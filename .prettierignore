@@ -1,0 +1,8 @@
+.next
+out
+build
+tmp
+node_modules
+.claude
+*.tsbuildinfo
+next-env.d.ts
