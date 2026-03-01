@@ -73,3 +73,25 @@
 	background: var(--mana-green);
 	color: #fff;
 }
+
+.matchGroup {
+	display: flex;
+	gap: 16px;
+	flex-wrap: wrap;
+	padding-top: 4px;
+}
+
+.matchOption {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	color: var(--text-muted);
+	cursor: pointer;
+	user-select: none;
+}
+
+.matchOption input[type='radio'] {
+	accent-color: var(--primary);
+	cursor: pointer;
+}

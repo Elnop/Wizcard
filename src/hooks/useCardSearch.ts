@@ -28,8 +28,12 @@ export type ScryfallSortDir = 'auto' | 'asc' | 'desc';
 export interface SearchFilters {
 	name: string;
 	colors: ScryfallColor[];
+	colorMatch?: 'exact' | 'include' | 'atMost';
 	type: string;
 	set: string;
+	rarities: string[];
+	oracleText: string;
+	cmc: string;
 	order?: ScryfallSortOrder;
 	dir?: ScryfallSortDir;
 }
@@ -65,11 +69,23 @@ export function useCardSearch(filters: SearchFilters): UseCardSearchResult {
 			return buildScryfallQuery({
 				name: name || undefined,
 				colors: filters.colors.length > 0 ? filters.colors : undefined,
+				colorMatch: filters.colorMatch,
 				type: filters.type || undefined,
 				set: filters.set || undefined,
+				rarities: filters.rarities.length > 0 ? filters.rarities : undefined,
+				text: filters.oracleText || undefined,
+				cmc: filters.cmc || undefined,
 			});
 		},
-		[filters.colors, filters.type, filters.set]
+		[
+			filters.colors,
+			filters.colorMatch,
+			filters.type,
+			filters.set,
+			filters.rarities,
+			filters.oracleText,
+			filters.cmc,
+		]
 	);
 
 	const fetchCards = useCallback(

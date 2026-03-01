@@ -6,9 +6,9 @@ export interface ScryfallQueryParams {
 	colorMatch?: 'exact' | 'include' | 'atMost';
 	type?: string;
 	set?: string;
-	rarity?: string;
+	rarities?: string[];
 	text?: string;
-	cmc?: number | string;
+	cmc?: string;
 }
 
 export function buildScryfallQuery(params: ScryfallQueryParams): string {
@@ -42,16 +42,26 @@ export function buildScryfallQuery(params: ScryfallQueryParams): string {
 		parts.push(`s:${params.set}`);
 	}
 
-	if (params.rarity) {
-		parts.push(`r:${params.rarity}`);
+	if (params.rarities && params.rarities.length > 0) {
+		if (params.rarities.length === 1) {
+			parts.push(`r:${params.rarities[0]}`);
+		} else {
+			const rarityParts = params.rarities.map((r) => `r:${r}`).join(' OR ');
+			parts.push(`(${rarityParts})`);
+		}
 	}
 
 	if (params.text) {
 		parts.push(`o:"${params.text}"`);
 	}
 
-	if (params.cmc !== undefined) {
-		parts.push(`cmc:${params.cmc}`);
+	if (params.cmc) {
+		const cmcStr = String(params.cmc);
+		if (/^(>=|<=|>|<)/.test(cmcStr)) {
+			parts.push(`cmc${cmcStr}`);
+		} else {
+			parts.push(`cmc:${cmcStr}`);
+		}
 	}
 
 	return parts.join(' ');

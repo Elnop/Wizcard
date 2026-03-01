@@ -33,6 +33,53 @@
 	margin-bottom: 32px;
 }
 
+.searchRow {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.searchRow > :first-child {
+	flex: 1;
+	min-width: 0;
+}
+
+.filtersButton {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	white-space: nowrap;
+	padding: 10px 16px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	color: var(--foreground);
+	cursor: pointer;
+	font-size: 14px;
+	transition:
+		border-color 0.2s,
+		background-color 0.2s;
+}
+
+.filtersButton:hover {
+	border-color: var(--primary);
+}
+
+.filterBadge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 20px;
+	height: 20px;
+	padding: 0 6px;
+	font-size: 11px;
+	font-weight: 700;
+	color: white;
+	background: var(--primary);
+	border-radius: 10px;
+}
+
 .resultInfo {
 	margin-bottom: 16px;
 	font-size: 14px;
@@ -118,5 +165,9 @@
 	.searchSection {
 		gap: 16px;
 		margin-bottom: 24px;
+	}
+
+	.searchRow {
+		gap: 8px;
 	}
 }

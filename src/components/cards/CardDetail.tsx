@@ -1,6 +1,8 @@
 'use client';
 
 import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
+import { useSymbols } from '@/hooks/useSymbols';
+import { SymbolText } from '@/components/ui/SymbolText';
 import { CardImage } from './CardImage';
 import styles from './CardDetail.module.css';
 
@@ -25,19 +27,15 @@ const rarityLabels: Record<string, string> = {
 	bonus: 'Bonus',
 };
 
-function formatOracleText(text: string | undefined): string[] {
+function splitOracleText(text: string | undefined): string[] {
 	if (!text) return [];
 	return text.split('\n').filter(Boolean);
 }
 
-function formatManaCost(cost: string | undefined): string {
-	if (!cost) return '';
-	return cost;
-}
-
 export function CardDetail({ card }: CardDetailProps) {
+	const symbolMap = useSymbols();
 	const colors = card.colors ?? card.color_identity ?? [];
-	const oracleLines = formatOracleText(card.oracle_text);
+	const oracleLines = splitOracleText(card.oracle_text);
 
 	return (
 		<div className={styles.container}>
@@ -49,7 +47,9 @@ export function CardDetail({ card }: CardDetailProps) {
 				<header className={styles.header}>
 					<h1 className={styles.name}>{card.name}</h1>
 					{card.mana_cost && (
-						<span className={styles.manaCost}>{formatManaCost(card.mana_cost)}</span>
+						<span className={styles.manaCost}>
+							<SymbolText text={card.mana_cost} symbolMap={symbolMap} />
+						</span>
 					)}
 				</header>
 
@@ -58,7 +58,9 @@ export function CardDetail({ card }: CardDetailProps) {
 				{oracleLines.length > 0 && (
 					<div className={styles.oracleText}>
 						{oracleLines.map((line, index) => (
-							<p key={index}>{line}</p>
+							<p key={index}>
+								<SymbolText text={line} symbolMap={symbolMap} />
+							</p>
 						))}
 					</div>
 				)}

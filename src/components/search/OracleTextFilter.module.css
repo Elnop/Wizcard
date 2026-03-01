@@ -1,0 +1,32 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.label {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-muted);
+}
+
+.input {
+	width: 100%;
+	padding: 9px 12px;
+	background: var(--surface-input, var(--surface));
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	color: var(--foreground);
+	font-size: 14px;
+	outline: none;
+	transition: border-color 0.2s;
+	box-sizing: border-box;
+}
+
+.input::placeholder {
+	color: var(--text-muted);
+}
+
+.input:focus {
+	border-color: var(--primary);
+}

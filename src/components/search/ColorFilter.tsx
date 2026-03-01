@@ -6,6 +6,8 @@ import styles from './ColorFilter.module.css';
 export interface ColorFilterProps {
 	selected: ScryfallColor[];
 	onChange: (colors: ScryfallColor[]) => void;
+	colorMatch?: 'exact' | 'include' | 'atMost';
+	onColorMatchChange?: (match: 'exact' | 'include' | 'atMost') => void;
 }
 
 const colors: { id: ScryfallColor; name: string; symbol: string }[] = [
@@ -16,7 +18,18 @@ const colors: { id: ScryfallColor; name: string; symbol: string }[] = [
 	{ id: 'G', name: 'Green', symbol: 'G' },
 ];
 
-export function ColorFilter({ selected, onChange }: ColorFilterProps) {
+const matchOptions: { value: 'include' | 'exact' | 'atMost'; label: string }[] = [
+	{ value: 'include', label: 'Inclut' },
+	{ value: 'exact', label: 'Exactement' },
+	{ value: 'atMost', label: 'Au plus' },
+];
+
+export function ColorFilter({
+	selected,
+	onChange,
+	colorMatch = 'include',
+	onColorMatchChange,
+}: ColorFilterProps) {
 	const handleToggle = (color: ScryfallColor) => {
 		if (selected.includes(color)) {
 			onChange(selected.filter((c) => c !== color));
@@ -43,6 +56,26 @@ export function ColorFilter({ selected, onChange }: ColorFilterProps) {
 					</button>
 				))}
 			</div>
+			{selected.length > 0 && onColorMatchChange && (
+				<div
+					className={styles.matchGroup}
+					role="group"
+					aria-label="Mode de correspondance des couleurs"
+				>
+					{matchOptions.map((opt) => (
+						<label key={opt.value} className={styles.matchOption}>
+							<input
+								type="radio"
+								name="colorMatch"
+								value={opt.value}
+								checked={colorMatch === opt.value}
+								onChange={() => onColorMatchChange(opt.value)}
+							/>
+							{opt.label}
+						</label>
+					))}
+				</div>
+			)}
 		</div>
 	);
 }
