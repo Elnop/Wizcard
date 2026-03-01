@@ -1,0 +1,75 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.label {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-muted);
+}
+
+.colors {
+	display: flex;
+	gap: 8px;
+}
+
+.colorButton {
+	width: 36px;
+	height: 36px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 14px;
+	font-weight: 700;
+	font-family: var(--font-geist-mono), monospace;
+	border: 2px solid transparent;
+	border-radius: 50%;
+	cursor: pointer;
+	transition:
+		transform 0.2s,
+		border-color 0.2s,
+		opacity 0.2s;
+	opacity: 0.5;
+}
+
+.colorButton:hover {
+	transform: scale(1.1);
+	opacity: 0.8;
+}
+
+.colorButton.selected {
+	opacity: 1;
+	border-color: var(--foreground);
+}
+
+.colorButton[data-color='W'] {
+	background: var(--mana-white);
+	color: #000;
+}
+
+.colorButton[data-color='U'] {
+	background: var(--mana-blue);
+	color: #fff;
+}
+
+.colorButton[data-color='B'] {
+	background: var(--mana-black);
+	color: #fff;
+	border-color: var(--border);
+}
+
+.colorButton[data-color='B'].selected {
+	border-color: var(--foreground);
+}
+
+.colorButton[data-color='R'] {
+	background: var(--mana-red);
+	color: #fff;
+}
+
+.colorButton[data-color='G'] {
+	background: var(--mana-green);
+	color: #fff;
+}

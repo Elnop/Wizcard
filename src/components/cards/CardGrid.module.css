@@ -1,0 +1,48 @@
+.grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 24px;
+	width: 100%;
+}
+
+.item {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.cardName {
+	font-size: 14px;
+	color: var(--foreground);
+	text-align: center;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 64px 24px;
+	color: var(--text-muted);
+	text-align: center;
+}
+
+@media (max-width: 768px) {
+	.grid {
+		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+		gap: 16px;
+	}
+}
+
+@media (max-width: 480px) {
+	.grid {
+		grid-template-columns: repeat(2, 1fr);
+		gap: 12px;
+	}
+
+	.cardName {
+		font-size: 12px;
+	}
+}

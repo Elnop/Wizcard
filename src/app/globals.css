@@ -1,13 +1,26 @@
 :root {
-	--background: #ffffff;
-	--foreground: #171717;
-}
+	color-scheme: dark;
+	--background: #0a0a0a;
+	--foreground: #ededed;
+	--primary: #6366f1;
+	--primary-hover: #4f46e5;
+	--surface: #18181b;
+	--surface-hover: #27272a;
+	--border: #27272a;
+	--text-muted: #a1a1aa;
 
-@media (prefers-color-scheme: dark) {
-	:root {
-		--background: #0a0a0a;
-		--foreground: #ededed;
-	}
+	/* Mana colors */
+	--mana-white: #f8e7b9;
+	--mana-blue: #0e68ab;
+	--mana-black: #150b00;
+	--mana-red: #d3202a;
+	--mana-green: #00733e;
+	--mana-colorless: #ccc2c0;
+
+	/* Functional colors */
+	--success: #22c55e;
+	--warning: #eab308;
+	--error: #ef4444;
 }
 
 html,
@@ -19,7 +32,7 @@ body {
 body {
 	color: var(--foreground);
 	background: var(--background);
-	font-family: Arial, Helvetica, sans-serif;
+	font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
@@ -35,8 +48,21 @@ a {
 	text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-	html {
-		color-scheme: dark;
-	}
+/* Scrollbar styling for dark mode */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--surface);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--border);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--text-muted);
 }

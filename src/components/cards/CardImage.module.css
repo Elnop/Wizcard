@@ -1,0 +1,93 @@
+.container {
+	position: relative;
+	display: inline-block;
+}
+
+.clickable {
+	cursor: pointer;
+}
+
+.clickable:hover .image {
+	transform: scale(1.02);
+}
+
+.imageWrapper {
+	position: relative;
+	border-radius: 12px;
+	overflow: hidden;
+}
+
+.image {
+	display: block;
+	width: 100%;
+	height: auto;
+	transition: transform 0.2s ease;
+}
+
+.image.loading {
+	opacity: 0;
+}
+
+.skeleton {
+	position: absolute;
+	top: 0;
+	left: 0;
+	background: linear-gradient(
+		90deg,
+		var(--surface) 25%,
+		var(--surface-hover) 50%,
+		var(--surface) 75%
+	);
+	background-size: 200% 100%;
+	animation: shimmer 1.5s infinite;
+	border-radius: 12px;
+}
+
+@keyframes shimmer {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
+}
+
+.placeholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 16px;
+}
+
+.placeholderText {
+	color: var(--text-muted);
+	text-align: center;
+	font-size: 14px;
+}
+
+.flipButton {
+	position: absolute;
+	bottom: 8px;
+	right: 8px;
+	width: 36px;
+	height: 36px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: rgba(0, 0, 0, 0.7);
+	border: 1px solid var(--border);
+	border-radius: 50%;
+	color: var(--foreground);
+	cursor: pointer;
+	transition:
+		background-color 0.2s,
+		transform 0.2s;
+}
+
+.flipButton:hover {
+	background-color: rgba(0, 0, 0, 0.9);
+	transform: rotate(180deg);
+}

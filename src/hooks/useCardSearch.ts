@@ -1,0 +1,166 @@
+'use client';
+
+import { useState, useCallback, useEffect, useRef } from 'react';
+import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
+import { searchCards } from '@/lib/scryfall/endpoints/cards';
+import { buildScryfallQuery } from '@/lib/utils/scryfall-query';
+import { useDebounce } from './useDebounce';
+
+export type ScryfallSortOrder =
+	| 'name'
+	| 'set'
+	| 'released'
+	| 'rarity'
+	| 'color'
+	| 'usd'
+	| 'tix'
+	| 'eur'
+	| 'cmc'
+	| 'power'
+	| 'toughness'
+	| 'edhrec'
+	| 'penny'
+	| 'artist'
+	| 'review';
+
+export type ScryfallSortDir = 'auto' | 'asc' | 'desc';
+
+export interface SearchFilters {
+	name: string;
+	colors: ScryfallColor[];
+	type: string;
+	set: string;
+	order?: ScryfallSortOrder;
+	dir?: ScryfallSortDir;
+}
+
+interface UseCardSearchResult {
+	cards: ScryfallCard[];
+	isLoading: boolean;
+	isLoadingMore: boolean;
+	error: Error | null;
+	hasMore: boolean;
+	totalCards: number;
+	loadMore: () => void;
+	reset: () => void;
+}
+
+export function useCardSearch(filters: SearchFilters): UseCardSearchResult {
+	const [cards, setCards] = useState<ScryfallCard[]>([]);
+	const [isLoading, setIsLoading] = useState(false);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const [error, setError] = useState<Error | null>(null);
+	const [hasMore, setHasMore] = useState(false);
+	const [totalCards, setTotalCards] = useState(0);
+	const [page, setPage] = useState(1);
+
+	const debouncedName = useDebounce(filters.name, 300);
+	const lastSearchKeyRef = useRef<string>('');
+
+	const order = filters.order ?? 'name';
+	const dir = filters.dir ?? 'auto';
+
+	const buildQuery = useCallback(
+		(name: string) => {
+			return buildScryfallQuery({
+				name: name || undefined,
+				colors: filters.colors.length > 0 ? filters.colors : undefined,
+				type: filters.type || undefined,
+				set: filters.set || undefined,
+			});
+		},
+		[filters.colors, filters.type, filters.set]
+	);
+
+	const fetchCards = useCallback(
+		async (query: string, pageNum: number, isNewSearch: boolean) => {
+			if (!query.trim()) {
+				setCards([]);
+				setHasMore(false);
+				setTotalCards(0);
+				return;
+			}
+
+			try {
+				if (isNewSearch) {
+					setIsLoading(true);
+				} else {
+					setIsLoadingMore(true);
+				}
+				setError(null);
+
+				const result = await searchCards({
+					q: query,
+					page: pageNum,
+					order,
+					dir,
+				});
+
+				if (isNewSearch) {
+					setCards(result.data);
+				} else {
+					setCards((prev) => [...prev, ...result.data]);
+				}
+
+				setHasMore(result.has_more);
+				setTotalCards(result.total_cards ?? result.data.length);
+			} catch (err) {
+				setError(err instanceof Error ? err : new Error('Search failed'));
+				if (isNewSearch) {
+					setCards([]);
+					setHasMore(false);
+					setTotalCards(0);
+				}
+			} finally {
+				setIsLoading(false);
+				setIsLoadingMore(false);
+			}
+		},
+		[order, dir]
+	);
+
+	useEffect(() => {
+		const query = buildQuery(debouncedName);
+		// Include order and dir in the search key to trigger re-fetch when they change
+		const searchKey = `${query}|${order}|${dir}`;
+
+		if (searchKey !== lastSearchKeyRef.current) {
+			lastSearchKeyRef.current = searchKey;
+			setPage(1);
+			fetchCards(query, 1, true);
+		}
+	}, [debouncedName, buildQuery, fetchCards, order, dir]);
+
+	const lastQueryRef = useRef<string>('');
+
+	const loadMore = useCallback(() => {
+		if (!isLoading && !isLoadingMore && hasMore) {
+			const nextPage = page + 1;
+			setPage(nextPage);
+			// Extract only the query part from the search key for loadMore
+			const query = lastSearchKeyRef.current.split('|')[0];
+			lastQueryRef.current = query;
+			fetchCards(query, nextPage, false);
+		}
+	}, [isLoading, isLoadingMore, hasMore, page, fetchCards]);
+
+	const reset = useCallback(() => {
+		setCards([]);
+		setPage(1);
+		setHasMore(false);
+		setTotalCards(0);
+		setError(null);
+		lastQueryRef.current = '';
+	}, []);
+
+	return {
+		cards,
+		isLoading,
+		isLoadingMore,
+		error,
+		hasMore,
+		totalCards,
+		loadMore,
+		reset,
+	};
+}
