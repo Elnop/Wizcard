@@ -2,12 +2,20 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { getScryfallCardImageUriBySize } from '@/lib/scryfall/scryfall-query';
 import styles from './CardImage.module.css';
 
+type CardImageCard = {
+	name: string;
+	image_uris?: { small?: string; normal?: string; large?: string };
+	card_faces?: Array<{
+		name?: string;
+		image_uris?: { small?: string; normal?: string; large?: string };
+	}>;
+};
+
 export interface CardImageProps {
-	card: ScryfallCard;
+	card: CardImageCard;
 	size?: 'small' | 'normal' | 'large';
 	priority?: boolean;
 	className?: string;

@@ -1,0 +1,111 @@
+.overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.6);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+}
+
+.modal {
+	background: var(--card-bg, #1a1a2e);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 32px;
+	max-width: 480px;
+	width: 90%;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.title {
+	font-size: 20px;
+	font-weight: 700;
+	color: var(--foreground);
+	margin: 0;
+}
+
+.stats {
+	display: flex;
+	gap: 32px;
+}
+
+.stat {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.statValue {
+	font-size: 32px;
+	font-weight: 700;
+	color: var(--primary);
+	line-height: 1;
+}
+
+.statValue.warn {
+	color: #f59e0b;
+}
+
+.statLabel {
+	font-size: 13px;
+	color: var(--text-muted);
+}
+
+.errors {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.errorToggle {
+	background: none;
+	border: none;
+	padding: 0;
+	font-size: 13px;
+	color: #f59e0b;
+	cursor: pointer;
+	text-align: left;
+}
+
+.errorToggle:hover {
+	text-decoration: underline;
+}
+
+.errorList {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	max-height: 200px;
+	overflow-y: auto;
+}
+
+.errorList li {
+	font-size: 12px;
+	color: var(--text-muted);
+	padding: 4px 8px;
+	background: rgba(255, 255, 255, 0.04);
+	border-radius: 4px;
+}
+
+.closeBtn {
+	align-self: flex-end;
+	background: var(--primary);
+	color: #fff;
+	border: none;
+	border-radius: 8px;
+	padding: 10px 24px;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: opacity 0.15s;
+}
+
+.closeBtn:hover {
+	opacity: 0.85;
+}

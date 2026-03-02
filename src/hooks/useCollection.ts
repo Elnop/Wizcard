@@ -3,6 +3,7 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card, CollectionStats } from '@/types/card';
+import { toStoredCard } from '@/types/card';
 
 const STORAGE_KEY = 'mtg-snap-collection';
 
@@ -46,13 +47,14 @@ function getSnapshot(): CollectionData {
 		if (needsWrite) {
 			try {
 				localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-			} catch {
-				// ignore
+			} catch (err) {
+				console.error('[useCollection] failed to write migrated collection to localStorage:', err);
 			}
 		}
 		cachedSnapshot = migrated;
 		return migrated;
-	} catch {
+	} catch (err) {
+		console.error('[useCollection] failed to read collection from localStorage:', err);
 		cachedSnapshot = EMPTY;
 		return EMPTY;
 	}
@@ -79,8 +81,8 @@ function subscribe(listener: () => void) {
 function saveCollection(data: CollectionData): void {
 	try {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-	} catch {
-		// localStorage quota exceeded or unavailable
+	} catch (err) {
+		console.error('[useCollection] failed to save collection to localStorage:', err);
 	}
 	emitChange();
 }
@@ -94,7 +96,7 @@ export function useCollection() {
 		saveCollection({
 			...current,
 			[card.id]: {
-				...card,
+				...toStoredCard(card),
 				quantity: existing ? (existing.quantity ?? 0) + 1 : 1,
 				dateAdded: existing?.dateAdded ?? new Date().toISOString(),
 			},
@@ -158,6 +160,30 @@ export function useCollection() {
 		saveCollection({});
 	}, []);
 
+	const importCards = useCallback(
+		(
+			cards: Array<
+				ScryfallCard & { quantity: number; isFoil?: boolean; condition?: string; tags?: string[] }
+			>
+		) => {
+			const current = getSnapshot();
+			const next = { ...current };
+			for (const card of cards) {
+				const existing = next[card.id];
+				next[card.id] = {
+					...toStoredCard(card),
+					quantity: (existing?.quantity ?? 0) + card.quantity,
+					isFoil: card.isFoil,
+					condition: card.condition,
+					tags: card.tags,
+					dateAdded: existing?.dateAdded ?? new Date().toISOString(),
+				};
+			}
+			saveCollection(next);
+		},
+		[]
+	);
+
 	const entries = Object.values(collection);
 
 	return {
@@ -170,5 +196,6 @@ export function useCollection() {
 		getQuantity,
 		getStats,
 		clearCollection,
+		importCards,
 	};
 }

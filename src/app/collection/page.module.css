@@ -45,7 +45,27 @@
 }
 
 .titleSection {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
 	margin-bottom: 32px;
+}
+
+.titleLeft {
+	display: flex;
+	flex-direction: column;
+}
+
+.actions {
+	display: flex;
+	flex-shrink: 0;
+	gap: 8px;
+	align-items: center;
+	padding-top: 4px;
+}
+
+.fileInput {
+	display: none;
 }
 
 .title {
