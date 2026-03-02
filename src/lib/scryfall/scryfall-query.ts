@@ -71,9 +71,7 @@ export function getScryfallCardImageUri(card: {
 	image_uris?: { normal?: string; small?: string; large?: string };
 	card_faces?: Array<{ image_uris?: { normal?: string; small?: string; large?: string } }>;
 }): string {
-	return (
-		card.image_uris?.normal ?? card.card_faces?.[0]?.image_uris?.normal ?? '/placeholder-card.png'
-	);
+	return card.image_uris?.normal ?? card.card_faces?.[0]?.image_uris?.normal ?? '';
 }
 
 export function getScryfallCardImageUriBySize(
@@ -83,7 +81,5 @@ export function getScryfallCardImageUriBySize(
 	},
 	size: 'small' | 'normal' | 'large' = 'normal'
 ): string {
-	return (
-		card.image_uris?.[size] ?? card.card_faces?.[0]?.image_uris?.[size] ?? '/placeholder-card.png'
-	);
+	return card.image_uris?.[size] ?? card.card_faces?.[0]?.image_uris?.[size] ?? '';
 }

@@ -1,18 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/card';
 import { CardImage } from '@/components/cards/CardImage';
 import styles from './CollectionGrid.module.css';
 
-interface CollectionEntry {
-	card: ScryfallCard;
-	quantity: number;
-	dateAdded: string;
-}
-
 export interface CollectionGridProps {
-	entries: CollectionEntry[];
+	entries: Card[];
 	onDecrement: (cardId: string) => void;
 }
 
@@ -22,22 +16,22 @@ export function CollectionGrid({ entries, onDecrement }: CollectionGridProps) {
 	return (
 		<div className={styles.grid}>
 			{entries.map((entry) => (
-				<div key={entry.card.id} className={styles.item}>
+				<div key={entry.id} className={styles.item}>
 					<div className={styles.imageWrapper}>
 						<CardImage
-							card={entry.card}
+							card={entry}
 							size="normal"
-							onClick={() => router.push(`/card/${entry.card.id}`)}
+							onClick={() => router.push(`/card/${entry.id}`)}
 						/>
-						{entry.quantity > 1 && <span className={styles.badge}>x{entry.quantity}</span>}
+						{(entry.quantity ?? 0) > 1 && <span className={styles.badge}>x{entry.quantity}</span>}
 						<button
 							type="button"
 							className={styles.removeButton}
 							onClick={(e) => {
 								e.stopPropagation();
-								onDecrement(entry.card.id);
+								onDecrement(entry.id);
 							}}
-							aria-label={`Remove one ${entry.card.name}`}
+							aria-label={`Remove one ${entry.name}`}
 						>
 							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
 								<path
@@ -50,7 +44,7 @@ export function CollectionGrid({ entries, onDecrement }: CollectionGridProps) {
 							</svg>
 						</button>
 					</div>
-					<p className={styles.cardName}>{entry.card.name}</p>
+					<p className={styles.cardName}>{entry.name}</p>
 				</div>
 			))}
 		</div>

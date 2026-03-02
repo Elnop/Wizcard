@@ -2,21 +2,30 @@
 
 import { useCallback, useSyncExternalStore } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { CollectionStats } from '@/lib/scryfall/types/card';
+import type { Card, CollectionStats } from '@/types/card';
 
 const STORAGE_KEY = 'mtg-snap-collection';
 
-interface CollectionEntry {
-	card: ScryfallCard;
-	quantity: number;
-	dateAdded: string;
-}
-
-type CollectionData = Record<string, CollectionEntry>;
+type CollectionData = Record<string, Card>;
 
 const EMPTY: CollectionData = {};
 let listeners: Array<() => void> = [];
 let cachedSnapshot: CollectionData | null = null;
+
+// Migrate legacy entries that stored { card: ScryfallCard, quantity, dateAdded }
+// to the flat Card shape where card data is top-level.
+function migrateEntry(raw: unknown): Card {
+	if (
+		raw &&
+		typeof raw === 'object' &&
+		'card' in raw &&
+		typeof (raw as Record<string, unknown>).card === 'object'
+	) {
+		const legacy = raw as { card: ScryfallCard; quantity: number; dateAdded: string };
+		return { ...legacy.card, quantity: legacy.quantity, dateAdded: legacy.dateAdded };
+	}
+	return raw as Card;
+}
 
 function getSnapshot(): CollectionData {
 	if (cachedSnapshot !== null) return cachedSnapshot;
@@ -26,8 +35,23 @@ function getSnapshot(): CollectionData {
 			cachedSnapshot = EMPTY;
 			return EMPTY;
 		}
-		cachedSnapshot = JSON.parse(raw) as CollectionData;
-		return cachedSnapshot;
+		const parsed = JSON.parse(raw) as Record<string, unknown>;
+		const migrated: CollectionData = {};
+		let needsWrite = false;
+		for (const [id, entry] of Object.entries(parsed)) {
+			const card = migrateEntry(entry);
+			migrated[id] = card;
+			if (entry !== card) needsWrite = true;
+		}
+		if (needsWrite) {
+			try {
+				localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+			} catch {
+				// ignore
+			}
+		}
+		cachedSnapshot = migrated;
+		return migrated;
 	} catch {
 		cachedSnapshot = EMPTY;
 		return EMPTY;
@@ -70,8 +94,8 @@ export function useCollection() {
 		saveCollection({
 			...current,
 			[card.id]: {
-				card,
-				quantity: existing ? existing.quantity + 1 : 1,
+				...card,
+				quantity: existing ? (existing.quantity ?? 0) + 1 : 1,
 				dateAdded: existing?.dateAdded ?? new Date().toISOString(),
 			},
 		});
@@ -88,14 +112,14 @@ export function useCollection() {
 		const current = getSnapshot();
 		const existing = current[cardId];
 		if (!existing) return;
-		if (existing.quantity <= 1) {
+		if ((existing.quantity ?? 0) <= 1) {
 			const next = { ...current };
 			delete next[cardId];
 			saveCollection(next);
 		} else {
 			saveCollection({
 				...current,
-				[cardId]: { ...existing, quantity: existing.quantity - 1 },
+				[cardId]: { ...existing, quantity: (existing.quantity ?? 0) - 1 },
 			});
 		}
 	}, []);
@@ -114,10 +138,11 @@ export function useCollection() {
 		let totalCards = 0;
 
 		for (const entry of entries) {
-			totalCards += entry.quantity;
-			sets.add(entry.card.set);
-			const rarity = entry.card.rarity;
-			rarityDistribution[rarity] = (rarityDistribution[rarity] ?? 0) + entry.quantity;
+			const qty = entry.quantity ?? 0;
+			totalCards += qty;
+			sets.add(entry.set);
+			const rarity = entry.rarity;
+			rarityDistribution[rarity] = (rarityDistribution[rarity] ?? 0) + qty;
 		}
 
 		return {
