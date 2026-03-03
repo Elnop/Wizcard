@@ -1,9 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Card } from '@/types/card';
 import { CardImage } from '@/components/cards/CardImage';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import styles from './CollectionGrid.module.css';
+
+const PAGE_SIZE = 48;
 
 export interface CollectionGridProps {
 	entries: Card[];
@@ -19,12 +23,31 @@ export function CollectionGrid({
 	totalExpected,
 }: CollectionGridProps) {
 	const router = useRouter();
+	const [{ visibleCount, trackedLength }, setPagination] = useState({
+		visibleCount: PAGE_SIZE,
+		trackedLength: entries.length,
+	});
+
+	const effectiveVisibleCount = entries.length !== trackedLength ? PAGE_SIZE : visibleCount;
+
+	const visibleEntries = entries.slice(0, effectiveVisibleCount);
+	const hasMore = effectiveVisibleCount < entries.length;
+
+	const { sentinelRef } = useInfiniteScroll({
+		onLoadMore: () =>
+			setPagination((prev) => ({
+				trackedLength: entries.length,
+				visibleCount: prev.visibleCount + PAGE_SIZE,
+			})),
+		hasMore,
+		isLoading: isLoading ?? false,
+	});
 
 	const skeletonCount = isLoading ? Math.max(0, (totalExpected ?? 0) - entries.length) : 0;
 
 	return (
 		<div className={styles.grid}>
-			{entries.map((entry) => (
+			{visibleEntries.map((entry) => (
 				<div key={entry.id} className={styles.item}>
 					<div className={styles.imageWrapper}>
 						<CardImage
@@ -56,6 +79,7 @@ export function CollectionGrid({
 					<p className={styles.cardName}>{entry.name}</p>
 				</div>
 			))}
+			<div ref={sentinelRef} />
 			{Array.from({ length: skeletonCount }).map((_, i) => (
 				<div key={`sk-${i}`} className={styles.item}>
 					<div className={styles.skeletonImage} />
