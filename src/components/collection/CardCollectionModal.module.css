@@ -54,6 +54,29 @@
 	border-radius: 8px;
 }
 
+.changePrintBtn {
+	display: block;
+	width: 100%;
+	margin-top: 10px;
+	background: var(--surface, rgba(255, 255, 255, 0.06));
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	color: var(--foreground);
+	font-size: 13px;
+	font-weight: 600;
+	padding: 8px 12px;
+	cursor: pointer;
+	transition:
+		background 0.15s,
+		border-color 0.15s;
+	text-align: center;
+}
+
+.changePrintBtn:hover {
+	background: var(--surface-hover, rgba(255, 255, 255, 0.1));
+	border-color: var(--primary, #7c3aed);
+}
+
 .infoCol {
 	flex: 1;
 	display: flex;

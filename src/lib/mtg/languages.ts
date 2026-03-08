@@ -20,6 +20,26 @@ export const MTG_LANGUAGES = [
 
 export type MtgLanguage = (typeof MTG_LANGUAGES)[number];
 
+export const SCRYFALL_CODE_TO_LANGUAGE: Record<string, MtgLanguage> = {
+	en: 'English',
+	fr: 'French',
+	de: 'German',
+	es: 'Spanish',
+	it: 'Italian',
+	pt: 'Portuguese',
+	ja: 'Japanese',
+	ko: 'Korean',
+	ru: 'Russian',
+	zhs: 'Simplified Chinese',
+	zht: 'Traditional Chinese',
+	he: 'Hebrew',
+	la: 'Latin',
+	grc: 'Ancient Greek',
+	ar: 'Arabic',
+	sa: 'Sanskrit',
+	ph: 'Phyrexian',
+};
+
 export const LANGUAGE_TO_SCRYFALL_CODE: Partial<Record<MtgLanguage, string>> = {
 	English: 'en',
 	French: 'fr',

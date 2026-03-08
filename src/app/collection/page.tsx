@@ -14,6 +14,9 @@ import { CollectionFiltersAside } from '@/components/collection/CollectionFilter
 import { ImportSummaryModal } from '@/components/collection/ImportSummaryModal';
 import { CardCollectionModal } from '@/components/collection/CardCollectionModal';
 import { Button } from '@/components/ui/Button';
+import { putCardsInCache } from '@/lib/card-cache';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
 import type { Card, CollectionEntry, CollectionStats } from '@/types/card';
 import styles from './page.module.css';
 
@@ -45,6 +48,7 @@ export default function CollectionPage() {
 		decrementCard,
 		removeCard,
 		updateEntry,
+		changePrint,
 		importCards,
 		clearCollection,
 	} = useCollection();
@@ -54,7 +58,22 @@ export default function CollectionPage() {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-	const selectedCard = selectedCardId ? (cards.find((c) => c.id === selectedCardId) ?? null) : null;
+	const [pendingScryfallCard, setPendingScryfallCard] = useState<ScryfallCard | null>(null);
+
+	const cardFromCollection = selectedCardId
+		? (cards.find((c) => c.id === selectedCardId) ?? null)
+		: null;
+	const selectedCard: Card | null = (() => {
+		if (!selectedCardId) return null;
+		if (cardFromCollection) return cardFromCollection;
+		// After a print change, useCollectionCards hasn't re-hydrated yet — use the
+		// ScryfallCard we already have from the picker, merged with the collection entry.
+		if (pendingScryfallCard && pendingScryfallCard.id === selectedCardId) {
+			const entry = entries.find((e) => e.id === selectedCardId);
+			if (entry) return { ...pendingScryfallCard, ...entry };
+		}
+		return null;
+	})();
 	const [filters, setFilters] = useState<CollectionFilters>(defaultCollectionFilters);
 	const filteredCards = useCollectionFilters(cards, filters);
 
@@ -171,13 +190,27 @@ export default function CollectionPage() {
 			<ImportSummaryModal status={status} result={result} onClose={reset} />
 			<CardCollectionModal
 				card={selectedCard}
-				onClose={() => setSelectedCardId(null)}
+				onClose={() => {
+					setSelectedCardId(null);
+					setPendingScryfallCard(null);
+				}}
 				onSave={(cardId, updates: Partial<CollectionEntry>) => {
 					updateEntry(cardId, updates);
 				}}
 				onRemove={(cardId) => {
 					removeCard(cardId);
 					setSelectedCardId(null);
+					setPendingScryfallCard(null);
+				}}
+				onChangePrint={(oldCardId, newCard) => {
+					void putCardsInCache([newCard]);
+					setPendingScryfallCard(newCard);
+					changePrint(oldCardId, newCard.id);
+					if (newCard.lang) {
+						const language = SCRYFALL_CODE_TO_LANGUAGE[newCard.lang];
+						updateEntry(newCard.id, { language });
+					}
+					setSelectedCardId(newCard.id);
 				}}
 			/>
 		</div>

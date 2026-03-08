@@ -1,0 +1,22 @@
+.lightbox {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.9);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1200;
+	cursor: zoom-out;
+}
+
+.lightboxCard {
+	max-width: min(672px, 90vw);
+	width: 100%;
+	cursor: default;
+}
+
+.lightboxCard img {
+	width: 100%;
+	height: auto;
+	border-radius: 12px;
+}

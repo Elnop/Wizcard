@@ -125,3 +125,24 @@ export async function countCardSearch(query: string): Promise<number> {
 	const result = await searchCards({ q: query, page: 1 });
 	return result.total_cards ?? result.data.length;
 }
+
+// Fetch all prints of a card using its prints_search_uri (a full Scryfall URL)
+export async function getCardPrints(prints_search_uri: string): Promise<ScryfallCard[]> {
+	const allCards: ScryfallCard[] = [];
+	const base = 'https://api.scryfall.com';
+
+	const firstUrl = new URL(prints_search_uri);
+	firstUrl.searchParams.set('include_multilingual', 'true');
+	let nextUrl: string | null = firstUrl.toString();
+
+	while (nextUrl) {
+		const path: string = nextUrl.startsWith(base) ? nextUrl.slice(base.length) : nextUrl;
+		const result = await scryfallGet<ScryfallCardSearchResult>(path);
+		allCards.push(...result.data);
+		nextUrl = result.has_more && result.next_page ? result.next_page : null;
+
+		if (allCards.length > 10000) break;
+	}
+
+	return allCards;
+}

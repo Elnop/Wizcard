@@ -168,6 +168,16 @@ export function useCollection() {
 		});
 	}, []);
 
+	const changePrint = useCallback((oldCardId: string, newCardId: string) => {
+		const current = getSnapshot();
+		const existing = current[oldCardId];
+		if (!existing) return;
+		const next = { ...current };
+		delete next[oldCardId];
+		next[newCardId] = { ...existing, id: newCardId };
+		saveCollection(next);
+	}, []);
+
 	const clearCollection = useCallback(() => {
 		saveCollection({});
 	}, []);
@@ -205,6 +215,7 @@ export function useCollection() {
 		removeCard,
 		decrementCard,
 		updateEntry,
+		changePrint,
 		getQuantity,
 		clearCollection,
 		importCards,
