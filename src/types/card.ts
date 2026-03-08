@@ -6,7 +6,13 @@ export interface CollectionEntry {
 	quantity: number;
 	dateAdded: string; // ISO timestamp
 	isFoil?: boolean;
+	foilType?: 'foil' | 'etched';
 	condition?: string;
+	language?: string;
+	purchasePrice?: string;
+	tradelistCount?: number;
+	alter?: boolean;
+	proxy?: boolean;
 	tags?: string[];
 }
 

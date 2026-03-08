@@ -105,14 +105,19 @@ export function useMoxfieldImport(
 						continue;
 					}
 
-					// 'etched' foil maps to isFoil: true (etched is a variant of foil treatment)
 					cardsToImport.push({
 						...card,
 						id: card.id,
 						quantity: row.count,
 						dateAdded: new Date().toISOString(),
-						isFoil: row.foil === 'foil' || row.foil === 'etched',
+						foilType: row.foil === '' ? undefined : row.foil,
+						isFoil: row.foil !== '',
 						condition: row.condition,
+						language: row.language,
+						purchasePrice: row.purchasePrice || undefined,
+						tradelistCount: row.tradelistCount || undefined,
+						alter: row.alter || undefined,
+						proxy: row.proxy || undefined,
 						tags: row.tags,
 					});
 				}

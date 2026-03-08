@@ -1,5 +1,4 @@
 import type { MoxfieldRow, MoxfieldFoilType } from './types';
-import { MOXFIELD_CSV_HEADERS } from './types';
 
 /** RFC 4180 character-by-character CSV parser. Returns all fields for every row. */
 function parseCSVRows(text: string): string[][] {
@@ -65,11 +64,6 @@ function parseCSVRows(text: string): string[][] {
 	return rows;
 }
 
-const HEADER_INDEX: Record<(typeof MOXFIELD_CSV_HEADERS)[number], number> = {} as Record<
-	(typeof MOXFIELD_CSV_HEADERS)[number],
-	number
->;
-
 function buildHeaderIndex(headerRow: string[]): Record<string, number> {
 	const idx: Record<string, number> = {};
 	for (let i = 0; i < headerRow.length; i++) {
@@ -83,12 +77,15 @@ function get(fields: string[], idx: Record<string, number>, key: string): string
 	return i !== undefined && i < fields.length ? fields[i].trim() : '';
 }
 
+/** Detect whether the CSV uses the "Haves" format (has "Etched" column) vs "Collection" format */
+function isHavesFormat(idx: Record<string, number>): boolean {
+	return 'Etched' in idx;
+}
+
 export function parseMoxfieldCSV(csvText: string): {
 	rows: MoxfieldRow[];
 	parseErrors: string[];
 } {
-	void HEADER_INDEX; // suppress unused-var; kept for future lookup use
-
 	const allRows = parseCSVRows(csvText);
 	const parseErrors: string[] = [];
 	const rows: MoxfieldRow[] = [];
@@ -100,6 +97,7 @@ export function parseMoxfieldCSV(csvText: string): {
 
 	const headerRow = allRows[0];
 	const idx = buildHeaderIndex(headerRow);
+	const havesFormat = isHavesFormat(idx);
 
 	for (let lineNum = 1; lineNum < allRows.length; lineNum++) {
 		const fields = allRows[lineNum];
@@ -126,11 +124,20 @@ export function parseMoxfieldCSV(csvText: string): {
 			continue;
 		}
 
-		const rawFoil = get(fields, idx, 'Foil').toLowerCase();
-		const foil: MoxfieldFoilType =
-			rawFoil === 'foil' ? 'foil' : rawFoil === 'etched' ? 'etched' : '';
+		let foil: MoxfieldFoilType;
+		if (havesFormat) {
+			// Haves format: "Foil" = 'foil'|'', "Etched" = 'etched'|''
+			const rawFoil = get(fields, idx, 'Foil').toLowerCase();
+			const rawEtched = get(fields, idx, 'Etched').toLowerCase();
+			foil = rawEtched === 'etched' ? 'etched' : rawFoil === 'foil' ? 'foil' : '';
+		} else {
+			// Collection format: "Foil" = 'foil'|'etched'|''
+			const rawFoil = get(fields, idx, 'Foil').toLowerCase();
+			foil = rawFoil === 'foil' ? 'foil' : rawFoil === 'etched' ? 'etched' : '';
+		}
 
-		const rawTags = get(fields, idx, 'Tags');
+		// "Tags" (Collection) or "Tag" (Haves)
+		const rawTags = get(fields, idx, 'Tags') || get(fields, idx, 'Tag');
 		const tags = rawTags
 			? rawTags
 					.split(',')
@@ -140,6 +147,7 @@ export function parseMoxfieldCSV(csvText: string): {
 
 		rows.push({
 			count,
+			tradelistCount: parseInt(get(fields, idx, 'Tradelist Count'), 10) || 0,
 			name: get(fields, idx, 'Name'),
 			edition,
 			condition: get(fields, idx, 'Condition') || 'Near Mint',
@@ -147,6 +155,8 @@ export function parseMoxfieldCSV(csvText: string): {
 			foil,
 			tags,
 			collectorNumber,
+			alter: get(fields, idx, 'Alter').toLowerCase() === 'true',
+			proxy: get(fields, idx, 'Proxy').toLowerCase() === 'true',
 			purchasePrice: get(fields, idx, 'Purchase Price'),
 		});
 	}

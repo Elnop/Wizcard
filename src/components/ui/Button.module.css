@@ -42,6 +42,17 @@
 	background-color: var(--surface-hover);
 }
 
+.danger {
+	background-color: transparent;
+	color: var(--error, #e53e3e);
+	border: 1px solid var(--error, #e53e3e);
+}
+
+.danger:hover:not(:disabled) {
+	background-color: var(--error, #e53e3e);
+	color: white;
+}
+
 .ghost {
 	background-color: transparent;
 	color: var(--foreground);

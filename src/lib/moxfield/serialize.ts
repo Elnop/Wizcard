@@ -14,24 +14,25 @@ export function serializeToMoxfieldCSV(cards: Card[]): string {
 	const header = MOXFIELD_CSV_HEADERS.map(quoteField).join(',');
 
 	const dataRows = cards.map((card) => {
-		const foil = card.isFoil ? 'foil' : '';
+		const foil = card.foilType ?? (card.isFoil ? 'foil' : '');
+		const language = card.language ?? card.lang ?? 'English';
 		const tags = (card.tags ?? []).join(',');
 		const condition = card.condition ?? 'Near Mint';
 
 		return [
 			quoteField(String(card.quantity ?? 1)),
-			quoteField('0'),
+			quoteField(String(card.tradelistCount ?? 0)),
 			quoteField(card.name),
 			quoteField(card.set),
 			quoteField(condition),
-			quoteField(card.lang ?? 'English'),
+			quoteField(language),
 			quoteField(foil),
 			quoteField(tags),
 			quoteField(formatDate(card.dateAdded)),
 			quoteField(card.collector_number),
-			quoteField(''),
-			quoteField(''),
-			quoteField(''),
+			quoteField(card.alter ? 'true' : ''),
+			quoteField(card.proxy ? 'true' : ''),
+			quoteField(card.purchasePrice ?? ''),
 		].join(',');
 	});
 

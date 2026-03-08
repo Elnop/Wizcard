@@ -38,7 +38,7 @@ function computeStats(cards: Card[]): CollectionStats {
 }
 
 export default function CollectionPage() {
-	const { entries, isLoaded, decrementCard, importCards } = useCollection();
+	const { entries, isLoaded, decrementCard, importCards, clearCollection } = useCollection();
 	const { cards, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
 	const { status, result, importFile, reset } = useMoxfieldImport(importCards);
 	const { sets, isLoading: setsLoading } = useScryfallSets();
@@ -57,6 +57,12 @@ export default function CollectionPage() {
 		filters.rarities.length +
 		(filters.oracleText ? 1 : 0) +
 		(filters.cmc ? 1 : 0);
+
+	function handleClearCollection() {
+		if (confirm('Effacer toute la collection ? Cette action est irréversible.')) {
+			clearCollection();
+		}
+	}
 
 	function handleExport() {
 		downloadCSV(serializeToMoxfieldCSV(cards), 'my-collection.csv');
@@ -128,9 +134,18 @@ export default function CollectionPage() {
 						</div>
 						<div className={styles.actions}>
 							{entries.length > 0 && (
-								<Button variant="secondary" onClick={handleExport} disabled={isBusy || isHydrating}>
-									Export CSV
-								</Button>
+								<>
+									<Button
+										variant="secondary"
+										onClick={handleExport}
+										disabled={isBusy || isHydrating}
+									>
+										Export CSV
+									</Button>
+									<Button variant="danger" onClick={handleClearCollection} disabled={isBusy}>
+										Clear Collection
+									</Button>
+								</>
 							)}
 							<Button variant="primary" onClick={handleImportClick} disabled={isBusy}>
 								{isBusy ? 'Importing…' : 'Import CSV'}

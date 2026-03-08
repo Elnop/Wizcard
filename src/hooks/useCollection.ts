@@ -165,8 +165,14 @@ export function useCollection() {
 			next[card.id] = {
 				id: card.id,
 				quantity: (existing?.quantity ?? 0) + card.quantity,
+				foilType: card.foilType,
 				isFoil: card.isFoil,
 				condition: card.condition,
+				language: card.language,
+				purchasePrice: card.purchasePrice,
+				tradelistCount: card.tradelistCount,
+				alter: card.alter,
+				proxy: card.proxy,
 				tags: card.tags,
 				dateAdded: existing?.dateAdded ?? new Date().toISOString(),
 			};
