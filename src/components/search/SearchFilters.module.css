@@ -54,6 +54,54 @@
 	cursor: not-allowed;
 }
 
+.sortRow {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-end;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.sortRow .filterGroup {
+	flex: 1;
+	min-width: 120px;
+}
+
+.dirToggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 38px;
+	height: 38px;
+	flex-shrink: 0;
+	background: var(--background);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition:
+		border-color 0.2s,
+		color 0.2s,
+		background 0.2s;
+}
+
+.dirToggle:hover {
+	border-color: var(--text-muted);
+	color: var(--foreground);
+}
+
+.dirToggle_asc,
+.dirToggle_desc {
+	border-color: var(--primary);
+	color: var(--primary);
+	background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.dirToggle_asc:hover,
+.dirToggle_desc:hover {
+	background: color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
 @media (max-width: 768px) {
 	.container {
 		flex-direction: column;
