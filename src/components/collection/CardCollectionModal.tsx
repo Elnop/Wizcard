@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Card, StackMeta } from '@/types/cards';
+import type { Card, CardStack, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { CardImage } from '@/components/cards/CardImage';
 import { MTG_LANGUAGES } from '@/lib/mtg/languages';
@@ -23,27 +23,27 @@ const COLOR_MAP: Record<string, string> = {
 const CONDITIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
 
 interface Props {
-	card: Card | null;
+	stack: CardStack | null;
 	onClose: () => void;
-	onSave: (cardId: string, updates: Partial<StackMeta>) => void;
-	onRemove: (cardId: string) => void;
-	onChangePrint?: (oldCardId: string, newCard: ScryfallCard) => void;
+	onSave: (rowId: string, updates: Partial<CardEntry>) => void;
+	onRemove: (scryfallId: string) => void;
+	onChangePrint?: (oldScryfallId: string, newCard: ScryfallCard) => void;
 	onIncrement?: () => void;
 	onDecrement?: () => void;
 }
 
 interface InnerProps {
-	card: Card;
+	stack: CardStack;
 	onClose: () => void;
-	onSave: (cardId: string, updates: Partial<StackMeta>) => void;
-	onRemove: (cardId: string) => void;
-	onChangePrint?: (oldCardId: string, newCard: ScryfallCard) => void;
+	onSave: (rowId: string, updates: Partial<CardEntry>) => void;
+	onRemove: (scryfallId: string) => void;
+	onChangePrint?: (oldScryfallId: string, newCard: ScryfallCard) => void;
 	onIncrement?: () => void;
 	onDecrement?: () => void;
 }
 
 function CardCollectionModalInner({
-	card,
+	stack,
 	onClose,
 	onSave,
 	onRemove,
@@ -56,24 +56,31 @@ function CardCollectionModalInner({
 	const [lightbox, setLightbox] = useState(false);
 	const symbolMap = useScryfallSymbols();
 
-	function save(patch: Partial<StackMeta>) {
-		const currentTags = card.tags ?? [];
-		onSave(card.scryfallId, {
-			condition: card.condition || undefined,
-			isFoil: card.isFoil ?? false,
-			foilType: (card.isFoil ?? false) ? (card.foilType ?? 'foil') : undefined,
-			language: card.language || undefined,
-			tags: currentTags.length > 0 ? currentTags : undefined,
-			...patch,
-		});
+	// Display the first copy as representative
+	const representative: Card = stack.cards[0];
+	const entry = representative.entry;
+	const count = stack.cards.length;
+
+	function save(patch: Partial<CardEntry>) {
+		// Apply updates to all copies in the stack
+		for (const card of stack.cards) {
+			onSave(card.entry.rowId, {
+				condition: entry.condition || undefined,
+				isFoil: entry.isFoil ?? false,
+				foilType: (entry.isFoil ?? false) ? (entry.foilType ?? 'foil') : undefined,
+				language: entry.language || undefined,
+				tags: (entry.tags ?? []).length > 0 ? entry.tags : undefined,
+				...patch,
+			});
+		}
 	}
 
 	function handleRemove() {
-		onRemove(card.scryfallId);
+		onRemove(representative.id);
 	}
 
 	function handleTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-		const currentTags = card.tags ?? [];
+		const currentTags = entry.tags ?? [];
 		if ((e.key === 'Enter' || e.key === ',') && tagInput.trim()) {
 			e.preventDefault();
 			const newTag = tagInput.trim().replace(/,$/, '');
@@ -89,11 +96,11 @@ function CardCollectionModalInner({
 	}
 
 	function removeTag(tag: string) {
-		const newTags = (card.tags ?? []).filter((t) => t !== tag);
+		const newTags = (entry.tags ?? []).filter((t) => t !== tag);
 		save({ tags: newTags.length > 0 ? newTags : undefined });
 	}
 
-	const isFoil = card.isFoil ?? false;
+	const isFoil = entry.isFoil ?? false;
 
 	return (
 		<>
@@ -118,7 +125,12 @@ function CardCollectionModalInner({
 
 					<div className={styles.layout}>
 						<div className={styles.imageCol}>
-							<CardImage card={card} size="large" priority onClick={() => setLightbox(true)} />
+							<CardImage
+								card={representative}
+								size="large"
+								priority
+								onClick={() => setLightbox(true)}
+							/>
 							<button
 								type="button"
 								className={styles.changePrintBtn}
@@ -131,16 +143,16 @@ function CardCollectionModalInner({
 						<div className={styles.infoCol}>
 							<div className={styles.cardMeta}>
 								<div className={styles.cardNameRow}>
-									<h2 className={styles.cardName}>{card.name}</h2>
-									{card.mana_cost && (
+									<h2 className={styles.cardName}>{representative.name}</h2>
+									{representative.mana_cost && (
 										<span className={styles.headerMana}>
-											<SymbolText text={card.mana_cost} symbolMap={symbolMap} />
+											<SymbolText text={representative.mana_cost} symbolMap={symbolMap} />
 										</span>
 									)}
 								</div>
-								{card.color_identity && card.color_identity.length > 0 && (
+								{representative.color_identity && representative.color_identity.length > 0 && (
 									<div className={styles.colorPips}>
-										{card.color_identity.map((c) => (
+										{representative.color_identity.map((c) => (
 											<span
 												key={c}
 												className={styles.colorPip}
@@ -162,11 +174,11 @@ function CardCollectionModalInner({
 											className={styles.qtyBtn}
 											onClick={() => onDecrement?.()}
 											aria-label="Decrease quantity"
-											disabled={card.count <= 1}
+											disabled={count <= 1}
 										>
 											−
 										</button>
-										<span className={styles.qtyValue}>{card.count ?? 1}</span>
+										<span className={styles.qtyValue}>{count}</span>
 										<button
 											type="button"
 											className={styles.qtyBtn}
@@ -186,8 +198,10 @@ function CardCollectionModalInner({
 									<select
 										id="condition"
 										className={styles.select}
-										value={card.condition ?? ''}
-										onChange={(e) => save({ condition: e.target.value || undefined })}
+										value={entry.condition ?? ''}
+										onChange={(e) =>
+											save({ condition: (e.target.value as CardEntry['condition']) || undefined })
+										}
 									>
 										<option value="">— select —</option>
 										{CONDITIONS.map((c) => (
@@ -208,7 +222,7 @@ function CardCollectionModalInner({
 											onClick={() =>
 												save({
 													isFoil: !isFoil,
-													foilType: !isFoil ? (card.foilType ?? 'foil') : undefined,
+													foilType: !isFoil ? (entry.foilType ?? 'foil') : undefined,
 												})
 											}
 										>
@@ -217,7 +231,7 @@ function CardCollectionModalInner({
 										{isFoil && (
 											<select
 												className={styles.select}
-												value={card.foilType ?? 'foil'}
+												value={entry.foilType ?? 'foil'}
 												onChange={(e) => save({ foilType: e.target.value as 'foil' | 'etched' })}
 											>
 												<option value="foil">Foil</option>
@@ -235,8 +249,10 @@ function CardCollectionModalInner({
 									<select
 										id="language"
 										className={styles.select}
-										value={card.language ?? ''}
-										onChange={(e) => save({ language: e.target.value || undefined })}
+										value={entry.language ?? ''}
+										onChange={(e) =>
+											save({ language: (e.target.value as CardEntry['language']) || undefined })
+										}
 									>
 										<option value="">— select —</option>
 										{MTG_LANGUAGES.map((lang) => (
@@ -253,7 +269,7 @@ function CardCollectionModalInner({
 										Tags
 									</label>
 									<div className={styles.tagsField}>
-										{(card.tags ?? []).map((tag) => (
+										{(entry.tags ?? []).map((tag) => (
 											<span key={tag} className={styles.tag}>
 												{tag}
 												<button
@@ -273,7 +289,7 @@ function CardCollectionModalInner({
 											value={tagInput}
 											onChange={(e) => setTagInput(e.target.value)}
 											onKeyDown={handleTagKeyDown}
-											placeholder={(card.tags ?? []).length === 0 ? 'Add tags…' : ''}
+											placeholder={(entry.tags ?? []).length === 0 ? 'Add tags…' : ''}
 										/>
 									</div>
 								</div>
@@ -282,29 +298,29 @@ function CardCollectionModalInner({
 							<hr className={styles.divider} />
 
 							<div className={styles.details}>
-								{card.type_line && (
+								{representative.type_line && (
 									<div className={styles.detailRow}>
 										<span className={styles.detailLabel}>Type</span>
-										<span className={styles.detailValue}>{card.type_line}</span>
+										<span className={styles.detailValue}>{representative.type_line}</span>
 									</div>
 								)}
 								<div className={styles.detailRow}>
 									<span className={styles.detailLabel}>Set</span>
 									<span className={styles.detailValue}>
-										{card.set_name}
-										{card.rarity && (
-											<span className={`${styles.rarity} ${styles[card.rarity]}`}>
+										{representative.set_name}
+										{representative.rarity && (
+											<span className={`${styles.rarity} ${styles[representative.rarity]}`}>
 												{' '}
-												· {card.rarity}
+												· {representative.rarity}
 											</span>
 										)}
 									</span>
 								</div>
-								{card.oracle_text && (
+								{representative.oracle_text && (
 									<div>
 										<span className={styles.detailLabel}>Oracle</span>
 										<div className={styles.oracleText}>
-											{card.oracle_text.split('\n').map((line, i) => (
+											{representative.oracle_text.split('\n').map((line, i) => (
 												<p key={i} className={styles.oracleLine}>
 													<SymbolText text={line} symbolMap={symbolMap} />
 												</p>
@@ -312,16 +328,18 @@ function CardCollectionModalInner({
 										</div>
 									</div>
 								)}
-								{card.flavor_text && <p className={styles.flavorText}>{card.flavor_text}</p>}
-								{card.loyalty && (
+								{representative.flavor_text && (
+									<p className={styles.flavorText}>{representative.flavor_text}</p>
+								)}
+								{representative.loyalty && (
 									<div className={styles.detailRow}>
 										<span className={styles.detailLabel}>Loyalty</span>
-										<span className={styles.detailValue}>{card.loyalty}</span>
+										<span className={styles.detailValue}>{representative.loyalty}</span>
 									</div>
 								)}
-								{card.keywords && card.keywords.length > 0 && (
+								{representative.keywords && representative.keywords.length > 0 && (
 									<div className={styles.keywords}>
-										{card.keywords.map((k) => (
+										{representative.keywords.map((k) => (
 											<span key={k} className={styles.keyword}>
 												{k}
 											</span>
@@ -330,12 +348,12 @@ function CardCollectionModalInner({
 								)}
 								<div className={styles.detailRow}>
 									<span className={styles.detailLabel}>Artist</span>
-									<span className={styles.detailValue}>{card.artist ?? '—'}</span>
+									<span className={styles.detailValue}>{representative.artist ?? '—'}</span>
 								</div>
 								<div className={styles.detailRow}>
 									<span className={styles.detailLabel}>Print</span>
 									<span className={styles.detailValue}>
-										{card.set.toUpperCase()} #{card.collector_number}
+										{representative.set.toUpperCase()} #{representative.collector_number}
 									</span>
 								</div>
 							</div>
@@ -353,18 +371,18 @@ function CardCollectionModalInner({
 			{lightbox && (
 				<div className={lightboxStyles.lightbox} onClick={() => setLightbox(false)}>
 					<div className={lightboxStyles.lightboxCard} onClick={(e) => e.stopPropagation()}>
-						<CardImage card={card} size="large" priority />
+						<CardImage card={representative} size="large" priority />
 					</div>
 				</div>
 			)}
 
-			{showPrintPicker && card.prints_search_uri && (
+			{showPrintPicker && representative.prints_search_uri && (
 				<PrintPickerModal
-					prints_search_uri={card.prints_search_uri}
-					currentCardId={card.id}
+					prints_search_uri={representative.prints_search_uri}
+					currentCardId={representative.id}
 					onSelect={(print) => {
 						setShowPrintPicker(false);
-						onChangePrint?.(card.scryfallId, print);
+						onChangePrint?.(representative.id, print);
 					}}
 					onClose={() => setShowPrintPicker(false)}
 				/>
@@ -374,7 +392,7 @@ function CardCollectionModalInner({
 }
 
 export function CardCollectionModal({
-	card,
+	stack,
 	onClose,
 	onSave,
 	onRemove,
@@ -382,11 +400,11 @@ export function CardCollectionModal({
 	onIncrement,
 	onDecrement,
 }: Props) {
-	if (!card) return null;
+	if (!stack || stack.cards.length === 0) return null;
 	return (
 		<CardCollectionModalInner
-			key={card.scryfallId}
-			card={card}
+			key={stack.name}
+			stack={stack}
 			onClose={onClose}
 			onSave={onSave}
 			onRemove={onRemove}

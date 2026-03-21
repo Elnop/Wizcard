@@ -10,29 +10,31 @@ function formatDate(iso?: string): string {
 	return iso.replace('T', ' ').substring(0, 19);
 }
 
+// Accepts one Card per physical copy — each becomes one CSV row
 export function serializeToMoxfieldCSV(cards: Card[]): string {
 	const header = MOXFIELD_CSV_HEADERS.map(quoteField).join(',');
 
 	const dataRows = cards.map((card) => {
-		const foil = card.foilType ?? (card.isFoil ? 'foil' : '');
-		const language = card.language ?? card.lang ?? 'English';
-		const tags = (card.tags ?? []).join(',');
-		const condition = card.condition ?? 'Near Mint';
+		const { entry } = card;
+		const foil = entry.foilType ?? (entry.isFoil ? 'foil' : '');
+		const language = entry.language ?? card.lang ?? 'English';
+		const tags = (entry.tags ?? []).join(',');
+		const condition = entry.condition ?? 'Near Mint';
 
 		return [
-			quoteField(String(card.count ?? 1)),
-			quoteField(String(card.forTrade ? card.count : 0)),
+			quoteField('1'),
+			quoteField(entry.forTrade ? '1' : '0'),
 			quoteField(card.name),
 			quoteField(card.set),
 			quoteField(condition),
 			quoteField(language),
 			quoteField(foil),
 			quoteField(tags),
-			quoteField(formatDate(card.dateAdded)),
+			quoteField(formatDate(entry.dateAdded)),
 			quoteField(card.collector_number),
-			quoteField(card.alter ? 'true' : ''),
-			quoteField(card.proxy ? 'true' : ''),
-			quoteField(card.purchasePrice ?? ''),
+			quoteField(entry.alter ? 'true' : ''),
+			quoteField(entry.proxy ? 'true' : ''),
+			quoteField(entry.purchasePrice ?? ''),
 		].join(',');
 	});
 

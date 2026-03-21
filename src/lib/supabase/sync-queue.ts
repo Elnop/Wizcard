@@ -1,4 +1,4 @@
-import type { StackMeta } from '@/types/cards';
+import type { CardEntry } from '@/types/cards';
 
 const QUEUE_KEY = 'mtg-snap-sync-queue';
 
@@ -6,7 +6,7 @@ export type SyncOp =
 	| {
 			id: string;
 			type: 'insert';
-			payload: { rowId: string; userId: string; scryfallId: string; meta: StackMeta };
+			payload: { rowId: string; userId: string; scryfallId: string; entry: CardEntry };
 			retries: number;
 			createdAt: string;
 	  }
@@ -20,7 +20,7 @@ export type SyncOp =
 	| {
 			id: string;
 			type: 'update';
-			payload: { rowIds: string[]; userId: string; meta: StackMeta };
+			payload: { rowId: string; userId: string; entry: CardEntry };
 			retries: number;
 			createdAt: string;
 	  }
@@ -29,7 +29,7 @@ export type SyncOp =
 			type: 'bulk-insert';
 			payload: {
 				userId: string;
-				rows: Array<{ rowId: string; scryfallId: string; meta: StackMeta }>;
+				rows: Array<{ rowId: string; scryfallId: string; entry: CardEntry }>;
 			};
 			retries: number;
 			createdAt: string;

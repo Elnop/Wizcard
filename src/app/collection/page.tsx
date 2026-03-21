@@ -17,25 +17,26 @@ import { Button } from '@/components/ui/Button';
 import { putCardsInCache } from '@/lib/card-cache';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
-import type { Card, StackMeta, CollectionStats } from '@/types/cards';
+import type { Card, CardStack, CardEntry, CollectionStats } from '@/types/cards';
 import styles from './page.module.css';
 
-function computeStats(cards: Card[]): CollectionStats {
+function computeStats(stacks: CardStack[]): CollectionStats {
 	const sets = new Set<string>();
 	const rarityDistribution: Record<string, number> = {};
 	let totalCards = 0;
 
-	for (const card of cards) {
-		const qty = card.count;
-		totalCards += qty;
-		sets.add(card.set);
-		rarityDistribution[card.rarity] = (rarityDistribution[card.rarity] ?? 0) + qty;
+	for (const stack of stacks) {
+		for (const card of stack.cards) {
+			totalCards += 1;
+			sets.add(card.set);
+			rarityDistribution[card.rarity] = (rarityDistribution[card.rarity] ?? 0) + 1;
+		}
 	}
 
 	return {
 		totalCards,
-		uniqueCards: cards.length,
-		uniqueByEdition: cards.length,
+		uniqueCards: stacks.length,
+		uniqueByEdition: stacks.reduce((n, s) => n + s.cards.length, 0),
 		setCount: sets.size,
 		rarityDistribution,
 	};
@@ -52,7 +53,7 @@ export default function CollectionPage() {
 		changePrint,
 		clearCollection,
 	} = useCollectionContext();
-	const { cards, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
+	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
 	const {
 		status,
 		progress,
@@ -72,26 +73,25 @@ export default function CollectionPage() {
 	} = useImportContext();
 	const { sets, isLoading: setsLoading } = useScryfallSets();
 
-	const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+	const [selectedStack, setSelectedStack] = useState<CardStack | null>(null);
 	const [pendingScryfallCard, setPendingScryfallCard] = useState<ScryfallCard | null>(null);
 
-	const selectedCard = useMemo<Card | null>(() => {
-		if (!selectedCardId) return null;
-		const fromCollection = cards.find((c) => c.scryfallId === selectedCardId) ?? null;
-		if (fromCollection) return fromCollection;
-		// After a print change, useCollectionCards hasn't re-hydrated yet — use the
-		// ScryfallCard we already have from the picker, merged with the collection stack.
-		if (pendingScryfallCard && pendingScryfallCard.id === selectedCardId) {
-			const stack = entries.find((e) => e.scryfallId === selectedCardId);
-			if (stack) return { ...pendingScryfallCard, ...stack, ...stack.meta };
-		}
-		return null;
-	}, [selectedCardId, cards, pendingScryfallCard, entries]);
+	// Filters operate on the representative card of each stack (cards[0])
+	const representativeCards = useMemo(
+		() => stacks.map((s) => s.cards[0]).filter(Boolean),
+		[stacks]
+	);
 
 	const [filters, setFilters] = useState<CollectionFilters>(defaultCollectionFilters);
-	const filteredCards = useCollectionFilters(cards, filters);
+	const filteredRepCards = useCollectionFilters(representativeCards, filters);
 
-	const stats = useMemo(() => computeStats(filteredCards), [filteredCards]);
+	// Rebuild stacks for the filtered representatives
+	const filteredStacks = useMemo(() => {
+		const filteredNames = new Set(filteredRepCards.map((c) => c.name));
+		return stacks.filter((s) => filteredNames.has(s.name));
+	}, [stacks, filteredRepCards]);
+
+	const stats = useMemo(() => computeStats(filteredStacks), [filteredStacks]);
 
 	const activeFilterCount = useMemo(
 		() =>
@@ -106,47 +106,72 @@ export default function CollectionPage() {
 		[filters]
 	);
 
-	const handleCardClick = useCallback((card: Card) => setSelectedCardId(card.scryfallId), []);
+	// Keep selectedStack in sync after hydration updates
+	const resolvedStack = useMemo<CardStack | null>(() => {
+		if (!selectedStack) return null;
+		// Find updated stack by name
+		const fromStacks = stacks.find((s) => s.name === selectedStack.name) ?? null;
+		if (fromStacks) return fromStacks;
+		// After a print change, use the pending Scryfall card
+		if (pendingScryfallCard) {
+			const newStack = stacks.find((s) => s.name === pendingScryfallCard.name) ?? null;
+			if (newStack) return newStack;
+		}
+		return null;
+	}, [selectedStack, stacks, pendingScryfallCard]);
+
+	const handleCardClick = useCallback((stack: CardStack) => setSelectedStack(stack), []);
 
 	const handleCloseModal = useCallback(() => {
-		setSelectedCardId(null);
+		setSelectedStack(null);
 		setPendingScryfallCard(null);
 	}, []);
 
 	const handleSaveModal = useCallback(
-		(cardId: string, updates: Partial<StackMeta>) => updateEntry(cardId, updates),
+		(rowId: string, updates: Partial<CardEntry>) => updateEntry(rowId, updates),
 		[updateEntry]
 	);
 
 	const handleRemoveModal = useCallback(
-		(cardId: string) => {
-			removeCard(cardId);
-			setSelectedCardId(null);
+		(scryfallId: string) => {
+			removeCard(scryfallId);
+			setSelectedStack(null);
 			setPendingScryfallCard(null);
 		},
 		[removeCard]
 	);
 
 	const handleIncrementModal = useCallback(() => {
-		if (selectedCard) addCard(selectedCard);
-	}, [selectedCard, addCard]);
+		if (resolvedStack && resolvedStack.cards.length > 0) {
+			addCard(resolvedStack.cards[0]);
+		}
+	}, [resolvedStack, addCard]);
 
 	const handleDecrementModal = useCallback(() => {
-		if (selectedCardId) decrementCard(selectedCardId);
-	}, [selectedCardId, decrementCard]);
+		if (resolvedStack && resolvedStack.cards.length > 0) {
+			decrementCard(resolvedStack.cards[0].id);
+		}
+	}, [resolvedStack, decrementCard]);
 
 	const handleChangePrint = useCallback(
-		(oldCardId: string, newCard: ScryfallCard) => {
+		(oldScryfallId: string, newCard: ScryfallCard) => {
 			void putCardsInCache([newCard]);
 			setPendingScryfallCard(newCard);
-			changePrint(oldCardId, newCard.id);
+			changePrint(oldScryfallId, newCard.id);
 			if (newCard.lang) {
 				const language = SCRYFALL_CODE_TO_LANGUAGE[newCard.lang];
-				updateEntry(newCard.id, { language });
+				// Update all copies with the new language via their rowIds
+				// (changePrint creates new rowIds — we update after the stack rehydrates)
+				if (language && resolvedStack) {
+					for (const card of resolvedStack.cards) {
+						updateEntry(card.entry.rowId, { language });
+					}
+				}
 			}
-			setSelectedCardId(newCard.id);
+			// Update selected stack to new card name
+			setSelectedStack({ name: newCard.name, cards: [] });
 		},
-		[changePrint, updateEntry]
+		[changePrint, updateEntry, resolvedStack]
 	);
 
 	function handleClearCollection() {
@@ -156,8 +181,9 @@ export default function CollectionPage() {
 	}
 
 	const handleExport = useCallback(() => {
-		downloadCSV(serializeToMoxfieldCSV(cards), 'my-collection.csv');
-	}, [cards]);
+		const allCards: Card[] = stacks.flatMap((s) => s.cards);
+		downloadCSV(serializeToMoxfieldCSV(allCards), 'my-collection.csv');
+	}, [stacks]);
 
 	const handleConfirmImport = useCallback(async () => {
 		await confirmImport();
@@ -234,9 +260,9 @@ export default function CollectionPage() {
 						</div>
 					) : (
 						<CollectionGrid
-							entries={filteredCards}
+							stacks={filteredStacks}
 							onDecrement={decrementCard}
-							onCardClick={handleCardClick}
+							onStackClick={handleCardClick}
 							isLoading={isHydrating}
 							totalExpected={totalExpected}
 						/>
@@ -261,7 +287,7 @@ export default function CollectionPage() {
 				onRemoveRow={removeRow}
 			/>
 			<CardCollectionModal
-				card={selectedCard}
+				stack={resolvedStack}
 				onClose={handleCloseModal}
 				onSave={handleSaveModal}
 				onRemove={handleRemoveModal}

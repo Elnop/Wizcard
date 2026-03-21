@@ -11,7 +11,7 @@ import type {
 	ImportResult,
 } from '@/lib/import/types';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { StackMeta } from '@/types/cards';
+import type { CardEntry } from '@/types/cards';
 
 export type ImportStatus =
 	| 'idle'
@@ -55,7 +55,7 @@ function mergeRows(rows: ParsedImportRow[]): ParsedImportRow[] {
 }
 
 export function useImport(
-	importCards: (cards: Array<ScryfallCard & { count: number; meta: StackMeta }>) => void
+	importCards: (cards: Array<{ scryfallId: string; entry: CardEntry }>) => void
 ) {
 	const [status, setStatus] = useState<ImportStatus>('idle');
 	const [progress, setProgress] = useState<ImportProgress>({ current: 0, total: 0 });
@@ -266,7 +266,7 @@ export function useImport(
 
 			setStatus('merging');
 
-			const cardsToImport: Array<ScryfallCard & { count: number; meta: StackMeta }> = [];
+			const cardsToImport: Array<{ scryfallId: string; entry: CardEntry }> = [];
 
 			for (const card of cards) {
 				// Try set/collector_number key first
@@ -295,22 +295,25 @@ export function useImport(
 					continue;
 				}
 
-				cardsToImport.push({
-					...card,
-					count: row.quantity,
-					meta: {
-						dateAdded: new Date().toISOString(),
-						foilType: row.foil || undefined,
-						isFoil: !!row.foil,
-						condition: row.condition,
-						language: row.language,
-						purchasePrice: row.purchasePrice || undefined,
-						forTrade: row.forTrade || undefined,
-						alter: row.alter || undefined,
-						proxy: row.proxy || undefined,
-						tags: row.tags,
-					},
-				});
+				// One CardEntry per physical copy
+				for (let i = 0; i < row.quantity; i++) {
+					cardsToImport.push({
+						scryfallId: card.id,
+						entry: {
+							rowId: crypto.randomUUID(),
+							dateAdded: new Date().toISOString(),
+							foilType: row.foil || undefined,
+							isFoil: !!row.foil,
+							condition: row.condition as CardEntry['condition'],
+							language: row.language as CardEntry['language'],
+							purchasePrice: row.purchasePrice || undefined,
+							forTrade: row.forTrade || undefined,
+							alter: row.alter || undefined,
+							proxy: row.proxy || undefined,
+							tags: row.tags,
+						},
+					});
+				}
 			}
 
 			importCards(cardsToImport);

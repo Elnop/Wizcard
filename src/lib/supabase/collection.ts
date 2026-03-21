@@ -1,7 +1,7 @@
-import type { CollectionStack, StackMeta } from '@/types/cards';
+import type { CardEntry, CardCondition } from '@/types/cards';
 import { createClient } from './client';
 
-const CONDITION_MAP: Record<string, string> = {
+const CONDITION_MAP: Record<string, CardCondition> = {
 	'near mint': 'NM',
 	mint: 'NM',
 	'lightly played': 'LP',
@@ -12,11 +12,11 @@ const CONDITION_MAP: Record<string, string> = {
 	poor: 'DMG',
 };
 
-const VALID_CONDITIONS = new Set(['NM', 'LP', 'MP', 'HP', 'DMG']);
+const VALID_CONDITIONS = new Set<CardCondition>(['NM', 'LP', 'MP', 'HP', 'DMG']);
 
-function normalizeCondition(condition: string | undefined): string | null {
+function normalizeCondition(condition: string | undefined): CardCondition | null {
 	if (!condition) return null;
-	if (VALID_CONDITIONS.has(condition)) return condition;
+	if (VALID_CONDITIONS.has(condition as CardCondition)) return condition as CardCondition;
 	return CONDITION_MAP[condition.toLowerCase()] ?? null;
 }
 
@@ -36,13 +36,14 @@ type DbRow = {
 	tags: string[] | null;
 };
 
-function rowToMeta(row: DbRow): StackMeta {
+function rowToEntry(row: DbRow): CardEntry {
 	return {
+		rowId: row.id,
 		dateAdded: row.date_added,
 		isFoil: row.is_foil ?? undefined,
-		foilType: (row.foil_type as StackMeta['foilType']) ?? undefined,
-		condition: row.condition ?? undefined,
-		language: row.language ?? undefined,
+		foilType: (row.foil_type as CardEntry['foilType']) ?? undefined,
+		condition: normalizeCondition(row.condition ?? undefined) ?? undefined,
+		language: (row.language as CardEntry['language']) ?? undefined,
 		purchasePrice: row.purchase_price ?? undefined,
 		forTrade: row.for_trade ?? undefined,
 		alter: row.alter ?? undefined,
@@ -53,7 +54,10 @@ function rowToMeta(row: DbRow): StackMeta {
 
 const PAGE_SIZE = 1000;
 
-export async function fetchCollection(userId: string): Promise<CollectionStack[]> {
+// Returns one { scryfallId, entry } per physical copy — Scryfall data is fetched separately
+export async function fetchCollection(
+	userId: string
+): Promise<Array<{ scryfallId: string; entry: CardEntry }>> {
 	const supabase = createClient();
 	const allRows: DbRow[] = [];
 	let from = 0;
@@ -75,52 +79,29 @@ export async function fetchCollection(userId: string): Promise<CollectionStack[]
 		from += PAGE_SIZE;
 	}
 
-	// Group rows by scryfall_id into CollectionStack
-	// P1-B: Use the most recently added row's meta instead of the first arbitrary row
-	const stackMap = new Map<string, CollectionStack>();
-	for (const row of allRows) {
-		const existing = stackMap.get(row.scryfall_id);
-		if (existing) {
-			existing.count += 1;
-			existing.rowIds.push(row.id);
-			// Replace meta if this row is more recent
-			if (row.date_added > existing.meta.dateAdded) {
-				existing.meta = rowToMeta(row);
-			}
-		} else {
-			stackMap.set(row.scryfall_id, {
-				scryfallId: row.scryfall_id,
-				count: 1,
-				meta: rowToMeta(row),
-				rowIds: [row.id],
-			});
-		}
-	}
-
-	return Array.from(stackMap.values());
+	return allRows.map((row) => ({ scryfallId: row.scryfall_id, entry: rowToEntry(row) }));
 }
 
 export async function insertEntry(
 	userId: string,
-	rowId: string,
 	scryfallId: string,
-	meta: StackMeta
+	entry: CardEntry
 ): Promise<void> {
 	const supabase = createClient();
 	const { error } = await supabase.from('cards').insert({
-		id: rowId,
+		id: entry.rowId,
 		owner_id: userId,
 		scryfall_id: scryfallId,
-		date_added: meta.dateAdded,
-		is_foil: meta.isFoil ?? null,
-		foil_type: meta.foilType ?? null,
-		condition: normalizeCondition(meta.condition),
-		language: meta.language ?? null,
-		purchase_price: meta.purchasePrice ?? null,
-		for_trade: meta.forTrade ?? null,
-		alter: meta.alter ?? null,
-		proxy: meta.proxy ?? null,
-		tags: meta.tags ?? null,
+		date_added: entry.dateAdded,
+		is_foil: entry.isFoil ?? null,
+		foil_type: entry.foilType ?? null,
+		condition: normalizeCondition(entry.condition),
+		language: entry.language ?? null,
+		purchase_price: entry.purchasePrice ?? null,
+		for_trade: entry.forTrade ?? null,
+		alter: entry.alter ?? null,
+		proxy: entry.proxy ?? null,
+		tags: entry.tags ?? null,
 	});
 
 	if (error) {
@@ -130,25 +111,25 @@ export async function insertEntry(
 
 export async function insertEntries(
 	userId: string,
-	rows: Array<{ rowId: string; scryfallId: string; meta: StackMeta }>
+	rows: Array<{ scryfallId: string; entry: CardEntry }>
 ): Promise<void> {
 	if (rows.length === 0) return;
 	const supabase = createClient();
 	const { error } = await supabase.from('cards').insert(
 		rows.map((r) => ({
-			id: r.rowId,
+			id: r.entry.rowId,
 			owner_id: userId,
 			scryfall_id: r.scryfallId,
-			date_added: r.meta.dateAdded,
-			is_foil: r.meta.isFoil ?? null,
-			foil_type: r.meta.foilType ?? null,
-			condition: normalizeCondition(r.meta.condition),
-			language: r.meta.language ?? null,
-			purchase_price: r.meta.purchasePrice ?? null,
-			for_trade: r.meta.forTrade ?? null,
-			alter: r.meta.alter ?? null,
-			proxy: r.meta.proxy ?? null,
-			tags: r.meta.tags ?? null,
+			date_added: r.entry.dateAdded,
+			is_foil: r.entry.isFoil ?? null,
+			foil_type: r.entry.foilType ?? null,
+			condition: normalizeCondition(r.entry.condition),
+			language: r.entry.language ?? null,
+			purchase_price: r.entry.purchasePrice ?? null,
+			for_trade: r.entry.forTrade ?? null,
+			alter: r.entry.alter ?? null,
+			proxy: r.entry.proxy ?? null,
+			tags: r.entry.tags ?? null,
 		}))
 	);
 
@@ -166,31 +147,26 @@ export async function deleteEntryById(userId: string, rowId: string): Promise<vo
 	}
 }
 
-export async function updateEntries(
-	userId: string,
-	rowIds: string[],
-	meta: StackMeta
-): Promise<void> {
-	if (rowIds.length === 0) return;
+export async function updateEntry(userId: string, rowId: string, entry: CardEntry): Promise<void> {
 	const supabase = createClient();
 	const { error } = await supabase
 		.from('cards')
 		.update({
-			date_added: meta.dateAdded,
-			is_foil: meta.isFoil ?? null,
-			foil_type: meta.foilType ?? null,
-			condition: normalizeCondition(meta.condition),
-			language: meta.language ?? null,
-			purchase_price: meta.purchasePrice ?? null,
-			for_trade: meta.forTrade ?? null,
-			alter: meta.alter ?? null,
-			proxy: meta.proxy ?? null,
-			tags: meta.tags ?? null,
+			date_added: entry.dateAdded,
+			is_foil: entry.isFoil ?? null,
+			foil_type: entry.foilType ?? null,
+			condition: normalizeCondition(entry.condition),
+			language: entry.language ?? null,
+			purchase_price: entry.purchasePrice ?? null,
+			for_trade: entry.forTrade ?? null,
+			alter: entry.alter ?? null,
+			proxy: entry.proxy ?? null,
+			tags: entry.tags ?? null,
 		})
 		.eq('owner_id', userId)
-		.in('id', rowIds);
+		.eq('id', rowId);
 
 	if (error) {
-		throw new Error(`[collection] updateEntries error: ${error.message}`);
+		throw new Error(`[collection] updateEntry error: ${error.message}`);
 	}
 }

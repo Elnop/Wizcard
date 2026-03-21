@@ -5,7 +5,7 @@ import {
 	insertEntry,
 	insertEntries,
 	deleteEntryById,
-	updateEntries,
+	updateEntry,
 } from '@/lib/supabase/collection';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -81,18 +81,13 @@ export function useSyncQueue(userId: string | null | undefined) {
 
 			try {
 				if (op.type === 'insert') {
-					await insertEntry(
-						op.payload.userId,
-						op.payload.rowId,
-						op.payload.scryfallId,
-						op.payload.meta
-					);
+					await insertEntry(op.payload.userId, op.payload.scryfallId, op.payload.entry);
 				} else if (op.type === 'delete') {
 					await deleteEntryById(op.payload.userId, op.payload.rowId);
 				} else if (op.type === 'bulk-insert') {
 					await insertEntries(op.payload.userId, op.payload.rows);
 				} else {
-					await updateEntries(op.payload.userId, op.payload.rowIds, op.payload.meta);
+					await updateEntry(op.payload.userId, op.payload.rowId, op.payload.entry);
 				}
 				dequeue();
 			} catch (err) {

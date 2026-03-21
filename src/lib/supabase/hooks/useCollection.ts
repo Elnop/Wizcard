@@ -2,76 +2,22 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { CollectionStack, StackMeta } from '@/types/cards';
+import type { CardEntry } from '@/types/cards';
 import { fetchCollection } from '@/lib/supabase/collection';
 import { enqueue, clearQueue } from '@/lib/supabase/sync-queue';
 
 const STORAGE_KEY = 'mtg-snap-collection';
 
-type CollectionData = Record<string, CollectionStack>;
+// Lightweight per-copy record stored in localStorage (no Scryfall data)
+type StoredCopy = { scryfallId: string; entry: CardEntry };
+type CollectionData = Record<string, StoredCopy>; // key = rowId
 
 const EMPTY: CollectionData = {};
 let listeners: Array<() => void> = [];
 let cachedSnapshot: CollectionData | null = null;
 
-function newMeta(overrides?: Partial<StackMeta>): StackMeta {
-	return { dateAdded: new Date().toISOString(), ...overrides };
-}
-
-// Migrate legacy entries (old format with {id, quantity, ...meta}) to CollectionStack
-export function migrateStack(raw: unknown): CollectionStack | null {
-	if (!raw || typeof raw !== 'object') return null;
-	const obj = raw as Record<string, unknown>;
-
-	// Already new format
-	if ('scryfallId' in obj && 'count' in obj && 'rowIds' in obj) {
-		return raw as CollectionStack;
-	}
-
-	// Legacy format 0: old new format with cardId (pre-rename)
-	if ('cardId' in obj && 'count' in obj && 'rowIds' in obj) {
-		const legacy = raw as { cardId: string; count: number; meta: StackMeta; rowIds: string[] };
-		return {
-			scryfallId: legacy.cardId,
-			count: legacy.count,
-			meta: legacy.meta,
-			rowIds: legacy.rowIds,
-		};
-	}
-
-	// Legacy format 1: { card: ScryfallCard, quantity, dateAdded }
-	if ('card' in obj && typeof obj.card === 'object') {
-		const legacy = raw as { card: { id: string }; quantity: number; dateAdded: string };
-		const count = legacy.quantity ?? 1;
-		return {
-			scryfallId: legacy.card.id,
-			count,
-			meta: { dateAdded: legacy.dateAdded ?? new Date().toISOString() },
-			rowIds: Array.from({ length: count }, () => crypto.randomUUID()),
-		};
-	}
-
-	// Legacy format 2: flat StoredCard / CollectionEntry
-	const id = obj.id as string;
-	if (!id) return null;
-	const count = (obj.quantity as number) ?? 1;
-	return {
-		scryfallId: id,
-		count,
-		meta: {
-			dateAdded: (obj.dateAdded as string) ?? new Date().toISOString(),
-			isFoil: obj.isFoil as boolean | undefined,
-			foilType: obj.foilType as 'foil' | 'etched' | undefined,
-			condition: obj.condition as string | undefined,
-			language: obj.language as string | undefined,
-			tags: obj.tags as string[] | undefined,
-			purchasePrice: obj.purchasePrice as string | undefined,
-			forTrade: obj.forTrade as boolean | undefined,
-			alter: obj.alter as boolean | undefined,
-			proxy: obj.proxy as boolean | undefined,
-		},
-		rowIds: Array.from({ length: count }, () => crypto.randomUUID()),
-	};
+function newEntry(rowId: string, overrides?: Partial<CardEntry>): CardEntry {
+	return { rowId, dateAdded: new Date().toISOString(), ...overrides };
 }
 
 function getSnapshot(): CollectionData {
@@ -83,31 +29,102 @@ function getSnapshot(): CollectionData {
 			return EMPTY;
 		}
 		const parsed = JSON.parse(raw) as Record<string, unknown>;
+		// Detect legacy format (values have scryfallId/count/rowIds) and migrate
 		const migrated: CollectionData = {};
-		let needsWrite = false;
-		for (const [key, entry] of Object.entries(parsed)) {
-			const stack = migrateStack(entry);
-			if (!stack) continue;
-			// Use scryfallId as key (legacy used Scryfall id directly as key)
-			migrated[stack.scryfallId] = stack;
+		for (const value of Object.values(parsed)) {
+			if (!value || typeof value !== 'object') continue;
+			const obj = value as Record<string, unknown>;
+
+			// New format: { scryfallId, entry: { rowId, dateAdded, ... } }
+			if (typeof obj.scryfallId === 'string' && obj.entry && typeof obj.entry === 'object') {
+				const entry = obj.entry as CardEntry;
+				migrated[entry.rowId] = { scryfallId: obj.scryfallId, entry };
+				continue;
+			}
+
+			// Legacy CollectionStack format: { scryfallId, count, rowIds, meta }
 			if (
-				entry !== stack &&
-				typeof entry === 'object' &&
-				entry !== null &&
-				('card' in (entry as object) ||
-					'name' in (entry as object) ||
-					'quantity' in (entry as object))
+				typeof obj.scryfallId === 'string' &&
+				Array.isArray(obj.rowIds) &&
+				obj.meta &&
+				typeof obj.meta === 'object'
 			) {
-				needsWrite = true;
+				const meta = obj.meta as Record<string, unknown>;
+				const rowIds = obj.rowIds as string[];
+				for (const rowId of rowIds) {
+					const entry: CardEntry = {
+						rowId,
+						dateAdded: (meta.dateAdded as string) ?? new Date().toISOString(),
+						isFoil: meta.isFoil as boolean | undefined,
+						foilType: meta.foilType as 'foil' | 'etched' | undefined,
+						condition: meta.condition as CardEntry['condition'],
+						language: meta.language as CardEntry['language'],
+						purchasePrice: meta.purchasePrice as string | undefined,
+						forTrade: meta.forTrade as boolean | undefined,
+						alter: meta.alter as boolean | undefined,
+						proxy: meta.proxy as boolean | undefined,
+						tags: meta.tags as string[] | undefined,
+					};
+					migrated[rowId] = { scryfallId: obj.scryfallId, entry };
+				}
+				continue;
 			}
-			if (key !== stack.scryfallId) needsWrite = true;
+
+			// Legacy with cardId instead of scryfallId
+			if (
+				typeof obj.cardId === 'string' &&
+				Array.isArray(obj.rowIds) &&
+				obj.meta &&
+				typeof obj.meta === 'object'
+			) {
+				const meta = obj.meta as Record<string, unknown>;
+				const rowIds = obj.rowIds as string[];
+				for (const rowId of rowIds) {
+					const entry: CardEntry = {
+						rowId,
+						dateAdded: (meta.dateAdded as string) ?? new Date().toISOString(),
+						isFoil: meta.isFoil as boolean | undefined,
+						foilType: meta.foilType as 'foil' | 'etched' | undefined,
+						condition: meta.condition as CardEntry['condition'],
+						language: meta.language as CardEntry['language'],
+						purchasePrice: meta.purchasePrice as string | undefined,
+						forTrade: meta.forTrade as boolean | undefined,
+						alter: meta.alter as boolean | undefined,
+						proxy: meta.proxy as boolean | undefined,
+						tags: meta.tags as string[] | undefined,
+					};
+					migrated[rowId] = { scryfallId: obj.cardId, entry };
+				}
+				continue;
+			}
+
+			// Legacy flat format: { id, quantity, dateAdded, ... }
+			if (typeof obj.id === 'string') {
+				const count = (obj.quantity as number) ?? 1;
+				const rowIds = Array.from({ length: count }, () => crypto.randomUUID());
+				for (const rowId of rowIds) {
+					const entry: CardEntry = {
+						rowId,
+						dateAdded: (obj.dateAdded as string) ?? new Date().toISOString(),
+						isFoil: obj.isFoil as boolean | undefined,
+						foilType: obj.foilType as 'foil' | 'etched' | undefined,
+						condition: obj.condition as CardEntry['condition'],
+						language: obj.language as CardEntry['language'],
+						tags: obj.tags as string[] | undefined,
+						purchasePrice: obj.purchasePrice as string | undefined,
+						forTrade: obj.forTrade as boolean | undefined,
+						alter: obj.alter as boolean | undefined,
+						proxy: obj.proxy as boolean | undefined,
+					};
+					migrated[rowId] = { scryfallId: obj.id, entry };
+				}
+				continue;
+			}
 		}
-		if (needsWrite) {
-			try {
-				localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-			} catch (err) {
-				console.error('[useCollection] failed to write migrated collection to localStorage:', err);
-			}
+		try {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+		} catch (err) {
+			console.error('[useCollection] failed to write migrated collection to localStorage:', err);
 		}
 		cachedSnapshot = migrated;
 		return migrated;
@@ -163,7 +180,6 @@ export function useCollection(
 		prevUserIdRef.current = userId;
 
 		if (!userId) {
-			// Only wipe local data on explicit sign-out (not on initial load before session resolves)
 			if (typeof window !== 'undefined' && localStorage.getItem('mtg-snap-signed-in') === 'true') {
 				localStorage.removeItem('mtg-snap-signed-in');
 				saveCollection({});
@@ -173,7 +189,6 @@ export function useCollection(
 			return;
 		}
 
-		// User switched without going through null (auth batching): wipe previous user's data first
 		if (prevUserId !== undefined && prevUserId !== null && prevUserId !== userId) {
 			saveCollection({});
 			clearQueue();
@@ -182,41 +197,32 @@ export function useCollection(
 
 		localStorage.setItem('mtg-snap-signed-in', 'true');
 
-		// P0-C: Capture local state BEFORE fetch to avoid race condition where
-		// user mutations during fetch would be overwritten by the stale pre-fetch snapshot.
 		const localBeforeFetch = getSnapshot();
 
-		// P2-A: Show local collection immediately, reconcile in background
 		setTimeout(() => setIsLoaded(true), 0);
 
-		fetchCollection(userId).then((remoteStacks) => {
-			// If Supabase returns nothing but we have local data, assume network/auth error — don't overwrite
-			if (remoteStacks.length === 0 && Object.keys(localBeforeFetch).length > 0) {
+		fetchCollection(userId).then((remoteCopies) => {
+			if (remoteCopies.length === 0 && Object.keys(localBeforeFetch).length > 0) {
 				return;
 			}
 
-			const remoteByScryfallId = Object.fromEntries(remoteStacks.map((s) => [s.scryfallId, s]));
+			const remoteRowIds = new Set(remoteCopies.map((c) => c.entry.rowId));
 
-			// Upload local copies (captured before fetch) that don't exist in remote
-			for (const stack of Object.values(localBeforeFetch)) {
-				const remoteStack = remoteByScryfallId[stack.scryfallId];
-				const remoteRowIds = new Set(remoteStack?.rowIds ?? []);
-				for (const rowId of stack.rowIds) {
-					if (!remoteRowIds.has(rowId)) {
-						enqueue({
-							type: 'insert',
-							payload: { userId, rowId, scryfallId: stack.scryfallId, meta: stack.meta },
-						});
-					}
+			// Upload local copies that don't exist in remote
+			for (const [rowId, copy] of Object.entries(localBeforeFetch)) {
+				if (!remoteRowIds.has(rowId)) {
+					enqueue({
+						type: 'insert',
+						payload: { userId, rowId, scryfallId: copy.scryfallId, entry: copy.entry },
+					});
 				}
 			}
 
-			// Remote wins: merge stacks (remote meta overwrites local meta)
-			// Start from current snapshot (may have mutations from during fetch)
+			// Remote wins: merge (remote overwrites local for same rowId)
 			const currentLocal = getSnapshot();
 			const merged: CollectionData = { ...currentLocal };
-			for (const remoteStack of remoteStacks) {
-				merged[remoteStack.scryfallId] = remoteStack;
+			for (const copy of remoteCopies) {
+				merged[copy.entry.rowId] = copy;
 			}
 			saveCollection(merged);
 		});
@@ -225,28 +231,17 @@ export function useCollection(
 	const addCard = useCallback(
 		(card: ScryfallCard) => {
 			const current = getSnapshot();
-			const existing = current[card.id];
 			const newRowId = crypto.randomUUID();
-			let nextStack: CollectionStack;
-			if (existing) {
-				nextStack = {
-					...existing,
-					count: existing.count + 1,
-					rowIds: [...existing.rowIds, newRowId],
-				};
-			} else {
-				nextStack = {
-					scryfallId: card.id,
-					count: 1,
-					meta: newMeta(),
-					rowIds: [newRowId],
-				};
-			}
-			saveCollection({ ...current, [card.id]: nextStack });
+			const entry = newEntry(newRowId);
+			const next: CollectionData = {
+				...current,
+				[newRowId]: { scryfallId: card.id, entry },
+			};
+			saveCollection(next);
 			if (userId) {
 				enqueue({
 					type: 'insert',
-					payload: { userId, rowId: newRowId, scryfallId: card.id, meta: nextStack.meta },
+					payload: { userId, rowId: newRowId, scryfallId: card.id, entry },
 				});
 				triggerSync();
 			}
@@ -255,15 +250,19 @@ export function useCollection(
 	);
 
 	const removeCard = useCallback(
-		(cardId: string) => {
+		(scryfallId: string) => {
 			const current = getSnapshot();
-			const stack = current[cardId];
-			if (!stack) return;
 			const next = { ...current };
-			delete next[cardId];
+			const removedRowIds: string[] = [];
+			for (const [rowId, copy] of Object.entries(next)) {
+				if (copy.scryfallId === scryfallId) {
+					delete next[rowId];
+					removedRowIds.push(rowId);
+				}
+			}
 			saveCollection(next);
 			if (userId) {
-				for (const rowId of stack.rowIds) {
+				for (const rowId of removedRowIds) {
 					enqueue({ type: 'delete', payload: { userId, rowId } });
 				}
 				triggerSync();
@@ -273,22 +272,19 @@ export function useCollection(
 	);
 
 	const decrementCard = useCallback(
-		(cardId: string) => {
+		(scryfallId: string) => {
 			const current = getSnapshot();
-			const existing = current[cardId];
-			if (!existing) return;
-			const rowIds = [...existing.rowIds];
-			const removedRowId = rowIds.pop()!;
-			if (existing.count <= 1) {
-				const next = { ...current };
-				delete next[cardId];
-				saveCollection(next);
-			} else {
-				const updated: CollectionStack = { ...existing, count: existing.count - 1, rowIds };
-				saveCollection({ ...current, [cardId]: updated });
-			}
+			// Remove the last-added copy with this scryfallId
+			const copies = Object.entries(current)
+				.filter(([, copy]) => copy.scryfallId === scryfallId)
+				.sort((a, b) => b[1].entry.dateAdded.localeCompare(a[1].entry.dateAdded));
+			if (copies.length === 0) return;
+			const [rowId] = copies[0];
+			const next = { ...current };
+			delete next[rowId];
+			saveCollection(next);
 			if (userId) {
-				enqueue({ type: 'delete', payload: { userId, rowId: removedRowId } });
+				enqueue({ type: 'delete', payload: { userId, rowId } });
 				triggerSync();
 			}
 		},
@@ -296,15 +292,14 @@ export function useCollection(
 	);
 
 	const updateEntry = useCallback(
-		(cardId: string, updates: Partial<StackMeta>) => {
+		(rowId: string, updates: Partial<CardEntry>) => {
 			const current = getSnapshot();
-			const stack = current[cardId];
-			if (!stack) return;
-			const updatedMeta: StackMeta = { ...stack.meta, ...updates };
-			const updated: CollectionStack = { ...stack, meta: updatedMeta };
-			saveCollection({ ...current, [cardId]: updated });
+			const copy = current[rowId];
+			if (!copy) return;
+			const updatedEntry: CardEntry = { ...copy.entry, ...updates };
+			saveCollection({ ...current, [rowId]: { ...copy, entry: updatedEntry } });
 			if (userId) {
-				enqueue({ type: 'update', payload: { userId, rowIds: stack.rowIds, meta: updatedMeta } });
+				enqueue({ type: 'update', payload: { userId, rowId, entry: updatedEntry } });
 				triggerSync();
 			}
 		},
@@ -312,50 +307,30 @@ export function useCollection(
 	);
 
 	const changePrint = useCallback(
-		(oldCardId: string, newCardId: string) => {
+		(oldScryfallId: string, newScryfallId: string) => {
 			const current = getSnapshot();
-			const oldStack = current[oldCardId];
-			if (!oldStack) return;
-
 			const next = { ...current };
-			delete next[oldCardId];
-
-			// Generate new rowIds for the new print
-			const newRowIds = Array.from({ length: oldStack.count }, () => crypto.randomUUID());
-			const existingNew = next[newCardId];
-			if (existingNew) {
-				// Merge into existing stack
-				next[newCardId] = {
-					...existingNew,
-					count: existingNew.count + oldStack.count,
-					rowIds: [...existingNew.rowIds, ...newRowIds],
+			const oldCopies = Object.entries(next).filter(
+				([, copy]) => copy.scryfallId === oldScryfallId
+			);
+			for (const [rowId, copy] of oldCopies) {
+				delete next[rowId];
+				const newRowId = crypto.randomUUID();
+				const newCopy: StoredCopy = {
+					scryfallId: newScryfallId,
+					entry: { ...copy.entry, rowId: newRowId },
 				};
-			} else {
-				next[newCardId] = {
-					scryfallId: newCardId,
-					count: oldStack.count,
-					meta: oldStack.meta,
-					rowIds: newRowIds,
-				};
-			}
-
-			saveCollection(next);
-
-			if (userId) {
-				// Delete old rows
-				for (const rowId of oldStack.rowIds) {
+				next[newRowId] = newCopy;
+				if (userId) {
 					enqueue({ type: 'delete', payload: { userId, rowId } });
-				}
-				// Insert new rows
-				const targetStack = next[newCardId];
-				for (const rowId of newRowIds) {
 					enqueue({
 						type: 'insert',
-						payload: { userId, rowId, scryfallId: newCardId, meta: targetStack.meta },
+						payload: { userId, rowId: newRowId, scryfallId: newScryfallId, entry: newCopy.entry },
 					});
 				}
-				triggerSync();
 			}
+			saveCollection(next);
+			if (userId) triggerSync();
 		},
 		[userId, triggerSync]
 	);
@@ -364,41 +339,23 @@ export function useCollection(
 		const current = getSnapshot();
 		saveCollection({});
 		if (userId) {
-			for (const stack of Object.values(current)) {
-				for (const rowId of stack.rowIds) {
-					enqueue({ type: 'delete', payload: { userId, rowId } });
-				}
+			for (const rowId of Object.keys(current)) {
+				enqueue({ type: 'delete', payload: { userId, rowId } });
 			}
 			triggerSync();
 		}
 	}, [userId, triggerSync]);
 
 	const importCards = useCallback(
-		(cards: Array<ScryfallCard & { count: number; meta: StackMeta }>) => {
+		(cards: Array<{ scryfallId: string; entry: CardEntry }>) => {
 			const current = getSnapshot();
 			const next = { ...current };
-			const toInsert: Array<{ rowId: string; scryfallId: string; meta: StackMeta }> = [];
+			const toInsert: Array<{ rowId: string; scryfallId: string; entry: CardEntry }> = [];
 
 			for (const card of cards) {
-				const newRowIds = Array.from({ length: card.count }, () => crypto.randomUUID());
-				const existing = next[card.id];
-				if (existing) {
-					next[card.id] = {
-						...existing,
-						count: existing.count + card.count,
-						rowIds: [...existing.rowIds, ...newRowIds],
-					};
-				} else {
-					next[card.id] = {
-						scryfallId: card.id,
-						count: card.count,
-						meta: card.meta,
-						rowIds: newRowIds,
-					};
-				}
-				for (const rowId of newRowIds) {
-					toInsert.push({ rowId, scryfallId: card.id, meta: card.meta });
-				}
+				const rowId = card.entry.rowId;
+				next[rowId] = { scryfallId: card.scryfallId, entry: card.entry };
+				toInsert.push({ rowId, scryfallId: card.scryfallId, entry: card.entry });
 			}
 
 			saveCollection(next);
@@ -412,12 +369,13 @@ export function useCollection(
 	);
 
 	const getQuantity = useCallback(
-		(cardId: string): number => {
-			return collection[cardId]?.count ?? 0;
+		(scryfallId: string): number => {
+			return Object.values(collection).filter((c) => c.scryfallId === scryfallId).length;
 		},
 		[collection]
 	);
 
+	// entries: lightweight list for useCollectionCards to hydrate
 	const entries = useMemo(() => Object.values(collection), [collection]);
 
 	return {

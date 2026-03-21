@@ -1,12 +1,16 @@
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { MtgLanguage } from '@/lib/mtg/languages';
 
-// Per-copy metadata — fields persisted per row in the DB
-export interface StackMeta {
+export type CardCondition = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG';
+
+// Metadata for a single physical copy
+export interface CardEntry {
+	rowId: string;
 	dateAdded: string;
 	isFoil?: boolean;
 	foilType?: 'foil' | 'etched';
-	condition?: string;
-	language?: string;
+	condition?: CardCondition;
+	language?: MtgLanguage;
 	purchasePrice?: string;
 	forTrade?: boolean;
 	alter?: boolean;
@@ -14,17 +18,14 @@ export interface StackMeta {
 	tags?: string[];
 }
 
-// One logical stack: all copies of a given scryfall_id in the collection
-export interface CollectionStack {
-	scryfallId: string; // Scryfall UUID — lookup key
-	count: number;
-	meta: StackMeta;
-	rowIds: string[]; // one per physical copy
-}
+// One copy in the collection = Scryfall print data + per-copy metadata
+export type Card = ScryfallCard & { entry: CardEntry };
 
-// Runtime type — full Scryfall data merged with collection metadata (flattened)
-// NOT what is stored in localStorage
-export type Card = ScryfallCard & Omit<CollectionStack, 'meta'> & StackMeta;
+// All copies of a card with the same name (potentially different editions)
+export interface CardStack {
+	name: string; // grouping key = card.name
+	cards: Card[]; // copies — may be different editions
+}
 
 // Aggregated collection statistics
 export interface CollectionStats {

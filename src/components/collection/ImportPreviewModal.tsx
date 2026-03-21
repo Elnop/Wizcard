@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useMemo } from 'react';
 import type { ImportFormatId, ImportFormatDescriptor, ParsedImportRow } from '@/lib/import/types';
 import type { ImportPreview } from '@/lib/import/hooks/useImport';
 import type { ScryfallCard, ScryfallSet } from '@/lib/scryfall/types/scryfall';
-import type { Card, StackMeta } from '@/types/cards';
+import type { Card, CardEntry, CardStack } from '@/types/cards';
 import { useCollectionFilters, defaultCollectionFilters } from '@/hooks/useCollectionFilters';
 import type { CollectionFilters } from '@/hooks/useCollectionFilters';
 import { SearchBar } from '@/components/search/SearchBar';
@@ -165,26 +165,26 @@ export function ImportPreviewModal({
 		if (!scryfallCard) return null;
 		const row = rowMap.get(selectedCardId);
 		if (!row) return null;
-		const meta: StackMeta = {
+		const entry: CardEntry = {
+			rowId: selectedCardId, // temporary — import preview only
 			dateAdded: new Date().toISOString(),
 			isFoil: !!row.foil,
 			foilType: row.foil || undefined,
-			condition: row.condition,
-			language: row.language,
+			condition: row.condition as CardEntry['condition'],
+			language: row.language as CardEntry['language'],
 			tags: row.tags,
 		};
-		return {
-			...scryfallCard,
-			scryfallId: scryfallCard.id,
-			count: row.quantity,
-			rowIds: [],
-			...meta,
-		};
+		return { ...scryfallCard, entry };
 	})();
 
-	function handleEditSave(cardId: string, updates: Partial<StackMeta>) {
+	const selectedImportStack: CardStack | null = selectedImportCard
+		? { name: selectedImportCard.name, cards: [selectedImportCard] }
+		: null;
+
+	function handleEditSave(rowId: string, updates: Partial<CardEntry>) {
 		if (!preview) return;
-		const row = rowMap.get(cardId);
+		// rowId here is the scryfallCard.id used as temporary rowId in preview
+		const row = rowMap.get(rowId);
 		if (!row) return;
 		const rowIndex = preview.parsed.rows.indexOf(row);
 		if (rowIndex === -1) return;
@@ -198,9 +198,9 @@ export function ImportPreviewModal({
 		onUpdateRow(rowIndex, rowUpdates);
 	}
 
-	function handleEditRemove(cardId: string) {
+	function handleEditRemove(scryfallId: string) {
 		if (!preview) return;
-		const row = rowMap.get(cardId);
+		const row = rowMap.get(scryfallId);
 		if (!row) return;
 		const rowIndex = preview.parsed.rows.indexOf(row);
 		if (rowIndex === -1) return;
@@ -519,7 +519,7 @@ export function ImportPreviewModal({
 				/>
 			</div>
 			<CardCollectionModal
-				card={selectedImportCard}
+				stack={selectedImportStack}
 				onClose={() => setSelectedCardId(null)}
 				onSave={handleEditSave}
 				onRemove={handleEditRemove}
