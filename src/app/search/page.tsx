@@ -15,7 +15,7 @@ import { SearchBar } from '@/components/search/SearchBar';
 import { FilterModal } from '@/components/search/FilterModal';
 import { CardGrid } from '@/components/cards/CardGrid';
 import { Spinner } from '@/components/ui/Spinner';
-import { useCollection } from '@/hooks/useCollection';
+import { useCollectionContext } from '@/lib/supabase/contexts/CollectionContext';
 import styles from './page.module.css';
 
 const VALID_COLORS = new Set(['W', 'U', 'B', 'R', 'G']);
@@ -86,7 +86,7 @@ export default function SearchPage() {
 function SearchPageContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const { entries: collectionEntries } = useCollection();
+	useCollectionContext();
 
 	// Initialize state from URL params
 	const [name, setName] = useState(() => searchParams.get('name') ?? '');
@@ -200,8 +200,6 @@ function SearchPageContent() {
 		rarities.length +
 		(oracleText ? 1 : 0) +
 		(cmc ? 1 : 0);
-
-	const totalCollectionCards = collectionEntries.reduce((sum, e) => sum + e.quantity, 0);
 
 	const hasFilters =
 		name || colors.length > 0 || type || set || rarities.length > 0 || oracleText || cmc;

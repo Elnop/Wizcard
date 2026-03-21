@@ -20,8 +20,8 @@ export function serializeToMoxfieldCSV(cards: Card[]): string {
 		const condition = card.condition ?? 'Near Mint';
 
 		return [
-			quoteField(String(card.quantity ?? 1)),
-			quoteField(String(card.tradelistCount ?? 0)),
+			quoteField(String(card.count ?? 1)),
+			quoteField(String(card.forTrade ? card.count : 0)),
 			quoteField(card.name),
 			quoteField(card.set),
 			quoteField(condition),

@@ -11,7 +11,7 @@ import type {
 	ImportResult,
 } from '@/lib/import/types';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { CollectionEntry } from '@/types/card';
+import type { StackMeta } from '@/types/card';
 
 export type ImportStatus =
 	| 'idle'
@@ -54,7 +54,9 @@ function mergeRows(rows: ParsedImportRow[]): ParsedImportRow[] {
 	return Array.from(map.values());
 }
 
-export function useImport(importCards: (cards: Array<ScryfallCard & CollectionEntry>) => void) {
+export function useImport(
+	importCards: (cards: Array<ScryfallCard & { count: number; meta: StackMeta }>) => void
+) {
 	const [status, setStatus] = useState<ImportStatus>('idle');
 	const [progress, setProgress] = useState<ImportProgress>({ current: 0, total: 0 });
 	const [result, setResult] = useState<ImportResult | null>(null);
@@ -264,7 +266,7 @@ export function useImport(importCards: (cards: Array<ScryfallCard & CollectionEn
 
 			setStatus('merging');
 
-			const cardsToImport: Array<ScryfallCard & CollectionEntry> = [];
+			const cardsToImport: Array<ScryfallCard & { count: number; meta: StackMeta }> = [];
 
 			for (const card of cards) {
 				// Try set/collector_number key first
@@ -295,18 +297,19 @@ export function useImport(importCards: (cards: Array<ScryfallCard & CollectionEn
 
 				cardsToImport.push({
 					...card,
-					id: card.id,
-					quantity: row.quantity,
-					dateAdded: new Date().toISOString(),
-					foilType: row.foil || undefined,
-					isFoil: !!row.foil,
-					condition: row.condition,
-					language: row.language,
-					purchasePrice: row.purchasePrice || undefined,
-					tradelistCount: row.tradelistCount || undefined,
-					alter: row.alter || undefined,
-					proxy: row.proxy || undefined,
-					tags: row.tags,
+					count: row.quantity,
+					meta: {
+						dateAdded: new Date().toISOString(),
+						foilType: row.foil || undefined,
+						isFoil: !!row.foil,
+						condition: row.condition,
+						language: row.language,
+						purchasePrice: row.purchasePrice || undefined,
+						forTrade: row.forTrade || undefined,
+						alter: row.alter || undefined,
+						proxy: row.proxy || undefined,
+						tags: row.tags,
+					},
 				});
 			}
 

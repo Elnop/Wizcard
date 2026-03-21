@@ -49,16 +49,16 @@ export function CollectionGrid({
 		<>
 			<div className={styles.grid}>
 				{visibleEntries.map((entry) => (
-					<div key={entry.id} className={styles.item}>
+					<div key={entry.scryfallId} className={styles.item}>
 						<div className={styles.imageWrapper}>
 							<CardImage card={entry} size="normal" onClick={() => onCardClick(entry)} />
-							{(entry.quantity ?? 0) > 1 && <span className={styles.badge}>x{entry.quantity}</span>}
+							{(entry.count ?? 0) > 1 && <span className={styles.badge}>x{entry.count}</span>}
 							<button
 								type="button"
 								className={styles.removeButton}
 								onClick={(e) => {
 									e.stopPropagation();
-									onDecrement(entry.id);
+									onDecrement(entry.scryfallId);
 								}}
 								aria-label={`Remove one ${entry.name}`}
 							>

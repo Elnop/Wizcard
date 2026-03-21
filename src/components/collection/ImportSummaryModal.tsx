@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { ImportResult } from '@/lib/import/types';
-import type { ImportStatus } from '@/hooks/useImport';
+import type { ImportStatus } from '@/lib/import/hooks/useImport';
 import styles from './ImportSummaryModal.module.css';
 
 interface Props {

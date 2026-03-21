@@ -1,7 +1,18 @@
 'use client';
 
-import { ImportProvider } from './ImportContext';
+import { AuthProvider } from '@/lib/supabase/contexts/AuthContext';
+import { CollectionProvider } from '@/lib/supabase/contexts/CollectionContext';
+import { ImportProvider } from '@/lib/import/contexts/ImportContext';
+import { SyncQueueRunner } from '@/lib/supabase/components/SyncQueueRunner';
 
 export function Providers({ children }: { children: React.ReactNode }) {
-	return <ImportProvider>{children}</ImportProvider>;
+	return (
+		<AuthProvider>
+			<SyncQueueRunner>
+				<CollectionProvider>
+					<ImportProvider>{children}</ImportProvider>
+				</CollectionProvider>
+			</SyncQueueRunner>
+		</AuthProvider>
+	);
 }

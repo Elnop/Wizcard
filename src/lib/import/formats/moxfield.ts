@@ -13,7 +13,7 @@ export function parseMoxfield(text: string): ParsedImportResult {
 		condition: row.condition,
 		language: row.language,
 		purchasePrice: row.purchasePrice,
-		tradelistCount: row.tradelistCount,
+		forTrade: (row.tradelistCount ?? 0) > 0,
 		alter: row.alter,
 		proxy: row.proxy,
 		tags: row.tags,

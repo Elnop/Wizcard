@@ -2,9 +2,9 @@
 
 import { useState, useRef, useCallback, useMemo } from 'react';
 import type { ImportFormatId, ImportFormatDescriptor, ParsedImportRow } from '@/lib/import/types';
-import type { ImportPreview } from '@/hooks/useImport';
+import type { ImportPreview } from '@/lib/import/hooks/useImport';
 import type { ScryfallCard, ScryfallSet } from '@/lib/scryfall/types/scryfall';
-import type { Card, CollectionEntry } from '@/types/card';
+import type { Card, StackMeta } from '@/types/card';
 import { useCollectionFilters, defaultCollectionFilters } from '@/hooks/useCollectionFilters';
 import type { CollectionFilters } from '@/hooks/useCollectionFilters';
 import { SearchBar } from '@/components/search/SearchBar';
@@ -165,9 +165,7 @@ export function ImportPreviewModal({
 		if (!scryfallCard) return null;
 		const row = rowMap.get(selectedCardId);
 		if (!row) return null;
-		return {
-			...scryfallCard,
-			quantity: row.quantity,
+		const meta: StackMeta = {
 			dateAdded: new Date().toISOString(),
 			isFoil: !!row.foil,
 			foilType: row.foil || undefined,
@@ -175,18 +173,22 @@ export function ImportPreviewModal({
 			language: row.language,
 			tags: row.tags,
 		};
+		return {
+			...scryfallCard,
+			scryfallId: scryfallCard.id,
+			count: row.quantity,
+			rowIds: [],
+			...meta,
+		};
 	})();
 
-	function handleEditSave(cardId: string, updates: Partial<CollectionEntry>) {
+	function handleEditSave(cardId: string, updates: Partial<StackMeta>) {
 		if (!preview) return;
 		const row = rowMap.get(cardId);
 		if (!row) return;
 		const rowIndex = preview.parsed.rows.indexOf(row);
 		if (rowIndex === -1) return;
 		const rowUpdates: Partial<ParsedImportRow> = {};
-		if (updates.quantity !== undefined) {
-			rowUpdates.quantity = Math.max(1, updates.quantity);
-		}
 		if (updates.isFoil !== undefined || updates.foilType !== undefined) {
 			rowUpdates.foil = updates.isFoil ? ((updates.foilType ?? 'foil') as 'foil' | 'etched') : '';
 		}

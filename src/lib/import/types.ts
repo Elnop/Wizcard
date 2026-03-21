@@ -18,7 +18,7 @@ export interface ParsedImportRow {
 	condition?: string;
 	language?: string;
 	purchasePrice?: string;
-	tradelistCount?: number;
+	forTrade?: boolean;
 	alter?: boolean;
 	proxy?: boolean;
 	tags?: string[];

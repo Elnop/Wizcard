@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Card, CollectionEntry } from '@/types/card';
+import type { Card, StackMeta } from '@/types/card';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { CardImage } from '@/components/cards/CardImage';
 import { MTG_LANGUAGES } from '@/lib/mtg/languages';
@@ -25,29 +25,40 @@ const CONDITIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
 interface Props {
 	card: Card | null;
 	onClose: () => void;
-	onSave: (cardId: string, updates: Partial<CollectionEntry>) => void;
+	onSave: (cardId: string, updates: Partial<StackMeta>) => void;
 	onRemove: (cardId: string) => void;
 	onChangePrint?: (oldCardId: string, newCard: ScryfallCard) => void;
+	onIncrement?: () => void;
+	onDecrement?: () => void;
 }
 
 interface InnerProps {
 	card: Card;
 	onClose: () => void;
-	onSave: (cardId: string, updates: Partial<CollectionEntry>) => void;
+	onSave: (cardId: string, updates: Partial<StackMeta>) => void;
 	onRemove: (cardId: string) => void;
 	onChangePrint?: (oldCardId: string, newCard: ScryfallCard) => void;
+	onIncrement?: () => void;
+	onDecrement?: () => void;
 }
 
-function CardCollectionModalInner({ card, onClose, onSave, onRemove, onChangePrint }: InnerProps) {
+function CardCollectionModalInner({
+	card,
+	onClose,
+	onSave,
+	onRemove,
+	onChangePrint,
+	onIncrement,
+	onDecrement,
+}: InnerProps) {
 	const [tagInput, setTagInput] = useState('');
 	const [showPrintPicker, setShowPrintPicker] = useState(false);
 	const [lightbox, setLightbox] = useState(false);
 	const symbolMap = useScryfallSymbols();
 
-	function save(patch: Partial<CollectionEntry>) {
+	function save(patch: Partial<StackMeta>) {
 		const currentTags = card.tags ?? [];
-		onSave(card.id, {
-			quantity: card.quantity ?? 1,
+		onSave(card.scryfallId, {
 			condition: card.condition || undefined,
 			isFoil: card.isFoil ?? false,
 			foilType: (card.isFoil ?? false) ? (card.foilType ?? 'foil') : undefined,
@@ -58,7 +69,7 @@ function CardCollectionModalInner({ card, onClose, onSave, onRemove, onChangePri
 	}
 
 	function handleRemove() {
-		onRemove(card.id);
+		onRemove(card.scryfallId);
 	}
 
 	function handleTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -149,16 +160,17 @@ function CardCollectionModalInner({ card, onClose, onSave, onRemove, onChangePri
 										<button
 											type="button"
 											className={styles.qtyBtn}
-											onClick={() => save({ quantity: Math.max(1, (card.quantity ?? 1) - 1) })}
+											onClick={() => onDecrement?.()}
 											aria-label="Decrease quantity"
+											disabled={card.count <= 1}
 										>
 											−
 										</button>
-										<span className={styles.qtyValue}>{card.quantity ?? 1}</span>
+										<span className={styles.qtyValue}>{card.count ?? 1}</span>
 										<button
 											type="button"
 											className={styles.qtyBtn}
-											onClick={() => save({ quantity: (card.quantity ?? 1) + 1 })}
+											onClick={() => onIncrement?.()}
 											aria-label="Increase quantity"
 										>
 											+
@@ -352,7 +364,7 @@ function CardCollectionModalInner({ card, onClose, onSave, onRemove, onChangePri
 					currentCardId={card.id}
 					onSelect={(print) => {
 						setShowPrintPicker(false);
-						onChangePrint?.(card.id, print);
+						onChangePrint?.(card.scryfallId, print);
 					}}
 					onClose={() => setShowPrintPicker(false)}
 				/>
@@ -361,16 +373,26 @@ function CardCollectionModalInner({ card, onClose, onSave, onRemove, onChangePri
 	);
 }
 
-export function CardCollectionModal({ card, onClose, onSave, onRemove, onChangePrint }: Props) {
+export function CardCollectionModal({
+	card,
+	onClose,
+	onSave,
+	onRemove,
+	onChangePrint,
+	onIncrement,
+	onDecrement,
+}: Props) {
 	if (!card) return null;
 	return (
 		<CardCollectionModalInner
-			key={card.id}
+			key={card.scryfallId}
 			card={card}
 			onClose={onClose}
 			onSave={onSave}
 			onRemove={onRemove}
 			onChangePrint={onChangePrint}
+			onIncrement={onIncrement}
+			onDecrement={onDecrement}
 		/>
 	);
 }

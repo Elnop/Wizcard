@@ -9,7 +9,18 @@
 		"lint": "eslint",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"prepare": "husky"
+		"check": "tsc --noEmit && eslint && prettier --check .",
+		"check:fix": "eslint --fix && prettier --write .",
+		"prepare": "husky",
+		"sb": "supabase",
+		"sb:start": "supabase start",
+		"sb:stop": "supabase stop",
+		"sb:restart": "supabase stop && supabase start",
+		"sb:status": "supabase status",
+		"sb:reset": "supabase db reset --local",
+		"sb:migrate": "supabase migration up --local",
+		"sb:studio": "xdg-open http://127.0.0.1:54323",
+		"sb:mail": "xdg-open http://127.0.0.1:54324"
 	},
 	"lint-staged": {
 		"*.{js,jsx,ts,tsx,mjs,mts}": [
@@ -21,6 +32,8 @@
 		]
 	},
 	"dependencies": {
+		"@supabase/ssr": "^0.9.0",
+		"@supabase/supabase-js": "^2.99.1",
 		"next": "16.1.6",
 		"react": "19.2.3",
 		"react-dom": "19.2.3"
@@ -36,6 +49,7 @@
 		"husky": "^9.1.7",
 		"lint-staged": "^16.2.7",
 		"prettier": "^3.8.1",
+		"supabase": "^2.78.1",
 		"typescript": "^5"
 	}
 }

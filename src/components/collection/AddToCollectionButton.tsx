@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import { useCollection } from '@/hooks/useCollection';
+import { useCollectionContext } from '@/lib/supabase/contexts/CollectionContext';
 import { Button } from '@/components/ui/Button';
 import styles from './AddToCollectionButton.module.css';
 
@@ -11,7 +11,7 @@ export interface AddToCollectionButtonProps {
 }
 
 export function AddToCollectionButton({ card }: AddToCollectionButtonProps) {
-	const { addCard, decrementCard, getQuantity } = useCollection();
+	const { addCard, decrementCard, getQuantity } = useCollectionContext();
 	const [showFeedback, setShowFeedback] = useState(false);
 	const quantity = getQuantity(card.id);
 

@@ -1,24 +1,30 @@
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
-// Only data persisted in localStorage — nothing from Scryfall except the ID
-export interface CollectionEntry {
-	id: string; // Scryfall UUID — lookup key
-	quantity: number;
+// Per-copy metadata — fields persisted per row in the DB
+export interface StackMeta {
 	dateAdded: string; // ISO timestamp
 	isFoil?: boolean;
 	foilType?: 'foil' | 'etched';
 	condition?: string;
 	language?: string;
 	purchasePrice?: string;
-	tradelistCount?: number;
+	forTrade?: boolean;
 	alter?: boolean;
 	proxy?: boolean;
 	tags?: string[];
 }
 
-// Runtime type — full Scryfall data merged with collection metadata
+// One logical stack: all copies of a given scryfall_id in the collection
+export interface CollectionStack {
+	scryfallId: string; // Scryfall UUID — lookup key
+	count: number;
+	meta: StackMeta;
+	rowIds: string[]; // one per physical copy
+}
+
+// Runtime type — full Scryfall data merged with collection metadata (flattened)
 // NOT what is stored in localStorage
-export type Card = ScryfallCard & CollectionEntry;
+export type Card = ScryfallCard & Omit<CollectionStack, 'meta'> & StackMeta;
 
 // Aggregated collection statistics
 export interface CollectionStats {
@@ -29,12 +35,4 @@ export interface CollectionStats {
 	rarityDistribution: Record<string, number>;
 	colorDistribution?: Record<string, number>;
 	typeDistribution?: Record<string, number>;
-}
-
-// Extract only the persistable fields from a ScryfallCard + metadata
-export function toCollectionEntry(
-	card: ScryfallCard,
-	meta: Omit<CollectionEntry, 'id'>
-): CollectionEntry {
-	return { id: card.id, ...meta };
 }

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { getCardsFromCache, putCardsInCache } from '@/lib/card-cache';
-import type { CollectionEntry, Card } from '@/types/card';
+import type { CollectionStack, Card } from '@/types/card';
 
 const BATCH_SIZE = 75;
 
-export function useCollectionCards(entries: CollectionEntry[]): {
+export function useCollectionCards(entries: CollectionStack[]): {
 	cards: Card[];
 	isLoading: boolean;
 	totalExpected: number;
@@ -15,27 +15,15 @@ export function useCollectionCards(entries: CollectionEntry[]): {
 	const [cards, setCards] = useState<Card[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 
-	// Stable key representing the current set of IDs so we only re-fetch on actual ID changes
-	const idsKey = entries
-		.map((e) => e.id)
-		.sort()
-		.join(',');
-
-	// Re-merge entry fields (quantity, condition, language, etc.) whenever entries change,
-	// without re-fetching Scryfall data that is already in the cards state.
-	useEffect(() => {
-		if (entries.length === 0) return;
-
-		setCards((prev) => {
-			if (prev.length === 0) return prev;
-			const entryMap = new Map<string, CollectionEntry>();
-			for (const entry of entries) entryMap.set(entry.id, entry);
-			return prev.map((card) => {
-				const entry = entryMap.get(card.id);
-				return entry ? { ...card, ...entry } : card;
-			});
-		});
-	}, [entries]);
+	// Stable key representing the current set of IDs — only re-fetch on actual ID changes
+	const idsKey = useMemo(
+		() =>
+			entries
+				.map((e) => e.scryfallId)
+				.sort()
+				.join(','),
+		[entries]
+	);
 
 	useEffect(() => {
 		if (entries.length === 0) {
@@ -48,13 +36,13 @@ export function useCollectionCards(entries: CollectionEntry[]): {
 		setIsLoading(true);
 
 		async function hydrate() {
-			// Build a lookup map from id → CollectionEntry for fast merge
-			const entryMap = new Map<string, CollectionEntry>();
+			// Build a lookup map from scryfallId → CollectionStack for fast merge
+			const entryMap = new Map<string, CollectionStack>();
 			for (const entry of entries) {
-				entryMap.set(entry.id, entry);
+				entryMap.set(entry.scryfallId, entry);
 			}
 
-			const allIds = entries.map((e) => e.id);
+			const allIds = entries.map((e) => e.scryfallId);
 
 			// Phase 1: read from IndexedDB cache (~20-50ms)
 			const cachedMap = await getCardsFromCache(allIds);
@@ -65,8 +53,8 @@ export function useCollectionCards(entries: CollectionEntry[]): {
 			// Build cards from cache hits
 			const cachedCards: Card[] = [];
 			for (const [id, scryfallCard] of cachedMap) {
-				const entry = entryMap.get(id);
-				if (entry) cachedCards.push({ ...scryfallCard, ...entry });
+				const stack = entryMap.get(id);
+				if (stack) cachedCards.push({ ...scryfallCard, ...stack, ...stack.meta });
 			}
 
 			// If everything is cached, we're done
@@ -110,8 +98,8 @@ export function useCollectionCards(entries: CollectionEntry[]): {
 
 			const fetchedCards: Card[] = [];
 			for (const scryfallCard of fetchedScryfallCards) {
-				const entry = entryMap.get(scryfallCard.id);
-				if (entry) fetchedCards.push({ ...scryfallCard, ...entry });
+				const stack = entryMap.get(scryfallCard.id);
+				if (stack) fetchedCards.push({ ...scryfallCard, ...stack, ...stack.meta });
 			}
 
 			const mergedCards = [...cachedCards, ...fetchedCards];

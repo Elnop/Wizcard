@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { useCollection } from '@/hooks/useCollection';
+import { useCollectionContext } from '@/lib/supabase/contexts/CollectionContext';
 import { useCollectionCards } from '@/hooks/useCollectionCards';
-import { useImportContext } from '@/contexts/ImportContext';
+import { useImportContext } from '@/lib/import/contexts/ImportContext';
 import { useCollectionFilters, defaultCollectionFilters } from '@/hooks/useCollectionFilters';
 import type { CollectionFilters } from '@/hooks/useCollectionFilters';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { putCardsInCache } from '@/lib/card-cache';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
-import type { Card, CollectionEntry, CollectionStats } from '@/types/card';
+import type { Card, StackMeta, CollectionStats } from '@/types/card';
 import styles from './page.module.css';
 
 function computeStats(cards: Card[]): CollectionStats {
@@ -26,7 +26,7 @@ function computeStats(cards: Card[]): CollectionStats {
 	let totalCards = 0;
 
 	for (const card of cards) {
-		const qty = card.quantity;
+		const qty = card.count;
 		totalCards += qty;
 		sets.add(card.set);
 		rarityDistribution[card.rarity] = (rarityDistribution[card.rarity] ?? 0) + qty;
@@ -45,12 +45,13 @@ export default function CollectionPage() {
 	const {
 		entries,
 		isLoaded,
+		addCard,
 		decrementCard,
 		removeCard,
 		updateEntry,
 		changePrint,
 		clearCollection,
-	} = useCollection();
+	} = useCollectionContext();
 	const { cards, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
 	const {
 		status,
@@ -74,34 +75,79 @@ export default function CollectionPage() {
 	const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 	const [pendingScryfallCard, setPendingScryfallCard] = useState<ScryfallCard | null>(null);
 
-	const cardFromCollection = selectedCardId
-		? (cards.find((c) => c.id === selectedCardId) ?? null)
-		: null;
-	const selectedCard: Card | null = (() => {
+	const selectedCard = useMemo<Card | null>(() => {
 		if (!selectedCardId) return null;
-		if (cardFromCollection) return cardFromCollection;
+		const fromCollection = cards.find((c) => c.scryfallId === selectedCardId) ?? null;
+		if (fromCollection) return fromCollection;
 		// After a print change, useCollectionCards hasn't re-hydrated yet — use the
-		// ScryfallCard we already have from the picker, merged with the collection entry.
+		// ScryfallCard we already have from the picker, merged with the collection stack.
 		if (pendingScryfallCard && pendingScryfallCard.id === selectedCardId) {
-			const entry = entries.find((e) => e.id === selectedCardId);
-			if (entry) return { ...pendingScryfallCard, ...entry };
+			const stack = entries.find((e) => e.scryfallId === selectedCardId);
+			if (stack) return { ...pendingScryfallCard, ...stack, ...stack.meta };
 		}
 		return null;
-	})();
+	}, [selectedCardId, cards, pendingScryfallCard, entries]);
+
 	const [filters, setFilters] = useState<CollectionFilters>(defaultCollectionFilters);
 	const filteredCards = useCollectionFilters(cards, filters);
 
-	const stats = computeStats(filteredCards);
+	const stats = useMemo(() => computeStats(filteredCards), [filteredCards]);
 
-	const activeFilterCount =
-		filters.colors.length +
-		(filters.type ? 1 : 0) +
-		(filters.set ? 1 : 0) +
-		(filters.order !== 'name' || filters.dir !== 'auto' ? 1 : 0) +
-		filters.rarities.length +
-		(filters.oracleText ? 1 : 0) +
-		(filters.cmc ? 1 : 0) +
-		(filters.name ? 1 : 0);
+	const activeFilterCount = useMemo(
+		() =>
+			filters.colors.length +
+			(filters.type ? 1 : 0) +
+			(filters.set ? 1 : 0) +
+			(filters.order !== 'name' || filters.dir !== 'auto' ? 1 : 0) +
+			filters.rarities.length +
+			(filters.oracleText ? 1 : 0) +
+			(filters.cmc ? 1 : 0) +
+			(filters.name ? 1 : 0),
+		[filters]
+	);
+
+	const handleCardClick = useCallback((card: Card) => setSelectedCardId(card.scryfallId), []);
+
+	const handleCloseModal = useCallback(() => {
+		setSelectedCardId(null);
+		setPendingScryfallCard(null);
+	}, []);
+
+	const handleSaveModal = useCallback(
+		(cardId: string, updates: Partial<StackMeta>) => updateEntry(cardId, updates),
+		[updateEntry]
+	);
+
+	const handleRemoveModal = useCallback(
+		(cardId: string) => {
+			removeCard(cardId);
+			setSelectedCardId(null);
+			setPendingScryfallCard(null);
+		},
+		[removeCard]
+	);
+
+	const handleIncrementModal = useCallback(() => {
+		if (selectedCard) addCard(selectedCard);
+	}, [selectedCard, addCard]);
+
+	const handleDecrementModal = useCallback(() => {
+		if (selectedCardId) decrementCard(selectedCardId);
+	}, [selectedCardId, decrementCard]);
+
+	const handleChangePrint = useCallback(
+		(oldCardId: string, newCard: ScryfallCard) => {
+			void putCardsInCache([newCard]);
+			setPendingScryfallCard(newCard);
+			changePrint(oldCardId, newCard.id);
+			if (newCard.lang) {
+				const language = SCRYFALL_CODE_TO_LANGUAGE[newCard.lang];
+				updateEntry(newCard.id, { language });
+			}
+			setSelectedCardId(newCard.id);
+		},
+		[changePrint, updateEntry]
+	);
 
 	function handleClearCollection() {
 		if (confirm('Effacer toute la collection ? Cette action est irréversible.')) {
@@ -109,9 +155,14 @@ export default function CollectionPage() {
 		}
 	}
 
-	function handleExport() {
+	const handleExport = useCallback(() => {
 		downloadCSV(serializeToMoxfieldCSV(cards), 'my-collection.csv');
-	}
+	}, [cards]);
+
+	const handleConfirmImport = useCallback(async () => {
+		await confirmImport();
+		reset();
+	}, [confirmImport, reset]);
 
 	if (!isLoaded) {
 		return <div className={styles.page} />;
@@ -185,7 +236,7 @@ export default function CollectionPage() {
 						<CollectionGrid
 							entries={filteredCards}
 							onDecrement={decrementCard}
-							onCardClick={(card) => setSelectedCardId(card.id)}
+							onCardClick={handleCardClick}
 							isLoading={isHydrating}
 							totalExpected={totalExpected}
 						/>
@@ -204,38 +255,19 @@ export default function CollectionPage() {
 				onFileSelect={selectFile}
 				onTextSubmit={submitText}
 				onChangeFormat={changeFormat}
-				onConfirm={async () => {
-					await confirmImport();
-					reset();
-				}}
+				onConfirm={handleConfirmImport}
 				onCancel={cancel}
 				onUpdateRow={updateRow}
 				onRemoveRow={removeRow}
 			/>
 			<CardCollectionModal
 				card={selectedCard}
-				onClose={() => {
-					setSelectedCardId(null);
-					setPendingScryfallCard(null);
-				}}
-				onSave={(cardId, updates: Partial<CollectionEntry>) => {
-					updateEntry(cardId, updates);
-				}}
-				onRemove={(cardId) => {
-					removeCard(cardId);
-					setSelectedCardId(null);
-					setPendingScryfallCard(null);
-				}}
-				onChangePrint={(oldCardId, newCard) => {
-					void putCardsInCache([newCard]);
-					setPendingScryfallCard(newCard);
-					changePrint(oldCardId, newCard.id);
-					if (newCard.lang) {
-						const language = SCRYFALL_CODE_TO_LANGUAGE[newCard.lang];
-						updateEntry(newCard.id, { language });
-					}
-					setSelectedCardId(newCard.id);
-				}}
+				onClose={handleCloseModal}
+				onSave={handleSaveModal}
+				onRemove={handleRemoveModal}
+				onIncrement={handleIncrementModal}
+				onDecrement={handleDecrementModal}
+				onChangePrint={handleChangePrint}
 			/>
 		</div>
 	);
