@@ -1,61 +1,48 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { useCollectionContext } from '@/lib/supabase/contexts/CollectionContext';
-import { useCollectionCards } from '@/hooks/useCollectionCards';
-import { useImportContext } from '@/lib/import/contexts/ImportContext';
-import { useCollectionFilters, defaultCollectionFilters } from '@/hooks/useCollectionFilters';
-import type { CollectionFilters } from '@/hooks/useCollectionFilters';
-import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
-import { serializeToMoxfieldCSV, downloadCSV } from '@/lib/moxfield/serialize';
+import { useCollectionPageState } from './useCollectionPageState';
 import { CollectionGrid } from '@/components/collection/CollectionGrid';
 import { CollectionFiltersAside } from '@/components/collection/CollectionFiltersAside';
 import { ImportPreviewModal } from '@/components/collection/ImportPreviewModal';
 import { CardCollectionModal } from '@/components/collection/CardCollectionModal';
 import { Button } from '@/components/ui/Button';
-import { putCardsInCache } from '@/lib/card-cache';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
-import type { Card, CardStack, CardEntry, CollectionStats } from '@/types/cards';
 import styles from './page.module.css';
-
-function computeStats(stacks: CardStack[]): CollectionStats {
-	const sets = new Set<string>();
-	const rarityDistribution: Record<string, number> = {};
-	let totalCards = 0;
-
-	for (const stack of stacks) {
-		for (const card of stack.cards) {
-			totalCards += 1;
-			sets.add(card.set);
-			rarityDistribution[card.rarity] = (rarityDistribution[card.rarity] ?? 0) + 1;
-		}
-	}
-
-	return {
-		totalCards,
-		uniqueCards: stacks.length,
-		uniqueByEdition: stacks.reduce((n, s) => n + s.cards.length, 0),
-		setCount: sets.size,
-		rarityDistribution,
-	};
-}
 
 export default function CollectionPage() {
 	const {
 		entries,
 		isLoaded,
-		addCard,
-		duplicateEntry,
+		filteredStacks,
+		stats,
+		isHydrating,
+		totalExpected,
+		filters,
+		setFilters,
+		sets,
+		setsLoading,
+		activeFilterCount,
+		importCtx,
+		resolvedStack,
 		decrementCard,
-		removeCard,
-		removeEntry,
-		updateEntry,
-		changePrint,
-		clearCollection,
-	} = useCollectionContext();
-	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
+		handleCardClick,
+		handleCloseModal,
+		handleSaveModal,
+		handleRemoveModal,
+		handleIncrementModal,
+		handleDecrementModal,
+		handleDuplicateEntry,
+		handleRemoveEntry,
+		handleChangePrint,
+		handleClearCollection,
+		handleExport,
+		handleConfirmImport,
+	} = useCollectionPageState();
+
+	if (!isLoaded) {
+		return <div className={styles.page} />;
+	}
+
 	const {
 		status,
 		progress,
@@ -66,143 +53,11 @@ export default function CollectionPage() {
 		selectFile,
 		submitText,
 		changeFormat,
-		confirm: confirmImport,
 		cancel,
-		reset,
 		updateRow,
 		removeRow,
 		formatRegistry,
-	} = useImportContext();
-	const { sets, isLoading: setsLoading } = useScryfallSets();
-
-	const [selectedStack, setSelectedStack] = useState<CardStack | null>(null);
-	const [pendingScryfallCard, setPendingScryfallCard] = useState<ScryfallCard | null>(null);
-
-	// Filters operate on the representative card of each stack (cards[0])
-	const representativeCards = useMemo(
-		() => stacks.map((s) => s.cards[0]).filter(Boolean),
-		[stacks]
-	);
-
-	const [filters, setFilters] = useState<CollectionFilters>(defaultCollectionFilters);
-	const filteredRepCards = useCollectionFilters(representativeCards, filters);
-
-	// Rebuild stacks for the filtered representatives
-	const filteredStacks = useMemo(() => {
-		const filteredNames = new Set(filteredRepCards.map((c) => c.name));
-		return stacks.filter((s) => filteredNames.has(s.name));
-	}, [stacks, filteredRepCards]);
-
-	const stats = useMemo(() => computeStats(filteredStacks), [filteredStacks]);
-
-	const activeFilterCount = useMemo(
-		() =>
-			filters.colors.length +
-			(filters.type ? 1 : 0) +
-			(filters.set ? 1 : 0) +
-			(filters.order !== 'name' || filters.dir !== 'auto' ? 1 : 0) +
-			filters.rarities.length +
-			(filters.oracleText ? 1 : 0) +
-			(filters.cmc ? 1 : 0) +
-			(filters.name ? 1 : 0),
-		[filters]
-	);
-
-	// Keep selectedStack in sync after hydration updates
-	const resolvedStack = useMemo<CardStack | null>(() => {
-		if (!selectedStack) return null;
-		// Find updated stack by name
-		const fromStacks = stacks.find((s) => s.name === selectedStack.name) ?? null;
-		if (fromStacks) return fromStacks;
-		// After a print change, use the pending Scryfall card
-		if (pendingScryfallCard) {
-			const newStack = stacks.find((s) => s.name === pendingScryfallCard.name) ?? null;
-			if (newStack) return newStack;
-		}
-		return null;
-	}, [selectedStack, stacks, pendingScryfallCard]);
-
-	const handleCardClick = useCallback((stack: CardStack) => setSelectedStack(stack), []);
-
-	const handleCloseModal = useCallback(() => {
-		setSelectedStack(null);
-		setPendingScryfallCard(null);
-	}, []);
-
-	const handleSaveModal = useCallback(
-		(rowId: string, updates: Partial<CardEntry>) => updateEntry(rowId, updates),
-		[updateEntry]
-	);
-
-	const handleRemoveModal = useCallback(
-		(scryfallId: string) => {
-			removeCard(scryfallId);
-			setSelectedStack(null);
-			setPendingScryfallCard(null);
-		},
-		[removeCard]
-	);
-
-	const handleIncrementModal = useCallback(() => {
-		if (resolvedStack && resolvedStack.cards.length > 0) {
-			addCard(resolvedStack.cards[0]);
-		}
-	}, [resolvedStack, addCard]);
-
-	const handleDecrementModal = useCallback(() => {
-		if (resolvedStack && resolvedStack.cards.length > 0) {
-			decrementCard(resolvedStack.cards[0].id);
-		}
-	}, [resolvedStack, decrementCard]);
-
-	const handleDuplicateEntry = useCallback(
-		(scryfallId: string, entry: CardEntry) => duplicateEntry(scryfallId, entry),
-		[duplicateEntry]
-	);
-
-	const handleRemoveEntry = useCallback((rowId: string) => removeEntry(rowId), [removeEntry]);
-
-	const handleChangePrint = useCallback(
-		(oldScryfallId: string, newCard: ScryfallCard) => {
-			void putCardsInCache([newCard]);
-			setPendingScryfallCard(newCard);
-			changePrint(oldScryfallId, newCard.id);
-			if (newCard.lang) {
-				const language = SCRYFALL_CODE_TO_LANGUAGE[newCard.lang];
-				// Update all copies with the new language via their rowIds
-				// (changePrint creates new rowIds — we update after the stack rehydrates)
-				if (language && resolvedStack) {
-					for (const card of resolvedStack.cards) {
-						updateEntry(card.entry.rowId, { language });
-					}
-				}
-			}
-			// Update selected stack to new card name
-			setSelectedStack({ oracleId: newCard.oracle_id, name: newCard.name, cards: [] });
-		},
-		[changePrint, updateEntry, resolvedStack]
-	);
-
-	function handleClearCollection() {
-		if (confirm('Effacer toute la collection ? Cette action est irréversible.')) {
-			clearCollection();
-		}
-	}
-
-	const handleExport = useCallback(() => {
-		const allCards: Card[] = stacks.flatMap((s) => s.cards);
-		downloadCSV(serializeToMoxfieldCSV(allCards), 'my-collection.csv');
-	}, [stacks]);
-
-	const handleConfirmImport = useCallback(async () => {
-		await confirmImport();
-		reset();
-	}, [confirmImport, reset]);
-
-	if (!isLoaded) {
-		return <div className={styles.page} />;
-	}
-
+	} = importCtx;
 	const isImporting = status === 'fetching' || status === 'merging';
 	const isBusy = status === 'previewing' || isImporting;
 

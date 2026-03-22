@@ -12,6 +12,7 @@ import type {
 } from '@/lib/import/types';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
+import { deduplicateIdentifiers } from '@/lib/import/identifier-dedup';
 
 export type ImportStatus =
 	| 'idle'
@@ -75,20 +76,7 @@ export function useImport(
 	const fetchPreviewCards = useCallback(async (parsed: ParsedImportResult) => {
 		if (parsed.rows.length === 0) return;
 
-		// Deduplicate identifiers
-		const identifierMap = new Map<string, (typeof parsed.identifiers)[number]>();
-		for (const id of parsed.identifiers) {
-			const key =
-				id.set && id.collector_number
-					? `${id.set.toLowerCase()}/${id.collector_number.toLowerCase()}`
-					: id.set
-						? `name:${(id.name ?? '').toLowerCase()}/set:${id.set.toLowerCase()}`
-						: `name:${(id.name ?? '').toLowerCase()}`;
-			if (!identifierMap.has(key)) {
-				identifierMap.set(key, id);
-			}
-		}
-		const identifiers = Array.from(identifierMap.values());
+		const identifiers = deduplicateIdentifiers(parsed.identifiers);
 
 		const chunks: (typeof identifiers)[] = [];
 		for (let i = 0; i < identifiers.length; i += BATCH_SIZE) {
@@ -225,20 +213,7 @@ export function useImport(
 			if (fetchedCards.length > 0) {
 				cards = fetchedCards;
 			} else {
-				// Deduplicate identifiers
-				const identifierMap = new Map<string, (typeof parsed.identifiers)[number]>();
-				for (const id of parsed.identifiers) {
-					const key =
-						id.set && id.collector_number
-							? `${id.set.toLowerCase()}/${id.collector_number.toLowerCase()}`
-							: id.set
-								? `name:${(id.name ?? '').toLowerCase()}/set:${id.set.toLowerCase()}`
-								: `name:${(id.name ?? '').toLowerCase()}`;
-					if (!identifierMap.has(key)) {
-						identifierMap.set(key, id);
-					}
-				}
-				const identifiers = Array.from(identifierMap.values());
+				const identifiers = deduplicateIdentifiers(parsed.identifiers);
 
 				const chunks: (typeof identifiers)[] = [];
 				for (let i = 0; i < identifiers.length; i += BATCH_SIZE) {

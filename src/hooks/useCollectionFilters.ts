@@ -1,35 +1,11 @@
 import { useMemo } from 'react';
 import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
-import type {
-	ScryfallSortOrder,
-	ScryfallSortDir,
-} from '@/lib/scryfall/hooks/useScryfallCardSearch';
+import type { ScryfallSortOrder } from '@/lib/scryfall/hooks/useScryfallCardSearch';
+import { type CardFilters, DEFAULT_CARD_FILTERS } from '@/lib/filters/types';
 
-export interface CollectionFilters {
-	name: string;
-	colors: ScryfallColor[];
-	colorMatch: 'exact' | 'include' | 'atMost';
-	type: string;
-	set: string;
-	rarities: string[];
-	oracleText: string;
-	cmc: string;
-	order: ScryfallSortOrder;
-	dir: ScryfallSortDir;
-}
-
-export const defaultCollectionFilters: CollectionFilters = {
-	name: '',
-	colors: [],
-	colorMatch: 'include',
-	type: '',
-	set: '',
-	rarities: [],
-	oracleText: '',
-	cmc: '',
-	order: 'name',
-	dir: 'auto',
-};
+// Re-export shared types under the legacy names for backwards compatibility
+export type CollectionFilters = CardFilters;
+export const defaultCollectionFilters: CollectionFilters = DEFAULT_CARD_FILTERS;
 
 function parseCmc(raw: string): ((cmc: number) => boolean) | null {
 	if (!raw) return null;

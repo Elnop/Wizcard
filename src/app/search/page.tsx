@@ -1,69 +1,18 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
-import {
-	useScryfallCardSearch,
-	type ScryfallSortOrder,
-	type ScryfallSortDir,
-} from '@/lib/scryfall/hooks/useScryfallCardSearch';
+import { useState, useCallback, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import { useScryfallCardSearch } from '@/lib/scryfall/hooks/useScryfallCardSearch';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
-import { useDebounce } from '@/hooks/useDebounce';
 import { SearchBar } from '@/components/search/SearchBar';
 import { FilterModal } from '@/components/search/FilterModal';
 import { CardGrid } from '@/components/cards/CardGrid';
 import { Spinner } from '@/components/ui/Spinner';
 import { useCollectionContext } from '@/lib/supabase/contexts/CollectionContext';
+import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
 import styles from './page.module.css';
-
-const VALID_COLORS = new Set(['W', 'U', 'B', 'R', 'G']);
-const VALID_ORDERS = new Set([
-	'name',
-	'set',
-	'released',
-	'rarity',
-	'color',
-	'usd',
-	'tix',
-	'eur',
-	'cmc',
-	'power',
-	'toughness',
-	'edhrec',
-	'penny',
-	'artist',
-	'review',
-]);
-const VALID_DIRS = new Set(['auto', 'asc', 'desc']);
-const VALID_COLOR_MATCHES = new Set(['exact', 'include', 'atMost']);
-const VALID_RARITIES = new Set(['common', 'uncommon', 'rare', 'mythic']);
-
-function parseColorsFromParam(param: string | null): ScryfallColor[] {
-	if (!param) return [];
-	return param.split(',').filter((c) => VALID_COLORS.has(c)) as ScryfallColor[];
-}
-
-function parseOrderFromParam(param: string | null): ScryfallSortOrder {
-	if (param && VALID_ORDERS.has(param)) return param as ScryfallSortOrder;
-	return 'name';
-}
-
-function parseDirFromParam(param: string | null): ScryfallSortDir {
-	if (param && VALID_DIRS.has(param)) return param as ScryfallSortDir;
-	return 'auto';
-}
-
-function parseColorMatchFromParam(param: string | null): 'exact' | 'include' | 'atMost' {
-	if (param && VALID_COLOR_MATCHES.has(param)) return param as 'exact' | 'include' | 'atMost';
-	return 'include';
-}
-
-function parseRaritiesFromParam(param: string | null): string[] {
-	if (!param) return [];
-	return param.split(',').filter((r) => VALID_RARITIES.has(r));
-}
 
 export default function SearchPage() {
 	return (
@@ -85,59 +34,25 @@ export default function SearchPage() {
 
 function SearchPageContent() {
 	const router = useRouter();
-	const searchParams = useSearchParams();
 	useCollectionContext();
 
-	// Initialize state from URL params
-	const [name, setName] = useState(() => searchParams.get('name') ?? '');
-	const [colors, setColors] = useState<ScryfallColor[]>(() =>
-		parseColorsFromParam(searchParams.get('colors'))
-	);
-	const [colorMatch, setColorMatch] = useState<'exact' | 'include' | 'atMost'>(() =>
-		parseColorMatchFromParam(searchParams.get('colorMatch'))
-	);
-	const [type, setType] = useState(() => searchParams.get('type') ?? '');
-	const [set, setSet] = useState(() => searchParams.get('set') ?? '');
-	const [rarities, setRarities] = useState<string[]>(() =>
-		parseRaritiesFromParam(searchParams.get('rarities'))
-	);
-	const [oracleText, setOracleText] = useState(() => searchParams.get('oracle') ?? '');
-	const [cmc, setCmc] = useState(() => searchParams.get('cmc') ?? '');
-	const [order, setOrder] = useState<ScryfallSortOrder>(() =>
-		parseOrderFromParam(searchParams.get('order'))
-	);
-	const [dir, setDir] = useState<ScryfallSortDir>(() => parseDirFromParam(searchParams.get('dir')));
+	const {
+		name,
+		setName,
+		colors,
+		colorMatch,
+		type,
+		set,
+		rarities,
+		oracleText,
+		cmc,
+		order,
+		dir,
+		applyFilters,
+		activeFilterCount,
+	} = useSearchFiltersFromUrl();
+
 	const [isModalOpen, setIsModalOpen] = useState(false);
-
-	// Debounce name for URL updates to avoid spamming history
-	const debouncedName = useDebounce(name, 300);
-	const isInitialMount = useRef(true);
-
-	// Sync state to URL when filters change
-	useEffect(() => {
-		// Skip URL update on initial mount (we're reading from URL, not writing)
-		if (isInitialMount.current) {
-			isInitialMount.current = false;
-			return;
-		}
-
-		const params = new URLSearchParams();
-		if (debouncedName) params.set('name', debouncedName);
-		if (colors.length > 0) params.set('colors', colors.join(','));
-		if (colorMatch !== 'include') params.set('colorMatch', colorMatch);
-		if (type) params.set('type', type);
-		if (set) params.set('set', set);
-		if (rarities.length > 0) params.set('rarities', rarities.join(','));
-		if (oracleText) params.set('oracle', oracleText);
-		if (cmc) params.set('cmc', cmc);
-		if (order !== 'name') params.set('order', order);
-		if (dir !== 'auto') params.set('dir', dir);
-
-		const queryString = params.toString();
-		router.replace(queryString ? `/search?${queryString}` : '/search', {
-			scroll: false,
-		});
-	}, [debouncedName, colors, colorMatch, type, set, rarities, oracleText, cmc, order, dir, router]);
 
 	const { sets, isLoading: setsLoading } = useScryfallSets();
 	const { cards, isLoading, isLoadingMore, error, hasMore, totalCards, loadMore } =
@@ -161,45 +76,9 @@ function SearchPageContent() {
 	});
 
 	const handleCardClick = useCallback(
-		(card: ScryfallCard) => {
-			router.push(`/card/${card.id}`);
-		},
+		(card: ScryfallCard) => router.push(`/card/${card.id}`),
 		[router]
 	);
-
-	const handleApplyFilters = useCallback(
-		(filters: {
-			colors: ScryfallColor[];
-			colorMatch: 'exact' | 'include' | 'atMost';
-			type: string;
-			set: string;
-			rarities: string[];
-			oracleText: string;
-			cmc: string;
-			order: ScryfallSortOrder;
-			dir: ScryfallSortDir;
-		}) => {
-			setColors(filters.colors);
-			setColorMatch(filters.colorMatch);
-			setType(filters.type);
-			setSet(filters.set);
-			setRarities(filters.rarities);
-			setOracleText(filters.oracleText);
-			setCmc(filters.cmc);
-			setOrder(filters.order);
-			setDir(filters.dir);
-		},
-		[]
-	);
-
-	const activeFilterCount =
-		colors.length +
-		(type ? 1 : 0) +
-		(set ? 1 : 0) +
-		(order !== 'name' || dir !== 'auto' ? 1 : 0) +
-		rarities.length +
-		(oracleText ? 1 : 0) +
-		(cmc ? 1 : 0);
 
 	const hasFilters =
 		name || colors.length > 0 || type || set || rarities.length > 0 || oracleText || cmc;
@@ -245,7 +124,7 @@ function SearchPageContent() {
 					setsLoading={setsLoading}
 					order={order}
 					dir={dir}
-					onApply={handleApplyFilters}
+					onApply={applyFilters}
 					onClose={() => setIsModalOpen(false)}
 				/>
 
