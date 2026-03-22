@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MTG Snap
 
-## Getting Started
+A Magic: The Gathering card collection manager. Search every printed card via the Scryfall API, track your physical copies with per-copy metadata (condition, foil type, language, tags, price), and sync your collection across devices with Supabase.
 
-First, run the development server:
+## Tech Stack
+
+- **Next.js 16** (App Router) + **React 19** + **TypeScript** (strict)
+- **Supabase** — auth (SSR) + PostgreSQL + Row-Level Security
+- **Scryfall API** — card data and images (rate-limited, cached)
+- **CSS Modules** — component-scoped styles, no UI library
+
+## Quick Start
+
+**Prerequisites:** Node.js 20+, [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# 1. Install dependencies
+npm install
+
+# 2. Start the local Supabase stack
+npm run sb:start
+
+# 3. Apply DB migrations
+npm run sb:reset
+
+# 4. Copy environment variables (values from `npm run sb:status`)
+cp .env.local.example .env.local
+# Fill in NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# 5. Start the dev server
+npm run dev   # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Commands
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Command              | Purpose                                           |
+| -------------------- | ------------------------------------------------- |
+| `npm run dev`        | Dev server at localhost:3000                      |
+| `npm run build`      | Production build                                  |
+| `npm run check`      | TypeScript + ESLint + Prettier (read-only)        |
+| `npm run check:fix`  | Auto-fix lint and format issues                   |
+| `npm run sb:start`   | Start local Supabase                              |
+| `npm run sb:stop`    | Stop local Supabase                               |
+| `npm run sb:reset`   | **Destructive** — drop DB and re-apply migrations |
+| `npm run sb:migrate` | Apply pending migrations only                     |
+| `npm run sb:status`  | Show local URLs and API keys                      |
+| `npm run sb:studio`  | Open Supabase Studio (port 54323)                 |
+| `npm run sb:mail`    | Open auth email inbox / Inbucket (port 54324)     |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Documentation
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Architecture overview](docs/architecture.md)
+- [Data model](docs/data-model.md)
+- [Scryfall integration](docs/scryfall.md)
+- [Offline sync](docs/offline-sync.md)
+- [Import formats](docs/import-formats.md)
+- [Local environment setup](docs/guides/local-setup.md)
+- [Database migrations](docs/guides/migrations.md)
+- [Adding a new import format](docs/guides/adding-import-format.md)
