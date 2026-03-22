@@ -15,6 +15,7 @@
 - `npm run sb:status` — show local URLs + keys
 - `npm run sb:reset` — **destructive** — drop DB and re-apply all migrations
 - `npm run sb:migrate` — apply pending migrations only
+- `supabase/bootstrap/init_schema.sql` — schéma final consolidé pour initialiser une DB vierge (hors migrations, non appliqué automatiquement)
 - `npm run sb:studio` — open Supabase Studio (port 54323)
 - `npm run sb:mail` — open Inbucket email inbox for auth emails (port 54324)
 

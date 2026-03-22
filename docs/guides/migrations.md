@@ -11,6 +11,19 @@ npm run sb:reset     # destructive: drop DB + re-apply all migrations from scrat
 
 Use `sb:migrate` for incremental updates. Use `sb:reset` when you need a clean slate (e.g. after a conflicting migration or during initial setup).
 
+## Bootstrap Schema
+
+`supabase/bootstrap/init_schema.sql` contains the consolidated final schema. It is **not** applied automatically — it exists as a reference and as a shortcut to initialize a brand-new database without replaying all incremental migrations.
+
+To use it on a fresh DB:
+
+```bash
+psql <connection-string> -f supabase/bootstrap/init_schema.sql
+# or paste directly into Supabase Studio → SQL Editor
+```
+
+Do not place it in `supabase/migrations/` — Supabase CLI would try to apply it and conflict with the existing migrations.
+
 ## Creating a Migration
 
 ```bash
