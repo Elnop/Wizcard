@@ -1,15 +1,7 @@
 ---
-description: Project context for scute_swarm MTG collection manager
+description: Project context
 globs: ["**/*"]
 alwaysApply: true
 ---
 
-See `AGENTS.md` at the project root for complete project context (architecture, key files, data model, commands).
-
-## Critical Pitfalls
-
-- **Never group by `scryfallId`** for display — use `oracleId` via `CardStack`
-- **Never call `fetch()` against Scryfall directly** — use `scryfallGet`/`scryfallPost` from `src/lib/scryfall/fetcher.ts`
-- **Always call `triggerSync()` after `enqueue()`** — the queue does not self-start
-- **`npm run sb:reset` is destructive** — drops and recreates the local DB
-- **Provider nesting order in `src/contexts/Providers.tsx` is load-bearing** — do not reorder without auditing
+See `AGENTS.md` at the project root for complete project context.

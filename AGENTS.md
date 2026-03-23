@@ -13,18 +13,14 @@ MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 
 ## Development Commands
 
-```
-npm run dev          — dev server (localhost:3000)
-npm run build        — production build
-npm run check        — TypeScript + ESLint + Prettier (read-only, run before committing)
-npm run check:fix    — auto-fix ESLint + Prettier issues
-npm run sb:start     — start local Supabase stack
-npm run sb:stop      — stop local Supabase
-npm run sb:reset     — DESTRUCTIVE — drop DB and re-apply all migrations
-npm run sb:migrate   — apply pending migrations only
-npm run sb:studio    — Supabase Studio (port 54323)
-npm run sb:mail      — Inbucket email inbox (port 54324)
-```
+- `npm run dev` — dev server (localhost:3000)
+- `npm run build` — production build
+- `npm run check` — TypeScript + ESLint + Prettier (read-only, run before committing)
+- `npm run check:fix` — auto-fix ESLint + Prettier issues
+- `npm run sb:start` / `sb:stop` — start/stop local Supabase
+- `npm run sb:reset` — **destructive** — drop DB and re-apply all migrations
+- `npm run sb:migrate` — apply pending migrations only
+- `npm run sb:studio` — Supabase Studio (port 54323)
 
 ## Architecture
 
@@ -137,3 +133,5 @@ AuthProvider
 - `docs/import-formats.md` — supported formats, auto-detection, import flow
 - `docs/guides/local-setup.md` — step-by-step local dev setup
 - `docs/guides/migrations.md` — migration commands, RLS patterns
+- `docs/guides/adding-import-format.md` — how to add a new import format
+- `docs/guides/ai-config-files.md` — organisation des fichiers de config IA (AGENTS.md, CLAUDE.md, etc.)
