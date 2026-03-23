@@ -145,6 +145,7 @@ export default function CollectionPage() {
 				onFileSelect={selectFile}
 				onTextSubmit={submitText}
 				onChangeFormat={changeFormat}
+				onChangeFile={openModal}
 				onConfirm={handleConfirmImport}
 				onCancel={cancel}
 				onUpdateRow={updateRow}

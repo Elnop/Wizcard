@@ -1,21 +1,5 @@
-.overlay {
-	position: fixed;
-	inset: 0;
-	background: rgba(0, 0, 0, 0.75);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	z-index: 1100;
-	padding: 16px;
-}
-
 .modal {
-	background: var(--card-bg, #1a1a2e);
-	border: 1px solid var(--border);
-	border-radius: 12px;
-	width: 100%;
 	max-width: 900px;
-	max-height: 90vh;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;

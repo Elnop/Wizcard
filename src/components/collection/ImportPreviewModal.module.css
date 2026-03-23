@@ -1,20 +1,7 @@
-.overlay {
-	position: fixed;
-	inset: 0;
-	background: rgba(0, 0, 0, 0.6);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	z-index: 1000;
-}
-
 .modal {
-	background: var(--card-bg, #1a1a2e);
-	border: 1px solid var(--border);
-	border-radius: 12px;
-	padding: 32px;
 	max-width: 520px;
-	width: 90%;
+	padding: 32px;
+	overflow-y: auto;
 	display: flex;
 	flex-direction: column;
 	gap: 20px;
@@ -130,12 +117,39 @@
 /* Step 2: Preview */
 
 .fileInfo {
+	position: relative;
 	display: flex;
 	align-items: center;
 	gap: 12px;
 	padding: 12px 16px;
 	background: rgba(255, 255, 255, 0.04);
 	border-radius: 8px;
+	cursor: pointer;
+	border: 1px solid transparent;
+	transition: border-color 0.15s;
+}
+
+.fileInfo:hover {
+	border-color: rgba(255, 255, 255, 0.15);
+}
+
+.fileInfoOverlay {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.55);
+	border-radius: 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--foreground);
+	opacity: 0;
+	transition: opacity 0.15s;
+}
+
+.fileInfo:hover .fileInfoOverlay {
+	opacity: 1;
 }
 
 .fileName {
@@ -308,6 +322,7 @@
 	border-radius: 8px;
 	overflow: hidden;
 	align-self: flex-start;
+	flex-shrink: 0;
 }
 
 .toggleBtn {

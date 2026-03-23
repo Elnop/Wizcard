@@ -121,11 +121,13 @@ export function useImport(
 	}, []);
 
 	const selectFile = useCallback(
-		async (file: File) => {
+		async (file: File, forcedFormatId?: ImportFormatId) => {
 			const text = await file.text();
 			setFileText(text);
 
-			const { formatId, scores } = detectFormat(text, file.name);
+			const { formatId, scores } = forcedFormatId
+				? { formatId: forcedFormatId, scores: {} as Record<ImportFormatId, number> }
+				: detectFormat(text, file.name);
 			const parser = getParser(formatId);
 			const parsed = parser(text);
 			const mergedRows = mergeRows(parsed.rows);
@@ -145,10 +147,12 @@ export function useImport(
 	);
 
 	const submitText = useCallback(
-		(text: string) => {
+		(text: string, forcedFormatId?: ImportFormatId) => {
 			setFileText(text);
 
-			const { formatId, scores } = detectFormat(text);
+			const { formatId, scores } = forcedFormatId
+				? { formatId: forcedFormatId, scores: {} as Record<ImportFormatId, number> }
+				: detectFormat(text);
 			const parser = getParser(formatId);
 			const parsed = parser(text);
 			const mergedRows = mergeRows(parsed.rows);

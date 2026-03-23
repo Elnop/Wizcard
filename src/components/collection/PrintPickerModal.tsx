@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
 import { CardImage } from '@/components/cards/CardImage';
+import { Modal } from '@/components/ui/Modal';
 import styles from './PrintPickerModal.module.css';
 import lightboxStyles from './lightbox.module.css';
 
@@ -58,68 +59,66 @@ export function PrintPickerModal({ prints_search_uri, currentCardId, onSelect, o
 
 	return (
 		<>
-			<div className={styles.overlay} onClick={onClose}>
-				<div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-					<div className={styles.header}>
-						<h2 className={styles.title}>Change Print</h2>
-						<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
-							<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-								<path
-									d="M2 2l12 12M14 2L2 14"
-									stroke="currentColor"
-									strokeWidth="1.8"
-									strokeLinecap="round"
-								/>
-							</svg>
-						</button>
-					</div>
-
-					<div className={styles.body}>
-						{loading && <p className={styles.status}>Loading prints…</p>}
-						{error && <p className={styles.statusError}>{error}</p>}
-						{!loading && !error && prints.length === 0 && (
-							<p className={styles.status}>No prints found.</p>
-						)}
-
-						{langs.map((lang) => {
-							const langPrints = byLang.get(lang)!;
-							return (
-								<details key={lang} className={styles.accordion} open={lang === 'en'}>
-									<summary className={styles.accordionSummary}>
-										{langName(lang)}
-										<span className={styles.accordionCount}>{langPrints.length}</span>
-									</summary>
-									<ul className={styles.grid}>
-										{langPrints.map((print) => (
-											<li key={print.id} className={styles.printItem}>
-												<div
-													className={`${styles.printCard} ${print.id === currentCardId ? styles.printCardActive : ''}`}
-												>
-													<button
-														type="button"
-														className={styles.printImageBtn}
-														onClick={() => setLightboxCard(print)}
-														aria-label={`Preview ${print.set_name}`}
-													>
-														<CardImage card={print} size="normal" />
-													</button>
-													<button
-														type="button"
-														className={`${styles.selectBtn} ${print.id === currentCardId ? styles.selectBtnActive : ''}`}
-														onClick={() => onSelect(print)}
-													>
-														{print.id === currentCardId ? 'Selected' : 'Select'}
-													</button>
-												</div>
-											</li>
-										))}
-									</ul>
-								</details>
-							);
-						})}
-					</div>
+			<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
+				<div className={styles.header}>
+					<h2 className={styles.title}>Change Print</h2>
+					<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+							<path
+								d="M2 2l12 12M14 2L2 14"
+								stroke="currentColor"
+								strokeWidth="1.8"
+								strokeLinecap="round"
+							/>
+						</svg>
+					</button>
 				</div>
-			</div>
+
+				<div className={styles.body}>
+					{loading && <p className={styles.status}>Loading prints…</p>}
+					{error && <p className={styles.statusError}>{error}</p>}
+					{!loading && !error && prints.length === 0 && (
+						<p className={styles.status}>No prints found.</p>
+					)}
+
+					{langs.map((lang) => {
+						const langPrints = byLang.get(lang)!;
+						return (
+							<details key={lang} className={styles.accordion} open={lang === 'en'}>
+								<summary className={styles.accordionSummary}>
+									{langName(lang)}
+									<span className={styles.accordionCount}>{langPrints.length}</span>
+								</summary>
+								<ul className={styles.grid}>
+									{langPrints.map((print) => (
+										<li key={print.id} className={styles.printItem}>
+											<div
+												className={`${styles.printCard} ${print.id === currentCardId ? styles.printCardActive : ''}`}
+											>
+												<button
+													type="button"
+													className={styles.printImageBtn}
+													onClick={() => setLightboxCard(print)}
+													aria-label={`Preview ${print.set_name}`}
+												>
+													<CardImage card={print} size="normal" />
+												</button>
+												<button
+													type="button"
+													className={`${styles.selectBtn} ${print.id === currentCardId ? styles.selectBtnActive : ''}`}
+													onClick={() => onSelect(print)}
+												>
+													{print.id === currentCardId ? 'Selected' : 'Select'}
+												</button>
+											</div>
+										</li>
+									))}
+								</ul>
+							</details>
+						);
+					})}
+				</div>
+			</Modal>
 
 			{lightboxCard && (
 				<div className={lightboxStyles.lightbox} onClick={() => setLightboxCard(null)}>
