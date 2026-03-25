@@ -7,6 +7,7 @@ import type { ScryfallCard, ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import type { Card, CardEntry, CardStack } from '@/types/cards';
 import { useCollectionFilters, defaultCollectionFilters } from '@/hooks/useCollectionFilters';
 import type { CollectionFilters } from '@/hooks/useCollectionFilters';
+import type { ScryfallSortOrder } from '@/lib/scryfall/hooks/useScryfallCardSearch';
 import { SearchBar } from '@/components/search/SearchBar';
 import { FilterModal } from '@/components/search/FilterModal';
 import { CardCollectionModal } from '@/components/collection/CardCollectionModal';
@@ -480,9 +481,9 @@ export function ImportPreviewModal({
 				cmc={filters.cmc}
 				sets={sets}
 				setsLoading={setsLoading}
-				order={filters.order}
+				order={filters.order as ScryfallSortOrder}
 				dir={filters.dir}
-				onApply={(applied) => setFilters((prev) => ({ ...prev, ...applied }))}
+				onApply={(applied) => setFilters((prev) => ({ ...prev, ...applied }) as CollectionFilters)}
 				onClose={() => setIsFilterModalOpen(false)}
 			/>
 			<CardCollectionModal

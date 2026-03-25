@@ -1,11 +1,19 @@
 import { useMemo } from 'react';
 import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder } from '@/lib/scryfall/hooks/useScryfallCardSearch';
+import type { Card } from '@/types/cards';
 import { type CardFilters, DEFAULT_CARD_FILTERS } from '@/lib/filters/types';
 
-// Re-export shared types under the legacy names for backwards compatibility
-export type CollectionFilters = CardFilters;
-export const defaultCollectionFilters: CollectionFilters = DEFAULT_CARD_FILTERS;
+export type CollectionSortOrder = ScryfallSortOrder | 'language';
+
+export interface CollectionFilters extends Omit<CardFilters, 'order'> {
+	order: CollectionSortOrder;
+}
+
+export const defaultCollectionFilters: CollectionFilters = {
+	...DEFAULT_CARD_FILTERS,
+	order: 'name',
+};
 
 function parseCmc(raw: string): ((cmc: number) => boolean) | null {
 	if (!raw) return null;
@@ -58,7 +66,13 @@ function matchColors(
 	}
 }
 
-function getSortValue(card: ScryfallCard, order: ScryfallSortOrder): string | number {
+export function getSortValue(
+	card: ScryfallCard | Card,
+	order: CollectionSortOrder
+): string | number {
+	if (order === 'language') {
+		return 'entry' in card ? (card.entry.language ?? '') : '';
+	}
 	switch (order) {
 		case 'name':
 			return card.name.toLowerCase();
@@ -102,7 +116,7 @@ function getSortValue(card: ScryfallCard, order: ScryfallSortOrder): string | nu
 	}
 }
 
-export function useCollectionFilters<T extends ScryfallCard>(
+export function useCollectionFilters<T extends ScryfallCard | Card>(
 	cards: T[],
 	filters: CollectionFilters
 ): T[] {

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import { MTG_LANGUAGES } from '@/lib/mtg/languages';
+import { MTG_LANGUAGES, LANGUAGE_TO_SCRYFALL_CODE } from '@/lib/mtg/languages';
 import { PrintPickerModal } from './PrintPickerModal';
 import { Modal } from '@/components/ui/Modal';
 import styles from './CopyEditModal.module.css';
@@ -47,6 +47,11 @@ export function CopyEditModal({ card, onSave, onChangePrint, onClose }: Props) {
 		const newTags = (entry.tags ?? []).filter((t) => t !== tag);
 		save({ tags: newTags.length > 0 ? newTags : undefined });
 	}
+
+	const entryLangCode =
+		entry.language && LANGUAGE_TO_SCRYFALL_CODE[entry.language]
+			? LANGUAGE_TO_SCRYFALL_CODE[entry.language]
+			: (card.lang ?? 'en');
 
 	return (
 		<>
@@ -187,6 +192,9 @@ export function CopyEditModal({ card, onSave, onChangePrint, onClose }: Props) {
 				<PrintPickerModal
 					prints_search_uri={card.prints_search_uri}
 					currentCardId={card.id}
+					currentSet={card.set}
+					currentCollectorNumber={card.collector_number}
+					currentLang={entryLangCode}
 					onSelect={(print) => {
 						onChangePrint(print);
 						setShowPrintPicker(false);

@@ -28,7 +28,7 @@ interface Props {
 	onRemove: (scryfallId: string) => void;
 	onRemoveEntry: (rowId: string) => void;
 	onDuplicate?: (scryfallId: string, entry: CardEntry) => void;
-	onChangePrint?: (oldScryfallId: string, newCard: ScryfallCard) => void;
+	onChangePrint?: (rowId: string, newCard: ScryfallCard) => void;
 	onIncrement?: () => void;
 	onDecrement?: () => void;
 }
@@ -40,7 +40,7 @@ interface InnerProps {
 	onRemove: (scryfallId: string) => void;
 	onRemoveEntry: (rowId: string) => void;
 	onDuplicate?: (scryfallId: string, entry: CardEntry) => void;
-	onChangePrint?: (oldScryfallId: string, newCard: ScryfallCard) => void;
+	onChangePrint?: (rowId: string, newCard: ScryfallCard) => void;
 	onIncrement?: () => void;
 	onDecrement?: () => void;
 }
@@ -311,7 +311,7 @@ function CardCollectionModalInner({
 					card={editingCard}
 					onSave={(patch) => onSave(editingCard.entry.rowId, patch)}
 					onChangePrint={(newCard) => {
-						onChangePrint?.(editingCard.id, newCard);
+						onChangePrint?.(editingCard.entry.rowId, newCard);
 					}}
 					onClose={() => setEditingRowId(null)}
 				/>

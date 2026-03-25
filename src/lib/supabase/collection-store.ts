@@ -42,10 +42,11 @@ type CollectionActions = {
 		triggerSync: () => void
 	) => void;
 	changePrint: (
-		oldScryfallId: string,
+		rowId: string,
 		newScryfallId: string,
 		userId: string | null,
-		triggerSync: () => void
+		triggerSync: () => void,
+		entryPatch?: Partial<CardEntry>
 	) => void;
 	clearCollection: (userId: string | null, triggerSync: () => void) => void;
 	importCards: (
@@ -187,32 +188,35 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 				}
 			},
 
-			changePrint: (oldScryfallId, newScryfallId, userId, triggerSync) => {
+			changePrint: (rowId, newScryfallId, userId, triggerSync, entryPatch) => {
 				const current = get().entries;
-				const next = { ...current };
-				const oldCopies = Object.entries(next).filter(
-					([, copy]) => copy.scryfallId === oldScryfallId
-				);
-				for (const [rowId, copy] of oldCopies) {
-					delete next[rowId];
-					const newRowId = crypto.randomUUID();
-					const newCopy: StoredCopy = {
-						scryfallId: newScryfallId,
-						entry: { ...copy.entry, rowId: newRowId },
-					};
-					next[newRowId] = newCopy;
-					if (userId) {
-						enqueue({ type: 'delete', payload: { userId, rowId } });
-						enqueue({
-							type: 'insert',
-							payload: {
-								userId,
-								rowId: newRowId,
-								scryfallId: newScryfallId,
-								entry: newCopy.entry,
-							},
-						});
+				const copy = current[rowId];
+				if (!copy) return;
+				const newRowId = crypto.randomUUID();
+				const newCopy: StoredCopy = {
+					scryfallId: newScryfallId,
+					entry: { ...copy.entry, rowId: newRowId, ...entryPatch },
+				};
+				// Rebuild preserving insertion order so the card stays at the same position
+				const next: typeof current = {};
+				for (const key of Object.keys(current)) {
+					if (key === rowId) {
+						next[newRowId] = newCopy;
+					} else {
+						next[key] = current[key];
 					}
+				}
+				if (userId) {
+					enqueue({ type: 'delete', payload: { userId, rowId } });
+					enqueue({
+						type: 'insert',
+						payload: {
+							userId,
+							rowId: newRowId,
+							scryfallId: newScryfallId,
+							entry: newCopy.entry,
+						},
+					});
 				}
 				set({ entries: next });
 				if (userId) triggerSync();

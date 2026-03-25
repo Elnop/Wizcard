@@ -153,6 +153,23 @@
 	background: rgba(255, 255, 255, 0.02);
 }
 
+.thSortable {
+	cursor: pointer;
+	user-select: none;
+	white-space: nowrap;
+}
+
+.thSortable:hover {
+	color: var(--foreground);
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.thSortable svg {
+	margin-left: 4px;
+	vertical-align: middle;
+	opacity: 0.8;
+}
+
 .clickableRow {
 	cursor: pointer;
 	transition: background 0.15s;

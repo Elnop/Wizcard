@@ -19,7 +19,7 @@ type CollectionContextValue = {
 	decrementCard: (scryfallId: string) => void;
 	removeEntry: (rowId: string) => void;
 	updateEntry: (rowId: string, updates: Partial<CardEntry>) => void;
-	changePrint: (oldScryfallId: string, newScryfallId: string) => void;
+	changePrint: (rowId: string, newScryfallId: string, entryPatch?: Partial<CardEntry>) => void;
 	clearCollection: () => void;
 	importCards: (cards: Array<{ scryfallId: string; entry: CardEntry }>) => void;
 	getQuantity: (scryfallId: string) => number;
@@ -88,8 +88,8 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 		[store, userId, triggerSync]
 	);
 	const changePrint = useCallback(
-		(oldScryfallId: string, newScryfallId: string) =>
-			store.changePrint(oldScryfallId, newScryfallId, userId, triggerSync),
+		(rowId: string, newScryfallId: string, entryPatch?: Partial<CardEntry>) =>
+			store.changePrint(rowId, newScryfallId, userId, triggerSync, entryPatch),
 		[store, userId, triggerSync]
 	);
 	const clearCollection = useCallback(

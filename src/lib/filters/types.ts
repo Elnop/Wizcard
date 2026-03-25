@@ -27,15 +27,19 @@ export const DEFAULT_CARD_FILTERS: CardFilters = {
 	oracleText: '',
 	cmc: '',
 	order: 'name',
-	dir: 'auto',
+	dir: 'asc',
 };
 
-export function countActiveFilters(filters: CardFilters): number {
+export function countActiveFilters(
+	filters:
+		| CardFilters
+		| ({ order: string; dir: ScryfallSortDir } & Omit<CardFilters, 'order' | 'dir'>)
+): number {
 	return (
 		filters.colors.length +
 		(filters.type ? 1 : 0) +
 		(filters.set ? 1 : 0) +
-		(filters.order !== 'name' || filters.dir !== 'auto' ? 1 : 0) +
+		(filters.order !== 'name' || (filters.dir !== 'auto' && filters.dir !== 'asc') ? 1 : 0) +
 		filters.rarities.length +
 		(filters.oracleText ? 1 : 0) +
 		(filters.cmc ? 1 : 0) +

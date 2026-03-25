@@ -35,13 +35,35 @@ function langName(code: string): string {
 interface Props {
 	prints_search_uri: string;
 	currentCardId: string;
+	currentSet?: string;
+	currentCollectorNumber?: string;
+	currentLang?: string;
 	onSelect: (print: ScryfallCard) => void;
 	onClose: () => void;
 }
 
-export function PrintPickerModal({ prints_search_uri, currentCardId, onSelect, onClose }: Props) {
+export function PrintPickerModal({
+	prints_search_uri,
+	currentCardId,
+	currentSet,
+	currentCollectorNumber,
+	currentLang,
+	onSelect,
+	onClose,
+}: Props) {
 	const { prints, loading, error } = useCardPrints(prints_search_uri);
 	const [lightboxCard, setLightboxCard] = useState<ScryfallCard | null>(null);
+
+	function isCurrentPrint(print: ScryfallCard): boolean {
+		if (currentSet && currentCollectorNumber && currentLang) {
+			return (
+				print.set === currentSet &&
+				print.collector_number === currentCollectorNumber &&
+				(print.lang ?? 'en') === currentLang
+			);
+		}
+		return print.id === currentCardId;
+	}
 
 	const byLang = new Map<string, ScryfallCard[]>();
 	for (const p of prints) {
@@ -84,7 +106,11 @@ export function PrintPickerModal({ prints_search_uri, currentCardId, onSelect, o
 					{langs.map((lang) => {
 						const langPrints = byLang.get(lang)!;
 						return (
-							<details key={lang} className={styles.accordion} open={lang === 'en'}>
+							<details
+								key={lang}
+								className={styles.accordion}
+								open={lang === (currentLang ?? 'en')}
+							>
 								<summary className={styles.accordionSummary}>
 									{langName(lang)}
 									<span className={styles.accordionCount}>{langPrints.length}</span>
@@ -93,7 +119,7 @@ export function PrintPickerModal({ prints_search_uri, currentCardId, onSelect, o
 									{langPrints.map((print) => (
 										<li key={print.id} className={styles.printItem}>
 											<div
-												className={`${styles.printCard} ${print.id === currentCardId ? styles.printCardActive : ''}`}
+												className={`${styles.printCard} ${isCurrentPrint(print) ? styles.printCardActive : ''}`}
 											>
 												<button
 													type="button"
@@ -105,10 +131,10 @@ export function PrintPickerModal({ prints_search_uri, currentCardId, onSelect, o
 												</button>
 												<button
 													type="button"
-													className={`${styles.selectBtn} ${print.id === currentCardId ? styles.selectBtnActive : ''}`}
+													className={`${styles.selectBtn} ${isCurrentPrint(print) ? styles.selectBtnActive : ''}`}
 													onClick={() => onSelect(print)}
 												>
-													{print.id === currentCardId ? 'Selected' : 'Select'}
+													{isCurrentPrint(print) ? 'Selected' : 'Select'}
 												</button>
 											</div>
 										</li>

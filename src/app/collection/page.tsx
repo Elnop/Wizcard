@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import type { CardStack } from '@/types/cards';
+import type { CollectionFilters } from '@/hooks/useCollectionFilters';
 import { useCollectionPageState } from './useCollectionPageState';
 import { CollectionFiltersAside } from '@/components/collection/CollectionFiltersAside';
 import { ImportPreviewModal } from '@/components/collection/ImportPreviewModal';
@@ -214,16 +215,26 @@ export default function CollectionPage() {
 									</>
 								);
 							}}
+							sortOrder={filters.order}
+							sortDir={filters.dir}
+							onSortChange={(newOrder, newDir) =>
+								setFilters({
+									...filters,
+									order: newOrder as CollectionFilters['order'],
+									dir: newDir,
+								})
+							}
 							tableColumns={[
 								{
 									key: 'qty',
 									label: 'Qté',
 									render: (card) => stackByCardId.get(card.id)?.cards.length ?? 1,
 								},
-								{ key: 'name', label: 'Nom' },
+								{ key: 'name', label: 'Nom', sortKey: 'name' },
 								{
 									key: 'set',
 									label: 'Set',
+									sortKey: 'set',
 									render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
 								},
 								{
@@ -243,8 +254,15 @@ export default function CollectionPage() {
 									render: (card) => ('entry' in card ? (card.entry.foilType ?? '—') : '—'),
 								},
 								{
+									key: 'language',
+									label: 'Langue',
+									sortKey: 'language',
+									render: (card) => ('entry' in card ? (card.entry.language ?? '—') : '—'),
+								},
+								{
 									key: 'prices',
 									label: 'Prix USD',
+									sortKey: 'usd',
 									render: (card) =>
 										'prices' in card && card.prices && 'usd' in card.prices
 											? (card.prices.usd ?? '—')

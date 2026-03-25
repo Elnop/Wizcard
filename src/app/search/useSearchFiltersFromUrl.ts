@@ -154,7 +154,9 @@ export function useSearchFiltersFromUrl() {
 		oracleText,
 		cmc,
 		order,
+		setOrder,
 		dir,
+		setDir,
 		// Aggregate
 		applyFilters,
 		activeFilterCount,

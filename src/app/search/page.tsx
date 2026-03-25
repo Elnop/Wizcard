@@ -46,7 +46,9 @@ function SearchPageContent() {
 		oracleText,
 		cmc,
 		order,
+		setOrder,
 		dir,
+		setDir,
 		applyFilters,
 		activeFilterCount,
 	} = useSearchFiltersFromUrl();
@@ -149,18 +151,26 @@ function SearchPageContent() {
 					hasMore={hasMore}
 					onLoadMore={loadMore}
 					onCardClick={handleCardClick}
+					sortOrder={order}
+					sortDir={dir}
+					onSortChange={(newOrder, newDir) => {
+						setOrder(newOrder as Parameters<typeof setOrder>[0]);
+						setDir(newDir);
+					}}
 					tableColumns={[
-						{ key: 'name', label: 'Nom' },
+						{ key: 'name', label: 'Nom', sortKey: 'name' },
 						{
 							key: 'set',
 							label: 'Set',
+							sortKey: 'set',
 							render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
 						},
 						{ key: 'type_line', label: 'Type' },
-						{ key: 'cmc', label: 'CMC' },
+						{ key: 'cmc', label: 'CMC', sortKey: 'cmc' },
 						{
 							key: 'prices',
 							label: 'Prix USD',
+							sortKey: 'usd',
 							render: (card) =>
 								'prices' in card && card.prices && 'usd' in card.prices
 									? (card.prices.usd ?? '—')

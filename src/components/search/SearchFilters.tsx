@@ -41,7 +41,12 @@ export function SearchFilters({
 			<ColorFilter selected={colors} onChange={onColorsChange} />
 			<TypeFilter value={type} onChange={onTypeChange} />
 			<SetFilter value={set} onChange={onSetChange} sets={sets} isLoading={setsLoading} />
-			<SortFilter order={order} onOrderChange={onOrderChange} dir={dir} onDirChange={onDirChange} />
+			<SortFilter
+				order={order}
+				onOrderChange={(v) => onOrderChange(v as ScryfallSortOrder)}
+				dir={dir}
+				onDirChange={onDirChange}
+			/>
 		</div>
 	);
 }

@@ -4,7 +4,11 @@ import { useState, useCallback, useMemo } from 'react';
 import { useCollectionContext } from '@/lib/supabase/contexts/CollectionContext';
 import { useCollectionCards } from '@/hooks/useCollectionCards';
 import { useImportContext } from '@/lib/import/contexts/ImportContext';
-import { useCollectionFilters, defaultCollectionFilters } from '@/hooks/useCollectionFilters';
+import {
+	useCollectionFilters,
+	defaultCollectionFilters,
+	getSortValue,
+} from '@/hooks/useCollectionFilters';
 import type { CollectionFilters } from '@/hooks/useCollectionFilters';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { serializeToMoxfieldCSV, downloadCSV } from '@/lib/moxfield/serialize';
@@ -46,9 +50,29 @@ export function useCollectionPageState() {
 	const filteredRepCards = useCollectionFilters(representativeCards, filters);
 
 	const filteredStacks = useMemo(() => {
-		const filteredNames = new Set(filteredRepCards.map((c) => c.name));
-		return stacks.filter((s) => filteredNames.has(s.name));
-	}, [stacks, filteredRepCards]);
+		const stackByName = new Map(stacks.map((s) => [s.name, s]));
+		const { order, dir } = filters;
+		return filteredRepCards
+			.map((c) => stackByName.get(c.name))
+			.filter(Boolean)
+			.map((stack) => {
+				if (stack!.cards.length <= 1) return stack!;
+				const sorted = [...stack!.cards].sort((a, b) => {
+					const av = getSortValue(a, order);
+					const bv = getSortValue(b, order);
+					let cmp: number;
+					if (typeof av === 'number' && typeof bv === 'number') {
+						cmp = av - bv;
+					} else {
+						cmp = String(av).localeCompare(String(bv));
+					}
+					if (dir === 'desc') cmp = -cmp;
+					if (cmp === 0) cmp = a.entry.dateAdded.localeCompare(b.entry.dateAdded);
+					return cmp;
+				});
+				return { ...stack!, cards: sorted };
+			}) as CardStack[];
+	}, [stacks, filteredRepCards, filters]);
 
 	const stats = useMemo(() => computeCollectionStats(filteredStacks), [filteredStacks]);
 
@@ -108,21 +132,14 @@ export function useCollectionPageState() {
 	const handleRemoveEntry = useCallback((rowId: string) => removeEntry(rowId), [removeEntry]);
 
 	const handleChangePrint = useCallback(
-		(oldScryfallId: string, newCard: ScryfallCard) => {
+		(rowId: string, newCard: ScryfallCard) => {
 			void putCardsInCache([newCard]);
 			setPendingScryfallCard(newCard);
-			changePrint(oldScryfallId, newCard.id);
-			if (newCard.lang && resolvedStack) {
-				const language = SCRYFALL_CODE_TO_LANGUAGE[newCard.lang];
-				if (language) {
-					for (const card of resolvedStack.cards) {
-						updateEntry(card.entry.rowId, { language });
-					}
-				}
-			}
+			const language = newCard.lang ? SCRYFALL_CODE_TO_LANGUAGE[newCard.lang] : undefined;
+			changePrint(rowId, newCard.id, language ? { language } : undefined);
 			setSelectedStack({ oracleId: newCard.oracle_id, name: newCard.name, cards: [] });
 		},
-		[changePrint, updateEntry, resolvedStack]
+		[changePrint]
 	);
 
 	const handleClearCollection = useCallback(() => {

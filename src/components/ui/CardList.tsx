@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card } from '@/types/cards';
+import type { ScryfallSortDir } from '@/components/search/SortFilter';
 import { CardImage } from '@/components/cards/CardImage';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import styles from './CardList.module.css';
@@ -13,6 +14,7 @@ type AnyCard = ScryfallCard | Card;
 export interface CardListColumn {
 	key: string;
 	label: string;
+	sortKey?: string;
 	render?: (card: AnyCard) => ReactNode;
 }
 
@@ -29,9 +31,39 @@ export interface CardListProps {
 	renderOverlay?: (card: AnyCard) => ReactNode;
 	// Table
 	tableColumns?: CardListColumn[];
+	sortOrder?: string;
+	sortDir?: ScryfallSortDir;
+	onSortChange?: (order: string, dir: ScryfallSortDir) => void;
 	// Grille : nombre de cartes par ligne (fixe la taille des cartes)
 	cardsPerLine?: number;
 	className?: string;
+}
+
+function SortIcon({ dir }: { dir: ScryfallSortDir }) {
+	if (dir === 'desc') {
+		return (
+			<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+				<path
+					d="M8 3v10M4 9l4 4 4-4"
+					stroke="currentColor"
+					strokeWidth="1.5"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				/>
+			</svg>
+		);
+	}
+	return (
+		<svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+			<path
+				d="M8 13V3M4 7l4-4 4 4"
+				stroke="currentColor"
+				strokeWidth="1.5"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
 }
 
 const DEFAULT_SKELETON_COUNT = 12;
@@ -51,9 +83,20 @@ export function CardList({
 	onCardClick,
 	renderOverlay,
 	tableColumns,
+	sortOrder,
+	sortDir,
+	onSortChange,
 	cardsPerLine,
 	className,
 }: CardListProps) {
+	function handleHeaderClick(key: string) {
+		if (!onSortChange) return;
+		if (sortOrder === key) {
+			onSortChange(key, sortDir === 'asc' ? 'desc' : 'asc');
+		} else {
+			onSortChange(key, 'asc');
+		}
+	}
 	const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
 	const { sentinelRef } = useInfiniteScroll({
@@ -91,7 +134,23 @@ export function CardList({
 						<thead>
 							<tr>
 								{columns.map((col) => (
-									<th key={col.key}>{col.label}</th>
+									<th
+										key={col.key}
+										onClick={col.sortKey ? () => handleHeaderClick(col.sortKey!) : undefined}
+										className={col.sortKey ? styles.thSortable : undefined}
+										aria-sort={
+											col.sortKey && sortOrder === col.sortKey
+												? sortDir === 'desc'
+													? 'descending'
+													: 'ascending'
+												: undefined
+										}
+									>
+										{col.label}
+										{col.sortKey && sortOrder === col.sortKey && (
+											<SortIcon dir={sortDir ?? 'asc'} />
+										)}
+									</th>
 								))}
 							</tr>
 						</thead>

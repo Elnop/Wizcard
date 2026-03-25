@@ -145,7 +145,7 @@ function FilterModalContent({
 				<SetFilter value={draftSet} onChange={setDraftSet} sets={sets} isLoading={setsLoading} />
 				<SortFilter
 					order={draftOrder}
-					onOrderChange={setDraftOrder}
+					onOrderChange={(v) => setDraftOrder(v as ScryfallSortOrder)}
 					dir={draftDir}
 					onDirChange={setDraftDir}
 				/>

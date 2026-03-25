@@ -15,6 +15,8 @@ import type { CollectionFilters } from '@/hooks/useCollectionFilters';
 import { defaultCollectionFilters } from '@/hooks/useCollectionFilters';
 import styles from './CollectionFiltersAside.module.css';
 
+const COLLECTION_EXTRA_SORT_OPTIONS = [{ value: 'language', label: 'Language' }];
+
 export interface CollectionFiltersAsideProps {
 	filters: CollectionFilters;
 	onChange: (filters: CollectionFilters) => void;
@@ -113,9 +115,11 @@ export function CollectionFiltersAside({
 
 				<SortFilter
 					order={filters.order}
-					onOrderChange={(v) => patch('order', v)}
+					onOrderChange={(v) => patch('order', v as CollectionFilters['order'])}
 					dir={filters.dir}
 					onDirChange={(v) => patch('dir', v)}
+					allowAuto={false}
+					extraOptions={COLLECTION_EXTRA_SORT_OPTIONS}
 				/>
 
 				{isFiltered && (

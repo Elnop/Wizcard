@@ -23,10 +23,12 @@ export type ScryfallSortOrder =
 export type ScryfallSortDir = 'auto' | 'asc' | 'desc';
 
 export interface SortFilterProps {
-	order: ScryfallSortOrder;
-	onOrderChange: (order: ScryfallSortOrder) => void;
+	order: string;
+	onOrderChange: (order: string) => void;
 	dir: ScryfallSortDir;
 	onDirChange: (dir: ScryfallSortDir) => void;
+	allowAuto?: boolean;
+	extraOptions?: { value: string; label: string }[];
 }
 
 const SORT_OPTIONS: { value: ScryfallSortOrder; label: string }[] = [
@@ -48,15 +50,19 @@ const SORT_OPTIONS: { value: ScryfallSortOrder; label: string }[] = [
 ];
 
 const DIR_CYCLE: ScryfallSortDir[] = ['auto', 'asc', 'desc'];
+const DIR_CYCLE_NO_AUTO: ScryfallSortDir[] = ['asc', 'desc'];
 
 function DirToggle({
 	dir,
 	onDirChange,
+	allowAuto = true,
 }: {
 	dir: ScryfallSortDir;
 	onDirChange: (dir: ScryfallSortDir) => void;
+	allowAuto?: boolean;
 }) {
-	const next = DIR_CYCLE[(DIR_CYCLE.indexOf(dir) + 1) % DIR_CYCLE.length];
+	const cycle = allowAuto ? DIR_CYCLE : DIR_CYCLE_NO_AUTO;
+	const next = cycle[(cycle.indexOf(dir) + 1) % cycle.length];
 	const label = dir === 'asc' ? 'Ascending' : dir === 'desc' ? 'Descending' : 'Auto';
 
 	return (
@@ -104,24 +110,33 @@ function DirToggle({
 	);
 }
 
-export function SortFilter({ order, onOrderChange, dir, onDirChange }: SortFilterProps) {
+export function SortFilter({
+	order,
+	onOrderChange,
+	dir,
+	onDirChange,
+	allowAuto = true,
+	extraOptions,
+}: SortFilterProps) {
 	const handleOrderChange = (e: ChangeEvent<HTMLSelectElement>) => {
-		onOrderChange(e.target.value as ScryfallSortOrder);
+		onOrderChange(e.target.value);
 	};
+
+	const allOptions = extraOptions ? [...SORT_OPTIONS, ...extraOptions] : SORT_OPTIONS;
 
 	return (
 		<div className={styles.sortRow}>
 			<div className={styles.filterGroup}>
 				<label className={styles.label}>Sort By</label>
 				<select className={styles.select} value={order} onChange={handleOrderChange}>
-					{SORT_OPTIONS.map((option) => (
+					{allOptions.map((option) => (
 						<option key={option.value} value={option.value}>
 							{option.label}
 						</option>
 					))}
 				</select>
 			</div>
-			<DirToggle dir={dir} onDirChange={onDirChange} />
+			<DirToggle dir={dir} onDirChange={onDirChange} allowAuto={allowAuto} />
 		</div>
 	);
 }
