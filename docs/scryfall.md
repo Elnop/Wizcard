@@ -2,24 +2,44 @@
 
 Scryfall provides all card data: names, images, oracle text, prices, set info, etc. The API is free, requires no authentication, and imposes a 100ms rate limit.
 
-## Key Files
+## Directory Structure
 
-- `src/lib/scryfall/fetcher.ts` — all HTTP calls go through here
-- `src/lib/scryfall/rate-limiter.ts` — enforces 100ms between requests
-- `src/lib/scryfall/cache.ts` — in-memory TTL cache
-- `src/lib/card-cache.ts` — IndexedDB persistent cache
-- `src/lib/scryfall/scryfall-query.ts` — query builder
-- `src/lib/scryfall/endpoints/` — typed API functions
+```
+src/lib/scryfall/
+├── store/
+│   └── scryfall-store.ts
+├── hooks/
+│   ├── useScryfallSets.ts
+│   ├── useScryfallSymbols.ts
+│   ├── useScryfallCardSearch.ts
+│   └── useCardPrints.ts
+├── endpoints/
+│   ├── cards.ts
+│   ├── sets.ts
+│   ├── symbols.ts
+│   └── bulk-data.ts
+├── types/
+│   └── scryfall.ts
+└── utils/
+    ├── fetcher.ts
+    ├── rate-limiter.ts
+    ├── cache.ts
+    ├── errors.ts
+    └── scryfall-query.ts
+```
 
-## HTTP Layer (`fetcher.ts`)
+## HTTP Layer (`utils/fetcher.ts`)
 
 All Scryfall requests must go through `scryfallGet()` or `scryfallPost()`. Never call `fetch()` directly against Scryfall.
 
 ```typescript
-import { scryfallGet, scryfallPost } from '@/lib/scryfall/fetcher';
+import { scryfallGet, scryfallPost } from '@/lib/scryfall/utils/fetcher';
 
 const card = await scryfallGet<ScryfallCard>('/cards/named?exact=Lightning+Bolt');
 const result = await scryfallPost<ScryfallCardCollection>('/cards/collection', { identifiers });
+
+// Optional AbortSignal for cancellation:
+const card = await scryfallGet<ScryfallCard>('/cards/named?exact=Bolt', signal);
 ```
 
 The fetcher provides:
@@ -28,24 +48,55 @@ The fetcher provides:
 2. **In-memory cache** — TTL-based, 5 minute expiry, 1000 entry max
 3. **In-flight deduplication** — identical concurrent requests share one network call
 4. **Retry logic** — retries on transient errors
+5. **AbortSignal support** — pass an optional `AbortSignal` to cancel in-flight requests
+
+## Store (`store/scryfall-store.ts`)
+
+The Zustand store caches sets and symbols across the app with TTL-based invalidation and `localStorage` persistence.
+
+```typescript
+import { useScryfallStore } from '@/lib/scryfall/store/scryfall-store';
+```
+
+| Data    | TTL | Storage key      |
+| ------- | --- | ---------------- |
+| sets    | 1h  | `scryfall-store` |
+| symbols | 24h | `scryfall-store` |
+
+Both `fetchSets` and `fetchSymbols` are no-ops if the cached data is still within TTL — no network call is made. The persisted state (`sets`, `symbols`, `setsLoadedAt`, `symbolsLoadedAt`) survives page reloads via `localStorage`.
+
+State shape:
+
+```typescript
+type ScryfallStoreState = {
+	sets: ScryfallSet[];
+	symbols: Record<string, ScryfallCardSymbol>;
+	setsLoadedAt: number | null;
+	symbolsLoadedAt: number | null;
+	isLoadingSets: boolean;
+	isLoadingSymbols: boolean;
+	setsError: string | null;
+	symbolsError: string | null;
+};
+```
 
 ## Two-Layer Card Cache
 
 Card objects are cached in two places:
 
-| Layer     | Location                    | TTL   | Purpose                                   |
-| --------- | --------------------------- | ----- | ----------------------------------------- |
-| In-memory | `src/lib/scryfall/cache.ts` | 5 min | API response caching                      |
-| IndexedDB | `src/lib/card-cache.ts`     | 24h   | `ScryfallCard` objects for the collection |
+| Layer     | Location                          | TTL   | Purpose                                   |
+| --------- | --------------------------------- | ----- | ----------------------------------------- |
+| In-memory | `src/lib/scryfall/utils/cache.ts` | 5 min | API response caching                      |
+| IndexedDB | `src/lib/card-cache.ts`           | 24h   | `ScryfallCard` objects for the collection |
 
 The IndexedDB cache (`card-cache.ts`) is used by `useCollectionCards` to avoid re-fetching card data on every page load. Cards are stored by `scryfallId` with a timestamp for TTL validation.
 
-## Query Builder (`scryfall-query.ts`)
+## Query Builder (`utils/scryfall-query.ts`)
 
 `buildScryfallQuery()` converts a structured search parameters object into a Scryfall full-text search query string.
 
 ```typescript
-import { buildScryfallQuery } from '@/lib/scryfall/scryfall-query';
+import { buildScryfallQuery } from '@/lib/scryfall/utils/scryfall-query';
 
 const query = buildScryfallQuery({
 	name: 'bolt',
@@ -87,13 +138,28 @@ The `getLocalizedImage()` helper in `src/hooks/useLocalizedImage.ts` handles thi
 
 ## React Hooks (`src/lib/scryfall/hooks/`)
 
-| Hook                    | Description                                 |
-| ----------------------- | ------------------------------------------- |
-| `useScryfallCardSearch` | Infinite-scroll search with filter params   |
-| `useSets`               | Fetches and caches all sets                 |
-| `useSymbology`          | Fetches mana symbol SVGs                    |
-| `useCardPrints`         | Fetches all printings for a given oracle ID |
+| Hook                    | Description                                                                                                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useScryfallCardSearch` | Infinite-scroll search with filter params                                                                                                       |
+| `useScryfallSets`       | Reads sets from the store; triggers a fetch if data is stale or absent                                                                          |
+| `useScryfallSymbols`    | Reads symbols from the store; triggers a fetch if data is stale or absent                                                                       |
+| `useCardPrints`         | Fetches all printings for a given oracle ID; uses `AbortController` to cancel in-flight requests when the URI changes or the component unmounts |
+
+`useScryfallSets` and `useScryfallSymbols` delegate all network logic to the store. They call `fetchSets`/`fetchSymbols` on mount, but those actions are no-ops when cached data is still fresh.
+
+```typescript
+// Sets
+const { sets, isLoading, error } = useScryfallSets();
+
+// Symbols — returns Record<string, ScryfallCardSymbol>
+const symbols = useScryfallSymbols();
+```
 
 ## Rate Limit Compliance
 
 The Scryfall API asks for a maximum of 10 requests/second (100ms between requests). The rate limiter serializes all requests into a chain — even if multiple components trigger requests simultaneously, they are sent one at a time with 100ms gaps.
+
+## Testability
+
+- `utils/fetcher.ts` accepts an optional `AbortSignal`, making it straightforward to test cancellation behaviour without relying on timers.
+- The Zustand store (`useScryfallStore`) can be reset between tests using `useScryfallStore.setState(initialState)` or mocked wholesale by replacing store selectors.
