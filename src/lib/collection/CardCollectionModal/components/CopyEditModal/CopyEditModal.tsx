@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { MTG_LANGUAGES, LANGUAGE_TO_SCRYFALL_CODE } from '@/lib/mtg/languages';
-import { PrintPickerModal } from './PrintPickerModal';
+import { PrintPickerModal } from '../PrintPickerModal/PrintPickerModal';
 import { Modal } from '@/components/ui/Modal';
 import styles from './CopyEditModal.module.css';
 

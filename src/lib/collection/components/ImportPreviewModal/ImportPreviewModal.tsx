@@ -5,12 +5,12 @@ import type { ImportFormatId, ImportFormatDescriptor, ParsedImportRow } from '@/
 import type { ImportPreview } from '@/lib/import/hooks/useImport';
 import type { ScryfallCard, ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import type { Card, CardEntry, CardStack } from '@/types/cards';
-import { useCollectionFilters, defaultCollectionFilters } from '@/hooks/useCollectionFilters';
-import type { CollectionFilters } from '@/hooks/useCollectionFilters';
+import { filterCollectionCards, defaultCollectionFilters } from '../../utils/filterCollectionCards';
+import type { CollectionFilters } from '../../utils/filterCollectionCards';
 import type { ScryfallSortOrder } from '@/lib/scryfall/hooks/useScryfallCardSearch';
 import { SearchBar } from '@/components/search/SearchBar';
 import { FilterModal } from '@/components/search/FilterModal';
-import { CardCollectionModal } from '@/components/collection/CardCollectionModal';
+import { CardCollectionModal } from '../../CardCollectionModal/CardCollectionModal';
 import { CardList } from '@/components/ui/CardList';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -83,7 +83,10 @@ export function ImportPreviewModal({
 		});
 	}, [fetchedCards, preview]);
 
-	const filteredCards = useCollectionFilters(activeCards, filters);
+	const filteredCards = useMemo(
+		() => filterCollectionCards(activeCards, filters),
+		[activeCards, filters]
+	);
 
 	const activeFilterCount =
 		filters.colors.length +

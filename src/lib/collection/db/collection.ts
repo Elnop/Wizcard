@@ -1,5 +1,5 @@
 import type { CardEntry, CardCondition } from '@/types/cards';
-import { createClient } from './client';
+import { createClient } from '@/lib/supabase/client';
 
 const CONDITION_MAP: Record<string, CardCondition> = {
 	'near mint': 'NM',

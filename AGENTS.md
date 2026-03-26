@@ -8,7 +8,7 @@ MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 - **Don't call `fetch()` against Scryfall directly** — always go through `scryfallGet`/`scryfallPost` in `src/lib/scryfall/fetcher.ts` (rate limiting, caching, dedup).
 - **Always call `triggerSync()` after `enqueue()`** — the queue does not self-start.
 - **`npm run sb:reset` is destructive** — drops and recreates the local DB.
-- **Write the current localStorage format**: `{ scryfallId: string, entry: CardEntry }`. Legacy migration exists in `useCollection.ts` but new code must write the current format.
+- **Write the current localStorage format**: `{ scryfallId: string, entry: CardEntry }`. Legacy migration exists in `src/lib/collection/db/collection-migrations.ts` but new code must write the current format.
 - **Don't add a context provider between `SyncQueueRunner` and `CollectionProvider`** without auditing whether it needs either.
 
 ## Development Commands
@@ -30,6 +30,17 @@ MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 - CSS Modules per component, global CSS in `src/app/globals.css`
 - Supabase for auth + database (RLS: all ops scoped to `auth.uid() = owner_id`)
 
+## Module Architecture
+
+Feature code lives in `src/lib/<feature>/`, organized by **feature > sub-feature > resource** — applied recursively. See `docs/feature-modules.md` for the full rules and template.
+
+Key constraints:
+
+- Next.js routes (`page.tsx`, `layout.tsx`) stay in `src/app/` — imposed by the framework
+- Generic infrastructure (`src/lib/supabase/`, `src/components/ui/`) is not owned by any feature
+- No barrel exports (`index.ts`) — import files directly
+- One component = one folder (`ComponentName/ComponentName.tsx` + `.module.css`)
+
 ## Provider Nesting Order
 
 The order is load-bearing. Do not reorder without auditing dependencies.
@@ -49,9 +60,10 @@ AuthProvider
 
 ### Collection State
 
-- `src/lib/supabase/hooks/useCollection.ts` — source of truth; localStorage-backed external store, Supabase hydration on login, all mutation methods (`addCard`, `duplicateEntry`, `removeEntry`, `updateEntry`, `changePrint`, `clearCollection`)
-- `src/lib/supabase/contexts/CollectionContext.tsx` — wraps `useCollection`, exposes via `useCollectionContext()`
-- `src/lib/supabase/collection.ts` — Supabase CRUD: `fetchCollection`, `insertEntry`, `insertEntries`, `deleteEntryById`, `updateEntry`
+- `src/lib/collection/store/collection-store.ts` — Zustand store; localStorage-backed, Supabase hydration on login, all mutation methods (`addCard`, `duplicateEntry`, `removeEntry`, `updateEntry`, `changePrint`, `clearCollection`)
+- `src/lib/collection/context/CollectionContext.tsx` — wraps the store, exposes via `useCollectionContext()`
+- `src/lib/collection/db/collection.ts` — Supabase CRUD: `fetchCollection`, `insertEntry`, `insertEntries`, `deleteEntryById`, `updateEntry`
+- `src/lib/collection/db/collection-migrations.ts` — migrates legacy localStorage formats to current schema
 - `src/lib/supabase/sync-queue.ts` — localStorage-backed offline queue (`enqueue` / `peek` / `dequeue` / `incrementRetry` / `skipFailed` / `clearQueue`)
 - `src/lib/supabase/hooks/useSyncQueue.ts` — drives the sync loop; processes one op at a time
 
@@ -66,8 +78,9 @@ AuthProvider
 
 ### Collection Display
 
-- `src/hooks/useCollectionCards.ts` — hydrates entries into `Card[]` + `CardStack[]`; two-phase: IndexedDB cache first, then Scryfall `/cards/collection` in 75-card batches
-- `src/hooks/useCollectionFilters.ts` — pure client-side filter + sort over `Card[]`
+- `src/lib/collection/hooks/useCollectionCards.ts` — hydrates entries into `Card[]` + `CardStack[]`; two-phase: IndexedDB cache first, then Scryfall `/cards/collection` in 75-card batches
+- `src/lib/collection/hooks/useCollectionFiltering.ts` — filter + sort state over `CardStack[]`
+- `src/lib/collection/shared/utils/filterCollectionCards.ts` — pure filter function (no state)
 
 ### Import System
 
@@ -126,6 +139,7 @@ AuthProvider
 
 ## Further Documentation
 
+- `docs/feature-modules.md` — feature module pattern: rules, template structure, example
 - `docs/architecture.md` — directory map, route definitions, data flow diagrams
 - `docs/data-model.md` — full type definitions, ID concepts, localStorage format
 - `docs/scryfall.md` — Scryfall API integration, caching strategy, query builder

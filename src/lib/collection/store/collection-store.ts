@@ -4,9 +4,9 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
-import { fetchCollection } from '@/lib/supabase/collection';
+import { fetchCollection } from '../db/collection';
 import { enqueue, clearQueue } from '@/lib/supabase/sync-queue';
-import { migrateCollectionData, type CollectionData } from '@/lib/supabase/collection-migrations';
+import { migrateCollectionData, type CollectionData } from '../db/collection-migrations';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 

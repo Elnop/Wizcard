@@ -6,7 +6,7 @@ import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
 import { CardImage } from '@/components/cards/CardImage';
 import { Modal } from '@/components/ui/Modal';
 import styles from './PrintPickerModal.module.css';
-import lightboxStyles from './lightbox.module.css';
+import lightboxStyles from '../../../styles/lightbox.module.css';
 
 const LANG_NAMES: Record<string, string> = {
 	en: 'English',

@@ -1,15 +1,20 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import type { CardStack } from '@/types/cards';
-import type { CollectionFilters } from '@/hooks/useCollectionFilters';
-import { useCollectionPageState } from './useCollectionPageState';
-import { CollectionFiltersAside } from '@/components/collection/CollectionFiltersAside';
-import { ImportPreviewModal } from '@/components/collection/ImportPreviewModal';
-import { CardCollectionModal } from '@/components/collection/CardCollectionModal';
+import type { CollectionFilters } from '@/lib/collection/utils/filterCollectionCards';
+import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
+import { useImportContext } from '@/lib/import/contexts/ImportContext';
+import { useCollectionFiltering } from '@/lib/collection/hooks/useCollectionFiltering';
+import { useCardCollectionModal } from '@/lib/collection/CardCollectionModal/hooks/useCardCollectionModal';
+import { CollectionFiltersAside } from '@/lib/collection/components/CollectionFiltersAside/CollectionFiltersAside';
+import { ImportPreviewModal } from '@/lib/collection/components/ImportPreviewModal/ImportPreviewModal';
+import { CardCollectionModal } from '@/lib/collection/CardCollectionModal/CardCollectionModal';
 import { CardList, cardListOverlayStyles } from '@/components/ui/CardList';
 import { Button } from '@/components/ui/Button';
+import { serializeToMoxfieldCSV, downloadCSV } from '@/lib/moxfield/serialize';
 import styles from './page.module.css';
 
 const PAGE_SIZE = 48;
@@ -35,21 +40,15 @@ function useStackPagination(stacks: CardStack[]) {
 }
 
 export default function CollectionPage() {
+	const { entries, isLoaded, decrementCard, clearCollection } = useCollectionContext();
+	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
+	const importCtx = useImportContext();
+
+	const { filters, setFilters, sets, setsLoading, filteredStacks, stats, activeFilterCount } =
+		useCollectionFiltering(stacks);
+
 	const {
-		entries,
-		isLoaded,
-		filteredStacks,
-		stats,
-		isHydrating,
-		totalExpected,
-		filters,
-		setFilters,
-		sets,
-		setsLoading,
-		activeFilterCount,
-		importCtx,
 		resolvedStack,
-		decrementCard,
 		handleCardClick,
 		handleCloseModal,
 		handleSaveModal,
@@ -59,16 +58,27 @@ export default function CollectionPage() {
 		handleDuplicateEntry,
 		handleRemoveEntry,
 		handleChangePrint,
-		handleClearCollection,
-		handleExport,
-		handleConfirmImport,
-	} = useCollectionPageState();
+	} = useCardCollectionModal(stacks);
+
+	const handleExport = useCallback(() => {
+		downloadCSV(serializeToMoxfieldCSV(stacks.flatMap((s) => s.cards)), 'my-collection.csv');
+	}, [stacks]);
+
+	const handleClearCollection = useCallback(() => {
+		if (confirm('Effacer toute la collection ? Cette action est irréversible.')) {
+			clearCollection();
+		}
+	}, [clearCollection]);
+
+	const handleConfirmImport = useCallback(async () => {
+		await importCtx.confirm();
+		importCtx.reset();
+	}, [importCtx]);
 
 	const { visibleStacks, hasMore, loadMore } = useStackPagination(filteredStacks);
 
 	const skeletonCount = isHydrating ? Math.max(0, (totalExpected ?? 0) - filteredStacks.length) : 0;
 
-	// Extract representative card from each visible stack
 	const representativeCards = useMemo(
 		() =>
 			visibleStacks
@@ -77,7 +87,6 @@ export default function CollectionPage() {
 		[visibleStacks]
 	);
 
-	// Map card id → stack for click handler and overlay
 	const stackByCardId = useMemo(() => {
 		const map = new Map<string, CardStack>();
 		for (const stack of visibleStacks) {

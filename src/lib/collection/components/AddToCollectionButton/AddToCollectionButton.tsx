@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import { useCollectionContext } from '@/lib/supabase/contexts/CollectionContext';
+import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { Button } from '@/components/ui/Button';
 import styles from './AddToCollectionButton.module.css';
 

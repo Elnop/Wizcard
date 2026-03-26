@@ -4,7 +4,7 @@ import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall'
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/components/ui/SymbolText';
 import { CardImage } from './CardImage';
-import { AddToCollectionButton } from '@/components/collection/AddToCollectionButton';
+import { AddToCollectionButton } from '@/lib/collection/components/AddToCollectionButton/AddToCollectionButton';
 import styles from './CardDetail.module.css';
 
 export interface CardDetailProps {

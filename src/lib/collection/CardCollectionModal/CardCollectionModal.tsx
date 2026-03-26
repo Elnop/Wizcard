@@ -6,11 +6,11 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { CardImage } from '@/components/cards/CardImage';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/components/ui/SymbolText';
-import { CopyEditModal } from './CopyEditModal';
+import { CopyEditModal } from './components/CopyEditModal/CopyEditModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import styles from './CardCollectionModal.module.css';
-import lightboxStyles from './lightbox.module.css';
+import lightboxStyles from '../styles/lightbox.module.css';
 
 const COLOR_MAP: Record<string, string> = {
 	W: '#f8e7b9',

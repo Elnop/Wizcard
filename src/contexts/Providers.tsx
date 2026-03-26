@@ -1,7 +1,7 @@
 'use client';
 
 import { AuthProvider } from '@/lib/supabase/contexts/AuthContext';
-import { CollectionProvider } from '@/lib/supabase/contexts/CollectionContext';
+import { CollectionProvider } from '@/lib/collection/context/CollectionContext';
 import { ImportProvider } from '@/lib/import/contexts/ImportContext';
 import { SyncQueueRunner } from '@/lib/supabase/components/SyncQueueRunner';
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useCallback } from 'react';
-import { useCollectionContext } from '@/lib/supabase/contexts/CollectionContext';
+import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useImport } from '@/lib/import/hooks/useImport';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 

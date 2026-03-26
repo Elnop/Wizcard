@@ -6,7 +6,7 @@ MTG Snap is a Next.js 16 App Router application for managing a Magic: The Gather
 
 ```
 src/
-├── app/                    # Next.js App Router pages
+├── app/                    # Next.js App Router pages (routes only — no library code)
 │   ├── page.tsx            # Landing page
 │   ├── layout.tsx          # Root layout (mounts Providers + Navbar)
 │   ├── search/page.tsx     # Card search
@@ -14,9 +14,8 @@ src/
 │   ├── card/[id]/page.tsx  # Card detail (server-rendered)
 │   └── auth/               # login, confirm, error pages
 │
-├── components/             # React components
+├── components/             # Generic UI components (reusable across features)
 │   ├── cards/              # CardGrid, CardDetail, CardImage
-│   ├── collection/         # Collection-specific UI (CardStack display, modals)
 │   ├── search/             # Search filters and results
 │   ├── ui/                 # Shared UI: Button, Modal, Navbar, Spinner, ManaSymbol
 │   ├── auth/               # Auth-related UI
@@ -24,6 +23,15 @@ src/
 │   └── sync/               # Sync status indicator
 │
 ├── lib/
+│   ├── collection/         # Collection feature module (see docs/feature-modules.md)
+│   │   ├── context/        # CollectionContext — provider + useCollectionContext()
+│   │   ├── store/          # Zustand store (localStorage + Supabase hydration)
+│   │   ├── db/             # Supabase CRUD + data migrations
+│   │   ├── hooks/          # useCollectionCards, useCollectionFiltering
+│   │   ├── components/     # AddToCollectionButton, CollectionFiltersAside, ImportPreviewModal…
+│   │   ├── CardCollectionModal/  # Sub-feature: card detail modal + CopyEditModal + PrintPickerModal
+│   │   └── shared/         # Pure utils + styles shared across sub-features
+│   │
 │   ├── scryfall/           # Scryfall API integration
 │   │   ├── endpoints/      # API call functions (cards, sets, symbols, bulk-data)
 │   │   ├── hooks/          # useScryfallCardSearch, useSets, useSymbols, useCardPrints
@@ -33,11 +41,10 @@ src/
 │   │   ├── rate-limiter.ts # 100ms sequential delay
 │   │   └── scryfall-query.ts # Query builder + image URI helpers
 │   │
-│   ├── supabase/           # Auth + DB
-│   │   ├── contexts/       # AuthContext, CollectionContext
-│   │   ├── hooks/          # useCollection, useSyncQueue
+│   ├── supabase/           # Auth + sync infrastructure (not feature-specific)
+│   │   ├── contexts/       # AuthContext, SyncQueueContext
+│   │   ├── hooks/          # useSyncQueue
 │   │   ├── components/     # SyncQueueRunner, SyncIndicator
-│   │   ├── collection.ts   # Supabase CRUD functions
 │   │   ├── sync-queue.ts   # Offline queue (localStorage)
 │   │   ├── client.ts       # Supabase browser client
 │   │   └── server.ts       # Supabase server-side client
@@ -53,9 +60,7 @@ src/
 │   ├── mtg/                # MTG-specific utilities (language mappings)
 │   └── card-cache.ts       # IndexedDB cache for ScryfallCard objects (24h)
 │
-├── hooks/                  # Custom React hooks
-│   ├── useCollectionCards.ts   # Hydrates entries into Card[] + CardStack[]
-│   ├── useCollectionFilters.ts # Client-side filter + sort
+├── hooks/                  # App-wide React hooks (not tied to a single feature)
 │   ├── useInfiniteScroll.ts    # Intersection observer sentinel
 │   ├── useDebounce.ts
 │   └── useLocalizedImage.ts
@@ -66,6 +71,8 @@ src/
 └── types/
     └── cards.ts            # CardEntry, Card, CardStack, CollectionStats
 ```
+
+Feature modules follow the **feature > sub-feature > resource** pattern — see `docs/feature-modules.md`.
 
 ## App Routes
 
@@ -96,14 +103,14 @@ src/
 
 ```
 /collection page
-    → useCollectionContext() → useCollection.ts
+    → useCollectionContext() → collection-store.ts (Zustand)
         ├── localStorage (mtg-snap-collection) — source of truth
-        └── Supabase public.cards — remote persistence
+        └── Supabase public.cards — remote persistence via sync queue
     → useCollectionCards (hook)
         ├── IndexedDB card cache (24h) — first
         └── Scryfall /cards/collection in 75-card batches — fallback
-    → useCollectionFilters (hook)
-    → CardStack components
+    → useCollectionFiltering (hook) → filterCollectionCards() (pure)
+    → CardList / CardStack components
 ```
 
 ### Collection Mutation

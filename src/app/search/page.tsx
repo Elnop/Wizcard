@@ -9,7 +9,7 @@ import { SearchBar } from '@/components/search/SearchBar';
 import { FilterModal } from '@/components/search/FilterModal';
 import { CardList } from '@/components/ui/CardList';
 import { Spinner } from '@/components/ui/Spinner';
-import { useCollectionContext } from '@/lib/supabase/contexts/CollectionContext';
+import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
 import styles from './page.module.css';
 

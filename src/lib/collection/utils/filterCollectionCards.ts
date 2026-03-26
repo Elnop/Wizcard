@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder } from '@/lib/scryfall/hooks/useScryfallCardSearch';
 import type { Card } from '@/types/cards';
@@ -116,48 +115,45 @@ export function getSortValue(
 	}
 }
 
-export function useCollectionFilters<T extends ScryfallCard | Card>(
+export function filterCollectionCards<T extends ScryfallCard | Card>(
 	cards: T[],
 	filters: CollectionFilters
 ): T[] {
-	return useMemo(() => {
-		const cmcTest = parseCmc(filters.cmc);
+	const cmcTest = parseCmc(filters.cmc);
 
-		let filtered = cards.filter((card) => {
-			if (filters.name && !card.name.toLowerCase().includes(filters.name.toLowerCase()))
-				return false;
-			if (!matchColors(card.colors, filters.colors, filters.colorMatch)) return false;
-			if (filters.type && !card.type_line.toLowerCase().includes(filters.type.toLowerCase()))
-				return false;
-			if (filters.set && card.set !== filters.set) return false;
-			if (filters.rarities.length > 0 && !filters.rarities.includes(card.rarity)) return false;
-			if (filters.oracleText) {
-				const tokens = parseOracleTokens(filters.oracleText);
-				const text = card.oracle_text?.toLowerCase() ?? '';
-				if (tokens.length > 0 && !tokens.every((t) => text.includes(t))) return false;
-			}
-			if (cmcTest && !cmcTest(card.cmc)) return false;
-			return true;
-		});
+	let filtered = cards.filter((card) => {
+		if (filters.name && !card.name.toLowerCase().includes(filters.name.toLowerCase())) return false;
+		if (!matchColors(card.colors, filters.colors, filters.colorMatch)) return false;
+		if (filters.type && !card.type_line.toLowerCase().includes(filters.type.toLowerCase()))
+			return false;
+		if (filters.set && card.set !== filters.set) return false;
+		if (filters.rarities.length > 0 && !filters.rarities.includes(card.rarity)) return false;
+		if (filters.oracleText) {
+			const tokens = parseOracleTokens(filters.oracleText);
+			const text = card.oracle_text?.toLowerCase() ?? '';
+			if (tokens.length > 0 && !tokens.every((t) => text.includes(t))) return false;
+		}
+		if (cmcTest && !cmcTest(card.cmc)) return false;
+		return true;
+	});
 
-		if (filtered.length <= 1) return filtered;
+	if (filtered.length <= 1) return filtered;
 
-		const dir = filters.dir;
+	const dir = filters.dir;
 
-		filtered = [...filtered].sort((a, b) => {
-			const av = getSortValue(a, filters.order);
-			const bv = getSortValue(b, filters.order);
-			let cmp: number;
-			if (typeof av === 'number' && typeof bv === 'number') {
-				cmp = av - bv;
-			} else {
-				cmp = String(av).localeCompare(String(bv));
-			}
-			// 'auto' behaves like 'asc' for local filtering
-			if (dir === 'desc') cmp = -cmp;
-			return cmp;
-		});
+	filtered = [...filtered].sort((a, b) => {
+		const av = getSortValue(a, filters.order);
+		const bv = getSortValue(b, filters.order);
+		let cmp: number;
+		if (typeof av === 'number' && typeof bv === 'number') {
+			cmp = av - bv;
+		} else {
+			cmp = String(av).localeCompare(String(bv));
+		}
+		// 'auto' behaves like 'asc' for local filtering
+		if (dir === 'desc') cmp = -cmp;
+		return cmp;
+	});
 
-		return filtered;
-	}, [cards, filters]);
+	return filtered;
 }

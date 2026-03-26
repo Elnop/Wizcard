@@ -6,7 +6,7 @@ import {
 	insertEntries,
 	deleteEntryById,
 	updateEntry,
-} from '@/lib/supabase/collection';
+} from '@/lib/collection/db/collection';
 import { createClient } from '@/lib/supabase/client';
 import {
 	peek,
