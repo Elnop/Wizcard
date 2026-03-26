@@ -398,7 +398,7 @@ export function ImportPreviewModal({
 					)}
 
 					{/* Table fallback: show parsed rows before Scryfall fetch */}
-					{filteredCards.length === 0 && filteredRows.length > 0 && (
+					{filteredCards.length === 0 && filteredRows.length > 0 && !isLoadingPreview && (
 						<div className={styles.tableContainer}>
 							<table className={styles.previewTable}>
 								<thead>
