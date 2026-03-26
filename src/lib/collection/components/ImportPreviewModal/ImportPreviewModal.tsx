@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useRef, useCallback, useMemo } from 'react';
-import type { ImportFormatId, ImportFormatDescriptor, ParsedImportRow } from '@/lib/import/types';
+import type {
+	ImportFormatId,
+	ImportFormatDescriptor,
+	ParsedImportRow,
+} from '@/lib/import/utils/types';
 import type { ImportPreview } from '@/lib/import/hooks/useImport';
 import type { ScryfallCard, ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import type { Card, CardEntry, CardStack } from '@/types/cards';

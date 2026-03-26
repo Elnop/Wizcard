@@ -1,5 +1,5 @@
 import { parseMoxfieldCSV } from '@/lib/moxfield/parse';
-import type { ParsedImportResult, ImportFormatDescriptor } from '../types';
+import type { ParsedImportResult, ImportFormatDescriptor } from '../utils/types';
 
 export function parseMoxfield(text: string): ParsedImportResult {
 	const { rows, parseErrors } = parseMoxfieldCSV(text);

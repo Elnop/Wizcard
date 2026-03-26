@@ -9,14 +9,14 @@ The import system supports loading an existing card collection from external sou
 | Moxfield CSV | `.csv`         | Export from moxfield.com — includes condition, foil, language, price, tags |
 | MTGA         | `.txt`         | Arena deck/collection export — minimal metadata (name + quantity only)     |
 
-## Auto-Detection (`src/lib/import/detect.ts`)
+## Auto-Detection (`src/lib/import/utils/detect.ts`)
 
 Format detection is score-based. Each format descriptor exposes a `detect(text: string): number` function that returns a confidence score between 0 and 1. A file extension match adds +0.1 to the score (capped at 1).
 
 The format with the highest score wins.
 
 ```typescript
-import { detectFormat } from '@/lib/import/detect';
+import { detectFormat } from '@/lib/import/utils/detect';
 
 const result = detectFormat(text, 'collection.csv');
 // { formatId: 'moxfield', scores: { moxfield: 0.95, mtga: 0.1 } }

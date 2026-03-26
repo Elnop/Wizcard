@@ -14,7 +14,7 @@ An import format consists of two things:
 Create `src/lib/import/formats/myformat.ts`:
 
 ```typescript
-import type { ImportFormatDescriptor, ParsedImportResult, FormatParser } from '../types';
+import type { ImportFormatDescriptor, ParsedImportResult, FormatParser } from '../utils/types';
 
 export const myFormatDescriptor: ImportFormatDescriptor = {
 	id: 'myformat',
@@ -49,7 +49,7 @@ export const parseMyFormat: FormatParser = (text: string): ParsedImportResult =>
 
 ## Step 2: Add the format ID to the union type
 
-In `src/lib/import/types.ts`, add your format ID:
+In `src/lib/import/utils/types.ts`, add your format ID:
 
 ```typescript
 export type ImportFormatId = 'moxfield' | 'mtga' | 'myformat';
@@ -80,7 +80,7 @@ const PARSERS: Record<ImportFormatId, FormatParser> = {
 Test that your `detect()` function scores correctly against sample data. The detection result is chosen by highest score — make sure your format's signature is distinctive enough to not conflict with existing formats.
 
 ```typescript
-import { detectFormat } from '@/lib/import/detect';
+import { detectFormat } from '@/lib/import/utils/detect';
 
 const result = detectFormat(sampleText, 'export.csv');
 console.log(result.scores);

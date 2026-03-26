@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { ImportResult } from '@/lib/import/types';
+import type { ImportResult } from '@/lib/import/utils/types';
 import type { ImportStatus } from '@/lib/import/hooks/useImport';
 import { Modal } from '@/components/ui/Modal';
 import styles from './ImportSummaryModal.module.css';

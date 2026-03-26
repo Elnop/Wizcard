@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { detectFormat } from '@/lib/import/detect';
+import { detectFormat } from '@/lib/import/utils/detect';
 import { parseMoxfield, moxfieldDescriptor } from '@/lib/import/formats/moxfield';
 import { parseMTGA, mtgaDescriptor } from '@/lib/import/formats/mtga';
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
@@ -11,10 +11,10 @@ import type {
 	ParsedImportRow,
 	ParsedImportResult,
 	ImportResult,
-} from '@/lib/import/types';
+} from '@/lib/import/utils/types';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
-import { deduplicateIdentifiers } from '@/lib/import/identifier-dedup';
+import { deduplicateIdentifiers } from '@/lib/import/utils/identifier-dedup';
 
 const FORMAT_REGISTRY = [moxfieldDescriptor, mtgaDescriptor];
 

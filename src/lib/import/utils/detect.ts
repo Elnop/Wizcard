@@ -1,6 +1,6 @@
 import type { ImportFormatId } from './types';
-import { moxfieldDescriptor } from './formats/moxfield';
-import { mtgaDescriptor } from './formats/mtga';
+import { moxfieldDescriptor } from '../formats/moxfield';
+import { mtgaDescriptor } from '../formats/mtga';
 
 const FORMAT_REGISTRY = [moxfieldDescriptor, mtgaDescriptor];
 
