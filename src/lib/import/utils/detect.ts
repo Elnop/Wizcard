@@ -1,8 +1,5 @@
 import type { ImportFormatId } from './types';
-import { moxfieldDescriptor } from '../formats/moxfield';
-import { mtgaDescriptor } from '../formats/mtga';
-
-const FORMAT_REGISTRY = [moxfieldDescriptor, mtgaDescriptor];
+import { FORMAT_REGISTRY } from '@/lib/import/formats/registry';
 
 export interface DetectionResult {
 	formatId: ImportFormatId;

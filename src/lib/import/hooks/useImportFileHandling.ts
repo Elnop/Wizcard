@@ -2,24 +2,9 @@
 
 import { useCallback } from 'react';
 import { detectFormat } from '@/lib/import/utils/detect';
-import { parseMoxfield } from '@/lib/import/formats/moxfield';
-import { parseMTGA } from '@/lib/import/formats/mtga';
-import type {
-	ImportFormatId,
-	FormatParser,
-	ParsedImportRow,
-	ParsedImportResult,
-} from '@/lib/import/utils/types';
+import { getParser } from '@/lib/import/formats/registry';
+import type { ImportFormatId, ParsedImportRow, ParsedImportResult } from '@/lib/import/utils/types';
 import type { ImportStatus, ImportPreview } from '@/lib/import/hooks/useImport';
-
-const PARSERS: Record<ImportFormatId, FormatParser> = {
-	moxfield: parseMoxfield,
-	mtga: parseMTGA,
-};
-
-function getParser(formatId: ImportFormatId): FormatParser {
-	return PARSERS[formatId];
-}
 
 function mergeRows(rows: ParsedImportRow[]): ParsedImportRow[] {
 	const map = new Map<string, ParsedImportRow>();
@@ -112,14 +97,5 @@ export function useImportFileHandling(deps: {
 		[setPreview, cancelPreviewFetch, fetchPreviewCards]
 	);
 
-	const openModal = useCallback(() => {
-		setStatus('selecting');
-	}, [setStatus]);
-
-	const cancel = useCallback(() => {
-		cancelPreviewFetch();
-		setStatus('idle');
-	}, [cancelPreviewFetch, setStatus]);
-
-	return { selectFile, submitText, changeFormat, openModal, cancel };
+	return { selectFile, submitText, changeFormat };
 }

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { moxfieldDescriptor } from '@/lib/import/formats/moxfield';
-import { mtgaDescriptor } from '@/lib/import/formats/mtga';
+import { FORMAT_REGISTRY } from '@/lib/import/formats/registry';
 import type { ImportFormatId, ImportResult } from '@/lib/import/utils/types';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
@@ -10,8 +9,6 @@ import { useImportPreviewFetch } from '@/lib/import/hooks/useImportPreviewFetch'
 import { useImportFileHandling } from '@/lib/import/hooks/useImportFileHandling';
 import { useImportConfirmation } from '@/lib/import/hooks/useImportConfirmation';
 import { useImportRowEditing } from '@/lib/import/hooks/useImportRowEditing';
-
-const FORMAT_REGISTRY = [moxfieldDescriptor, mtgaDescriptor];
 
 export type ImportStatus =
 	| 'idle'
