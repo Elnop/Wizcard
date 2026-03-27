@@ -134,11 +134,7 @@ export function useImportPreviewState({
 	// Deduplicated identifier count for skeleton placeholders
 	const uniqueIdentifierCount = useMemo(() => {
 		if (!preview) return 0;
-		return new Set(
-			preview.parsed.identifiers.map((id) =>
-				id.set && id.collector_number ? `${id.set}/${id.collector_number}` : `name:${id.name ?? ''}`
-			)
-		).size;
+		return new Set(preview.parsed.identifiers.map((id) => buildIdentifierKey(id))).size;
 	}, [preview]);
 
 	// Rows filtered by name only (for fallback table before Scryfall fetch)
