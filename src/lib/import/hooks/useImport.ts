@@ -13,6 +13,7 @@ import { useImportRowEditing } from '@/lib/import/hooks/useImportRowEditing';
 export type ImportStatus =
 	| 'idle'
 	| 'selecting'
+	| 'parsing'
 	| 'previewing'
 	| 'fetching'
 	| 'merging'

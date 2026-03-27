@@ -157,6 +157,7 @@ function SearchPageContent() {
 						setOrder(newOrder as Parameters<typeof setOrder>[0]);
 						setDir(newDir);
 					}}
+					pageSize={false}
 					tableColumns={[
 						{ key: 'name', label: 'Nom', sortKey: 'name' },
 						{

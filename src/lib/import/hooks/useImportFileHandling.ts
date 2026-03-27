@@ -36,24 +36,27 @@ export function useImportFileHandling(deps: {
 		async (file: File, forcedFormatId?: ImportFormatId) => {
 			const text = await file.text();
 			setFileText(text);
+			setStatus('parsing');
 
-			const { formatId, scores } = forcedFormatId
-				? { formatId: forcedFormatId, scores: {} as Record<ImportFormatId, number> }
-				: detectFormat(text, file.name);
-			const parser = getParser(formatId);
-			const parsed = parser(text);
-			const mergedRows = mergeRows(parsed.rows);
-			const mergedParsed: ParsedImportResult = { ...parsed, rows: mergedRows };
+			setTimeout(() => {
+				const { formatId, scores } = forcedFormatId
+					? { formatId: forcedFormatId, scores: {} as Record<ImportFormatId, number> }
+					: detectFormat(text, file.name);
+				const parser = getParser(formatId);
+				const parsed = parser(text);
+				const mergedRows = mergeRows(parsed.rows);
+				const mergedParsed: ParsedImportResult = { ...parsed, rows: mergedRows };
 
-			setPreview({
-				fileName: file.name,
-				fileSize: file.size,
-				detectedFormat: formatId,
-				scores,
-				parsed: mergedParsed,
-			});
-			setStatus('previewing');
-			void fetchPreviewCards(parsed);
+				setPreview({
+					fileName: file.name,
+					fileSize: file.size,
+					detectedFormat: formatId,
+					scores,
+					parsed: mergedParsed,
+				});
+				setStatus('previewing');
+				void fetchPreviewCards(parsed);
+			}, 0);
 		},
 		[setFileText, setPreview, setStatus, fetchPreviewCards]
 	);
@@ -61,24 +64,27 @@ export function useImportFileHandling(deps: {
 	const submitText = useCallback(
 		(text: string, forcedFormatId?: ImportFormatId) => {
 			setFileText(text);
+			setStatus('parsing');
 
-			const { formatId, scores } = forcedFormatId
-				? { formatId: forcedFormatId, scores: {} as Record<ImportFormatId, number> }
-				: detectFormat(text);
-			const parser = getParser(formatId);
-			const parsed = parser(text);
-			const mergedRows = mergeRows(parsed.rows);
-			const mergedParsed: ParsedImportResult = { ...parsed, rows: mergedRows };
+			setTimeout(() => {
+				const { formatId, scores } = forcedFormatId
+					? { formatId: forcedFormatId, scores: {} as Record<ImportFormatId, number> }
+					: detectFormat(text);
+				const parser = getParser(formatId);
+				const parsed = parser(text);
+				const mergedRows = mergeRows(parsed.rows);
+				const mergedParsed: ParsedImportResult = { ...parsed, rows: mergedRows };
 
-			setPreview({
-				fileName: 'Collage texte',
-				fileSize: new Blob([text]).size,
-				detectedFormat: formatId,
-				scores,
-				parsed: mergedParsed,
-			});
-			setStatus('previewing');
-			void fetchPreviewCards(parsed);
+				setPreview({
+					fileName: 'Collage texte',
+					fileSize: new Blob([text]).size,
+					detectedFormat: formatId,
+					scores,
+					parsed: mergedParsed,
+				});
+				setStatus('previewing');
+				void fetchPreviewCards(parsed);
+			}, 0);
 		},
 		[setFileText, setPreview, setStatus, fetchPreviewCards]
 	);

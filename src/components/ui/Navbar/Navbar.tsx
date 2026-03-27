@@ -18,7 +18,7 @@ export function Navbar() {
 	const { triggerSync } = useSyncQueueContext();
 
 	const totalCollectionCards = entries.length;
-	const isImporting = status === 'fetching' || status === 'merging';
+	const isImporting = status === 'parsing' || status === 'fetching' || status === 'merging';
 
 	async function handleSignOut() {
 		triggerSync();

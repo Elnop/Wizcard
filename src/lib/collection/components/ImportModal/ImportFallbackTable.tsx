@@ -1,7 +1,7 @@
 'use client';
 
 import type { ParsedImportRow } from '@/lib/import/utils/types';
-import styles from './ImportPreviewModal.module.css';
+import styles from './ImportModal.module.css';
 
 interface ImportFallbackTableProps {
 	rows: ParsedImportRow[];

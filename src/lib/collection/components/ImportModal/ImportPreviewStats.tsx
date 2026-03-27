@@ -3,7 +3,7 @@
 import type { ImportFormatId, ImportFormatDescriptor } from '@/lib/import/utils/types';
 import type { ImportPreview } from '@/lib/import/hooks/useImport';
 import { formatFileSize } from '@/lib/collection/utils/format';
-import styles from './ImportPreviewModal.module.css';
+import styles from './ImportModal.module.css';
 
 interface ImportPreviewStatsProps {
 	preview: ImportPreview;

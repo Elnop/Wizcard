@@ -7,6 +7,7 @@ import type { Card } from '@/types/cards';
 import type { ScryfallSortDir } from '@/components/ui/filters/SortFilter/SortFilter';
 import { CardImage } from '@/components/cards/CardImage';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { PAGE_SIZE } from '@/lib/collection/constants';
 import styles from './CardList.module.css';
 
 type AnyCard = ScryfallCard | Card;
@@ -37,6 +38,7 @@ export interface CardListProps {
 	// Grille : nombre de cartes par ligne (fixe la taille des cartes)
 	cardsPerLine?: number;
 	className?: string;
+	pageSize?: number | false;
 }
 
 function SortIcon({ dir }: { dir: ScryfallSortDir }) {
@@ -88,6 +90,7 @@ export function CardList({
 	onSortChange,
 	cardsPerLine,
 	className,
+	pageSize = PAGE_SIZE,
 }: CardListProps) {
 	function handleHeaderClick(key: string) {
 		if (!onSortChange) return;
@@ -99,9 +102,34 @@ export function CardList({
 	}
 	const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
+	const localPageSize = typeof pageSize === 'number' ? pageSize : null;
+
+	const [{ visibleCount, trackedLength }, setInternalPagination] = useState({
+		visibleCount: localPageSize ?? cards.length,
+		trackedLength: cards.length,
+	});
+
+	const effectiveVisibleCount =
+		localPageSize !== null
+			? cards.length !== trackedLength
+				? localPageSize
+				: visibleCount
+			: cards.length;
+
+	const internalHasMore = localPageSize !== null ? effectiveVisibleCount < cards.length : false;
+	const internalLoadMore = () =>
+		setInternalPagination((prev) => ({
+			trackedLength: cards.length,
+			visibleCount: prev.visibleCount + localPageSize!,
+		}));
+
+	const visibleCards = localPageSize !== null ? cards.slice(0, effectiveVisibleCount) : cards;
+	const resolvedHasMore = localPageSize !== null ? internalHasMore : hasMore;
+	const resolvedLoadMore = localPageSize !== null ? internalLoadMore : onLoadMore;
+
 	const { sentinelRef } = useInfiniteScroll({
-		onLoadMore: onLoadMore ?? (() => {}),
-		hasMore: hasMore && !!onLoadMore,
+		onLoadMore: resolvedLoadMore ?? (() => {}),
+		hasMore: resolvedHasMore && !!resolvedLoadMore,
 		isLoading: isLoading || isLoadingMore,
 	});
 
@@ -155,7 +183,7 @@ export function CardList({
 							</tr>
 						</thead>
 						<tbody>
-							{cards.map((card) => (
+							{visibleCards.map((card) => (
 								<tr
 									key={card.id}
 									className={onCardClick ? styles.clickableRow : undefined}
@@ -173,7 +201,7 @@ export function CardList({
 						</tbody>
 					</table>
 				</div>
-				{hasMore && onLoadMore && <div ref={sentinelRef} />}
+				{resolvedHasMore && resolvedLoadMore && <div ref={sentinelRef} />}
 			</>
 		);
 	}
@@ -212,7 +240,7 @@ export function CardList({
 		<>
 			{toggle}
 			<div className={gridClass} style={gridStyle}>
-				{cards.map((card) => (
+				{visibleCards.map((card) => (
 					<div
 						key={card.id}
 						className={[styles.item, onCardClick ? styles.itemClickable : undefined]
@@ -235,7 +263,7 @@ export function CardList({
 						</div>
 					))}
 			</div>
-			{hasMore && onLoadMore && <div ref={sentinelRef} />}
+			{resolvedHasMore && resolvedLoadMore && <div ref={sentinelRef} />}
 		</>
 	);
 }
