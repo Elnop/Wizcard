@@ -2,12 +2,11 @@
 
 import { useRef, useCallback } from 'react';
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
+import { BATCH_SIZE } from '@/lib/scryfall/constants';
 import { deduplicateIdentifiers } from '@/lib/import/utils/identifier-dedup';
 import type { ParsedImportResult } from '@/lib/import/utils/types';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { ImportProgress } from '@/lib/import/hooks/useImport';
-
-const BATCH_SIZE = 75;
 
 export function useImportPreviewFetch(deps: {
 	setFetchedCards: (cards: ScryfallCard[]) => void;

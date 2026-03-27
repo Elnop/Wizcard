@@ -2,13 +2,12 @@
 
 import { useCallback } from 'react';
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
+import { BATCH_SIZE } from '@/lib/scryfall/constants';
 import { deduplicateIdentifiers } from '@/lib/import/utils/identifier-dedup';
 import type { ParsedImportRow, ImportResult } from '@/lib/import/utils/types';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
 import type { ImportStatus, ImportPreview, ImportProgress } from '@/lib/import/hooks/useImport';
-
-const BATCH_SIZE = 75;
 
 export function useImportConfirmation(deps: {
 	fetchedCards: ScryfallCard[];

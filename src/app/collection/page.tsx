@@ -15,9 +15,8 @@ import { CardCollectionModal } from '@/lib/collection/CardCollectionModal/CardCo
 import { CardList, cardListOverlayStyles } from '@/components/ui/CardList/CardList';
 import { Button } from '@/components/ui/Button/Button';
 import { serializeToMoxfieldCSV, downloadCSV } from '@/lib/moxfield/serialize';
+import { PAGE_SIZE } from '@/lib/collection/constants';
 import styles from './page.module.css';
-
-const PAGE_SIZE = 48;
 
 function useStackPagination(stacks: CardStack[]) {
 	const [{ visibleCount, trackedLength }, setPagination] = useState({

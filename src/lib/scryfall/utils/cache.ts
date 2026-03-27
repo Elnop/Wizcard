@@ -34,12 +34,3 @@ export function setCached<T>(key: string, data: T): void {
 export function clearCache(): void {
 	cache.clear();
 }
-
-export function cleanupCache(): void {
-	const now = Date.now();
-	for (const [key, entry] of cache.entries()) {
-		if (now - entry.timestamp > CACHE_MAX_AGE) {
-			cache.delete(key);
-		}
-	}
-}
