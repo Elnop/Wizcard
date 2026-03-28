@@ -1,4 +1,4 @@
-import type { CardListColumn } from '@/components/ui/CardList/CardList';
+import type { CardListColumn } from '@/components/ui/CardListTable/CardListTable.types';
 
 export const STATIC_IMPORT_COLUMNS: CardListColumn[] = [
 	{ key: 'name', label: 'Nom' },
