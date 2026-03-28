@@ -8,6 +8,7 @@ import type {
 	ScryfallList,
 	ScryfallUUID,
 	ScryfallCardIdentifier,
+	ScryfallRuling,
 } from '../types/scryfall';
 import type { ScryfallSearchParams } from '../types/api';
 
@@ -149,4 +150,38 @@ export async function getCardPrints(
 	}
 
 	return allCards;
+}
+
+export async function getCardRulings(
+	id: ScryfallUUID,
+	signal?: AbortSignal
+): Promise<ScryfallRuling[]> {
+	const result = await scryfallGet<{ data: ScryfallRuling[] }>(
+		`/cards/${id}/rulings`,
+		undefined,
+		signal
+	);
+	return result.data;
+}
+
+export async function getCardSimilar(
+	card: ScryfallCard,
+	signal?: AbortSignal
+): Promise<ScryfallCard[]> {
+	const keyword = card.keywords?.[0];
+	const typeParts = card.type_line.split('—')[0].trim().split(' ');
+	const subtype = typeParts[typeParts.length - 1];
+	const q = keyword
+		? `type:${subtype} oracle:"${keyword}" -!"${card.name}"`
+		: `type:${subtype} -!"${card.name}"`;
+	try {
+		const result = await scryfallGet<ScryfallCardSearchResult>(
+			'/cards/search',
+			{ q, unique: 'cards', order: 'edhrec' },
+			signal
+		);
+		return result.data.slice(0, 12);
+	} catch {
+		return [];
+	}
 }
