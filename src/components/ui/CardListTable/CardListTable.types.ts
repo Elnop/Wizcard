@@ -12,8 +12,6 @@ export interface CardListColumn {
 export interface CardListTableProps {
 	cards: AnyCard[];
 	columns: CardListColumn[];
-	isLoading?: boolean;
-	skeletonCount?: number;
 	onCardClick?: (card: AnyCard) => void;
 	sortOrder?: string;
 	sortDir?: ScryfallSortDir;
