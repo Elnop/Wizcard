@@ -89,7 +89,7 @@ export function CopyEditModal(props: Props) {
 			: 'en';
 
 	const title = addMode
-		? 'Ajouter à la collection'
+		? `Ajouter — ${props.scryfallCard.name}`
 		: `Edit copy — ${props.card.set.toUpperCase()} #${props.card.collector_number}`;
 
 	return (
