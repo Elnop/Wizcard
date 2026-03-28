@@ -127,6 +127,7 @@ export function CardList({
 						className={className}
 					/>
 				)}
+				{resolvedHasMore && resolvedLoadMore && <div ref={sentinelRef} />}
 			</>
 		);
 	}
