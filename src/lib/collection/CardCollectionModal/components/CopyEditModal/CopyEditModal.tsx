@@ -10,21 +10,45 @@ import styles from './CopyEditModal.module.css';
 
 const CONDITIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
 
-interface Props {
+interface EditProps {
+	mode?: 'edit';
 	card: Card;
 	onSave: (patch: Partial<CardEntry>) => void;
 	onChangePrint: (newCard: ScryfallCard) => void;
 	onClose: () => void;
 }
 
-export function CopyEditModal({ card, onSave, onChangePrint, onClose }: Props) {
+interface AddProps {
+	mode: 'add';
+	scryfallCard: ScryfallCard;
+	onAdd: (entry: Partial<CardEntry>) => void;
+	onClose: () => void;
+}
+
+type Props = EditProps | AddProps;
+
+function isAddMode(props: Props): props is AddProps {
+	return props.mode === 'add';
+}
+
+const DEFAULT_ENTRY: Partial<CardEntry> = {};
+
+export function CopyEditModal(props: Props) {
+	const addMode = isAddMode(props);
+
+	const [draftEntry, setDraftEntry] = useState<Partial<CardEntry>>(DEFAULT_ENTRY);
+
+	const entry: Partial<CardEntry> = addMode ? draftEntry : props.card.entry;
 	const [showPrintPicker, setShowPrintPicker] = useState(false);
 	const [tagInput, setTagInput] = useState('');
-	const entry = card.entry;
 	const isFoil = entry.isFoil ?? false;
 
 	function save(patch: Partial<CardEntry>) {
-		onSave({ ...entry, ...patch });
+		if (addMode) {
+			setDraftEntry((prev) => ({ ...prev, ...patch }));
+		} else {
+			props.onSave({ ...props.card.entry, ...patch });
+		}
 	}
 
 	function handleTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -48,19 +72,37 @@ export function CopyEditModal({ card, onSave, onChangePrint, onClose }: Props) {
 		save({ tags: newTags.length > 0 ? newTags : undefined });
 	}
 
+	function handleConfirmAdd() {
+		if (addMode) {
+			props.onAdd(draftEntry);
+			props.onClose();
+		}
+	}
+
+	const cardForPrint: Card | null = addMode ? null : props.card;
+
 	const entryLangCode =
-		entry.language && LANGUAGE_TO_SCRYFALL_CODE[entry.language]
-			? LANGUAGE_TO_SCRYFALL_CODE[entry.language]
-			: (card.lang ?? 'en');
+		!addMode && props.card.lang
+			? entry.language && LANGUAGE_TO_SCRYFALL_CODE[entry.language]
+				? LANGUAGE_TO_SCRYFALL_CODE[entry.language]
+				: props.card.lang
+			: 'en';
+
+	const title = addMode
+		? 'Ajouter à la collection'
+		: `Edit copy — ${props.card.set.toUpperCase()} #${props.card.collector_number}`;
 
 	return (
 		<>
-			<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
+			<Modal onClose={props.onClose} className={styles.modal} zIndex={1100}>
 				<div className={styles.header}>
-					<span className={styles.title}>
-						Edit copy — {card.set.toUpperCase()} #{card.collector_number}
-					</span>
-					<button type="button" className={styles.closeIcon} onClick={onClose} aria-label="Close">
+					<span className={styles.title}>{title}</span>
+					<button
+						type="button"
+						className={styles.closeIcon}
+						onClick={props.onClose}
+						aria-label="Close"
+					>
 						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 							<path
 								d="M2 2l12 12M14 2L2 14"
@@ -177,26 +219,35 @@ export function CopyEditModal({ card, onSave, onChangePrint, onClose }: Props) {
 						</div>
 					</div>
 
-					{/* Change print */}
-					<button
-						type="button"
-						className={styles.changePrintBtn}
-						onClick={() => setShowPrintPicker(true)}
-					>
-						Change print
-					</button>
+					{/* Change print (edit mode only) */}
+					{!addMode && (
+						<button
+							type="button"
+							className={styles.changePrintBtn}
+							onClick={() => setShowPrintPicker(true)}
+						>
+							Change print
+						</button>
+					)}
+
+					{/* Confirm add (add mode only) */}
+					{addMode && (
+						<button type="button" className={styles.changePrintBtn} onClick={handleConfirmAdd}>
+							Confirmer l&apos;ajout
+						</button>
+					)}
 				</div>
 			</Modal>
 
-			{showPrintPicker && card.prints_search_uri && (
+			{showPrintPicker && cardForPrint && cardForPrint.prints_search_uri && (
 				<PrintPickerModal
-					prints_search_uri={card.prints_search_uri}
-					currentCardId={card.id}
-					currentSet={card.set}
-					currentCollectorNumber={card.collector_number}
+					prints_search_uri={cardForPrint.prints_search_uri}
+					currentCardId={cardForPrint.id}
+					currentSet={cardForPrint.set}
+					currentCollectorNumber={cardForPrint.collector_number}
 					currentLang={entryLangCode}
 					onSelect={(print) => {
-						onChangePrint(print);
+						if (!addMode) props.onChangePrint(print);
 						setShowPrintPicker(false);
 					}}
 					onClose={() => setShowPrintPicker(false)}
