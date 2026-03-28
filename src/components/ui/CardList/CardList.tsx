@@ -265,17 +265,23 @@ export function CardList({
 		);
 	}
 
+	// Note: isSections([]) returns false, so an empty sections array falls through
+	// to flat-mode rendering (shows skeleton when isLoading, null when empty).
+	// This is correct for PrintsTab: loading → empty array → skeleton, no data → null.
 	if (isSections(cardsOrSections)) {
 		return (
 			<>
 				{toggle}
-				{cardsOrSections.map((section) => {
+				{cardsOrSections.map((section, idx) => {
 					const collapsed = collapsedSections.has(section.label);
 					const labelMatch = section.label.match(/^(.+?)\s*(\(\d+\))$/);
 					const labelName = labelMatch?.[1] ?? section.label;
 					const labelCount = labelMatch?.[2] ?? '';
 					return (
-						<div key={section.label}>
+						<div
+							key={section.label}
+							className={idx === 0 ? styles.sectionWrapperFirst : styles.sectionWrapper}
+						>
 							<button
 								type="button"
 								className={styles.sectionHeader}

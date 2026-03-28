@@ -238,6 +238,14 @@
 
 /* Sections */
 
+.sectionWrapper {
+	margin-top: 24px;
+}
+
+.sectionWrapperFirst {
+	margin-top: 0;
+}
+
 .sectionHeader {
 	display: flex;
 	align-items: center;
@@ -252,11 +260,6 @@
 	font-size: 14px;
 	font-weight: 600;
 	text-align: left;
-	margin-top: 24px;
-}
-
-.sectionHeader:first-child {
-	margin-top: 0;
 }
 
 .sectionCount {
