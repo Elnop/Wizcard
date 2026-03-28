@@ -1,0 +1,143 @@
+.showcase {
+	padding: 96px 48px;
+	text-align: center;
+	overflow: hidden;
+}
+
+.heading {
+	font-size: 36px;
+	font-weight: 700;
+	color: var(--foreground);
+	margin-bottom: 12px;
+	opacity: 0;
+	transform: translateY(20px);
+	transition:
+		opacity 0.6s ease,
+		transform 0.6s ease;
+}
+
+.visible .heading {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.subheading {
+	font-size: 18px;
+	color: var(--text-muted);
+	margin-bottom: 56px;
+	opacity: 0;
+	transform: translateY(20px);
+	transition:
+		opacity 0.6s ease 0.1s,
+		transform 0.6s ease 0.1s;
+}
+
+.visible .subheading {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.scrollContainer {
+	display: flex;
+	gap: 32px;
+	justify-content: center;
+	flex-wrap: wrap;
+	padding: 24px 0;
+}
+
+.cardWrapper {
+	flex: 0 0 auto;
+	width: 220px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	opacity: 0;
+	transform: translateY(24px);
+	transition:
+		opacity 0.5s ease var(--delay),
+		transform 0.5s ease var(--delay);
+}
+
+.visible .cardWrapper {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.cardImage {
+	width: 100%;
+	height: auto;
+	border-radius: 12px;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+	transition:
+		transform 0.35s ease,
+		box-shadow 0.35s ease;
+}
+
+.cardWrapper:hover .cardImage {
+	transform: translateY(-12px);
+	box-shadow: 0 20px 48px color-mix(in srgb, var(--glow-color) 30%, transparent);
+}
+
+.cardName {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-muted);
+	transition: color 0.3s ease;
+}
+
+.cardWrapper:hover .cardName {
+	color: var(--foreground);
+}
+
+/* Responsive */
+
+@media (max-width: 1024px) {
+	.scrollContainer {
+		gap: 24px;
+	}
+
+	.cardWrapper {
+		width: 180px;
+	}
+}
+
+@media (max-width: 768px) {
+	.showcase {
+		padding: 64px 24px;
+	}
+
+	.heading {
+		font-size: 28px;
+	}
+
+	.subheading {
+		font-size: 16px;
+		margin-bottom: 40px;
+	}
+
+	.scrollContainer {
+		flex-wrap: nowrap;
+		justify-content: flex-start;
+		overflow-x: auto;
+		scroll-snap-type: x mandatory;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+		padding: 24px 16px;
+	}
+
+	.scrollContainer::-webkit-scrollbar {
+		display: none;
+	}
+
+	.cardWrapper {
+		width: 200px;
+		scroll-snap-align: center;
+	}
+}
+
+@media (max-width: 480px) {
+	.cardWrapper {
+		width: 160px;
+	}
+}

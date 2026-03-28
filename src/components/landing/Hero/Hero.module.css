@@ -1,0 +1,267 @@
+.hero {
+	position: relative;
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+}
+
+.background {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+}
+
+.gradient {
+	position: absolute;
+	inset: 0;
+	background:
+		radial-gradient(ellipse at top left, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+		radial-gradient(ellipse at bottom right, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+}
+
+.grid {
+	position: absolute;
+	inset: 0;
+	background-image:
+		linear-gradient(var(--border) 1px, transparent 1px),
+		linear-gradient(90deg, var(--border) 1px, transparent 1px);
+	background-size: 64px 64px;
+	mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+	-webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+	opacity: 0.4;
+}
+
+/* Layout */
+
+.heroGrid {
+	position: relative;
+	z-index: 1;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	align-items: center;
+	gap: 64px;
+	max-width: 1200px;
+	width: 100%;
+	padding: 48px 48px;
+}
+
+/* Text column */
+
+.textColumn {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	opacity: 0;
+	transform: translateY(24px);
+	transition:
+		opacity 0.7s ease,
+		transform 0.7s ease;
+}
+
+.visible .textColumn {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.title {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-bottom: 24px;
+}
+
+.titleMain {
+	font-size: 76px;
+	font-weight: 800;
+	letter-spacing: -3px;
+	line-height: 1;
+	background: linear-gradient(135deg, var(--foreground) 0%, var(--primary) 50%, #a855f7 100%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+}
+
+.titleSub {
+	font-size: 20px;
+	font-weight: 500;
+	color: var(--text-muted);
+	line-height: 1.4;
+}
+
+.description {
+	font-size: 18px;
+	line-height: 1.7;
+	color: var(--text-muted);
+	max-width: 480px;
+	margin-bottom: 36px;
+}
+
+.cta {
+	display: flex;
+	gap: 16px;
+	align-items: center;
+}
+
+.cta a {
+	display: inline-block;
+}
+
+/* Card fan */
+
+.cardFan {
+	position: relative;
+	width: 100%;
+	height: 480px;
+	opacity: 0;
+	transform: translateY(24px);
+	transition:
+		opacity 0.7s ease 0.2s,
+		transform 0.7s ease 0.2s;
+}
+
+.visible .cardFan {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.cardImage {
+	width: 100%;
+	height: auto;
+	border-radius: 12px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+	transition: transform 0.35s ease;
+}
+
+.fanCard0,
+.fanCard1,
+.fanCard2 {
+	position: absolute;
+	width: 240px;
+	top: 50%;
+	left: 50%;
+	transition: transform 0.35s ease;
+}
+
+.fanCard0 {
+	transform: translate(-75%, -50%) rotate(-12deg);
+	z-index: 1;
+}
+
+.fanCard1 {
+	transform: translate(-50%, -55%) rotate(0deg);
+	z-index: 3;
+}
+
+.fanCard2 {
+	transform: translate(-25%, -50%) rotate(12deg);
+	z-index: 2;
+}
+
+.fanCard0:hover,
+.fanCard2:hover {
+	z-index: 4;
+}
+
+.fanCard0:hover {
+	transform: translate(-75%, -54%) rotate(-12deg);
+}
+
+.fanCard1:hover {
+	transform: translate(-50%, -59%) rotate(0deg);
+}
+
+.fanCard2:hover {
+	transform: translate(-25%, -54%) rotate(12deg);
+}
+
+/* Responsive */
+
+@media (max-width: 1024px) {
+	.heroGrid {
+		gap: 40px;
+		padding: 40px 32px;
+	}
+
+	.titleMain {
+		font-size: 56px;
+		letter-spacing: -2px;
+	}
+
+	.fanCard0,
+	.fanCard1,
+	.fanCard2 {
+		width: 200px;
+	}
+
+	.cardFan {
+		height: 400px;
+	}
+}
+
+@media (max-width: 768px) {
+	.heroGrid {
+		grid-template-columns: 1fr;
+		text-align: center;
+		padding: 40px 24px;
+		gap: 48px;
+	}
+
+	.textColumn {
+		align-items: center;
+	}
+
+	.titleMain {
+		font-size: 44px;
+		letter-spacing: -1px;
+	}
+
+	.titleSub {
+		font-size: 16px;
+	}
+
+	.description {
+		font-size: 16px;
+	}
+
+	.cta {
+		justify-content: center;
+	}
+
+	.cardFan {
+		height: 320px;
+		order: -1;
+	}
+
+	.fanCard0,
+	.fanCard1,
+	.fanCard2 {
+		width: 160px;
+	}
+}
+
+@media (max-width: 480px) {
+	.titleMain {
+		font-size: 36px;
+	}
+
+	.cta {
+		flex-direction: column;
+		width: 100%;
+	}
+
+	.cta a {
+		width: 100%;
+	}
+
+	.cardFan {
+		height: 260px;
+	}
+
+	.fanCard0,
+	.fanCard1,
+	.fanCard2 {
+		width: 130px;
+	}
+}

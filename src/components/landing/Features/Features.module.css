@@ -1,0 +1,149 @@
+.features {
+	padding: 96px 48px;
+	max-width: 1200px;
+	margin: 0 auto;
+}
+
+.heading {
+	font-size: 36px;
+	font-weight: 700;
+	color: var(--foreground);
+	text-align: center;
+	margin-bottom: 12px;
+	opacity: 0;
+	transform: translateY(20px);
+	transition:
+		opacity 0.6s ease,
+		transform 0.6s ease;
+}
+
+.visible .heading {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.subheading {
+	font-size: 18px;
+	color: var(--text-muted);
+	text-align: center;
+	margin-bottom: 56px;
+	opacity: 0;
+	transform: translateY(20px);
+	transition:
+		opacity 0.6s ease 0.1s,
+		transform 0.6s ease 0.1s;
+}
+
+.visible .subheading {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 24px;
+}
+
+.card {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 16px;
+	padding: 32px;
+	transition:
+		border-color 0.3s ease,
+		transform 0.3s ease,
+		opacity 0.5s ease var(--delay),
+		translate 0.5s ease var(--delay);
+	opacity: 0;
+	translate: 0 24px;
+}
+
+.visible .card {
+	opacity: 1;
+	translate: 0 0;
+}
+
+.card:hover {
+	border-color: var(--primary);
+	transform: translateY(-2px);
+}
+
+.icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 56px;
+	height: 56px;
+	background: var(--background);
+	border: 1px solid var(--border);
+	border-radius: 14px;
+	color: var(--primary);
+	margin-bottom: 20px;
+}
+
+.cardTitle {
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--foreground);
+	margin-bottom: 8px;
+}
+
+.cardDescription {
+	font-size: 15px;
+	line-height: 1.6;
+	color: var(--text-muted);
+}
+
+/* Last two cards center when 5 items in 3-col grid */
+.grid .card:nth-child(4) {
+	grid-column: 1 / 2;
+}
+
+.grid .card:nth-child(5) {
+	grid-column: 2 / 3;
+}
+
+/* Responsive */
+
+@media (max-width: 1024px) {
+	.grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.grid .card:nth-child(4),
+	.grid .card:nth-child(5) {
+		grid-column: auto;
+	}
+
+	.grid .card:last-child {
+		grid-column: 1 / -1;
+		max-width: 480px;
+		margin: 0 auto;
+		width: 100%;
+	}
+}
+
+@media (max-width: 768px) {
+	.features {
+		padding: 64px 24px;
+	}
+
+	.heading {
+		font-size: 28px;
+	}
+
+	.subheading {
+		font-size: 16px;
+		margin-bottom: 40px;
+	}
+
+	.grid {
+		grid-template-columns: 1fr;
+	}
+
+	.grid .card:last-child {
+		grid-column: auto;
+		max-width: none;
+	}
+}
