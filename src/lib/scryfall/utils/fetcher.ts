@@ -63,11 +63,17 @@ export function scryfallGet<T>(
 		return Promise.resolve(cached);
 	}
 
+	// Skip deduplication when a signal is provided: each caller has its own lifecycle,
+	// and sharing a Promise would cause one caller's AbortError to reject the other.
+	if (signal) {
+		return scryfallGetInner<T>(url, signal);
+	}
+
 	// Deduplicate concurrent requests for the same URL
 	const existing = inFlight.get(url);
 	if (existing) return existing as Promise<T>;
 
-	const promise = scryfallGetInner<T>(url, signal);
+	const promise = scryfallGetInner<T>(url);
 	inFlight.set(url, promise);
 	promise
 		.finally(() => inFlight.delete(url))
@@ -108,6 +114,9 @@ async function scryfallGetInner<T>(url: string, externalSignal?: AbortSignal): P
 			return data;
 		} catch (error) {
 			lastError = error instanceof Error ? error : new Error(String(error));
+
+			// Don't retry on abort — either the caller cancelled or the timeout fired.
+			if (error instanceof DOMException && error.name === 'AbortError') throw error;
 
 			// Don't retry on any client errors (4xx) — 429s are not retried either,
 			// as the rate-limiter should prevent them; retrying would worsen the situation.

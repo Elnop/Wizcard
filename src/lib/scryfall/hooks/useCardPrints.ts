@@ -27,6 +27,7 @@ export function useCardPrints(prints_search_uri: string | undefined): {
 					setPrints(data);
 				}
 			} catch (err: unknown) {
+				if (err instanceof DOMException && err.name === 'AbortError') return;
 				if (!controller.signal.aborted) {
 					setError(err instanceof Error ? err.message : 'Failed to load prints');
 					setPrints([]);

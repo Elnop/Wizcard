@@ -10,6 +10,12 @@
 .imageSection {
 	flex-shrink: 0;
 	cursor: zoom-in;
+	width: 220px;
+}
+
+.imageSection img {
+	width: 100%;
+	height: auto;
 }
 
 .infoSection {

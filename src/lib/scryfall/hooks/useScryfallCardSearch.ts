@@ -121,6 +121,7 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 				setHasMore(result.has_more);
 				setTotalCards(result.total_cards ?? result.data.length);
 			} catch (err) {
+				if (err instanceof DOMException && err.name === 'AbortError') return;
 				setError(err instanceof Error ? err : new Error('Search failed'));
 				if (isNewSearch) {
 					setCards([]);
