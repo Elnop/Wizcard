@@ -11,6 +11,7 @@
 
 .lightboxCard {
 	max-width: min(672px, 90vw);
+	max-height: 90vh;
 	width: 100%;
 	cursor: default;
 }
@@ -18,5 +19,7 @@
 .lightboxCard img {
 	width: 100%;
 	height: auto;
+	max-height: 90vh;
+	object-fit: contain;
 	border-radius: 12px;
 }
