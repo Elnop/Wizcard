@@ -1,0 +1,61 @@
+/* src/components/ui/CardListTable/CardListTable.module.css */
+
+.tableContainer {
+	overflow-x: auto;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+}
+
+.table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13px;
+}
+
+.table th {
+	position: sticky;
+	top: 0;
+	background: var(--card-bg, #1a1a2e);
+	padding: 8px 12px;
+	text-align: left;
+	font-weight: 600;
+	color: var(--text-muted);
+	font-size: 12px;
+	border-bottom: 1px solid var(--border);
+}
+
+.table td {
+	padding: 6px 12px;
+	color: var(--foreground);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.table tr:nth-child(even) td {
+	background: rgba(255, 255, 255, 0.02);
+}
+
+.thSortable {
+	cursor: pointer;
+	user-select: none;
+	white-space: nowrap;
+}
+
+.thSortable:hover {
+	color: var(--foreground);
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.thSortable svg {
+	margin-left: 4px;
+	vertical-align: middle;
+	opacity: 0.8;
+}
+
+.clickableRow {
+	cursor: pointer;
+	transition: background 0.15s;
+}
+
+.clickableRow:hover td {
+	background: rgba(255, 255, 255, 0.06);
+}
