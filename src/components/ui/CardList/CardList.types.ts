@@ -28,7 +28,8 @@ export interface CardListProps {
 	onCardClick?: (card: AnyCard) => void;
 	renderOverlay?: (card: AnyCard) => ReactNode;
 	// Table
-	tableColumns?: import('@/components/ui/CardListTable/CardListTable.types').CardListColumn[];
+	// TODO: replace with CardListColumn[] once CardListTable.types.ts is created (Task 2)
+	tableColumns?: unknown[];
 	sortOrder?: string;
 	sortDir?: ScryfallSortDir;
 	onSortChange?: (order: string, dir: ScryfallSortDir) => void;
