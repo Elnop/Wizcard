@@ -4,9 +4,9 @@ import { useState } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
 import { CardImage } from '@/components/cards/CardImage';
+import { CardLightbox } from '@/components/cards/CardLightbox';
 import { Modal } from '@/components/ui/Modal/Modal';
 import styles from './PrintPickerModal.module.css';
-import lightboxStyles from '../../../styles/lightbox.module.css';
 
 const LANG_NAMES: Record<string, string> = {
 	en: 'English',
@@ -146,13 +146,7 @@ export function PrintPickerModal({
 				</div>
 			</Modal>
 
-			{lightboxCard && (
-				<div className={lightboxStyles.lightbox} onClick={() => setLightboxCard(null)}>
-					<div className={lightboxStyles.lightboxCard} onClick={(e) => e.stopPropagation()}>
-						<CardImage card={lightboxCard} size="large" priority />
-					</div>
-				</div>
-			)}
+			{lightboxCard && <CardLightbox card={lightboxCard} onClose={() => setLightboxCard(null)} />}
 		</>
 	);
 }

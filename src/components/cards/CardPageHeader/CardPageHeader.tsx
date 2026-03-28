@@ -5,9 +5,9 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/components/ui/SymbolText/SymbolText';
 import { CardImage } from '@/components/cards/CardImage';
+import { CardLightbox } from '@/components/cards/CardLightbox';
 import { AddToCollectionButton } from '@/lib/collection/components/AddToCollectionButton/AddToCollectionButton';
 import styles from './CardPageHeader.module.css';
-import lightboxStyles from '@/lib/collection/styles/lightbox.module.css';
 
 const rarityLabels: Record<string, string> = {
 	common: 'Common',
@@ -88,13 +88,7 @@ export function CardPageHeader({ card }: Props) {
 				</div>
 			</div>
 
-			{lightbox && (
-				<div className={lightboxStyles.lightbox} onClick={() => setLightbox(false)}>
-					<div className={lightboxStyles.lightboxCard} onClick={(e) => e.stopPropagation()}>
-						<CardImage card={card} size="large" priority />
-					</div>
-				</div>
-			)}
+			{lightbox && <CardLightbox card={card} onClose={() => setLightbox(false)} />}
 		</>
 	);
 }

@@ -4,13 +4,13 @@ import { useState } from 'react';
 import type { Card, CardStack, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { CardImage } from '@/components/cards/CardImage';
+import { CardLightbox } from '@/components/cards/CardLightbox';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/components/ui/SymbolText/SymbolText';
 import { CopyEditModal } from './components/CopyEditModal/CopyEditModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal/ConfirmModal';
 import { Modal } from '@/components/ui/Modal/Modal';
 import styles from './CardCollectionModal.module.css';
-import lightboxStyles from '../styles/lightbox.module.css';
 
 const COLOR_MAP: Record<string, string> = {
 	W: '#f8e7b9',
@@ -281,13 +281,7 @@ function CardCollectionModalInner({
 				</div>
 			</Modal>
 
-			{lightbox && (
-				<div className={lightboxStyles.lightbox} onClick={() => setLightbox(false)}>
-					<div className={lightboxStyles.lightboxCard} onClick={(e) => e.stopPropagation()}>
-						<CardImage card={selectedCard} size="large" priority />
-					</div>
-				</div>
-			)}
+			{lightbox && <CardLightbox card={selectedCard} onClose={() => setLightbox(false)} />}
 
 			{confirmRemoveAll && (
 				<ConfirmModal
