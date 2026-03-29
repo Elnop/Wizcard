@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
-import { CardImage } from '@/components/cards/CardImage';
-import { CardLightbox } from '@/components/cards/CardLightbox';
+import { CardImage } from '@/components/ui/CardImage/CardImage';
+import { CardLightbox } from '@/components/ui/CardLightbox/CardLightbox';
 import { Modal } from '@/components/ui/Modal/Modal';
 import styles from './PrintPickerModal.module.css';
 

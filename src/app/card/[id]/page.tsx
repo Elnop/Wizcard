@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { getCardById } from '@/lib/scryfall/endpoints/cards';
-import { CardPageHeader } from '@/components/cards/CardPageHeader/CardPageHeader';
-import { CardTabs } from '@/components/cards/CardTabs/CardTabs';
+import { CardPageHeader } from './components/CardPageHeader/CardPageHeader';
+import { CardTabs } from './components/CardTabs/CardTabs';
 import styles from './page.module.css';
 
 interface CardPageProps {

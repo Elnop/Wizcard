@@ -1,4 +1,8 @@
-// Scryfall bulk data metadata functions
+/**
+ * Scryfall bulk data metadata functions.
+ *
+ * Not yet consumed in the app — kept for future use.
+ */
 
 import { scryfallGet } from '../utils/fetcher';
 import type { ScryfallBulkData, ScryfallList, ScryfallUUID } from '../types/scryfall';

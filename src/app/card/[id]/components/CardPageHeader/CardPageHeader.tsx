@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
-import { SymbolText } from '@/components/ui/SymbolText/SymbolText';
-import { CardImage } from '@/components/cards/CardImage';
-import { CardLightbox } from '@/components/cards/CardLightbox';
+import { SymbolText } from '@/components/ui/SymbolText';
+import { CardImage } from '@/components/ui/CardImage/CardImage';
+import { CardLightbox } from '@/components/ui/CardLightbox/CardLightbox';
 import { AddToCollectionButton } from '@/lib/collection/components/AddToCollectionButton/AddToCollectionButton';
 import styles from './CardPageHeader.module.css';
 

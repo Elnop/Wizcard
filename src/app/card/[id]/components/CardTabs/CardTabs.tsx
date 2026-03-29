@@ -2,10 +2,10 @@
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import { OverviewTab } from '../tabs/OverviewTab';
-import { PrintsTab } from '../tabs/PrintsTab';
-import { RulingsTab } from '../tabs/RulingsTab';
-import { SimilarTab } from '../tabs/SimilarTab';
+import { OverviewTab } from '../tabs/OverviewTab/OverviewTab';
+import { PrintsTab } from '../tabs/PrintsTab/PrintsTab';
+import { RulingsTab } from '../tabs/RulingsTab/RulingsTab';
+import { SimilarTab } from '../tabs/SimilarTab/SimilarTab';
 import styles from './CardTabs.module.css';
 
 type TabId = 'overview' | 'prints' | 'rulings' | 'similar';

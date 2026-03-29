@@ -1,4 +1,9 @@
-// Scryfall rulings and clarifications functions
+/**
+ * Scryfall rulings and clarifications functions.
+ *
+ * Not yet consumed in the app — kept for future use.
+ * The card detail page currently fetches rulings via `getCardRulings()` in `cards.ts`.
+ */
 
 import { scryfallGet } from '../utils/fetcher';
 import type { ScryfallRuling, ScryfallList, ScryfallUUID } from '../types/scryfall';

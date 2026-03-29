@@ -1,10 +1,10 @@
 'use client';
 
 import type { ScryfallSortOrder } from '@/lib/scryfall/hooks/useScryfallCardSearch';
-import type { CollectionFilters } from '../../utils/filterCollectionCards';
+import type { CollectionFilters } from '@/lib/collection/utils/filterCollectionCards';
 import type { ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
-import { CardCollectionModal } from '../../CardCollectionModal/CardCollectionModal';
+import { CardCollectionModal } from '@/lib/collection/CardCollectionModal/CardCollectionModal';
 import type { useImportPreviewState } from './useImportPreviewState';
 
 type ImportPreviewState = ReturnType<typeof useImportPreviewState>;

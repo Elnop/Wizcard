@@ -1,5 +1,5 @@
 // src/components/ui/CardListGrid/CardListGrid.tsx
-import { CardImage } from '@/components/cards/CardImage';
+import { CardImage } from '@/components/ui/CardImage/CardImage';
 import type { CardListGridProps } from './CardListGrid.types';
 import styles from './CardListGrid.module.css';
 

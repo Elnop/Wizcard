@@ -10,7 +10,7 @@ import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
 import { CardList } from '@/components/ui/CardList/CardList';
 import { Spinner } from '@/components/ui/Spinner/Spinner';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
-import { useSearchFiltersFromUrl } from '@/lib/search/hooks/useSearchFiltersFromUrl';
+import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
 import styles from './page.module.css';
 
 export default function SearchPage() {

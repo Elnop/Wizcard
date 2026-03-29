@@ -1,4 +1,8 @@
-// Scryfall catalog access functions
+/**
+ * Scryfall catalog access functions.
+ *
+ * Not yet consumed in the app — kept for future use.
+ */
 
 import { scryfallGet } from '../utils/fetcher';
 import type { ScryfallCatalog } from '../types/scryfall';

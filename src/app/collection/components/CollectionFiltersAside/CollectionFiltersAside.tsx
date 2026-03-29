@@ -11,8 +11,8 @@ import { OracleTextFilter } from '@/components/ui/filters/OracleTextFilter/Oracl
 import { CmcFilter } from '@/components/ui/filters/CmcFilter/CmcFilter';
 import { SetFilter } from '@/components/ui/filters/SetFilter/SetFilter';
 import { SortFilter } from '@/components/ui/filters/SortFilter/SortFilter';
-import type { CollectionFilters } from '../../utils/filterCollectionCards';
-import { defaultCollectionFilters } from '../../utils/filterCollectionCards';
+import type { CollectionFilters } from '@/lib/collection/utils/filterCollectionCards';
+import { defaultCollectionFilters } from '@/lib/collection/utils/filterCollectionCards';
 import styles from './CollectionFiltersAside.module.css';
 
 const COLLECTION_EXTRA_SORT_OPTIONS = [{ value: 'language', label: 'Language' }];

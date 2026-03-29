@@ -7,7 +7,7 @@ import { useImportContext } from '@/lib/import/contexts/ImportContext';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { getQueueLength } from '@/lib/supabase/sync-queue';
-import { SyncIndicator } from '@/lib/supabase/components/SyncIndicator';
+import { SyncIndicator } from '@/lib/supabase/components/SyncIndicator/SyncIndicator';
 import styles from './Navbar.module.css';
 
 export function Navbar() {
