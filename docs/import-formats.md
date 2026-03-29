@@ -65,7 +65,7 @@ interface ParsedImportRow {
 
 - Full metadata support: condition, foil type, language, price, trade flag, tags
 - Conditions are normalized via `CONDITION_MAP` in `collection.ts` (e.g. `"Near Mint"` → `"NM"`)
-- Parser: `src/lib/import/formats/moxfield.ts`
+- Parser: `src/lib/moxfield/import-adapter.ts` (wraps `src/lib/moxfield/parse.ts`)
 
 ### MTGA
 
@@ -76,7 +76,7 @@ interface ParsedImportRow {
 
 ## Format Registry
 
-Formats are registered in `src/lib/import/formats/index.ts`:
+Formats are registered in `src/lib/import/formats/registry.ts`:
 
 ```typescript
 export const FORMAT_REGISTRY: ImportFormatDescriptor[] = [moxfieldDescriptor, mtgaDescriptor];

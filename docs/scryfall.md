@@ -17,7 +17,9 @@ src/lib/scryfall/
 │   ├── cards.ts
 │   ├── sets.ts
 │   ├── symbols.ts
-│   └── bulk-data.ts
+│   ├── bulk-data.ts          # not yet consumed — reserved for future use
+│   ├── rulings.ts             # not yet consumed — reserved for future use
+│   └── catalogs.ts            # not yet consumed — reserved for future use
 ├── types/
 │   └── scryfall.ts
 └── utils/
@@ -110,12 +112,14 @@ const query = buildScryfallQuery({
 
 ## Available Endpoints (`src/lib/scryfall/endpoints/`)
 
-| File           | Functions                                                          |
-| -------------- | ------------------------------------------------------------------ |
-| `cards.ts`     | `searchCards`, `getCardById`, `getCardByName`, `getCardCollection` |
-| `sets.ts`      | `getAllSets`, `getSetByCode`                                       |
-| `symbols.ts`   | `getAllSymbols`, `parseMana`                                       |
-| `bulk-data.ts` | `getBulkDataList`, `getBulkDataFile`                               |
+| File           | Functions                                                                             |
+| -------------- | ------------------------------------------------------------------------------------- |
+| `cards.ts`     | `searchCards`, `getCardById`, `getCardByName`, `getCardCollection`                    |
+| `sets.ts`      | `getAllSets`, `getSetByCode`                                                          |
+| `symbols.ts`   | `getAllSymbols`, `parseMana`                                                          |
+| `bulk-data.ts` | `getAllBulkData`, `getBulkDataById`, `getBulkDataByType`, … (reserved for future use) |
+| `rulings.ts`   | `getRulingsByCardId`, `getRulingsBySetNumber`, … (reserved for future use)            |
+| `catalogs.ts`  | `getCardNames`, `getCreatureTypes`, `getCatalogByType`, … (reserved for future use)   |
 
 ## Image URIs
 

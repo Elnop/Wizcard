@@ -5,7 +5,7 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 ## Common Pitfalls
 
 - **Never group by `scryfallId`** for display — use `oracleId` via `CardStack`. Two copies of the same card from different editions = same `CardStack`.
-- **Don't call `fetch()` against Scryfall directly** — always go through `scryfallGet`/`scryfallPost` in `src/lib/scryfall/fetcher.ts` (rate limiting, caching, dedup).
+- **Don't call `fetch()` against Scryfall directly** — always go through `scryfallGet`/`scryfallPost` in `src/lib/scryfall/utils/fetcher.ts` (rate limiting, caching, dedup).
 - **Always call `triggerSync()` after `enqueue()`** — the queue does not self-start.
 - **`npm run sb:reset` is destructive** — drops and recreates the local DB.
 - **Write the current localStorage format**: `{ scryfallId: string, entry: CardEntry }`. Legacy migration exists in `src/lib/collection/db/collection-migrations.ts` but new code must write the current format.
@@ -37,9 +37,10 @@ Feature code lives in `src/lib/<feature>/`, organized by **feature > sub-feature
 Key constraints:
 
 - Next.js routes (`page.tsx`, `layout.tsx`) stay in `src/app/` — imposed by the framework
+- **Page-specific components** live in `src/app/<page>/components/`; page-specific hooks live in `src/app/<page>/`. Only shared code stays in `src/lib/`.
 - Generic infrastructure (`src/lib/supabase/`, `src/components/ui/`) is not owned by any feature
 - No barrel exports (`index.ts`) — import files directly
-- One component = one folder (`ComponentName/ComponentName.tsx` + `.module.css`)
+- A component gets its own folder (`ComponentName/ComponentName.tsx` + `.module.css`) only when it has ≥2 files. A single `.tsx` with no CSS stays as a flat file.
 
 ## Provider Nesting Order
 
@@ -69,30 +70,30 @@ AuthProvider
 
 ### Scryfall Integration
 
-- `src/lib/scryfall/fetcher.ts` — `scryfallGet`/`scryfallPost`; rate-limit + in-memory cache + retry + in-flight deduplication
-- `src/lib/scryfall/rate-limiter.ts` — 100ms sequential delay via promise chaining
-- `src/lib/scryfall/cache.ts` — in-memory TTL cache (5 min, 1000 entries max)
+- `src/lib/scryfall/utils/fetcher.ts` — `scryfallGet`/`scryfallPost`; rate-limit + in-memory cache + retry + in-flight deduplication
+- `src/lib/scryfall/utils/rate-limiter.ts` — 100ms sequential delay via promise chaining
+- `src/lib/scryfall/utils/cache.ts` — in-memory TTL cache (5 min, 1000 entries max)
 - `src/lib/card-cache.ts` — IndexedDB persistent cache for `ScryfallCard` objects (24h TTL)
-- `src/lib/scryfall/scryfall-query.ts` — `buildScryfallQuery()` + image URI helpers
-- `src/lib/scryfall/endpoints/` — `cards.ts`, `sets.ts`, `symbols.ts`, `bulk-data.ts`
+- `src/lib/scryfall/utils/scryfall-query.ts` — `buildScryfallQuery()` + `getScryfallCardImageUriBySize()`
+- `src/lib/scryfall/endpoints/` — `cards.ts`, `sets.ts`, `symbols.ts` (active); `bulk-data.ts`, `rulings.ts`, `catalogs.ts` (reserved for future use)
 
 ### Collection Display
 
-- `src/lib/collection/hooks/useCollectionCards.ts` — hydrates entries into `Card[]` + `CardStack[]`; two-phase: IndexedDB cache first, then Scryfall `/cards/collection` in 75-card batches
-- `src/lib/collection/hooks/useCollectionFiltering.ts` — filter + sort state over `CardStack[]`
-- `src/lib/collection/shared/utils/filterCollectionCards.ts` — pure filter function (no state)
+- `src/app/collection/useCollectionCards.ts` — hydrates entries into `Card[]` + `CardStack[]`; two-phase: IndexedDB cache first, then Scryfall `/cards/collection` in 75-card batches
+- `src/app/collection/useCollectionFiltering.ts` — filter + sort state over `CardStack[]`
+- `src/lib/collection/utils/filterCollectionCards.ts` — pure filter function (no state)
 
 ### Import System
 
-- `src/lib/import/detect.ts` — format auto-detection by content scoring + file extension bonus
-- `src/lib/import/formats/moxfield.ts` — Moxfield CSV parser
+- `src/lib/import/utils/detect.ts` — format auto-detection by content scoring + file extension bonus
+- `src/lib/moxfield/import-adapter.ts` — Moxfield CSV import adapter (wraps `src/lib/moxfield/parse.ts`)
 - `src/lib/import/formats/mtga.ts` — MTGA text format parser
-- `src/lib/import/formats/index.ts` — `FORMAT_REGISTRY` + `getParser()`
+- `src/lib/import/formats/registry.ts` — `FORMAT_REGISTRY` + `getParser()`
 
 ### Auth + Routing
 
 - `src/lib/supabase/contexts/AuthContext.tsx` — `useAuth()`, exposes `user` + `isLoading`
-- `src/middleware.ts` — Supabase SSR session refresh
+- `src/proxy.ts` — Supabase SSR session refresh (Next.js middleware entry point)
 
 ### App Structure
 

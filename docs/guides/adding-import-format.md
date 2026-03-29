@@ -57,7 +57,7 @@ export type ImportFormatId = 'moxfield' | 'mtga' | 'myformat';
 
 ## Step 3: Register the format
 
-In `src/lib/import/formats/index.ts`:
+In `src/lib/import/formats/registry.ts`:
 
 ```typescript
 import { parseMyFormat, myFormatDescriptor } from './myformat';

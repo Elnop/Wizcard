@@ -110,7 +110,7 @@ Table: `public.cards`
 
 RLS policies ensure `auth.uid() = owner_id` for all operations.
 
-The mapping between DB columns and TypeScript fields is handled in `src/lib/supabase/collection.ts` (`rowToEntry` function).
+The mapping between DB columns and TypeScript fields is handled in `src/lib/collection/db/collection.ts` (`rowToEntry` function).
 
 ---
 
