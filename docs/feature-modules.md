@@ -119,6 +119,8 @@ src/app/collection/
     ImportModal/                    # Import flow — only used on this page
 ```
 
+Per rule 3, any hook, util, or context used exclusively by this page belongs here — not in `src/lib/collection/`.
+
 Infrastructure stays in `src/lib/supabase/`:
 
 ```

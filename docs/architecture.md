@@ -86,6 +86,42 @@ src/
 
 Feature modules follow the **feature > sub-feature > resource** pattern — see `docs/feature-modules.md`.
 
+## Page-Specific Colocation
+
+Code used by a single page lives with that page in `src/app/<page>/`, not in `src/lib/`.
+
+| Resource type            | Location                              |
+| ------------------------ | ------------------------------------- |
+| Page-specific components | `src/app/<page>/components/`          |
+| Page-specific hooks      | `src/app/<page>/` (or `hooks/` if ≥2) |
+| Page-specific utils      | `src/app/<page>/utils/`               |
+| Page-specific contexts   | `src/app/<page>/contexts/`            |
+
+Code stays in `src/lib/<feature>/` only when it is shared between ≥2 pages or consumed by global infrastructure (providers, sync queue, middleware).
+
+### Example: collection page
+
+```
+src/app/collection/
+  page.tsx
+  layout.tsx
+  page.module.css
+  useCollectionCards.ts            # entries → Card[] + CardStack[]
+  useCollectionFiltering.ts        # filter + sort state
+  components/
+    CollectionFiltersAside/        # filter sidebar
+    ImportModal/                   # import flow
+```
+
+Shared collection code (used by card detail page, providers, or sync) stays in `src/lib/collection/`:
+
+| Stays in `src/lib/collection/`      | Why                                                          |
+| ----------------------------------- | ------------------------------------------------------------ |
+| `context/CollectionContext.tsx`     | Used by collection page, card detail page, and Providers.tsx |
+| `store/collection-store.ts`         | Backing store for CollectionContext (global)                 |
+| `db/`                               | Used by sync queue (global infrastructure)                   |
+| `components/AddToCollectionButton/` | Used by collection page and card detail page                 |
+
 ## App Routes
 
 | Route           | Rendering | Description                       |
