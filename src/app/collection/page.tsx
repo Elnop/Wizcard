@@ -3,7 +3,7 @@
 import { useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import type { CardStack } from '@/types/cards';
-import type { CollectionFilters } from '@/lib/collection/utils/filterCollectionCards';
+import type { CollectionFilters } from '@/app/collection/utils/filterCollectionCards';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useCollectionCards } from './useCollectionCards';
 import { useImportContext } from '@/lib/import/contexts/ImportContext';

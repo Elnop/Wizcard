@@ -1,7 +1,7 @@
 'use client';
 
 import type { ScryfallSortOrder } from '@/lib/scryfall/types/sort';
-import type { CollectionFilters } from '@/lib/collection/utils/filterCollectionCards';
+import type { CollectionFilters } from '@/app/collection/utils/filterCollectionCards';
 import type { ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';

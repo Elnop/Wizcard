@@ -8,8 +8,8 @@ import type { CardEntry, CardStack, Card } from '@/types/cards';
 import {
 	filterCollectionCards,
 	defaultCollectionFilters,
-} from '@/lib/collection/utils/filterCollectionCards';
-import type { CollectionFilters } from '@/lib/collection/utils/filterCollectionCards';
+} from '@/app/collection/utils/filterCollectionCards';
+import type { CollectionFilters } from '@/app/collection/utils/filterCollectionCards';
 import { countActiveFilters } from '@/lib/search/types';
 import { buildIdentifierKey } from '@/lib/import/utils/identifier-dedup';
 import type { InputMode } from './types';
