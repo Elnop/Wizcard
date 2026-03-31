@@ -1,7 +1,7 @@
 'use client';
 
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import { CardImage } from '@/components/ui/CardImage/CardImage';
+import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import styles from './CardLightbox.module.css';
 
 interface Props {

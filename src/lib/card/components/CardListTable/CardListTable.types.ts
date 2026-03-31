@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { AnyCard } from '@/components/ui/CardList/CardList.types';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { ScryfallSortDir } from '@/lib/scryfall/types/sort';
 
 export interface CardListColumn {

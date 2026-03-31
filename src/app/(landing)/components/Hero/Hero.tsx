@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button/Button';
+import { Button } from '@/components/Button/Button';
 import { useInView } from '@/hooks/useInView';
 import styles from './Hero.module.css';
 

@@ -4,8 +4,8 @@ import { useState } from 'react';
 import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { MTG_LANGUAGES, LANGUAGE_TO_SCRYFALL_CODE } from '@/lib/mtg/languages';
-import { CardPrintPickerModal } from '@/lib/CardPrintPickerModal/CardPrintPickerModal';
-import { Modal } from '@/components/ui/Modal/Modal';
+import { CardPrintPickerModal } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
+import { Modal } from '@/components/Modal/Modal';
 import styles from './EditCardModal.module.css';
 
 const CONDITIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];

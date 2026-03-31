@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
-import { EditCardModal } from '@/lib/EditCardModal/EditCardModal';
-import { Button } from '@/components/ui/Button/Button';
+import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
+import { Button } from '@/components/Button/Button';
 import styles from './AddToCollectionButton.module.css';
 
 export interface AddToCollectionButtonProps {

@@ -1,5 +1,5 @@
 import type { ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
-import { ManaSymbol } from './ManaSymbol/ManaSymbol';
+import { ManaSymbol } from '@/lib/card/components/ManaSymbol/ManaSymbol';
 
 interface SymbolTextProps {
 	text: string;

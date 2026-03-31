@@ -1,7 +1,7 @@
 'use client';
 
 import type { ScryfallColor, ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
-import { ManaSymbol } from '@/components/ui/ManaSymbol/ManaSymbol';
+import { ManaSymbol } from '@/lib/card/components/ManaSymbol/ManaSymbol';
 import styles from './ColorFilter.module.css';
 
 export interface ColorFilterProps {

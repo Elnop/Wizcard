@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
-import { CardImage } from '@/components/ui/CardImage/CardImage';
-import { CardLightbox } from '@/components/ui/CardLightbox/CardLightbox';
-import { Modal } from '@/components/ui/Modal/Modal';
+import { CardImage } from '@/lib/card/components/CardImage/CardImage';
+import { CardLightbox } from '@/lib/card/components/CardLightbox/CardLightbox';
+import { Modal } from '@/components/Modal/Modal';
 import styles from './CardPrintPickerModal.module.css';
 
 const LANG_NAMES: Record<string, string> = {

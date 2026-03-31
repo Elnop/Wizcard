@@ -4,7 +4,7 @@ import type { ScryfallSortOrder } from '@/lib/scryfall/types/sort';
 import type { CollectionFilters } from '@/lib/collection/utils/filterCollectionCards';
 import type { ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
-import { CardModal } from '@/lib/CardModal/CardModal';
+import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import type { useImportPreviewState } from './useImportPreviewState';
 
 type ImportPreviewState = ReturnType<typeof useImportPreviewState>;

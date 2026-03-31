@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import type { CardListProps } from './CardList.types';
 import { isSections } from './CardList.types';
-import { CardListGrid } from '@/components/ui/CardListGrid/CardListGrid';
-import { CardListTable } from '@/components/ui/CardListTable/CardListTable';
+import { CardListGrid } from '@/lib/card/components/CardListGrid/CardListGrid';
+import { CardListTable } from '@/lib/card/components/CardListTable/CardListTable';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { PAGE_SIZE } from '@/lib/collection/constants';
 import styles from './CardList.module.css';

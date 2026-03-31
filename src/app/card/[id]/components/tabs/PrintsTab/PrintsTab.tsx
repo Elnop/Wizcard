@@ -6,9 +6,9 @@ import type { ReactNode } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card, CardEntry } from '@/types/cards';
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
-import { CardList } from '@/components/ui/CardList/CardList';
-import type { CardListSection } from '@/components/ui/CardList/CardList.types';
-import { EditCardModal } from '@/lib/EditCardModal/EditCardModal';
+import { CardList } from '@/lib/card/components/CardList/CardList';
+import type { CardListSection } from '@/lib/card/components/CardList/CardList.types';
+import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import styles from './PrintsTab.module.css';
 

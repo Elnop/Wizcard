@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import { CardImage } from '@/components/ui/CardImage/CardImage';
-import { CardLightbox } from '@/components/ui/CardLightbox/CardLightbox';
+import { CardImage } from '@/lib/card/components/CardImage/CardImage';
+import { CardLightbox } from '@/lib/card/components/CardLightbox/CardLightbox';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
-import { SymbolText } from '@/components/ui/SymbolText';
-import { EditCardModal } from '@/lib/EditCardModal/EditCardModal';
-import { ConfirmModal } from '@/components/ui/ConfirmModal/ConfirmModal';
-import { Modal } from '@/components/ui/Modal/Modal';
+import { SymbolText } from '@/components/SymbolText';
+import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
+import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
+import { Modal } from '@/components/Modal/Modal';
 import styles from './CardModal.module.css';
 
 const COLOR_MAP: Record<string, string> = {

@@ -3,7 +3,7 @@
 import { useRef, useCallback } from 'react';
 import type { ImportFormatId, ImportFormatDescriptor } from '@/lib/import/utils/types';
 import type { InputMode } from './types';
-import { Button } from '@/components/ui/Button/Button';
+import { Button } from '@/components/Button/Button';
 import styles from './ImportModal.module.css';
 
 interface ImportFileInputProps {

@@ -15,11 +15,11 @@ import { ImportPreviewStats } from './ImportPreviewStats';
 import { ImportPreviewFilters } from './ImportPreviewFilters';
 import { ImportFallbackTable } from './ImportFallbackTable';
 import { ImportSupportModals } from './ImportSupportModals';
-import { CardList } from '@/components/ui/CardList/CardList';
-import type { CardListColumn } from '@/components/ui/CardListTable/CardListTable.types';
-import { Button } from '@/components/ui/Button/Button';
-import { Modal } from '@/components/ui/Modal/Modal';
-import { Spinner } from '@/components/ui/Spinner/Spinner';
+import { CardList } from '@/lib/card/components/CardList/CardList';
+import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
+import { Button } from '@/components/Button/Button';
+import { Modal } from '@/components/Modal/Modal';
+import { Spinner } from '@/components/Spinner/Spinner';
 import styles from './ImportModal.module.css';
 import { STATIC_IMPORT_COLUMNS } from './tableColumns';
 

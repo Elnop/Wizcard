@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card } from '@/types/cards';
 import type { ScryfallSortDir } from '@/lib/scryfall/types/sort';
-import type { CardListColumn } from '@/components/ui/CardListTable/CardListTable.types';
+import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 
 export type AnyCard = ScryfallCard | Card;
 

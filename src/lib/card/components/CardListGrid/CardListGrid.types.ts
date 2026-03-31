@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { AnyCard, CardListSection } from '@/components/ui/CardList/CardList.types';
+import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 
 export interface CardListGridProps {
 	cards: AnyCard[];

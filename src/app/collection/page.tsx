@@ -8,12 +8,12 @@ import { useCollectionContext } from '@/lib/collection/context/CollectionContext
 import { useCollectionCards } from './useCollectionCards';
 import { useImportContext } from '@/lib/import/contexts/ImportContext';
 import { useCollectionFiltering } from './useCollectionFiltering';
-import { useCardModal } from '@/lib/collection/hooks/useCardModal';
+import { useCardModal } from '@/lib/card/hooks/useCardModal';
 import { CollectionFiltersAside } from './components/CollectionFiltersAside/CollectionFiltersAside';
 import { ImportModal } from './components/ImportModal/ImportModal';
-import { CardModal } from '@/lib/CardModal/CardModal';
-import { CardList } from '@/components/ui/CardList/CardList';
-import { Button } from '@/components/ui/Button/Button';
+import { CardModal } from '@/lib/card/components/CardModal/CardModal';
+import { CardList } from '@/lib/card/components/CardList/CardList';
+import { Button } from '@/components/Button/Button';
 import { serializeToMoxfieldCSV, downloadCSV } from '@/lib/moxfield/serialize';
 import styles from './page.module.css';
 
