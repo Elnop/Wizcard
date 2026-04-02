@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
 import styles from './ManaSymbol.module.css';
 
@@ -13,5 +14,14 @@ export function ManaSymbol({ symbol, symbolMap }: ManaSymbolProps) {
 		return <span>{symbol}</span>;
 	}
 
-	return <img src={data.svg_uri} alt={data.english} className={styles.manaSymbol} />;
+	return (
+		<Image
+			src={data.svg_uri}
+			alt={data.english}
+			width={16}
+			height={16}
+			className={styles.manaSymbol}
+			unoptimized
+		/>
+	);
 }

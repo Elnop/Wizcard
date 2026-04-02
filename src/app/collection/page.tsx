@@ -8,6 +8,7 @@ import { useCollectionContext } from '@/lib/collection/context/CollectionContext
 import { useCollectionCards } from './useCollectionCards';
 import { useImportContext } from '@/lib/import/contexts/ImportContext';
 import { useCollectionFiltering } from './useCollectionFiltering';
+import { PAGE_SIZE } from '@/lib/collection/constants';
 import { useCardModal } from '@/lib/card/hooks/useCardModal';
 import { CollectionFiltersAside } from './components/CollectionFiltersAside/CollectionFiltersAside';
 import { ImportModal } from './components/ImportModal/ImportModal';
@@ -52,7 +53,9 @@ export default function CollectionPage() {
 		await importCtx.confirm();
 	}, [importCtx]);
 
-	const skeletonCount = isHydrating ? Math.max(0, (totalExpected ?? 0) - filteredStacks.length) : 0;
+	const skeletonCount = isHydrating
+		? Math.min(PAGE_SIZE, Math.max(0, (totalExpected ?? 0) - filteredStacks.length))
+		: 0;
 
 	const representativeCards = useMemo(
 		() =>
