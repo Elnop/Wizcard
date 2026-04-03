@@ -40,7 +40,7 @@ export function Hero() {
 
 					<p className={styles.description}>
 						Search, collect, and manage every Magic card ever printed. Powerful filters, offline
-						sync, and bulk import — all in one place.
+						sync, and bulk import, all in one place.
 					</p>
 
 					<div className={styles.cta}>
