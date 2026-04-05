@@ -1,0 +1,161 @@
+.section {
+	padding: 96px 48px;
+	max-width: 1200px;
+	margin: 0 auto;
+}
+
+/* Heading reveal */
+.headingWrapper .heading {
+	opacity: 0;
+	transform: translateY(16px);
+	transition:
+		opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+		transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.headingWrapper.visible .heading {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.heading {
+	font-family: var(--font-display);
+	font-size: 28px;
+	font-weight: 700;
+	color: var(--foreground);
+	text-align: center;
+	letter-spacing: 0.06em;
+	margin-bottom: 48px;
+}
+
+/* Horizontal strip with hover reveal */
+.strip {
+	display: flex;
+	gap: 2px;
+	border-radius: 12px;
+	overflow: hidden;
+}
+
+/* Staggered cell reveal — scale up from center */
+.strip .cell {
+	opacity: 0;
+	transform: scaleY(0.8);
+	transform-origin: bottom;
+	transition:
+		opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+		transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+		flex 0.4s ease,
+		background 0.3s;
+}
+
+.strip.visible .cell {
+	opacity: 1;
+	transform: scaleY(1);
+}
+
+.cell {
+	flex: 1;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 40px 16px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	cursor: default;
+	min-height: 180px;
+	overflow: hidden;
+}
+
+.cellActive {
+	flex: 2.5;
+	background: rgba(124, 58, 237, 0.06);
+	border-color: var(--violet);
+}
+
+.icon {
+	font-size: 32px;
+	margin-bottom: 12px;
+	transition: transform 0.3s;
+}
+
+.cellActive .icon {
+	transform: scale(1.15);
+}
+
+.reveal {
+	max-height: 0;
+	opacity: 0;
+	overflow: hidden;
+	transition:
+		max-height 0.4s ease,
+		opacity 0.3s ease;
+	text-align: center;
+}
+
+.cellActive .reveal {
+	max-height: 120px;
+	opacity: 1;
+}
+
+.cellTitle {
+	font-family: var(--font-display);
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--foreground);
+	letter-spacing: 0.04em;
+	margin-bottom: 6px;
+}
+
+.cellDescription {
+	font-size: 12px;
+	color: var(--text-muted);
+	line-height: 1.5;
+}
+
+/* Bottom glow bar */
+.glowBar {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 2px;
+	background: var(--violet);
+	opacity: 0;
+	transition: opacity 0.3s;
+	box-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
+}
+
+.cellActive .glowBar {
+	opacity: 1;
+}
+
+@media (max-width: 768px) {
+	.section {
+		padding: 64px 24px;
+	}
+
+	.strip {
+		flex-direction: column;
+	}
+
+	.cell {
+		min-height: auto;
+		padding: 24px 16px;
+	}
+
+	.cellActive {
+		flex: auto;
+	}
+
+	/* Vertical reveal on mobile */
+	.strip .cell {
+		transform: translateY(16px);
+		transform-origin: center;
+	}
+
+	.strip.visible .cell {
+		transform: translateY(0);
+	}
+}

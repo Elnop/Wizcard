@@ -1,0 +1,76 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.label {
+	font-size: 12px;
+	font-weight: 600;
+	font-family: var(--font-display);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+}
+
+.colors {
+	display: flex;
+	gap: 10px;
+}
+
+.colorButton {
+	width: 40px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	background: var(--glass-bg);
+	border: 1px solid var(--glass-border);
+	border-radius: 50%;
+	cursor: pointer;
+	backdrop-filter: blur(var(--glass-blur));
+	transition:
+		border-color 0.3s,
+		box-shadow 0.3s,
+		transform 0.2s;
+}
+
+.colorButton:hover {
+	transform: scale(1.1);
+	border-color: var(--violet);
+}
+
+.colorButton.selected {
+	border-color: var(--violet);
+	box-shadow: 0 0 14px var(--glow);
+}
+
+.pip {
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.matchGroup {
+	display: flex;
+	gap: 16px;
+	flex-wrap: wrap;
+	padding-top: 4px;
+}
+
+.matchOption {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	color: var(--text-muted);
+	cursor: pointer;
+	user-select: none;
+}
+
+.matchOption input[type='radio'] {
+	accent-color: var(--violet);
+	cursor: pointer;
+}

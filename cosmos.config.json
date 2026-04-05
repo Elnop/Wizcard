@@ -1,0 +1,9 @@
+{
+	"$schema": "http://json.schemastore.org/cosmos-config",
+	"rendererUrl": {
+		"dev": "http://localhost:3000/cosmos/<fixture>",
+		"export": "/cosmos/<fixture>.html"
+	},
+	"globalImports": ["./src/app/globals.css"],
+	"ignore": ["**/node_modules/**", "**/.next/**"]
+}

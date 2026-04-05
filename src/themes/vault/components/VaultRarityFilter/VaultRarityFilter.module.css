@@ -1,0 +1,94 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.label {
+	font-size: 12px;
+	font-weight: 600;
+	font-family: var(--font-display);
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--brass);
+}
+
+.rarities {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.rarityButton {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 18px;
+	font-size: 12px;
+	font-weight: 600;
+	font-family: var(--font-display);
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	background: var(--glass-bg);
+	border: 1px solid var(--glass-border);
+	border-radius: 2px;
+	cursor: pointer;
+	color: var(--text-muted);
+	backdrop-filter: blur(var(--glass-blur));
+	transition:
+		border-color 0.25s,
+		color 0.25s,
+		box-shadow 0.25s,
+		transform 0.2s;
+}
+
+.rarityButton:hover {
+	transform: scale(1.03);
+}
+
+.rarityButton.selected {
+	border-color: var(--gold);
+}
+
+.diamond {
+	width: 8px;
+	height: 8px;
+	transform: rotate(45deg);
+	border: 1px solid currentColor;
+}
+
+/* Rarity colors */
+.rarityButton[data-rarity='common'] {
+	color: #9e9e9e;
+}
+
+.rarityButton[data-rarity='common'].selected {
+	color: #c0c0c0;
+	border-color: #9e9e9e;
+}
+
+.rarityButton[data-rarity='uncommon'] {
+	color: #b0c4de;
+}
+
+.rarityButton[data-rarity='uncommon'].selected {
+	color: #d0e4ff;
+	border-color: #b0c4de;
+}
+
+.rarityButton[data-rarity='rare'] {
+	color: var(--gold);
+}
+
+.rarityButton[data-rarity='rare'].selected {
+	box-shadow: 0 0 10px rgba(201, 168, 76, 0.25);
+}
+
+.rarityButton[data-rarity='mythic'] {
+	color: #e8671b;
+}
+
+.rarityButton[data-rarity='mythic'].selected {
+	border-color: #e8671b;
+	box-shadow: 0 0 10px rgba(232, 103, 27, 0.25);
+}

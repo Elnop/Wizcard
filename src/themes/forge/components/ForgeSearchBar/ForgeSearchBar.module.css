@@ -1,0 +1,64 @@
+.container {
+	position: relative;
+	display: flex;
+	align-items: center;
+	width: 100%;
+}
+
+.icon {
+	position: absolute;
+	left: 16px;
+	color: var(--violet);
+	pointer-events: none;
+}
+
+.input {
+	width: 100%;
+	padding: 14px 48px;
+	font-size: 15px;
+	font-family: var(--font-body);
+	color: var(--foreground);
+	background: var(--glass-bg);
+	border: 1px solid var(--glass-border);
+	border-radius: 8px;
+	outline: none;
+	backdrop-filter: blur(var(--glass-blur));
+	transition:
+		border-color 0.3s,
+		box-shadow 0.3s;
+}
+
+.input::placeholder {
+	color: var(--text-muted);
+}
+
+.input:focus {
+	border-color: var(--violet);
+	box-shadow:
+		0 0 0 2px rgba(124, 58, 237, 0.15),
+		0 0 16px rgba(124, 58, 237, 0.1);
+}
+
+.clearButton {
+	position: absolute;
+	right: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	color: var(--text-muted);
+	background: transparent;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	transition:
+		color 0.2s,
+		background-color 0.2s;
+}
+
+.clearButton:hover {
+	color: var(--violet);
+	background: rgba(124, 58, 237, 0.1);
+}

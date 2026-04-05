@@ -1,0 +1,380 @@
+.hero {
+	position: relative;
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+}
+
+/* === Entrance animations === */
+.hero .glowRing {
+	opacity: 0;
+	transform: scale(0.5);
+	transition:
+		opacity 1s ease 0.2s,
+		transform 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+}
+
+.hero.visible .glowRing {
+	opacity: 1;
+	transform: scale(1);
+}
+
+.hero .preTitle {
+	opacity: 0;
+	transition: opacity 0.6s ease 0.5s;
+}
+
+.hero.visible .preTitle {
+	opacity: 1;
+}
+
+.hero .title {
+	opacity: 0;
+	transform: translateY(24px) scale(0.95);
+	transition:
+		opacity 0.8s ease 0.6s,
+		transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s;
+}
+
+.hero.visible .title {
+	opacity: 1;
+	transform: translateY(0) scale(1);
+}
+
+.hero .subtitle {
+	opacity: 0;
+	transition: opacity 0.8s ease 0.9s;
+}
+
+.hero.visible .subtitle {
+	opacity: 1;
+}
+
+.hero .description {
+	opacity: 0;
+	transform: translateY(10px);
+	transition:
+		opacity 0.8s ease 1s,
+		transform 0.8s ease 1s;
+}
+
+.hero.visible .description {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.hero .cta {
+	opacity: 0;
+	transform: translateY(10px);
+	transition:
+		opacity 0.8s ease 1.2s,
+		transform 0.8s ease 1.2s;
+}
+
+.hero.visible .cta {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+/* Floating cards fade in with delay */
+.hero .floatingCard {
+	opacity: 0;
+	transition: opacity 1.5s ease;
+	transition-delay: calc(0.3s + var(--i) * 0.3s);
+}
+
+.hero.visible .floatingCard {
+	opacity: 0.12;
+}
+
+/* Background */
+.background {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+}
+
+.gradient {
+	position: absolute;
+	inset: 0;
+	background:
+		radial-gradient(ellipse at 50% 40%, rgba(124, 58, 237, 0.12) 0%, transparent 50%),
+		radial-gradient(ellipse at 30% 70%, rgba(67, 56, 202, 0.08) 0%, transparent 40%),
+		radial-gradient(ellipse at 70% 60%, rgba(59, 130, 246, 0.06) 0%, transparent 40%);
+}
+
+.particles {
+	position: absolute;
+	inset: 0;
+	background-image: radial-gradient(circle, rgba(124, 58, 237, 0.25) 1px, transparent 1px);
+	background-size: 50px 50px;
+	animation: drift 25s linear infinite;
+	mask-image: radial-gradient(ellipse at center, black 10%, transparent 60%);
+}
+
+@keyframes drift {
+	0% {
+		transform: translate(0, 0);
+	}
+	100% {
+		transform: translate(50px, 50px);
+	}
+}
+
+/* Horizontal energy lines */
+.energyLines {
+	position: absolute;
+	inset: 0;
+	background: repeating-linear-gradient(
+		0deg,
+		transparent,
+		transparent 149px,
+		rgba(124, 58, 237, 0.03) 149px,
+		rgba(124, 58, 237, 0.03) 150px
+	);
+	mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+	animation: energyShift 8s linear infinite;
+}
+
+@keyframes energyShift {
+	0% {
+		transform: translateY(0);
+	}
+	100% {
+		transform: translateY(150px);
+	}
+}
+
+.orbGlow {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 500px;
+	height: 500px;
+	border-radius: 50%;
+	background: radial-gradient(circle, rgba(124, 58, 237, 0.08) 0%, transparent 60%);
+	animation: pulse 4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+	0%,
+	100% {
+		opacity: 0.6;
+		transform: translate(-50%, -50%) scale(1);
+	}
+	50% {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1.1);
+	}
+}
+
+/* Floating cards scattered behind text */
+.floatingCards {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+}
+
+.floatingCard {
+	position: absolute;
+	width: 140px;
+	border-radius: 10px;
+	overflow: hidden;
+	filter: blur(1px);
+	box-shadow: 0 0 30px color-mix(in srgb, var(--glow) 30%, transparent);
+	animation: float 8s ease-in-out infinite;
+	animation-delay: calc(var(--i) * -2s);
+}
+
+.floatingCard:nth-child(1) {
+	top: 10%;
+	left: 8%;
+	transform: rotate(-8deg);
+}
+
+.floatingCard:nth-child(2) {
+	top: 15%;
+	right: 10%;
+	transform: rotate(6deg);
+}
+
+.floatingCard:nth-child(3) {
+	bottom: 15%;
+	left: 12%;
+	transform: rotate(4deg);
+}
+
+.floatingCard:nth-child(4) {
+	bottom: 10%;
+	right: 8%;
+	transform: rotate(-5deg);
+}
+
+@keyframes float {
+	0%,
+	100% {
+		transform: translateY(0) rotate(var(--rotate, 0deg));
+	}
+	50% {
+		transform: translateY(-15px) rotate(var(--rotate, 0deg));
+	}
+}
+
+.floatingImage {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+/* Content overlay */
+.content {
+	position: relative;
+	z-index: 2;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	padding: 80px 48px;
+}
+
+.glowRing {
+	width: 80px;
+	height: 80px;
+	border-radius: 50%;
+	border: 1px solid rgba(124, 58, 237, 0.3);
+	box-shadow:
+		0 0 20px rgba(124, 58, 237, 0.15),
+		inset 0 0 20px rgba(124, 58, 237, 0.1);
+	margin-bottom: 32px;
+	animation: ringPulse 3s ease-in-out infinite;
+}
+
+@keyframes ringPulse {
+	0%,
+	100% {
+		box-shadow:
+			0 0 20px rgba(124, 58, 237, 0.15),
+			inset 0 0 20px rgba(124, 58, 237, 0.1);
+	}
+	50% {
+		box-shadow:
+			0 0 40px rgba(124, 58, 237, 0.25),
+			inset 0 0 30px rgba(124, 58, 237, 0.15);
+	}
+}
+
+.preTitle {
+	font-family: var(--font-display);
+	font-size: 14px;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.3em;
+	margin-bottom: 8px;
+}
+
+.title {
+	font-family: var(--font-display);
+	font-size: 72px;
+	font-weight: 700;
+	background: linear-gradient(135deg, var(--violet), var(--mystic-blue), var(--arcane-gold));
+	background-size: 200% 200%;
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	letter-spacing: 0.06em;
+	margin-bottom: 12px;
+	line-height: 1;
+	animation: gradientShift 4s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+	0%,
+	100% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+}
+
+.subtitle {
+	font-family: var(--font-display);
+	font-size: 16px;
+	color: var(--text-muted);
+	letter-spacing: 0.08em;
+	margin-bottom: 24px;
+}
+
+.description {
+	font-size: 16px;
+	color: var(--text-muted);
+	line-height: 1.7;
+	max-width: 480px;
+	margin-bottom: 40px;
+}
+
+.cta {
+	display: flex;
+	gap: 16px;
+}
+
+/* Scroll indicator - arcane orb */
+.scrollIndicator {
+	position: absolute;
+	bottom: -60px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	animation: scrollFloat 2s ease-in-out infinite;
+}
+
+.scrollOrb {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--violet);
+	box-shadow: 0 0 8px rgba(124, 58, 237, 0.5);
+}
+
+.scrollTrail {
+	width: 1px;
+	height: 28px;
+	background: linear-gradient(to bottom, var(--violet), transparent);
+	opacity: 0.5;
+}
+
+@keyframes scrollFloat {
+	0%,
+	100% {
+		transform: translateY(0);
+		opacity: 0.6;
+	}
+	50% {
+		transform: translateY(8px);
+		opacity: 1;
+	}
+}
+
+@media (max-width: 768px) {
+	.content {
+		padding: 60px 24px;
+	}
+
+	.title {
+		font-size: 48px;
+	}
+
+	.floatingCard {
+		width: 100px;
+	}
+
+	.glowRing {
+		width: 56px;
+		height: 56px;
+	}
+}

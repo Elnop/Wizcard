@@ -20,7 +20,9 @@
 		"sb:reset": "supabase db reset --local",
 		"sb:migrate": "supabase migration up --local",
 		"sb:studio": "xdg-open http://127.0.0.1:54323",
-		"sb:mail": "xdg-open http://127.0.0.1:54324"
+		"sb:mail": "xdg-open http://127.0.0.1:54324",
+		"cosmos": "cosmos --expose-imports",
+		"cosmos:export": "cosmos-export --expose-imports"
 	},
 	"lint-staged": {
 		"*.{js,jsx,ts,tsx,mjs,mts}": [
@@ -50,6 +52,8 @@
 		"husky": "^9.1.7",
 		"lint-staged": "^16.2.7",
 		"prettier": "^3.8.1",
+		"react-cosmos": "^7.2.0",
+		"react-cosmos-next": "^7.2.0",
 		"supabase": "^2.78.1",
 		"typescript": "^5"
 	}

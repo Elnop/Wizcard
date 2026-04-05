@@ -1,0 +1,62 @@
+.container {
+	position: relative;
+	display: flex;
+	align-items: center;
+	width: 100%;
+}
+
+.icon {
+	position: absolute;
+	left: 16px;
+	color: var(--leather);
+	pointer-events: none;
+}
+
+.input {
+	width: 100%;
+	padding: 14px 48px;
+	font-size: 15px;
+	font-family: var(--font-body);
+	color: var(--parchment);
+	background: var(--surface);
+	border: 1px solid var(--espresso);
+	border-radius: 6px;
+	outline: none;
+	transition:
+		border-color 0.2s,
+		box-shadow 0.2s;
+}
+
+.input::placeholder {
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.input:focus {
+	border-color: var(--burgundy);
+	box-shadow: 0 0 0 2px rgba(140, 17, 39, 0.15);
+}
+
+.clearButton {
+	position: absolute;
+	right: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	color: var(--text-muted);
+	background: transparent;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	transition:
+		color 0.2s,
+		background-color 0.2s;
+}
+
+.clearButton:hover {
+	color: var(--parchment);
+	background: rgba(107, 78, 61, 0.3);
+}

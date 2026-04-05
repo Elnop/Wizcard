@@ -1,0 +1,90 @@
+.section {
+	padding: 96px 48px;
+	border-top: 1px solid var(--espresso);
+}
+
+/* Reveal animations */
+.section .quote {
+	opacity: 0;
+	transform: translateY(20px);
+	transition:
+		opacity 1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s,
+		transform 1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s;
+}
+
+.section.visible .quote {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.section .rule {
+	transform: scaleX(0);
+	transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s;
+}
+
+.section.visible .rule {
+	transform: scaleX(1);
+}
+
+.section .description {
+	opacity: 0;
+	transition: opacity 0.8s ease 0.6s;
+}
+
+.section.visible .description {
+	opacity: 1;
+}
+
+.section .content > a {
+	opacity: 0;
+	transform: translateY(10px);
+	transition:
+		opacity 0.6s ease 0.8s,
+		transform 0.6s ease 0.8s;
+}
+
+.section.visible .content > a {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+
+.quote {
+	font-family: var(--font-display);
+	font-size: 24px;
+	font-style: italic;
+	font-weight: 400;
+	color: var(--parchment);
+	line-height: 1.6;
+	max-width: 540px;
+	margin-bottom: 24px;
+}
+
+.rule {
+	width: 30px;
+	height: 2px;
+	background: var(--burgundy);
+	margin-bottom: 20px;
+}
+
+.description {
+	font-size: 15px;
+	color: var(--text-muted);
+	margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+	.section {
+		padding: 64px 24px;
+	}
+
+	.quote {
+		font-size: 20px;
+	}
+}
