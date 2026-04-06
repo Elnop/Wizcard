@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { FORMAT_REGISTRY } from '@/lib/import/formats/registry';
+import { ALL_FORMATS } from '@/lib/import/formats/registry';
 import type { ImportFormatId, ImportResult } from '@/lib/import/utils/types';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
@@ -129,6 +129,6 @@ export function useImport(
 		reset,
 		updateRow,
 		removeRow,
-		formatRegistry: FORMAT_REGISTRY,
+		formatRegistry: ALL_FORMATS,
 	};
 }

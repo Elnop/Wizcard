@@ -1,13 +1,14 @@
 'use client';
 
-import type { ImportFormatId, ImportFormatDescriptor } from '@/lib/import/utils/types';
+import type { ImportFormatId } from '@/lib/import/utils/types';
+import { isBinaryFormat } from '@/lib/import/utils/types';
 import type { ImportPreview } from '@/lib/import/hooks/useImport';
 import { formatFileSize } from '@/lib/import/utils/format';
 import styles from './ImportModal.module.css';
 
 interface ImportPreviewStatsProps {
 	preview: ImportPreview;
-	formatRegistry: ImportFormatDescriptor[];
+	formatRegistry: Array<{ id: ImportFormatId; label: string }>;
 	errorsExpanded: boolean;
 	onErrorsToggle: () => void;
 	onChangeFile: () => void;
@@ -39,6 +40,7 @@ export function ImportPreviewStats({
 					className={styles.formatSelect}
 					value={preview.detectedFormat}
 					onChange={(e) => onChangeFormat(e.target.value as ImportFormatId)}
+					disabled={isBinaryFormat(preview.detectedFormat)}
 				>
 					{formatRegistry.map((f) => (
 						<option key={f.id} value={f.id}>

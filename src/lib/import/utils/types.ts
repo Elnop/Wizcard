@@ -1,6 +1,6 @@
 import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
 
-export type ImportFormatId = 'moxfield' | 'mtga';
+export type ImportFormatId = 'moxfield' | 'mtga' | 'delverlens';
 
 export interface ImportFormatDescriptor {
 	id: ImportFormatId;
@@ -37,3 +37,17 @@ export interface ImportResult {
 }
 
 export type FormatParser = (text: string) => ParsedImportResult;
+
+export type BinaryFormatParser = (buffer: ArrayBuffer) => Promise<ParsedImportResult>;
+
+export interface BinaryFormatDescriptor {
+	id: ImportFormatId;
+	label: string;
+	fileExtensions: string[];
+}
+
+const BINARY_FORMAT_IDS: Set<ImportFormatId> = new Set(['delverlens']);
+
+export function isBinaryFormat(formatId: ImportFormatId): boolean {
+	return BINARY_FORMAT_IDS.has(formatId);
+}

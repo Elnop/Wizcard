@@ -1,9 +1,17 @@
 import type { ImportFormatId } from './types';
-import { FORMAT_REGISTRY } from '@/lib/import/formats/registry';
+import { FORMAT_REGISTRY, BINARY_FORMAT_REGISTRY } from '@/lib/import/formats/registry';
 
 export interface DetectionResult {
 	formatId: ImportFormatId;
 	scores: Record<ImportFormatId, number>;
+}
+
+export function detectBinaryFormat(fileName: string): ImportFormatId | null {
+	const ext = fileName.slice(fileName.lastIndexOf('.')).toLowerCase();
+	for (const descriptor of BINARY_FORMAT_REGISTRY) {
+		if (descriptor.fileExtensions.includes(ext)) return descriptor.id;
+	}
+	return null;
 }
 
 export function detectFormat(text: string, fileName?: string): DetectionResult {

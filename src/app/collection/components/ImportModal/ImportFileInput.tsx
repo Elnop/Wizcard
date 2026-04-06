@@ -1,13 +1,13 @@
 'use client';
 
 import { useRef, useCallback } from 'react';
-import type { ImportFormatId, ImportFormatDescriptor } from '@/lib/import/utils/types';
+import type { ImportFormatId } from '@/lib/import/utils/types';
 import type { InputMode } from './types';
 import { Button } from '@/components/Button/Button';
 import styles from './ImportModal.module.css';
 
 interface ImportFileInputProps {
-	formatRegistry: ImportFormatDescriptor[];
+	formatRegistry: Array<{ id: ImportFormatId; label: string }>;
 	forcedFormat: ImportFormatId | 'auto';
 	onForcedFormatChange: (f: ImportFormatId | 'auto') => void;
 	inputMode: InputMode;
@@ -98,12 +98,12 @@ export function ImportFileInput({
 						<span className={styles.dropText}>
 							Glissez un fichier ici ou cliquez pour parcourir
 						</span>
-						<span className={styles.dropHint}>.csv, .txt</span>
+						<span className={styles.dropHint}>.csv, .txt, .dlens</span>
 					</div>
 					<input
 						ref={fileInputRef}
 						type="file"
-						accept=".csv,.txt"
+						accept=".csv,.txt,.dlens"
 						className={styles.hiddenInput}
 						onChange={handleFileChange}
 					/>

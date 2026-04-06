@@ -1,11 +1,7 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import type {
-	ImportFormatId,
-	ImportFormatDescriptor,
-	ParsedImportRow,
-} from '@/lib/import/utils/types';
+import type { ImportFormatId, ParsedImportRow } from '@/lib/import/utils/types';
 import type { ImportPreview, ImportStatus, ImportProgress } from '@/lib/import/hooks/useImport';
 import type { ScryfallCard, ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import { PAGE_SIZE } from '@/lib/collection/constants';
@@ -27,7 +23,7 @@ interface Props {
 	isOpen: boolean;
 	status: ImportStatus;
 	preview: ImportPreview | null;
-	formatRegistry: ImportFormatDescriptor[];
+	formatRegistry: Array<{ id: ImportFormatId; label: string }>;
 	fetchedCards: ScryfallCard[];
 	isLoadingPreview: boolean;
 	previewProgress: ImportProgress;

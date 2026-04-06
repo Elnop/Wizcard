@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback } from 'react';
-import { detectFormat } from '@/lib/import/utils/detect';
-import { getParser } from '@/lib/import/formats/registry';
+import { detectFormat, detectBinaryFormat } from '@/lib/import/utils/detect';
+import { getParser, getBinaryParser } from '@/lib/import/formats/registry';
+import { isBinaryFormat } from '@/lib/import/utils/types';
 import type { ImportFormatId, ParsedImportRow, ParsedImportResult } from '@/lib/import/utils/types';
 import type { ImportStatus, ImportPreview } from '@/lib/import/hooks/useImport';
 
@@ -34,6 +35,36 @@ export function useImportFileHandling(deps: {
 
 	const selectFile = useCallback(
 		async (file: File, forcedFormatId?: ImportFormatId) => {
+			const binaryFormatId =
+				forcedFormatId && isBinaryFormat(forcedFormatId)
+					? forcedFormatId
+					: detectBinaryFormat(file.name);
+
+			if (binaryFormatId) {
+				setFileText('');
+				setStatus('parsing');
+				try {
+					const buffer = await file.arrayBuffer();
+					const parser = getBinaryParser(binaryFormatId);
+					if (!parser) throw new Error(`Pas de parser pour ${binaryFormatId}`);
+					const parsed = await parser(buffer);
+					const mergedRows = mergeRows(parsed.rows);
+					const mergedParsed: ParsedImportResult = { ...parsed, rows: mergedRows };
+					setPreview({
+						fileName: file.name,
+						fileSize: file.size,
+						detectedFormat: binaryFormatId,
+						scores: { [binaryFormatId]: 1 } as Record<ImportFormatId, number>,
+						parsed: mergedParsed,
+					});
+					setStatus('previewing');
+					void fetchPreviewCards(mergedParsed);
+				} catch {
+					setStatus('error');
+				}
+				return;
+			}
+
 			const text = await file.text();
 			setFileText(text);
 			setStatus('parsing');
@@ -43,6 +74,7 @@ export function useImportFileHandling(deps: {
 					? { formatId: forcedFormatId, scores: {} as Record<ImportFormatId, number> }
 					: detectFormat(text, file.name);
 				const parser = getParser(formatId);
+				if (!parser) return;
 				const parsed = parser(text);
 				const mergedRows = mergeRows(parsed.rows);
 				const mergedParsed: ParsedImportResult = { ...parsed, rows: mergedRows };
@@ -71,6 +103,7 @@ export function useImportFileHandling(deps: {
 					? { formatId: forcedFormatId, scores: {} as Record<ImportFormatId, number> }
 					: detectFormat(text);
 				const parser = getParser(formatId);
+				if (!parser) return;
 				const parsed = parser(text);
 				const mergedRows = mergeRows(parsed.rows);
 				const mergedParsed: ParsedImportResult = { ...parsed, rows: mergedRows };
@@ -91,8 +124,9 @@ export function useImportFileHandling(deps: {
 
 	const changeFormat = useCallback(
 		(formatId: ImportFormatId, fileText: string, currentPreview: ImportPreview | null) => {
-			if (!currentPreview) return;
+			if (!currentPreview || isBinaryFormat(formatId)) return;
 			const parser = getParser(formatId);
+			if (!parser) return;
 			const parsed = parser(fileText);
 			const mergedRows = mergeRows(parsed.rows);
 			const mergedParsed: ParsedImportResult = { ...parsed, rows: mergedRows };
