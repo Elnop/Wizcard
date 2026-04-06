@@ -25,10 +25,10 @@ export function CardListGrid({
 		? ({ '--cards-per-line': cardsPerLine } as React.CSSProperties)
 		: undefined;
 
-	function renderItems(cardItems: typeof cards, withLoadMoreSkeletons = false) {
+	function renderItems(cardItems: typeof cards, withLoadMoreSkeletons = false, priorityOffset = 0) {
 		return (
 			<div className={gridClass} style={gridStyle}>
-				{cardItems.map((c) => (
+				{cardItems.map((c, i) => (
 					<div
 						key={c.id}
 						className={[styles.item, onCardClick ? styles.itemClickable : undefined]
@@ -39,7 +39,7 @@ export function CardListGrid({
 					>
 						<p className={styles.cardName}>{c.name}</p>
 						<div className={styles.imageWrapper}>
-							<CardImage card={c} size="normal" />
+							<CardImage card={c} size="normal" priority={priorityOffset + i < 4} />
 							{renderOverlay?.(c)}
 						</div>
 					</div>
@@ -87,7 +87,11 @@ export function CardListGrid({
 									▾
 								</span>
 							</button>
-							{!collapsed && <div className={styles.sectionBody}>{renderItems(section.cards)}</div>}
+							{!collapsed && (
+								<div className={styles.sectionBody}>
+									{renderItems(section.cards, false, idx === 0 ? 0 : Infinity)}
+								</div>
+							)}
 						</div>
 					);
 				})}

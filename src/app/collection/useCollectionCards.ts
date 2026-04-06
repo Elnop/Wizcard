@@ -100,17 +100,16 @@ export function useCollectionCards(entries: StoredCopy[]): {
 				chunks.push(identifiers.slice(i, i + BATCH_SIZE));
 			}
 
-			const settled = await Promise.allSettled(chunks.map((chunk) => getCardCollection(chunk)));
-			if (cancelledRef.current) return;
-
 			const fetchedScryfallCards: ScryfallCard[] = [];
-			for (const result of settled) {
-				if (result.status === 'rejected') {
-					console.error('[useCollectionCards] batch failed:', result.reason);
-					continue;
-				}
-				for (const scryfallCard of result.value.data) {
-					fetchedScryfallCards.push(scryfallCard);
+			for (let i = 0; i < chunks.length; i++) {
+				if (cancelledRef.current) return;
+				try {
+					const result = await getCardCollection(chunks[i]);
+					for (const scryfallCard of result.data) {
+						fetchedScryfallCards.push(scryfallCard);
+					}
+				} catch (err) {
+					console.error(`[useCollectionCards] batch ${i + 1}/${chunks.length} failed:`, err);
 				}
 			}
 
