@@ -1,6 +1,6 @@
 'use client';
 
-import { useFixtureInput } from 'react-cosmos/client';
+import { useFixtureInput } from 'react-cosmos-renderer/client';
 import { LibrarySearchBar } from './LibrarySearchBar';
 
 function Interactive() {

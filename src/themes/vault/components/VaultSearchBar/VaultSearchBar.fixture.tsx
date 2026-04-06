@@ -1,6 +1,6 @@
 'use client';
 
-import { useFixtureInput } from 'react-cosmos/client';
+import { useFixtureInput } from 'react-cosmos-renderer/client';
 import { VaultSearchBar } from './VaultSearchBar';
 
 function Interactive() {

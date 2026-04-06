@@ -1,6 +1,6 @@
 'use client';
 
-import { useFixtureSelect, useFixtureInput } from 'react-cosmos/client';
+import { useFixtureSelect, useFixtureInput } from 'react-cosmos-renderer/client';
 import { VaultButton } from './VaultButton';
 
 function Interactive() {
