@@ -21,6 +21,9 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 - `npm run sb:reset` — **destructive** — drop DB and re-apply all migrations
 - `npm run sb:migrate` — apply pending migrations only
 - `npm run sb:studio` — Supabase Studio (port 54323)
+- `npm run cosmos` — React Cosmos dev server
+- `npm run cosmos:export` — static export of all fixtures
+- Note: `npm run check` includes `cosmos-export --expose-imports` before type-checking
 
 ## Architecture
 
@@ -29,6 +32,8 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 - React Compiler is **disabled** (`reactCompiler: false` in `next.config.ts`)
 - CSS Modules per component, global CSS in `src/app/globals.css`
 - Supabase for auth + database (RLS: all ops scoped to `auth.uid() = owner_id`)
+- Theme system in `src/themes/` — three themes (Forge, Library, Vault) with CSS custom properties activated via `data-theme` attribute
+- React Cosmos for component development — fixtures in `src/themes/`, rendered via `/cosmos/[fixture]`
 
 ## Module Architecture
 
@@ -38,7 +43,7 @@ Key constraints:
 
 - Next.js routes (`page.tsx`, `layout.tsx`) stay in `src/app/` — imposed by the framework
 - **Page-specific components** live in `src/app/<page>/components/`; page-specific hooks live in `src/app/<page>/`. Only shared code stays in `src/lib/`.
-- Generic infrastructure (`src/lib/supabase/`, `src/components/ui/`) is not owned by any feature
+- Generic infrastructure (`src/lib/supabase/`, `src/components/`) is not owned by any feature
 - No barrel exports (`index.ts`) — import files directly
 - A component gets its own folder (`ComponentName/ComponentName.tsx` + `.module.css`) only when it has ≥2 files. A single `.tsx` with no CSS stays as a flat file.
 
@@ -65,6 +70,8 @@ AuthProvider
 - `src/lib/collection/context/CollectionContext.tsx` — wraps the store, exposes via `useCollectionContext()`
 - `src/lib/collection/db/collection.ts` — Supabase CRUD: `fetchCollection`, `insertEntry`, `insertEntries`, `deleteEntryById`, `updateEntry`
 - `src/lib/collection/db/collection-migrations.ts` — migrates legacy localStorage formats to current schema
+- `src/app/collection/utils/filterCollectionCards.ts` — pure filter function (no state)
+- `src/app/collection/utils/stats.ts` — collection statistics calculation
 - `src/lib/supabase/sync-queue.ts` — localStorage-backed offline queue (`enqueue` / `peek` / `dequeue` / `incrementRetry` / `skipFailed` / `clearQueue`)
 - `src/lib/supabase/hooks/useSyncQueue.ts` — drives the sync loop; processes one op at a time
 
@@ -76,17 +83,22 @@ AuthProvider
 - `src/lib/card-cache.ts` — IndexedDB persistent cache for `ScryfallCard` objects (24h TTL)
 - `src/lib/scryfall/utils/scryfall-query.ts` — `buildScryfallQuery()` + `getScryfallCardImageUriBySize()`
 - `src/lib/scryfall/endpoints/` — `cards.ts`, `sets.ts`, `symbols.ts`
+- `src/lib/scryfall/components/ManaSymbol/` — mana symbol rendering (uses `next/image`)
+- `src/lib/scryfall/components/SymbolText.tsx` — inline mana symbol text
 
-### Collection Display
+### Card Display
 
+- `src/lib/card/components/` — CardImage, CardLightbox, CardList, CardListGrid, CardListTable, CardModal, EditCardModal, CardPrintPickerModal
+- `src/lib/card/hooks/useCardModal.ts` — card modal state management
 - `src/app/collection/useCollectionCards.ts` — hydrates entries into `Card[]` + `CardStack[]`; two-phase: IndexedDB cache first, then Scryfall `/cards/collection` in 75-card batches
 - `src/app/collection/useCollectionFiltering.ts` — filter + sort state over `CardStack[]`
-- `src/lib/collection/utils/filterCollectionCards.ts` — pure filter function (no state)
 
 ### Search
 
 - `src/lib/search/components/SearchBar/SearchBar.tsx` — reusable search input (used by search + collection pages)
 - `src/lib/search/components/FilterModal/FilterModal.tsx` — Scryfall filter panel (colors, rarity, type, set, CMC, sort); shared between search + collection/import
+- `src/lib/search/hooks/useDebounce.ts` — debounce hook for search input
+- `src/lib/search/hooks/useMultiSelect.ts` — multi-select hook for filter components
 
 ### Import System
 
@@ -104,6 +116,30 @@ AuthProvider
 
 - `src/contexts/Providers.tsx` — provider nesting (see above)
 - `src/app/layout.tsx` — root layout, mounts `Providers` + `Navbar`
+
+### Generic UI Components
+
+- `src/components/Button/` — variants: primary, secondary, ghost, danger
+- `src/components/Modal/` — reusable modal with glassmorphism
+- `src/components/ConfirmModal/` — confirmation dialog
+- `src/components/Navbar/` — top navigation
+- `src/components/Spinner/` — loading indicator
+
+### Theme System
+
+- `src/themes/{forge,library,vault}/tokens.css` — CSS custom properties per theme, activated via `[data-theme='<theme>']`
+- `src/themes/_shared/types.ts` — shared prop interfaces re-exported from base components
+- `src/themes/{forge,library,vault}/cosmos.decorator.tsx` — Cosmos wrappers that apply theme context
+- `src/themes/{forge,library,vault}/components/` — themed component variants (`<Theme><Component>`)
+- `src/themes/{forge,library,vault}/homepage/` — theme-specific landing page sections
+- `src/themes/_shared/mockData.ts` — shared mock data for theme demos
+- `src/themes/_shared/useScrollReveal.ts` — scroll-reveal animation hook
+
+### Component Fixtures (React Cosmos)
+
+- `cosmos.config.json` — Cosmos config (rendererUrl uses `/cosmos/<fixture>`)
+- `src/app/cosmos/[fixture]/page.tsx` — Next.js dynamic route that renders fixtures
+- Fixture files: `src/themes/<theme>/components/<Component>/<Component>.fixture.tsx`
 
 ## Data Model
 
@@ -151,6 +187,7 @@ AuthProvider
 - `docs/scryfall.md` — Scryfall API integration, caching strategy, query builder
 - `docs/offline-sync.md` — offline-first architecture, sync queue processing, login merge
 - `docs/import-formats.md` — supported formats, auto-detection, import flow
+- `docs/themes.md` — theme system: design tokens, themed components, adding a theme
 - `docs/guides/local-setup.md` — step-by-step local dev setup
 - `docs/guides/migrations.md` — migration commands, RLS patterns
 - `docs/guides/adding-import-format.md` — how to add a new import format

@@ -11,7 +11,13 @@ src/
 │   ├── globals.css
 │   ├── (landing)/              # Route group for / (landing page)
 │   │   ├── page.tsx
-│   │   └── components/         # Hero, CardShowcase, Features, CallToAction
+│   │   ├── hooks/              # useInView
+│   │   └── components/
+│   │       ├── Hero/           # Hero section
+│   │       │   └── backdrops/  # Animated backdrop variants (7) + RandomBackdrop
+│   │       ├── CardShowcase/
+│   │       ├── Features/
+│   │       └── CallToAction/
 │   ├── search/
 │   │   ├── page.tsx            # Card search
 │   │   └── useSearchFiltersFromUrl.ts  # Page-specific hook
@@ -19,31 +25,36 @@ src/
 │   │   ├── page.tsx            # User collection
 │   │   ├── useCollectionCards.ts       # Page-specific hook
 │   │   ├── useCollectionFiltering.ts   # Page-specific hook
+│   │   ├── utils/              # filterCollectionCards, stats
 │   │   └── components/         # CollectionFiltersAside, ImportModal
 │   ├── card/[id]/
 │   │   ├── page.tsx            # Card detail (server-rendered)
 │   │   └── components/         # CardPageHeader, CardTabs, tabs/
+│   ├── themes/                 # Theme showcase
+│   │   ├── layout.tsx          # Loads theme fonts
+│   │   ├── page.tsx            # Theme picker index
+│   │   └── {forge,library,vault}/homepage/  # Per-theme landing page demos
+│   ├── cosmos/[fixture]/       # React Cosmos fixture renderer
 │   └── auth/                   # login, confirm, error pages
 │
-├── components/
-│   └── ui/                     # Generic UI (reusable across features)
-│       ├── Button/, Modal/, Spinner/, Navbar/, ManaSymbol/
-│       ├── CardImage/, CardLightbox/
-│       ├── CardList/, CardListGrid/, CardListTable/
-│       ├── ConfirmModal/
-│       └── SymbolText.tsx      # No CSS → flat file
+├── components/                 # Generic UI (reusable across features)
+│   ├── Button/, Modal/, Spinner/, Navbar/
+│   └── ConfirmModal/
 │
 ├── lib/
+│   ├── card/                   # Card display components + hooks
+│   │   ├── components/         # CardImage, CardLightbox, CardList, CardListGrid,
+│   │   │                       # CardListTable, CardModal, EditCardModal, CardPrintPickerModal
+│   │   └── hooks/              # useCardModal
+│   │
 │   ├── collection/             # Collection feature — shared code only
 │   │   ├── context/            # CollectionContext + useCollectionContext()
 │   │   ├── store/              # Zustand store (localStorage + Supabase hydration)
 │   │   ├── db/                 # Supabase CRUD + data migrations
-│   │   ├── components/         # AddToCollectionButton (shared across pages)
-│   │   ├── CardCollectionModal/  # Sub-feature: card detail modal + CopyEditModal + PrintPickerModal
-│   │   ├── utils/              # filterCollectionCards, stats, format
 │   │   └── constants.ts
 │   │
 │   ├── scryfall/               # Scryfall API integration
+│   │   ├── components/         # ManaSymbol/, SymbolText.tsx
 │   │   ├── endpoints/          # cards, sets, symbols
 │   │   ├── hooks/              # useScryfallCardSearch, useSets, useSymbols, useCardPrints
 │   │   ├── types/              # ScryfallCard, ScryfallSet, ScryfallSortOrder, API param types
@@ -66,20 +77,24 @@ src/
 │   │   ├── hooks/              # useImport, useImportFileHandling, …
 │   │   └── utils/              # detect.ts, types.ts, identifier-dedup.ts
 │   │
-│   ├── search/                 # Card search — shared search components
-│   │   └── components/         # FilterModal, SearchBar (used by search + collection pages)
-│   │       └── filters/        # ColorFilter, RarityFilter, TypeFilter, SetFilter, CmcFilter, OracleTextFilter, SortFilter
+│   ├── search/                 # Card search — shared search components + hooks
+│   │   ├── components/         # FilterModal, SearchBar (used by search + collection pages)
+│   │   │   └── filters/        # ColorFilter, RarityFilter, TypeFilter, SetFilter, CmcFilter, OracleTextFilter, SortFilter
+│   │   └── hooks/              # useDebounce, useMultiSelect
 │   │
 │   ├── moxfield/               # Moxfield format (parse, serialize, import-adapter)
-│   ├── filters/                # Shared filter types
 │   ├── mtg/                    # MTG-specific utilities (language mappings)
 │   └── card-cache.ts           # IndexedDB cache for ScryfallCard objects (24h)
 │
-├── hooks/                      # App-wide React hooks
-│   ├── useInfiniteScroll.ts
-│   ├── useDebounce.ts
-│   ├── useInView.ts
-│   └── useLocalizedImage.ts
+├── themes/                     # Theme system (design tokens + themed components)
+│   ├── _shared/                # Shared types, mock data, scroll-reveal hook
+│   ├── forge/                  # "The Mana Forge" theme
+│   │   ├── tokens.css          # CSS custom properties (activated by data-theme="forge")
+│   │   ├── cosmos.decorator.tsx
+│   │   ├── components/         # Themed component variants (ForgeButton, ForgeModal, …)
+│   │   └── homepage/           # Theme-specific landing page sections
+│   ├── library/                # "The Planeswalker's Library" theme (same structure)
+│   └── vault/                  # "The Collector's Vault" theme (same structure)
 │
 ├── contexts/
 │   └── Providers.tsx           # App-wide provider tree
@@ -112,6 +127,9 @@ src/app/collection/
   page.module.css
   useCollectionCards.ts            # entries → Card[] + CardStack[]
   useCollectionFiltering.ts        # filter + sort state
+  utils/
+    filterCollectionCards.ts       # pure filter function
+    stats.ts                       # collection statistics
   components/
     CollectionFiltersAside/        # filter sidebar
     ImportModal/                   # import flow
@@ -119,24 +137,26 @@ src/app/collection/
 
 Shared collection code (used by card detail page, providers, or sync) stays in `src/lib/collection/`:
 
-| Stays in `src/lib/collection/`      | Why                                                          |
-| ----------------------------------- | ------------------------------------------------------------ |
-| `context/CollectionContext.tsx`     | Used by collection page, card detail page, and Providers.tsx |
-| `store/collection-store.ts`         | Backing store for CollectionContext (global)                 |
-| `db/`                               | Used by sync queue (global infrastructure)                   |
-| `components/AddToCollectionButton/` | Used by collection page and card detail page                 |
+| Stays in `src/lib/collection/`  | Why                                                          |
+| ------------------------------- | ------------------------------------------------------------ |
+| `context/CollectionContext.tsx` | Used by collection page, card detail page, and Providers.tsx |
+| `store/collection-store.ts`     | Backing store for CollectionContext (global)                 |
+| `db/`                           | Used by sync queue (global infrastructure)                   |
 
 ## App Routes
 
-| Route           | Rendering | Description                       |
-| --------------- | --------- | --------------------------------- |
-| `/`             | Server    | Landing page (Hero)               |
-| `/search`       | Client    | Card search with advanced filters |
-| `/collection`   | Client    | User collection management        |
-| `/card/[id]`    | Server    | Card detail page (SEO-friendly)   |
-| `/auth/login`   | Client    | Login / registration form         |
-| `/auth/confirm` | Server    | Email confirmation callback       |
-| `/auth/error`   | Server    | Auth error display                |
+| Route                                    | Rendering | Description                       |
+| ---------------------------------------- | --------- | --------------------------------- |
+| `/`                                      | Server    | Landing page (Hero)               |
+| `/search`                                | Client    | Card search with advanced filters |
+| `/collection`                            | Client    | User collection management        |
+| `/card/[id]`                             | Server    | Card detail page (SEO-friendly)   |
+| `/themes`                                | Server    | Theme showcase index / picker     |
+| `/themes/{forge,library,vault}/homepage` | Server    | Theme-specific landing page demo  |
+| `/cosmos/[fixture]`                      | Client    | React Cosmos fixture renderer     |
+| `/auth/login`                            | Client    | Login / registration form         |
+| `/auth/confirm`                          | Server    | Email confirmation callback       |
+| `/auth/error`                            | Server    | Auth error display                |
 
 ## Data Flow
 
@@ -198,3 +218,33 @@ Server components are used for:
 - Auth callback routes
 
 Everything else (search, collection, modals) is client-rendered.
+
+## Theme System
+
+Three visual themes (Forge, Library, Vault) — currently used as design showcases, not yet user-selectable at runtime.
+
+Each theme is defined by CSS custom properties in `tokens.css`, activated via `data-theme` attribute on a wrapper element:
+
+```
+src/themes/forge/
+  tokens.css               # [data-theme='forge'] { --background: …; --primary: …; }
+  cosmos.decorator.tsx      # Wraps fixtures in data-theme context
+  components/               # Themed component variants (ForgeButton, ForgeModal, …)
+  homepage/                 # Theme-specific landing page sections
+```
+
+Theme homepages are split: route shell in `src/app/themes/<theme>/homepage/page.tsx`, actual section components in `src/themes/<theme>/homepage/`.
+
+Shared utilities live in `src/themes/_shared/` (types, mock data, scroll-reveal hook).
+
+See `docs/themes.md` for full details.
+
+## React Cosmos
+
+Component development environment for themed components.
+
+- `npm run cosmos` — dev server
+- Fixtures use `*.fixture.tsx` convention, located in `src/themes/<theme>/components/`
+- Each theme has a `cosmos.decorator.tsx` that wraps fixtures in `data-theme` context + `tokens.css`
+- Next.js integration: dynamic route at `/cosmos/[fixture]`
+- `cosmos-export --expose-imports` runs as part of `npm run check` to generate the fixture manifest

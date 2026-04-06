@@ -11,4 +11,5 @@ Strictly follow the rules in @AGENTS.md.
 - `npm run sb:migrate` — apply pending migrations only
 - `npm run sb:studio` — Supabase Studio (port 54323)
 - `npm run sb:mail` — Inbucket email inbox (port 54324)
+- `npm run cosmos` — React Cosmos dev server
 - `supabase/bootstrap/init_schema.sql` — schema consolide pour DB vierge

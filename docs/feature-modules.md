@@ -50,13 +50,13 @@ src/lib/<feature>/
 | Supabase client                    | any feature folder                  | `src/lib/supabase/client.ts`                |
 | Auth state                         | any feature folder                  | `src/lib/supabase/contexts/AuthContext.tsx` |
 | Sync queue                         | any feature folder                  | `src/lib/supabase/sync-queue.ts`            |
-| Generic UI (Button, Modal, Navbar) | any feature folder                  | `src/components/ui/`                        |
+| Generic UI (Button, Modal, Navbar) | any feature folder                  | `src/components/`                           |
 
 ### Feature components vs. generic UI
 
-A component shared between ≥2 pages stays in `src/lib/<feature>/components/` when it is coupled to the feature's domain (imports feature-specific types, hooks, or logic). It goes in `src/components/ui/` only when it is purely presentational with zero domain dependency.
+A component shared between ≥2 pages stays in `src/lib/<feature>/components/` when it is coupled to the feature's domain (imports feature-specific types, hooks, or logic). It goes in `src/components/` only when it is purely presentational with zero domain dependency.
 
-**Example:** `FilterModal` imports Scryfall types (`ScryfallSortOrder`, `ScryfallColor`, `ScryfallSet`) and orchestrates Scryfall search filters → it belongs in `src/lib/search/components/`, not `src/components/ui/`. By contrast, `Button` and `Modal` have no domain coupling → `src/components/ui/`.
+**Example:** `FilterModal` imports Scryfall types (`ScryfallSortOrder`, `ScryfallColor`, `ScryfallSet`) and orchestrates Scryfall search filters → it belongs in `src/lib/search/components/`, not `src/components/`. By contrast, `Button` and `Modal` have no domain coupling → `src/components/`.
 
 ## Decision Guide
 
@@ -75,10 +75,10 @@ Is it used by a single page only?
       Is it shared between ≥2 sub-features? → shared/utils/ or shared/styles/
       Is it a sub-feature? → <SubFeature>/ (apply rules recursively)
     No → is it generic UI?
-      Yes → src/components/ui/
+      Yes → src/components/
       No  → is it Supabase infrastructure?
         Yes → src/lib/supabase/
-        No  → src/lib/<domain>/ or src/hooks/ (app-wide hooks)
+        No  → src/lib/<domain>/
 ```
 
 ## Example: Collection Feature
@@ -94,21 +94,24 @@ src/lib/collection/
   db/
     collection.ts                   # Supabase CRUD: fetchCollection, insertEntry, deleteEntryById…
     collection-migrations.ts        # Migrates legacy localStorage formats to current schema
-  components/
-    AddToCollectionButton/          # Used by collection page + card detail page → shared
-  CardCollectionModal/              # Sub-feature: used by collection + card detail via AddToCollectionButton
-    CardCollectionModal.tsx
-    CardCollectionModal.module.css
-    hooks/
-      useCardCollectionModal.ts     # Modal state: selected stack, handlers
-    components/
-      CopyEditModal/                # Edit a single copy (foil, condition, language, price…)
-      PrintPickerModal/             # Pick a different printing/language
-  utils/
-    filterCollectionCards.ts        # Pure filter function (no state) over Card[]
-    stats.ts                        # computeCollectionStats()
-    format.ts                       # Formatting helpers
   constants.ts
+```
+
+Card display components (used across collection + card detail + search) live in `src/lib/card/`:
+
+```
+src/lib/card/
+  components/
+    CardImage/                      # Card image with fallback
+    CardLightbox/                   # Image zoom modal
+    CardList/                       # Card list orchestrator (grid/table toggle)
+    CardListGrid/                   # Grid view
+    CardListTable/                  # Table view
+    CardModal/                      # Card detail modal
+    EditCardModal/                  # Edit per-copy metadata
+    CardPrintPickerModal/           # Pick a different printing
+  hooks/
+    useCardModal.ts                 # Card modal state management
 ```
 
 Page-specific code lives with the page in `src/app/collection/`:
@@ -120,6 +123,9 @@ src/app/collection/
   page.module.css
   useCollectionCards.ts             # Page-specific hook (entries → Card[] + CardStack[])
   useCollectionFiltering.ts         # Page-specific hook (filter + sort state)
+  utils/
+    filterCollectionCards.ts        # Pure filter function (no state) over Card[]
+    stats.ts                        # computeCollectionStats()
   components/
     CollectionFiltersAside/         # Filter sidebar — only used on this page
     ImportModal/                    # Import flow — only used on this page
