@@ -378,6 +378,26 @@
 	color: #ef4444;
 }
 
+.moreInfoLink {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--primary);
+	text-decoration: none;
+	transition: color 0.15s;
+}
+
+.moreInfoLink:hover {
+	color: var(--foreground);
+	text-decoration: underline;
+}
+
+.addSection {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 8px;
+}
+
 .copiesSection {
 	display: flex;
 	flex-direction: column;

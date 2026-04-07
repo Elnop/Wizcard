@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import { MTG_LANGUAGES, LANGUAGE_TO_SCRYFALL_CODE } from '@/lib/mtg/languages';
+import {
+	MTG_LANGUAGES,
+	LANGUAGE_TO_SCRYFALL_CODE,
+	SCRYFALL_CODE_TO_LANGUAGE,
+} from '@/lib/mtg/languages';
 import { CardPrintPickerModal } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
 import { Modal } from '@/components/Modal/Modal';
 import styles from './EditCardModal.module.css';
@@ -258,6 +262,8 @@ export function EditCardModal(props: Props) {
 					onSelect={(print) => {
 						if (addMode) {
 							setSelectedPrint(print);
+							const lang = print.lang ? SCRYFALL_CODE_TO_LANGUAGE[print.lang] : undefined;
+							save({ language: lang });
 						} else {
 							props.onChangePrint(print);
 						}

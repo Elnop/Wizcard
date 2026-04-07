@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useCallback, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useScryfallCardSearch } from '@/lib/scryfall/hooks/useScryfallCardSearch';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
 import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
 import { CardList } from '@/lib/card/components/CardList/CardList';
+import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
@@ -32,8 +32,8 @@ export default function SearchPage() {
 }
 
 function SearchPageContent() {
-	const router = useRouter();
-	useCollectionContext();
+	const { addCard } = useCollectionContext();
+	const [selectedCard, setSelectedCard] = useState<ScryfallCard | null>(null);
 
 	const {
 		name,
@@ -70,10 +70,7 @@ function SearchPageContent() {
 			dir,
 		});
 
-	const handleCardClick = useCallback(
-		(card: ScryfallCard) => router.push(`/card/${card.id}`),
-		[router]
-	);
+	const handleCardClick = useCallback((card: ScryfallCard) => setSelectedCard(card), []);
 
 	const hasFilters =
 		name || colors.length > 0 || type || set || rarities.length > 0 || oracleText || cmc;
@@ -185,6 +182,16 @@ function SearchPageContent() {
 						<h3>No cards found</h3>
 						<p>Try adjusting your search or filters.</p>
 					</div>
+				)}
+
+				{selectedCard && (
+					<CardModal
+						cards={selectedCard}
+						onClose={() => setSelectedCard(null)}
+						onAddToCollection={(card, entry) => {
+							addCard(card, entry);
+						}}
+					/>
 				)}
 			</main>
 		</div>

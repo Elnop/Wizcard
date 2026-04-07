@@ -121,14 +121,21 @@ export function CardPrintPickerModal({
 											<div
 												className={`${styles.printCard} ${isCurrentPrint(print) ? styles.printCardActive : ''}`}
 											>
-												<button
-													type="button"
+												<div
+													role="button"
+													tabIndex={0}
 													className={styles.printImageBtn}
 													onClick={() => setLightboxCard(print)}
+													onKeyDown={(e) => {
+														if (e.key === 'Enter' || e.key === ' ') {
+															e.preventDefault();
+															setLightboxCard(print);
+														}
+													}}
 													aria-label={`Preview ${print.set_name}`}
 												>
 													<CardImage card={print} size="normal" />
-												</button>
+												</div>
 												<button
 													type="button"
 													className={`${styles.selectBtn} ${isCurrentPrint(print) ? styles.selectBtnActive : ''}`}

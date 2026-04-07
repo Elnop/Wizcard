@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import type { Card, CardEntry } from '@/types/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallCard, ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import { CardLightbox } from '@/lib/card/components/CardLightbox/CardLightbox';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
@@ -10,6 +11,7 @@ import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
 import { Modal } from '@/components/Modal/Modal';
+import { Button } from '@/components/Button/Button';
 import styles from './CardModal.module.css';
 
 const COLOR_MAP: Record<string, string> = {
@@ -21,28 +23,130 @@ const COLOR_MAP: Record<string, string> = {
 	C: '#ccc2c0',
 };
 
+function isCollectionCard(card: Card | ScryfallCard): card is Card {
+	return 'entry' in card;
+}
+
 interface Props {
-	cards: Card | Card[] | null;
+	cards: Card | Card[] | ScryfallCard | null;
 	onClose: () => void;
-	onSave: (rowId: string, updates: Partial<CardEntry>) => void;
-	onRemove: (scryfallId: string) => void;
-	onRemoveEntry: (rowId: string) => void;
+	onSave?: (rowId: string, updates: Partial<CardEntry>) => void;
+	onRemove?: (scryfallId: string) => void;
+	onRemoveEntry?: (rowId: string) => void;
+	onDuplicate?: (scryfallId: string, entry: CardEntry) => void;
+	onChangePrint?: (rowId: string, newCard: ScryfallCard) => void;
+	onIncrement?: (entry: Partial<CardEntry>) => void;
+	onDecrement?: () => void;
+	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
+}
+
+interface InnerProps {
+	cards: Card[];
+	onClose: () => void;
+	onSave?: (rowId: string, updates: Partial<CardEntry>) => void;
+	onRemove?: (scryfallId: string) => void;
+	onRemoveEntry?: (rowId: string) => void;
 	onDuplicate?: (scryfallId: string, entry: CardEntry) => void;
 	onChangePrint?: (rowId: string, newCard: ScryfallCard) => void;
 	onIncrement?: (entry: Partial<CardEntry>) => void;
 	onDecrement?: () => void;
 }
 
-interface InnerProps {
-	cards: Card[];
-	onClose: () => void;
-	onSave: (rowId: string, updates: Partial<CardEntry>) => void;
-	onRemove: (scryfallId: string) => void;
-	onRemoveEntry: (rowId: string) => void;
-	onDuplicate?: (scryfallId: string, entry: CardEntry) => void;
-	onChangePrint?: (rowId: string, newCard: ScryfallCard) => void;
-	onIncrement?: (entry: Partial<CardEntry>) => void;
-	onDecrement?: () => void;
+function CardDetailSection({
+	card,
+	symbolMap,
+}: {
+	card: ScryfallCard;
+	symbolMap: Record<string, ScryfallCardSymbol>;
+}) {
+	return (
+		<>
+			<div className={styles.cardMeta}>
+				<div className={styles.cardNameRow}>
+					<h2 className={styles.cardName}>{card.name}</h2>
+					{card.mana_cost && (
+						<span className={styles.headerMana}>
+							<SymbolText text={card.mana_cost} symbolMap={symbolMap} />
+						</span>
+					)}
+				</div>
+				{card.color_identity && card.color_identity.length > 0 && (
+					<div className={styles.colorPips}>
+						{card.color_identity.map((c) => (
+							<span
+								key={c}
+								className={styles.colorPip}
+								style={{ background: COLOR_MAP[c] ?? '#888' }}
+								title={c}
+							/>
+						))}
+					</div>
+				)}
+			</div>
+
+			<hr className={styles.divider} />
+
+			<div className={styles.details}>
+				{card.type_line && (
+					<div className={styles.detailRow}>
+						<span className={styles.detailLabel}>Type</span>
+						<span className={styles.detailValue}>{card.type_line}</span>
+					</div>
+				)}
+				<div className={styles.detailRow}>
+					<span className={styles.detailLabel}>Set</span>
+					<span className={styles.detailValue}>
+						{card.set_name}
+						{card.rarity && (
+							<span className={`${styles.rarity} ${styles[card.rarity]}`}> · {card.rarity}</span>
+						)}
+					</span>
+				</div>
+				{card.oracle_text && (
+					<div>
+						<span className={styles.detailLabel}>Oracle</span>
+						<div className={styles.oracleText}>
+							{card.oracle_text.split('\n').map((line, i) => (
+								<p key={i} className={styles.oracleLine}>
+									<SymbolText text={line} symbolMap={symbolMap} />
+								</p>
+							))}
+						</div>
+					</div>
+				)}
+				{card.flavor_text && <p className={styles.flavorText}>{card.flavor_text}</p>}
+				{card.loyalty && (
+					<div className={styles.detailRow}>
+						<span className={styles.detailLabel}>Loyalty</span>
+						<span className={styles.detailValue}>{card.loyalty}</span>
+					</div>
+				)}
+				{card.keywords && card.keywords.length > 0 && (
+					<div className={styles.keywords}>
+						{card.keywords.map((k) => (
+							<span key={k} className={styles.keyword}>
+								{k}
+							</span>
+						))}
+					</div>
+				)}
+				<div className={styles.detailRow}>
+					<span className={styles.detailLabel}>Artist</span>
+					<span className={styles.detailValue}>{card.artist ?? '—'}</span>
+				</div>
+				<div className={styles.detailRow}>
+					<span className={styles.detailLabel}>Print</span>
+					<span className={styles.detailValue}>
+						{card.set.toUpperCase()} #{card.collector_number}
+					</span>
+				</div>
+			</div>
+
+			<Link href={`/card/${card.id}`} className={styles.moreInfoLink}>
+				Plus d&apos;informations
+			</Link>
+		</>
+	);
 }
 
 function CardModalInner({
@@ -72,14 +176,14 @@ function CardModalInner({
 
 	function handleRemoveCopy(card: Card) {
 		if (count === 1) {
-			onRemove(card.id);
+			onRemove?.(card.id);
 		} else {
 			if (card.entry.rowId === selectedRowId) {
 				const idx = cards.indexOf(card);
 				const next = cards[idx === 0 ? 1 : idx - 1];
 				setSelectedRowId(next.entry.rowId);
 			}
-			onRemoveEntry(card.entry.rowId);
+			onRemoveEntry?.(card.entry.rowId);
 		}
 	}
 
@@ -108,91 +212,7 @@ function CardModalInner({
 					</div>
 
 					<div className={styles.infoCol}>
-						<div className={styles.cardMeta}>
-							<div className={styles.cardNameRow}>
-								<h2 className={styles.cardName}>{selectedCard.name}</h2>
-								{selectedCard.mana_cost && (
-									<span className={styles.headerMana}>
-										<SymbolText text={selectedCard.mana_cost} symbolMap={symbolMap} />
-									</span>
-								)}
-							</div>
-							{selectedCard.color_identity && selectedCard.color_identity.length > 0 && (
-								<div className={styles.colorPips}>
-									{selectedCard.color_identity.map((c) => (
-										<span
-											key={c}
-											className={styles.colorPip}
-											style={{ background: COLOR_MAP[c] ?? '#888' }}
-											title={c}
-										/>
-									))}
-								</div>
-							)}
-						</div>
-
-						<hr className={styles.divider} />
-
-						<div className={styles.details}>
-							{selectedCard.type_line && (
-								<div className={styles.detailRow}>
-									<span className={styles.detailLabel}>Type</span>
-									<span className={styles.detailValue}>{selectedCard.type_line}</span>
-								</div>
-							)}
-							<div className={styles.detailRow}>
-								<span className={styles.detailLabel}>Set</span>
-								<span className={styles.detailValue}>
-									{selectedCard.set_name}
-									{selectedCard.rarity && (
-										<span className={`${styles.rarity} ${styles[selectedCard.rarity]}`}>
-											{' '}
-											· {selectedCard.rarity}
-										</span>
-									)}
-								</span>
-							</div>
-							{selectedCard.oracle_text && (
-								<div>
-									<span className={styles.detailLabel}>Oracle</span>
-									<div className={styles.oracleText}>
-										{selectedCard.oracle_text.split('\n').map((line, i) => (
-											<p key={i} className={styles.oracleLine}>
-												<SymbolText text={line} symbolMap={symbolMap} />
-											</p>
-										))}
-									</div>
-								</div>
-							)}
-							{selectedCard.flavor_text && (
-								<p className={styles.flavorText}>{selectedCard.flavor_text}</p>
-							)}
-							{selectedCard.loyalty && (
-								<div className={styles.detailRow}>
-									<span className={styles.detailLabel}>Loyalty</span>
-									<span className={styles.detailValue}>{selectedCard.loyalty}</span>
-								</div>
-							)}
-							{selectedCard.keywords && selectedCard.keywords.length > 0 && (
-								<div className={styles.keywords}>
-									{selectedCard.keywords.map((k) => (
-										<span key={k} className={styles.keyword}>
-											{k}
-										</span>
-									))}
-								</div>
-							)}
-							<div className={styles.detailRow}>
-								<span className={styles.detailLabel}>Artist</span>
-								<span className={styles.detailValue}>{selectedCard.artist ?? '—'}</span>
-							</div>
-							<div className={styles.detailRow}>
-								<span className={styles.detailLabel}>Print</span>
-								<span className={styles.detailValue}>
-									{selectedCard.set.toUpperCase()} #{selectedCard.collector_number}
-								</span>
-							</div>
-						</div>
+						<CardDetailSection card={selectedCard} symbolMap={symbolMap} />
 
 						{/* Cards list */}
 						<div className={styles.copiesSection}>
@@ -293,7 +313,7 @@ function CardModalInner({
 					confirmLabel="Remove all"
 					onConfirm={() => {
 						const uniqueIds = [...new Set(cards.map((c) => c.id))];
-						uniqueIds.forEach((id) => onRemove(id));
+						uniqueIds.forEach((id) => onRemove?.(id));
 					}}
 					onClose={() => setConfirmRemoveAll(false)}
 				/>
@@ -303,7 +323,7 @@ function CardModalInner({
 				<EditCardModal
 					key={editingCard.entry.rowId}
 					card={editingCard}
-					onSave={(patch) => onSave(editingCard.entry.rowId, patch)}
+					onSave={(patch) => onSave?.(editingCard.entry.rowId, patch)}
 					onChangePrint={(newCard) => {
 						onChangePrint?.(editingCard.entry.rowId, newCard);
 					}}
@@ -326,6 +346,69 @@ function CardModalInner({
 	);
 }
 
+function ScryfallCardModalInner({
+	card,
+	onClose,
+	onAddToCollection,
+}: {
+	card: ScryfallCard;
+	onClose: () => void;
+	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
+}) {
+	const [lightbox, setLightbox] = useState(false);
+	const [addingCard, setAddingCard] = useState(false);
+	const symbolMap = useScryfallSymbols();
+
+	return (
+		<>
+			<Modal onClose={onClose} className={styles.modal}>
+				<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path
+							d="M2 2l12 12M14 2L2 14"
+							stroke="currentColor"
+							strokeWidth="1.8"
+							strokeLinecap="round"
+						/>
+					</svg>
+				</button>
+
+				<div className={styles.layout}>
+					<div className={styles.imageCol}>
+						<CardImage card={card} size="large" priority onClick={() => setLightbox(true)} />
+					</div>
+
+					<div className={styles.infoCol}>
+						<CardDetailSection card={card} symbolMap={symbolMap} />
+
+						{onAddToCollection && (
+							<div className={styles.addSection}>
+								<Button variant="primary" onClick={() => setAddingCard(true)}>
+									Add to Collection
+								</Button>
+							</div>
+						)}
+					</div>
+				</div>
+			</Modal>
+
+			{lightbox && <CardLightbox card={card} onClose={() => setLightbox(false)} />}
+
+			{addingCard && onAddToCollection && (
+				<EditCardModal
+					mode="add"
+					scryfallCard={card}
+					onAdd={(selectedPrint, entry) => {
+						onAddToCollection(selectedPrint, entry);
+						setAddingCard(false);
+					}}
+					onClose={() => setAddingCard(false)}
+				/>
+			)}
+		</>
+	);
+}
+
 export function CardModal({
 	cards,
 	onClose,
@@ -336,13 +419,30 @@ export function CardModal({
 	onChangePrint,
 	onIncrement,
 	onDecrement,
+	onAddToCollection,
 }: Props) {
-	const normalizedCards = cards === null ? null : Array.isArray(cards) ? cards : [cards];
-	if (!normalizedCards || normalizedCards.length === 0) return null;
+	if (cards === null) return null;
+
+	const normalizedCards = Array.isArray(cards) ? cards : [cards];
+	if (normalizedCards.length === 0) return null;
+
+	const first = normalizedCards[0];
+
+	if (!isCollectionCard(first)) {
+		return (
+			<ScryfallCardModalInner
+				key={first.id}
+				card={first}
+				onClose={onClose}
+				onAddToCollection={onAddToCollection}
+			/>
+		);
+	}
+
 	return (
 		<CardModalInner
-			key={normalizedCards[0].oracle_id}
-			cards={normalizedCards}
+			key={first.oracle_id}
+			cards={normalizedCards as Card[]}
 			onClose={onClose}
 			onSave={onSave}
 			onRemove={onRemove}
