@@ -6,6 +6,7 @@ import { isSections } from './CardList.types';
 import { CardListGrid } from '@/lib/card/components/CardListGrid/CardListGrid';
 import { CardListTable } from '@/lib/card/components/CardListTable/CardListTable';
 import { useInfiniteScroll } from './useInfiniteScroll';
+import { Spinner } from '@/components/Spinner/Spinner';
 import { PAGE_SIZE } from '@/lib/collection/constants';
 import styles from './CardList.module.css';
 
@@ -72,6 +73,15 @@ export function CardList({
 		isLoading: isLoading || isLoadingMore,
 	});
 
+	const sentinel = resolvedHasMore && resolvedLoadMore && (
+		<>
+			<div ref={sentinelRef} />
+			<div className={styles.loaderWrapper}>
+				<Spinner size="md" />
+			</div>
+		</>
+	);
+
 	const toggle = (
 		<div className={styles.viewToggle}>
 			<button
@@ -118,7 +128,7 @@ export function CardList({
 						className={className}
 					/>
 				)}
-				{resolvedHasMore && resolvedLoadMore && <div ref={sentinelRef} />}
+				{sentinel}
 			</>
 		);
 	}
@@ -135,7 +145,7 @@ export function CardList({
 					sortDir={sortDir}
 					onSortChange={onSortChange}
 				/>
-				{resolvedHasMore && resolvedLoadMore && <div ref={sentinelRef} />}
+				{sentinel}
 			</>
 		);
 	}
@@ -153,7 +163,7 @@ export function CardList({
 				cardsPerLine={cardsPerLine}
 				className={className}
 			/>
-			{resolvedHasMore && resolvedLoadMore && <div ref={sentinelRef} />}
+			{sentinel}
 		</>
 	);
 }

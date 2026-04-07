@@ -31,3 +31,9 @@
 	background: var(--primary);
 	color: var(--primary-text);
 }
+
+.loaderWrapper {
+	display: flex;
+	justify-content: center;
+	padding: 2rem 0;
+}
