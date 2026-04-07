@@ -32,8 +32,7 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 - React Compiler is **disabled** (`reactCompiler: false` in `next.config.ts`)
 - CSS Modules per component, global CSS in `src/app/globals.css`
 - Supabase for auth + database (RLS: all ops scoped to `auth.uid() = owner_id`)
-- Theme system in `src/themes/` — three themes (Forge, Library, Vault) with CSS custom properties activated via `data-theme` attribute
-- React Cosmos for component development — fixtures in `src/themes/`, rendered via `/cosmos/[fixture]`
+- React Cosmos for component development — fixtures rendered via `/cosmos/[fixture]`
 
 ## Module Architecture
 
@@ -125,21 +124,10 @@ AuthProvider
 - `src/components/Navbar/` — top navigation
 - `src/components/Spinner/` — loading indicator
 
-### Theme System
-
-- `src/themes/{forge,library,vault}/tokens.css` — CSS custom properties per theme, activated via `[data-theme='<theme>']`
-- `src/themes/_shared/types.ts` — shared prop interfaces re-exported from base components
-- `src/themes/{forge,library,vault}/cosmos.decorator.tsx` — Cosmos wrappers that apply theme context
-- `src/themes/{forge,library,vault}/components/` — themed component variants (`<Theme><Component>`)
-- `src/themes/{forge,library,vault}/homepage/` — theme-specific landing page sections
-- `src/themes/_shared/mockData.ts` — shared mock data for theme demos
-- `src/themes/_shared/useScrollReveal.ts` — scroll-reveal animation hook
-
 ### Component Fixtures (React Cosmos)
 
 - `cosmos.config.json` — Cosmos config (rendererUrl uses `/cosmos/<fixture>`)
 - `src/app/cosmos/[fixture]/page.tsx` — Next.js dynamic route that renders fixtures
-- Fixture files: `src/themes/<theme>/components/<Component>/<Component>.fixture.tsx`
 
 ## Data Model
 
@@ -187,7 +175,6 @@ AuthProvider
 - `docs/scryfall.md` — Scryfall API integration, caching strategy, query builder
 - `docs/offline-sync.md` — offline-first architecture, sync queue processing, login merge
 - `docs/import-formats.md` — supported formats, auto-detection, import flow
-- `docs/themes.md` — theme system: design tokens, themed components, adding a theme
 - `docs/guides/local-setup.md` — step-by-step local dev setup
 - `docs/guides/migrations.md` — migration commands, RLS patterns
 - `docs/guides/adding-import-format.md` — how to add a new import format

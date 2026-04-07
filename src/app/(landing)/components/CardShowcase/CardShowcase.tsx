@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useInView } from '@/app/(landing)/hooks/useInView';
-import { SHOWCASE_SECTIONS } from '@/themes/_shared/mockData';
+import { SHOWCASE_SECTIONS } from './showcaseData';
 import styles from './CardShowcase.module.css';
 
 function ShowcaseSection({ group }: { group: (typeof SHOWCASE_SECTIONS)[number] }) {
