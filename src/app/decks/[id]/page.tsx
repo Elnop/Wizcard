@@ -7,6 +7,7 @@ import { validateDeck } from '@/lib/deck/utils/format-rules';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { Button } from '@/components/Button/Button';
 import { useDeckDetail, type ResolvedDeckCard } from './useDeckDetail';
 import { useDeckCardSections } from './hooks/useDeckCardSections';
@@ -39,6 +40,29 @@ export default function DeckDetailPage() {
 	);
 
 	const { sections, groupByCardId } = useDeckCardSections(cardsByZone, showCommander);
+
+	const tableColumns: CardListColumn[] = useMemo(
+		() => [
+			{
+				key: 'qty',
+				label: 'Qté',
+				render: (card) => groupByCardId.get(card.id)?.count ?? 1,
+			},
+			{ key: 'name', label: 'Nom' },
+			{ key: 'type_line', label: 'Type' },
+			{
+				key: 'mana_cost',
+				label: 'Mana',
+				render: (card) => ('mana_cost' in card ? (card.mana_cost as string) : '—'),
+			},
+			{
+				key: 'set',
+				label: 'Set',
+				render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
+			},
+		],
+		[groupByCardId]
+	);
 
 	const warnings = useMemo(() => {
 		if (!deck) return [];
@@ -119,7 +143,12 @@ export default function DeckDetailPage() {
 					</Button>
 				</div>
 
-				<CardList cards={sections} renderOverlay={renderOverlay} pageSize={false} />
+				<CardList
+					cards={sections}
+					renderOverlay={renderOverlay}
+					tableColumns={tableColumns}
+					pageSize={false}
+				/>
 
 				<DeckStats stats={stats} warnings={warnings} />
 			</div>

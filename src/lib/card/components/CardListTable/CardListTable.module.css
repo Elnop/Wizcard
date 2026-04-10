@@ -59,3 +59,70 @@
 .clickableRow:hover td {
 	background: rgba(255, 255, 255, 0.06);
 }
+
+.loadingWrapper {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 48px 0;
+}
+
+/* Section rows */
+
+.sectionRow td {
+	background: rgba(255, 255, 255, 0.03);
+	border-bottom: 1px solid var(--border);
+}
+
+.sectionRow[data-depth='0'] td {
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.sectionCell {
+	padding: 0 !important;
+}
+
+.sectionButton {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	width: 100%;
+	padding: 8px 12px;
+	background: none;
+	border: none;
+	color: var(--foreground);
+	font-weight: 600;
+	font-size: 13px;
+	cursor: pointer;
+	text-align: left;
+}
+
+.sectionButton:hover {
+	background: rgba(255, 255, 255, 0.04);
+}
+
+.sectionLabel {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 12px;
+	font-weight: 600;
+	font-size: 13px;
+	color: var(--foreground);
+}
+
+.sectionCount {
+	color: var(--text-muted);
+	font-weight: 400;
+}
+
+.chevron {
+	display: inline-block;
+	transition: transform 0.15s;
+	font-size: 12px;
+	line-height: 1;
+}
+
+.chevronCollapsed {
+	transform: rotate(-90deg);
+}

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { ScryfallSortDir } from '@/lib/scryfall/types/sort';
 
 export interface CardListColumn {
@@ -12,8 +12,12 @@ export interface CardListColumn {
 export interface CardListTableProps {
 	cards: AnyCard[];
 	columns: CardListColumn[];
+	sections?: CardListSection[];
+	isLoading?: boolean;
 	onCardClick?: (card: AnyCard) => void;
 	sortOrder?: string;
 	sortDir?: ScryfallSortDir;
 	onSortChange?: (order: string, dir: ScryfallSortDir) => void;
+	collapsedSections?: Set<string>;
+	onSectionToggle?: (key: string) => void;
 }

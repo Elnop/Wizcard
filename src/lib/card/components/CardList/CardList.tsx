@@ -103,20 +103,23 @@ export function CardList({
 		</div>
 	);
 
-	// Sections mode — CardListGrid handles section layout
+	// Sections mode — CardListGrid and CardListTable handle section layout
 	if (sections) {
-		const sectionCards = sections.flatMap((s) => s.cards);
 		return (
 			<>
 				{toggle}
 				{viewMode === 'table' ? (
 					<CardListTable
-						cards={sectionCards}
+						cards={[]}
 						columns={tableColumns ?? []}
+						sections={sections}
+						isLoading={isLoading}
 						onCardClick={onCardClick}
 						sortOrder={sortOrder}
 						sortDir={sortDir}
 						onSortChange={onSortChange}
+						collapsedSections={collapsedSections}
+						onSectionToggle={toggleSection}
 					/>
 				) : (
 					<CardListGrid
@@ -144,6 +147,7 @@ export function CardList({
 				<CardListTable
 					cards={visibleCards}
 					columns={tableColumns ?? []}
+					isLoading={isLoading}
 					onCardClick={onCardClick}
 					sortOrder={sortOrder}
 					sortDir={sortDir}
