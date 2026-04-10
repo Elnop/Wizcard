@@ -16,6 +16,7 @@ export interface CardEntry {
 	alter?: boolean;
 	proxy?: boolean;
 	tags?: string[];
+	deckId?: string;
 }
 
 // One copy in the collection = Scryfall print data + per-copy metadata

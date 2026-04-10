@@ -1,0 +1,72 @@
+.header {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 24px;
+}
+
+.titleRow {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.name {
+	font-size: 28px;
+	font-weight: 700;
+	color: var(--foreground);
+	margin: 0;
+}
+
+.format {
+	padding: 2px 10px;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: capitalize;
+	color: var(--primary);
+	background: rgba(201, 168, 76, 0.1);
+	border: 1px solid rgba(201, 168, 76, 0.2);
+	border-radius: 20px;
+}
+
+.description {
+	font-size: 14px;
+	color: var(--text-muted);
+	margin: 0;
+}
+
+.nameInput {
+	padding: 8px 12px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	color: var(--foreground);
+	font-size: 20px;
+	font-weight: 600;
+	outline: none;
+}
+
+.nameInput:focus {
+	border-color: var(--primary);
+}
+
+.descInput {
+	padding: 8px 12px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	color: var(--foreground);
+	font-size: 14px;
+	outline: none;
+	resize: vertical;
+	font-family: inherit;
+}
+
+.descInput:focus {
+	border-color: var(--primary);
+}
+
+.editActions {
+	display: flex;
+	gap: 8px;
+}

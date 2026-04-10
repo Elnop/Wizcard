@@ -9,8 +9,10 @@ export interface CardListGridProps {
 	skeletonCount?: number;
 	onCardClick?: (card: AnyCard) => void;
 	renderOverlay?: (card: AnyCard) => ReactNode;
+	renderItem?: (card: AnyCard, index: number) => ReactNode;
 	cardsPerLine?: number;
 	collapsedSections?: Set<string>;
 	onSectionToggle?: (label: string) => void;
+	sectionClassName?: string;
 	className?: string;
 }

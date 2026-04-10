@@ -34,6 +34,7 @@ type DbRow = {
 	alter: boolean | null;
 	proxy: boolean | null;
 	tags: string[] | null;
+	deck_id: string | null;
 };
 
 function rowToEntry(row: DbRow): CardEntry {
@@ -49,6 +50,7 @@ function rowToEntry(row: DbRow): CardEntry {
 		alter: row.alter ?? undefined,
 		proxy: row.proxy ?? undefined,
 		tags: row.tags ?? undefined,
+		deckId: row.deck_id ?? undefined,
 	};
 }
 
@@ -97,6 +99,7 @@ export async function insertEntry(
 		alter: entry.alter ?? null,
 		proxy: entry.proxy ?? null,
 		tags: entry.tags ?? null,
+		deck_id: entry.deckId ?? null,
 	});
 
 	if (error) {
@@ -125,6 +128,7 @@ export async function insertEntries(
 			alter: r.entry.alter ?? null,
 			proxy: r.entry.proxy ?? null,
 			tags: r.entry.tags ?? null,
+			deck_id: r.entry.deckId ?? null,
 		}))
 	);
 
@@ -171,6 +175,7 @@ export async function updateEntry(userId: string, rowId: string, entry: CardEntr
 			alter: entry.alter ?? null,
 			proxy: entry.proxy ?? null,
 			tags: entry.tags ?? null,
+			deck_id: entry.deckId ?? null,
 		})
 		.eq('owner_id', userId)
 		.eq('id', rowId);

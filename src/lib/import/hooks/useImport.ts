@@ -9,6 +9,7 @@ import { useImportPreviewFetch } from '@/lib/import/hooks/useImportPreviewFetch'
 import { useImportFileHandling } from '@/lib/import/hooks/useImportFileHandling';
 import { useImportConfirmation } from '@/lib/import/hooks/useImportConfirmation';
 import { useImportRowEditing } from '@/lib/import/hooks/useImportRowEditing';
+import { useSetCodeNormalizer } from '@/lib/import/hooks/useSetCodeNormalizer';
 
 export type ImportStatus =
 	| 'idle'
@@ -48,10 +49,13 @@ export function useImport(
 		total: 0,
 	});
 
+	const normalizeSetCodes = useSetCodeNormalizer();
+
 	const { fetchPreviewCards, cancelPreviewFetch } = useImportPreviewFetch({
 		setFetchedCards,
 		setIsLoadingPreview,
 		setPreviewProgress,
+		normalizeSetCodes,
 	});
 
 	const fileHandling = useImportFileHandling({
@@ -69,6 +73,7 @@ export function useImport(
 		setProgress,
 		setResult,
 		importCards,
+		normalizeSetCodes,
 	});
 
 	const { updateRow, removeRow } = useImportRowEditing({ setPreview });

@@ -1,0 +1,88 @@
+.countBadge {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	min-width: 26px;
+	height: 26px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 6px;
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--primary-text);
+	background: var(--primary);
+	border-radius: 13px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	z-index: 1;
+	pointer-events: none;
+}
+
+.actions {
+	position: absolute;
+	bottom: 8px;
+	left: 4px;
+	right: 4px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	z-index: 2;
+	opacity: 0;
+	transition: opacity 0.15s;
+	pointer-events: none;
+}
+
+.overlay:hover .actions {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.overlay {
+	position: absolute;
+	inset: 0;
+}
+
+.actionBtn {
+	width: 28px;
+	height: 28px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--glass-bg);
+	backdrop-filter: blur(var(--glass-blur));
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	color: var(--foreground);
+	font-size: 16px;
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		background 0.15s,
+		border-color 0.15s;
+}
+
+.actionBtn:hover {
+	background: var(--primary);
+	border-color: var(--primary);
+	color: var(--primary-text);
+}
+
+.moveBtn {
+	padding: 4px 8px;
+	background: var(--glass-bg);
+	backdrop-filter: blur(var(--glass-blur));
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	color: var(--text-muted);
+	font-size: 11px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition:
+		background 0.15s,
+		color 0.15s;
+}
+
+.moveBtn:hover {
+	background: rgba(255, 255, 255, 0.04);
+	color: var(--foreground);
+}

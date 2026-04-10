@@ -8,6 +8,15 @@ import {
 	deleteEntries,
 	updateEntry,
 } from '@/lib/collection/db/collection';
+import {
+	insertDeck,
+	updateDeckMeta,
+	deleteDeck,
+	insertDeckCard,
+	insertDeckCards,
+	deleteDeckCard,
+	updateDeckCard,
+} from '@/lib/deck/db/decks';
 import { createClient } from '@/lib/supabase/client';
 import {
 	peek,
@@ -90,6 +99,20 @@ export function useSyncQueue(userId: string | null | undefined) {
 					await insertEntries(op.payload.userId, op.payload.rows);
 				} else if (op.type === 'bulk-delete') {
 					await deleteEntries(op.payload.userId, op.payload.rowIds);
+				} else if (op.type === 'deck-insert') {
+					await insertDeck(op.payload.userId, op.payload.deck);
+				} else if (op.type === 'deck-update') {
+					await updateDeckMeta(op.payload.userId, op.payload.deckId, op.payload.updates);
+				} else if (op.type === 'deck-delete') {
+					await deleteDeck(op.payload.userId, op.payload.deckId);
+				} else if (op.type === 'deck-card-insert') {
+					await insertDeckCard(op.payload.deckId, op.payload.scryfallId, op.payload.entry);
+				} else if (op.type === 'deck-card-bulk-insert') {
+					await insertDeckCards(op.payload.deckId, op.payload.cards);
+				} else if (op.type === 'deck-card-delete') {
+					await deleteDeckCard(op.payload.rowId);
+				} else if (op.type === 'deck-card-update') {
+					await updateDeckCard(op.payload.rowId, op.payload.updates);
 				} else {
 					await updateEntry(op.payload.userId, op.payload.rowId, op.payload.entry);
 				}

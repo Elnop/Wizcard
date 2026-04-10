@@ -42,6 +42,12 @@ export function Navbar() {
 					Search
 				</Link>
 				<Link
+					href="/decks"
+					className={`${styles.navLink} ${pathname.startsWith('/decks') ? styles.navLinkActive : ''}`}
+				>
+					Decks
+				</Link>
+				<Link
 					href="/collection"
 					className={`${styles.navLink} ${pathname === '/collection' ? styles.navLinkActive : ''}`}
 				>

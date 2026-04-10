@@ -248,6 +248,7 @@ export interface ScryfallCard {
 export interface ScryfallSet {
 	id: ScryfallUUID;
 	code: string;
+	arena_code?: string;
 	mtgo_code?: string;
 	tcgplayer_id?: number;
 	name: string;

@@ -12,8 +12,9 @@ export function useImportPreviewFetch(deps: {
 	setFetchedCards: (cards: ScryfallCard[]) => void;
 	setIsLoadingPreview: (b: boolean) => void;
 	setPreviewProgress: (p: ImportProgress) => void;
+	normalizeSetCodes: (parsed: ParsedImportResult) => ParsedImportResult;
 }) {
-	const { setFetchedCards, setIsLoadingPreview, setPreviewProgress } = deps;
+	const { setFetchedCards, setIsLoadingPreview, setPreviewProgress, normalizeSetCodes } = deps;
 	const abortRef = useRef(false);
 
 	const cancelPreviewFetch = useCallback(() => {
@@ -24,7 +25,8 @@ export function useImportPreviewFetch(deps: {
 		async (parsed: ParsedImportResult) => {
 			if (parsed.rows.length === 0) return;
 
-			const identifiers = deduplicateIdentifiers(parsed.identifiers);
+			const normalized = normalizeSetCodes(parsed);
+			const identifiers = deduplicateIdentifiers(normalized.identifiers);
 
 			const chunks: (typeof identifiers)[] = [];
 			for (let i = 0; i < identifiers.length; i += BATCH_SIZE) {
@@ -56,7 +58,7 @@ export function useImportPreviewFetch(deps: {
 			}
 			setIsLoadingPreview(false);
 		},
-		[setFetchedCards, setIsLoadingPreview, setPreviewProgress]
+		[setFetchedCards, setIsLoadingPreview, setPreviewProgress, normalizeSetCodes]
 	);
 
 	return { fetchPreviewCards, cancelPreviewFetch };

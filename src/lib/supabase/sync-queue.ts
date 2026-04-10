@@ -1,4 +1,5 @@
 import type { CardEntry } from '@/types/cards';
+import type { DeckMeta } from '@/types/decks';
 
 const QUEUE_KEY = 'wizcard-sync-queue';
 
@@ -38,6 +39,62 @@ export type SyncOp =
 			id: string;
 			type: 'bulk-delete';
 			payload: { userId: string; rowIds: string[] };
+			retries: number;
+			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'deck-insert';
+			payload: { userId: string; deck: DeckMeta };
+			retries: number;
+			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'deck-update';
+			payload: {
+				userId: string;
+				deckId: string;
+				updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description'>>;
+			};
+			retries: number;
+			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'deck-delete';
+			payload: { userId: string; deckId: string };
+			retries: number;
+			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'deck-card-insert';
+			payload: { deckId: string; scryfallId: string; entry: CardEntry };
+			retries: number;
+			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'deck-card-bulk-insert';
+			payload: {
+				deckId: string;
+				cards: Array<{ scryfallId: string; entry: CardEntry }>;
+			};
+			retries: number;
+			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'deck-card-delete';
+			payload: { rowId: string };
+			retries: number;
+			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'deck-card-update';
+			payload: { rowId: string; updates: { tags?: string[]; owner_id?: string | null } };
 			retries: number;
 			createdAt: string;
 	  };

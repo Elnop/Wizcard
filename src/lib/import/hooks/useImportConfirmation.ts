@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { BATCH_SIZE } from '@/lib/scryfall/constants';
 import { deduplicateIdentifiers } from '@/lib/import/utils/identifier-dedup';
-import type { ParsedImportRow, ImportResult } from '@/lib/import/utils/types';
+import type { ParsedImportRow, ParsedImportResult, ImportResult } from '@/lib/import/utils/types';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
 import type { ImportStatus, ImportPreview, ImportProgress } from '@/lib/import/hooks/useImport';
@@ -16,14 +16,23 @@ export function useImportConfirmation(deps: {
 	setProgress: (p: ImportProgress) => void;
 	setResult: (r: ImportResult) => void;
 	importCards: (cards: Array<{ scryfallId: string; entry: CardEntry }>) => void;
+	normalizeSetCodes: (parsed: ParsedImportResult) => ParsedImportResult;
 }) {
-	const { fetchedCards, preview, setStatus, setProgress, setResult, importCards } = deps;
+	const {
+		fetchedCards,
+		preview,
+		setStatus,
+		setProgress,
+		setResult,
+		importCards,
+		normalizeSetCodes,
+	} = deps;
 
 	const confirm = useCallback(async () => {
 		if (!preview) return;
 
 		try {
-			const { parsed } = preview;
+			const parsed = normalizeSetCodes(preview.parsed);
 
 			if (parsed.rows.length === 0) {
 				setResult({ imported: 0, notFound: 0, errors: parsed.parseErrors });
@@ -145,7 +154,7 @@ export function useImportConfirmation(deps: {
 			});
 			setStatus('error');
 		}
-	}, [preview, fetchedCards, setStatus, setProgress, setResult, importCards]);
+	}, [preview, fetchedCards, setStatus, setProgress, setResult, importCards, normalizeSetCodes]);
 
 	return { confirm };
 }

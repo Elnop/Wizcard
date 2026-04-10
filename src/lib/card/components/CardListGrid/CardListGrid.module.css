@@ -141,12 +141,18 @@
 	padding: 10px 0 6px;
 	background: none;
 	border: none;
-	border-bottom: 1px solid var(--border);
-	cursor: pointer;
-	color: var(--foreground);
+	border-bottom: 1px solid var(--glass-border);
+	color: var(--gold);
+	font-family: var(--font-display);
 	font-size: 14px;
 	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
 	text-align: left;
+}
+
+.sectionHeaderCollapsible {
+	cursor: pointer;
 }
 
 .sectionCount {
@@ -169,4 +175,32 @@
 
 .sectionBody {
 	margin-top: 12px;
+}
+
+/* Sub-sections (depth > 0) */
+
+.subSectionWrapper {
+	margin-top: 12px;
+}
+
+.subSectionHeader {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 6px 0 4px;
+	background: none;
+	border: none;
+	border-bottom: 1px solid var(--glass-border);
+	color: var(--text-muted);
+	font-family: var(--font-display);
+	font-size: 12px;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	text-align: left;
+}
+
+.subSectionHeaderCollapsible {
+	cursor: pointer;
 }

@@ -9,6 +9,7 @@ export type AnyCard = ScryfallCard | Card;
 export interface CardListSection {
 	label: string;
 	cards: AnyCard[];
+	children?: CardListSection[];
 }
 
 export type CardListCards = AnyCard[] | CardListSection[];
@@ -35,6 +36,8 @@ export interface CardListProps {
 	onSortChange?: (order: string, dir: ScryfallSortDir) => void;
 	// Grille : nombre de cartes par ligne (fixe la taille des cartes)
 	cardsPerLine?: number;
+	renderItem?: (card: AnyCard, index: number) => ReactNode;
+	sectionClassName?: string;
 	className?: string;
 	pageSize?: number | false;
 }

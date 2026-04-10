@@ -24,6 +24,8 @@ export function CardList({
 	sortDir,
 	onSortChange,
 	cardsPerLine,
+	renderItem,
+	sectionClassName,
 	className,
 	pageSize = PAGE_SIZE,
 }: CardListProps) {
@@ -122,9 +124,11 @@ export function CardList({
 						sections={sections}
 						onCardClick={onCardClick}
 						renderOverlay={renderOverlay}
+						renderItem={renderItem}
 						cardsPerLine={cardsPerLine}
 						collapsedSections={collapsedSections}
 						onSectionToggle={toggleSection}
+						sectionClassName={sectionClassName}
 						className={className}
 					/>
 				)}
@@ -160,6 +164,7 @@ export function CardList({
 				skeletonCount={skeletonCount}
 				onCardClick={onCardClick}
 				renderOverlay={renderOverlay}
+				renderItem={renderItem}
 				cardsPerLine={cardsPerLine}
 				className={className}
 			/>
