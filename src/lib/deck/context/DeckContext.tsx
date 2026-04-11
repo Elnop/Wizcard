@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { DeckMeta, DeckZone } from '@/types/decks';
+import type { DeckMeta, DeckZone, FolderMeta } from '@/types/decks';
 import type { CardEntry } from '@/types/cards';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
@@ -12,11 +12,26 @@ type StoredCopy = { scryfallId: string; entry: CardEntry };
 
 type DeckContextValue = {
 	decks: DeckMeta[];
+	folders: FolderMeta[];
 	activeDeckId: string | null;
 	activeDeckCards: Record<string, StoredCopy>;
 	isLoaded: boolean;
 
-	createDeck: (name: string, format: DeckMeta['format'], description: string | null) => string;
+	createFolder: (name: string, parentId: string | null) => string;
+	updateFolder: (
+		folderId: string,
+		updates: Partial<Pick<FolderMeta, 'name' | 'parentId' | 'position'>>
+	) => void;
+	deleteFolder: (folderId: string) => void;
+	moveFolderToFolder: (folderId: string, newParentId: string | null) => void;
+	moveDeckToFolder: (deckId: string, folderId: string | null) => void;
+
+	createDeck: (
+		name: string,
+		format: DeckMeta['format'],
+		description: string | null,
+		folderId?: string | null
+	) => string;
 	updateDeck: (
 		deckId: string,
 		updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description'>>
@@ -59,6 +74,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 		if (prevUserId !== undefined && prevUserId !== null && prevUserId !== userId) {
 			useDeckStore.setState({
 				decks: {},
+				folders: {},
 				activeDeckId: null,
 				activeDeckCards: {},
 				isLoaded: false,
@@ -68,10 +84,55 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 		void store.hydrateDecks(userId);
 	}, [userId, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
+	const createFolder = useCallback(
+		(name: string, parentId: string | null) => {
+			if (!userId) throw new Error('Must be logged in to create a folder');
+			return store.createFolder(name, parentId, userId, triggerSync);
+		},
+		[store, userId, triggerSync]
+	);
+
+	const updateFolder = useCallback(
+		(folderId: string, updates: Partial<Pick<FolderMeta, 'name' | 'parentId' | 'position'>>) => {
+			if (!userId) return;
+			store.updateFolder(folderId, updates, userId, triggerSync);
+		},
+		[store, userId, triggerSync]
+	);
+
+	const deleteFolder = useCallback(
+		(folderId: string) => {
+			if (!userId) return;
+			store.deleteFolder(folderId, userId, triggerSync);
+		},
+		[store, userId, triggerSync]
+	);
+
+	const moveFolderToFolder = useCallback(
+		(folderId: string, newParentId: string | null) => {
+			if (!userId) return;
+			store.moveFolderToFolder(folderId, newParentId, userId, triggerSync);
+		},
+		[store, userId, triggerSync]
+	);
+
+	const moveDeckToFolder = useCallback(
+		(deckId: string, folderId: string | null) => {
+			if (!userId) return;
+			store.moveDeckToFolder(deckId, folderId, userId, triggerSync);
+		},
+		[store, userId, triggerSync]
+	);
+
 	const createDeck = useCallback(
-		(name: string, format: DeckMeta['format'], description: string | null) => {
+		(
+			name: string,
+			format: DeckMeta['format'],
+			description: string | null,
+			folderId?: string | null
+		) => {
 			if (!userId) throw new Error('Must be logged in to create a deck');
-			return store.createDeck(name, format, description, userId, triggerSync);
+			return store.createDeck(name, format, description, folderId ?? null, userId, triggerSync);
 		},
 		[store, userId, triggerSync]
 	);
@@ -137,12 +198,19 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const decks = useMemo(() => Object.values(store.decks), [store.decks]);
+	const folders = useMemo(() => Object.values(store.folders), [store.folders]);
 
 	const value: DeckContextValue = {
 		decks,
+		folders,
 		activeDeckId: store.activeDeckId,
 		activeDeckCards: store.activeDeckCards,
 		isLoaded: store.isLoaded,
+		createFolder,
+		updateFolder,
+		deleteFolder,
+		moveFolderToFolder,
+		moveDeckToFolder,
 		createDeck,
 		updateDeck,
 		deleteDeck,

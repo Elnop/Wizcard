@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
-import type { DeckFormat } from '@/types/decks';
+import type { DeckFormat, FolderMeta } from '@/types/decks';
 import styles from './CreateDeckModal.module.css';
 
 const FORMATS: { value: DeckFormat | ''; label: string }[] = [
@@ -22,19 +22,32 @@ const FORMATS: { value: DeckFormat | ''; label: string }[] = [
 ];
 
 type Props = {
-	onCreate: (name: string, format: DeckFormat | null, description: string | null) => void;
+	folders?: FolderMeta[];
+	defaultFolderId?: string | null;
+	onCreate: (
+		name: string,
+		format: DeckFormat | null,
+		description: string | null,
+		folderId: string | null
+	) => void;
 	onClose: () => void;
 };
 
-export function CreateDeckModal({ onCreate, onClose }: Props) {
+export function CreateDeckModal({
+	folders = [],
+	defaultFolderId = null,
+	onCreate,
+	onClose,
+}: Props) {
 	const [name, setName] = useState('');
 	const [format, setFormat] = useState<DeckFormat | ''>('');
 	const [description, setDescription] = useState('');
+	const [folderId, setFolderId] = useState<string>(defaultFolderId ?? '');
 
 	function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		if (!name.trim()) return;
-		onCreate(name.trim(), format || null, description.trim() || null);
+		onCreate(name.trim(), format || null, description.trim() || null, folderId || null);
 	}
 
 	return (
@@ -68,6 +81,24 @@ export function CreateDeckModal({ onCreate, onClose }: Props) {
 						))}
 					</select>
 				</label>
+
+				{folders.length > 0 && (
+					<label className={styles.label}>
+						Folder
+						<select
+							className={styles.input}
+							value={folderId}
+							onChange={(e) => setFolderId(e.target.value)}
+						>
+							<option value="">Aucun dossier</option>
+							{folders.map((f) => (
+								<option key={f.id} value={f.id} className={styles.option}>
+									{f.name}
+								</option>
+							))}
+						</select>
+					</label>
+				)}
 
 				<label className={styles.label}>
 					Description

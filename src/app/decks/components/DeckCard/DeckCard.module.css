@@ -249,3 +249,63 @@
 	white-space: nowrap;
 	flex-shrink: 0;
 }
+
+/* ── Drag state ── */
+
+.dragging {
+	opacity: 0.4;
+	pointer-events: none;
+}
+
+/* ── Context menu ── */
+
+.contextMenu {
+	position: fixed;
+	z-index: 1000;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 0.25rem;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+	min-width: 180px;
+	max-height: 320px;
+	overflow-y: auto;
+}
+
+.contextItem {
+	display: block;
+	width: 100%;
+	background: none;
+	border: none;
+	padding: 0.45rem 0.75rem;
+	font-size: 0.85rem;
+	color: var(--foreground);
+	cursor: pointer;
+	text-align: left;
+	border-radius: 5px;
+	transition: background 0.1s;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.contextItem:hover {
+	background: var(--surface-hover);
+}
+
+.contextItemActive {
+	color: var(--gold);
+}
+
+.contextDivider {
+	height: 1px;
+	background: var(--border);
+	margin: 0.25rem 0;
+}
+
+.contextEmpty {
+	display: block;
+	padding: 0.45rem 0.75rem;
+	font-size: 0.8rem;
+	color: var(--text-muted);
+}

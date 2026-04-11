@@ -8,6 +8,7 @@ type DeckDbRow = {
 	name: string;
 	format: string | null;
 	description: string | null;
+	folder_id: string | null;
 	created_at: string;
 	updated_at: string;
 };
@@ -18,6 +19,7 @@ function rowToDeckMeta(row: DeckDbRow): DeckMeta {
 		name: row.name,
 		format: (row.format as DeckMeta['format']) ?? null,
 		description: row.description,
+		folderId: row.folder_id ?? null,
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,
 	};
@@ -98,6 +100,7 @@ export async function insertDeck(userId: string, deck: DeckMeta): Promise<void> 
 		name: deck.name,
 		format: deck.format,
 		description: deck.description,
+		folder_id: deck.folderId ?? null,
 		created_at: deck.createdAt,
 		updated_at: deck.updatedAt,
 	});
@@ -126,6 +129,23 @@ export async function updateDeckMeta(
 
 	if (error) {
 		throw new Error(`[decks] updateDeckMeta error: ${error.message}`);
+	}
+}
+
+export async function moveDeckToFolder(
+	userId: string,
+	deckId: string,
+	folderId: string | null
+): Promise<void> {
+	const supabase = createClient();
+	const { error } = await supabase
+		.from('decks')
+		.update({ folder_id: folderId, updated_at: new Date().toISOString() })
+		.eq('owner_id', userId)
+		.eq('id', deckId);
+
+	if (error) {
+		throw new Error(`[decks] moveDeckToFolder error: ${error.message}`);
 	}
 }
 

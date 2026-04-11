@@ -50,6 +50,16 @@ export interface DeckMeta {
 	name: string;
 	format: DeckFormat | null;
 	description: string | null;
+	folderId: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface FolderMeta {
+	id: string;
+	parentId: string | null;
+	name: string;
+	position: number;
 	createdAt: string;
 	updatedAt: string;
 }

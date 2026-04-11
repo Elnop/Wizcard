@@ -1,7 +1,9 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
+import { useDraggable } from '@dnd-kit/core';
 import type { ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
-import type { DeckMeta } from '@/types/decks';
+import type { DeckMeta, FolderMeta } from '@/types/decks';
 import type { DeckSummary } from '../../hooks/useDeckSummaries';
 import { ManaSymbol } from '@/lib/scryfall/components/ManaSymbol/ManaSymbol';
 import { MiniManaCurve } from './MiniManaCurve';
@@ -11,8 +13,10 @@ type Props = {
 	deck: DeckMeta;
 	summary?: DeckSummary;
 	symbolMap: Record<string, ScryfallCardSymbol>;
+	folders?: FolderMeta[];
 	onClick: () => void;
 	onDelete: () => void;
+	onMove?: (folderId: string | null) => void;
 };
 
 function formatRelativeDate(iso: string): string {
@@ -40,100 +44,201 @@ function formatRelativeDate(iso: string): string {
 	return "à l'instant";
 }
 
-export function DeckCard({ deck, summary, symbolMap, onClick, onDelete }: Props) {
-	const colors = summary?.colors;
-	const hasManaCurve = summary?.manaCurve && Object.keys(summary.manaCurve).length > 0;
+type ContextMenuState = { x: number; y: number } | null;
+
+function MoveMenu({
+	folders,
+	currentFolderId,
+	onMove,
+	onClose,
+	position,
+}: {
+	folders: FolderMeta[];
+	currentFolderId: string | null;
+	onMove: (folderId: string | null) => void;
+	onClose: () => void;
+	position: { x: number; y: number };
+}) {
+	const ref = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		const handleClick = (e: MouseEvent) => {
+			if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+		};
+		const handleKey = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') onClose();
+		};
+		document.addEventListener('mousedown', handleClick);
+		document.addEventListener('keydown', handleKey);
+		return () => {
+			document.removeEventListener('mousedown', handleClick);
+			document.removeEventListener('keydown', handleKey);
+		};
+	}, [onClose]);
 
 	return (
 		<div
-			role="button"
-			tabIndex={0}
-			className={styles.card}
-			onClick={onClick}
-			onKeyDown={(e) => {
-				if (e.key === 'Enter') onClick();
-			}}
+			ref={ref}
+			className={styles.contextMenu}
+			style={{ top: position.y, left: position.x }}
+			onClick={(e) => e.stopPropagation()}
 		>
-			{/* ── Header bar ── */}
-			<div className={styles.header}>
-				<h3 className={styles.name}>{deck.name}</h3>
-				<div className={styles.headerRight}>
-					{colors && colors.length > 0 && (
-						<div className={styles.colors}>
-							{colors.map((color) => (
-								<ManaSymbol key={color} symbol={`{${color}}`} symbolMap={symbolMap} />
-							))}
-						</div>
-					)}
-					<button
-						type="button"
-						className={styles.deleteBtn}
-						onClick={(e) => {
-							e.stopPropagation();
-							onDelete();
-						}}
-						aria-label="Delete deck"
-					>
-						&times;
-					</button>
-				</div>
-			</div>
-
-			{/* ── Image zone ── */}
-			<div className={styles.imageZone}>
-				{summary?.artCropUrl && (
-					<>
-						{/* eslint-disable-next-line @next/next/no-img-element */}
-						<img src={summary.artCropUrl} alt="" className={styles.artCrop} />
-						<div className={styles.artOverlay} />
-					</>
-				)}
-				{hasManaCurve && (
-					<div className={styles.curveOverlay}>
-						<MiniManaCurve curve={summary!.manaCurve} />
-					</div>
-				)}
-			</div>
-
-			{/* ── Body zone ── */}
-			<div className={styles.body}>
-				{summary?.commanderName && <p className={styles.commanderName}>{summary.commanderName}</p>}
-				<div className={styles.metaRow}>
-					{deck.format && <span className={styles.format}>{deck.format}</span>}
-					{summary && deck.format && summary.warningCount > 0 && (
-						<span className={styles.warningBadge}>
-							{summary.warningCount} warning{summary.warningCount !== 1 ? 's' : ''}
-							<span className={styles.warningTooltip}>
-								{summary.warnings.map((msg, i) => (
-									<span key={i} className={styles.warningTooltipItem}>
-										{msg}
-									</span>
-								))}
-							</span>
-						</span>
-					)}
-				</div>
-				{deck.description && <p className={styles.description}>{deck.description}</p>}
-				<div className={styles.footer}>
-					{summary && summary.totalCards > 0 ? (
-						<div className={styles.statsRow}>
-							<span className={styles.stat}>
-								{summary.targetCards !== null
-									? `${summary.totalCards}/${summary.targetCards}`
-									: summary.totalCards}{' '}
-								cards
-							</span>
-							<span className={styles.statSep}>·</span>
-							<span className={styles.stat}>{summary.landCount} lands</span>
-							<span className={styles.statSep}>·</span>
-							<span className={styles.stat}>{summary.averageCmc.toFixed(1)} CMC</span>
-						</div>
-					) : (
-						<div />
-					)}
-					<span className={styles.updatedAt}>{formatRelativeDate(deck.updatedAt)}</span>
-				</div>
-			</div>
+			{currentFolderId !== null && (
+				<button
+					className={styles.contextItem}
+					onClick={() => {
+						onMove(null);
+						onClose();
+					}}
+				>
+					Retirer du dossier
+				</button>
+			)}
+			{folders.length > 0 && <div className={styles.contextDivider} />}
+			{folders.map((folder) => (
+				<button
+					key={folder.id}
+					className={`${styles.contextItem} ${folder.id === currentFolderId ? styles.contextItemActive : ''}`}
+					onClick={() => {
+						if (folder.id !== currentFolderId) onMove(folder.id);
+						onClose();
+					}}
+				>
+					{folder.id === currentFolderId ? '✓ ' : ''}
+					{folder.name}
+				</button>
+			))}
+			{folders.length === 0 && currentFolderId === null && (
+				<span className={styles.contextEmpty}>Aucun dossier</span>
+			)}
 		</div>
+	);
+}
+
+export function DeckCard({ deck, summary, symbolMap, folders, onClick, onDelete, onMove }: Props) {
+	const colors = summary?.colors;
+	const hasManaCurve = summary?.manaCurve && Object.keys(summary.manaCurve).length > 0;
+	const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
+
+	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+		id: deck.id,
+		data: { type: 'deck', deckId: deck.id },
+	});
+
+	const handleContextMenu = (e: React.MouseEvent) => {
+		if (!onMove || !folders) return;
+		e.preventDefault();
+		setContextMenu({ x: e.clientX, y: e.clientY });
+	};
+
+	return (
+		<>
+			<div
+				ref={setNodeRef}
+				{...attributes}
+				{...listeners}
+				role="button"
+				tabIndex={0}
+				className={`${styles.card} ${isDragging ? styles.dragging : ''}`}
+				onClick={isDragging ? undefined : onClick}
+				onKeyDown={(e) => {
+					if (e.key === 'Enter') onClick();
+				}}
+				onContextMenu={handleContextMenu}
+			>
+				{/* ── Header bar ── */}
+				<div className={styles.header}>
+					<h3 className={styles.name}>{deck.name}</h3>
+					<div className={styles.headerRight}>
+						{colors && colors.length > 0 && (
+							<div className={styles.colors}>
+								{colors.map((color) => (
+									<ManaSymbol key={color} symbol={`{${color}}`} symbolMap={symbolMap} />
+								))}
+							</div>
+						)}
+						<button
+							type="button"
+							className={styles.deleteBtn}
+							onClick={(e) => {
+								e.stopPropagation();
+								onDelete();
+							}}
+							aria-label="Delete deck"
+						>
+							&times;
+						</button>
+					</div>
+				</div>
+
+				{/* ── Image zone ── */}
+				<div className={styles.imageZone}>
+					{summary?.artCropUrl && (
+						<>
+							{/* eslint-disable-next-line @next/next/no-img-element */}
+							<img src={summary.artCropUrl} alt="" className={styles.artCrop} />
+							<div className={styles.artOverlay} />
+						</>
+					)}
+					{hasManaCurve && (
+						<div className={styles.curveOverlay}>
+							<MiniManaCurve curve={summary!.manaCurve} />
+						</div>
+					)}
+				</div>
+
+				{/* ── Body zone ── */}
+				<div className={styles.body}>
+					{summary?.commanderName && (
+						<p className={styles.commanderName}>{summary.commanderName}</p>
+					)}
+					<div className={styles.metaRow}>
+						{deck.format && <span className={styles.format}>{deck.format}</span>}
+						{summary && deck.format && summary.warningCount > 0 && (
+							<span className={styles.warningBadge}>
+								{summary.warningCount} warning{summary.warningCount !== 1 ? 's' : ''}
+								<span className={styles.warningTooltip}>
+									{summary.warnings.map((msg, i) => (
+										<span key={i} className={styles.warningTooltipItem}>
+											{msg}
+										</span>
+									))}
+								</span>
+							</span>
+						)}
+					</div>
+					{deck.description && <p className={styles.description}>{deck.description}</p>}
+					<div className={styles.footer}>
+						{summary && summary.totalCards > 0 ? (
+							<div className={styles.statsRow}>
+								<span className={styles.stat}>
+									{summary.targetCards !== null
+										? `${summary.totalCards}/${summary.targetCards}`
+										: summary.totalCards}{' '}
+									cards
+								</span>
+								<span className={styles.statSep}>·</span>
+								<span className={styles.stat}>{summary.landCount} lands</span>
+								<span className={styles.statSep}>·</span>
+								<span className={styles.stat}>{summary.averageCmc.toFixed(1)} CMC</span>
+							</div>
+						) : (
+							<div />
+						)}
+						<span className={styles.updatedAt}>{formatRelativeDate(deck.updatedAt)}</span>
+					</div>
+				</div>
+			</div>
+
+			{contextMenu && onMove && folders && (
+				<MoveMenu
+					folders={folders}
+					currentFolderId={deck.folderId}
+					onMove={onMove}
+					onClose={() => setContextMenu(null)}
+					position={contextMenu}
+				/>
+			)}
+		</>
 	);
 }

@@ -16,7 +16,9 @@ import {
 	insertDeckCards,
 	deleteDeckCard,
 	updateDeckCard,
+	moveDeckToFolder,
 } from '@/lib/deck/db/decks';
+import { insertFolder, updateFolder, deleteFolder } from '@/lib/deck/db/folders';
 import { createClient } from '@/lib/supabase/client';
 import {
 	peek,
@@ -113,6 +115,14 @@ export function useSyncQueue(userId: string | null | undefined) {
 					await deleteDeckCard(op.payload.rowId);
 				} else if (op.type === 'deck-card-update') {
 					await updateDeckCard(op.payload.rowId, op.payload.updates);
+				} else if (op.type === 'folder-insert') {
+					await insertFolder(op.payload.userId, op.payload.folder);
+				} else if (op.type === 'folder-update') {
+					await updateFolder(op.payload.userId, op.payload.folderId, op.payload.updates);
+				} else if (op.type === 'folder-delete') {
+					await deleteFolder(op.payload.userId, op.payload.folderId);
+				} else if (op.type === 'deck-move') {
+					await moveDeckToFolder(op.payload.userId, op.payload.deckId, op.payload.folderId);
 				} else {
 					await updateEntry(op.payload.userId, op.payload.rowId, op.payload.entry);
 				}

@@ -1,0 +1,160 @@
+.card {
+	position: relative;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	min-height: 360px;
+	background: var(--glass-bg);
+	backdrop-filter: blur(var(--glass-blur));
+	border: 1px solid var(--glass-border);
+	border-radius: 2px;
+	cursor: grab;
+	text-align: left;
+	transition:
+		border-color 0.15s,
+		box-shadow 0.15s;
+	width: 100%;
+}
+
+.card:active {
+	cursor: grabbing;
+}
+
+.card:hover {
+	border-color: var(--gold);
+	box-shadow: 0 0 16px rgba(201, 168, 76, 0.15);
+}
+
+.card.dropOver {
+	border-color: var(--gold);
+	box-shadow:
+		0 0 0 2px var(--gold),
+		0 0 24px rgba(201, 168, 76, 0.25);
+}
+
+.card.dragging {
+	opacity: 0.4;
+	pointer-events: none;
+}
+
+/* ── Header ── */
+
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 14px 16px;
+	background: var(--glass-bg);
+	backdrop-filter: blur(var(--glass-blur));
+}
+
+.headerLeft {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+.folderIcon {
+	width: 18px;
+	height: 18px;
+	flex-shrink: 0;
+	color: var(--brass);
+}
+
+.name {
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--foreground);
+	margin: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
+}
+
+/* ── Collage zone ── */
+
+.imageZone {
+	position: relative;
+	aspect-ratio: 626 / 457;
+	flex-shrink: 0;
+	overflow: hidden;
+	background: rgba(0, 0, 0, 0.25);
+}
+
+/* Dark background */
+.imageBg {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.55);
+}
+
+/* Grid of small thumbnail vignettes in corners */
+.thumbnails {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	grid-template-rows: 1fr 1fr;
+	gap: 3px;
+	padding: 10px;
+}
+
+.thumb {
+	overflow: hidden;
+	border-radius: 3px;
+	opacity: 0.5;
+	transition: opacity 0.3s ease;
+}
+
+.card:hover .thumb {
+	opacity: 0.65;
+}
+
+.thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+/* Big folder icon centered */
+.folderIconOverlay {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--gold);
+	filter: drop-shadow(0 2px 12px rgba(201, 168, 76, 0.4));
+	transition: filter 0.3s ease;
+}
+
+.card:hover .folderIconOverlay {
+	filter: drop-shadow(0 2px 20px rgba(201, 168, 76, 0.7));
+}
+
+/* ── Body ── */
+
+.body {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 14px 16px 16px;
+	flex: 1;
+	background: var(--glass-bg);
+}
+
+.stats {
+	font-size: 14px;
+	color: var(--text-muted);
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+
+.statSep {
+	opacity: 0.4;
+}

@@ -1,5 +1,5 @@
 import type { CardEntry } from '@/types/cards';
-import type { DeckMeta } from '@/types/decks';
+import type { DeckMeta, FolderMeta } from '@/types/decks';
 
 const QUEUE_KEY = 'wizcard-sync-queue';
 
@@ -95,6 +95,38 @@ export type SyncOp =
 			id: string;
 			type: 'deck-card-update';
 			payload: { rowId: string; updates: { tags?: string[]; owner_id?: string | null } };
+			retries: number;
+			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'folder-insert';
+			payload: { userId: string; folder: FolderMeta };
+			retries: number;
+			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'folder-update';
+			payload: {
+				userId: string;
+				folderId: string;
+				updates: Partial<Pick<FolderMeta, 'name' | 'parentId' | 'position'>>;
+			};
+			retries: number;
+			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'folder-delete';
+			payload: { userId: string; folderId: string };
+			retries: number;
+			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'deck-move';
+			payload: { userId: string; deckId: string; folderId: string | null };
 			retries: number;
 			createdAt: string;
 	  };

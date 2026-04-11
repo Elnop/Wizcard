@@ -1,0 +1,29 @@
+.breadcrumb {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	margin-bottom: 1rem;
+	font-size: 0.8rem;
+}
+
+.crumb {
+	background: none;
+	border: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 0;
+	transition: color 0.15s;
+}
+
+.crumb:hover {
+	color: var(--gold);
+}
+
+.sep {
+	color: var(--border);
+}
+
+.current {
+	color: var(--foreground);
+	font-weight: 500;
+}
