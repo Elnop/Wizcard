@@ -7,6 +7,7 @@ export interface DeckStats {
 	sideboardCount: number;
 	maybeboardCount: number;
 	commanderCount: number;
+	landCount: number;
 	averageCmc: number;
 	manaCurve: Record<number, number>;
 	colorDistribution: Record<string, number>;
@@ -22,9 +23,13 @@ export function computeDeckStats(cards: Array<{ card: ScryfallCard; zone: DeckZo
 	const manaCurve: Record<number, number> = {};
 	let cmcSum = 0;
 	let cmcCount = 0;
+	let landCount = 0;
 	for (const { card } of [...mainboard, ...commander]) {
 		const typeLine = card.type_line ?? '';
-		if (typeLine.toLowerCase().includes('land')) continue;
+		if (typeLine.toLowerCase().includes('land')) {
+			landCount++;
+			continue;
+		}
 		const cmc = Math.floor(card.cmc ?? 0);
 		manaCurve[cmc] = (manaCurve[cmc] ?? 0) + 1;
 		cmcSum += cmc;
@@ -46,6 +51,7 @@ export function computeDeckStats(cards: Array<{ card: ScryfallCard; zone: DeckZo
 		sideboardCount: sideboard.length,
 		maybeboardCount: maybeboard.length,
 		commanderCount: commander.length,
+		landCount,
 		averageCmc: cmcCount > 0 ? cmcSum / cmcCount : 0,
 		manaCurve,
 		colorDistribution,

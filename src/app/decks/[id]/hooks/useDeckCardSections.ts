@@ -46,6 +46,7 @@ export function useDeckCardSections(
 				}
 			}
 
+			const countById = new Map<string, number>();
 			const sectionCards = [...grouped.values()].map((copies) => {
 				const representative = copies[0];
 				groupByCardId.set(representative.card.id, {
@@ -54,11 +55,14 @@ export function useDeckCardSections(
 					count: copies.length,
 					zone,
 				});
+				countById.set(representative.card.id, copies.length);
 				return representative.card;
 			});
 
 			const children =
-				zone !== 'commander' && sectionCards.length > 0 ? groupByCardType(sectionCards) : undefined;
+				zone !== 'commander' && sectionCards.length > 0
+					? groupByCardType(sectionCards, countById)
+					: undefined;
 
 			sections.push({
 				label: `${ZONE_LABELS[zone]} (${cards.length})`,

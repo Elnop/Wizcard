@@ -5,11 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import type { DeckFormat } from '@/types/decks';
+import type { DeckZone } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { parseMTGADeck, type DeckImportResult } from '@/lib/import/formats/mtga-deck';
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { deduplicateIdentifiers } from '@/lib/import/utils/identifier-dedup';
 import { useSetCodeNormalizer } from '@/lib/import/hooks/useSetCodeNormalizer';
+import { extractMoxfieldId, fetchMoxfieldDeck } from '@/lib/moxfield/fetch-deck';
+import { convertMoxfieldDeck, type MoxfieldImportData } from '@/lib/moxfield/convert-deck';
 import type { ScryfallCard, ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
 import styles from './ImportDeckModal.module.css';
 
@@ -41,6 +44,8 @@ const PLACEHOLDER = `4 Lightning Bolt (M11) 149
 Sideboard
 2 Rest in Peace
 1 Flusterstorm`;
+
+type ImportMode = 'paste' | 'url';
 
 type Props = {
 	onClose: () => void;
@@ -94,11 +99,38 @@ function buildDetectionHint(parsed: DeckImportResult): string | null {
 	return parts.join(' — ');
 }
 
+function buildMoxfieldSummary(data: MoxfieldImportData): string {
+	const counts: Record<DeckZone, number> = {
+		mainboard: 0,
+		sideboard: 0,
+		commander: 0,
+		maybeboard: 0,
+	};
+	for (const card of data.cards) {
+		counts[card.zone] += card.quantity;
+	}
+
+	const parts: string[] = [];
+	if (data.format) parts.push(FORMAT_LABELS[data.format] ?? data.format);
+
+	const cardParts: string[] = [];
+	if (counts.commander > 0) cardParts.push(`${counts.commander} commander`);
+	if (counts.mainboard > 0) cardParts.push(`${counts.mainboard} mainboard`);
+	if (counts.sideboard > 0) cardParts.push(`${counts.sideboard} sideboard`);
+	if (counts.maybeboard > 0) cardParts.push(`${counts.maybeboard} maybeboard`);
+	parts.push(cardParts.join(' + '));
+
+	return parts.join(' — ');
+}
+
 export function ImportDeckModal({ onClose }: Props) {
 	const { createDeck, bulkAddCardsToDeck } = useDeckContext();
 	const router = useRouter();
 	const normalizeSetCodes = useSetCodeNormalizer();
 
+	const [mode, setMode] = useState<ImportMode>('paste');
+
+	// Paste mode state
 	const [name, setName] = useState('');
 	const [format, setFormat] = useState<DeckFormat | ''>('');
 	const [text, setText] = useState('');
@@ -107,6 +139,11 @@ export function ImportDeckModal({ onClose }: Props) {
 
 	const nameManuallyEdited = useRef(false);
 	const formatManuallyEdited = useRef(false);
+
+	// URL mode state
+	const [url, setUrl] = useState('');
+	const [isFetching, setIsFetching] = useState(false);
+	const [moxfieldData, setMoxfieldData] = useState<MoxfieldImportData | null>(null);
 
 	const parsed = useMemo(() => (text.trim() ? parseMTGADeck(text) : null), [text]);
 	const detectionHint = useMemo(() => (parsed ? buildDetectionHint(parsed) : null), [parsed]);
@@ -138,7 +175,36 @@ export function ImportDeckModal({ onClose }: Props) {
 		setFormat(e.target.value as DeckFormat | '');
 	}, []);
 
-	const handleImport = useCallback(async () => {
+	// --- URL mode handlers ---
+
+	const handleFetchMoxfield = useCallback(async () => {
+		setErrors([]);
+		setMoxfieldData(null);
+
+		const publicId = extractMoxfieldId(url);
+		if (!publicId) {
+			setErrors(['Invalid Moxfield URL. Expected: https://moxfield.com/decks/...']);
+			return;
+		}
+
+		setIsFetching(true);
+		try {
+			const response = await fetchMoxfieldDeck(publicId);
+			const data = convertMoxfieldDeck(response);
+			setMoxfieldData(data);
+
+			if (!nameManuallyEdited.current) setName(data.name);
+			if (!formatManuallyEdited.current) setFormat(data.format ?? '');
+		} catch (err) {
+			setErrors([err instanceof Error ? err.message : 'Failed to fetch deck from Moxfield.']);
+		} finally {
+			setIsFetching(false);
+		}
+	}, [url]);
+
+	// --- Import handlers ---
+
+	const handleImportPaste = useCallback(async () => {
 		setErrors([]);
 
 		if (!parsed || parsed.rows.length === 0) {
@@ -155,17 +221,13 @@ export function ImportDeckModal({ onClose }: Props) {
 		setIsImporting(true);
 
 		try {
-			// Normalize MTGA/MTGO set codes to Scryfall codes before resolving
 			const normalized = normalizeSetCodes(parsed);
 			const resolved = await resolveCards(normalized.identifiers);
 
-			// Build a lookup: identifier key → ScryfallCard
-			// Index by set+collector_number, full name, and front-face name (for DFCs)
 			const cardMap = new Map<string, ScryfallCard>();
 			for (const card of resolved) {
 				cardMap.set(`${card.set}:${card.collector_number}`, card);
 				cardMap.set(`name:${card.name.toLowerCase()}`, card);
-				// DFC: Scryfall returns "Front // Back", MTGA lists only "Front"
 				const slashIdx = card.name.indexOf(' // ');
 				if (slashIdx !== -1) {
 					cardMap.set(`name:${card.name.slice(0, slashIdx).toLowerCase()}`, card);
@@ -220,26 +282,115 @@ export function ImportDeckModal({ onClose }: Props) {
 		}
 	}, [parsed, name, format, createDeck, bulkAddCardsToDeck, router, normalizeSetCodes]);
 
-	const canImport = text.trim().length > 0 && !isImporting;
+	const handleImportMoxfield = useCallback(() => {
+		if (!moxfieldData || moxfieldData.cards.length === 0) return;
+
+		setIsImporting(true);
+
+		try {
+			const deckId = createDeck(
+				name.trim() || moxfieldData.name,
+				format || null,
+				moxfieldData.description
+			);
+
+			// bulkAddCardsToDeck expects ScryfallCard objects but only uses card.id
+			const cardsToAdd = moxfieldData.cards.map((c) => ({
+				card: { id: c.scryfallId } as ScryfallCard,
+				zone: c.zone,
+				quantity: c.quantity,
+			}));
+
+			bulkAddCardsToDeck(deckId, cardsToAdd);
+
+			router.push(`/decks/${deckId}`);
+		} catch (err) {
+			setErrors([`Import failed: ${err instanceof Error ? err.message : 'unknown error'}`]);
+			setIsImporting(false);
+		}
+	}, [moxfieldData, name, format, createDeck, bulkAddCardsToDeck, router]);
+
+	const handleImport = mode === 'paste' ? handleImportPaste : handleImportMoxfield;
+
+	const canImport =
+		mode === 'paste'
+			? text.trim().length > 0 && !isImporting
+			: moxfieldData !== null && moxfieldData.cards.length > 0 && !isImporting;
+
+	const handleModeChange = useCallback((newMode: ImportMode) => {
+		setMode(newMode);
+		setErrors([]);
+		if (!nameManuallyEdited.current) setName('');
+		if (!formatManuallyEdited.current) setFormat('');
+	}, []);
 
 	return (
 		<Modal className={styles.dialog}>
 			<div className={styles.form}>
 				<h2 className={styles.title}>Import a Deck</h2>
 
-				<label className={styles.label}>
-					Deck List
-					<textarea
-						className={styles.textarea}
-						placeholder={PLACEHOLDER}
-						value={text}
-						onChange={(e) => handleTextChange(e.target.value)}
-						rows={10}
-						autoFocus
-					/>
-				</label>
+				<div className={styles.tabs}>
+					<button
+						type="button"
+						className={`${styles.tab} ${mode === 'paste' ? styles.tabActive : ''}`}
+						onClick={() => handleModeChange('paste')}
+					>
+						Paste list
+					</button>
+					<button
+						type="button"
+						className={`${styles.tab} ${mode === 'url' ? styles.tabActive : ''}`}
+						onClick={() => handleModeChange('url')}
+					>
+						Moxfield URL
+					</button>
+				</div>
 
-				{detectionHint && <p className={styles.hint}>{detectionHint}</p>}
+				{mode === 'paste' && (
+					<>
+						<label className={styles.label}>
+							Deck List
+							<textarea
+								className={styles.textarea}
+								placeholder={PLACEHOLDER}
+								value={text}
+								onChange={(e) => handleTextChange(e.target.value)}
+								rows={10}
+								autoFocus
+							/>
+						</label>
+
+						{detectionHint && <p className={styles.hint}>{detectionHint}</p>}
+					</>
+				)}
+
+				{mode === 'url' && (
+					<>
+						<label className={styles.label}>
+							Moxfield Deck URL
+							<div className={styles.urlRow}>
+								<input
+									type="url"
+									className={styles.input}
+									value={url}
+									onChange={(e) => setUrl(e.target.value)}
+									placeholder="https://moxfield.com/decks/..."
+									autoFocus
+								/>
+								<Button
+									variant="secondary"
+									onClick={handleFetchMoxfield}
+									disabled={!url.trim() || isFetching}
+									isLoading={isFetching}
+								>
+									Fetch
+								</Button>
+							</div>
+						</label>
+
+						{moxfieldData && <p className={styles.hint}>{buildMoxfieldSummary(moxfieldData)}</p>}
+					</>
+				)}
 
 				<label className={styles.label}>
 					Name

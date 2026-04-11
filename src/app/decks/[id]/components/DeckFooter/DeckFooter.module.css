@@ -4,20 +4,28 @@
 	left: 0;
 	right: 0;
 	z-index: 50;
-	background: var(--glass-bg);
-	backdrop-filter: blur(12px);
-	-webkit-backdrop-filter: blur(12px);
+	background: rgba(26, 26, 46, 0.92);
+	backdrop-filter: blur(var(--glass-blur));
+	-webkit-backdrop-filter: blur(var(--glass-blur));
 	border-top: 1px solid var(--glass-border);
 }
 
 .inner {
 	display: flex;
 	align-items: center;
-	justify-content: center;
-	gap: 20px;
+	justify-content: space-between;
 	max-width: 1400px;
 	margin: 0 auto;
-	padding: 10px 24px;
+	padding: 16px 32px;
+	height: 56px;
+	box-sizing: border-box;
+}
+
+.left,
+.right {
+	display: flex;
+	align-items: center;
+	gap: 20px;
 }
 
 .item {
@@ -40,6 +48,15 @@
 	letter-spacing: 0.5px;
 }
 
+.format {
+	font-size: 12px;
+	font-weight: 700;
+	font-family: var(--font-display);
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	color: var(--gold);
+}
+
 .valid .value {
 	color: var(--success);
 }
@@ -54,17 +71,132 @@
 	background: var(--border);
 }
 
+.colorDots {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.colorDot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Warnings trigger button */
+.warningsTrigger {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	background: none;
+	border: none;
+	padding: 4px 8px;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: background 0.15s ease;
+}
+
+.warningsTrigger:hover {
+	background: rgba(192, 57, 43, 0.1);
+}
+
+.warningsValue {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--error);
+}
+
+.warningsLabel {
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--error);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.chevron {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	border-right: 2px solid var(--error);
+	border-top: 2px solid var(--error);
+	transform: rotate(-45deg);
+	transition: transform 0.2s ease;
+	margin-left: 2px;
+}
+
+.warningsTriggerOpen .chevron {
+	transform: rotate(135deg);
+}
+
+/* Warnings expandable panel */
+.warningsPanel {
+	position: absolute;
+	bottom: 100%;
+	left: 0;
+	right: 0;
+	background: var(--glass-bg);
+	backdrop-filter: blur(var(--glass-blur));
+	-webkit-backdrop-filter: blur(var(--glass-blur));
+	border-top: 1px solid var(--glass-border);
+	overflow: hidden;
+	max-height: 0;
+	opacity: 0;
+	transition:
+		max-height 0.25s ease,
+		opacity 0.2s ease;
+}
+
+.warningsPanelOpen {
+	max-height: 300px;
+	opacity: 1;
+}
+
+.warningsPanelInner {
+	max-width: 1400px;
+	margin: 0 auto;
+	padding: 12px 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.warningItem {
+	padding: 8px 12px;
+	font-size: 13px;
+	color: var(--warning);
+	background: rgba(201, 168, 76, 0.1);
+	border: 1px solid rgba(201, 168, 76, 0.2);
+	border-radius: 4px;
+}
+
 @media (max-width: 480px) {
 	.inner {
-		gap: 12px;
 		padding: 8px 16px;
+		height: auto;
 	}
 
-	.value {
+	.left,
+	.right {
+		gap: 12px;
+	}
+
+	.value,
+	.warningsValue {
 		font-size: 14px;
 	}
 
-	.label {
+	.label,
+	.warningsLabel {
 		font-size: 10px;
+	}
+
+	.format {
+		font-size: 10px;
+	}
+
+	.warningsPanelInner {
+		padding: 10px 16px;
 	}
 }

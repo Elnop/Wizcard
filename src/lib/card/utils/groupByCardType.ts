@@ -11,7 +11,10 @@ const CARD_TYPE_ORDER = [
 	{ key: 'battle', label: 'Battles' },
 ] as const;
 
-export function groupByCardType(cards: AnyCard[]): CardListSection[] {
+export function groupByCardType(
+	cards: AnyCard[],
+	countById?: Map<string, number>
+): CardListSection[] {
 	const buckets = new Map<string, AnyCard[]>();
 
 	for (const card of cards) {
@@ -43,12 +46,18 @@ export function groupByCardType(cards: AnyCard[]): CardListSection[] {
 	for (const { key, label } of CARD_TYPE_ORDER) {
 		const group = buckets.get(key);
 		if (group && group.length > 0) {
-			sections.push({ label: `${label} (${group.length})`, cards: group });
+			const total = countById
+				? group.reduce((sum, c) => sum + (countById.get(c.id) ?? 1), 0)
+				: group.length;
+			sections.push({ label: `${label} (${total})`, cards: group });
 		}
 	}
 	const other = buckets.get('other');
 	if (other && other.length > 0) {
-		sections.push({ label: `Other (${other.length})`, cards: other });
+		const total = countById
+			? other.reduce((sum, c) => sum + (countById.get(c.id) ?? 1), 0)
+			: other.length;
+		sections.push({ label: `Other (${total})`, cards: other });
 	}
 
 	return sections;

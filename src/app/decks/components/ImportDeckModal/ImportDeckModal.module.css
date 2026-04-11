@@ -21,6 +21,37 @@
 	padding: 28px 32px;
 }
 
+.tabs {
+	display: flex;
+	gap: 0;
+	border-bottom: 1px solid var(--border);
+	margin-bottom: 4px;
+}
+
+.tab {
+	flex: 1;
+	padding: 8px 12px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-muted);
+	background: none;
+	border: none;
+	border-bottom: 2px solid transparent;
+	cursor: pointer;
+	transition:
+		color 0.15s,
+		border-color 0.15s;
+}
+
+.tab:hover {
+	color: var(--foreground);
+}
+
+.tabActive {
+	color: var(--foreground);
+	border-bottom-color: var(--primary);
+}
+
 .label {
 	display: flex;
 	flex-direction: column;
@@ -57,6 +88,17 @@ select.input {
 .option {
 	background: #1a1a2e;
 	color: #e8e6e3;
+}
+
+.urlRow {
+	display: flex;
+	gap: 8px;
+	align-items: stretch;
+}
+
+.urlRow .input {
+	flex: 1;
+	min-width: 0;
 }
 
 .textarea {

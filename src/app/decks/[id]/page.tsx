@@ -153,7 +153,7 @@ export default function DeckDetailPage() {
 				<DeckStats stats={stats} warnings={warnings} />
 			</div>
 
-			<DeckFooter stats={stats} format={deck.format} />
+			<DeckFooter stats={stats} format={deck.format} warnings={warnings} />
 
 			{showAddCard && (
 				<AddCardModal
