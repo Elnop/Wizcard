@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { ALL_FORMATS } from '@/lib/import/formats/registry';
-import type { ImportFormatId, ImportResult } from '@/lib/import/utils/types';
+import type { ImportFormatId, ImportResult } from '@/lib/import/types';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
 import { useImportPreviewFetch } from '@/lib/import/hooks/useImportPreviewFetch';
@@ -31,7 +31,7 @@ export interface ImportPreview {
 	fileSize: number;
 	detectedFormat: ImportFormatId;
 	scores: Record<ImportFormatId, number>;
-	parsed: import('@/lib/import/utils/types').ParsedImportResult;
+	parsed: import('@/lib/import/types').ParsedImportResult;
 }
 
 export function useImport(

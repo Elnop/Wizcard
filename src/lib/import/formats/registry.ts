@@ -7,7 +7,7 @@ import type {
 	FormatParser,
 	BinaryFormatDescriptor,
 	BinaryFormatParser,
-} from '@/lib/import/utils/types';
+} from '@/lib/import/types';
 
 export const FORMAT_REGISTRY: ImportFormatDescriptor[] = [moxfieldDescriptor, mtgaDescriptor];
 

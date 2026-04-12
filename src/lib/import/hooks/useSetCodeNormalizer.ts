@@ -4,7 +4,7 @@ import { useCallback, useEffect } from 'react';
 import { useScryfallStore } from '@/lib/scryfall/store/scryfall-store';
 import { normalizeImportResult } from '@/lib/import/utils/normalize-set-code';
 import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
-import type { ParsedImportRow } from '@/lib/import/utils/types';
+import type { ParsedImportRow } from '@/lib/import/types';
 
 type Normalizable = {
 	rows: ParsedImportRow[];

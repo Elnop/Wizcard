@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import type { ParsedImportRow } from '@/lib/import/utils/types';
+import type { ParsedImportRow } from '@/lib/import/types';
 import type { ImportPreview } from '@/lib/import/hooks/useImport';
 
 export function useImportRowEditing(deps: {

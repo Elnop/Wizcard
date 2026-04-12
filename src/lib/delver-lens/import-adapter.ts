@@ -1,4 +1,4 @@
-import type { BinaryFormatDescriptor } from '@/lib/import/utils/types';
+import type { BinaryFormatDescriptor } from '@/lib/import/types';
 
 export { parseDelverLens } from './parse';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import type { ParsedImportRow } from '@/lib/import/utils/types';
+import type { ParsedImportRow } from '@/lib/import/types';
 import styles from './ImportModal.module.css';
 
 interface ImportFallbackTableProps {

@@ -3,8 +3,8 @@
 import { useCallback } from 'react';
 import { detectFormat, detectBinaryFormat } from '@/lib/import/utils/detect';
 import { getParser, getBinaryParser } from '@/lib/import/formats/registry';
-import { isBinaryFormat } from '@/lib/import/utils/types';
-import type { ImportFormatId, ParsedImportRow, ParsedImportResult } from '@/lib/import/utils/types';
+import { isBinaryFormat } from '@/lib/import/types';
+import type { ImportFormatId, ParsedImportRow, ParsedImportResult } from '@/lib/import/types';
 import type { ImportStatus, ImportPreview } from '@/lib/import/hooks/useImport';
 
 function mergeRows(rows: ParsedImportRow[]): ParsedImportRow[] {

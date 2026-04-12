@@ -1,5 +1,5 @@
 import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
-import type { ParsedImportResult, ParsedImportRow, ImportFormatDescriptor } from '../utils/types';
+import type { ParsedImportResult, ParsedImportRow, ImportFormatDescriptor } from '../types';
 
 const IGNORED_LINES = new Set(['deck', 'sideboard', 'commander', 'companion']);
 

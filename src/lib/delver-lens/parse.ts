@@ -1,5 +1,5 @@
 import type { SqlValue } from 'sql.js';
-import type { ParsedImportRow, BinaryFormatParser } from '@/lib/import/utils/types';
+import type { ParsedImportRow, BinaryFormatParser } from '@/lib/import/types';
 import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
 import { openDatabase } from './sql-loader';
 import {

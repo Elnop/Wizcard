@@ -26,7 +26,7 @@ import { DeckCard } from './components/DeckCard/DeckCard';
 import { FolderCard } from './components/FolderCard/FolderCard';
 import { FolderSidebar } from './components/FolderSidebar/FolderSidebar';
 import { FolderBreadcrumb } from './components/FolderBreadcrumb/FolderBreadcrumb';
-import { useDeckSummaries } from './hooks/useDeckSummaries';
+import { useDeckSummaries } from './useDeckSummaries';
 import styles from './page.module.css';
 
 export default function DecksPage() {

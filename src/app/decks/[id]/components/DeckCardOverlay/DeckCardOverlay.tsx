@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { DeckCardGroup } from '../../hooks/useDeckCardSections';
+import type { DeckCardGroup } from '../../useDeckCardSections';
 import type { DeckZone } from '@/types/decks';
 import type { ResolvedDeckCard } from '../../useDeckDetail';
 import styles from './DeckCardOverlay.module.css';

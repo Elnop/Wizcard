@@ -10,7 +10,7 @@ import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { Button } from '@/components/Button/Button';
 import { useDeckDetail, type ResolvedDeckCard } from './useDeckDetail';
-import { useDeckCardSections } from './hooks/useDeckCardSections';
+import { useDeckCardSections } from './useDeckCardSections';
 import { DeckHeader } from './components/DeckHeader/DeckHeader';
 import { DeckStats } from './components/DeckStats/DeckStats';
 import { DeckCardOverlay } from './components/DeckCardOverlay/DeckCardOverlay';

@@ -5,7 +5,7 @@ import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall'
 import type { DeckMeta, DeckZone } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { fetchDeckCardEntries } from '@/lib/deck/db/decks';
-import { getCardsFromCache, putCardsInCache } from '@/lib/scryfall/card-cache';
+import { getCardsFromCache, putCardsInCache } from '@/lib/scryfall/utils/card-cache';
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { computeDeckStats } from '@/lib/deck/utils/deck-stats';
 import { validateDeck, getFormatRules } from '@/lib/deck/utils/format-rules';

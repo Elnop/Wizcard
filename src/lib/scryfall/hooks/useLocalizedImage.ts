@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react';
 import { LANGUAGE_TO_SCRYFALL_CODE } from '@/lib/mtg/languages';
 import { getCardBySetNumberAndLang } from '@/lib/scryfall/endpoints/cards';
-import { getLocalizedImageFromCache, putLocalizedImageInCache } from '@/lib/scryfall/card-cache';
+import {
+	getLocalizedImageFromCache,
+	putLocalizedImageInCache,
+} from '@/lib/scryfall/utils/card-cache';
 import type { MtgLanguage } from '@/lib/mtg/languages';
 import type { ScryfallImageUris, ScryfallCardFace } from '@/lib/scryfall/types/scryfall';
 

@@ -1,5 +1,5 @@
 import type { ScryfallSet, ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
-import type { ParsedImportRow } from './types';
+import type { ParsedImportRow } from '@/lib/import/types';
 
 /** Minimal shape that both ParsedImportResult and DeckImportResult satisfy. */
 type Normalizable = {

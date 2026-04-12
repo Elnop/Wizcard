@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
 import type { DeckMeta, FolderMeta } from '@/types/decks';
-import type { DeckSummary } from '../../hooks/useDeckSummaries';
+import type { DeckSummary } from '../../useDeckSummaries';
 import { ManaSymbol } from '@/lib/scryfall/components/ManaSymbol/ManaSymbol';
 import { MiniManaCurve } from './MiniManaCurve';
 import styles from './DeckCard.module.css';

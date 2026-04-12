@@ -10,7 +10,7 @@ import {
 	getCollectionFromCache,
 	putCollectionEntriesInCache,
 	clearCollectionCache,
-} from '@/lib/scryfall/card-cache';
+} from '@/lib/scryfall/utils/card-cache';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 

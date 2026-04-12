@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import type { CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { DeckZone } from '@/types/decks';
-import type { ResolvedDeckCard } from '../useDeckDetail';
-import { groupByCardType } from '@/lib/card/utils/groupByCardType';
+import type { ResolvedDeckCard } from './useDeckDetail';
+import { groupByCardType } from '@/lib/card/utils/group-by-card-type';
 
 export type DeckCardGroup = {
 	representative: ResolvedDeckCard;

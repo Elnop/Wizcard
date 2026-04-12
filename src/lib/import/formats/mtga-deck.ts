@@ -1,5 +1,5 @@
 import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
-import type { ParsedImportRow } from '../utils/types';
+import type { ParsedImportRow } from '../types';
 import type { DeckFormat, DeckZone } from '@/types/decks';
 
 // Card line patterns (applied after normalizeLine preprocessing)

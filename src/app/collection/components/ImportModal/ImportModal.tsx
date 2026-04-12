@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import type { ImportFormatId, ParsedImportRow } from '@/lib/import/utils/types';
+import type { ImportFormatId, ParsedImportRow } from '@/lib/import/types';
 import type { ImportPreview, ImportStatus, ImportProgress } from '@/lib/import/hooks/useImport';
 import type { ScryfallCard, ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import { PAGE_SIZE } from '@/lib/collection/constants';

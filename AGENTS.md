@@ -79,7 +79,7 @@ AuthProvider
 - `src/lib/scryfall/utils/fetcher.ts` — `scryfallGet`/`scryfallPost`; rate-limit + in-memory cache + retry + in-flight deduplication
 - `src/lib/scryfall/utils/rate-limiter.ts` — 100ms sequential delay via promise chaining
 - `src/lib/scryfall/utils/cache.ts` — in-memory TTL cache (5 min, 1000 entries max)
-- `src/lib/card-cache.ts` — IndexedDB persistent cache for `ScryfallCard` objects (24h TTL)
+- `src/lib/scryfall/utils/card-cache.ts` — IndexedDB persistent cache for `ScryfallCard` objects (24h TTL)
 - `src/lib/scryfall/utils/scryfall-query.ts` — `buildScryfallQuery()` + `getScryfallCardImageUriBySize()`
 - `src/lib/scryfall/endpoints/` — `cards.ts`, `sets.ts`, `symbols.ts`
 - `src/lib/scryfall/components/ManaSymbol/` — mana symbol rendering (uses `next/image`)

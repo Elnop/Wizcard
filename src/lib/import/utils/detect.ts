@@ -1,4 +1,4 @@
-import type { ImportFormatId } from './types';
+import type { ImportFormatId } from '@/lib/import/types';
 import { FORMAT_REGISTRY, BINARY_FORMAT_REGISTRY } from '@/lib/import/formats/registry';
 
 export interface DetectionResult {

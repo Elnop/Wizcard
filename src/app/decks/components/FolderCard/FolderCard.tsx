@@ -3,7 +3,7 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { FolderIcon } from '@phosphor-icons/react';
 import type { FolderMeta, DeckMeta } from '@/types/decks';
-import type { DeckSummary } from '../../hooks/useDeckSummaries';
+import type { DeckSummary } from '../../useDeckSummaries';
 import styles from './FolderCard.module.css';
 
 type Props = {

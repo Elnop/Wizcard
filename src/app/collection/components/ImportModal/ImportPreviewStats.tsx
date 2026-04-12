@@ -1,7 +1,7 @@
 'use client';
 
-import type { ImportFormatId } from '@/lib/import/utils/types';
-import { isBinaryFormat } from '@/lib/import/utils/types';
+import type { ImportFormatId } from '@/lib/import/types';
+import { isBinaryFormat } from '@/lib/import/types';
 import type { ImportPreview } from '@/lib/import/hooks/useImport';
 import { formatFileSize } from '@/lib/import/utils/format';
 import styles from './ImportModal.module.css';
