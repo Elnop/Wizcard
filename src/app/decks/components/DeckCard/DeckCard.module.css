@@ -311,9 +311,13 @@
 }
 
 @media (max-width: 480px) {
+	.card {
+		min-height: 200px;
+	}
+
 	.imageZone {
 		aspect-ratio: unset;
-		height: 110px;
+		height: 90px;
 	}
 
 	.header {

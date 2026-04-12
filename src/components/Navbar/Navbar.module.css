@@ -129,13 +129,180 @@
 	border-color: var(--gold);
 }
 
+/* ── Hamburger button — hidden on desktop ── */
+
+.hamburger {
+	display: none;
+	flex-direction: column;
+	justify-content: center;
+	gap: 5px;
+	width: 36px;
+	height: 36px;
+	padding: 6px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	flex-shrink: 0;
+	margin-left: auto;
+}
+
+.hamburgerLine {
+	display: block;
+	width: 100%;
+	height: 2px;
+	background: var(--foreground);
+	border-radius: 2px;
+	transition:
+		transform 0.2s ease,
+		opacity 0.2s ease;
+	transform-origin: center;
+}
+
+.hamburgerLineOpen1 {
+	transform: translateY(7px) rotate(45deg);
+}
+
+.hamburgerLineOpen2 {
+	opacity: 0;
+}
+
+.hamburgerLineOpen3 {
+	transform: translateY(-7px) rotate(-45deg);
+}
+
+/* ── Mobile drawer ── */
+
+.drawerBackdrop {
+	display: none;
+	position: fixed;
+	inset: 0;
+	z-index: 149;
+	background: rgba(0, 0, 0, 0);
+	pointer-events: none;
+	transition: background 0.25s ease;
+}
+
+.drawerBackdropVisible {
+	background: rgba(0, 0, 0, 0.55);
+	pointer-events: auto;
+}
+
+.drawer {
+	display: none;
+	position: fixed;
+	top: var(--navbar-height);
+	right: 0;
+	width: 220px;
+	height: calc(100dvh - var(--navbar-height));
+	z-index: 150;
+	flex-direction: column;
+	gap: 4px;
+	padding: 16px 12px;
+	background: var(--surface);
+	border-left: 1px solid var(--glass-border);
+	transform: translateX(100%);
+	transition: transform 0.25s ease;
+}
+
+.drawerOpen {
+	transform: translateX(0);
+}
+
+.drawerLink {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 12px;
+	font-size: var(--text-sm);
+	font-weight: 600;
+	font-family: var(--font-display);
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+	border-radius: 4px;
+	transition:
+		color 0.2s,
+		background 0.2s;
+}
+
+.drawerLink:hover {
+	color: var(--gold);
+	background: var(--surface-hover);
+}
+
+.drawerLinkActive {
+	color: var(--foreground);
+}
+
+.drawerDivider {
+	height: 1px;
+	background: var(--border);
+	margin: 8px 0;
+}
+
+.drawerEmail {
+	padding: 6px 12px;
+	font-size: var(--text-xs);
+	font-family: var(--font-body);
+	color: var(--text-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.drawerSignOutBtn {
+	display: block;
+	width: 100%;
+	padding: 10px 12px;
+	font-size: var(--text-xs);
+	font-weight: 600;
+	font-family: var(--font-display);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--brass);
+	background: none;
+	border: 1px solid var(--glass-border);
+	border-radius: 4px;
+	cursor: pointer;
+	text-align: left;
+	transition:
+		color 0.25s,
+		border-color 0.25s;
+}
+
+.drawerSignOutBtn:hover {
+	color: var(--gold);
+	border-color: var(--gold);
+}
+
 @media (max-width: 768px) {
 	.navbar {
-		padding: 12px 16px;
-		gap: 16px;
+		padding: 10px 12px;
+		gap: 10px;
 	}
 
 	.logo {
 		font-size: var(--text-xl);
+	}
+
+	/* Hide desktop nav & auth on mobile */
+	.nav,
+	.authSection,
+	.syncSection {
+		display: none;
+	}
+
+	/* Show hamburger */
+	.hamburger {
+		display: flex;
+	}
+
+	/* Show drawer & backdrop */
+	.drawerBackdrop {
+		display: block;
+	}
+
+	.drawer {
+		display: flex;
 	}
 }

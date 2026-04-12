@@ -79,6 +79,12 @@ a {
 	text-decoration: none;
 }
 
+@supports (padding: max(0px)) {
+	body {
+		padding-bottom: env(safe-area-inset-bottom);
+	}
+}
+
 /* Scrollbar styling for dark mode */
 ::-webkit-scrollbar {
 	width: 8px;

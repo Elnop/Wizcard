@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useImportContext } from '@/lib/import/contexts/ImportContext';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
@@ -9,6 +10,10 @@ import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { getQueueLength } from '@/lib/supabase/sync-queue';
 import { SyncIndicator } from '@/lib/supabase/components/SyncIndicator/SyncIndicator';
 import styles from './Navbar.module.css';
+
+const NavbarDrawer = dynamic(() => import('./NavbarDrawer').then((m) => m.NavbarDrawer), {
+	ssr: false,
+});
 
 export function Navbar() {
 	const pathname = usePathname();
@@ -30,52 +35,61 @@ export function Navbar() {
 	}
 
 	return (
-		<header className={styles.navbar}>
-			<Link href="/" className={styles.logo}>
-				Wizcard
-			</Link>
-			<nav className={styles.nav}>
-				<Link
-					href="/search"
-					className={`${styles.navLink} ${pathname === '/search' ? styles.navLinkActive : ''}`}
-				>
-					Search
+		<>
+			<header className={styles.navbar}>
+				<Link href="/" className={styles.logo}>
+					Wizcard
 				</Link>
-				<Link
-					href="/decks"
-					className={`${styles.navLink} ${pathname.startsWith('/decks') ? styles.navLinkActive : ''}`}
-				>
-					Decks
-				</Link>
-				<Link
-					href="/collection"
-					className={`${styles.navLink} ${pathname === '/collection' ? styles.navLinkActive : ''}`}
-				>
-					Collection
-					{isImporting && <span className={styles.spinner} />}
-					{totalCollectionCards > 0 && <span className={styles.badge}>{totalCollectionCards}</span>}
-				</Link>
-			</nav>
-			<div className={styles.syncSection}>
-				<SyncIndicator />
-			</div>
-			<div className={styles.authSection}>
-				{user ? (
-					<>
-						<span className={styles.userEmail}>{user.email}</span>
-						<button className={styles.signOutBtn} onClick={() => void handleSignOut()}>
-							Déconnexion
-						</button>
-					</>
-				) : (
+
+				{/* Desktop nav */}
+				<nav className={styles.nav}>
 					<Link
-						href="/auth/login"
-						className={`${styles.navLink} ${pathname === '/auth/login' ? styles.navLinkActive : ''}`}
+						href="/search"
+						className={`${styles.navLink} ${pathname === '/search' ? styles.navLinkActive : ''}`}
 					>
-						Connexion
+						Search
 					</Link>
-				)}
-			</div>
-		</header>
+					<Link
+						href="/decks"
+						className={`${styles.navLink} ${pathname.startsWith('/decks') ? styles.navLinkActive : ''}`}
+					>
+						Decks
+					</Link>
+					<Link
+						href="/collection"
+						className={`${styles.navLink} ${pathname === '/collection' ? styles.navLinkActive : ''}`}
+					>
+						Collection
+						{isImporting && <span className={styles.spinner} />}
+						{totalCollectionCards > 0 && (
+							<span className={styles.badge}>{totalCollectionCards}</span>
+						)}
+					</Link>
+				</nav>
+				<div className={styles.syncSection}>
+					<SyncIndicator />
+				</div>
+				<div className={styles.authSection}>
+					{user ? (
+						<>
+							<span className={styles.userEmail}>{user.email}</span>
+							<button className={styles.signOutBtn} onClick={() => void handleSignOut()}>
+								Déconnexion
+							</button>
+						</>
+					) : (
+						<Link
+							href="/auth/login"
+							className={`${styles.navLink} ${pathname === '/auth/login' ? styles.navLinkActive : ''}`}
+						>
+							Connexion
+						</Link>
+					)}
+				</div>
+
+				{/* Hamburger + drawer — client only, no SSR to avoid hydration mismatch */}
+				<NavbarDrawer />
+			</header>
+		</>
 	);
 }
