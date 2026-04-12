@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import type { ScryfallColor, ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
+import { Modal } from '@/components/Modal/Modal';
 import { ColorFilter } from '@/lib/search/components/filters/ColorFilter/ColorFilter';
 import { RarityFilter } from '@/lib/search/components/filters/RarityFilter/RarityFilter';
 import { TypeFilter } from '@/lib/search/components/filters/TypeFilter/TypeFilter';
@@ -176,53 +177,26 @@ export function FilterModal({
 	onApply,
 	onClose,
 }: FilterModalProps) {
-	const dialogRef = useRef<HTMLDialogElement>(null);
-
-	useEffect(() => {
-		const dialog = dialogRef.current;
-		if (isOpen) {
-			dialog?.showModal();
-			document.body.style.overflow = 'hidden';
-		} else {
-			dialog?.close();
-			document.body.style.overflow = '';
-		}
-		return () => {
-			document.body.style.overflow = '';
-		};
-	}, [isOpen]);
-
-	const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-		if (e.target === dialogRef.current) onClose();
-	};
+	if (!isOpen) return null;
 
 	return (
-		<dialog
-			ref={dialogRef}
-			className={styles.dialog}
-			aria-modal="true"
-			aria-label="Filtres"
-			onClick={handleBackdropClick}
-			onCancel={onClose}
-		>
-			{isOpen && (
-				<FilterModalContent
-					key={String(isOpen)}
-					sets={sets}
-					setsLoading={setsLoading}
-					initialColors={colors}
-					initialColorMatch={colorMatch}
-					initialType={type}
-					initialSet={set}
-					initialRarities={rarities}
-					initialOracleText={oracleText}
-					initialCmc={cmc}
-					initialOrder={order}
-					initialDir={dir}
-					onApply={onApply}
-					onClose={onClose}
-				/>
-			)}
-		</dialog>
+		<Modal onClose={onClose} className={styles.panel}>
+			<FilterModalContent
+				key={String(isOpen)}
+				sets={sets}
+				setsLoading={setsLoading}
+				initialColors={colors}
+				initialColorMatch={colorMatch}
+				initialType={type}
+				initialSet={set}
+				initialRarities={rarities}
+				initialOracleText={oracleText}
+				initialCmc={cmc}
+				initialOrder={order}
+				initialDir={dir}
+				onApply={onApply}
+				onClose={onClose}
+			/>
+		</Modal>
 	);
 }

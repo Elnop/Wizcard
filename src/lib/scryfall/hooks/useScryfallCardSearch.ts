@@ -5,6 +5,7 @@ import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall'
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import { searchCards } from '@/lib/scryfall/endpoints/cards';
 import { buildScryfallQuery } from '@/lib/scryfall/utils/scryfall-query';
+import { ScryfallApiError } from '@/lib/scryfall/utils/errors';
 import { useDebounce } from '@/lib/search/hooks/useDebounce';
 
 export interface SearchFilters {
@@ -106,6 +107,12 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 				setTotalCards(result.total_cards ?? result.data.length);
 			} catch (err) {
 				if (err instanceof DOMException && err.name === 'AbortError') return;
+				if (err instanceof ScryfallApiError && err.status === 404) {
+					setCards([]);
+					setHasMore(false);
+					setTotalCards(0);
+					return;
+				}
 				setError(err instanceof Error ? err : new Error('Search failed'));
 				if (isNewSearch) {
 					setCards([]);
