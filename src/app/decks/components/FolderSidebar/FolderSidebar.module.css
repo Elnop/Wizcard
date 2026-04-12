@@ -16,7 +16,7 @@
 }
 
 .sectionLabel {
-	font-size: 0.65rem;
+	font-size: var(--text-xs);
 	font-weight: 600;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
@@ -32,7 +32,7 @@
 	width: 100%;
 	padding: 0.4rem 0.75rem;
 	border-radius: 6px;
-	font-size: 0.85rem;
+	font-size: var(--text-base);
 	color: var(--foreground);
 	background: none;
 	border: none;
@@ -74,7 +74,7 @@
 }
 
 .count {
-	font-size: 0.75rem;
+	font-size: var(--text-sm);
 	color: var(--text-muted);
 	flex-shrink: 0;
 }
@@ -93,7 +93,7 @@
 	margin: 0.25rem 0.5rem;
 	padding: 0.4rem 0.75rem;
 	border-radius: 6px;
-	font-size: 0.8rem;
+	font-size: var(--text-sm);
 	color: var(--text-muted);
 	background: none;
 	border: 1px dashed var(--border);
@@ -113,7 +113,7 @@
 	margin: 0.25rem 0.5rem;
 	padding: 0.4rem 0.75rem;
 	border-radius: 6px;
-	font-size: 0.85rem;
+	font-size: var(--text-base);
 	background: var(--surface-hover);
 	border: 1px solid var(--glass-border);
 	color: var(--foreground);

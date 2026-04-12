@@ -14,7 +14,7 @@
 }
 
 .logo {
-	font-size: 22px;
+	font-size: var(--text-2xl);
 	font-weight: 700;
 	font-family: var(--font-display);
 	letter-spacing: 0.15em;
@@ -36,7 +36,7 @@
 	display: flex;
 	align-items: center;
 	gap: 6px;
-	font-size: 12px;
+	font-size: var(--text-sm);
 	font-weight: 600;
 	font-family: var(--font-display);
 	letter-spacing: 0.1em;
@@ -60,7 +60,7 @@
 	min-width: 20px;
 	height: 20px;
 	padding: 0 6px;
-	font-size: 10px;
+	font-size: var(--text-2xs);
 	font-weight: 700;
 	font-family: var(--font-body);
 	letter-spacing: 0.05em;
@@ -98,7 +98,7 @@
 }
 
 .userEmail {
-	font-size: 12px;
+	font-size: var(--text-sm);
 	font-family: var(--font-body);
 	color: var(--text-muted);
 	max-width: 160px;
@@ -108,7 +108,7 @@
 }
 
 .signOutBtn {
-	font-size: 11px;
+	font-size: var(--text-xs);
 	font-weight: 600;
 	font-family: var(--font-display);
 	letter-spacing: 0.08em;
@@ -136,6 +136,6 @@
 	}
 
 	.logo {
-		font-size: 18px;
+		font-size: var(--text-xl);
 	}
 }

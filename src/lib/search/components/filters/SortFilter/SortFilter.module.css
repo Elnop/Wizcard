@@ -6,14 +6,14 @@
 }
 
 .label {
-	font-size: 13px;
+	font-size: var(--text-sm);
 	font-weight: 500;
 	color: var(--text-muted);
 }
 
 .select {
 	padding: 10px 36px 10px 12px;
-	font-size: 14px;
+	font-size: var(--text-base);
 	font-family: inherit;
 	color: var(--foreground);
 	background: var(--background);

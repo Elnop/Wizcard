@@ -39,7 +39,7 @@
 	border-radius: 10px;
 	color: var(--foreground);
 	cursor: pointer;
-	font-size: 14px;
+	font-size: var(--text-base);
 	transition:
 		border-color 0.2s,
 		background-color 0.2s;
@@ -56,7 +56,7 @@
 	min-width: 20px;
 	height: 20px;
 	padding: 0 6px;
-	font-size: 11px;
+	font-size: var(--text-xs);
 	font-weight: 700;
 	color: var(--primary-text);
 	background: var(--primary);
@@ -65,7 +65,7 @@
 
 .resultInfo {
 	margin-bottom: 16px;
-	font-size: 14px;
+	font-size: var(--text-base);
 	color: var(--text-muted);
 }
 
@@ -94,7 +94,7 @@
 }
 
 .emptyState h2 {
-	font-size: 24px;
+	font-size: var(--text-2xl);
 	font-weight: 600;
 	color: var(--foreground);
 	margin-bottom: 12px;
@@ -115,7 +115,7 @@
 }
 
 .noResults h3 {
-	font-size: 20px;
+	font-size: var(--text-xl);
 	font-weight: 600;
 	color: var(--foreground);
 	margin-bottom: 8px;

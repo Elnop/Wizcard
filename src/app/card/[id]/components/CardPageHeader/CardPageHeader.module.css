@@ -33,14 +33,14 @@
 }
 
 .name {
-	font-size: 32px;
+	font-size: var(--text-5xl);
 	font-weight: 700;
 	color: var(--foreground);
 	margin: 0;
 }
 
 .manaCost {
-	font-size: 18px;
+	font-size: var(--text-xl);
 	color: var(--text-muted);
 	font-family: var(--font-geist-mono), monospace;
 	background: var(--surface);
@@ -54,7 +54,7 @@
 }
 
 .typeLine {
-	font-size: 16px;
+	font-size: var(--text-lg);
 	color: var(--text-muted);
 	font-style: italic;
 }
@@ -63,7 +63,7 @@
 	display: flex;
 	gap: 8px;
 	align-items: center;
-	font-size: 14px;
+	font-size: var(--text-base);
 	color: var(--text-muted);
 }
 
@@ -79,7 +79,7 @@
 }
 
 .externalLink {
-	font-size: 13px;
+	font-size: var(--text-sm);
 	color: var(--text-muted);
 	text-decoration: none;
 	padding: 4px 10px;
@@ -108,7 +108,7 @@
 	}
 
 	.name {
-		font-size: 24px;
+		font-size: var(--text-2xl);
 	}
 }
 

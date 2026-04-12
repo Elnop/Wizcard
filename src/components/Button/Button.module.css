@@ -95,17 +95,17 @@
 
 .sm {
 	padding: 6px 16px;
-	font-size: 11px;
+	font-size: var(--text-xs);
 }
 
 .md {
 	padding: 10px 24px;
-	font-size: 13px;
+	font-size: var(--text-sm);
 }
 
 .lg {
 	padding: 14px 32px;
-	font-size: 15px;
+	font-size: var(--text-md);
 }
 
 /* --- Loading --- */

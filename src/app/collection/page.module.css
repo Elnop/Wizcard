@@ -37,14 +37,14 @@
 }
 
 .title {
-	font-size: 28px;
+	font-size: var(--text-4xl);
 	font-weight: 700;
 	color: var(--foreground);
 	margin-bottom: 8px;
 }
 
 .statsLine {
-	font-size: 14px;
+	font-size: var(--text-base);
 	color: var(--text-muted);
 }
 
@@ -58,7 +58,7 @@
 }
 
 .emptyState h2 {
-	font-size: 24px;
+	font-size: var(--text-2xl);
 	font-weight: 600;
 	color: var(--foreground);
 	margin-bottom: 12px;
@@ -82,7 +82,7 @@
 	min-width: 28px;
 	height: 28px;
 	padding: 0 8px;
-	font-size: 12px;
+	font-size: var(--text-xs);
 	font-weight: 700;
 	color: var(--primary-text);
 	background: var(--primary);
@@ -102,6 +102,6 @@
 	}
 
 	.title {
-		font-size: 24px;
+		font-size: var(--text-2xl);
 	}
 }

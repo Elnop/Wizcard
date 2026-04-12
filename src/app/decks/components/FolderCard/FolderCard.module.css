@@ -64,7 +64,7 @@
 }
 
 .name {
-	font-size: 18px;
+	font-size: var(--text-xl);
 	font-weight: 600;
 	color: var(--foreground);
 	margin: 0;
@@ -148,7 +148,7 @@
 }
 
 .stats {
-	font-size: 14px;
+	font-size: var(--text-base);
 	color: var(--text-muted);
 	display: flex;
 	gap: 6px;

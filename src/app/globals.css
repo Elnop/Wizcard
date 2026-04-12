@@ -38,6 +38,19 @@
 	/* Typography */
 	--font-display: var(--font-cinzel), 'Georgia', serif;
 	--font-body: var(--font-geist-sans), 'Arial', sans-serif;
+
+	/* Typography scale */
+	--text-2xs: 12px; /* micro labels, icônes de compteur */
+	--text-xs: 13px; /* badges, secondary muted info */
+	--text-sm: 15px; /* filter labels, small UI text */
+	--text-base: 17px; /* corps de texte principal */
+	--text-md: 18px; /* oracle text, descriptions, search input */
+	--text-lg: 19px; /* valeurs de stat, section counts */
+	--text-xl: 21px; /* titres de composants (modals, cards) */
+	--text-2xl: 24px; /* titres de pages, noms de cartes */
+	--text-3xl: 26px; /* section headings (features, CTA) */
+	--text-4xl: 30px; /* page headings (collection, decks) */
+	--text-5xl: 34px; /* CardPageHeader name desktop */
 }
 
 html,

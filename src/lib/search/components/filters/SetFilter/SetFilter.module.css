@@ -7,7 +7,7 @@
 }
 
 .label {
-	font-size: 13px;
+	font-size: var(--text-sm);
 	font-weight: 500;
 	color: var(--text-muted);
 }
@@ -17,7 +17,7 @@
 	align-items: center;
 	gap: 8px;
 	padding: 10px 12px;
-	font-size: 14px;
+	font-size: var(--text-base);
 	font-family: inherit;
 	color: var(--foreground);
 	background: var(--background);
@@ -91,7 +91,7 @@
 .searchInput {
 	width: 100%;
 	padding: 6px 10px;
-	font-size: 13px;
+	font-size: var(--text-sm);
 	font-family: inherit;
 	color: var(--foreground);
 	background: var(--background);
@@ -118,7 +118,7 @@
 	align-items: center;
 	gap: 8px;
 	padding: 8px 12px;
-	font-size: 13px;
+	font-size: var(--text-sm);
 	color: var(--foreground);
 	cursor: pointer;
 	transition: background 0.1s;

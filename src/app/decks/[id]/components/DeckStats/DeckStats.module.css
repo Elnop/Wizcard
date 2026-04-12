@@ -13,7 +13,7 @@
 }
 
 .sectionTitle {
-	font-size: 14px;
+	font-size: var(--text-base);
 	font-weight: 600;
 	color: var(--foreground);
 	margin: 0 0 12px;
@@ -45,7 +45,7 @@
 	display: flex;
 	align-items: center;
 	gap: 6px;
-	font-size: 13px;
+	font-size: var(--text-sm);
 	color: var(--text-muted);
 }
 
@@ -58,7 +58,7 @@
 
 .warning {
 	padding: 10px 14px;
-	font-size: 14px;
+	font-size: var(--text-base);
 	color: var(--warning);
 	background: rgba(201, 168, 76, 0.1);
 	border: 1px solid rgba(201, 168, 76, 0.2);

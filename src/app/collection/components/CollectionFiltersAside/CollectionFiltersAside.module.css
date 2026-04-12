@@ -23,7 +23,7 @@
 }
 
 .asideTitle {
-	font-size: 16px;
+	font-size: var(--text-lg);
 	font-weight: 600;
 	color: var(--foreground);
 	display: flex;
@@ -38,7 +38,7 @@
 	min-width: 20px;
 	height: 20px;
 	padding: 0 6px;
-	font-size: 11px;
+	font-size: var(--text-xs);
 	font-weight: 600;
 	background: var(--primary);
 	color: var(--primary-text);
@@ -48,7 +48,7 @@
 .resetButton {
 	margin-top: auto;
 	padding: 10px 16px;
-	font-size: 14px;
+	font-size: var(--text-base);
 	font-weight: 500;
 	color: var(--text-muted);
 	background: transparent;
@@ -102,7 +102,7 @@
 		align-items: center;
 		gap: 8px;
 		padding: 8px 14px;
-		font-size: 14px;
+		font-size: var(--text-base);
 		font-weight: 500;
 		color: var(--foreground);
 		background: var(--surface);
@@ -122,7 +122,7 @@
 		justify-content: center;
 		width: 28px;
 		height: 28px;
-		font-size: 16px;
+		font-size: var(--text-lg);
 		background: transparent;
 		border: none;
 		color: var(--text-muted);

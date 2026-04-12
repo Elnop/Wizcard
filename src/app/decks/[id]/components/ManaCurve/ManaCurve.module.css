@@ -21,7 +21,7 @@
 }
 
 .count {
-	font-size: 11px;
+	font-size: var(--text-xs);
 	font-weight: 600;
 	color: var(--text-muted);
 	min-height: 14px;
@@ -36,7 +36,7 @@
 }
 
 .label {
-	font-size: 11px;
+	font-size: var(--text-xs);
 	font-weight: 500;
 	color: var(--text-muted);
 }

@@ -5,7 +5,7 @@
 }
 
 .label {
-	font-size: 13px;
+	font-size: var(--text-sm);
 	font-weight: 500;
 	color: var(--text-muted);
 }
@@ -21,7 +21,7 @@
 	border: 1px solid var(--border);
 	border-radius: 10px;
 	color: var(--foreground);
-	font-size: 14px;
+	font-size: var(--text-base);
 	outline: none;
 	cursor: pointer;
 	transition: border-color 0.2s;
@@ -39,7 +39,7 @@
 	border: 1px solid var(--border);
 	border-radius: 10px;
 	color: var(--foreground);
-	font-size: 14px;
+	font-size: var(--text-base);
 	outline: none;
 	transition: border-color 0.2s;
 	flex-shrink: 0;

@@ -15,7 +15,7 @@
 .input {
 	width: 100%;
 	padding: 14px 48px;
-	font-size: 15px;
+	font-size: var(--text-md);
 	font-family: var(--font-body);
 	color: var(--foreground);
 	background: var(--glass-bg);

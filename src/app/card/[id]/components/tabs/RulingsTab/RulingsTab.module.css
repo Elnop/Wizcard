@@ -6,14 +6,14 @@
 
 .loading {
 	color: var(--text-muted);
-	font-size: 14px;
+	font-size: var(--text-base);
 	padding: 32px 0;
 	text-align: center;
 }
 
 .empty {
 	color: var(--text-muted);
-	font-size: 14px;
+	font-size: var(--text-base);
 	padding: 32px 0;
 	text-align: center;
 }
@@ -26,13 +26,13 @@
 }
 
 .date {
-	font-size: 12px;
+	font-size: var(--text-xs);
 	color: var(--text-muted);
 	margin-bottom: 6px;
 }
 
 .comment {
-	font-size: 14px;
+	font-size: var(--text-base);
 	line-height: 1.6;
 	color: var(--foreground);
 }

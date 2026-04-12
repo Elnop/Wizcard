@@ -1,13 +1,13 @@
 .loading {
 	color: var(--text-muted);
-	font-size: 14px;
+	font-size: var(--text-base);
 	padding: 32px 0;
 	text-align: center;
 }
 
 .empty {
 	color: var(--text-muted);
-	font-size: 14px;
+	font-size: var(--text-base);
 	padding: 32px 0;
 	text-align: center;
 }

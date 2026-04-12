@@ -4,7 +4,7 @@
 }
 
 .title {
-	font-size: 20px;
+	font-size: var(--text-xl);
 	font-weight: 600;
 	color: var(--foreground);
 	margin: 0 0 8px;
@@ -21,7 +21,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
-	font-size: 14px;
+	font-size: var(--text-base);
 	font-weight: 500;
 	color: var(--text-muted);
 }
@@ -32,7 +32,7 @@
 	border: 1px solid var(--border);
 	border-radius: 8px;
 	color: var(--foreground);
-	font-size: 14px;
+	font-size: var(--text-base);
 	outline: none;
 	transition: border-color 0.15s;
 }
@@ -61,7 +61,7 @@ select.input {
 	border: 1px solid var(--border);
 	border-radius: 8px;
 	color: var(--foreground);
-	font-size: 14px;
+	font-size: var(--text-base);
 	outline: none;
 	resize: vertical;
 	font-family: inherit;

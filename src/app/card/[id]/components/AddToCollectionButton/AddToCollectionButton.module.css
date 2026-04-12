@@ -14,7 +14,7 @@
 }
 
 .label {
-	font-size: 14px;
+	font-size: var(--text-base);
 	font-weight: 600;
 	color: var(--primary);
 }
@@ -35,7 +35,7 @@
 	border-radius: 6px;
 	background: var(--surface);
 	color: var(--foreground);
-	font-size: 16px;
+	font-size: var(--text-lg);
 	font-weight: 600;
 	cursor: pointer;
 	transition:
@@ -52,7 +52,7 @@
 .quantity {
 	min-width: 24px;
 	text-align: center;
-	font-size: 14px;
+	font-size: var(--text-base);
 	font-weight: 700;
 	color: var(--foreground);
 }
