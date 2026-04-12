@@ -128,7 +128,11 @@ export function DeckCard({ deck, summary, symbolMap, folders, onClick, onDelete,
 	const handleContextMenu = (e: React.MouseEvent) => {
 		if (!onMove || !folders) return;
 		e.preventDefault();
-		setContextMenu({ x: e.clientX, y: e.clientY });
+		const MENU_WIDTH = 200;
+		const MENU_HEIGHT = 300;
+		const x = Math.min(e.clientX, window.innerWidth - MENU_WIDTH - 8);
+		const y = Math.min(e.clientY, window.innerHeight - MENU_HEIGHT - 8);
+		setContextMenu({ x, y });
 	};
 
 	return (

@@ -101,27 +101,106 @@
 	margin-bottom: 24px;
 }
 
-@media (max-width: 768px) {
-	.page {
-		flex-direction: column;
+.drawerBackdrop {
+	display: none;
+}
+
+/* FAB folder toggle — hidden on desktop */
+.folderToggle {
+	display: none;
+}
+
+@media (max-width: 767px) {
+	.sidebar {
+		transform: translateX(-100%);
+		transition: transform 0.25s ease;
+		z-index: 200;
+		box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6);
 	}
 
-	.sidebar {
-		position: static;
-		height: auto;
-		width: 100%;
+	.sidebar.open {
+		transform: translateX(0);
+	}
+
+	.drawerBackdrop {
+		display: block;
+		position: fixed;
+		inset: 0;
+		z-index: 199;
+		background: rgba(0, 0, 0, 0);
+		pointer-events: none;
+		transition: background 0.25s ease;
+	}
+
+	.drawerBackdrop.visible {
+		background: rgba(0, 0, 0, 0.55);
+		pointer-events: auto;
+	}
+
+	/* Floating action button */
+	.folderToggle {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		position: fixed;
+		bottom: 20px;
+		right: 16px;
+		z-index: 198;
+		padding: 10px 16px;
+		background: var(--surface);
+		border: 1px solid var(--glass-border);
+		border-radius: 24px;
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--foreground);
+		cursor: pointer;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+		transition:
+			color 0.15s,
+			border-color 0.15s,
+			background 0.15s;
+	}
+
+	.folderToggle:hover {
+		color: var(--gold);
+		border-color: var(--gold);
+		background: var(--surface-hover);
 	}
 
 	.main {
 		margin-left: 0;
-		padding: 16px 12px;
+		padding: 12px 12px 80px;
+	}
+
+	.titleSection {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 10px;
+		margin-bottom: 14px;
 	}
 
 	.title {
 		font-size: var(--text-2xl);
 	}
 
+	.actions {
+		width: 100%;
+		padding-top: 0;
+	}
+
+	.grid {
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+		gap: 10px;
+	}
+}
+
+@media (max-width: 480px) {
+	.actions {
+		flex-wrap: wrap;
+	}
+
 	.grid {
 		grid-template-columns: 1fr;
+		gap: 8px;
 	}
 }

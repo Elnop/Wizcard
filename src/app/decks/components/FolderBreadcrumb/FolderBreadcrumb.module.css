@@ -4,6 +4,15 @@
 	gap: 0.35rem;
 	margin-bottom: 1rem;
 	font-size: var(--text-sm);
+	overflow-x: auto;
+	white-space: nowrap;
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+	padding-bottom: 2px;
+}
+
+.breadcrumb::-webkit-scrollbar {
+	display: none;
 }
 
 .crumb {

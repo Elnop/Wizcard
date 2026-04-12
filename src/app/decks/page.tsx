@@ -53,12 +53,14 @@ export default function DecksPage() {
 	const [folderToDelete, setFolderToDelete] = useState<string | null>(null);
 	const [draggingDeckId, setDraggingDeckId] = useState<string | null>(null);
 	const [draggingFolderId, setDraggingFolderId] = useState<string | null>(null);
+	const [sidebarOpen, setSidebarOpen] = useState(false);
 
 	// Active folder from URL: null = all, 'none' = unfiled, uuid = specific folder
 	const folderParam = searchParams.get('folder') as string | null;
 	const activeFolderId: string | null | 'none' = folderParam ?? null;
 
 	const handleFolderSelect = (id: string | null | 'none') => {
+		setSidebarOpen(false);
 		if (id === null) {
 			router.replace('/decks');
 		} else {
@@ -196,7 +198,13 @@ export default function DecksPage() {
 			onDragEnd={handleDragEnd}
 		>
 			<div className={styles.page}>
-				<div className={styles.sidebar}>
+				<div
+					className={`${styles.drawerBackdrop} ${sidebarOpen ? styles.visible : ''}`}
+					onClick={() => setSidebarOpen(false)}
+					aria-hidden="true"
+				/>
+
+				<div className={`${styles.sidebar} ${sidebarOpen ? styles.open : ''}`}>
 					<FolderSidebar
 						folders={folders}
 						decks={decks}
@@ -209,6 +217,15 @@ export default function DecksPage() {
 				</div>
 
 				<div className={styles.main}>
+					<button
+						className={styles.folderToggle}
+						onClick={() => setSidebarOpen(true)}
+						aria-label="Open folders"
+					>
+						<FolderIcon size={14} />
+						Folders
+					</button>
+
 					{activeFolderId !== null && (
 						<FolderBreadcrumb
 							activeFolderId={activeFolderId}

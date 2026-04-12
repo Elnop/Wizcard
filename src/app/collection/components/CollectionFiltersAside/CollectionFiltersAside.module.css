@@ -68,7 +68,7 @@
 	background: var(--surface);
 }
 
-/* Mobile toggle button — hidden on desktop */
+/* Mobile toggle button — moved to page as FAB, hidden here on desktop */
 .mobileToggle {
 	display: none;
 }
@@ -97,23 +97,34 @@
 		transform: translateX(0);
 	}
 
+	/* FAB — floating action button rendered from the page */
 	.mobileToggle {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		padding: 8px 14px;
-		font-size: var(--text-base);
+		position: fixed;
+		bottom: 20px;
+		right: 16px;
+		z-index: 198;
+		padding: 10px 16px;
+		font-size: var(--text-sm);
 		font-weight: 500;
 		color: var(--foreground);
 		background: var(--surface);
-		border: 1px solid var(--border);
-		border-radius: 8px;
+		border: 1px solid rgba(201, 168, 76, 0.2);
+		border-radius: 24px;
 		cursor: pointer;
-		transition: border-color 0.15s;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+		transition:
+			color 0.15s,
+			border-color 0.15s,
+			background 0.15s;
 	}
 
 	.mobileToggle:hover {
-		border-color: var(--text-muted);
+		color: var(--gold);
+		border-color: var(--gold);
+		background: var(--surface-hover);
 	}
 
 	.mobileClose {
