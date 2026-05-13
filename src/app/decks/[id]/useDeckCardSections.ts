@@ -66,8 +66,11 @@ export function useDeckCardSections(
 				if (seen.has(key)) continue;
 				seen.add(key);
 				const group = groupByCardId.get(key)!;
-				sectionCards.push(group.representative as ResolvedDeckCard);
-				countById.set(group.representative.id, group.byZone.get(zone)?.length ?? 0);
+				// Use the first copy of this zone so entry.tags reflects the correct zone
+				const sectionRep = (group.byZone.get(zone)?.[0] ??
+					group.representative) as ResolvedDeckCard;
+				sectionCards.push(sectionRep);
+				countById.set(sectionRep.id, group.byZone.get(zone)?.length ?? 0);
 			}
 
 			const children =

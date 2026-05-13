@@ -50,14 +50,20 @@ export function DeckCardOverlay({
 	useEffect(() => {
 		if (!menuPos) return;
 		const handleClick = () => closeMenu();
+		const handleContextMenu = () => closeMenu();
+		const handleScroll = () => closeMenu();
 		const handleKey = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') closeMenu();
 		};
 		document.addEventListener('click', handleClick);
+		document.addEventListener('contextmenu', handleContextMenu, true);
 		document.addEventListener('keydown', handleKey);
+		document.addEventListener('scroll', handleScroll, true);
 		return () => {
 			document.removeEventListener('click', handleClick);
+			document.removeEventListener('contextmenu', handleContextMenu, true);
 			document.removeEventListener('keydown', handleKey);
+			document.removeEventListener('scroll', handleScroll, true);
 		};
 	}, [menuPos, closeMenu]);
 

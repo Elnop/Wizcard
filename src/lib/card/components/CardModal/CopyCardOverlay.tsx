@@ -58,14 +58,20 @@ export function CopyCardOverlay({
 	useEffect(() => {
 		if (!menuPos) return;
 		const onClick = () => closeMenu();
+		const onContextMenuOutside = () => closeMenu();
+		const onScroll = () => closeMenu();
 		const onKey = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') closeMenu();
 		};
 		document.addEventListener('click', onClick);
+		document.addEventListener('contextmenu', onContextMenuOutside, true);
 		document.addEventListener('keydown', onKey);
+		document.addEventListener('scroll', onScroll, true);
 		return () => {
 			document.removeEventListener('click', onClick);
+			document.removeEventListener('contextmenu', onContextMenuOutside, true);
 			document.removeEventListener('keydown', onKey);
+			document.removeEventListener('scroll', onScroll, true);
 		};
 	}, [menuPos, closeMenu]);
 
