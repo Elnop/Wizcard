@@ -46,7 +46,7 @@ type DeckContextValue = {
 	) => void;
 	removeCardFromDeck: (rowId: string) => void;
 	changeZone: (rowId: string, zone: DeckZone) => void;
-	updateDeckCard: (rowId: string, updates: { tags?: string[]; owner_id?: string | null }) => void;
+	updateDeckCard: (rowId: string, updates: Partial<CardEntry>) => void;
 	toggleOwned: (rowId: string) => void;
 };
 
@@ -184,7 +184,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const updateDeckCard = useCallback(
-		(rowId: string, updates: { tags?: string[]; owner_id?: string | null }) =>
+		(rowId: string, updates: Partial<CardEntry>) =>
 			store.updateDeckCard(rowId, updates, triggerSync),
 		[store, triggerSync]
 	);

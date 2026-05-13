@@ -1,0 +1,85 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import type { Card, CardEntry } from '@/types/cards';
+import type { DeckZone } from '@/types/decks';
+import { getDeckZone } from '@/types/decks';
+import { useDeckContext } from '@/lib/deck/context/DeckContext';
+import type { DeckCardGroup } from '@/app/decks/[id]/useDeckCardSections';
+
+type Selection = { oracleId: string; clickedRowId: string };
+
+export function useDeckCardModal(deckId: string, groupByCardId: Map<string, DeckCardGroup>) {
+	const { addCardToDeck, removeCardFromDeck, changeZone, updateDeckCard } = useDeckContext();
+	const [selection, setSelection] = useState<Selection | null>(null);
+
+	// Derived reactively — auto-updates when the store changes
+	const selectedGroup = selection ? (groupByCardId.get(selection.oracleId) ?? null) : null;
+
+	// All copies across all zones, ordered: clicked zone first, then others
+	const selectedCards: Card[] | null = selectedGroup
+		? (() => {
+				const clickedCard = [...selectedGroup.byZone.values()]
+					.flat()
+					.find((c) => c.entry.rowId === selection!.clickedRowId);
+				const clickedZone = clickedCard ? getDeckZone(clickedCard.entry.tags) : null;
+				const ordered: Card[] = [];
+				if (clickedZone) {
+					ordered.push(...(selectedGroup.byZone.get(clickedZone) ?? []));
+				}
+				for (const [zone, copies] of selectedGroup.byZone) {
+					if (zone !== clickedZone) ordered.push(...copies);
+				}
+				return ordered;
+			})()
+		: null;
+
+	// The zone to add copies into = zone of the clicked card
+	const selectedZone: DeckZone | null = selectedCards
+		? getDeckZone(selectedCards[0].entry.tags)
+		: null;
+
+	const handleCardGroupClick = useCallback((group: DeckCardGroup, clickedRowId: string) => {
+		setSelection({ oracleId: group.representative.oracle_id, clickedRowId });
+	}, []);
+
+	const handleClose = useCallback(() => setSelection(null), []);
+
+	const handleSave = useCallback(
+		(rowId: string, updates: Partial<CardEntry>) => {
+			updateDeckCard(rowId, updates);
+		},
+		[updateDeckCard]
+	);
+
+	const handleRemoveEntry = useCallback(
+		(rowId: string) => {
+			removeCardFromDeck(rowId);
+		},
+		[removeCardFromDeck]
+	);
+
+	const handleAddCopy = useCallback(() => {
+		if (!selectedGroup || !selectedZone) return;
+		addCardToDeck(deckId, selectedGroup.representative as Card, selectedZone);
+	}, [selectedGroup, selectedZone, deckId, addCardToDeck]);
+
+	const handleChangeZone = useCallback(
+		(rowId: string, zone: DeckZone) => {
+			changeZone(rowId, zone);
+		},
+		[changeZone]
+	);
+
+	return {
+		selectedCards,
+		selectedZone,
+		clickedRowId: selection?.clickedRowId ?? null,
+		handleCardGroupClick,
+		handleClose,
+		handleSave,
+		handleRemoveEntry,
+		handleAddCopy,
+		handleChangeZone,
+	};
+}

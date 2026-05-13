@@ -1,19 +1,15 @@
 'use client';
 
 import { useEffect, useState, useMemo, useRef } from 'react';
+import type { Card } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { CardEntry } from '@/types/cards';
 import type { DeckZone } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { computeDeckStats, type DeckStats } from '@/lib/deck/utils/deck-stats';
 
-export type ResolvedDeckCard = {
-	card: ScryfallCard;
-	entry: CardEntry;
-	zone: DeckZone;
-};
+export type ResolvedDeckCard = Card;
 
 export function useDeckDetail(deckId: string) {
 	const { decks, activeDeckId, activeDeckCards, loadDeck } = useDeckContext();
@@ -94,11 +90,7 @@ export function useDeckDetail(deckId: string) {
 			.map((copy) => {
 				const card = scryfallCards[copy.scryfallId];
 				if (!card) return null;
-				return {
-					card,
-					entry: copy.entry,
-					zone: getDeckZone(copy.entry.tags),
-				};
+				return { ...card, entry: copy.entry };
 			})
 			.filter((c): c is ResolvedDeckCard => c !== null);
 	}, [activeDeckId, deckId, activeDeckCards, scryfallCards]);
@@ -112,14 +104,16 @@ export function useDeckDetail(deckId: string) {
 			commander: [],
 		};
 		for (const rc of resolvedCards) {
-			grouped[rc.zone].push(rc);
+			grouped[getDeckZone(rc.entry.tags)].push(rc);
 		}
 		return grouped;
 	}, [resolvedCards]);
 
 	// Compute stats
 	const stats: DeckStats = useMemo(() => {
-		return computeDeckStats(resolvedCards.map((rc) => ({ card: rc.card, zone: rc.zone })));
+		return computeDeckStats(
+			resolvedCards.map((rc) => ({ card: rc, zone: getDeckZone(rc.entry.tags) }))
+		);
 	}, [resolvedCards]);
 
 	const isResolving = resolveGeneration > 0;

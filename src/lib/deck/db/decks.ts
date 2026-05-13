@@ -302,7 +302,15 @@ export async function deleteDeckCard(rowId: string): Promise<void> {
 
 export async function updateDeckCard(
 	rowId: string,
-	updates: { tags?: string[]; owner_id?: string | null }
+	updates: {
+		tags?: string[];
+		owner_id?: string | null;
+		is_foil?: boolean | null;
+		foil_type?: string | null;
+		condition?: string | null;
+		language?: string | null;
+		purchase_price?: string | null;
+	}
 ): Promise<void> {
 	const supabase = createClient();
 	const { error } = await supabase.from('cards').update(updates).eq('id', rowId);

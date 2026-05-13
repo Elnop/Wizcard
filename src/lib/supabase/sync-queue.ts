@@ -94,7 +94,18 @@ export type SyncOp =
 	| {
 			id: string;
 			type: 'deck-card-update';
-			payload: { rowId: string; updates: { tags?: string[]; owner_id?: string | null } };
+			payload: {
+				rowId: string;
+				updates: {
+					tags?: string[];
+					owner_id?: string | null;
+					is_foil?: boolean | null;
+					foil_type?: string | null;
+					condition?: string | null;
+					language?: string | null;
+					purchase_price?: string | null;
+				};
+			};
 			retries: number;
 			createdAt: string;
 	  }

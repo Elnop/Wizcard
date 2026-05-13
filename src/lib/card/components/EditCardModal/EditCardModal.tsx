@@ -204,19 +204,21 @@ export function EditCardModal(props: Props) {
 							Tags
 						</label>
 						<div className={styles.tagsField}>
-							{(entry.tags ?? []).map((tag) => (
-								<span key={tag} className={styles.tag}>
-									{tag}
-									<button
-										type="button"
-										className={styles.tagRemove}
-										onClick={() => removeTag(tag)}
-										aria-label={`Remove tag ${tag}`}
-									>
-										×
-									</button>
-								</span>
-							))}
+							{(entry.tags ?? [])
+								.filter((tag) => !tag.includes(':'))
+								.map((tag) => (
+									<span key={tag} className={styles.tag}>
+										{tag}
+										<button
+											type="button"
+											className={styles.tagRemove}
+											onClick={() => removeTag(tag)}
+											aria-label={`Remove tag ${tag}`}
+										>
+											×
+										</button>
+									</span>
+								))}
 							<input
 								id="copy-edit-tags"
 								type="text"
@@ -224,7 +226,11 @@ export function EditCardModal(props: Props) {
 								value={tagInput}
 								onChange={(e) => setTagInput(e.target.value)}
 								onKeyDown={handleTagKeyDown}
-								placeholder={(entry.tags ?? []).length === 0 ? 'Add tags…' : ''}
+								placeholder={
+									(entry.tags ?? []).filter((tag) => !tag.includes(':')).length === 0
+										? 'Add tags…'
+										: ''
+								}
 							/>
 						</div>
 					</div>

@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard, ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
+import type { DeckZone } from '@/types/decks';
+import { getDeckZone } from '@/types/decks';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import { CardLightbox } from '@/lib/card/components/CardLightbox/CardLightbox';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
@@ -12,7 +14,25 @@ import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
+import { CardList } from '@/lib/card/components/CardList/CardList';
+import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
+import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
+import { CopyCardOverlay } from './CopyCardOverlay';
 import styles from './CardModal.module.css';
+
+const ZONE_LABELS: Record<DeckZone, string> = {
+	mainboard: 'Mainboard',
+	sideboard: 'Sideboard',
+	maybeboard: 'Maybeboard',
+	commander: 'Commander',
+};
+
+const ZONE_ABBR: Record<DeckZone, string> = {
+	mainboard: 'Main',
+	sideboard: 'Side',
+	maybeboard: 'Maybe',
+	commander: 'Cmd',
+};
 
 const COLOR_MAP: Record<string, string> = {
 	W: '#f8e7b9',
@@ -29,6 +49,7 @@ function isCollectionCard(card: Card | ScryfallCard): card is Card {
 
 interface Props {
 	cards: Card | Card[] | ScryfallCard | null;
+	initialRowId?: string;
 	onClose: () => void;
 	onSave?: (rowId: string, updates: Partial<CardEntry>) => void;
 	onRemove?: (scryfallId: string) => void;
@@ -38,10 +59,14 @@ interface Props {
 	onIncrement?: (entry: Partial<CardEntry>) => void;
 	onDecrement?: () => void;
 	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
+	zone?: DeckZone;
+	availableZones?: DeckZone[];
+	onChangeZone?: (rowId: string, zone: DeckZone) => void;
 }
 
 interface InnerProps {
 	cards: Card[];
+	initialRowId?: string;
 	onClose: () => void;
 	onSave?: (rowId: string, updates: Partial<CardEntry>) => void;
 	onRemove?: (scryfallId: string) => void;
@@ -50,6 +75,9 @@ interface InnerProps {
 	onChangePrint?: (rowId: string, newCard: ScryfallCard) => void;
 	onIncrement?: (entry: Partial<CardEntry>) => void;
 	onDecrement?: () => void;
+	zone?: DeckZone;
+	availableZones?: DeckZone[];
+	onChangeZone?: (rowId: string, zone: DeckZone) => void;
 }
 
 function CardDetailSection({
@@ -151,6 +179,7 @@ function CardDetailSection({
 
 function CardModalInner({
 	cards,
+	initialRowId,
 	onClose,
 	onSave,
 	onRemove,
@@ -158,9 +187,12 @@ function CardModalInner({
 	onDuplicate,
 	onChangePrint,
 	onIncrement,
+	zone,
+	availableZones,
+	onChangeZone,
 }: InnerProps) {
 	const [lightbox, setLightbox] = useState(false);
-	const [selectedRowId, setSelectedRowId] = useState<string>(cards[0].entry.rowId);
+	const [selectedRowId, setSelectedRowId] = useState<string>(initialRowId ?? cards[0].entry.rowId);
 	const [editingRowId, setEditingRowId] = useState<string | null>(null);
 	const [addingCopy, setAddingCopy] = useState(false);
 	const [confirmRemoveAll, setConfirmRemoveAll] = useState(false);
@@ -174,18 +206,149 @@ function CardModalInner({
 		? (cards.find((c) => c.entry.rowId === editingRowId) ?? null)
 		: null;
 
-	function handleRemoveCopy(card: Card) {
-		if (count === 1) {
-			onRemove?.(card.id);
-		} else {
-			if (card.entry.rowId === selectedRowId) {
-				const idx = cards.indexOf(card);
-				const next = cards[idx === 0 ? 1 : idx - 1];
-				setSelectedRowId(next.entry.rowId);
+	const handleRemoveCopy = useCallback(
+		(card: Card) => {
+			if (count === 1) {
+				onRemove?.(card.id);
+			} else {
+				if (card.entry.rowId === selectedRowId) {
+					const idx = cards.indexOf(card);
+					const next = cards[idx === 0 ? 1 : idx - 1];
+					setSelectedRowId(next.entry.rowId);
+				}
+				onRemoveEntry?.(card.entry.rowId);
 			}
-			onRemoveEntry?.(card.entry.rowId);
+		},
+		[count, selectedRowId, cards, onRemove, onRemoveEntry]
+	);
+
+	const copySections: CardListSection[] | Card[] = useMemo(() => {
+		if (!availableZones) return cards;
+		const byZone = new Map<DeckZone, Card[]>();
+		for (const card of cards) {
+			const z = getDeckZone(card.entry.tags);
+			const existing = byZone.get(z) ?? [];
+			existing.push(card);
+			byZone.set(z, existing);
 		}
-	}
+		return availableZones
+			.filter((z) => byZone.has(z))
+			.map((z) => ({
+				label: `${ZONE_LABELS[z]} (${byZone.get(z)!.length})`,
+				cards: byZone.get(z)!,
+			}));
+	}, [cards, availableZones]);
+
+	const tableColumns: CardListColumn[] = useMemo(
+		() => [
+			{
+				key: 'print',
+				label: 'Print',
+				render: (c) => {
+					const card = c as Card;
+					return `${card.set.toUpperCase()} #${card.collector_number}`;
+				},
+			},
+			{
+				key: 'condition',
+				label: 'Condition',
+				render: (c) => (c as Card).entry.condition ?? '—',
+			},
+			{
+				key: 'foil',
+				label: 'Foil',
+				render: (c) => ((c as Card).entry.isFoil ? '✦' : '—'),
+			},
+			{
+				key: 'language',
+				label: 'Langue',
+				render: (c) => (c as Card).entry.language ?? 'English',
+			},
+			{
+				key: 'actions',
+				label: '',
+				render: (c) => {
+					const card = c as Card;
+					return (
+						<span className={styles.tableActions}>
+							<button
+								type="button"
+								className={styles.tableActionBtn}
+								onClick={(e) => {
+									e.stopPropagation();
+									setEditingRowId(card.entry.rowId);
+								}}
+							>
+								Edit
+							</button>
+							{onDuplicate && (
+								<button
+									type="button"
+									className={styles.tableActionBtn}
+									title="Duplicate"
+									onClick={(e) => {
+										e.stopPropagation();
+										onDuplicate(card.id, card.entry);
+									}}
+								>
+									⧉
+								</button>
+							)}
+							{onChangeZone &&
+								availableZones
+									?.filter((z) => z !== getDeckZone(card.entry.tags))
+									.map((z) => (
+										<button
+											key={z}
+											type="button"
+											className={styles.tableActionBtn}
+											title={`Move to ${ZONE_LABELS[z]}`}
+											onClick={(e) => {
+												e.stopPropagation();
+												onChangeZone(card.entry.rowId, z);
+											}}
+										>
+											{ZONE_ABBR[z]}
+										</button>
+									))}
+							<button
+								type="button"
+								className={styles.tableActionBtnDanger}
+								onClick={(e) => {
+									e.stopPropagation();
+									handleRemoveCopy(card);
+								}}
+							>
+								×
+							</button>
+						</span>
+					);
+				},
+			},
+		],
+		[onDuplicate, onChangeZone, availableZones, handleRemoveCopy]
+	);
+
+	const renderCopyOverlay = useCallback(
+		(c: AnyCard) => {
+			const card = c as Card;
+			const cardZone = availableZones ? getDeckZone(card.entry.tags) : zone;
+			return (
+				<CopyCardOverlay
+					card={card}
+					isSelected={card.entry.rowId === selectedRowId}
+					onSelect={() => setSelectedRowId(card.entry.rowId)}
+					onEdit={() => setEditingRowId(card.entry.rowId)}
+					onRemove={() => handleRemoveCopy(card)}
+					onDuplicate={onDuplicate ? () => onDuplicate(card.id, card.entry) : undefined}
+					zone={cardZone}
+					availableZones={availableZones}
+					onChangeZone={onChangeZone ? (z) => onChangeZone(card.entry.rowId, z) : undefined}
+				/>
+			);
+		},
+		[selectedRowId, handleRemoveCopy, onDuplicate, zone, availableZones, onChangeZone]
+	);
 
 	return (
 		<>
@@ -214,7 +377,7 @@ function CardModalInner({
 					<div className={styles.infoCol}>
 						<CardDetailSection card={selectedCard} symbolMap={symbolMap} />
 
-						{/* Cards list */}
+						{/* Copies list */}
 						<div className={styles.copiesSection}>
 							<div className={styles.copiesHeader}>
 								<span className={styles.copiesTitle}>Copies ({count})</span>
@@ -227,74 +390,23 @@ function CardModalInner({
 									+
 								</button>
 							</div>
-							<ul className={styles.copiesList}>
-								{cards.map((card) => {
-									const isActive = card.entry.rowId === selectedRowId;
-									return (
-										<li
-											key={card.entry.rowId}
-											className={`${styles.copyRow} ${isActive ? styles.copyRowActive : ''}`}
-											onClick={() => setSelectedRowId(card.entry.rowId)}
-										>
-											<span className={styles.copyInfo}>
-												<span className={styles.copyBadge}>
-													{card.set.toUpperCase()} #{card.collector_number}
-												</span>
-												{card.entry.condition && (
-													<span className={styles.copyBadge}>{card.entry.condition}</span>
-												)}
-												{card.entry.isFoil && <span className={styles.copyBadgeFoil}>✦</span>}
-												{card.entry.language && card.entry.language !== 'English' && (
-													<span className={styles.copyBadge}>{card.entry.language}</span>
-												)}
-											</span>
-											<span className={styles.copyActions}>
-												<button
-													type="button"
-													className={styles.copyEditBtn}
-													onClick={(e) => {
-														e.stopPropagation();
-														setEditingRowId(card.entry.rowId);
-													}}
-													aria-label="Edit this copy"
-												>
-													Edit
-												</button>
-												<button
-													type="button"
-													className={styles.copyEditBtn}
-													onClick={(e) => {
-														e.stopPropagation();
-														onDuplicate?.(card.id, card.entry);
-													}}
-													aria-label="Duplicate this copy"
-													title="Duplicate"
-												>
-													⧉
-												</button>
-												<button
-													type="button"
-													className={styles.copyRemoveBtn}
-													onClick={(e) => {
-														e.stopPropagation();
-														handleRemoveCopy(card);
-													}}
-													aria-label="Remove this copy"
-												>
-													×
-												</button>
-											</span>
-										</li>
-									);
-								})}
-							</ul>
-							<button
-								type="button"
-								className={styles.removeAllBtn}
-								onClick={() => setConfirmRemoveAll(true)}
-							>
-								Remove all
-							</button>
+							<CardList
+								cards={copySections}
+								pageSize={false}
+								onCardClick={(c) => setSelectedRowId((c as Card).entry.rowId)}
+								renderOverlay={renderCopyOverlay}
+								tableColumns={tableColumns}
+								cardsPerLine={3}
+							/>
+							{onRemove && (
+								<button
+									type="button"
+									className={styles.removeAllBtn}
+									onClick={() => setConfirmRemoveAll(true)}
+								>
+									Remove all
+								</button>
+							)}
 						</div>
 					</div>
 				</div>
@@ -411,6 +523,7 @@ function ScryfallCardModalInner({
 
 export function CardModal({
 	cards,
+	initialRowId,
 	onClose,
 	onSave,
 	onRemove,
@@ -420,6 +533,9 @@ export function CardModal({
 	onIncrement,
 	onDecrement,
 	onAddToCollection,
+	zone,
+	availableZones,
+	onChangeZone,
 }: Props) {
 	if (cards === null) return null;
 
@@ -443,6 +559,7 @@ export function CardModal({
 		<CardModalInner
 			key={first.oracle_id}
 			cards={normalizedCards as Card[]}
+			initialRowId={initialRowId}
 			onClose={onClose}
 			onSave={onSave}
 			onRemove={onRemove}
@@ -451,6 +568,9 @@ export function CardModal({
 			onChangePrint={onChangePrint}
 			onIncrement={onIncrement}
 			onDecrement={onDecrement}
+			zone={zone}
+			availableZones={availableZones}
+			onChangeZone={onChangeZone}
 		/>
 	);
 }

@@ -1,14 +1,15 @@
 import { useMemo } from 'react';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { DeckZone } from '@/types/decks';
-import type { ResolvedDeckCard } from './useDeckDetail';
 import { groupByCardType } from '@/lib/card/utils/group-by-card-type';
+import type { ResolvedDeckCard } from './useDeckDetail';
 
 export type DeckCardGroup = {
-	representative: ResolvedDeckCard;
-	allCopies: ResolvedDeckCard[];
-	count: number;
-	zone: DeckZone;
+	representative: ScryfallCard;
+	byZone: Map<DeckZone, Card[]>;
+	totalCount: number;
 };
 
 const ZONE_LABELS: Record<DeckZone, string> = {
@@ -27,37 +28,47 @@ export function useDeckCardSections(
 			? ['commander', 'mainboard', 'sideboard', 'maybeboard']
 			: ['mainboard', 'sideboard', 'maybeboard'];
 
-		const sections: CardListSection[] = [];
+		// Build groupByCardId keyed by oracle_id, accumulating copies per zone
 		const groupByCardId = new Map<string, DeckCardGroup>();
+
+		for (const zone of zones) {
+			for (const rc of cardsByZone[zone] ?? []) {
+				const key = rc.oracle_id;
+				if (!groupByCardId.has(key)) {
+					groupByCardId.set(key, {
+						representative: rc,
+						byZone: new Map(),
+						totalCount: 0,
+					});
+				}
+				const group = groupByCardId.get(key)!;
+				const existing = group.byZone.get(zone) ?? [];
+				existing.push(rc);
+				group.byZone.set(zone, existing);
+				group.totalCount += 1;
+			}
+		}
+
+		// Build sections per zone
+		const sections: CardListSection[] = [];
 
 		for (const zone of zones) {
 			const cards = cardsByZone[zone] ?? [];
 			if (cards.length === 0) continue;
 
-			// Group by oracle_id (per AGENTS.md: never group by scryfallId)
-			const grouped = new Map<string, ResolvedDeckCard[]>();
-			for (const rc of cards) {
-				const key = rc.card.oracle_id ?? rc.card.id;
-				const existing = grouped.get(key);
-				if (existing) {
-					existing.push(rc);
-				} else {
-					grouped.set(key, [rc]);
-				}
-			}
-
+			// Deduplicate by oracle_id, keep one representative per group per zone
+			const seen = new Set<string>();
+			const sectionCards: ResolvedDeckCard[] = [];
 			const countById = new Map<string, number>();
-			const sectionCards = [...grouped.values()].map((copies) => {
-				const representative = copies[0];
-				groupByCardId.set(representative.card.id, {
-					representative,
-					allCopies: copies,
-					count: copies.length,
-					zone,
-				});
-				countById.set(representative.card.id, copies.length);
-				return representative.card;
-			});
+
+			for (const rc of cards) {
+				const key = rc.oracle_id;
+				if (seen.has(key)) continue;
+				seen.add(key);
+				const group = groupByCardId.get(key)!;
+				sectionCards.push(group.representative as ResolvedDeckCard);
+				countById.set(group.representative.id, group.byZone.get(zone)?.length ?? 0);
+			}
 
 			const children =
 				zone !== 'commander' && sectionCards.length > 0

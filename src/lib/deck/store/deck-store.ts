@@ -81,11 +81,7 @@ type DeckActions = {
 	) => void;
 	removeCardFromDeck: (rowId: string, triggerSync: () => void) => void;
 	changeZone: (rowId: string, zone: DeckZone, triggerSync: () => void) => void;
-	updateDeckCard: (
-		rowId: string,
-		updates: { tags?: string[]; owner_id?: string | null },
-		triggerSync: () => void
-	) => void;
+	updateDeckCard: (rowId: string, updates: Partial<CardEntry>, triggerSync: () => void) => void;
 	toggleOwned: (rowId: string, userId: string, triggerSync: () => void) => void;
 
 	getDeckCardCount: (deckId: string) => number;
@@ -350,15 +346,32 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		const current = get().activeDeckCards;
 		const copy = current[rowId];
 		if (!copy) return;
-		const updatedEntry: CardEntry = { ...copy.entry };
-		if (updates.tags) updatedEntry.tags = updates.tags;
+		const updatedEntry: CardEntry = { ...copy.entry, ...updates };
+		// Preserve zone tags when caller doesn't supply tags
+		if (!updates.tags) updatedEntry.tags = copy.entry.tags;
 		set({
 			activeDeckCards: {
 				...current,
 				[rowId]: { ...copy, entry: updatedEntry },
 			},
 		});
-		enqueue({ type: 'deck-card-update', payload: { rowId, updates } });
+		// Translate Partial<CardEntry> to DB column names
+		const dbUpdates: {
+			tags?: string[];
+			is_foil?: boolean | null;
+			foil_type?: string | null;
+			condition?: string | null;
+			language?: string | null;
+			purchase_price?: string | null;
+		} = {};
+		if (updates.tags !== undefined) dbUpdates.tags = updates.tags;
+		if (updates.isFoil !== undefined) dbUpdates.is_foil = updates.isFoil ?? null;
+		if (updates.foilType !== undefined) dbUpdates.foil_type = updates.foilType ?? null;
+		if (updates.condition !== undefined) dbUpdates.condition = updates.condition ?? null;
+		if (updates.language !== undefined) dbUpdates.language = updates.language ?? null;
+		if (updates.purchasePrice !== undefined)
+			dbUpdates.purchase_price = updates.purchasePrice ?? null;
+		enqueue({ type: 'deck-card-update', payload: { rowId, updates: dbUpdates } });
 		triggerSync();
 	},
 
