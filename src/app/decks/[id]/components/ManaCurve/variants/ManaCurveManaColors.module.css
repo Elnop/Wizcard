@@ -1,9 +1,11 @@
 @keyframes riseUp {
 	from {
 		height: 0;
+		opacity: 0;
 	}
 	to {
 		height: var(--bar-height);
+		opacity: 1;
 	}
 }
 
@@ -32,17 +34,28 @@
 .count {
 	font-size: var(--text-xs);
 	font-weight: 600;
-	color: var(--gold);
+	color: var(--bar-color);
 	min-height: 14px;
+	text-shadow: 0 0 8px var(--bar-color);
 }
 
 .bar {
 	width: 100%;
 	min-height: 2px;
-	background: linear-gradient(to top, var(--brass), var(--gold));
+	background: var(--bar-color);
 	border-radius: 3px 3px 0 0;
 	animation: riseUp 0.4s ease-out both;
 	animation-delay: calc(var(--col-index) * 60ms);
+	transition:
+		box-shadow 0.2s ease,
+		transform 0.15s ease;
+}
+
+.bar:hover {
+	box-shadow:
+		0 0 12px var(--bar-color),
+		0 0 24px color-mix(in srgb, var(--bar-color) 40%, transparent);
+	transform: scaleX(1.05);
 }
 
 .label {

@@ -15,7 +15,7 @@ export function buildScryfallQuery(params: ScryfallQueryParams): string {
 	const parts: string[] = [];
 
 	if (params.name) {
-		parts.push(params.name);
+		parts.push(`name:${params.name}`);
 	}
 
 	if (params.colors && params.colors.length > 0) {

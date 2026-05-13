@@ -56,19 +56,28 @@ function SearchPageContent() {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
 	const { sets, isLoading: setsLoading } = useScryfallSets();
-	const { cards, isLoading, isLoadingMore, error, hasMore, totalCards, loadMore } =
-		useScryfallCardSearch({
-			name,
-			colors,
-			colorMatch,
-			type,
-			set,
-			rarities,
-			oracleText,
-			cmc,
-			order,
-			dir,
-		});
+	const {
+		cards,
+		isLoading,
+		isLoadingMore,
+		error,
+		queryError,
+		hasMore,
+		totalCards,
+		suggestions,
+		loadMore,
+	} = useScryfallCardSearch({
+		name,
+		colors,
+		colorMatch,
+		type,
+		set,
+		rarities,
+		oracleText,
+		cmc,
+		order,
+		dir,
+	});
 
 	const handleCardClick = useCallback((card: ScryfallCard) => setSelectedCard(card), []);
 
@@ -130,7 +139,20 @@ function SearchPageContent() {
 
 				{error && (
 					<div className={styles.error}>
-						<p>Failed to load cards. Please try again.</p>
+						<p>An error occurred. Please try again.</p>
+					</div>
+				)}
+
+				{queryError && (
+					<div className={styles.queryError}>
+						<p>{queryError.message}</p>
+						{queryError.warnings.length > 0 && (
+							<ul className={styles.queryWarnings}>
+								{queryError.warnings.map((w) => (
+									<li key={w}>{w}</li>
+								))}
+							</ul>
+						)}
 					</div>
 				)}
 
@@ -180,7 +202,26 @@ function SearchPageContent() {
 				{!isLoading && hasFilters && cards.length === 0 && !error && (
 					<div className={styles.noResults}>
 						<h3>No cards found</h3>
-						<p>Try adjusting your search or filters.</p>
+						{suggestions.length > 0 ? (
+							<>
+								<p>Did you mean:</p>
+								<ul className={styles.suggestions}>
+									{suggestions.map((s) => (
+										<li key={s}>
+											<button
+												type="button"
+												className={styles.suggestionLink}
+												onClick={() => setName(s)}
+											>
+												{s}
+											</button>
+										</li>
+									))}
+								</ul>
+							</>
+						) : (
+							<p>Try adjusting your search or filters.</p>
+						)}
 					</div>
 				)}
 

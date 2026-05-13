@@ -22,13 +22,25 @@ export function ManaCurve({ curve }: Props) {
 	return (
 		<div className={styles.container}>
 			<div className={styles.chart}>
-				{grouped.map((entry) => (
-					<div key={entry.cmc} className={styles.column}>
-						<span className={styles.count}>{entry.count || ''}</span>
-						<div className={styles.bar} style={{ height: `${(entry.count / maxCount) * 100}%` }} />
-						<span className={styles.label}>{entry.cmc === 7 ? '7+' : entry.cmc}</span>
-					</div>
-				))}
+				{grouped.map((entry, i) => {
+					const heightPct = `${(entry.count / maxCount) * 100}%`;
+					return (
+						<div key={entry.cmc} className={styles.column}>
+							<span className={styles.count}>{entry.count || ''}</span>
+							<div
+								className={styles.bar}
+								style={
+									{
+										height: heightPct,
+										'--bar-height': heightPct,
+										'--col-index': i,
+									} as React.CSSProperties
+								}
+							/>
+							<span className={styles.label}>{entry.cmc === 7 ? '7+' : entry.cmc}</span>
+						</div>
+					);
+				})}
 			</div>
 		</div>
 	);

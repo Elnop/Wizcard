@@ -26,8 +26,10 @@ interface UseScryfallCardSearchResult {
 	isLoading: boolean;
 	isLoadingMore: boolean;
 	error: Error | null;
+	queryError: { message: string; warnings: string[] } | null;
 	hasMore: boolean;
 	totalCards: number;
+	suggestions: string[];
 	loadMore: () => void;
 	reset: () => void;
 }
@@ -37,8 +39,12 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 	const [isLoading, setIsLoading] = useState(false);
 	const [isLoadingMore, setIsLoadingMore] = useState(false);
 	const [error, setError] = useState<Error | null>(null);
+	const [queryError, setQueryError] = useState<{ message: string; warnings: string[] } | null>(
+		null
+	);
 	const [hasMore, setHasMore] = useState(false);
 	const [totalCards, setTotalCards] = useState(0);
+	const [suggestions, setSuggestions] = useState<string[]>([]);
 	const [page, setPage] = useState(1);
 
 	const debouncedName = useDebounce(filters.name, 300);
@@ -94,6 +100,8 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 					setIsLoadingMore(true);
 				}
 				setError(null);
+				setQueryError(null);
+				setSuggestions([]);
 
 				const result = await searchCards({ q: query, page: pageNum, order, dir }, signal);
 
@@ -111,6 +119,20 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 					setCards([]);
 					setHasMore(false);
 					setTotalCards(0);
+					setSuggestions(err.warnings ?? []);
+					return;
+				}
+				if (err instanceof ScryfallApiError && err.status === 400) {
+					setCards([]);
+					setHasMore(false);
+					setTotalCards(0);
+					const isIgnoredTerms = err.details === 'All of your terms were ignored.';
+					setQueryError({
+						message: isIgnoredTerms
+							? 'Your search term is too common to search as-is. Try a more specific term or use filters.'
+							: err.details,
+						warnings: err.warnings ?? [],
+					});
 					return;
 				}
 				setError(err instanceof Error ? err : new Error('Search failed'));
@@ -164,6 +186,8 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 		setHasMore(false);
 		setTotalCards(0);
 		setError(null);
+		setQueryError(null);
+		setSuggestions([]);
 		lastQueryRef.current = '';
 	}, []);
 
@@ -172,8 +196,10 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 		isLoading,
 		isLoadingMore,
 		error,
+		queryError,
 		hasMore,
 		totalCards,
+		suggestions,
 		loadMore,
 		reset,
 	};
