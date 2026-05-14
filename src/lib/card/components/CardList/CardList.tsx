@@ -26,6 +26,7 @@ export function CardList({
 	cardsPerLine,
 	renderItem,
 	sectionClassName,
+	fluidSections,
 	className,
 	pageSize = PAGE_SIZE,
 }: CardListProps) {
@@ -132,6 +133,7 @@ export function CardList({
 						collapsedSections={collapsedSections}
 						onSectionToggle={toggleSection}
 						sectionClassName={sectionClassName}
+						fluidSections={fluidSections}
 						className={className}
 					/>
 				)}
