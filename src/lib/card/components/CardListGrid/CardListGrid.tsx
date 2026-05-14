@@ -144,7 +144,11 @@ export function CardListGrid({
 					: sectionWidth(section)
 				: undefined;
 
-		const wrapperStyle = fluidWidth !== undefined ? { width: `${fluidWidth}px` } : undefined;
+		const sectionColor = !isSubSection ? section.color : undefined;
+		const wrapperStyle: React.CSSProperties = {
+			...(fluidWidth !== undefined ? { width: `${fluidWidth}px` } : {}),
+			...(sectionColor ? { '--section-color': sectionColor } : {}),
+		};
 
 		const headerClass = [
 			isSubSection ? styles.subSectionHeader : styles.sectionHeader,

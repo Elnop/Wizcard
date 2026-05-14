@@ -19,6 +19,13 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 	commander: 'Commander',
 };
 
+const ZONE_COLORS: Record<DeckZone, string> = {
+	mainboard: '#3b82f6',
+	sideboard: '#a855f7',
+	maybeboard: '#f59e0b',
+	commander: '#ef4444',
+};
+
 export function useDeckCardSections(
 	cardsByZone: Record<DeckZone, ResolvedDeckCard[]>,
 	showCommander: boolean
@@ -82,6 +89,7 @@ export function useDeckCardSections(
 				label: `${ZONE_LABELS[zone]} (${cards.length})`,
 				cards: sectionCards,
 				children,
+				color: ZONE_COLORS[zone],
 			});
 		}
 

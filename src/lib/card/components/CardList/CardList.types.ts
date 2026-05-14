@@ -10,6 +10,7 @@ export interface CardListSection {
 	label: string;
 	cards: AnyCard[];
 	children?: CardListSection[];
+	color?: string;
 }
 
 export type CardListCards = AnyCard[] | CardListSection[];
