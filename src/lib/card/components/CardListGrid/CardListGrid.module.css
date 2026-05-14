@@ -225,27 +225,30 @@
 	flex: 0 0 auto;
 	min-width: 0;
 	max-width: 100%;
-	border-radius: 10px;
-	padding: 0 14px 14px;
-	border: 1px solid var(--section-color, var(--glass-border));
-	border-top: none;
-	background: color-mix(in srgb, var(--section-color, transparent) 4%, transparent);
-	box-shadow: 0 0 16px color-mix(in srgb, var(--section-color, transparent) 15%, transparent);
-	overflow: hidden;
 }
 
 .fluidSection .sectionHeading {
-	margin: 0 -14px;
+	padding: 10px 0 6px;
+	background: color-mix(in srgb, var(--section-color, transparent) 10%, transparent);
+	border-radius: 6px 6px 0 0;
 }
 
 .fluidSection .sectionHeader,
 .fluidSection .sectionHeaderCollapsible {
 	width: 100%;
-	padding: 10px 14px 6px;
-	border-top: 3px solid var(--section-color, var(--glass-border));
-	background: color-mix(in srgb, var(--section-color, transparent) 10%, transparent);
-	border-bottom-color: var(--section-color, var(--glass-border));
+	padding: 0;
+	border-bottom: none;
+	background: none;
 	color: var(--section-color, var(--gold));
+}
+
+.fluidSectionBodyCards,
+.fluidSectionBody {
+	padding: 12px 14px 14px;
+	border: 1px solid var(--section-color, var(--glass-border));
+	border-radius: 0 0 10px 10px;
+	background: color-mix(in srgb, var(--section-color, transparent) 4%, transparent);
+	box-shadow: 0 0 16px color-mix(in srgb, var(--section-color, transparent) 15%, transparent);
 }
 
 .fluidSectionBody {
@@ -253,7 +256,6 @@
 	flex-wrap: wrap;
 	gap: 16px;
 	align-items: flex-start;
-	padding-top: 12px;
 }
 
 .fluidSubSection {

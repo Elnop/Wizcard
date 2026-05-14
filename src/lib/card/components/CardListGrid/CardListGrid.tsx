@@ -174,7 +174,11 @@ export function CardListGrid({
 		const hasChildren = section.children && section.children.length > 0;
 
 		const sectionBodyClass = [
-			hasChildren && fluidSections ? styles.fluidSectionBody : styles.sectionBody,
+			fluidSections && !isSubSection
+				? hasChildren
+					? styles.fluidSectionBody
+					: styles.fluidSectionBodyCards
+				: styles.sectionBody,
 		]
 			.filter(Boolean)
 			.join(' ');
