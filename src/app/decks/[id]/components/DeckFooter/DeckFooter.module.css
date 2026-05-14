@@ -201,3 +201,35 @@
 		padding: 10px 16px;
 	}
 }
+
+.searchToggle {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	background: none;
+	border: 1px solid var(--border);
+	padding: 4px 10px;
+	border-radius: 4px;
+	cursor: pointer;
+	transition:
+		background 0.15s ease,
+		border-color 0.15s ease;
+}
+
+.searchToggle:hover {
+	background: var(--surface-alt);
+	border-color: var(--primary);
+}
+
+.searchToggleActive {
+	border-color: var(--primary);
+	background: rgba(201, 168, 76, 0.08);
+}
+
+.searchToggleLabel {
+	font-size: var(--text-xs);
+	font-weight: 600;
+	color: var(--foreground);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}

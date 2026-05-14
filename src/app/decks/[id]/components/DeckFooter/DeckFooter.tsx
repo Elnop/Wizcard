@@ -21,9 +21,17 @@ type Props = {
 	stats: DeckStats;
 	format: DeckFormat | null;
 	warnings: ValidationWarning[];
+	searchPanelOpen: boolean;
+	onToggleSearchPanel: () => void;
 };
 
-export function DeckFooter({ stats, format, warnings }: Props) {
+export function DeckFooter({
+	stats,
+	format,
+	warnings,
+	searchPanelOpen,
+	onToggleSearchPanel,
+}: Props) {
 	const [warningsOpen, setWarningsOpen] = useState(false);
 	const panelRef = useRef<HTMLDivElement>(null);
 	const triggerRef = useRef<HTMLButtonElement>(null);
@@ -149,6 +157,17 @@ export function DeckFooter({ stats, format, warnings }: Props) {
 							</div>
 						</>
 					)}
+
+					<div className={styles.separator} />
+					<button
+						type="button"
+						className={`${styles.searchToggle} ${searchPanelOpen ? styles.searchToggleActive : ''}`}
+						onClick={onToggleSearchPanel}
+					>
+						<span className={styles.searchToggleLabel}>
+							{searchPanelOpen ? '× Cards' : '+ Cards'}
+						</span>
+					</button>
 
 					{warnings.length > 0 && (
 						<>
