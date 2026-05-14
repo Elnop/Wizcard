@@ -59,6 +59,7 @@ interface Props {
 	onIncrement?: (entry: Partial<CardEntry>) => void;
 	onDecrement?: () => void;
 	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
+	addLabel?: string;
 	zone?: DeckZone;
 	availableZones?: DeckZone[];
 	onChangeZone?: (rowId: string, zone: DeckZone) => void;
@@ -463,10 +464,12 @@ function ScryfallCardModalInner({
 	card,
 	onClose,
 	onAddToCollection,
+	addLabel = 'Add to Collection',
 }: {
 	card: ScryfallCard;
 	onClose: () => void;
 	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
+	addLabel?: string;
 }) {
 	const [lightbox, setLightbox] = useState(false);
 	const [addingCard, setAddingCard] = useState(false);
@@ -497,7 +500,7 @@ function ScryfallCardModalInner({
 						{onAddToCollection && (
 							<div className={styles.addSection}>
 								<Button variant="primary" onClick={() => setAddingCard(true)}>
-									Add to Collection
+									{addLabel}
 								</Button>
 							</div>
 						)}
@@ -534,6 +537,7 @@ export function CardModal({
 	onIncrement,
 	onDecrement,
 	onAddToCollection,
+	addLabel,
 	zone,
 	availableZones,
 	onChangeZone,
@@ -552,6 +556,7 @@ export function CardModal({
 				card={first}
 				onClose={onClose}
 				onAddToCollection={onAddToCollection}
+				addLabel={addLabel}
 			/>
 		);
 	}
