@@ -1,4 +1,6 @@
-import { useEffect, useCallback } from 'react';
+'use client';
+
+import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './ContextMenu.module.css';
 
@@ -19,23 +21,27 @@ export function ContextMenu({ items, position, onClose }: Props) {
 	const y =
 		position.y + estimatedHeight > window.innerHeight ? position.y - estimatedHeight : position.y;
 
-	const handleClose = useCallback(() => onClose(), [onClose]);
+	const onCloseRef = useRef(onClose);
+	useEffect(() => {
+		onCloseRef.current = onClose;
+	});
 
 	useEffect(() => {
+		const close = () => onCloseRef.current();
 		const handleKey = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') handleClose();
+			if (e.key === 'Escape') close();
 		};
-		document.addEventListener('click', handleClose);
-		document.addEventListener('contextmenu', handleClose, true);
+		document.addEventListener('click', close);
+		document.addEventListener('contextmenu', close, true);
 		document.addEventListener('keydown', handleKey);
-		document.addEventListener('scroll', handleClose, true);
+		document.addEventListener('scroll', close, true);
 		return () => {
-			document.removeEventListener('click', handleClose);
-			document.removeEventListener('contextmenu', handleClose, true);
+			document.removeEventListener('click', close);
+			document.removeEventListener('contextmenu', close, true);
 			document.removeEventListener('keydown', handleKey);
-			document.removeEventListener('scroll', handleClose, true);
+			document.removeEventListener('scroll', close, true);
 		};
-	}, [handleClose]);
+	}, []);
 
 	return createPortal(
 		<div
@@ -45,11 +51,11 @@ export function ContextMenu({ items, position, onClose }: Props) {
 		>
 			{items.map((item, i) => {
 				if (item.type === 'divider') {
-					return <div key={i} className={styles.menuDivider} />;
+					return <div key={`divider-${i}`} className={styles.menuDivider} />;
 				}
 				return (
 					<button
-						key={i}
+						key={item.label}
 						type="button"
 						className={`${styles.menuItem}${item.danger ? ` ${styles.menuItemDanger}` : ''}`}
 						onClick={item.onClick}
