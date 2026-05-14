@@ -223,13 +223,14 @@
 
 .fluidSection {
 	flex: 0 0 auto;
+	width: fit-content;
 	min-width: 200px;
 	max-width: 100%;
 }
 
 .fluidSection .sectionHeader,
 .fluidSection .sectionHeaderCollapsible {
-	width: auto;
+	width: 100%;
 }
 
 .fluidSection .grid,
