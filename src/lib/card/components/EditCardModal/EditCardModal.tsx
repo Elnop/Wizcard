@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import { type DeckZone, setDeckZone } from '@/types/decks';
 import {
 	MTG_LANGUAGES,
 	LANGUAGE_TO_SCRYFALL_CODE,
 	SCRYFALL_CODE_TO_LANGUAGE,
 } from '@/lib/mtg/languages';
+import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import { CardPrintPickerModal } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
 import { Modal } from '@/components/Modal/Modal';
 import styles from './EditCardModal.module.css';
@@ -27,6 +29,8 @@ interface AddProps {
 	scryfallCard: ScryfallCard;
 	onAdd: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
 	onClose: () => void;
+	availableZones?: DeckZone[];
+	defaultZone?: DeckZone;
 }
 
 type Props = EditProps | AddProps;
@@ -35,13 +39,19 @@ function isAddMode(props: Props): props is AddProps {
 	return props.mode === 'add';
 }
 
-const DEFAULT_ENTRY: Partial<CardEntry> = {};
+const ZONE_LABELS: Record<DeckZone, string> = {
+	mainboard: 'Mainboard',
+	sideboard: 'Sideboard',
+	maybeboard: 'Maybeboard',
+	commander: 'Commander',
+};
 
 export function EditCardModal(props: Props) {
 	const addMode = isAddMode(props);
+	const initialZone: DeckZone = addMode ? (props.defaultZone ?? 'mainboard') : 'mainboard';
 
 	const [draftEntry, setDraftEntry] = useState<Partial<CardEntry>>(
-		addMode ? DEFAULT_ENTRY : { ...props.card.entry }
+		addMode ? { tags: setDeckZone(undefined, initialZone) } : { ...props.card.entry }
 	);
 	const [selectedPrint, setSelectedPrint] = useState<ScryfallCard>(
 		addMode ? props.scryfallCard : props.card
@@ -124,137 +134,168 @@ export function EditCardModal(props: Props) {
 					</button>
 				</div>
 
-				<div className={styles.form}>
-					{/* Condition */}
-					<div className={styles.field}>
-						<label className={styles.label} htmlFor="copy-edit-condition">
-							Condition
-						</label>
-						<select
-							id="copy-edit-condition"
-							className={styles.select}
-							value={entry.condition ?? ''}
-							onChange={(e) =>
-								save({ condition: (e.target.value as CardEntry['condition']) || undefined })
-							}
-						>
-							<option value="">— select —</option>
-							{CONDITIONS.map((c) => (
-								<option key={c} value={c}>
-									{c}
-								</option>
-							))}
-						</select>
+				<div className={styles.body}>
+					<div className={styles.preview}>
+						<CardImage card={selectedPrint} size="normal" />
 					</div>
+					<div className={styles.form}>
+						{/* Zone (add mode only, when multiple zones available) */}
+						{addMode && props.availableZones && props.availableZones.length > 1 && (
+							<div className={styles.field}>
+								<label className={styles.label} htmlFor="copy-edit-zone">
+									Zone
+								</label>
+								<select
+									id="copy-edit-zone"
+									className={styles.select}
+									value={
+										(entry.tags ?? []).find((t) => t.startsWith('deck:'))?.replace('deck:', '') ??
+										initialZone
+									}
+									onChange={(e) =>
+										save({ tags: setDeckZone(entry.tags, e.target.value as DeckZone) })
+									}
+								>
+									{props.availableZones.map((z) => (
+										<option key={z} value={z}>
+											{ZONE_LABELS[z]}
+										</option>
+									))}
+								</select>
+							</div>
+						)}
 
-					{/* Foil */}
-					<div className={styles.field}>
-						<label className={styles.label}>Foil</label>
-						<div className={styles.foilRow}>
-							<button
-								type="button"
-								className={`${styles.foilToggle} ${isFoil ? styles.foilToggleActive : ''}`}
-								onClick={() =>
-									save({
-										isFoil: !isFoil,
-										foilType: !isFoil ? (entry.foilType ?? 'foil') : undefined,
-									})
+						{/* Condition */}
+						<div className={styles.field}>
+							<label className={styles.label} htmlFor="copy-edit-condition">
+								Condition
+							</label>
+							<select
+								id="copy-edit-condition"
+								className={styles.select}
+								value={entry.condition ?? ''}
+								onChange={(e) =>
+									save({ condition: (e.target.value as CardEntry['condition']) || undefined })
 								}
 							>
-								✦ Foil
-							</button>
-							{isFoil && (
-								<select
-									className={styles.select}
-									value={entry.foilType ?? 'foil'}
-									onChange={(e) => save({ foilType: e.target.value as 'foil' | 'etched' })}
-								>
-									<option value="foil">Foil</option>
-									<option value="etched">Etched</option>
-								</select>
-							)}
-						</div>
-					</div>
-
-					{/* Language */}
-					<div className={styles.field}>
-						<label className={styles.label} htmlFor="copy-edit-language">
-							Language
-						</label>
-						<select
-							id="copy-edit-language"
-							className={styles.select}
-							value={entry.language ?? ''}
-							onChange={(e) =>
-								save({ language: (e.target.value as CardEntry['language']) || undefined })
-							}
-						>
-							<option value="">— select —</option>
-							{MTG_LANGUAGES.map((lang) => (
-								<option key={lang} value={lang}>
-									{lang}
-								</option>
-							))}
-						</select>
-					</div>
-
-					{/* Tags */}
-					<div className={styles.field}>
-						<label className={styles.label} htmlFor="copy-edit-tags">
-							Tags
-						</label>
-						<div className={styles.tagsField}>
-							{(entry.tags ?? [])
-								.filter((tag) => !tag.includes(':'))
-								.map((tag) => (
-									<span key={tag} className={styles.tag}>
-										{tag}
-										<button
-											type="button"
-											className={styles.tagRemove}
-											onClick={() => removeTag(tag)}
-											aria-label={`Remove tag ${tag}`}
-										>
-											×
-										</button>
-									</span>
+								<option value="">— select —</option>
+								{CONDITIONS.map((c) => (
+									<option key={c} value={c}>
+										{c}
+									</option>
 								))}
-							<input
-								id="copy-edit-tags"
-								type="text"
-								className={styles.tagInput}
-								value={tagInput}
-								onChange={(e) => setTagInput(e.target.value)}
-								onKeyDown={handleTagKeyDown}
-								placeholder={
-									(entry.tags ?? []).filter((tag) => !tag.includes(':')).length === 0
-										? 'Add tags…'
-										: ''
-								}
-							/>
+							</select>
 						</div>
+
+						{/* Foil */}
+						<div className={styles.field}>
+							<label className={styles.label}>Foil</label>
+							<div className={styles.foilRow}>
+								<button
+									type="button"
+									className={`${styles.foilToggle} ${isFoil ? styles.foilToggleActive : ''}`}
+									onClick={() =>
+										save({
+											isFoil: !isFoil,
+											foilType: !isFoil ? (entry.foilType ?? 'foil') : undefined,
+										})
+									}
+								>
+									✦ Foil
+								</button>
+								{isFoil && (
+									<select
+										className={styles.select}
+										value={entry.foilType ?? 'foil'}
+										onChange={(e) => save({ foilType: e.target.value as 'foil' | 'etched' })}
+									>
+										<option value="foil">Foil</option>
+										<option value="etched">Etched</option>
+									</select>
+								)}
+							</div>
+						</div>
+
+						{/* Language */}
+						<div className={styles.field}>
+							<label className={styles.label} htmlFor="copy-edit-language">
+								Language
+							</label>
+							<select
+								id="copy-edit-language"
+								className={styles.select}
+								value={entry.language ?? ''}
+								onChange={(e) =>
+									save({ language: (e.target.value as CardEntry['language']) || undefined })
+								}
+							>
+								<option value="">— select —</option>
+								{MTG_LANGUAGES.map((lang) => (
+									<option key={lang} value={lang}>
+										{lang}
+									</option>
+								))}
+							</select>
+						</div>
+
+						{/* Tags */}
+						<div className={styles.field}>
+							<label className={styles.label} htmlFor="copy-edit-tags">
+								Tags
+							</label>
+							<div className={styles.tagsField}>
+								{(entry.tags ?? [])
+									.filter((tag) => !tag.includes(':'))
+									.map((tag) => (
+										<span key={tag} className={styles.tag}>
+											{tag}
+											<button
+												type="button"
+												className={styles.tagRemove}
+												onClick={() => removeTag(tag)}
+												aria-label={`Remove tag ${tag}`}
+											>
+												×
+											</button>
+										</span>
+									))}
+								<input
+									id="copy-edit-tags"
+									type="text"
+									className={styles.tagInput}
+									value={tagInput}
+									onChange={(e) => setTagInput(e.target.value)}
+									onKeyDown={handleTagKeyDown}
+									placeholder={
+										(entry.tags ?? []).filter((tag) => !tag.includes(':')).length === 0
+											? 'Add tags…'
+											: ''
+									}
+								/>
+							</div>
+						</div>
+
+						{/* Change print (both modes) */}
+						<button
+							type="button"
+							className={styles.changePrintBtn}
+							onClick={() => setShowPrintPicker(true)}
+						>
+							Change print
+						</button>
+
+						{/* Confirm add (add mode only) */}
+						{addMode && (
+							<button type="button" className={styles.changePrintBtn} onClick={handleConfirmAdd}>
+								Confirmer l&apos;ajout
+							</button>
+						)}
+						{!addMode && (
+							<button type="button" className={styles.saveBtn} onClick={handleSave}>
+								Sauvegarder
+							</button>
+						)}
 					</div>
-
-					{/* Change print (both modes) */}
-					<button
-						type="button"
-						className={styles.changePrintBtn}
-						onClick={() => setShowPrintPicker(true)}
-					>
-						Change print
-					</button>
-
-					{/* Confirm add (add mode only) */}
-					{addMode && (
-						<button type="button" className={styles.changePrintBtn} onClick={handleConfirmAdd}>
-							Confirmer l&apos;ajout
-						</button>
-					)}
-					{!addMode && (
-						<button type="button" className={styles.saveBtn} onClick={handleSave}>
-							Sauvegarder
-						</button>
-					)}
 				</div>
 			</Modal>
 

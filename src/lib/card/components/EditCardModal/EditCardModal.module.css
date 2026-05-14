@@ -1,5 +1,5 @@
 .modal {
-	max-width: 420px;
+	max-width: 700px;
 	padding: 24px;
 	position: relative;
 }
@@ -201,4 +201,37 @@
 
 .saveBtn:hover {
 	opacity: 0.88;
+}
+
+.body {
+	display: flex;
+	gap: 24px;
+	align-items: flex-start;
+}
+
+.preview {
+	flex: 0 0 auto;
+	width: 220px;
+}
+
+.preview img {
+	width: 100%;
+	height: auto;
+	border-radius: 8px;
+}
+
+@media (max-width: 580px) {
+	.body {
+		flex-direction: column;
+	}
+
+	.preview {
+		width: 100%;
+		display: flex;
+		justify-content: center;
+	}
+
+	.preview img {
+		max-width: 220px;
+	}
 }
