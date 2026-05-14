@@ -222,7 +222,7 @@
 }
 
 .fluidSection {
-	flex: 1 1 auto;
+	flex: 0 0 auto;
 	min-width: 200px;
 	max-width: 100%;
 }
@@ -236,7 +236,7 @@
 }
 
 .fluidSubSection {
-	flex: 1 1 auto;
+	flex: 0 0 auto;
 	min-width: 200px;
 	max-width: 100%;
 	padding-left: 0;

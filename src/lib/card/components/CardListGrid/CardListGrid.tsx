@@ -73,13 +73,48 @@ export function CardListGrid({
 		return section.cards.length;
 	}
 
+	// Calcule la largeur exacte d'une section en fonction de son contenu.
+	// Pour une section avec children : somme des largeurs des enfants + gaps, sur autant de lignes que nécessaire.
+	// Pour une section avec cartes : ceil(sqrt(N)) colonnes × 224px.
+	const CARD_WIDTH = 200;
+	const CARD_GAP = 24;
+	const CARD_STEP = CARD_WIDTH + CARD_GAP; // 224px
+
+	function sectionWidth(section: CardListSection): number {
+		const n = countCards(section);
+		if (n === 0) return CARD_STEP * 2;
+		const cols = Math.ceil(Math.sqrt(n));
+		return cols * CARD_STEP - CARD_GAP;
+	}
+
+	// Largeur d'un container avec des children côte à côte (flex-wrap).
+	// On simule le wrapping : on place les children ligne par ligne dans maxWidth,
+	// et la largeur du container est le max des largeurs de ligne.
+	function containerWidth(children: CardListSection[], maxWidth: number): number {
+		const childWidths = children.map(sectionWidth);
+		let lineWidth = 0;
+		let maxLineWidth = 0;
+		for (const w of childWidths) {
+			const needed = lineWidth === 0 ? w : lineWidth + CARD_GAP + w;
+			if (needed > maxWidth && lineWidth > 0) {
+				maxLineWidth = Math.max(maxLineWidth, lineWidth);
+				lineWidth = w;
+			} else {
+				lineWidth = needed;
+			}
+		}
+		maxLineWidth = Math.max(maxLineWidth, lineWidth);
+		return maxLineWidth;
+	}
+
 	function renderSection(
 		section: CardListSection,
 		idx: number,
 		depth: number,
 		sectionKey: string,
 		isFirstTopLevel: boolean,
-		parentIsFluid: boolean
+		parentIsFluid: boolean,
+		parentWidth: number
 	) {
 		const collapsed = collapsedSections?.has(sectionKey) ?? false;
 		const labelMatch = section.label.match(/^(.+?)\s*(\(\d+\))$/);
@@ -102,10 +137,14 @@ export function CardListGrid({
 			.filter(Boolean)
 			.join(' ');
 
-		const wrapperStyle =
+		const fluidWidth =
 			fluidSections && (isSubSection ? parentIsFluid : true)
-				? { flexBasis: `${Math.max(2, countCards(section)) * 224}px` }
+				? section.children && section.children.length > 0
+					? containerWidth(section.children, parentWidth)
+					: sectionWidth(section)
 				: undefined;
+
+		const wrapperStyle = fluidWidth !== undefined ? { width: `${fluidWidth}px` } : undefined;
 
 		const headerClass = [
 			isSubSection ? styles.subSectionHeader : styles.sectionHeader,
@@ -167,7 +206,8 @@ export function CardListGrid({
 										depth + 1,
 										`${sectionKey}::${child.label}`,
 										false,
-										fluidSections
+										fluidSections,
+										fluidWidth ?? parentWidth
 									)
 								)
 							: renderItems(section.cards, false, isFirstTopLevel && depth === 0 ? 0 : Infinity)}
@@ -179,13 +219,27 @@ export function CardListGrid({
 
 	// Sections mode
 	if (sections && sections.length > 0) {
-		const sectionItems = sections.map((section, idx) =>
-			renderSection(section, idx, 0, section.label, idx === 0, false)
-		);
 		if (fluidSections) {
-			return <div className={styles.fluidSectionsContainer}>{sectionItems}</div>;
+			// parentWidth = somme de toutes les largeurs + gaps (container "infini" pour le top-level)
+			const totalWidth = sections.reduce(
+				(sum, s, i) => sum + sectionWidth(s) + (i > 0 ? CARD_GAP : 0),
+				0
+			);
+			return (
+				<div className={styles.fluidSectionsContainer}>
+					{sections.map((section, idx) =>
+						renderSection(section, idx, 0, section.label, idx === 0, false, totalWidth)
+					)}
+				</div>
+			);
 		}
-		return <>{sectionItems}</>;
+		return (
+			<>
+				{sections.map((section, idx) =>
+					renderSection(section, idx, 0, section.label, idx === 0, false, 0)
+				)}
+			</>
+		);
 	}
 
 	// Initial skeleton
