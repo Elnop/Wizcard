@@ -167,14 +167,13 @@ export function CardListGrid({
 
 	// Sections mode
 	if (sections && sections.length > 0) {
-		const containerClass = fluidSections ? styles.fluidSectionsContainer : undefined;
-		return (
-			<div className={containerClass}>
-				{sections.map((section, idx) =>
-					renderSection(section, idx, 0, section.label, idx === 0, false)
-				)}
-			</div>
+		const sectionItems = sections.map((section, idx) =>
+			renderSection(section, idx, 0, section.label, idx === 0, false)
 		);
+		if (fluidSections) {
+			return <div className={styles.fluidSectionsContainer}>{sectionItems}</div>;
+		}
+		return <>{sectionItems}</>;
 	}
 
 	// Initial skeleton
