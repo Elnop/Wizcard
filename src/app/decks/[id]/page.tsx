@@ -180,6 +180,7 @@ export default function DeckDetailPage() {
 					onCardClick={handleCardClick}
 					tableColumns={tableColumns}
 					pageSize={false}
+					fluidSections
 				/>
 
 				<DeckStats stats={stats} warnings={warnings} />
