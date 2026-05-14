@@ -79,12 +79,12 @@ export function CardListGrid({
 	const CARD_WIDTH = 200;
 	const CARD_GAP = 24;
 	const CARD_STEP = CARD_WIDTH + CARD_GAP; // 224px
+	const SECTION_PADDING = 28; // 14px each side
 
 	function sectionWidth(section: CardListSection): number {
 		const n = countCards(section);
-		if (n === 0) return CARD_STEP * 2;
-		const cols = Math.ceil(Math.sqrt(n));
-		return cols * CARD_STEP - CARD_GAP;
+		const cols = Math.max(2, Math.ceil(Math.sqrt(n)));
+		return cols * CARD_STEP - CARD_GAP + SECTION_PADDING;
 	}
 
 	// Largeur d'un container avec des children côte à côte (flex-wrap).
