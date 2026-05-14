@@ -145,7 +145,11 @@ export function CardListGrid({
 					: sectionWidth(section)
 				: undefined;
 
-		const sectionColor = !isSubSection ? section.color : undefined;
+		const isFluidTopLevel = fluidSections && !isSubSection;
+		const isFluidSub = fluidSections && isSubSection && parentIsFluid;
+		const showBorder = section.border ?? true;
+		const showBg = section.background ?? true;
+		const sectionColor = isFluidTopLevel || isFluidSub ? section.color : undefined;
 		const wrapperStyle: React.CSSProperties = {
 			...(fluidWidth !== undefined ? { width: `${fluidWidth}px` } : {}),
 			...(sectionColor ? { '--section-color': sectionColor } : {}),
@@ -174,18 +178,27 @@ export function CardListGrid({
 		const hasChildren = section.children && section.children.length > 0;
 
 		const sectionBodyClass = [
-			fluidSections && !isSubSection
+			isFluidTopLevel || isFluidSub
 				? hasChildren
 					? styles.fluidSectionBody
 					: styles.fluidSectionBodyCards
 				: styles.sectionBody,
+			(isFluidTopLevel || isFluidSub) && showBorder ? styles.fluidSectionBodyBorder : undefined,
+			(isFluidTopLevel || isFluidSub) && showBg ? styles.fluidSectionBodyBg : undefined,
+		]
+			.filter(Boolean)
+			.join(' ');
+
+		const headingClass = [
+			styles.sectionHeading,
+			isFluidTopLevel && showBg ? styles.fluidSectionHeadingBg : undefined,
 		]
 			.filter(Boolean)
 			.join(' ');
 
 		return (
 			<div key={sectionKey} className={wrapperClass} style={wrapperStyle}>
-				<Heading className={styles.sectionHeading}>
+				<Heading className={headingClass}>
 					{isCollapsible ? (
 						<button
 							type="button"

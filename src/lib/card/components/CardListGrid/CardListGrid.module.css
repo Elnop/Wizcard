@@ -228,8 +228,11 @@
 }
 
 .fluidSection > .sectionHeading {
-	background: color-mix(in srgb, var(--section-color, transparent) 10%, transparent);
 	border-radius: 6px 6px 0 0;
+}
+
+.fluidSectionHeadingBg {
+	background: color-mix(in srgb, var(--section-color, transparent) 10%, transparent);
 }
 
 .fluidSection > .sectionHeading > .sectionHeader,
@@ -244,9 +247,15 @@
 .fluidSectionBodyCards,
 .fluidSectionBody {
 	padding: 12px 14px 14px;
-	border: 1px solid var(--section-color, var(--glass-border));
 	border-radius: 0 0 10px 10px;
-	background: color-mix(in srgb, var(--section-color, transparent) 4%, transparent);
+}
+
+.fluidSectionBodyBorder {
+	border: 1px solid var(--section-color, var(--glass-border));
+}
+
+.fluidSectionBodyBg {
+	background: color-mix(in srgb, var(--section-color, transparent) 6%, transparent);
 	box-shadow: 0 0 16px color-mix(in srgb, var(--section-color, transparent) 15%, transparent);
 }
 

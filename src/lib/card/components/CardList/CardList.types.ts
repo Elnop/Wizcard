@@ -11,6 +11,8 @@ export interface CardListSection {
 	cards: AnyCard[];
 	children?: CardListSection[];
 	color?: string;
+	border?: boolean;
+	background?: boolean;
 }
 
 export type CardListCards = AnyCard[] | CardListSection[];

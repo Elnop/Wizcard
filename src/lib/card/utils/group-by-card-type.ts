@@ -1,14 +1,14 @@
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 
 const CARD_TYPE_ORDER = [
-	{ key: 'creature', label: 'Creatures' },
-	{ key: 'planeswalker', label: 'Planeswalkers' },
-	{ key: 'instant', label: 'Instants' },
-	{ key: 'sorcery', label: 'Sorceries' },
-	{ key: 'enchantment', label: 'Enchantments' },
-	{ key: 'artifact', label: 'Artifacts' },
-	{ key: 'land', label: 'Lands' },
-	{ key: 'battle', label: 'Battles' },
+	{ key: 'creature', label: 'Creatures', color: '#22c55e' },
+	{ key: 'planeswalker', label: 'Planeswalkers', color: '#f59e0b' },
+	{ key: 'instant', label: 'Instants', color: '#3b82f6' },
+	{ key: 'sorcery', label: 'Sorceries', color: '#8b5cf6' },
+	{ key: 'enchantment', label: 'Enchantments', color: '#ec4899' },
+	{ key: 'artifact', label: 'Artifacts', color: '#94a3b8' },
+	{ key: 'land', label: 'Lands', color: '#a16207' },
+	{ key: 'battle', label: 'Battles', color: '#ef4444' },
 ] as const;
 
 export function groupByCardType(
@@ -43,13 +43,19 @@ export function groupByCardType(
 	}
 
 	const sections: CardListSection[] = [];
-	for (const { key, label } of CARD_TYPE_ORDER) {
+	for (const { key, label, color } of CARD_TYPE_ORDER) {
 		const group = buckets.get(key);
 		if (group && group.length > 0) {
 			const total = countById
 				? group.reduce((sum, c) => sum + (countById.get(c.id) ?? 1), 0)
 				: group.length;
-			sections.push({ label: `${label} (${total})`, cards: group });
+			sections.push({
+				label: `${label} (${total})`,
+				cards: group,
+				color,
+				border: true,
+				background: false,
+			});
 		}
 	}
 	const other = buckets.get('other');
@@ -57,7 +63,7 @@ export function groupByCardType(
 		const total = countById
 			? other.reduce((sum, c) => sum + (countById.get(c.id) ?? 1), 0)
 			: other.length;
-		sections.push({ label: `Other (${total})`, cards: other });
+		sections.push({ label: `Other (${total})`, cards: other, border: true, background: false });
 	}
 
 	return sections;

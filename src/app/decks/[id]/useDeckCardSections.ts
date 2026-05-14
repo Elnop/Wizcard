@@ -90,6 +90,8 @@ export function useDeckCardSections(
 				cards: sectionCards,
 				children,
 				color: ZONE_COLORS[zone],
+				border: false,
+				background: true,
 			});
 		}
 
