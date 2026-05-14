@@ -10,7 +10,7 @@ import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { getDeckZone } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useDeckCardModal } from '@/lib/card/hooks/useDeckCardModal';
 import { useDeckDetail, type ResolvedDeckCard } from './useDeckDetail';
@@ -104,12 +104,18 @@ export default function DeckDetailPage() {
 		);
 	}, [deck, resolvedCards]);
 
-	const getQuantityInDeck = useCallback(
-		(scryfallId: string) => {
-			return Object.values(activeDeckCards).filter((c) => c.scryfallId === scryfallId).length;
-		},
-		[activeDeckCards]
-	);
+	const commanderColorIdentity = useMemo((): ScryfallColor[] | undefined => {
+		if (!showCommander) return undefined;
+		const commanderCards = resolvedCards.filter((rc) => getDeckZone(rc.entry.tags) === 'commander');
+		if (commanderCards.length === 0) return undefined;
+		const identity = new Set<ScryfallColor>();
+		for (const rc of commanderCards) {
+			for (const color of rc.color_identity ?? []) {
+				identity.add(color as ScryfallColor);
+			}
+		}
+		return identity.size > 0 ? [...identity] : undefined;
+	}, [showCommander, resolvedCards]);
 
 	const handleDuplicateCard = useCallback(
 		(rc: ResolvedDeckCard) => {
@@ -184,9 +190,11 @@ export default function DeckDetailPage() {
 
 				{searchPanelOpen && (
 					<CardSearchPanel
+						deckId={deckId}
 						onCardClick={setPanelSelectedCard}
-						getQuantityInDeck={getQuantityInDeck}
 						onClose={() => setSearchPanelOpen(false)}
+						deckFormat={deck.format}
+						commanderColorIdentity={commanderColorIdentity}
 					/>
 				)}
 			</div>
@@ -215,6 +223,7 @@ export default function DeckDetailPage() {
 				cards={panelSelectedCard}
 				onClose={() => setPanelSelectedCard(null)}
 				addLabel="Add to Deck"
+				availableZones={zones}
 				onAddToCollection={(card, entry) => {
 					const zone =
 						(entry.tags

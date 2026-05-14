@@ -2,24 +2,48 @@
 
 import { useState } from 'react';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
-import { CardImage } from '@/lib/card/components/CardImage/CardImage';
-import { Spinner } from '@/components/Spinner/Spinner';
-import { Button } from '@/components/Button/Button';
+import { CardList } from '@/lib/card/components/CardList/CardList';
+import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
+import { SearchCardContextMenu } from './SearchCardContextMenu';
 import {
 	useScryfallCardSearch,
 	type SearchFilters,
 } from '@/lib/scryfall/hooks/useScryfallCardSearch';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
+import type { DeckFormat } from '@/types/decks';
 import styles from './CardSearchPanel.module.css';
 
+const FORMATS_WITHOUT_LEGALITY: DeckFormat[] = ['draft', 'limited'];
+const COMMANDER_FORMATS: DeckFormat[] = ['commander', 'brawl', 'oathbreaker'];
+
 type Props = {
+	deckId: string;
 	onCardClick: (card: ScryfallCard) => void;
-	getQuantityInDeck: (scryfallId: string) => number;
 	onClose: () => void;
+	deckFormat?: DeckFormat | null;
+	commanderColorIdentity?: ScryfallColor[];
 };
 
-export function CardSearchPanel({ onCardClick, getQuantityInDeck, onClose }: Props) {
+export function CardSearchPanel({
+	deckId,
+	onCardClick,
+	onClose,
+	deckFormat,
+	commanderColorIdentity,
+}: Props) {
 	const [searchName, setSearchName] = useState('');
+	const [legalOnly, setLegalOnly] = useState(true);
+	const {
+		menu: contextMenu,
+		open: openContextMenu,
+		close: closeContextMenu,
+	} = useContextMenu<ScryfallCard>();
+
+	const showLegalToggle = deckFormat != null && !FORMATS_WITHOUT_LEGALITY.includes(deckFormat);
+	const legalFilter = showLegalToggle && legalOnly ? deckFormat : undefined;
+	const isCommanderFormat = deckFormat != null && COMMANDER_FORMATS.includes(deckFormat);
+	const colorIdentityFilter = legalFilter && isCommanderFormat ? commanderColorIdentity : undefined;
 
 	const filters: SearchFilters = {
 		name: searchName,
@@ -29,9 +53,18 @@ export function CardSearchPanel({ onCardClick, getQuantityInDeck, onClose }: Pro
 		rarities: [],
 		oracleText: '',
 		cmc: '',
+		legal: legalFilter,
+		colorIdentity: colorIdentityFilter,
 	};
 
-	const { cards, isLoading, hasMore, loadMore } = useScryfallCardSearch(filters);
+	const { cards, isLoading, isLoadingMore, hasMore, loadMore } = useScryfallCardSearch(filters);
+
+	const renderSearchOverlay = (card: AnyCard) => (
+		<div
+			className={styles.searchCardOverlay}
+			onContextMenu={(e) => openContextMenu(card as ScryfallCard, e)}
+		/>
+	);
 
 	return (
 		<aside className={styles.panel}>
@@ -56,57 +89,47 @@ export function CardSearchPanel({ onCardClick, getQuantityInDeck, onClose }: Pro
 
 			<div className={styles.search}>
 				<SearchBar value={searchName} onChange={setSearchName} placeholder="Search for a card..." />
+				{showLegalToggle && (
+					<label className={styles.toggleLabel}>
+						<input
+							type="checkbox"
+							checked={legalOnly}
+							onChange={(e) => setLegalOnly(e.target.checked)}
+							className={styles.toggleInput}
+						/>
+						<span className={styles.toggleText}>Legal in {deckFormat} only</span>
+					</label>
+				)}
 			</div>
 
 			<div className={styles.results}>
-				{isLoading && cards.length === 0 && (
-					<div className={styles.loading}>
-						<Spinner />
-					</div>
-				)}
+				<CardList
+					cards={cards}
+					isLoading={isLoading}
+					isLoadingMore={isLoadingMore}
+					hasMore={hasMore}
+					onLoadMore={loadMore}
+					onCardClick={(card: AnyCard) => onCardClick(card as ScryfallCard)}
+					renderOverlay={renderSearchOverlay}
+					pageSize={false}
+					fluidSections
+				/>
 
 				{!isLoading && cards.length === 0 && searchName.trim() && (
 					<p className={styles.noResults}>No cards found</p>
 				)}
-
-				{cards.map((card) => {
-					const qty = getQuantityInDeck(card.id);
-					return (
-						<button
-							key={card.id}
-							type="button"
-							className={styles.resultRow}
-							onClick={() => onCardClick(card)}
-						>
-							<div className={styles.resultImage}>
-								<CardImage card={card} size="small" />
-							</div>
-							<div className={styles.resultInfo}>
-								<span className={styles.resultName}>{card.name}</span>
-								<span className={styles.resultMeta}>
-									{card.set_name} &middot; {card.type_line}
-								</span>
-							</div>
-							{qty > 0 && <span className={styles.qtyBadge}>x{qty}</span>}
-						</button>
-					);
-				})}
-
-				{hasMore && (
-					<div className={styles.loadMore}>
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={(e) => {
-								e.stopPropagation();
-								loadMore();
-							}}
-						>
-							Load more
-						</Button>
-					</div>
-				)}
 			</div>
+
+			{contextMenu && (
+				<SearchCardContextMenu
+					card={contextMenu.data}
+					position={contextMenu.position}
+					deckId={deckId}
+					format={deckFormat}
+					onCardClick={onCardClick}
+					onClose={closeContextMenu}
+				/>
+			)}
 		</aside>
 	);
 }
