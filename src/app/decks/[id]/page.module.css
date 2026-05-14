@@ -15,10 +15,13 @@
 	padding: 32px;
 	padding-bottom: 80px;
 	max-width: 1400px;
+	margin-inline: auto;
 }
 
 .layoutWithPanel .content {
 	max-width: none;
+	margin-inline: 0;
+	padding-right: calc(480px + 32px);
 }
 
 .loading,

@@ -17,6 +17,8 @@ export interface SearchFilters {
 	rarities: string[];
 	oracleText: string;
 	cmc: string;
+	legal?: string;
+	colorIdentity?: ScryfallColor[];
 	order?: ScryfallSortOrder;
 	dir?: ScryfallSortDir;
 }
@@ -65,6 +67,11 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 				rarities: filters.rarities.length > 0 ? filters.rarities : undefined,
 				text: filters.oracleText || undefined,
 				cmc: filters.cmc || undefined,
+				legal: filters.legal || undefined,
+				colorIdentity:
+					filters.colorIdentity && filters.colorIdentity.length > 0
+						? filters.colorIdentity
+						: undefined,
 			});
 		},
 		[
@@ -75,6 +82,8 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 			filters.rarities,
 			filters.oracleText,
 			filters.cmc,
+			filters.legal,
+			filters.colorIdentity,
 		]
 	);
 

@@ -16,8 +16,8 @@
 	justify-content: space-between;
 	max-width: 1400px;
 	margin: 0 auto;
-	padding: 16px 32px;
-	height: 56px;
+	padding: 12px 32px;
+	min-height: 56px;
 	box-sizing: border-box;
 }
 

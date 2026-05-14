@@ -123,17 +123,37 @@ export function validateDeck(
 	const mainboardCards = cards.filter((c) => c.zone === 'mainboard');
 	const sideboardCards = cards.filter((c) => c.zone === 'sideboard');
 
-	// Mainboard size
-	if (mainboardCards.length < rules.minMainboard) {
+	// Resolve effective commander limit — partners allow 2 commanders in 1-commander formats
+	const hasPartnerKeyword = (card: ScryfallCard) =>
+		card.keywords?.some((k) => k === 'Partner' || k.startsWith('Partner with')) ||
+		/\bPartner\b/.test(card.oracle_text ?? '');
+
+	const allCommandersHavePartner =
+		commanderCards.length > 0 && commanderCards.every(({ card }) => hasPartnerKeyword(card));
+	const effectiveCommanderMax =
+		rules.commanderCount === 1 && allCommandersHavePartner ? 2 : rules.commanderCount;
+
+	// Mainboard size — for formats with a fixed total (commander/brawl), count commanders + mainboard
+	const totalCards = mainboardCards.length + commanderCards.length;
+	const totalMin = rules.maxMainboard ? rules.minMainboard + rules.commanderCount : null;
+	const totalMax = rules.maxMainboard ? rules.maxMainboard + effectiveCommanderMax : null;
+
+	if (totalMin !== null && totalCards < totalMin) {
+		warnings.push({
+			type: 'size',
+			message: `Deck has ${totalCards} cards, minimum is ${totalMin}`,
+		});
+	}
+	if (totalMax !== null && totalCards > totalMax) {
+		warnings.push({
+			type: 'size',
+			message: `Deck has ${totalCards} cards, maximum is ${totalMax}`,
+		});
+	}
+	if (totalMin === null && mainboardCards.length < rules.minMainboard) {
 		warnings.push({
 			type: 'size',
 			message: `Mainboard has ${mainboardCards.length} cards, minimum is ${rules.minMainboard}`,
-		});
-	}
-	if (rules.maxMainboard && mainboardCards.length > rules.maxMainboard) {
-		warnings.push({
-			type: 'size',
-			message: `Mainboard has ${mainboardCards.length} cards, maximum is ${rules.maxMainboard}`,
 		});
 	}
 
@@ -151,17 +171,16 @@ export function validateDeck(
 		});
 	}
 
-	// Commander requirement
 	if (rules.requiresCommander && commanderCards.length === 0) {
 		warnings.push({
 			type: 'commander',
 			message: 'A commander is required for this format',
 		});
 	}
-	if (rules.requiresCommander && commanderCards.length > rules.commanderCount) {
+	if (rules.requiresCommander && commanderCards.length > effectiveCommanderMax) {
 		warnings.push({
 			type: 'commander',
-			message: `Too many commanders: ${commanderCards.length} (max ${rules.commanderCount})`,
+			message: `Too many commanders: ${commanderCards.length} (max ${effectiveCommanderMax})`,
 		});
 	}
 

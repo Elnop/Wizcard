@@ -465,11 +465,13 @@ function ScryfallCardModalInner({
 	onClose,
 	onAddToCollection,
 	addLabel = 'Add to Collection',
+	availableZones,
 }: {
 	card: ScryfallCard;
 	onClose: () => void;
 	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
 	addLabel?: string;
+	availableZones?: DeckZone[];
 }) {
 	const [lightbox, setLightbox] = useState(false);
 	const [addingCard, setAddingCard] = useState(false);
@@ -514,6 +516,7 @@ function ScryfallCardModalInner({
 				<EditCardModal
 					mode="add"
 					scryfallCard={card}
+					availableZones={availableZones}
 					onAdd={(selectedPrint, entry) => {
 						onAddToCollection(selectedPrint, entry);
 						setAddingCard(false);
@@ -557,6 +560,7 @@ export function CardModal({
 				onClose={onClose}
 				onAddToCollection={onAddToCollection}
 				addLabel={addLabel}
+				availableZones={availableZones}
 			/>
 		);
 	}

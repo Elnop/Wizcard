@@ -9,6 +9,8 @@ export interface ScryfallQueryParams {
 	rarities?: string[];
 	text?: string;
 	cmc?: string;
+	legal?: string;
+	colorIdentity?: ScryfallColor[];
 }
 
 export function buildScryfallQuery(params: ScryfallQueryParams): string {
@@ -62,6 +64,14 @@ export function buildScryfallQuery(params: ScryfallQueryParams): string {
 		} else {
 			parts.push(`cmc:${cmcStr}`);
 		}
+	}
+
+	if (params.legal) {
+		parts.push(`legal:${params.legal}`);
+	}
+
+	if (params.colorIdentity && params.colorIdentity.length > 0) {
+		parts.push(`ci<=${params.colorIdentity.join('')}`);
 	}
 
 	return parts.join(' ');
