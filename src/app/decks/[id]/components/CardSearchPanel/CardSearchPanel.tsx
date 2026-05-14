@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
@@ -59,11 +59,14 @@ export function CardSearchPanel({
 
 	const { cards, isLoading, isLoadingMore, hasMore, loadMore } = useScryfallCardSearch(filters);
 
-	const renderSearchOverlay = (card: AnyCard) => (
-		<div
-			className={styles.searchCardOverlay}
-			onContextMenu={(e) => openContextMenu(card as ScryfallCard, e)}
-		/>
+	const renderSearchOverlay = useCallback(
+		(card: AnyCard) => (
+			<div
+				className={styles.searchCardOverlay}
+				onContextMenu={(e) => openContextMenu(card as ScryfallCard, e)}
+			/>
+		),
+		[openContextMenu]
 	);
 
 	return (
