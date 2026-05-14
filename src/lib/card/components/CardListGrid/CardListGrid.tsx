@@ -19,6 +19,7 @@ export function CardListGrid({
 	collapsedSections,
 	onSectionToggle,
 	sectionClassName,
+	fluidSections = false,
 	className,
 }: CardListGridProps) {
 	const gridClass = [cardsPerLine ? styles.gridFixed : styles.grid, className]
@@ -70,7 +71,8 @@ export function CardListGrid({
 		idx: number,
 		depth: number,
 		sectionKey: string,
-		isFirstTopLevel: boolean
+		isFirstTopLevel: boolean,
+		parentIsFluid: boolean
 	) {
 		const collapsed = collapsedSections?.has(sectionKey) ?? false;
 		const labelMatch = section.label.match(/^(.+?)\s*(\(\d+\))$/);
@@ -81,10 +83,13 @@ export function CardListGrid({
 
 		const wrapperClass = [
 			isSubSection
-				? styles.subSectionWrapper
+				? parentIsFluid
+					? styles.fluidSubSection
+					: styles.subSectionWrapper
 				: isFirstTopLevel
 					? styles.sectionWrapperFirst
 					: styles.sectionWrapper,
+			fluidSections && !isSubSection ? styles.fluidSection : undefined,
 			!isSubSection ? sectionClassName : undefined,
 		]
 			.filter(Boolean)
@@ -112,6 +117,12 @@ export function CardListGrid({
 
 		const hasChildren = section.children && section.children.length > 0;
 
+		const sectionBodyClass = [
+			hasChildren && fluidSections ? styles.fluidSectionBody : styles.sectionBody,
+		]
+			.filter(Boolean)
+			.join(' ');
+
 		return (
 			<div key={sectionKey} className={wrapperClass}>
 				<Heading className={styles.sectionHeading}>
@@ -135,10 +146,17 @@ export function CardListGrid({
 					)}
 				</Heading>
 				{!collapsed && (
-					<div className={styles.sectionBody}>
+					<div className={sectionBodyClass}>
 						{hasChildren
 							? section.children!.map((child, i) =>
-									renderSection(child, i, depth + 1, `${sectionKey}::${child.label}`, false)
+									renderSection(
+										child,
+										i,
+										depth + 1,
+										`${sectionKey}::${child.label}`,
+										false,
+										fluidSections
+									)
 								)
 							: renderItems(section.cards, false, isFirstTopLevel && depth === 0 ? 0 : Infinity)}
 					</div>
@@ -149,10 +167,13 @@ export function CardListGrid({
 
 	// Sections mode
 	if (sections && sections.length > 0) {
+		const containerClass = fluidSections ? styles.fluidSectionsContainer : undefined;
 		return (
-			<>
-				{sections.map((section, idx) => renderSection(section, idx, 0, section.label, idx === 0))}
-			</>
+			<div className={containerClass}>
+				{sections.map((section, idx) =>
+					renderSection(section, idx, 0, section.label, idx === 0, false)
+				)}
+			</div>
 		);
 	}
 
