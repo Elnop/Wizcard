@@ -280,3 +280,9 @@
 	min-width: 0;
 	max-width: 100%;
 }
+
+.fluidSubSection .grid,
+.fluidSubSection .gridFixed {
+	width: fit-content;
+	max-width: 100%;
+}
