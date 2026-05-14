@@ -3,11 +3,22 @@
 	background: var(--background);
 }
 
+.layout {
+	display: flex;
+	align-items: flex-start;
+	min-height: calc(100vh - var(--navbar-height));
+}
+
 .content {
+	flex: 1;
+	min-width: 0;
 	padding: 32px;
 	padding-bottom: 80px;
 	max-width: 1400px;
-	margin: 0 auto;
+}
+
+.layoutWithPanel .content {
+	max-width: none;
 }
 
 .loading,
@@ -17,12 +28,6 @@
 	justify-content: center;
 	min-height: calc(100vh - var(--navbar-height));
 	color: var(--text-muted);
-}
-
-.toolbar {
-	display: flex;
-	justify-content: flex-end;
-	margin-bottom: 16px;
 }
 
 .resolving {

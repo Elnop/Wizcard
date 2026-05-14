@@ -8,9 +8,9 @@ import { Spinner } from '@/components/Spinner/Spinner';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
-import { Button } from '@/components/Button/Button';
 import { getDeckZone } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useDeckCardModal } from '@/lib/card/hooks/useDeckCardModal';
 import { useDeckDetail, type ResolvedDeckCard } from './useDeckDetail';
@@ -19,7 +19,7 @@ import { DeckHeader } from './components/DeckHeader/DeckHeader';
 import { DeckStats } from './components/DeckStats/DeckStats';
 import { DeckCardOverlay } from './components/DeckCardOverlay/DeckCardOverlay';
 import { DeckFooter } from './components/DeckFooter/DeckFooter';
-import { AddCardModal } from './components/AddCardModal/AddCardModal';
+import { CardSearchPanel } from './components/CardSearchPanel/CardSearchPanel';
 import styles from './page.module.css';
 
 export default function DeckDetailPage() {
@@ -30,7 +30,8 @@ export default function DeckDetailPage() {
 		useDeckContext();
 	const { deck, cardsByZone, resolvedCards, stats, isLoading, isResolving } = useDeckDetail(deckId);
 
-	const [showAddCard, setShowAddCard] = useState(false);
+	const [searchPanelOpen, setSearchPanelOpen] = useState(false);
+	const [panelSelectedCard, setPanelSelectedCard] = useState<ScryfallCard | null>(null);
 
 	const showCommander = deck?.format === 'commander' || deck?.format === 'brawl';
 
@@ -159,43 +160,44 @@ export default function DeckDetailPage() {
 
 	return (
 		<div className={styles.page}>
-			<div className={styles.content}>
-				<DeckHeader deck={deck} onUpdate={(updates) => updateDeck(deckId, updates)} />
+			<div className={`${styles.layout} ${searchPanelOpen ? styles.layoutWithPanel : ''}`}>
+				<div className={styles.content}>
+					<DeckHeader deck={deck} onUpdate={(updates) => updateDeck(deckId, updates)} />
 
-				{isResolving && Object.keys(activeDeckCards).length > 0 && (
-					<div className={styles.resolving}>
-						<Spinner /> Loading card data...
-					</div>
-				)}
+					{isResolving && Object.keys(activeDeckCards).length > 0 && (
+						<div className={styles.resolving}>
+							<Spinner /> Loading card data...
+						</div>
+					)}
 
-				<div className={styles.toolbar}>
-					<Button size="sm" onClick={() => setShowAddCard(true)}>
-						+ Add Card
-					</Button>
+					<CardList
+						cards={sections}
+						renderOverlay={renderOverlay}
+						onCardClick={handleCardClick}
+						tableColumns={tableColumns}
+						pageSize={false}
+						fluidSections
+					/>
+
+					<DeckStats stats={stats} warnings={warnings} />
 				</div>
 
-				<CardList
-					cards={sections}
-					renderOverlay={renderOverlay}
-					onCardClick={handleCardClick}
-					tableColumns={tableColumns}
-					pageSize={false}
-					fluidSections
-				/>
-
-				<DeckStats stats={stats} warnings={warnings} />
+				{searchPanelOpen && (
+					<CardSearchPanel
+						onCardClick={setPanelSelectedCard}
+						getQuantityInDeck={getQuantityInDeck}
+						onClose={() => setSearchPanelOpen(false)}
+					/>
+				)}
 			</div>
 
-			<DeckFooter stats={stats} format={deck.format} warnings={warnings} />
-
-			{showAddCard && (
-				<AddCardModal
-					activeZone="mainboard"
-					onAdd={(card, zone) => addCardToDeck(deckId, card, zone)}
-					onClose={() => setShowAddCard(false)}
-					getQuantityInDeck={getQuantityInDeck}
-				/>
-			)}
+			<DeckFooter
+				stats={stats}
+				format={deck.format}
+				warnings={warnings}
+				searchPanelOpen={searchPanelOpen}
+				onToggleSearchPanel={() => setSearchPanelOpen((v) => !v)}
+			/>
 
 			<CardModal
 				cards={selectedCards}
@@ -207,6 +209,20 @@ export default function DeckDetailPage() {
 				onRemoveEntry={handleRemoveEntry}
 				onIncrement={handleAddCopy}
 				onChangeZone={handleChangeZone}
+			/>
+
+			<CardModal
+				cards={panelSelectedCard}
+				onClose={() => setPanelSelectedCard(null)}
+				addLabel="Add to Deck"
+				onAddToCollection={(card, entry) => {
+					const zone =
+						(entry.tags
+							?.find((t: string) => t.startsWith('deck:'))
+							?.replace('deck:', '') as DeckZone) ?? 'mainboard';
+					addCardToDeck(deckId, card, zone);
+					setPanelSelectedCard(null);
+				}}
 			/>
 		</div>
 	);
