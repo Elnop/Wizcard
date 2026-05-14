@@ -79,7 +79,7 @@ export function CardListGrid({
 	const CARD_WIDTH = 200;
 	const CARD_GAP = 24;
 	const CARD_STEP = CARD_WIDTH + CARD_GAP; // 224px
-	const SECTION_PADDING = 28; // 14px each side
+	const SECTION_PADDING = 30; // 14px padding each side + 1px border each side
 
 	function sectionWidth(section: CardListSection): number {
 		const n = countCards(section);
