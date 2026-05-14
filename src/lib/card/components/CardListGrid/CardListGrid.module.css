@@ -227,16 +227,15 @@
 	max-width: 100%;
 }
 
-.fluidSection .sectionHeading {
-	padding: 10px 0 6px;
+.fluidSection > .sectionHeading {
 	background: color-mix(in srgb, var(--section-color, transparent) 10%, transparent);
 	border-radius: 6px 6px 0 0;
 }
 
-.fluidSection .sectionHeader,
-.fluidSection .sectionHeaderCollapsible {
+.fluidSection > .sectionHeading > .sectionHeader,
+.fluidSection > .sectionHeading > .sectionHeaderCollapsible {
 	width: 100%;
-	padding: 0;
+	padding: 10px 14px 8px;
 	border-bottom: none;
 	background: none;
 	color: var(--section-color, var(--gold));
@@ -262,5 +261,4 @@
 	flex: 0 0 auto;
 	min-width: 0;
 	max-width: 100%;
-	padding-left: 0;
 }
