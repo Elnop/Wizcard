@@ -211,3 +211,34 @@
 .subSectionHeaderCollapsible {
 	cursor: pointer;
 }
+
+/* Fluid sections layout */
+
+.fluidSectionsContainer {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 24px;
+	align-items: flex-start;
+}
+
+.fluidSection {
+	flex: 0 0 fit-content;
+	min-width: 200px;
+	max-width: 100%;
+}
+
+.fluidSectionBody {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	align-items: flex-start;
+	margin-top: 12px;
+}
+
+.fluidSubSection {
+	flex: 0 0 fit-content;
+	min-width: 160px;
+	max-width: 100%;
+	margin-top: 0;
+	padding-left: 0;
+}
