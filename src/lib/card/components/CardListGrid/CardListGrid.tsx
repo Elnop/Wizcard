@@ -66,6 +66,13 @@ export function CardListGrid({
 
 	const isCollapsible = !!onSectionToggle;
 
+	function countCards(section: CardListSection): number {
+		if (section.children && section.children.length > 0) {
+			return section.children.reduce((sum, c) => sum + countCards(c), 0);
+		}
+		return section.cards.length;
+	}
+
 	function renderSection(
 		section: CardListSection,
 		idx: number,
@@ -94,6 +101,11 @@ export function CardListGrid({
 		]
 			.filter(Boolean)
 			.join(' ');
+
+		const wrapperStyle =
+			fluidSections && !isSubSection
+				? { flexBasis: `${Math.max(2, countCards(section)) * 224}px` }
+				: undefined;
 
 		const headerClass = [
 			isSubSection ? styles.subSectionHeader : styles.sectionHeader,
@@ -124,7 +136,7 @@ export function CardListGrid({
 			.join(' ');
 
 		return (
-			<div key={sectionKey} className={wrapperClass}>
+			<div key={sectionKey} className={wrapperClass} style={wrapperStyle}>
 				<Heading className={styles.sectionHeading}>
 					{isCollapsible ? (
 						<button
