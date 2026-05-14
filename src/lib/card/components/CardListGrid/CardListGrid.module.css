@@ -228,14 +228,16 @@
 }
 
 .fluidSectionBody {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	align-items: flex-start;
 	margin-top: 12px;
 }
 
 .fluidSubSection {
-	margin-top: 12px;
+	flex: 1 1 auto;
+	min-width: 200px;
+	max-width: 100%;
 	padding-left: 0;
-}
-
-.fluidSubSection:first-child {
-	margin-top: 0;
 }

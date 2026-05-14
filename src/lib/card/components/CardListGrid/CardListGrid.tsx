@@ -103,7 +103,7 @@ export function CardListGrid({
 			.join(' ');
 
 		const wrapperStyle =
-			fluidSections && !isSubSection
+			fluidSections && (isSubSection ? parentIsFluid : true)
 				? { flexBasis: `${Math.max(2, countCards(section)) * 224}px` }
 				: undefined;
 
