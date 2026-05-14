@@ -32,12 +32,10 @@ export function ContextMenu({ items, position, onClose }: Props) {
 			if (e.key === 'Escape') close();
 		};
 		document.addEventListener('click', close);
-		document.addEventListener('contextmenu', close, true);
 		document.addEventListener('keydown', handleKey);
 		document.addEventListener('scroll', close, true);
 		return () => {
 			document.removeEventListener('click', close);
-			document.removeEventListener('contextmenu', close, true);
 			document.removeEventListener('keydown', handleKey);
 			document.removeEventListener('scroll', close, true);
 		};
