@@ -227,12 +227,21 @@
 	max-width: 100%;
 }
 
-.fluidSection > .sectionHeading {
+.fluidSection > .sectionHeading,
+.fluidSubSection > .sectionHeading {
 	border-radius: 6px 6px 0 0;
 }
 
 .fluidSectionHeadingBg {
 	background: color-mix(in srgb, var(--section-color, transparent) 10%, transparent);
+}
+
+.fluidSubSection > .fluidSectionHeadingBg > .subSectionHeader,
+.fluidSubSection > .fluidSectionHeadingBg > .subSectionHeaderCollapsible {
+	padding: 6px 14px 4px;
+	border-bottom: none;
+	background: none;
+	color: var(--section-color, var(--text-muted));
 }
 
 .fluidSection > .sectionHeading > .sectionHeader,

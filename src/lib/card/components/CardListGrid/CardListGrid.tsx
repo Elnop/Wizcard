@@ -191,7 +191,9 @@ export function CardListGrid({
 
 		const headingClass = [
 			styles.sectionHeading,
-			isFluidTopLevel && showBg ? styles.fluidSectionHeadingBg : undefined,
+			(isFluidTopLevel || isFluidSub) && showBg && sectionColor
+				? styles.fluidSectionHeadingBg
+				: undefined,
 		]
 			.filter(Boolean)
 			.join(' ');
