@@ -397,6 +397,7 @@ function CardModalInner({
 								renderOverlay={renderCopyOverlay}
 								tableColumns={tableColumns}
 								cardsPerLine={3}
+								fluidSections
 							/>
 							{onRemove && (
 								<button
