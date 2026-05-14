@@ -105,7 +105,8 @@ export function CardListGrid({
 			}
 		}
 		maxLineWidth = Math.max(maxLineWidth, lineWidth);
-		return maxLineWidth;
+		// Add parent body padding so children fit inside without overflowing
+		return maxLineWidth + SECTION_PADDING;
 	}
 
 	function renderSection(
