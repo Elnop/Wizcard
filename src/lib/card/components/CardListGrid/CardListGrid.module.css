@@ -222,9 +222,19 @@
 }
 
 .fluidSection {
-	flex: 0 0 fit-content;
+	flex: 0 0 auto;
 	min-width: 200px;
 	max-width: 100%;
+}
+
+.fluidSection .sectionHeader,
+.fluidSection .sectionHeaderCollapsible {
+	width: auto;
+}
+
+.fluidSection .grid,
+.fluidSection .gridFixed {
+	width: fit-content;
 }
 
 .fluidSectionBody {
