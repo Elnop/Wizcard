@@ -214,6 +214,10 @@
 	width: 220px;
 }
 
+.preview > * {
+	width: 100%;
+}
+
 .preview img {
 	width: 100%;
 	height: auto;
