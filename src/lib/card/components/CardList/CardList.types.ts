@@ -20,24 +20,21 @@ export function isSections(cards: CardListCards): cards is CardListSection[] {
 
 export interface CardListProps {
 	cards: CardListCards;
-	// Pagination intégrée
 	isLoading?: boolean;
 	isLoadingMore?: boolean;
 	hasMore?: boolean;
 	onLoadMore?: () => void;
 	skeletonCount?: number;
-	// Interactions
 	onCardClick?: (card: AnyCard) => void;
 	renderOverlay?: (card: AnyCard) => ReactNode;
-	// Table
 	tableColumns?: CardListColumn[];
 	sortOrder?: string;
 	sortDir?: ScryfallSortDir;
 	onSortChange?: (order: string, dir: ScryfallSortDir) => void;
-	// Grille : nombre de cartes par ligne (fixe la taille des cartes)
 	cardsPerLine?: number;
 	renderItem?: (card: AnyCard, index: number) => ReactNode;
 	sectionClassName?: string;
+	fluidSections?: boolean;
 	className?: string;
 	pageSize?: number | false;
 }

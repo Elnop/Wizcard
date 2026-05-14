@@ -14,5 +14,6 @@ export interface CardListGridProps {
 	collapsedSections?: Set<string>;
 	onSectionToggle?: (label: string) => void;
 	sectionClassName?: string;
+	fluidSections?: boolean;
 	className?: string;
 }
