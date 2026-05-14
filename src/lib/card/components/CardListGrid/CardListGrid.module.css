@@ -228,6 +228,7 @@
 	border-radius: 10px;
 	padding: 0 14px 14px;
 	border: 1px solid var(--section-color, var(--glass-border));
+	border-top: none;
 	background: color-mix(in srgb, var(--section-color, transparent) 4%, transparent);
 	box-shadow: 0 0 16px color-mix(in srgb, var(--section-color, transparent) 15%, transparent);
 	overflow: hidden;
@@ -241,6 +242,7 @@
 .fluidSection .sectionHeaderCollapsible {
 	width: 100%;
 	padding: 10px 14px 6px;
+	border-top: 3px solid var(--section-color, var(--glass-border));
 	background: color-mix(in srgb, var(--section-color, transparent) 10%, transparent);
 	border-bottom-color: var(--section-color, var(--glass-border));
 	color: var(--section-color, var(--gold));
@@ -251,12 +253,12 @@
 	flex-wrap: wrap;
 	gap: 16px;
 	align-items: flex-start;
-	margin-top: 12px;
+	padding-top: 12px;
 }
 
 .fluidSubSection {
 	flex: 0 0 auto;
-	min-width: 200px;
+	min-width: 0;
 	max-width: 100%;
 	padding-left: 0;
 }
