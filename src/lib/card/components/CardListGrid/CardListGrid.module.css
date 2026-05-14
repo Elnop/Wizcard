@@ -233,8 +233,8 @@
 	width: 100%;
 }
 
-.fluidSection .grid,
-.fluidSection .gridFixed {
+.fluidSection > .sectionBody > .grid,
+.fluidSection > .sectionBody > .gridFixed {
 	width: fit-content;
 }
 
@@ -247,7 +247,7 @@
 }
 
 .fluidSubSection {
-	flex: 0 0 fit-content;
+	flex: 1 1 200px;
 	min-width: 160px;
 	max-width: 100%;
 	margin-top: 0;
