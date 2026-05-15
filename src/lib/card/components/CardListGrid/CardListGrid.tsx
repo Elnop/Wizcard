@@ -107,7 +107,7 @@ export function CardListGrid({
 
 		const showBorder = section.border ?? true;
 		const showBg = section.background ?? true;
-		const sectionColor = isFluid ? section.color : undefined;
+		const sectionColor = section.color;
 
 		const wrapperStyle = {
 			...(sectionColor ? { '--section-color': sectionColor } : {}),
@@ -147,7 +147,7 @@ export function CardListGrid({
 
 		const headingClass = [
 			styles.sectionHeading,
-			isFluid && showBg && sectionColor ? styles.fluidSectionHeadingBg : undefined,
+			showBg && sectionColor ? styles.sectionHeadingColoredBg : undefined,
 		]
 			.filter(Boolean)
 			.join(' ');
