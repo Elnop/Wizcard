@@ -53,8 +53,8 @@ export function groupByCardType(
 				label: `${label} (${total})`,
 				cards: group,
 				color,
-				border: true,
-				background: false,
+				border: false,
+				background: true,
 			});
 		}
 	}
@@ -63,7 +63,7 @@ export function groupByCardType(
 		const total = countById
 			? other.reduce((sum, c) => sum + (countById.get(c.id) ?? 1), 0)
 			: other.length;
-		sections.push({ label: `Other (${total})`, cards: other, border: true, background: false });
+		sections.push({ label: `Other (${total})`, cards: other, border: false, background: true });
 	}
 
 	return sections;

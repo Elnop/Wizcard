@@ -189,6 +189,13 @@
 	margin-top: 12px;
 }
 
+.sectionBodyColoredBg {
+	background: color-mix(in srgb, var(--section-color, transparent) 6%, transparent);
+	box-shadow: 0 0 16px color-mix(in srgb, var(--section-color, transparent) 15%, transparent);
+	border-radius: 0 0 10px 10px;
+	padding: 12px;
+}
+
 /* Sub-sections (depth > 0) */
 
 .subSectionWrapper {
@@ -204,7 +211,6 @@
 	padding: 6px 12px 4px;
 	background: none;
 	border: none;
-	border-bottom: 1px solid var(--glass-border);
 	color: var(--section-color, var(--text-muted));
 	font-family: var(--font-display);
 	font-size: var(--text-lg);

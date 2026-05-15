@@ -140,6 +140,7 @@ export function CardListGrid({
 					: styles.fluidSectionBodyCards
 				: styles.sectionBody,
 			isFluid && showBorder ? styles.fluidSectionBodyBorder : undefined,
+			showBg && sectionColor ? styles.sectionBodyColoredBg : undefined,
 			isFluid && showBg ? styles.fluidSectionBodyBg : undefined,
 		]
 			.filter(Boolean)
