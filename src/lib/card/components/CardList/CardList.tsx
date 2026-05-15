@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import type { CardListProps } from './CardList.types';
-import { isSections } from './CardList.types';
+import type { CardListProps, CardListViewMode } from './CardList.types';
+import { isSections, VIEW_MODE_LABELS } from './CardList.types';
 import { CardListGrid } from '@/lib/card/components/CardListGrid/CardListGrid';
 import { CardListTable } from '@/lib/card/components/CardListTable/CardListTable';
 import { useInfiniteScroll } from './useInfiniteScroll';
@@ -27,10 +27,11 @@ export function CardList({
 	renderItem,
 	sectionClassName,
 	fluidSections,
+	viewModes = ['grid', 'table'],
 	className,
 	pageSize = PAGE_SIZE,
 }: CardListProps) {
-	const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+	const [viewMode, setViewMode] = useState<CardListViewMode>(viewModes[0]);
 	const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
 	function toggleSection(label: string) {
@@ -85,24 +86,22 @@ export function CardList({
 		</>
 	);
 
-	const toggle = (
+	const toggle = viewModes.length > 1 && (
 		<div className={styles.viewToggle}>
-			<button
-				type="button"
-				className={`${styles.toggleBtn} ${viewMode === 'grid' ? styles.toggleBtnActive : ''}`}
-				onClick={() => setViewMode('grid')}
-			>
-				Grille
-			</button>
-			<button
-				type="button"
-				className={`${styles.toggleBtn} ${viewMode === 'table' ? styles.toggleBtnActive : ''}`}
-				onClick={() => setViewMode('table')}
-			>
-				Tableau
-			</button>
+			{viewModes.map((mode) => (
+				<button
+					key={mode}
+					type="button"
+					className={`${styles.toggleBtn} ${viewMode === mode ? styles.toggleBtnActive : ''}`}
+					onClick={() => setViewMode(mode)}
+				>
+					{VIEW_MODE_LABELS[mode]}
+				</button>
+			))}
 		</div>
 	);
+
+	const isFluid = viewMode === 'fluid-grid' || fluidSections;
 
 	// Sections mode — CardListGrid and CardListTable handle section layout
 	if (sections) {
@@ -133,7 +132,7 @@ export function CardList({
 						collapsedSections={collapsedSections}
 						onSectionToggle={toggleSection}
 						sectionClassName={sectionClassName}
-						fluidSections={fluidSections}
+						fluidSections={isFluid}
 						className={className}
 					/>
 				)}
@@ -172,6 +171,7 @@ export function CardList({
 				renderOverlay={renderOverlay}
 				renderItem={renderItem}
 				cardsPerLine={cardsPerLine}
+				fluidSections={isFluid}
 				className={className}
 			/>
 			{sentinel}

@@ -21,6 +21,14 @@ export function isSections(cards: CardListCards): cards is CardListSection[] {
 	return cards.length > 0 && 'label' in (cards[0] as object);
 }
 
+export type CardListViewMode = 'grid' | 'fluid-grid' | 'table';
+
+export const VIEW_MODE_LABELS: Record<CardListViewMode, string> = {
+	grid: 'Grille',
+	'fluid-grid': 'Fluid',
+	table: 'Tableau',
+};
+
 export interface CardListProps {
 	cards: CardListCards;
 	isLoading?: boolean;
@@ -37,7 +45,9 @@ export interface CardListProps {
 	cardsPerLine?: number;
 	renderItem?: (card: AnyCard, index: number) => ReactNode;
 	sectionClassName?: string;
+	/** @deprecated use viewModes instead */
 	fluidSections?: boolean;
+	viewModes?: CardListViewMode[];
 	className?: string;
 	pageSize?: number | false;
 }

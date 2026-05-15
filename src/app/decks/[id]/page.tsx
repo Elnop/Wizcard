@@ -182,7 +182,7 @@ export default function DeckDetailPage() {
 						onCardClick={handleCardClick}
 						tableColumns={tableColumns}
 						pageSize={false}
-						fluidSections
+						viewModes={['fluid-grid', 'grid', 'table']}
 					/>
 
 					<DeckStats stats={stats} warnings={warnings} />
