@@ -11,6 +11,8 @@ import type { CardListColumn } from '@/lib/card/components/CardListTable/CardLis
 import { getDeckZone } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
 import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
+import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
+import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useDeckCardModal } from '@/lib/card/hooks/useDeckCardModal';
 import { useDeckDetail, type ResolvedDeckCard } from './useDeckDetail';
@@ -44,6 +46,7 @@ export default function DeckDetailPage() {
 	);
 
 	const { sections, groupByCardId } = useDeckCardSections(cardsByZone, showCommander);
+	const symbolMap = useScryfallSymbols();
 
 	const {
 		selectedCards,
@@ -82,7 +85,11 @@ export default function DeckDetailPage() {
 			{
 				key: 'mana_cost',
 				label: 'Mana',
-				render: (card) => ('mana_cost' in card ? (card.mana_cost as string) : '—'),
+				render: (card) => {
+					const cost = 'mana_cost' in card ? (card.mana_cost as string) : '';
+					if (!cost) return '—';
+					return <SymbolText text={cost} symbolMap={symbolMap} />;
+				},
 			},
 			{
 				key: 'set',
@@ -90,7 +97,7 @@ export default function DeckDetailPage() {
 				render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
 			},
 		],
-		[groupByCardId]
+		[groupByCardId, symbolMap]
 	);
 
 	const warnings = useMemo(() => {
