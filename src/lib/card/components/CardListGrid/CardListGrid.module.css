@@ -1,9 +1,14 @@
 /* Grid view */
 
+:root {
+	--card-width: 200px;
+	--card-gap: 24px;
+}
+
 .grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, 200px);
-	gap: 24px;
+	grid-template-columns: repeat(auto-fill, var(--card-width));
+	gap: var(--card-gap);
 	width: 100%;
 }
 
@@ -67,6 +72,7 @@
 	100% {
 		opacity: 1;
 	}
+
 	50% {
 		opacity: 0.4;
 	}
@@ -212,24 +218,90 @@
 	cursor: pointer;
 }
 
-/* Fluid sections layout */
+/* ─── Fluid sections layout ─────────────────────────────────────────────── */
 
+/*
+ * Hierarchy:
+ *   fluidSectionsContainer        — flex row, wraps sections
+ *     fluidSectionParent          — full-width zone (COMMANDER, MAINBOARD…)
+ *       fluidSectionBody          — flex row, wraps sub-sections
+ *         fluidSubSection         — fits its card content, max 100% of body
+ *           fluidSectionBodyCards — card grid
+ *     fluidSection                — top-level leaf (no children), same sizing
+ *       fluidSectionBodyCards     — card grid
+ */
+
+/* Container: zones sit side by side, wrap when they don't fit */
 .fluidSectionsContainer {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 24px;
+	gap: var(--card-gap);
 	align-items: flex-start;
+	width: 100%;
+	min-width: 0;
 }
 
-.fluidSection {
-	flex: 0 0 auto;
+/* Zone (COMMANDER, MAINBOARD…): always full width, stacks heading + body */
+.fluidSectionParent {
+	display: flex;
+	flex-direction: column;
+	flex: 0 0 100%;
 	min-width: 0;
-	max-width: 100%;
 }
+
+/* Sub-section container: sub-sections sit side by side, wrap when needed */
+.fluidSectionBody {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--card-gap);
+	align-items: flex-start;
+	min-width: 0;
+	padding: 12px 14px 14px;
+	border-radius: 0 0 10px 10px;
+}
+
+/* Sub-section / top-level leaf: fits card content, capped by parent width */
+.fluidSection,
+.fluidSubSection {
+	display: flex;
+	flex-direction: column;
+	flex: 0 0 auto;
+	width: max-content;
+	max-width: 100%;
+	min-width: 0;
+}
+
+/* Wrapper around the card grid — padding + border-radius only */
+.fluidSectionBodyCards {
+	padding: 12px 14px 14px;
+	border-radius: 0 0 10px 10px;
+}
+
+.fluidItemGrid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--card-gap);
+}
+
+.fluidItemGrid > * {
+	flex: 0 0 var(--card-width);
+	width: var(--card-width);
+}
+
+/* ─── Fluid section decorators ──────────────────────────────────────────── */
 
 .fluidSection > .sectionHeading,
 .fluidSubSection > .sectionHeading {
 	border-radius: 6px 6px 0 0;
+}
+
+.fluidSection > .sectionHeading > .sectionHeader,
+.fluidSection > .sectionHeading > .sectionHeaderCollapsible {
+	width: 100%;
+	padding: 10px 14px 8px;
+	border-bottom: none;
+	background: none;
+	color: var(--section-color, var(--gold));
 }
 
 .fluidSectionHeadingBg {
@@ -244,21 +316,6 @@
 	color: var(--section-color, var(--text-muted));
 }
 
-.fluidSection > .sectionHeading > .sectionHeader,
-.fluidSection > .sectionHeading > .sectionHeaderCollapsible {
-	width: 100%;
-	padding: 10px 14px 8px;
-	border-bottom: none;
-	background: none;
-	color: var(--section-color, var(--gold));
-}
-
-.fluidSectionBodyCards,
-.fluidSectionBody {
-	padding: 12px 14px 14px;
-	border-radius: 0 0 10px 10px;
-}
-
 .fluidSectionBodyBorder {
 	border: 1px solid var(--section-color, var(--glass-border));
 }
@@ -266,23 +323,4 @@
 .fluidSectionBodyBg {
 	background: color-mix(in srgb, var(--section-color, transparent) 6%, transparent);
 	box-shadow: 0 0 16px color-mix(in srgb, var(--section-color, transparent) 15%, transparent);
-}
-
-.fluidSectionBody {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 16px;
-	align-items: flex-start;
-}
-
-.fluidSubSection {
-	flex: 0 0 auto;
-	min-width: 0;
-	max-width: 100%;
-}
-
-.fluidSubSection .grid,
-.fluidSubSection .gridFixed {
-	width: fit-content;
-	max-width: 100%;
 }
