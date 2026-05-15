@@ -5,17 +5,10 @@ import type { DeckStats } from '@/lib/deck/utils/deck-stats';
 import type { DeckFormat } from '@/types/decks';
 import type { ValidationWarning } from '@/lib/deck/utils/format-rules';
 import { getFormatRules } from '@/lib/deck/utils/format-rules';
+import { ColorIdentityIcons } from '@/lib/scryfall/components/ColorIdentityIcons';
 import styles from './DeckFooter.module.css';
 
 const COLOR_ORDER = ['W', 'U', 'B', 'R', 'G'] as const;
-
-const COLOR_CSS: Record<string, string> = {
-	W: 'var(--mana-white, #f9faf4)',
-	U: 'var(--mana-blue, #0e68ab)',
-	B: 'var(--mana-black, #150b00)',
-	R: 'var(--mana-red, #d3202a)',
-	G: 'var(--mana-green, #00733e)',
-};
 
 type Props = {
 	stats: DeckStats;
@@ -146,14 +139,7 @@ export function DeckFooter({
 						<>
 							<div className={styles.separator} />
 							<div className={styles.colorDots}>
-								{colors.map((color) => (
-									<span
-										key={color}
-										className={styles.colorDot}
-										style={{ background: COLOR_CSS[color] }}
-										title={`${color}: ${stats.colorDistribution[color]}`}
-									/>
-								))}
+								<ColorIdentityIcons colors={colors} size={18} />
 							</div>
 						</>
 					)}

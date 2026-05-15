@@ -2,6 +2,7 @@
 
 import type { DeckStats as DeckStatsType } from '@/lib/deck/utils/deck-stats';
 import type { ValidationWarning } from '@/lib/deck/utils/format-rules';
+import { ColorIdentityIcons } from '@/lib/scryfall/components/ColorIdentityIcons';
 import { ManaCurve } from '../ManaCurve/ManaCurve';
 import styles from './DeckStats.module.css';
 
@@ -56,10 +57,7 @@ export function DeckStats({ stats, warnings }: Props) {
 					<div className={styles.colorLegend}>
 						{colorEntries.map(([color, count]) => (
 							<span key={color} className={styles.colorItem}>
-								<span
-									className={styles.colorDot}
-									style={{ background: COLOR_CSS[color] ?? 'var(--text-muted)' }}
-								/>
+								<ColorIdentityIcons colors={[color]} size={16} />
 								{COLOR_LABELS[color] ?? color} ({count})
 							</span>
 						))}

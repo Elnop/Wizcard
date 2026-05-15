@@ -10,6 +10,7 @@ import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import { CardLightbox } from '@/lib/card/components/CardLightbox/CardLightbox';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
+import { ColorIdentityIcons } from '@/lib/scryfall/components/ColorIdentityIcons';
 import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
 import { Modal } from '@/components/Modal/Modal';
@@ -32,15 +33,6 @@ const ZONE_ABBR: Record<DeckZone, string> = {
 	sideboard: 'Side',
 	maybeboard: 'Maybe',
 	commander: 'Cmd',
-};
-
-const COLOR_MAP: Record<string, string> = {
-	W: '#f8e7b9',
-	U: '#0e68ab',
-	B: '#a0a0a0',
-	R: '#d3202a',
-	G: '#00733e',
-	C: '#ccc2c0',
 };
 
 function isCollectionCard(card: Card | ScryfallCard): card is Card {
@@ -101,14 +93,7 @@ function CardDetailSection({
 				</div>
 				{card.color_identity && card.color_identity.length > 0 && (
 					<div className={styles.colorPips}>
-						{card.color_identity.map((c) => (
-							<span
-								key={c}
-								className={styles.colorPip}
-								style={{ background: COLOR_MAP[c] ?? '#888' }}
-								title={c}
-							/>
-						))}
+						<ColorIdentityIcons colors={card.color_identity} size={18} />
 					</div>
 				)}
 			</div>

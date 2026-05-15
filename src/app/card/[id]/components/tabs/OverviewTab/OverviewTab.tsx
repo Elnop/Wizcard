@@ -1,17 +1,10 @@
 'use client';
 
-import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
+import { ColorIdentityIcons } from '@/lib/scryfall/components/ColorIdentityIcons';
 import styles from './OverviewTab.module.css';
-
-const colorNames: Record<ScryfallColor, string> = {
-	W: 'White',
-	U: 'Blue',
-	B: 'Black',
-	R: 'Red',
-	G: 'Green',
-};
 
 function splitOracleText(text: string | undefined): string[] {
 	if (!text) return [];
@@ -71,13 +64,7 @@ export function OverviewTab({ card }: Props) {
 				{colors.length > 0 && (
 					<div className={styles.metaRow}>
 						<span className={styles.metaLabel}>Colors</span>
-						<div className={styles.colorPills}>
-							{colors.map((color) => (
-								<span key={color} className={styles.colorPill} data-color={color}>
-									{colorNames[color]}
-								</span>
-							))}
-						</div>
+						<ColorIdentityIcons colors={colors} size={18} />
 					</div>
 				)}
 			</div>
