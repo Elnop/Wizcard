@@ -100,6 +100,7 @@ export function CardListGrid({
 					? styles.sectionWrapperFirst
 					: styles.sectionWrapper,
 			isFluid ? (hasChildren ? styles.fluidSectionParent : styles.fluidSection) : undefined,
+			isFluid && collapsed ? styles.fluidSectionCollapsed : undefined,
 			!isSubSection ? sectionClassName : undefined,
 		]
 			.filter(Boolean)

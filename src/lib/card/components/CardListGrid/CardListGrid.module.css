@@ -277,6 +277,10 @@
 	min-width: 0;
 }
 
+.fluidSectionCollapsed {
+	width: 100%;
+}
+
 /* Wrapper around the card grid — padding + border-radius only */
 .fluidSectionBodyCards {
 	padding: 12px 14px 14px;
