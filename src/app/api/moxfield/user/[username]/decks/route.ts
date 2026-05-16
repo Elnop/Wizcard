@@ -1,8 +1,8 @@
-// src/app/api/moxfield/user/[username]/decks/route.ts
 import { NextResponse } from 'next/server';
 
 const MOXFIELD_API = 'https://api.moxfield.com/v2/users';
 const PAGE_SIZE = 100;
+const MAX_PAGES = 20;
 
 export type MoxfieldUserDeckEntry = {
 	publicId: string;
@@ -21,7 +21,6 @@ type MoxfieldUserDecksPage = {
 		format: string | null;
 		colorIdentity: string[];
 		mainboardCount: number;
-		sideboardCount: number;
 		commandersCount: number;
 		lastUpdatedAtUtc: string | null;
 		hub?: { name: string } | null;
@@ -44,6 +43,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ usernam
 	let totalPages = 1;
 
 	while (pageNumber <= totalPages) {
+		if (pageNumber > MAX_PAGES) break;
 		const url = `${MOXFIELD_API}/${encodeURIComponent(username)}/decks?pageNumber=${pageNumber}&pageSize=${PAGE_SIZE}&sortType=updated&sortDirection=descending`;
 
 		const res = await fetch(url, {
@@ -61,6 +61,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ usernam
 		}
 
 		const page = (await res.json()) as MoxfieldUserDecksPage;
+
+		if (!Array.isArray(page.data)) {
+			return NextResponse.json({ error: 'Unexpected response from Moxfield' }, { status: 502 });
+		}
 
 		for (const d of page.data) {
 			allDecks.push({
