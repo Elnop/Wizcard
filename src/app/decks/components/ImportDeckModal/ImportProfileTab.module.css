@@ -145,6 +145,15 @@
 	cursor: pointer;
 }
 
+.optionRowDisabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.optionRowDisabled input[type='checkbox'] {
+	cursor: not-allowed;
+}
+
 .progress {
 	font-size: var(--text-sm);
 	color: var(--text-muted);

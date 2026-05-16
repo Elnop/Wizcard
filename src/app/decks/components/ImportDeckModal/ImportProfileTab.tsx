@@ -238,11 +238,14 @@ export function ImportProfileTab({ onClose }: Props) {
 					/>
 					Put imported decks in a folder &quot;Import From Moxfield&quot;
 				</label>
-				<label className={styles.optionRow}>
+				<label
+					className={`${styles.optionRow} ${!useImportFolder ? styles.optionRowDisabled : ''}`}
+				>
 					<input
 						type="checkbox"
 						checked={preserveFolders}
 						onChange={(e) => setPreserveFolders(e.target.checked)}
+						disabled={!useImportFolder}
 					/>
 					Preserve Moxfield folder structure as subfolders
 				</label>
