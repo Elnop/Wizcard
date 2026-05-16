@@ -31,7 +31,7 @@ const FORMATS: { value: DeckFormat | ''; label: string }[] = [
 	{ value: 'limited', label: 'Limited' },
 ];
 
-const FORMAT_LABELS: Record<string, string> = Object.fromEntries(
+export const FORMAT_LABELS: Record<string, string> = Object.fromEntries(
 	FORMATS.filter((f) => f.value).map((f) => [f.value, f.label])
 );
 

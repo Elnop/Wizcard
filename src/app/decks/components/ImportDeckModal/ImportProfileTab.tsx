@@ -8,29 +8,9 @@ import { fetchMoxfieldDeck } from '@/lib/moxfield/fetch-deck';
 import { convertMoxfieldDeck } from '@/lib/moxfield/convert-deck';
 import type { MoxfieldUserDeckEntry } from '@/lib/moxfield/fetch-user-decks';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import { ColorIdentityIcons } from '@/lib/scryfall/components/ColorIdentityIcons';
+import { FORMAT_LABELS } from './ImportDeckModal';
 import styles from './ImportProfileTab.module.css';
-
-const FORMAT_LABELS: Record<string, string> = {
-	standard: 'Standard',
-	modern: 'Modern',
-	pioneer: 'Pioneer',
-	legacy: 'Legacy',
-	vintage: 'Vintage',
-	commander: 'Commander',
-	pauper: 'Pauper',
-	brawl: 'Brawl',
-	oathbreaker: 'Oathbreaker',
-	draft: 'Draft',
-	limited: 'Limited',
-};
-
-const COLOR_SYMBOLS: Record<string, string> = {
-	W: '☀',
-	U: '💧',
-	B: '💀',
-	R: '🔥',
-	G: '🌲',
-};
 
 type Phase = 'input' | 'select' | 'importing';
 
@@ -233,9 +213,11 @@ export function ImportProfileTab({ onClose }: Props) {
 									{deck.format ? (FORMAT_LABELS[deck.format] ?? deck.format) : '—'}
 								</span>
 								<span className={styles.deckColors}>
-									{deck.colorIdentity.length > 0
-										? deck.colorIdentity.map((c) => COLOR_SYMBOLS[c] ?? c).join('')
-										: '—'}
+									{deck.colorIdentity.length > 0 ? (
+										<ColorIdentityIcons colors={deck.colorIdentity} size={14} />
+									) : (
+										'—'
+									)}
 								</span>
 								<span className={styles.deckMeta}>{deck.cardCount}c</span>
 								<span className={styles.deckMeta}>
