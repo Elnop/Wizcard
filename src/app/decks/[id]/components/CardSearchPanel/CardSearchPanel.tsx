@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
@@ -54,6 +54,9 @@ export function CardSearchPanel({
 	const [cmc, setCmc] = useState('');
 	const [order, setOrder] = useState<ScryfallSortOrder>('name');
 	const [dir, setDir] = useState<ScryfallSortDir>('auto');
+	const [inCollectionOnly, setInCollectionOnly] = useState(false);
+
+	const emptyEntries = useMemo(() => [], []);
 
 	const { sets, isLoading: setsLoading } = useScryfallSets();
 
@@ -89,33 +92,38 @@ export function CardSearchPanel({
 		},
 		[]
 	);
-	const [inCollectionOnly, setInCollectionOnly] = useState(false);
-
 	const { entries: collectionEntries } = useCollectionContext();
 
 	const { stacks: collectionStacks, isLoading: collectionLoading } = useCollectionCards(
-		inCollectionOnly ? collectionEntries : []
+		inCollectionOnly ? collectionEntries : emptyEntries
 	);
 
-	const collectionFilters: CollectionFilters = {
-		...defaultCollectionFilters,
-		name: searchName,
-		colors,
-		colorMatch,
-		type: filterType,
-		set: filterSet,
-		rarities,
-		oracleText,
-		cmc,
-		order,
-		dir,
-	};
+	const allCollectionCards = useMemo(
+		() => collectionStacks.flatMap((s) => s.cards),
+		[collectionStacks]
+	);
 
-	const allCollectionCards = collectionStacks.flatMap((s) => s.cards);
+	const collectionFilters = useMemo<CollectionFilters>(
+		() => ({
+			...defaultCollectionFilters,
+			name: searchName,
+			colors,
+			colorMatch,
+			type: filterType,
+			set: filterSet,
+			rarities,
+			oracleText,
+			cmc,
+			order,
+			dir,
+		}),
+		[searchName, colors, colorMatch, filterType, filterSet, rarities, oracleText, cmc, order, dir]
+	);
 
-	const filteredCollectionCards = inCollectionOnly
-		? filterCollectionCards(allCollectionCards, collectionFilters)
-		: [];
+	const filteredCollectionCards = useMemo(
+		() => (inCollectionOnly ? filterCollectionCards(allCollectionCards, collectionFilters) : []),
+		[inCollectionOnly, allCollectionCards, collectionFilters]
+	);
 
 	const {
 		menu: contextMenu,
@@ -263,9 +271,15 @@ export function CardSearchPanel({
 					fluidSections
 				/>
 
-				{!isLoading && cards.length === 0 && searchName.trim() && (
-					<p className={styles.noResults}>No cards found</p>
-				)}
+				{!isLoading &&
+					cards.length === 0 &&
+					(searchName.trim() || (inCollectionOnly && activeFilterCount > 0)) && (
+						<p className={styles.noResults}>
+							{inCollectionOnly
+								? 'No cards in your collection match these filters'
+								: 'No cards found'}
+						</p>
+					)}
 			</div>
 
 			{contextMenu && (
