@@ -11,6 +11,13 @@ import {
 	type SearchFilters,
 } from '@/lib/scryfall/hooks/useScryfallCardSearch';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
+import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { useCollectionCards } from '@/app/collection/useCollectionCards';
+import {
+	filterCollectionCards,
+	defaultCollectionFilters,
+} from '@/app/collection/utils/filterCollectionCards';
+import type { CollectionFilters } from '@/app/collection/utils/filterCollectionCards';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
@@ -82,6 +89,34 @@ export function CardSearchPanel({
 		},
 		[]
 	);
+	const [inCollectionOnly, setInCollectionOnly] = useState(false);
+
+	const { entries: collectionEntries } = useCollectionContext();
+
+	const { stacks: collectionStacks, isLoading: collectionLoading } = useCollectionCards(
+		inCollectionOnly ? collectionEntries : []
+	);
+
+	const collectionFilters: CollectionFilters = {
+		...defaultCollectionFilters,
+		name: searchName,
+		colors,
+		colorMatch,
+		type: filterType,
+		set: filterSet,
+		rarities,
+		oracleText,
+		cmc,
+		order,
+		dir,
+	};
+
+	const allCollectionCards = collectionStacks.flatMap((s) => s.cards);
+
+	const filteredCollectionCards = inCollectionOnly
+		? filterCollectionCards(allCollectionCards, collectionFilters)
+		: [];
+
 	const {
 		menu: contextMenu,
 		open: openContextMenu,
@@ -93,22 +128,31 @@ export function CardSearchPanel({
 	const isCommanderFormat = deckFormat != null && COMMANDER_FORMATS.includes(deckFormat);
 	const colorIdentityFilter = legalFilter && isCommanderFormat ? commanderColorIdentity : undefined;
 
-	const filters: SearchFilters = {
-		name: searchName,
-		colors,
-		colorMatch,
-		type: filterType,
-		set: filterSet,
-		rarities,
-		oracleText,
-		cmc,
-		legal: legalFilter,
-		colorIdentity: colorIdentityFilter,
-		order,
-		dir,
+	const scryfallFilters: SearchFilters = {
+		name: inCollectionOnly ? '' : searchName,
+		colors: inCollectionOnly ? [] : colors,
+		colorMatch: inCollectionOnly ? 'include' : colorMatch,
+		type: inCollectionOnly ? '' : filterType,
+		set: inCollectionOnly ? '' : filterSet,
+		rarities: inCollectionOnly ? [] : rarities,
+		oracleText: inCollectionOnly ? '' : oracleText,
+		cmc: inCollectionOnly ? '' : cmc,
+		legal: inCollectionOnly ? undefined : legalFilter,
+		colorIdentity: inCollectionOnly ? undefined : colorIdentityFilter,
+		order: inCollectionOnly ? 'name' : order,
+		dir: inCollectionOnly ? 'auto' : dir,
 	};
 
-	const { cards, isLoading, isLoadingMore, hasMore, loadMore } = useScryfallCardSearch(filters);
+	const {
+		cards: scryfallCards,
+		isLoading: scryfallLoading,
+		isLoadingMore,
+		hasMore,
+		loadMore,
+	} = useScryfallCardSearch(scryfallFilters);
+
+	const cards = inCollectionOnly ? filteredCollectionCards : scryfallCards;
+	const isLoading = inCollectionOnly ? collectionLoading : scryfallLoading;
 
 	const renderSearchOverlay = useCallback(
 		(card: AnyCard) => (
@@ -178,6 +222,15 @@ export function CardSearchPanel({
 						<span className={styles.toggleText}>Legal in {deckFormat} only</span>
 					</label>
 				)}
+				<label className={styles.toggleLabel}>
+					<input
+						type="checkbox"
+						checked={inCollectionOnly}
+						onChange={(e) => setInCollectionOnly(e.target.checked)}
+						className={styles.toggleInput}
+					/>
+					<span className={styles.toggleText}>In collection only</span>
+				</label>
 			</div>
 
 			<FilterModal
@@ -201,9 +254,9 @@ export function CardSearchPanel({
 				<CardList
 					cards={cards}
 					isLoading={isLoading}
-					isLoadingMore={isLoadingMore}
-					hasMore={hasMore}
-					onLoadMore={loadMore}
+					isLoadingMore={inCollectionOnly ? false : isLoadingMore}
+					hasMore={inCollectionOnly ? false : hasMore}
+					onLoadMore={inCollectionOnly ? undefined : loadMore}
 					onCardClick={(card: AnyCard) => onCardClick(card as ScryfallCard)}
 					renderOverlay={renderSearchOverlay}
 					pageSize={false}
