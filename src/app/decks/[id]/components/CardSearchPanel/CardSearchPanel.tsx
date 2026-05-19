@@ -288,7 +288,15 @@ export function CardSearchPanel({
 					isLoadingMore={inCollectionOnly ? false : isLoadingMore}
 					hasMore={inCollectionOnly ? false : hasMore}
 					onLoadMore={inCollectionOnly ? undefined : loadMore}
-					onCardClick={(card: AnyCard) => onCardClick(card as ScryfallCard)}
+					onCardClick={(card: AnyCard) => {
+						if ('entry' in card) {
+							// eslint-disable-next-line @typescript-eslint/no-unused-vars
+							const { entry: _, ...scryfallCard } = card as import('@/types/cards').Card;
+							onCardClick(scryfallCard as ScryfallCard);
+						} else {
+							onCardClick(card as ScryfallCard);
+						}
+					}}
 					renderOverlay={renderSearchOverlay}
 					pageSize={inCollectionOnly ? undefined : false}
 					fluidSections
