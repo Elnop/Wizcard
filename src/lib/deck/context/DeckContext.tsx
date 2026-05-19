@@ -48,6 +48,12 @@ type DeckContextValue = {
 	changeZone: (rowId: string, zone: DeckZone) => void;
 	updateDeckCard: (rowId: string, updates: Partial<CardEntry>) => void;
 	toggleOwned: (rowId: string) => void;
+	replaceDeckCardWithCollectionCopy: (
+		deckCardRowId: string,
+		collectionRowId: string,
+		deckId: string,
+		zone: string
+	) => void;
 };
 
 const DeckContext = createContext<DeckContextValue | null>(null);
@@ -197,6 +203,19 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 		[store, userId, triggerSync]
 	);
 
+	const replaceDeckCardWithCollectionCopy = useCallback(
+		(deckCardRowId: string, collectionRowId: string, deckId: string, zone: string) =>
+			store.replaceDeckCardWithCollectionCopy(
+				deckCardRowId,
+				collectionRowId,
+				deckId,
+				zone,
+				userId,
+				triggerSync
+			),
+		[store, userId, triggerSync]
+	);
+
 	const decks = useMemo(() => Object.values(store.decks), [store.decks]);
 	const folders = useMemo(() => Object.values(store.folders), [store.folders]);
 
@@ -221,6 +240,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 		changeZone,
 		updateDeckCard,
 		toggleOwned,
+		replaceDeckCardWithCollectionCopy,
 	};
 
 	return <DeckContext value={value}>{children}</DeckContext>;

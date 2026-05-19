@@ -84,6 +84,15 @@ type DeckActions = {
 	updateDeckCard: (rowId: string, updates: Partial<CardEntry>, triggerSync: () => void) => void;
 	toggleOwned: (rowId: string, userId: string, triggerSync: () => void) => void;
 
+	replaceDeckCardWithCollectionCopy: (
+		deckCardRowId: string,
+		collectionRowId: string,
+		deckId: string,
+		zone: string,
+		userId: string | null,
+		triggerSync: () => void
+	) => void;
+
 	getDeckCardCount: (deckId: string) => number;
 };
 
@@ -389,6 +398,45 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			},
 		});
 		enqueue({ type: 'deck-card-update', payload: { rowId, updates } });
+		triggerSync();
+	},
+
+	replaceDeckCardWithCollectionCopy: (
+		deckCardRowId,
+		collectionRowId,
+		deckId,
+		zone,
+		userId,
+		triggerSync
+	) => {
+		const current = get().activeDeckCards;
+		const collectionCopy = current[collectionRowId];
+		if (!collectionCopy) return;
+
+		// Remove the deck-only row and update the collection copy to occupy the slot
+		const newTags = setDeckZone(collectionCopy.entry.tags, zone as DeckZone);
+		const updatedEntry: CardEntry = {
+			...collectionCopy.entry,
+			deckId,
+			tags: newTags,
+		};
+
+		const next = { ...current };
+		delete next[deckCardRowId];
+		next[collectionRowId] = { ...collectionCopy, entry: updatedEntry };
+		set({ activeDeckCards: next });
+
+		// Delete the deck-only row from the DB
+		enqueue({ type: 'deck-card-delete', payload: { rowId: deckCardRowId } });
+
+		// Assign the collection copy to the deck slot in the DB
+		if (userId) {
+			enqueue({
+				type: 'update',
+				payload: { rowId: collectionRowId, userId, entry: updatedEntry },
+			});
+		}
+
 		triggerSync();
 	},
 
