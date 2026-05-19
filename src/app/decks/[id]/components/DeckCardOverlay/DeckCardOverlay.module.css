@@ -23,3 +23,66 @@
 	inset: 0;
 	cursor: context-menu;
 }
+
+.ownershipBadge {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	min-width: 28px;
+	height: 28px;
+	padding: 0 7px;
+	border-radius: 14px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--text-xs);
+	font-weight: 700;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+	pointer-events: auto;
+	z-index: 2;
+	white-space: nowrap;
+	cursor: default;
+}
+
+.ownershipBadgeGreen {
+	background: rgba(74, 140, 111, 0.92);
+	color: #fff;
+}
+
+.ownershipBadgeOrange {
+	background: rgba(201, 168, 76, 0.92);
+	color: #0b0c10;
+}
+
+.ownershipTooltip {
+	display: none;
+	position: absolute;
+	bottom: calc(100% + 8px);
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 10;
+	min-width: 140px;
+	max-width: 220px;
+	padding: 6px 8px;
+	background: var(--glass-bg);
+	backdrop-filter: blur(var(--glass-blur));
+	border: 1px solid var(--glass-border);
+	border-radius: 4px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+	flex-direction: column;
+	gap: 3px;
+	pointer-events: none;
+	white-space: nowrap;
+}
+
+.ownershipBadge:hover .ownershipTooltip {
+	display: flex;
+}
+
+.ownershipTooltipItem {
+	font-size: var(--text-xs);
+	font-weight: 400;
+	color: var(--foreground);
+	line-height: 1.4;
+}
