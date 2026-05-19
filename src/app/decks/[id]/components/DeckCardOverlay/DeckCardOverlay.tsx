@@ -1,11 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import type { DeckCardGroup } from '../../useDeckCardSections';
 import type { DeckZone } from '@/types/decks';
 import type { Card } from '@/types/cards';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
-import { getCardsFromCache } from '@/lib/scryfall/utils/card-cache';
 import styles from './DeckCardOverlay.module.css';
 
 const ZONE_LABELS: Record<DeckZone, string> = {
@@ -43,30 +42,11 @@ export function DeckCardOverlay({
 	const K = zoneCopies.filter((c) => !!c.entry.ownerId).length;
 
 	const repScryfallId = group.representative.id;
-	const repOracleId = (group.representative as { oracle_id?: string }).oracle_id;
 
-	// Synchronous count of free copies with the exact same print
+	// Exact-print count of free (unassigned) copies matching this specific print
 	const freeExact = collectionEntries.filter(
 		(e) => e.scryfallId === repScryfallId && !e.entry.deckId
 	).length;
-
-	// Oracle-level count enriched via Scryfall cache (async, best-effort)
-	const [freeOracle, setFreeOracle] = useState<number | null>(null);
-
-	useEffect(() => {
-		if (K > 0 || !repOracleId) return;
-		const freeEntries = collectionEntries.filter((e) => !e.entry.deckId);
-		const freeIds = [...new Set(freeEntries.map((e) => e.scryfallId))];
-		if (freeIds.length === 0) return;
-		void getCardsFromCache(freeIds).then((cached) => {
-			const total = freeEntries.filter(
-				(e) => cached.get(e.scryfallId)?.oracle_id === repOracleId
-			).length;
-			setFreeOracle(total);
-		});
-	}, [collectionEntries, repOracleId, K]);
-
-	const freeCount = freeOracle ?? freeExact;
 
 	const freeCopiesForTooltip = collectionEntries.filter(
 		(e) => !e.entry.deckId && e.scryfallId === repScryfallId
@@ -125,9 +105,9 @@ export function DeckCardOverlay({
 				>
 					{K}/{N}
 				</span>
-			) : freeCount > 0 ? (
+			) : freeExact > 0 ? (
 				<span className={`${styles.ownershipBadge} ${styles.ownershipBadgeOrange}`}>
-					{freeCount}
+					{freeExact}
 					{freeCopiesForTooltip.length > 0 && (
 						<span className={styles.ownershipTooltip}>
 							{freeCopiesForTooltip.map((e) => (
