@@ -120,10 +120,24 @@ export function CardSearchPanel({
 		[searchName, colors, colorMatch, filterType, filterSet, rarities, oracleText, cmc, order, dir]
 	);
 
-	const filteredCollectionCards = useMemo(
-		() => (inCollectionOnly ? filterCollectionCards(allCollectionCards, collectionFilters) : []),
-		[inCollectionOnly, allCollectionCards, collectionFilters]
-	);
+	const showLegalToggle = deckFormat != null && !FORMATS_WITHOUT_LEGALITY.includes(deckFormat);
+
+	const filteredCollectionCards = useMemo(() => {
+		if (!inCollectionOnly) return [];
+		const filtered = filterCollectionCards(allCollectionCards, collectionFilters);
+		if (showLegalToggle && legalOnly && deckFormat) {
+			const fmt = deckFormat as import('@/lib/scryfall/types/scryfall').ScryfallFormat;
+			return filtered.filter((c) => c.legalities[fmt] === 'legal');
+		}
+		return filtered;
+	}, [
+		inCollectionOnly,
+		allCollectionCards,
+		collectionFilters,
+		showLegalToggle,
+		legalOnly,
+		deckFormat,
+	]);
 
 	const {
 		menu: contextMenu,
@@ -131,7 +145,6 @@ export function CardSearchPanel({
 		close: closeContextMenu,
 	} = useContextMenu<ScryfallCard>();
 
-	const showLegalToggle = deckFormat != null && !FORMATS_WITHOUT_LEGALITY.includes(deckFormat);
 	const legalFilter = showLegalToggle && legalOnly ? deckFormat : undefined;
 	const isCommanderFormat = deckFormat != null && COMMANDER_FORMATS.includes(deckFormat);
 	const colorIdentityFilter = legalFilter && isCommanderFormat ? commanderColorIdentity : undefined;
