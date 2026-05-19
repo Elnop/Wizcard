@@ -98,8 +98,9 @@ export function CardSearchPanel({
 		inCollectionOnly ? collectionEntries : emptyEntries
 	);
 
-	const allCollectionCards = useMemo(
-		() => collectionStacks.flatMap((s) => s.cards),
+	const collectionRepresentatives = useMemo(
+		() =>
+			collectionStacks.map((s) => s.cards[0]).filter((c): c is NonNullable<typeof c> => c != null),
 		[collectionStacks]
 	);
 
@@ -126,7 +127,7 @@ export function CardSearchPanel({
 
 	const filteredCollectionCards = useMemo(() => {
 		if (!inCollectionOnly) return [];
-		const filtered = filterCollectionCards(allCollectionCards, collectionFilters);
+		const filtered = filterCollectionCards(collectionRepresentatives, collectionFilters);
 		if (showLegalToggle && legalOnly && deckFormat) {
 			const fmt = deckFormat as import('@/lib/scryfall/types/scryfall').ScryfallFormat;
 			const legalFiltered = filtered.filter((c) => c.legalities[fmt] === 'legal');
@@ -140,7 +141,7 @@ export function CardSearchPanel({
 		return filtered;
 	}, [
 		inCollectionOnly,
-		allCollectionCards,
+		collectionRepresentatives,
 		collectionFilters,
 		showLegalToggle,
 		legalOnly,
