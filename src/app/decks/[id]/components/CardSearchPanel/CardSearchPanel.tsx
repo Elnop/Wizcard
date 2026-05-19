@@ -289,7 +289,7 @@ export function CardSearchPanel({
 					onLoadMore={inCollectionOnly ? undefined : loadMore}
 					onCardClick={(card: AnyCard) => onCardClick(card as ScryfallCard)}
 					renderOverlay={renderSearchOverlay}
-					pageSize={false}
+					pageSize={inCollectionOnly ? undefined : false}
 					fluidSections
 				/>
 
