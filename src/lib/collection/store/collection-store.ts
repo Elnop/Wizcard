@@ -64,6 +64,15 @@ type CollectionActions = {
 		triggerSync: () => void
 	) => void;
 
+	// Deck assignment
+	assignToDeck: (
+		rowId: string,
+		deckId: string,
+		userId: string | null,
+		triggerSync: () => void
+	) => void;
+	unassignFromDeck: (rowId: string, userId: string | null, triggerSync: () => void) => void;
+
 	// Computed helpers
 	getQuantity: (scryfallId: string) => number;
 };
@@ -261,6 +270,32 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 		set({ entries: next });
 		if (userId && toInsert.length > 0) {
 			enqueue({ type: 'bulk-insert', payload: { userId, rows: toInsert } });
+			triggerSync();
+		}
+	},
+
+	assignToDeck: (rowId, deckId, userId, triggerSync) => {
+		const current = get().entries;
+		const copy = current[rowId];
+		if (!copy) return;
+		const updatedEntry: CardEntry = { ...copy.entry, deckId };
+		set({ entries: { ...current, [rowId]: { ...copy, entry: updatedEntry } } });
+		if (userId) {
+			enqueue({ type: 'update', payload: { userId, rowId, entry: updatedEntry } });
+			triggerSync();
+		}
+	},
+
+	unassignFromDeck: (rowId, userId, triggerSync) => {
+		const current = get().entries;
+		const copy = current[rowId];
+		if (!copy) return;
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const { deckId: _deckId, ...rest } = copy.entry;
+		const updatedEntry: CardEntry = rest;
+		set({ entries: { ...current, [rowId]: { ...copy, entry: updatedEntry } } });
+		if (userId) {
+			enqueue({ type: 'update', payload: { userId, rowId, entry: updatedEntry } });
 			triggerSync();
 		}
 	},

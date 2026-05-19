@@ -22,6 +22,8 @@ type CollectionContextValue = {
 	changePrint: (rowId: string, newScryfallId: string, entryPatch?: Partial<CardEntry>) => void;
 	clearCollection: () => void;
 	importCards: (cards: Array<{ scryfallId: string; entry: CardEntry }>) => void;
+	assignToDeck: (rowId: string, deckId: string) => void;
+	unassignFromDeck: (rowId: string) => void;
 	getQuantity: (scryfallId: string) => number;
 };
 
@@ -102,6 +104,14 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 			store.importCards(cards, userId, triggerSync),
 		[store, userId, triggerSync]
 	);
+	const assignToDeck = useCallback(
+		(rowId: string, deckId: string) => store.assignToDeck(rowId, deckId, userId, triggerSync),
+		[store, userId, triggerSync]
+	);
+	const unassignFromDeck = useCallback(
+		(rowId: string) => store.unassignFromDeck(rowId, userId, triggerSync),
+		[store, userId, triggerSync]
+	);
 	const getQuantity = useCallback((scryfallId: string) => store.getQuantity(scryfallId), [store]);
 
 	const entries = useMemo(() => Object.values(store.entries), [store.entries]);
@@ -119,6 +129,8 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 		changePrint,
 		clearCollection,
 		importCards,
+		assignToDeck,
+		unassignFromDeck,
 		getQuantity,
 	};
 

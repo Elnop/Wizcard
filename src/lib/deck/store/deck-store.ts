@@ -379,7 +379,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		const current = get().activeDeckCards;
 		const copy = current[rowId];
 		if (!copy) return;
-		const isCurrentlyOwned = !!copy.entry.deckId && copy.entry.forTrade !== undefined;
+		const isCurrentlyOwned = !!copy.entry.ownerId;
 		const newOwnerId = isCurrentlyOwned ? null : userId;
 		const updates = { owner_id: newOwnerId };
 		set({

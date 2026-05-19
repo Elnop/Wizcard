@@ -56,6 +56,7 @@ function rowToEntry(row: CardDbRow): CardEntry {
 		proxy: row.proxy ?? undefined,
 		tags: row.tags ?? undefined,
 		deckId: row.deck_id ?? undefined,
+		ownerId: row.owner_id ?? undefined,
 	};
 }
 
@@ -241,7 +242,6 @@ export async function insertDeckCard(
 	const supabase = createClient();
 	const { error } = await supabase.from('cards').insert({
 		id: entry.rowId,
-		owner_id: entry.deckId && !entry.forTrade ? null : undefined,
 		scryfall_id: scryfallId,
 		date_added: entry.dateAdded,
 		deck_id: deckId,
@@ -269,7 +269,6 @@ export async function insertDeckCards(
 	const supabase = createClient();
 	const rows = cards.map(({ scryfallId, entry }) => ({
 		id: entry.rowId,
-		owner_id: entry.deckId && !entry.forTrade ? null : undefined,
 		scryfall_id: scryfallId,
 		date_added: entry.dateAdded,
 		deck_id: deckId,
