@@ -46,7 +46,7 @@ export function CardSearchPanel({
 	const [oracleText, setOracleText] = useState('');
 	const [cmc, setCmc] = useState('');
 	const [order, setOrder] = useState<ScryfallSortOrder>('name');
-	const [dir, setDir] = useState<ScryfallSortDir>('asc');
+	const [dir, setDir] = useState<ScryfallSortDir>('auto');
 
 	const { sets, isLoading: setsLoading } = useScryfallSets();
 
@@ -58,27 +58,30 @@ export function CardSearchPanel({
 		(oracleText ? 1 : 0) +
 		(cmc ? 1 : 0);
 
-	function handleApplyFilters(f: {
-		colors: ScryfallColor[];
-		colorMatch: 'exact' | 'include' | 'atMost';
-		type: string;
-		set: string;
-		rarities: string[];
-		oracleText: string;
-		cmc: string;
-		order: ScryfallSortOrder;
-		dir: ScryfallSortDir;
-	}) {
-		setColors(f.colors);
-		setColorMatch(f.colorMatch);
-		setFilterType(f.type);
-		setFilterSet(f.set);
-		setRarities(f.rarities);
-		setOracleText(f.oracleText);
-		setCmc(f.cmc);
-		setOrder(f.order);
-		setDir(f.dir);
-	}
+	const handleApplyFilters = useCallback(
+		(f: {
+			colors: ScryfallColor[];
+			colorMatch: 'exact' | 'include' | 'atMost';
+			type: string;
+			set: string;
+			rarities: string[];
+			oracleText: string;
+			cmc: string;
+			order: ScryfallSortOrder;
+			dir: ScryfallSortDir;
+		}) => {
+			setColors(f.colors);
+			setColorMatch(f.colorMatch);
+			setFilterType(f.type);
+			setFilterSet(f.set);
+			setRarities(f.rarities);
+			setOracleText(f.oracleText);
+			setCmc(f.cmc);
+			setOrder(f.order);
+			setDir(f.dir);
+		},
+		[]
+	);
 	const {
 		menu: contextMenu,
 		open: openContextMenu,
@@ -147,6 +150,7 @@ export function CardSearchPanel({
 					/>
 					<button
 						type="button"
+						aria-label="More filters"
 						className={styles.filtersButton}
 						onClick={() => setFilterModalOpen(true)}
 					>
