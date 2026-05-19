@@ -3,14 +3,17 @@
 import { useState, useCallback } from 'react';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
 import { CardList } from '@/lib/card/components/CardList/CardList';
+import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
 import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
 import { SearchCardContextMenu } from './SearchCardContextMenu';
 import {
 	useScryfallCardSearch,
 	type SearchFilters,
 } from '@/lib/scryfall/hooks/useScryfallCardSearch';
+import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import type { DeckFormat } from '@/types/decks';
 import styles from './CardSearchPanel.module.css';
 
@@ -34,6 +37,48 @@ export function CardSearchPanel({
 }: Props) {
 	const [searchName, setSearchName] = useState('');
 	const [legalOnly, setLegalOnly] = useState(true);
+	const [filterModalOpen, setFilterModalOpen] = useState(false);
+	const [colors, setColors] = useState<ScryfallColor[]>([]);
+	const [colorMatch, setColorMatch] = useState<'exact' | 'include' | 'atMost'>('include');
+	const [filterType, setFilterType] = useState('');
+	const [filterSet, setFilterSet] = useState('');
+	const [rarities, setRarities] = useState<string[]>([]);
+	const [oracleText, setOracleText] = useState('');
+	const [cmc, setCmc] = useState('');
+	const [order, setOrder] = useState<ScryfallSortOrder>('name');
+	const [dir, setDir] = useState<ScryfallSortDir>('asc');
+
+	const { sets, isLoading: setsLoading } = useScryfallSets();
+
+	const activeFilterCount =
+		colors.length +
+		(filterType ? 1 : 0) +
+		(filterSet ? 1 : 0) +
+		rarities.length +
+		(oracleText ? 1 : 0) +
+		(cmc ? 1 : 0);
+
+	function handleApplyFilters(f: {
+		colors: ScryfallColor[];
+		colorMatch: 'exact' | 'include' | 'atMost';
+		type: string;
+		set: string;
+		rarities: string[];
+		oracleText: string;
+		cmc: string;
+		order: ScryfallSortOrder;
+		dir: ScryfallSortDir;
+	}) {
+		setColors(f.colors);
+		setColorMatch(f.colorMatch);
+		setFilterType(f.type);
+		setFilterSet(f.set);
+		setRarities(f.rarities);
+		setOracleText(f.oracleText);
+		setCmc(f.cmc);
+		setOrder(f.order);
+		setDir(f.dir);
+	}
 	const {
 		menu: contextMenu,
 		open: openContextMenu,
@@ -47,14 +92,17 @@ export function CardSearchPanel({
 
 	const filters: SearchFilters = {
 		name: searchName,
-		colors: [],
-		type: '',
-		set: '',
-		rarities: [],
-		oracleText: '',
-		cmc: '',
+		colors,
+		colorMatch,
+		type: filterType,
+		set: filterSet,
+		rarities,
+		oracleText,
+		cmc,
 		legal: legalFilter,
 		colorIdentity: colorIdentityFilter,
+		order,
+		dir,
 	};
 
 	const { cards, isLoading, isLoadingMore, hasMore, loadMore } = useScryfallCardSearch(filters);
@@ -91,7 +139,30 @@ export function CardSearchPanel({
 			</div>
 
 			<div className={styles.search}>
-				<SearchBar value={searchName} onChange={setSearchName} placeholder="Search for a card..." />
+				<div className={styles.searchRow}>
+					<SearchBar
+						value={searchName}
+						onChange={setSearchName}
+						placeholder="Search for a card..."
+					/>
+					<button
+						type="button"
+						className={styles.filtersButton}
+						onClick={() => setFilterModalOpen(true)}
+					>
+						<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+							<path
+								d="M2 4h12M4 8h8M6 12h4"
+								stroke="currentColor"
+								strokeWidth="1.5"
+								strokeLinecap="round"
+							/>
+						</svg>
+						{activeFilterCount > 0 && (
+							<span className={styles.filterBadge}>{activeFilterCount}</span>
+						)}
+					</button>
+				</div>
 				{showLegalToggle && (
 					<label className={styles.toggleLabel}>
 						<input
@@ -104,6 +175,23 @@ export function CardSearchPanel({
 					</label>
 				)}
 			</div>
+
+			<FilterModal
+				isOpen={filterModalOpen}
+				colors={colors}
+				colorMatch={colorMatch}
+				type={filterType}
+				set={filterSet}
+				rarities={rarities}
+				oracleText={oracleText}
+				cmc={cmc}
+				sets={sets}
+				setsLoading={setsLoading}
+				order={order}
+				dir={dir}
+				onApply={handleApplyFilters}
+				onClose={() => setFilterModalOpen(false)}
+			/>
 
 			<div className={styles.results}>
 				<CardList
