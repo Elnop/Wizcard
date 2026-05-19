@@ -15,7 +15,6 @@ import { extractMoxfieldId, fetchMoxfieldDeck } from '@/lib/moxfield/fetch-deck'
 import { convertMoxfieldDeck, type MoxfieldImportData } from '@/lib/moxfield/convert-deck';
 import type { ScryfallCard, ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
 import styles from './ImportDeckModal.module.css';
-import { ImportProfileTab } from './ImportProfileTab';
 
 const FORMATS: { value: DeckFormat | ''; label: string }[] = [
 	{ value: '', label: 'No format' },
@@ -46,7 +45,7 @@ Sideboard
 2 Rest in Peace
 1 Flusterstorm`;
 
-type ImportMode = 'paste' | 'url' | 'profile';
+type ImportMode = 'paste' | 'url';
 
 type Props = {
 	onClose: () => void;
@@ -345,13 +344,6 @@ export function ImportDeckModal({ onClose }: Props) {
 					>
 						Moxfield URL
 					</button>
-					<button
-						type="button"
-						className={`${styles.tab} ${mode === 'profile' ? styles.tabActive : ''}`}
-						onClick={() => handleModeChange('profile')}
-					>
-						Moxfield Profile
-					</button>
 				</div>
 
 				{mode === 'paste' && (
@@ -400,52 +392,46 @@ export function ImportDeckModal({ onClose }: Props) {
 					</>
 				)}
 
-				{mode === 'profile' && <ImportProfileTab onClose={onClose} />}
+				<label className={styles.label}>
+					Name
+					<input
+						type="text"
+						className={styles.input}
+						value={name}
+						onChange={handleNameChange}
+						placeholder="My Imported Deck"
+					/>
+				</label>
 
-				{mode !== 'profile' && (
-					<>
-						<label className={styles.label}>
-							Name
-							<input
-								type="text"
-								className={styles.input}
-								value={name}
-								onChange={handleNameChange}
-								placeholder="My Imported Deck"
-							/>
-						</label>
+				<label className={styles.label}>
+					Format
+					<select className={styles.input} value={format} onChange={handleFormatChange}>
+						{FORMATS.map((f) => (
+							<option key={f.value} value={f.value} className={styles.option}>
+								{f.label}
+							</option>
+						))}
+					</select>
+				</label>
 
-						<label className={styles.label}>
-							Format
-							<select className={styles.input} value={format} onChange={handleFormatChange}>
-								{FORMATS.map((f) => (
-									<option key={f.value} value={f.value} className={styles.option}>
-										{f.label}
-									</option>
-								))}
-							</select>
-						</label>
-
-						{errors.length > 0 && (
-							<div className={styles.errors}>
-								{errors.map((err, i) => (
-									<p key={i} className={styles.errorLine}>
-										{err}
-									</p>
-								))}
-							</div>
-						)}
-
-						<div className={styles.actions}>
-							<Button variant="ghost" type="button" onClick={onClose} disabled={isImporting}>
-								Cancel
-							</Button>
-							<Button onClick={handleImport} disabled={!canImport} isLoading={isImporting}>
-								Import
-							</Button>
-						</div>
-					</>
+				{errors.length > 0 && (
+					<div className={styles.errors}>
+						{errors.map((err, i) => (
+							<p key={i} className={styles.errorLine}>
+								{err}
+							</p>
+						))}
+					</div>
 				)}
+
+				<div className={styles.actions}>
+					<Button variant="ghost" type="button" onClick={onClose} disabled={isImporting}>
+						Cancel
+					</Button>
+					<Button onClick={handleImport} disabled={!canImport} isLoading={isImporting}>
+						Import
+					</Button>
+				</div>
 			</div>
 		</Modal>
 	);
