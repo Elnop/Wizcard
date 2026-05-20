@@ -59,6 +59,7 @@ export default function DeckDetailPage() {
 		handleRemoveEntry,
 		handleAddCopy,
 		handleChangeZone,
+		handleChangePrint,
 		handleAssignCollectionCopy,
 	} = useDeckCardModal(deckId, groupByCardId);
 
@@ -242,6 +243,7 @@ export default function DeckDetailPage() {
 				onRemoveEntry={handleRemoveEntry}
 				onIncrement={handleAddCopy}
 				onChangeZone={handleChangeZone}
+				onChangePrint={handleChangePrint}
 				collectionCopies={freeCollectionCopies}
 				onAssignCollectionCopy={handleAssignCollectionCopy}
 			/>

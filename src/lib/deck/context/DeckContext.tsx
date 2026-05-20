@@ -48,6 +48,7 @@ type DeckContextValue = {
 	changeZone: (rowId: string, zone: DeckZone) => void;
 	updateDeckCard: (rowId: string, updates: Partial<CardEntry>) => void;
 	toggleOwned: (rowId: string) => void;
+	changeDeckCardPrint: (rowId: string, newCard: ScryfallCard, deckId: string) => void;
 	replaceDeckCardWithCollectionCopy: (
 		deckCardRowId: string,
 		collectionRowId: string,
@@ -203,6 +204,12 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 		[store, userId, triggerSync]
 	);
 
+	const changeDeckCardPrint = useCallback(
+		(rowId: string, newCard: ScryfallCard, deckId: string) =>
+			store.changeDeckCardPrint(rowId, newCard, deckId, triggerSync),
+		[store, triggerSync]
+	);
+
 	const replaceDeckCardWithCollectionCopy = useCallback(
 		(deckCardRowId: string, collectionRowId: string, deckId: string, zone: DeckZone) =>
 			store.replaceDeckCardWithCollectionCopy(
@@ -240,6 +247,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 		changeZone,
 		updateDeckCard,
 		toggleOwned,
+		changeDeckCardPrint,
 		replaceDeckCardWithCollectionCopy,
 	};
 

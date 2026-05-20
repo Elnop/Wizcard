@@ -84,6 +84,12 @@ type DeckActions = {
 	changeZone: (rowId: string, zone: DeckZone, triggerSync: () => void) => void;
 	updateDeckCard: (rowId: string, updates: Partial<CardEntry>, triggerSync: () => void) => void;
 	toggleOwned: (rowId: string, userId: string, triggerSync: () => void) => void;
+	changeDeckCardPrint: (
+		rowId: string,
+		newCard: ScryfallCard,
+		deckId: string,
+		triggerSync: () => void
+	) => void;
 
 	replaceDeckCardWithCollectionCopy: (
 		deckCardRowId: string,
@@ -399,6 +405,24 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			},
 		});
 		enqueue({ type: 'deck-card-update', payload: { rowId, updates } });
+		triggerSync();
+	},
+
+	changeDeckCardPrint: (rowId, newCard, deckId, triggerSync) => {
+		const current = get().activeDeckCards;
+		const copy = current[rowId];
+		if (!copy) return;
+		const newRowId = crypto.randomUUID();
+		const newEntry: CardEntry = { ...copy.entry, rowId: newRowId };
+		const next = { ...current };
+		delete next[rowId];
+		next[newRowId] = { scryfallId: newCard.id, entry: newEntry };
+		set({ activeDeckCards: next });
+		enqueue({ type: 'deck-card-delete', payload: { rowId } });
+		enqueue({
+			type: 'deck-card-insert',
+			payload: { deckId, scryfallId: newCard.id, entry: newEntry },
+		});
 		triggerSync();
 	},
 

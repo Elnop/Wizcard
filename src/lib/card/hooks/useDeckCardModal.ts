@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import type { Card, CardEntry } from '@/types/cards';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckZone } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
@@ -10,7 +11,14 @@ import type { DeckCardGroup } from '@/app/decks/[id]/useDeckCardSections';
 type Selection = { oracleId: string; clickedRowId: string };
 
 export function useDeckCardModal(deckId: string, groupByCardId: Map<string, DeckCardGroup>) {
-	const { addCardToDeck, removeCardFromDeck, changeZone, updateDeckCard, replaceDeckCardWithCollectionCopy } = useDeckContext();
+	const {
+		addCardToDeck,
+		removeCardFromDeck,
+		changeZone,
+		updateDeckCard,
+		changeDeckCardPrint,
+		replaceDeckCardWithCollectionCopy,
+	} = useDeckContext();
 	const [selection, setSelection] = useState<Selection | null>(null);
 
 	// Derived reactively — auto-updates when the store changes
@@ -71,6 +79,13 @@ export function useDeckCardModal(deckId: string, groupByCardId: Map<string, Deck
 		[changeZone]
 	);
 
+	const handleChangePrint = useCallback(
+		(rowId: string, newCard: ScryfallCard) => {
+			changeDeckCardPrint(rowId, newCard, deckId);
+		},
+		[changeDeckCardPrint, deckId]
+	);
+
 	// Called when the user selects a collection copy in the print picker
 	const handleAssignCollectionCopy = useCallback(
 		(collectionRowId: string) => {
@@ -93,6 +108,7 @@ export function useDeckCardModal(deckId: string, groupByCardId: Map<string, Deck
 		handleRemoveEntry,
 		handleAddCopy,
 		handleChangeZone,
+		handleChangePrint,
 		handleAssignCollectionCopy,
 	};
 }
