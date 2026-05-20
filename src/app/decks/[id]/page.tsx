@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
+import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { validateDeck } from '@/lib/deck/utils/format-rules';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { CardList } from '@/lib/card/components/CardList/CardList';
@@ -59,6 +60,29 @@ export default function DeckDetailPage() {
 		handleAddCopy,
 		handleChangeZone,
 	} = useDeckCardModal(deckId, groupByCardId);
+
+	const { entries, updateEntry } = useCollectionContext();
+
+	const freeCollectionCopies = useMemo(
+		() =>
+			entries
+				.filter((e) => !e.entry.deckId)
+				.map((e) => ({
+					rowId: e.entry.rowId,
+					scryfallId: e.scryfallId,
+					condition: e.entry.condition,
+					isFoil: e.entry.isFoil,
+					language: e.entry.language,
+				})),
+		[entries]
+	);
+
+	const handleAssignCollectionCopy = useCallback(
+		(rowId: string) => {
+			updateEntry(rowId, { deckId });
+		},
+		[updateEntry, deckId]
+	);
 
 	const handleCardClick = useCallback(
 		(card: AnyCard) => {
@@ -224,6 +248,8 @@ export default function DeckDetailPage() {
 				onRemoveEntry={handleRemoveEntry}
 				onIncrement={handleAddCopy}
 				onChangeZone={handleChangeZone}
+				collectionCopies={freeCollectionCopies}
+				onAssignCollectionCopy={handleAssignCollectionCopy}
 			/>
 
 			<CardModal

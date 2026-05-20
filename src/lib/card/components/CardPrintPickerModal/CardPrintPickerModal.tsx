@@ -32,6 +32,14 @@ function langName(code: string): string {
 	return LANG_NAMES[code] ?? code.toUpperCase();
 }
 
+export interface CollectionCopyEntry {
+	rowId: string;
+	scryfallId: string;
+	condition?: string;
+	isFoil?: boolean;
+	language?: string;
+}
+
 interface Props {
 	prints_search_uri: string;
 	currentCardId: string;
@@ -40,6 +48,8 @@ interface Props {
 	currentLang?: string;
 	onSelect: (print: ScryfallCard) => void;
 	onClose: () => void;
+	collectionCopies?: CollectionCopyEntry[];
+	onSelectCollectionCopy?: (rowId: string) => void;
 }
 
 export function CardPrintPickerModal({
@@ -50,6 +60,8 @@ export function CardPrintPickerModal({
 	currentLang,
 	onSelect,
 	onClose,
+	collectionCopies,
+	onSelectCollectionCopy,
 }: Props) {
 	const { prints, loading, error } = useCardPrints(prints_search_uri);
 	const [lightboxCard, setLightboxCard] = useState<ScryfallCard | null>(null);
@@ -97,6 +109,26 @@ export function CardPrintPickerModal({
 				</div>
 
 				<div className={styles.body}>
+					{collectionCopies && collectionCopies.length > 0 && (
+						<div className={styles.collectionSection}>
+							<p className={styles.collectionSectionTitle}>Copies de ma collection</p>
+							{collectionCopies.map((copy) => (
+								<button
+									key={copy.rowId}
+									className={styles.collectionCopyRow}
+									onClick={() => onSelectCollectionCopy?.(copy.rowId)}
+									type="button"
+								>
+									<span className={styles.collectionCopyCondition}>{copy.condition ?? 'NM'}</span>
+									{copy.isFoil && <span className={styles.collectionCopyFoil}>✦</span>}
+									{copy.language && copy.language !== 'English' && (
+										<span className={styles.collectionCopyLang}>{copy.language}</span>
+									)}
+								</button>
+							))}
+						</div>
+					)}
+
 					{loading && <p className={styles.status}>Loading prints…</p>}
 					{error && <p className={styles.statusError}>{error}</p>}
 					{!loading && !error && prints.length === 0 && (

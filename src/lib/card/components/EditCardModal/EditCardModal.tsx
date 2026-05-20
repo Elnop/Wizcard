@@ -11,6 +11,7 @@ import {
 } from '@/lib/mtg/languages';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import { CardPrintPickerModal } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
+import type { CollectionCopyEntry } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
 import { Modal } from '@/components/Modal/Modal';
 import styles from './EditCardModal.module.css';
 
@@ -22,6 +23,8 @@ interface EditProps {
 	onSave: (patch: Partial<CardEntry>) => void;
 	onChangePrint: (newCard: ScryfallCard) => void;
 	onClose: () => void;
+	collectionCopies?: CollectionCopyEntry[];
+	onSelectCollectionCopy?: (rowId: string) => void;
 }
 
 interface AddProps {
@@ -48,6 +51,8 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 
 export function EditCardModal(props: Props) {
 	const addMode = isAddMode(props);
+	const collectionCopies = !addMode ? props.collectionCopies : undefined;
+	const onSelectCollectionCopy = !addMode ? props.onSelectCollectionCopy : undefined;
 	const initialZone: DeckZone = addMode ? (props.defaultZone ?? 'mainboard') : 'mainboard';
 
 	const [draftEntry, setDraftEntry] = useState<Partial<CardEntry>>(
@@ -317,6 +322,8 @@ export function EditCardModal(props: Props) {
 						setShowPrintPicker(false);
 					}}
 					onClose={() => setShowPrintPicker(false)}
+					collectionCopies={collectionCopies}
+					onSelectCollectionCopy={onSelectCollectionCopy}
 				/>
 			)}
 		</>

@@ -12,6 +12,7 @@ import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { ColorIdentityIcons } from '@/lib/scryfall/components/ColorIdentityIcons';
 import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
+import type { CollectionCopyEntry } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
@@ -55,6 +56,8 @@ interface Props {
 	zone?: DeckZone;
 	availableZones?: DeckZone[];
 	onChangeZone?: (rowId: string, zone: DeckZone) => void;
+	collectionCopies?: CollectionCopyEntry[];
+	onAssignCollectionCopy?: (rowId: string) => void;
 }
 
 interface InnerProps {
@@ -71,6 +74,8 @@ interface InnerProps {
 	zone?: DeckZone;
 	availableZones?: DeckZone[];
 	onChangeZone?: (rowId: string, zone: DeckZone) => void;
+	collectionCopies?: CollectionCopyEntry[];
+	onAssignCollectionCopy?: (rowId: string) => void;
 }
 
 function CardDetailSection({
@@ -176,6 +181,8 @@ function CardModalInner({
 	zone,
 	availableZones,
 	onChangeZone,
+	collectionCopies,
+	onAssignCollectionCopy,
 }: InnerProps) {
 	const [lightbox, setLightbox] = useState(false);
 	const [selectedRowId, setSelectedRowId] = useState<string>(initialRowId ?? cards[0].entry.rowId);
@@ -427,6 +434,8 @@ function CardModalInner({
 						onChangePrint?.(editingCard.entry.rowId, newCard);
 					}}
 					onClose={() => setEditingRowId(null)}
+					collectionCopies={collectionCopies}
+					onSelectCollectionCopy={onAssignCollectionCopy}
 				/>
 			)}
 
@@ -529,6 +538,8 @@ export function CardModal({
 	zone,
 	availableZones,
 	onChangeZone,
+	collectionCopies,
+	onAssignCollectionCopy,
 }: Props) {
 	if (cards === null) return null;
 
@@ -566,6 +577,8 @@ export function CardModal({
 			zone={zone}
 			availableZones={availableZones}
 			onChangeZone={onChangeZone}
+			collectionCopies={collectionCopies}
+			onAssignCollectionCopy={onAssignCollectionCopy}
 		/>
 	);
 }
