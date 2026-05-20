@@ -25,6 +25,7 @@ interface EditProps {
 	onClose: () => void;
 	collectionCopies?: CollectionCopyEntry[];
 	onSelectCollectionCopy?: (rowId: string) => void;
+	autoOpenPrintPicker?: boolean;
 }
 
 interface AddProps {
@@ -63,7 +64,7 @@ export function EditCardModal(props: Props) {
 	);
 
 	const entry: Partial<CardEntry> = draftEntry;
-	const [showPrintPicker, setShowPrintPicker] = useState(false);
+	const [showPrintPicker, setShowPrintPicker] = useState(!addMode && !!props.autoOpenPrintPicker);
 	const [tagInput, setTagInput] = useState('');
 	const isFoil = entry.isFoil ?? false;
 

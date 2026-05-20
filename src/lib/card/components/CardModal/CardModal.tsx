@@ -187,6 +187,7 @@ function CardModalInner({
 	const [lightbox, setLightbox] = useState(false);
 	const [selectedRowId, setSelectedRowId] = useState<string>(initialRowId ?? cards[0].entry.rowId);
 	const [editingRowId, setEditingRowId] = useState<string | null>(null);
+	const [changingPrintRowId, setChangingPrintRowId] = useState<string | null>(null);
 	const [addingCopy, setAddingCopy] = useState(false);
 	const [confirmRemoveAll, setConfirmRemoveAll] = useState(false);
 	const symbolMap = useScryfallSymbols();
@@ -365,6 +366,15 @@ function CardModalInner({
 							priority
 							onClick={() => setLightbox(true)}
 						/>
+						{onChangePrint && (
+							<button
+								type="button"
+								className={styles.changePrintBtn}
+								onClick={() => setChangingPrintRowId(selectedCard.entry.rowId)}
+							>
+								Changer de print
+							</button>
+						)}
 					</div>
 
 					<div className={styles.infoCol}>
@@ -438,6 +448,29 @@ function CardModalInner({
 					onSelectCollectionCopy={onAssignCollectionCopy}
 				/>
 			)}
+
+			{changingPrintRowId &&
+				(() => {
+					const card = cards.find((c) => c.entry.rowId === changingPrintRowId);
+					return card ? (
+						<EditCardModal
+							key={`print-${changingPrintRowId}`}
+							card={card}
+							onSave={(patch) => onSave?.(changingPrintRowId, patch)}
+							onChangePrint={(newCard) => {
+								onChangePrint?.(changingPrintRowId, newCard);
+								setChangingPrintRowId(null);
+							}}
+							onClose={() => setChangingPrintRowId(null)}
+							collectionCopies={collectionCopies}
+							onSelectCollectionCopy={(rowId) => {
+								onAssignCollectionCopy?.(rowId);
+								setChangingPrintRowId(null);
+							}}
+							autoOpenPrintPicker
+						/>
+					) : null;
+				})()}
 
 			{addingCopy && (
 				<EditCardModal

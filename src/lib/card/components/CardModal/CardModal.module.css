@@ -34,10 +34,31 @@
 .imageCol {
 	flex-shrink: 0;
 	width: 260px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }
 
 .imageCol img {
 	border-radius: 8px;
+}
+
+.changePrintBtn {
+	width: 100%;
+	padding: 6px 12px;
+	border-radius: 6px;
+	border: 1px solid var(--glass-border);
+	background: var(--glass-bg);
+	color: var(--foreground);
+	font-size: var(--text-sm);
+	cursor: pointer;
+	text-align: center;
+}
+
+.changePrintBtn:hover {
+	background: var(--primary);
+	color: var(--primary-text);
+	border-color: var(--primary);
 }
 
 .infoCol {
