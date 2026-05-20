@@ -8,6 +8,7 @@ import { setDeckZone } from '@/types/decks';
 import { fetchDecks, fetchDeckCards } from '../db/decks';
 import { fetchFolders } from '../db/folders';
 import { enqueue } from '@/lib/supabase/sync-queue';
+import { useCollectionStore } from '@/lib/collection/store/collection-store';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 
@@ -88,7 +89,7 @@ type DeckActions = {
 		deckCardRowId: string,
 		collectionRowId: string,
 		deckId: string,
-		zone: string,
+		zone: DeckZone,
 		userId: string | null,
 		triggerSync: () => void
 	) => void;
@@ -410,34 +411,34 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		triggerSync
 	) => {
 		const current = get().activeDeckCards;
-		const collectionCopy = current[collectionRowId];
+
+		// The deck card being replaced must exist
+		const deckCard = current[deckCardRowId];
+		if (!deckCard) return;
+
+		// Get the collection copy — it may not be in activeDeckCards yet
+		const collectionCopy =
+			current[collectionRowId] ??
+			(() => {
+				const ce = useCollectionStore.getState().entries[collectionRowId];
+				return ce ? { scryfallId: ce.scryfallId, entry: ce.entry } : null;
+			})();
+
 		if (!collectionCopy) return;
 
-		// Remove the deck-only row and update the collection copy to occupy the slot
-		const newTags = setDeckZone(collectionCopy.entry.tags, zone as DeckZone);
-		const updatedEntry: CardEntry = {
-			...collectionCopy.entry,
-			deckId,
-			tags: newTags,
-		};
+		const newTags = setDeckZone(collectionCopy.entry.tags, zone);
+		const updatedEntry: CardEntry = { ...collectionCopy.entry, deckId, tags: newTags };
 
 		const next = { ...current };
 		delete next[deckCardRowId];
-		next[collectionRowId] = { ...collectionCopy, entry: updatedEntry };
+		next[collectionRowId] = { scryfallId: collectionCopy.scryfallId, entry: updatedEntry };
 		set({ activeDeckCards: next });
 
-		// Delete the deck-only row from the DB
-		enqueue({ type: 'deck-card-delete', payload: { rowId: deckCardRowId } });
-
-		// Assign the collection copy to the deck slot in the DB
 		if (userId) {
-			enqueue({
-				type: 'update',
-				payload: { rowId: collectionRowId, userId, entry: updatedEntry },
-			});
+			enqueue({ type: 'deck-card-delete', payload: { rowId: deckCardRowId } });
+			enqueue({ type: 'update', payload: { userId, rowId: collectionRowId, entry: updatedEntry } });
+			triggerSync();
 		}
-
-		triggerSync();
 	},
 
 	getDeckCardCount: (deckId) => {

@@ -52,7 +52,7 @@ type DeckContextValue = {
 		deckCardRowId: string,
 		collectionRowId: string,
 		deckId: string,
-		zone: string
+		zone: DeckZone
 	) => void;
 };
 
@@ -204,7 +204,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const replaceDeckCardWithCollectionCopy = useCallback(
-		(deckCardRowId: string, collectionRowId: string, deckId: string, zone: string) =>
+		(deckCardRowId: string, collectionRowId: string, deckId: string, zone: DeckZone) =>
 			store.replaceDeckCardWithCollectionCopy(
 				deckCardRowId,
 				collectionRowId,
