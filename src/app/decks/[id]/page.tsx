@@ -65,10 +65,17 @@ export default function DeckDetailPage() {
 
 	const { entries } = useCollectionContext();
 
+	// scryfallIds of all prints in the currently selected card group
+	const selectedScryfallIds = useMemo(
+		() => new Set(selectedCards?.map((c) => c.id) ?? []),
+		[selectedCards]
+	);
+
+	// Free collection copies filtered to the selected card's prints only
 	const freeCollectionCopies = useMemo(
 		() =>
 			entries
-				.filter((e) => !e.entry.deckId)
+				.filter((e) => !e.entry.deckId && selectedScryfallIds.has(e.scryfallId))
 				.map((e) => ({
 					rowId: e.entry.rowId,
 					scryfallId: e.scryfallId,
@@ -76,7 +83,7 @@ export default function DeckDetailPage() {
 					isFoil: e.entry.isFoil,
 					language: e.entry.language,
 				})),
-		[entries]
+		[entries, selectedScryfallIds]
 	);
 
 	const handleCardClick = useCallback(
