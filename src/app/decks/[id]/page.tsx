@@ -59,9 +59,10 @@ export default function DeckDetailPage() {
 		handleRemoveEntry,
 		handleAddCopy,
 		handleChangeZone,
+		handleAssignCollectionCopy,
 	} = useDeckCardModal(deckId, groupByCardId);
 
-	const { entries, updateEntry } = useCollectionContext();
+	const { entries } = useCollectionContext();
 
 	const freeCollectionCopies = useMemo(
 		() =>
@@ -75,13 +76,6 @@ export default function DeckDetailPage() {
 					language: e.entry.language,
 				})),
 		[entries]
-	);
-
-	const handleAssignCollectionCopy = useCallback(
-		(rowId: string) => {
-			updateEntry(rowId, { deckId });
-		},
-		[updateEntry, deckId]
 	);
 
 	const handleCardClick = useCallback(
