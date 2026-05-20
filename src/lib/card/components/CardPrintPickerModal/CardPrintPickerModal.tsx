@@ -166,7 +166,7 @@ export function CardPrintPickerModal({
 													}}
 													aria-label={`Preview ${print.set_name}`}
 												>
-													<CardImage card={print} size="normal" />
+													<CardImage card={print} size="normal" priority />
 												</div>
 												<button
 													type="button"
