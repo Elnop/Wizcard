@@ -401,7 +401,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		set({
 			activeDeckCards: {
 				...current,
-				[rowId]: { ...copy, entry: { ...copy.entry } },
+				[rowId]: { ...copy, entry: { ...copy.entry, ownerId: newOwnerId ?? undefined } },
 			},
 		});
 		enqueue({ type: 'deck-card-update', payload: { rowId, updates } });
@@ -453,10 +453,22 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		const newTags = setDeckZone(collectionCopy.entry.tags, zone);
 		const updatedEntry: CardEntry = { ...collectionCopy.entry, deckId, tags: newTags };
 
+		// Update deck store
 		const next = { ...current };
 		delete next[deckCardRowId];
 		next[collectionRowId] = { scryfallId: collectionCopy.scryfallId, entry: updatedEntry };
 		set({ activeDeckCards: next });
+
+		// Update collection store so the copy no longer appears as free
+		const colEntries = useCollectionStore.getState().entries;
+		if (colEntries[collectionRowId]) {
+			useCollectionStore.setState({
+				entries: {
+					...colEntries,
+					[collectionRowId]: { scryfallId: collectionCopy.scryfallId, entry: updatedEntry },
+				},
+			});
+		}
 
 		if (userId) {
 			enqueue({ type: 'deck-card-delete', payload: { rowId: deckCardRowId } });
