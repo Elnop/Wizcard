@@ -10,7 +10,7 @@ import type { DeckCardGroup } from '@/app/decks/[id]/useDeckCardSections';
 type Selection = { oracleId: string; clickedRowId: string };
 
 export function useDeckCardModal(deckId: string, groupByCardId: Map<string, DeckCardGroup>) {
-	const { addCardToDeck, removeCardFromDeck, changeZone, updateDeckCard } = useDeckContext();
+	const { addCardToDeck, removeCardFromDeck, changeZone, updateDeckCard, replaceDeckCardWithCollectionCopy } = useDeckContext();
 	const [selection, setSelection] = useState<Selection | null>(null);
 
 	// Derived reactively — auto-updates when the store changes
@@ -71,6 +71,18 @@ export function useDeckCardModal(deckId: string, groupByCardId: Map<string, Deck
 		[changeZone]
 	);
 
+	// Called when the user selects a collection copy in the print picker
+	const handleAssignCollectionCopy = useCallback(
+		(collectionRowId: string) => {
+			if (!selection || !selectedCards) return;
+			const clickedCard = selectedCards.find((c) => c.entry.rowId === selection.clickedRowId);
+			if (!clickedCard) return;
+			const zone = getDeckZone(clickedCard.entry.tags);
+			replaceDeckCardWithCollectionCopy(clickedCard.entry.rowId, collectionRowId, deckId, zone);
+		},
+		[selection, selectedCards, deckId, replaceDeckCardWithCollectionCopy]
+	);
+
 	return {
 		selectedCards,
 		selectedZone,
@@ -81,5 +93,6 @@ export function useDeckCardModal(deckId: string, groupByCardId: Map<string, Deck
 		handleRemoveEntry,
 		handleAddCopy,
 		handleChangeZone,
+		handleAssignCollectionCopy,
 	};
 }
