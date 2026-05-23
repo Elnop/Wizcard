@@ -1,44 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
-import { CardImage } from '@/lib/card/components/CardImage/CardImage';
-import { CardLightbox } from '@/lib/card/components/CardLightbox/CardLightbox';
 import { Modal } from '@/components/Modal/Modal';
+import { PrintList } from '@/lib/card/components/PrintList/PrintList';
+import type { CollectionCopyEntry } from '@/lib/card/components/PrintList/PrintList.types';
 import styles from './CardPrintPickerModal.module.css';
 
-const LANG_NAMES: Record<string, string> = {
-	en: 'English',
-	fr: 'French',
-	de: 'German',
-	es: 'Spanish',
-	it: 'Italian',
-	pt: 'Portuguese',
-	ja: 'Japanese',
-	ko: 'Korean',
-	ru: 'Russian',
-	zhs: 'Simplified Chinese',
-	zht: 'Traditional Chinese',
-	ph: 'Phyrexian',
-	he: 'Hebrew',
-	ar: 'Arabic',
-	la: 'Latin',
-	grc: 'Ancient Greek',
-	sa: 'Sanskrit',
-};
-
-function langName(code: string): string {
-	return LANG_NAMES[code] ?? code.toUpperCase();
-}
-
-export interface CollectionCopyEntry {
-	rowId: string;
-	scryfallId: string;
-	condition?: string;
-	isFoil?: boolean;
-	language?: string;
-}
+export type { CollectionCopyEntry };
 
 interface Props {
 	prints_search_uri: string;
@@ -63,129 +31,39 @@ export function CardPrintPickerModal({
 	collectionCopies,
 	onSelectCollectionCopy,
 }: Props) {
-	const { prints, loading, error } = useCardPrints(prints_search_uri);
-	const [lightboxCard, setLightboxCard] = useState<ScryfallCard | null>(null);
-
-	function isCurrentPrint(print: ScryfallCard): boolean {
-		if (currentSet && currentCollectorNumber && currentLang) {
-			return (
-				print.set === currentSet &&
-				print.collector_number === currentCollectorNumber &&
-				(print.lang ?? 'en') === currentLang
-			);
-		}
-		return print.id === currentCardId;
-	}
-
-	const byLang = new Map<string, ScryfallCard[]>();
-	for (const p of prints) {
-		const lang = p.lang ?? 'en';
-		const arr = byLang.get(lang) ?? [];
-		arr.push(p);
-		byLang.set(lang, arr);
-	}
-
-	const langs = Array.from(byLang.keys()).sort((a, b) => {
-		if (a === 'en') return -1;
-		if (b === 'en') return 1;
-		return langName(a).localeCompare(langName(b));
-	});
-
 	return (
-		<>
-			<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
-				<div className={styles.header}>
-					<h2 className={styles.title}>Change Print</h2>
-					<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-							<path
-								d="M2 2l12 12M14 2L2 14"
-								stroke="currentColor"
-								strokeWidth="1.8"
-								strokeLinecap="round"
-							/>
-						</svg>
-					</button>
-				</div>
-
-				<div className={styles.body}>
-					{collectionCopies && collectionCopies.length > 0 && (
-						<div className={styles.collectionSection}>
-							<p className={styles.collectionSectionTitle}>Copies de ma collection</p>
-							{collectionCopies.map((copy) => (
-								<button
-									key={copy.rowId}
-									className={styles.collectionCopyRow}
-									onClick={() => onSelectCollectionCopy?.(copy.rowId)}
-									type="button"
-								>
-									<span className={styles.collectionCopyCondition}>{copy.condition ?? 'NM'}</span>
-									{copy.isFoil && <span className={styles.collectionCopyFoil}>✦</span>}
-									{copy.language && copy.language !== 'English' && (
-										<span className={styles.collectionCopyLang}>{copy.language}</span>
-									)}
-								</button>
-							))}
-						</div>
-					)}
-
-					{loading && <p className={styles.status}>Loading prints…</p>}
-					{error && <p className={styles.statusError}>{error}</p>}
-					{!loading && !error && prints.length === 0 && (
-						<p className={styles.status}>No prints found.</p>
-					)}
-
-					{langs.map((lang) => {
-						const langPrints = byLang.get(lang)!;
-						return (
-							<details
-								key={lang}
-								className={styles.accordion}
-								open={lang === (currentLang ?? 'en')}
-							>
-								<summary className={styles.accordionSummary}>
-									{langName(lang)}
-									<span className={styles.accordionCount}>{langPrints.length}</span>
-								</summary>
-								<ul className={styles.grid}>
-									{langPrints.map((print) => (
-										<li key={print.id} className={styles.printItem}>
-											<div
-												className={`${styles.printCard} ${isCurrentPrint(print) ? styles.printCardActive : ''}`}
-											>
-												<div
-													role="button"
-													tabIndex={0}
-													className={styles.printImageBtn}
-													onClick={() => setLightboxCard(print)}
-													onKeyDown={(e) => {
-														if (e.key === 'Enter' || e.key === ' ') {
-															e.preventDefault();
-															setLightboxCard(print);
-														}
-													}}
-													aria-label={`Preview ${print.set_name}`}
-												>
-													<CardImage card={print} size="normal" priority />
-												</div>
-												<button
-													type="button"
-													className={`${styles.selectBtn} ${isCurrentPrint(print) ? styles.selectBtnActive : ''}`}
-													onClick={() => onSelect(print)}
-												>
-													{isCurrentPrint(print) ? 'Selected' : 'Select'}
-												</button>
-											</div>
-										</li>
-									))}
-								</ul>
-							</details>
-						);
-					})}
-				</div>
-			</Modal>
-
-			{lightboxCard && <CardLightbox card={lightboxCard} onClose={() => setLightboxCard(null)} />}
-		</>
+		<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
+			<div className={styles.header}>
+				<h2 className={styles.title}>Changer d&apos;édition</h2>
+				<button className={styles.closeIcon} onClick={onClose} aria-label="Fermer" type="button">
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path
+							d="M2 2l12 12M14 2L2 14"
+							stroke="currentColor"
+							strokeWidth="1.8"
+							strokeLinecap="round"
+						/>
+					</svg>
+				</button>
+			</div>
+			<div className={styles.body}>
+				<PrintList
+					prints_search_uri={prints_search_uri}
+					currentCardId={currentCardId}
+					currentSet={currentSet}
+					currentCollectorNumber={currentCollectorNumber}
+					currentLang={currentLang}
+					onSelect={(print) => {
+						onSelect(print);
+						onClose();
+					}}
+					collectionCopies={collectionCopies}
+					onSelectCollectionCopy={(rowId) => {
+						onSelectCollectionCopy?.(rowId);
+						onClose();
+					}}
+				/>
+			</div>
+		</Modal>
 	);
 }
