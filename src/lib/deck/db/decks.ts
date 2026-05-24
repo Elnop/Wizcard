@@ -150,8 +150,17 @@ export async function moveDeckToFolder(
 	}
 }
 
-export async function deleteDeck(userId: string, deckId: string): Promise<void> {
+export async function deleteDeck(
+	userId: string,
+	deckId: string,
+	deleteCollectionCopies = false
+): Promise<void> {
 	const supabase = createClient();
+
+	if (!deleteCollectionCopies) {
+		await unassignCollectionCopiesFromDeck(userId, deckId);
+	}
+
 	const { error } = await supabase.from('decks').delete().eq('owner_id', userId).eq('id', deckId);
 
 	if (error) {

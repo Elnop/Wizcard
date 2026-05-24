@@ -63,7 +63,7 @@ export type SyncOp =
 	| {
 			id: string;
 			type: 'deck-delete';
-			payload: { userId: string; deckId: string };
+			payload: { userId: string; deckId: string; deleteCollectionCopies?: boolean };
 			retries: number;
 			createdAt: string;
 	  }
@@ -138,13 +138,6 @@ export type SyncOp =
 			id: string;
 			type: 'deck-move';
 			payload: { userId: string; deckId: string; folderId: string | null };
-			retries: number;
-			createdAt: string;
-	  }
-	| {
-			id: string;
-			type: 'deck-collection-unassign';
-			payload: { userId: string; deckId: string };
 			retries: number;
 			createdAt: string;
 	  };

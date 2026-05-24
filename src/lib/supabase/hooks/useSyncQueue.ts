@@ -12,7 +12,6 @@ import {
 	insertDeck,
 	updateDeckMeta,
 	deleteDeck,
-	unassignCollectionCopiesFromDeck,
 	insertDeckCard,
 	insertDeckCards,
 	deleteDeckCard,
@@ -106,10 +105,8 @@ export function useSyncQueue(userId: string | null | undefined) {
 					await insertDeck(op.payload.userId, op.payload.deck);
 				} else if (op.type === 'deck-update') {
 					await updateDeckMeta(op.payload.userId, op.payload.deckId, op.payload.updates);
-				} else if (op.type === 'deck-collection-unassign') {
-					await unassignCollectionCopiesFromDeck(op.payload.userId, op.payload.deckId);
 				} else if (op.type === 'deck-delete') {
-					await deleteDeck(op.payload.userId, op.payload.deckId);
+					await deleteDeck(op.payload.userId, op.payload.deckId, op.payload.deleteCollectionCopies);
 				} else if (op.type === 'deck-card-insert') {
 					await insertDeckCard(op.payload.deckId, op.payload.scryfallId, op.payload.entry);
 				} else if (op.type === 'deck-card-bulk-insert') {

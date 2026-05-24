@@ -271,10 +271,10 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			stateUpdate.activeDeckCards = {};
 		}
 		set(stateUpdate);
-		if (!options?.deleteCollectionCopies) {
-			enqueue({ type: 'deck-collection-unassign', payload: { userId, deckId } });
-		}
-		enqueue({ type: 'deck-delete', payload: { userId, deckId } });
+		enqueue({
+			type: 'deck-delete',
+			payload: { userId, deckId, deleteCollectionCopies: options?.deleteCollectionCopies ?? false },
+		});
 		triggerSync();
 	},
 
