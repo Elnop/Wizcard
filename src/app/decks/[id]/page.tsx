@@ -53,7 +53,9 @@ export default function DeckDetailPage() {
 		selectedCards,
 		selectedZone,
 		clickedRowId,
+		openPrintPicker,
 		handleCardGroupClick,
+		handleCardGroupClickWithPrintPicker,
 		handleClose,
 		handleSave,
 		handleRemoveEntry,
@@ -172,7 +174,9 @@ export default function DeckDetailPage() {
 					onDuplicate={handleDuplicateCard}
 					onRemove={removeCardFromDeck}
 					onChangeZone={changeZone}
-					onBadgeClick={() => handleCardGroupClick(group, firstCopy?.entry.rowId ?? c.entry.rowId)}
+					onBadgeClick={() =>
+						handleCardGroupClickWithPrintPicker(group, firstCopy?.entry.rowId ?? c.entry.rowId)
+					}
 				/>
 			);
 		},
@@ -182,7 +186,7 @@ export default function DeckDetailPage() {
 			handleDuplicateCard,
 			removeCardFromDeck,
 			changeZone,
-			handleCardGroupClick,
+			handleCardGroupClickWithPrintPicker,
 		]
 	);
 
@@ -252,6 +256,7 @@ export default function DeckDetailPage() {
 			<CardModal
 				cards={selectedCards}
 				initialRowId={clickedRowId ?? undefined}
+				initialChangingPrintRowId={openPrintPicker ? (clickedRowId ?? undefined) : undefined}
 				zone={selectedZone ?? undefined}
 				availableZones={zones}
 				onClose={handleClose}

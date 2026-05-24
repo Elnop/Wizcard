@@ -43,6 +43,7 @@ function isCollectionCard(card: Card | ScryfallCard): card is Card {
 interface Props {
 	cards: Card | Card[] | ScryfallCard | null;
 	initialRowId?: string;
+	initialChangingPrintRowId?: string;
 	onClose: () => void;
 	onSave?: (rowId: string, updates: Partial<CardEntry>) => void;
 	onRemove?: (scryfallId: string) => void;
@@ -63,6 +64,7 @@ interface Props {
 interface InnerProps {
 	cards: Card[];
 	initialRowId?: string;
+	initialChangingPrintRowId?: string;
 	onClose: () => void;
 	onSave?: (rowId: string, updates: Partial<CardEntry>) => void;
 	onRemove?: (scryfallId: string) => void;
@@ -171,6 +173,7 @@ function CardDetailSection({
 function CardModalInner({
 	cards,
 	initialRowId,
+	initialChangingPrintRowId,
 	onClose,
 	onSave,
 	onRemove,
@@ -187,7 +190,9 @@ function CardModalInner({
 	const [lightbox, setLightbox] = useState(false);
 	const [selectedRowId, setSelectedRowId] = useState<string>(initialRowId ?? cards[0].entry.rowId);
 	const [editingRowId, setEditingRowId] = useState<string | null>(null);
-	const [changingPrintRowId, setChangingPrintRowId] = useState<string | null>(null);
+	const [changingPrintRowId, setChangingPrintRowId] = useState<string | null>(
+		initialChangingPrintRowId ?? null
+	);
 	const [addingCopy, setAddingCopy] = useState(false);
 	const [confirmRemoveAll, setConfirmRemoveAll] = useState(false);
 	const symbolMap = useScryfallSymbols();
@@ -558,6 +563,7 @@ function ScryfallCardModalInner({
 export function CardModal({
 	cards,
 	initialRowId,
+	initialChangingPrintRowId,
 	onClose,
 	onSave,
 	onRemove,
@@ -599,6 +605,7 @@ export function CardModal({
 			key={first.oracle_id}
 			cards={normalizedCards as Card[]}
 			initialRowId={initialRowId}
+			initialChangingPrintRowId={initialChangingPrintRowId}
 			onClose={onClose}
 			onSave={onSave}
 			onRemove={onRemove}
