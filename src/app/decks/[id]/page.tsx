@@ -82,19 +82,20 @@ export default function DeckDetailPage() {
 		[selectedCards]
 	);
 
-	// Free collection copies filtered to the selected card's prints only
-	const freeCollectionCopies = useMemo(
+	// All collection copies (assigned + free) filtered to the selected card's prints only
+	const allCollectionCopies = useMemo(
 		() =>
 			entries
-				.filter((e) => !e.entry.deckId && selectedScryfallIds.has(e.scryfallId))
+				.filter((e) => selectedScryfallIds.has(e.scryfallId))
 				.map((e) => ({
 					rowId: e.entry.rowId,
 					scryfallId: e.scryfallId,
 					condition: e.entry.condition,
 					isFoil: e.entry.isFoil,
 					language: e.entry.language,
+					assignedToDeckName: e.entry.deckId === deck?.id ? deck?.name : undefined,
 				})),
-		[entries, selectedScryfallIds]
+		[entries, selectedScryfallIds, deck]
 	);
 
 	const emptyEntries = useMemo(() => [], []);
@@ -291,7 +292,7 @@ export default function DeckDetailPage() {
 				onIncrement={handleAddCopy}
 				onChangeZone={handleChangeZone}
 				onChangePrint={handleChangePrint}
-				collectionCopies={freeCollectionCopies}
+				collectionCopies={allCollectionCopies}
 				onAssignCollectionCopy={handleAssignCollectionCopy}
 			/>
 
