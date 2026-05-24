@@ -328,6 +328,9 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 				...state.activeDeckCards,
 				[collectionRowId]: { scryfallId: collectionCopy.scryfallId, entry: updatedEntry },
 			},
+			...(state.decks[deckId]
+				? { decks: { ...state.decks, [deckId]: { ...state.decks[deckId], updatedAt: new Date().toISOString() } } }
+				: {}),
 		}));
 
 		// Update collection store so the copy no longer appears as free

@@ -301,10 +301,7 @@ export default function DeckDetailPage() {
 				addLabel="Add to Deck"
 				availableZones={zones}
 				onAddToCollection={(card, entry) => {
-					const zone =
-						(entry.tags
-							?.find((t: string) => t.startsWith('deck:'))
-							?.replace('deck:', '') as DeckZone) ?? 'mainboard';
+					const zone = getDeckZone(entry.tags);
 					if (panelInCollectionOnly) {
 						const copy = findFreeCollectionCopy(
 							card.id,
