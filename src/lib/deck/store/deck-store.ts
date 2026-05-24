@@ -451,7 +451,12 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		if (!collectionCopy) return;
 
 		const newTags = setDeckZone(collectionCopy.entry.tags, zone);
-		const updatedEntry: CardEntry = { ...collectionCopy.entry, deckId, tags: newTags };
+		const updatedEntry: CardEntry = {
+			...collectionCopy.entry,
+			deckId,
+			tags: newTags,
+			ownerId: userId ?? undefined,
+		};
 
 		// Update deck store
 		const next = { ...current };
