@@ -8,7 +8,7 @@ import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/Ca
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { CardLightbox } from '@/lib/card/components/CardLightbox/CardLightbox';
-import { type PrintListProps, groupPrintsByLang } from './PrintList.types';
+import { type PrintListProps, groupPrintsByLang, groupCollectionByPrint } from './PrintList.types';
 import styles from './PrintList.module.css';
 
 export function PrintList({
@@ -39,28 +39,13 @@ export function PrintList({
 
 	if (collectionCopies && collectionCopies.length > 0 && prints.length > 0) {
 		const printMap = new Map<string, ScryfallCard>(prints.map((p) => [p.id, p]));
-		const copiesAsCards: Card[] = collectionCopies
-			.map((copy) => {
-				const scryfallCard = printMap.get(copy.scryfallId);
-				if (!scryfallCard) return null;
-				const card: Card = {
-					...scryfallCard,
-					entry: {
-						rowId: copy.rowId,
-						dateAdded: '',
-						condition: (copy.condition as Card['entry']['condition']) ?? 'NM',
-						isFoil: copy.isFoil,
-						language: copy.language as Card['entry']['language'],
-					},
-				};
-				return card;
-			})
-			.filter((c): c is Card => c !== null);
+		const printSections = groupCollectionByPrint(collectionCopies, printMap);
 
-		if (copiesAsCards.length > 0) {
+		if (printSections.length > 0) {
 			sections.push({
-				label: `Mes copies (${copiesAsCards.length})`,
-				cards: copiesAsCards as AnyCard[],
+				label: `Ma collection (${collectionCopies.length})`,
+				cards: [],
+				children: printSections,
 			});
 		}
 	}
@@ -73,17 +58,31 @@ export function PrintList({
 	function renderOverlay(anyCard: AnyCard): ReactNode {
 		if ('entry' in anyCard) {
 			const card = anyCard as Card;
+			const assignedDeckName = (collectionCopies ?? []).find(
+				(c) => c.rowId === card.entry.rowId
+			)?.assignedToDeckName;
+
 			return (
-				<button
-					type="button"
-					className={styles.copySelectBtn}
-					onClick={(e) => {
-						e.stopPropagation();
-						onSelectCollectionCopy?.(card.entry.rowId);
-					}}
-				>
-					Utiliser
-				</button>
+				<>
+					{assignedDeckName && (
+						<span
+							className={styles.assignedBadge}
+							title={`Utilisé dans : ${assignedDeckName}`}
+						>
+							Utilisé
+						</span>
+					)}
+					<button
+						type="button"
+						className={styles.copySelectBtn}
+						onClick={(e) => {
+							e.stopPropagation();
+							onSelectCollectionCopy?.(card.entry.rowId);
+						}}
+					>
+						Utiliser
+					</button>
+				</>
 			);
 		}
 
