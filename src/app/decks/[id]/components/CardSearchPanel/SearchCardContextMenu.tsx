@@ -34,7 +34,7 @@ export function SearchCardContextMenu({
 	scryfallIdToOracleId,
 }: Props) {
 	const { addCardToDeck } = useDeckContext();
-	const { assignToDeck } = useCollectionContext();
+	const { updateEntry } = useCollectionContext();
 	const isCommanderFormat = format != null && COMMANDER_FORMATS.includes(format);
 
 	const addWithCollectionAssign = useCallback(
@@ -46,7 +46,14 @@ export function SearchCardContextMenu({
 					collectionEntries,
 					scryfallIdToOracleId
 				);
-				if (copy) assignToDeck(copy.rowId, deckId);
+				if (copy) {
+					// Mark collection copy as assigned to this deck (no ownerId link — known limitation)
+					updateEntry(copy.rowId, { deckId });
+				} else {
+					// No free collection copy — don't add a ghost deck card
+					onClose();
+					return;
+				}
 			}
 			addCardToDeck(deckId, card, zone);
 			onClose();
@@ -56,7 +63,7 @@ export function SearchCardContextMenu({
 			card,
 			collectionEntries,
 			scryfallIdToOracleId,
-			assignToDeck,
+			updateEntry,
 			deckId,
 			addCardToDeck,
 			onClose,
