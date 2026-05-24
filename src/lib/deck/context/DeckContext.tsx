@@ -211,7 +211,8 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const replaceDeckCardWithCollectionCopy = useCallback(
-		(deckCardRowId: string, collectionRowId: string, deckId: string, zone: DeckZone) =>
+		(deckCardRowId: string, collectionRowId: string, deckId: string, zone: DeckZone) => {
+			if (!userId) return;
 			store.replaceDeckCardWithCollectionCopy(
 				deckCardRowId,
 				collectionRowId,
@@ -219,7 +220,8 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 				zone,
 				userId,
 				triggerSync
-			),
+			);
+		},
 		[store, userId, triggerSync]
 	);
 

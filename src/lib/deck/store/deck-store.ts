@@ -96,7 +96,7 @@ type DeckActions = {
 		collectionRowId: string,
 		deckId: string,
 		zone: DeckZone,
-		userId: string | null,
+		userId: string,
 		triggerSync: () => void
 	) => void;
 
