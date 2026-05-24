@@ -475,12 +475,18 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 
 		if (!collectionCopy) return;
 
+		// Guard: userId is required to persist this operation
+		if (!userId) {
+			console.error('[deck-store] replaceDeckCardWithCollectionCopy: userId absent, aborting');
+			return;
+		}
+
 		const newTags = setDeckZone(collectionCopy.entry.tags, zone);
 		const updatedEntry: CardEntry = {
 			...collectionCopy.entry,
 			deckId,
 			tags: newTags,
-			ownerId: userId ?? undefined,
+			ownerId: userId,
 		};
 
 		// Update deck store
@@ -500,11 +506,9 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			});
 		}
 
-		if (userId) {
-			enqueue({ type: 'deck-card-delete', payload: { rowId: deckCardRowId } });
-			enqueue({ type: 'update', payload: { userId, rowId: collectionRowId, entry: updatedEntry } });
-			triggerSync();
-		}
+		enqueue({ type: 'deck-card-delete', payload: { rowId: deckCardRowId } });
+		enqueue({ type: 'update', payload: { userId, rowId: collectionRowId, entry: updatedEntry } });
+		triggerSync();
 	},
 
 	getDeckCardCount: (deckId) => {
