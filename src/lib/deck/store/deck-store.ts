@@ -412,13 +412,33 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		const current = get().activeDeckCards;
 		const copy = current[rowId];
 		if (!copy) return;
+
 		const newRowId = crypto.randomUUID();
-		const newEntry: CardEntry = { ...copy.entry, rowId: newRowId };
+		const newEntry: CardEntry = { ...copy.entry, rowId: newRowId, ownerId: undefined, deckId };
 		const next = { ...current };
 		delete next[rowId];
 		next[newRowId] = { scryfallId: newCard.id, entry: newEntry };
 		set({ activeDeckCards: next });
-		enqueue({ type: 'deck-card-delete', payload: { rowId } });
+
+		// If the replaced card was a physical collection copy, free it (don't delete it)
+		const isCollectionCopy = !!useCollectionStore.getState().entries[rowId];
+		if (isCollectionCopy) {
+			const userId = copy.entry.ownerId;
+			if (userId) {
+				const freedEntry: CardEntry = { ...copy.entry, deckId: undefined };
+				// Update collection store: mark copy as free
+				useCollectionStore.setState((state) => ({
+					entries: {
+						...state.entries,
+						[rowId]: { scryfallId: copy.scryfallId, entry: freedEntry },
+					},
+				}));
+				enqueue({ type: 'update', payload: { userId, rowId, entry: freedEntry } });
+			}
+		} else {
+			enqueue({ type: 'deck-card-delete', payload: { rowId } });
+		}
+
 		enqueue({
 			type: 'deck-card-insert',
 			payload: { deckId, scryfallId: newCard.id, entry: newEntry },
