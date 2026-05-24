@@ -1,5 +1,6 @@
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardListSection, AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import type { Card } from '@/types/cards';
 
 export interface CollectionCopyEntry {
 	rowId: string;
@@ -7,6 +8,7 @@ export interface CollectionCopyEntry {
 	condition?: string;
 	isFoil?: boolean;
 	language?: string;
+	assignedToDeckName?: string;
 }
 
 export interface PrintListProps {
@@ -46,4 +48,53 @@ export function groupPrintsByLang(prints: ScryfallCard[], currentLang: string): 
 		label: getLangLabel(lang, cards.length),
 		cards: cards as AnyCard[],
 	}));
+}
+
+export function groupCollectionByPrint(
+	copies: CollectionCopyEntry[],
+	printMap: Map<string, ScryfallCard>
+): CardListSection[] {
+	const byPrint = new Map<string, CollectionCopyEntry[]>();
+	const orphans: CollectionCopyEntry[] = [];
+
+	for (const copy of copies) {
+		if (printMap.has(copy.scryfallId)) {
+			const group = byPrint.get(copy.scryfallId) ?? [];
+			group.push(copy);
+			byPrint.set(copy.scryfallId, group);
+		} else {
+			orphans.push(copy);
+		}
+	}
+
+	const sections: CardListSection[] = [];
+
+	for (const [scryfallId, group] of byPrint.entries()) {
+		const scryfallCard = printMap.get(scryfallId)!;
+		sections.push({
+			label: `${scryfallCard.set_name} #${scryfallCard.collector_number} (${group.length})`,
+			cards: group.map((copy) => {
+				const card: Card = {
+					...scryfallCard,
+					entry: {
+						rowId: copy.rowId,
+						dateAdded: '',
+						condition: (copy.condition as Card['entry']['condition']) ?? 'NM',
+						isFoil: copy.isFoil,
+						language: copy.language as Card['entry']['language'],
+					},
+				};
+				return card as AnyCard;
+			}),
+		});
+	}
+
+	if (orphans.length > 0) {
+		sections.push({
+			label: `Autre (${orphans.length})`,
+			cards: [],
+		});
+	}
+
+	return sections;
 }
