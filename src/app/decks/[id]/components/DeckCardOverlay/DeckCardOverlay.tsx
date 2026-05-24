@@ -40,17 +40,40 @@ export function DeckCardOverlay({
 	const { entries: collectionEntries } = useCollectionContext();
 	const N = zoneCopies.length;
 	const K = zoneCopies.filter((c) => !!c.entry.ownerId).length;
-
 	const repScryfallId = group.representative.id;
+	const repSet = group.representative.set.toUpperCase();
+	const repCollectorNumber = group.representative.collector_number;
 
-	// Exact-print count of free (unassigned) copies matching this specific print
-	const freeExact = collectionEntries.filter(
+	const freeCopies = collectionEntries.filter(
 		(e) => e.scryfallId === repScryfallId && !e.entry.deckId
-	).length;
-
-	const freeCopiesForTooltip = collectionEntries.filter(
-		(e) => !e.entry.deckId && e.scryfallId === repScryfallId
 	);
+	const freeExact = freeCopies.length;
+
+	type BadgeState = 'none' | 'partial' | 'owned';
+	const badgeState: BadgeState =
+		K === N && N > 0 ? 'owned' : K > 0 || freeExact > 0 ? 'partial' : 'none';
+
+	const formatCopyLine = (entry: { condition?: string; isFoil?: boolean; language?: string }) => {
+		const parts: string[] = [`[${repSet} #${repCollectorNumber}]`];
+		parts.push(entry.condition ?? 'NM');
+		if (entry.isFoil) parts.push('✦');
+		if (entry.language && entry.language !== 'English') parts.push(entry.language);
+		return parts.join(' · ');
+	};
+
+	const tooltipCopies: { rowId: string; line: string }[] =
+		badgeState === 'owned'
+			? zoneCopies
+					.filter((c) => !!c.entry.ownerId)
+					.map((c) => ({ rowId: c.entry.rowId, line: formatCopyLine(c.entry) }))
+			: badgeState === 'partial'
+				? [
+						...zoneCopies
+							.filter((c) => !!c.entry.ownerId)
+							.map((c) => ({ rowId: c.entry.rowId, line: formatCopyLine(c.entry) })),
+						...freeCopies.map((e) => ({ rowId: e.entry.rowId, line: formatCopyLine(e.entry) })),
+					]
+				: [];
 
 	const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
 	const closeMenu = useCallback(() => setMenuPos(null), []);
@@ -99,30 +122,29 @@ export function DeckCardOverlay({
 
 	return (
 		<div className={styles.overlay} onContextMenu={handleContextMenu}>
-			{K > 0 ? (
-				<span
-					className={`${styles.ownershipBadge} ${K === N ? styles.ownershipBadgeGreen : styles.ownershipBadgeOrange}`}
-				>
-					{K}/{N}
-				</span>
-			) : freeExact > 0 ? (
-				<span className={`${styles.ownershipBadge} ${styles.ownershipBadgeOrange}`}>
-					{freeExact}
-					{freeCopiesForTooltip.length > 0 && (
-						<span className={styles.ownershipTooltip}>
-							{freeCopiesForTooltip.map((e) => (
-								<span key={e.entry.rowId} className={styles.ownershipTooltipItem}>
-									{e.entry.condition ?? 'NM'}
-									{e.entry.isFoil ? ' ✦' : ''}
-									{e.entry.language && e.entry.language !== 'English'
-										? ` · ${e.entry.language}`
-										: ''}
-								</span>
-							))}
-						</span>
+			<span
+				className={`${styles.ownershipBadge} ${
+					badgeState === 'owned'
+						? styles.ownershipBadgeGreen
+						: badgeState === 'partial'
+							? styles.ownershipBadgeOrange
+							: styles.ownershipBadgeGrey
+				}`}
+			>
+				{badgeState === 'owned' ? '✓' : badgeState === 'partial' ? `${K}/${N}` : ''}
+				<span className={styles.ownershipTooltip}>
+					<span className={styles.ownershipTooltipHeader}>Ma collection</span>
+					{badgeState === 'none' ? (
+						<span className={styles.ownershipTooltipItem}>Pas dans ma collection</span>
+					) : (
+						tooltipCopies.map((copy) => (
+							<span key={copy.rowId} className={styles.ownershipTooltipItem}>
+								{copy.line}
+							</span>
+						))
 					)}
 				</span>
-			) : null}
+			</span>
 			{count > 1 && <span className={styles.countBadge}>x{count}</span>}
 			{menuPos && <ContextMenu items={items} position={menuPos} onClose={closeMenu} />}
 		</div>
