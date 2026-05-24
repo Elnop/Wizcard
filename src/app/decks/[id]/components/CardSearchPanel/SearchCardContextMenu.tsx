@@ -2,7 +2,6 @@ import { useCallback, useMemo } from 'react';
 import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
-import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { findFreeCollectionCopy } from '@/lib/deck/utils/collectionCopyResolver';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckFormat, DeckZone } from '@/types/decks';
@@ -33,8 +32,7 @@ export function SearchCardContextMenu({
 	collectionEntries,
 	scryfallIdToOracleId,
 }: Props) {
-	const { addCardToDeck } = useDeckContext();
-	const { updateEntry } = useCollectionContext();
+	const { addCardToDeck, addCollectionCardToDeck } = useDeckContext();
 	const isCommanderFormat = format != null && COMMANDER_FORMATS.includes(format);
 
 	const addWithCollectionAssign = useCallback(
@@ -47,13 +45,14 @@ export function SearchCardContextMenu({
 					scryfallIdToOracleId
 				);
 				if (copy) {
-					// Mark collection copy as assigned to this deck (no ownerId link — known limitation)
-					updateEntry(copy.rowId, { deckId });
+					addCollectionCardToDeck(deckId, copy.rowId, zone);
 				} else {
 					// No free collection copy — don't add a ghost deck card
 					onClose();
 					return;
 				}
+				onClose();
+				return;
 			}
 			addCardToDeck(deckId, card, zone);
 			onClose();
@@ -63,7 +62,7 @@ export function SearchCardContextMenu({
 			card,
 			collectionEntries,
 			scryfallIdToOracleId,
-			updateEntry,
+			addCollectionCardToDeck,
 			deckId,
 			addCardToDeck,
 			onClose,

@@ -40,6 +40,7 @@ type DeckContextValue = {
 
 	loadDeck: (deckId: string) => Promise<void>;
 	addCardToDeck: (deckId: string, card: ScryfallCard, zone: DeckZone) => void;
+	addCollectionCardToDeck: (deckId: string, collectionRowId: string, zone: DeckZone) => void;
 	bulkAddCardsToDeck: (
 		deckId: string,
 		cards: Array<{ card: ScryfallCard; zone: DeckZone; quantity: number }>
@@ -172,6 +173,14 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 		[store, userId, triggerSync]
 	);
 
+	const addCollectionCardToDeck = useCallback(
+		(deckId: string, collectionRowId: string, zone: DeckZone) => {
+			if (!userId) return;
+			store.addCollectionCardToDeck(deckId, collectionRowId, zone, userId, triggerSync);
+		},
+		[store, userId, triggerSync]
+	);
+
 	const bulkAddCardsToDeck = useCallback(
 		(deckId: string, cards: Array<{ card: ScryfallCard; zone: DeckZone; quantity: number }>) => {
 			if (!userId) return;
@@ -244,6 +253,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 		deleteDeck,
 		loadDeck,
 		addCardToDeck,
+		addCollectionCardToDeck,
 		bulkAddCardsToDeck,
 		removeCardFromDeck,
 		changeZone,

@@ -31,8 +31,14 @@ export default function DeckDetailPage() {
 	const params = useParams();
 	const deckId = params.id as string;
 
-	const { updateDeck, addCardToDeck, removeCardFromDeck, changeZone, activeDeckCards } =
-		useDeckContext();
+	const {
+		updateDeck,
+		addCardToDeck,
+		addCollectionCardToDeck,
+		removeCardFromDeck,
+		changeZone,
+		activeDeckCards,
+	} = useDeckContext();
 	const { deck, cardsByZone, resolvedCards, stats, isLoading, isResolving } = useDeckDetail(deckId);
 
 	const [searchPanelOpen, setSearchPanelOpen] = useState(false);
@@ -68,7 +74,7 @@ export default function DeckDetailPage() {
 		handleAssignCollectionCopy,
 	} = useDeckCardModal(deckId, groupByCardId);
 
-	const { entries, updateEntry } = useCollectionContext();
+	const { entries } = useCollectionContext();
 
 	// scryfallIds of all prints in the currently selected card group
 	const selectedScryfallIds = useMemo(
@@ -307,12 +313,14 @@ export default function DeckDetailPage() {
 							panelScryfallIdToOracleId
 						);
 						if (copy) {
-							updateEntry(copy.rowId, { deckId });
+							addCollectionCardToDeck(deckId, copy.rowId, zone);
 						} else {
 							// No free collection copy available — don't add a ghost deck card
 							setPanelSelectedCard(null);
 							return;
 						}
+						setPanelSelectedCard(null);
+						return;
 					}
 					addCardToDeck(deckId, card, zone);
 					setPanelSelectedCard(null);

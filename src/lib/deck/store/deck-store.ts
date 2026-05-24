@@ -74,6 +74,13 @@ type DeckActions = {
 		userId: string,
 		triggerSync: () => void
 	) => void;
+	addCollectionCardToDeck: (
+		deckId: string,
+		collectionRowId: string,
+		zone: DeckZone,
+		userId: string,
+		triggerSync: () => void
+	) => void;
 	bulkAddCardsToDeck: (
 		deckId: string,
 		cards: Array<{ card: ScryfallCard; zone: DeckZone; quantity: number }>,
@@ -295,6 +302,48 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 				},
 			}));
 		}
+	},
+
+	addCollectionCardToDeck: (deckId, collectionRowId, zone, userId, triggerSync) => {
+		const collectionCopy =
+			get().activeDeckCards[collectionRowId] ??
+			(() => {
+				const ce = useCollectionStore.getState().entries[collectionRowId];
+				return ce ? { scryfallId: ce.scryfallId, entry: ce.entry } : null;
+			})();
+
+		if (!collectionCopy) return;
+
+		const newTags = setDeckZone(collectionCopy.entry.tags, zone);
+		const updatedEntry: CardEntry = {
+			...collectionCopy.entry,
+			deckId,
+			tags: newTags,
+			ownerId: userId,
+		};
+
+		// Add to deck store using the collection rowId (not a new UUID)
+		set((state) => ({
+			activeDeckCards: {
+				...state.activeDeckCards,
+				[collectionRowId]: { scryfallId: collectionCopy.scryfallId, entry: updatedEntry },
+			},
+		}));
+
+		// Update collection store so the copy no longer appears as free
+		const colEntries = useCollectionStore.getState().entries;
+		if (colEntries[collectionRowId]) {
+			useCollectionStore.setState({
+				entries: {
+					...colEntries,
+					[collectionRowId]: { scryfallId: collectionCopy.scryfallId, entry: updatedEntry },
+				},
+			});
+		}
+
+		// One update op — the collection row serves as the deck card row
+		enqueue({ type: 'update', payload: { userId, rowId: collectionRowId, entry: updatedEntry } });
+		triggerSync();
 	},
 
 	bulkAddCardsToDeck: (deckId, cards, userId, triggerSync) => {
