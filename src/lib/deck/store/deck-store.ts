@@ -271,6 +271,22 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			stateUpdate.activeDeckCards = {};
 		}
 		set(stateUpdate);
+
+		// Sync collection store client-side: remove deckId from freed copies
+		if (!options?.deleteCollectionCopies) {
+			const colEntries = useCollectionStore.getState().entries;
+			const updatedEntries = { ...colEntries };
+			let changed = false;
+			for (const [rowId, copy] of Object.entries(updatedEntries)) {
+				if (copy.entry.deckId === deckId) {
+					const { deckId: _deckId, ...rest } = copy.entry;
+					updatedEntries[rowId] = { ...copy, entry: rest };
+					changed = true;
+				}
+			}
+			if (changed) useCollectionStore.setState({ entries: updatedEntries });
+		}
+
 		enqueue({
 			type: 'deck-delete',
 			payload: { userId, deckId, deleteCollectionCopies: options?.deleteCollectionCopies ?? false },
