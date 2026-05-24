@@ -50,6 +50,7 @@ export default function DecksPage() {
 	const [showCreate, setShowCreate] = useState(false);
 	const [showImport, setShowImport] = useState(false);
 	const [deckToDelete, setDeckToDelete] = useState<string | null>(null);
+	const [deleteCollectionCopies, setDeleteCollectionCopies] = useState(false);
 	const [folderToDelete, setFolderToDelete] = useState<string | null>(null);
 	const [draggingDeckId, setDraggingDeckId] = useState<string | null>(null);
 	const [draggingFolderId, setDraggingFolderId] = useState<string | null>(null);
@@ -334,14 +335,27 @@ export default function DecksPage() {
 
 			{deckToDelete && (
 				<ConfirmModal
-					message="Are you sure you want to delete this deck? All cards in it will be removed."
-					confirmLabel="Delete"
+					message="Supprimer ce deck ?"
+					confirmLabel="Supprimer"
 					onConfirm={() => {
-						deleteDeck(deckToDelete);
+						deleteDeck(deckToDelete, { deleteCollectionCopies });
 						setDeckToDelete(null);
+						setDeleteCollectionCopies(false);
 					}}
-					onClose={() => setDeckToDelete(null)}
-				/>
+					onClose={() => {
+						setDeckToDelete(null);
+						setDeleteCollectionCopies(false);
+					}}
+				>
+					<label className={styles.deleteToggle}>
+						<input
+							type="checkbox"
+							checked={deleteCollectionCopies}
+							onChange={(e) => setDeleteCollectionCopies(e.target.checked)}
+						/>
+						Supprimer les cartes de la collection
+					</label>
+				</ConfirmModal>
 			)}
 
 			{folderToDelete && (

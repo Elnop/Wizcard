@@ -140,6 +140,13 @@ export type SyncOp =
 			payload: { userId: string; deckId: string; folderId: string | null };
 			retries: number;
 			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'deck-collection-unassign';
+			payload: { userId: string; deckId: string };
+			retries: number;
+			createdAt: string;
 	  };
 
 function loadQueue(): SyncOp[] {

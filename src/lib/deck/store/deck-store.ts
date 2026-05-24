@@ -65,7 +65,12 @@ type DeckActions = {
 		userId: string,
 		triggerSync: () => void
 	) => void;
-	deleteDeck: (deckId: string, userId: string, triggerSync: () => void) => void;
+	deleteDeck: (
+		deckId: string,
+		userId: string,
+		triggerSync: () => void,
+		options?: { deleteCollectionCopies?: boolean }
+	) => void;
 
 	addCardToDeck: (
 		deckId: string,
@@ -257,7 +262,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		triggerSync();
 	},
 
-	deleteDeck: (deckId, userId, triggerSync) => {
+	deleteDeck: (deckId, userId, triggerSync, options) => {
 		const next = { ...get().decks };
 		delete next[deckId];
 		const stateUpdate: Partial<DeckState> = { decks: next };
@@ -266,6 +271,9 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			stateUpdate.activeDeckCards = {};
 		}
 		set(stateUpdate);
+		if (!options?.deleteCollectionCopies) {
+			enqueue({ type: 'deck-collection-unassign', payload: { userId, deckId } });
+		}
 		enqueue({ type: 'deck-delete', payload: { userId, deckId } });
 		triggerSync();
 	},
@@ -329,7 +337,12 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 				[collectionRowId]: { scryfallId: collectionCopy.scryfallId, entry: updatedEntry },
 			},
 			...(state.decks[deckId]
-				? { decks: { ...state.decks, [deckId]: { ...state.decks[deckId], updatedAt: new Date().toISOString() } } }
+				? {
+						decks: {
+							...state.decks,
+							[deckId]: { ...state.decks[deckId], updatedAt: new Date().toISOString() },
+						},
+					}
 				: {}),
 		}));
 

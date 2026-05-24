@@ -159,6 +159,22 @@ export async function deleteDeck(userId: string, deckId: string): Promise<void> 
 	}
 }
 
+export async function unassignCollectionCopiesFromDeck(
+	userId: string,
+	deckId: string
+): Promise<void> {
+	const supabase = createClient();
+	const { error } = await supabase
+		.from('cards')
+		.update({ deck_id: null })
+		.eq('deck_id', deckId)
+		.not('owner_id', 'is', null);
+
+	if (error) {
+		throw new Error(`[decks] unassignCollectionCopiesFromDeck error: ${error.message}`);
+	}
+}
+
 /** Fetch distinct scryfall_ids for each of the given deck IDs in a single query. */
 export async function fetchDeckScryfallIds(deckIds: string[]): Promise<Record<string, string[]>> {
 	if (deckIds.length === 0) return {};

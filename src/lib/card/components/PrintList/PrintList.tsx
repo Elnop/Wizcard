@@ -65,10 +65,7 @@ export function PrintList({
 			return (
 				<>
 					{assignedDeckName && (
-						<span
-							className={styles.assignedBadge}
-							title={`Utilisé dans : ${assignedDeckName}`}
-						>
+						<span className={styles.assignedBadge} title={`Utilisé dans : ${assignedDeckName}`}>
 							Utilisé
 						</span>
 					)}
