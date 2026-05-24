@@ -89,12 +89,5 @@ export function groupCollectionByPrint(
 		});
 	}
 
-	if (orphans.length > 0) {
-		sections.push({
-			label: `Autre (${orphans.length})`,
-			cards: [],
-		});
-	}
-
 	return sections;
 }
