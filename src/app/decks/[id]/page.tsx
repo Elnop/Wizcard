@@ -16,6 +16,8 @@ import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useDeckCardModal } from '@/lib/card/hooks/useDeckCardModal';
+import { useCollectionCards } from '@/app/collection/useCollectionCards';
+import { findFreeCollectionCopy } from '@/lib/deck/utils/collectionCopyResolver';
 import { useDeckDetail, type ResolvedDeckCard } from './useDeckDetail';
 import { useDeckCardSections } from './useDeckCardSections';
 import { DeckHeader } from './components/DeckHeader/DeckHeader';
@@ -35,6 +37,7 @@ export default function DeckDetailPage() {
 
 	const [searchPanelOpen, setSearchPanelOpen] = useState(false);
 	const [panelSelectedCard, setPanelSelectedCard] = useState<ScryfallCard | null>(null);
+	const [panelInCollectionOnly, setPanelInCollectionOnly] = useState(false);
 
 	const showCommander = deck?.format === 'commander' || deck?.format === 'brawl';
 
@@ -65,7 +68,7 @@ export default function DeckDetailPage() {
 		handleAssignCollectionCopy,
 	} = useDeckCardModal(deckId, groupByCardId);
 
-	const { entries } = useCollectionContext();
+	const { entries, updateEntry } = useCollectionContext();
 
 	// scryfallIds of all prints in the currently selected card group
 	const selectedScryfallIds = useMemo(
@@ -87,6 +90,22 @@ export default function DeckDetailPage() {
 				})),
 		[entries, selectedScryfallIds]
 	);
+
+	const emptyEntries = useMemo(() => [], []);
+
+	const { stacks: panelCollectionStacks } = useCollectionCards(
+		panelInCollectionOnly ? entries : emptyEntries
+	);
+
+	const panelScryfallIdToOracleId = useMemo(() => {
+		const map = new Map<string, string>();
+		for (const stack of panelCollectionStacks) {
+			for (const card of stack.cards) {
+				if (card.oracle_id) map.set(card.id, card.oracle_id);
+			}
+		}
+		return map;
+	}, [panelCollectionStacks]);
 
 	const handleCardClick = useCallback(
 		(card: AnyCard) => {
@@ -241,6 +260,7 @@ export default function DeckDetailPage() {
 						onClose={() => setSearchPanelOpen(false)}
 						deckFormat={deck.format}
 						commanderColorIdentity={commanderColorIdentity}
+						onCollectionModeChange={setPanelInCollectionOnly}
 					/>
 				)}
 			</div>
@@ -279,6 +299,21 @@ export default function DeckDetailPage() {
 						(entry.tags
 							?.find((t: string) => t.startsWith('deck:'))
 							?.replace('deck:', '') as DeckZone) ?? 'mainboard';
+					if (panelInCollectionOnly) {
+						const copy = findFreeCollectionCopy(
+							card.id,
+							card.oracle_id ?? '',
+							entries,
+							panelScryfallIdToOracleId
+						);
+						if (copy) {
+							updateEntry(copy.rowId, { deckId });
+						} else {
+							// No free collection copy available — don't add a ghost deck card
+							setPanelSelectedCard(null);
+							return;
+						}
+					}
 					addCardToDeck(deckId, card, zone);
 					setPanelSelectedCard(null);
 				}}
