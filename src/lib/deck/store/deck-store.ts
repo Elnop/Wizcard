@@ -434,6 +434,11 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 					},
 				}));
 				enqueue({ type: 'update', payload: { userId, rowId, entry: freedEntry } });
+			} else {
+				console.error(
+					'[deck-store] changeDeckCardPrint: collection copy missing ownerId, falling back to deck-card-delete'
+				);
+				enqueue({ type: 'deck-card-delete', payload: { rowId } });
 			}
 		} else {
 			enqueue({ type: 'deck-card-delete', payload: { rowId } });
