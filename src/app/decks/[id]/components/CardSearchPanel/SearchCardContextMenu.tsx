@@ -1,9 +1,12 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
+import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { findFreeCollectionCopy } from '@/lib/deck/utils/collectionCopyResolver';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { DeckFormat } from '@/types/decks';
+import type { DeckFormat, DeckZone } from '@/types/decks';
+import type { CardEntry } from '@/types/cards';
 
 const COMMANDER_FORMATS: DeckFormat[] = ['commander', 'brawl', 'oathbreaker'];
 
@@ -14,6 +17,9 @@ type Props = {
 	format: DeckFormat | null | undefined;
 	onCardClick: (card: ScryfallCard) => void;
 	onClose: () => void;
+	inCollectionOnly: boolean;
+	collectionEntries: Array<{ scryfallId: string; entry: CardEntry }>;
+	scryfallIdToOracleId: Map<string, string>;
 };
 
 export function SearchCardContextMenu({
@@ -23,47 +29,65 @@ export function SearchCardContextMenu({
 	format,
 	onCardClick,
 	onClose,
+	inCollectionOnly,
+	collectionEntries,
+	scryfallIdToOracleId,
 }: Props) {
 	const { addCardToDeck } = useDeckContext();
+	const { assignToDeck } = useCollectionContext();
 	const isCommanderFormat = format != null && COMMANDER_FORMATS.includes(format);
+
+	const addWithCollectionAssign = useCallback(
+		(zone: DeckZone) => {
+			if (inCollectionOnly) {
+				const copy = findFreeCollectionCopy(
+					card.id,
+					card.oracle_id ?? '',
+					collectionEntries,
+					scryfallIdToOracleId
+				);
+				if (copy) assignToDeck(copy.rowId, deckId);
+			}
+			addCardToDeck(deckId, card, zone);
+			onClose();
+		},
+		[
+			inCollectionOnly,
+			card,
+			collectionEntries,
+			scryfallIdToOracleId,
+			assignToDeck,
+			deckId,
+			addCardToDeck,
+			onClose,
+		]
+	);
 
 	const items: ContextMenuAction[] = useMemo(() => {
 		const zoneItems: ContextMenuAction[] = [
 			{
 				type: 'action',
 				label: '+ Mainboard',
-				onClick: () => {
-					addCardToDeck(deckId, card, 'mainboard');
-					onClose();
-				},
+				onClick: () => addWithCollectionAssign('mainboard'),
 			},
 			{
 				type: 'action',
 				label: '+ Sideboard',
-				onClick: () => {
-					addCardToDeck(deckId, card, 'sideboard');
-					onClose();
-				},
+				onClick: () => addWithCollectionAssign('sideboard'),
 			},
 			...(isCommanderFormat
 				? [
 						{
 							type: 'action' as const,
 							label: '+ Commander',
-							onClick: () => {
-								addCardToDeck(deckId, card, 'commander');
-								onClose();
-							},
+							onClick: () => addWithCollectionAssign('commander'),
 						},
 					]
 				: []),
 			{
 				type: 'action',
 				label: '+ Maybeboard',
-				onClick: () => {
-					addCardToDeck(deckId, card, 'maybeboard');
-					onClose();
-				},
+				onClick: () => addWithCollectionAssign('maybeboard'),
 			},
 		];
 
@@ -79,7 +103,7 @@ export function SearchCardContextMenu({
 			{ type: 'divider' },
 			...zoneItems,
 		];
-	}, [card, deckId, isCommanderFormat, addCardToDeck, onCardClick, onClose]);
+	}, [card, isCommanderFormat, addWithCollectionAssign, onCardClick, onClose]);
 
 	return <ContextMenu items={items} position={position} onClose={onClose} />;
 }

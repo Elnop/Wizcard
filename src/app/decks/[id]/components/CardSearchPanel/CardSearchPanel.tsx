@@ -33,6 +33,7 @@ type Props = {
 	onClose: () => void;
 	deckFormat?: DeckFormat | null;
 	commanderColorIdentity?: ScryfallColor[];
+	onCollectionModeChange?: (inCollectionOnly: boolean) => void;
 };
 
 export function CardSearchPanel({
@@ -41,6 +42,7 @@ export function CardSearchPanel({
 	onClose,
 	deckFormat,
 	commanderColorIdentity,
+	onCollectionModeChange,
 }: Props) {
 	const [searchName, setSearchName] = useState('');
 	const [legalOnly, setLegalOnly] = useState(true);
@@ -103,6 +105,16 @@ export function CardSearchPanel({
 			collectionStacks.map((s) => s.cards[0]).filter((c): c is NonNullable<typeof c> => c != null),
 		[collectionStacks]
 	);
+
+	const scryfallIdToOracleId = useMemo(() => {
+		const map = new Map<string, string>();
+		for (const stack of collectionStacks) {
+			for (const card of stack.cards) {
+				if (card.oracle_id) map.set(card.id, card.oracle_id);
+			}
+		}
+		return map;
+	}, [collectionStacks]);
 
 	const collectionFilters = useMemo<CollectionFilters>(
 		() => ({
@@ -257,7 +269,11 @@ export function CardSearchPanel({
 					<input
 						type="checkbox"
 						checked={inCollectionOnly}
-						onChange={(e) => setInCollectionOnly(e.target.checked)}
+						onChange={(e) => {
+							const next = e.target.checked;
+							setInCollectionOnly(next);
+							onCollectionModeChange?.(next);
+						}}
 						className={styles.toggleInput}
 					/>
 					<span className={styles.toggleText}>In collection only</span>
@@ -321,6 +337,9 @@ export function CardSearchPanel({
 					format={deckFormat}
 					onCardClick={onCardClick}
 					onClose={closeContextMenu}
+					inCollectionOnly={inCollectionOnly}
+					collectionEntries={collectionEntries}
+					scryfallIdToOracleId={scryfallIdToOracleId}
 				/>
 			)}
 		</aside>
