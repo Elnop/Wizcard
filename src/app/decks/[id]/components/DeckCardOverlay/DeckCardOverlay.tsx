@@ -21,6 +21,7 @@ type Props = {
 	onDuplicate: (rc: Card) => void;
 	onRemove: (rowId: string) => void;
 	onChangeZone: (rowId: string, zone: DeckZone) => void;
+	onBadgeClick?: () => void;
 };
 
 export function DeckCardOverlay({
@@ -30,6 +31,7 @@ export function DeckCardOverlay({
 	onDuplicate,
 	onRemove,
 	onChangeZone,
+	onBadgeClick,
 }: Props) {
 	const otherZones = zones.filter((z) => z !== currentZone);
 	const zoneCopies = group.byZone.get(currentZone) ?? [];
@@ -129,6 +131,11 @@ export function DeckCardOverlay({
 							? styles.ownershipBadgeOrange
 							: styles.ownershipBadgeGrey
 				}`}
+				onClick={(e) => {
+					e.stopPropagation();
+					onBadgeClick?.();
+				}}
+				style={onBadgeClick ? { cursor: 'pointer' } : undefined}
 			>
 				{badgeState === 'owned' ? '✓' : badgeState === 'partial' ? `${K}/${count}` : ''}
 				<span className={styles.ownershipTooltip}>

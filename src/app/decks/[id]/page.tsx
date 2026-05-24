@@ -163,6 +163,7 @@ export default function DeckDetailPage() {
 			const group = groupByCardId.get(c.oracle_id);
 			const currentZone = getDeckZone(c.entry.tags);
 			if (!group) return null;
+			const firstCopy = group.byZone.get(currentZone)?.[0];
 			return (
 				<DeckCardOverlay
 					group={group}
@@ -171,10 +172,18 @@ export default function DeckDetailPage() {
 					onDuplicate={handleDuplicateCard}
 					onRemove={removeCardFromDeck}
 					onChangeZone={changeZone}
+					onBadgeClick={() => handleCardGroupClick(group, firstCopy?.entry.rowId ?? c.entry.rowId)}
 				/>
 			);
 		},
-		[groupByCardId, zones, handleDuplicateCard, removeCardFromDeck, changeZone]
+		[
+			groupByCardId,
+			zones,
+			handleDuplicateCard,
+			removeCardFromDeck,
+			changeZone,
+			handleCardGroupClick,
+		]
 	);
 
 	if (isLoading) {
