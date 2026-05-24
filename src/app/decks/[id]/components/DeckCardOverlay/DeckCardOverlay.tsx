@@ -38,7 +38,6 @@ export function DeckCardOverlay({
 
 	// Ownership badge
 	const { entries: collectionEntries } = useCollectionContext();
-	const N = zoneCopies.length;
 	const K = zoneCopies.filter((c) => !!c.entry.ownerId).length;
 	const repScryfallId = group.representative.id;
 	const repSet = group.representative.set.toUpperCase();
@@ -51,7 +50,7 @@ export function DeckCardOverlay({
 
 	type BadgeState = 'none' | 'partial' | 'owned';
 	const badgeState: BadgeState =
-		K === N && N > 0 ? 'owned' : K > 0 || freeExact > 0 ? 'partial' : 'none';
+		K === count && count > 0 ? 'owned' : K > 0 || freeExact > 0 ? 'partial' : 'none';
 
 	const formatCopyLine = (entry: { condition?: string; isFoil?: boolean; language?: string }) => {
 		const parts: string[] = [`[${repSet} #${repCollectorNumber}]`];
@@ -131,7 +130,7 @@ export function DeckCardOverlay({
 							: styles.ownershipBadgeGrey
 				}`}
 			>
-				{badgeState === 'owned' ? '✓' : badgeState === 'partial' ? `${K}/${N}` : ''}
+				{badgeState === 'owned' ? '✓' : badgeState === 'partial' ? `${K}/${count}` : ''}
 				<span className={styles.ownershipTooltip}>
 					<span className={styles.ownershipTooltipHeader}>Ma collection</span>
 					{badgeState === 'none' ? (
