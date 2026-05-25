@@ -32,6 +32,7 @@ export default function DeckDetailPage() {
 	const deckId = params.id as string;
 
 	const {
+		decks: allDecks,
 		updateDeck,
 		addCardToDeck,
 		addCollectionCardToDeck,
@@ -82,20 +83,31 @@ export default function DeckDetailPage() {
 		[selectedCards]
 	);
 
+	const deckNameById = useMemo(() => new Map(allDecks.map((d) => [d.id, d.name])), [allDecks]);
+
 	// All collection copies (assigned + free) filtered to the selected card's prints only
 	const allCollectionCopies = useMemo(
 		() =>
 			entries
 				.filter((e) => selectedScryfallIds.has(e.scryfallId))
-				.map((e) => ({
-					rowId: e.entry.rowId,
-					scryfallId: e.scryfallId,
-					condition: e.entry.condition,
-					isFoil: e.entry.isFoil,
-					language: e.entry.language,
-					assignedToDeckName: e.entry.deckId === deck?.id ? deck?.name : undefined,
-				})),
-		[entries, selectedScryfallIds, deck]
+				.map((e) => {
+					const assignedToCurrentDeck = !!e.entry.deckId && e.entry.deckId === deck?.id;
+					return {
+						rowId: e.entry.rowId,
+						scryfallId: e.scryfallId,
+						condition: e.entry.condition,
+						isFoil: e.entry.isFoil,
+						language: e.entry.language,
+						assignedToDeckName:
+							e.entry.deckId != null
+								? assignedToCurrentDeck
+									? deck?.name
+									: deckNameById.get(e.entry.deckId)
+								: undefined,
+						isCurrentDeck: assignedToCurrentDeck,
+					};
+				}),
+		[entries, selectedScryfallIds, deck, deckNameById]
 	);
 
 	const emptyEntries = useMemo(() => [], []);
