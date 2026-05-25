@@ -28,7 +28,8 @@ export function useCollectionBadge(
 	group: DeckCardGroup,
 	currentZone: DeckZone,
 	currentDeckId: string,
-	oracleScryfallIds: string[]
+	oracleScryfallIds: string[],
+	deckNameResolver: (deckId: string) => string | undefined
 ): UseCollectionBadgeResult {
 	const { entries: collectionEntries } = useCollectionContext();
 
@@ -103,7 +104,11 @@ export function useCollectionBadge(
 			stackEntry(e.scryfallId, e.entry);
 		}
 		for (const e of lockedCopies) {
-			stackEntry(e.scryfallId, e.entry, undefined); // deck name resolver added in Task 5
+			stackEntry(
+				e.scryfallId,
+				e.entry,
+				e.entry.deckId ? deckNameResolver(e.entry.deckId) : undefined
+			);
 		}
 
 		const tooltipCopies: TooltipCopy[] = Array.from(stackMap.entries()).map(
@@ -116,5 +121,5 @@ export function useCollectionBadge(
 		);
 
 		return { badgeState, ownedCount, neededCount, tooltipCopies };
-	}, [collectionEntries, group, currentZone, currentDeckId, oracleScryfallIds]);
+	}, [collectionEntries, group, currentZone, currentDeckId, oracleScryfallIds, deckNameResolver]);
 }

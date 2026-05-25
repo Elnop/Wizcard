@@ -20,6 +20,7 @@ type Props = {
 	zones: DeckZone[];
 	deckId: string;
 	oracleScryfallIds: string[];
+	deckNameResolver: (deckId: string) => string | undefined;
 	onDuplicate: (rc: Card) => void;
 	onRemove: (rowId: string) => void;
 	onChangeZone: (rowId: string, zone: DeckZone) => void;
@@ -32,6 +33,7 @@ export function DeckCardOverlay({
 	zones,
 	deckId,
 	oracleScryfallIds,
+	deckNameResolver,
 	onDuplicate,
 	onRemove,
 	onChangeZone,
@@ -46,7 +48,8 @@ export function DeckCardOverlay({
 		group,
 		currentZone,
 		deckId,
-		oracleScryfallIds
+		oracleScryfallIds,
+		deckNameResolver
 	);
 
 	const badgeClass =

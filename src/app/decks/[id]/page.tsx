@@ -85,6 +85,8 @@ export default function DeckDetailPage() {
 
 	const deckNameById = useMemo(() => new Map(allDecks.map((d) => [d.id, d.name])), [allDecks]);
 
+	const deckNameResolver = useCallback((id: string) => deckNameById.get(id), [deckNameById]);
+
 	// All collection copies (assigned + free) filtered to the selected card's prints only
 	const allCollectionCopies = useMemo(
 		() =>
@@ -220,6 +222,7 @@ export default function DeckDetailPage() {
 					zones={zones}
 					deckId={deckId}
 					oracleScryfallIds={oracleScryfallIds}
+					deckNameResolver={deckNameResolver}
 					onDuplicate={handleDuplicateCard}
 					onRemove={removeCardFromDeck}
 					onChangeZone={changeZone}
@@ -233,6 +236,7 @@ export default function DeckDetailPage() {
 			groupByCardId,
 			zones,
 			deckId,
+			deckNameResolver,
 			handleDuplicateCard,
 			removeCardFromDeck,
 			changeZone,
