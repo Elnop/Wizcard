@@ -4,7 +4,7 @@ import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import type { DeckCardGroup } from '../../useDeckCardSections';
 import type { DeckZone } from '@/types/decks';
 import type { Card } from '@/types/cards';
-import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { useCollectionBadge } from './useCollectionBadge';
 import styles from './DeckCardOverlay.module.css';
 
 const ZONE_LABELS: Record<DeckZone, string> = {
@@ -18,6 +18,8 @@ type Props = {
 	group: DeckCardGroup;
 	currentZone: DeckZone;
 	zones: DeckZone[];
+	deckId: string;
+	oracleScryfallIds: string[];
 	onDuplicate: (rc: Card) => void;
 	onRemove: (rowId: string) => void;
 	onChangeZone: (rowId: string, zone: DeckZone) => void;
@@ -28,6 +30,8 @@ export function DeckCardOverlay({
 	group,
 	currentZone,
 	zones,
+	deckId,
+	oracleScryfallIds,
 	onDuplicate,
 	onRemove,
 	onChangeZone,
@@ -38,43 +42,30 @@ export function DeckCardOverlay({
 	const lastCopy = zoneCopies[zoneCopies.length - 1];
 	const count = zoneCopies.length;
 
-	// Ownership badge
-	const { entries: collectionEntries } = useCollectionContext();
-	const K = zoneCopies.filter((c) => !!c.entry.ownerId).length;
-	const repScryfallId = group.representative.id;
-	const repSet = group.representative.set.toUpperCase();
-	const repCollectorNumber = group.representative.collector_number;
-
-	const freeCopies = collectionEntries.filter(
-		(e) => e.scryfallId === repScryfallId && !e.entry.deckId
+	const { badgeState, ownedCount, neededCount, tooltipCopies } = useCollectionBadge(
+		group,
+		currentZone,
+		deckId,
+		oracleScryfallIds
 	);
-	const freeExact = freeCopies.length;
 
-	type BadgeState = 'none' | 'partial' | 'owned';
-	const badgeState: BadgeState =
-		K === count && count > 0 ? 'owned' : K > 0 || freeExact > 0 ? 'partial' : 'none';
-
-	const formatCopyLine = (entry: { condition?: string; isFoil?: boolean; language?: string }) => {
-		const parts: string[] = [`[${repSet} #${repCollectorNumber}]`];
-		parts.push(entry.condition ?? 'NM');
-		if (entry.isFoil) parts.push('✦');
-		if (entry.language && entry.language !== 'English') parts.push(entry.language);
-		return parts.join(' · ');
-	};
-
-	const tooltipCopies: { rowId: string; line: string }[] =
+	const badgeClass =
 		badgeState === 'owned'
-			? zoneCopies
-					.filter((c) => !!c.entry.ownerId)
-					.map((c) => ({ rowId: c.entry.rowId, line: formatCopyLine(c.entry) }))
+			? styles.ownershipBadgeGreen
 			: badgeState === 'partial'
-				? [
-						...zoneCopies
-							.filter((c) => !!c.entry.ownerId)
-							.map((c) => ({ rowId: c.entry.rowId, line: formatCopyLine(c.entry) })),
-						...freeCopies.map((e) => ({ rowId: e.entry.rowId, line: formatCopyLine(e.entry) })),
-					]
-				: [];
+				? styles.ownershipBadgeOrange
+				: badgeState === 'locked'
+					? styles.ownershipBadgeLocked
+					: styles.ownershipBadgeGrey;
+
+	const badgeText =
+		badgeState === 'owned'
+			? '✓'
+			: badgeState === 'partial'
+				? `${ownedCount}/${neededCount}`
+				: badgeState === 'locked'
+					? `0/${neededCount}`
+					: '';
 
 	const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
 	const closeMenu = useCallback(() => setMenuPos(null), []);
@@ -124,28 +115,26 @@ export function DeckCardOverlay({
 	return (
 		<div className={styles.overlay} onContextMenu={handleContextMenu}>
 			<span
-				className={`${styles.ownershipBadge} ${
-					badgeState === 'owned'
-						? styles.ownershipBadgeGreen
-						: badgeState === 'partial'
-							? styles.ownershipBadgeOrange
-							: styles.ownershipBadgeGrey
-				}`}
+				className={`${styles.ownershipBadge} ${badgeClass}`}
 				onClick={(e) => {
 					e.stopPropagation();
 					onBadgeClick?.();
 				}}
 				style={onBadgeClick ? { cursor: 'pointer' } : undefined}
 			>
-				{badgeState === 'owned' ? '✓' : badgeState === 'partial' ? `${K}/${count}` : ''}
+				{badgeText}
 				<span className={styles.ownershipTooltip}>
 					<span className={styles.ownershipTooltipHeader}>Ma collection</span>
 					{badgeState === 'none' ? (
 						<span className={styles.ownershipTooltipItem}>Pas dans ma collection</span>
 					) : (
 						tooltipCopies.map((copy) => (
-							<span key={copy.rowId} className={styles.ownershipTooltipItem}>
+							<span
+								key={copy.key}
+								className={`${styles.ownershipTooltipItem}${copy.lockedDeckName ? ` ${styles.ownershipTooltipItemLocked}` : ''}`}
+							>
 								{copy.line}
+								{copy.lockedDeckName ? ` 🔒 ${copy.lockedDeckName}` : ''}
 							</span>
 						))
 					)}
