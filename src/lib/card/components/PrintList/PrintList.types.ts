@@ -9,6 +9,7 @@ export interface CollectionCopyEntry {
 	isFoil?: boolean;
 	language?: string;
 	assignedToDeckName?: string;
+	isCurrentDeck?: boolean;
 }
 
 export interface PrintListProps {
