@@ -8,7 +8,13 @@ import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/Ca
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { CardLightbox } from '@/lib/card/components/CardLightbox/CardLightbox';
-import { type PrintListProps, groupPrintsByLang, groupCollectionByPrint } from './PrintList.types';
+import {
+	type PrintListProps,
+	groupPrintsByLang,
+	groupCollectionByPrint,
+	getLangLabel,
+} from './PrintList.types';
+import { LANGUAGE_TO_SCRYFALL_CODE } from '@/lib/mtg/languages';
 import styles from './PrintList.module.css';
 
 export function PrintList({
@@ -142,12 +148,16 @@ export function PrintList({
 			render: (anyCard: AnyCard) => {
 				if (!('entry' in anyCard)) return null;
 				const card = anyCard as Card;
+				const langCode = card.entry.language
+					? LANGUAGE_TO_SCRYFALL_CODE[card.entry.language as keyof typeof LANGUAGE_TO_SCRYFALL_CODE]
+					: null;
+				const langLabel = langCode ? getLangLabel(langCode, 0).replace(/\s*\(\d+\)$/, '') : null;
 				return (
 					<span className={styles.copyMeta}>
 						<span className={styles.copyCondition}>{card.entry.condition ?? 'NM'}</span>
 						{card.entry.isFoil && <span className={styles.copyFoil}>✦</span>}
-						{card.entry.language && card.entry.language !== 'English' && (
-							<span className={styles.copyLang}>{card.entry.language}</span>
+						{langLabel && card.entry.language !== 'English' && (
+							<span className={styles.copyLang}>{langLabel}</span>
 						)}
 					</span>
 				);
