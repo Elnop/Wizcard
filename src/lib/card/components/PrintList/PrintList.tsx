@@ -151,7 +151,9 @@ export function PrintList({
 				const langCode = card.entry.language
 					? LANGUAGE_TO_SCRYFALL_CODE[card.entry.language as keyof typeof LANGUAGE_TO_SCRYFALL_CODE]
 					: null;
-				const langLabel = langCode ? getLangLabel(langCode, 0).replace(/\s*\(\d+\)$/, '') : null;
+				const langLabel = langCode
+					? getLangLabel(langCode, 0).replace(/\s*\(\d+\)$/, '')
+					: (card.entry.language ?? null);
 				return (
 					<span className={styles.copyMeta}>
 						<span className={styles.copyCondition}>{card.entry.condition ?? 'NM'}</span>
