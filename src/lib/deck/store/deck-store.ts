@@ -419,6 +419,14 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		const next = { ...current };
 		delete next[rowId];
 		set({ activeDeckCards: next });
+
+		// If the removed card was a collection copy, remove it from the collection store too
+		const colEntries = useCollectionStore.getState().entries;
+		if (colEntries[rowId]) {
+			const { [rowId]: _removed, ...remainingEntries } = colEntries;
+			useCollectionStore.setState({ entries: remainingEntries });
+		}
+
 		enqueue({ type: 'deck-card-delete', payload: { rowId } });
 		triggerSync();
 	},
@@ -479,12 +487,21 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		const isCurrentlyOwned = !!copy.entry.ownerId;
 		const newOwnerId = isCurrentlyOwned ? null : userId;
 		const updates = { owner_id: newOwnerId };
+		const newEntry = { ...copy.entry, ownerId: newOwnerId ?? undefined };
 		set({
 			activeDeckCards: {
 				...current,
-				[rowId]: { ...copy, entry: { ...copy.entry, ownerId: newOwnerId ?? undefined } },
+				[rowId]: { ...copy, entry: newEntry },
 			},
 		});
+
+		// Keep collection store in sync if this row exists there
+		const colEntries = useCollectionStore.getState().entries;
+		if (colEntries[rowId]) {
+			useCollectionStore.setState({
+				entries: { ...colEntries, [rowId]: { ...colEntries[rowId], entry: newEntry } },
+			});
+		}
 		enqueue({ type: 'deck-card-update', payload: { rowId, updates } });
 		triggerSync();
 	},
