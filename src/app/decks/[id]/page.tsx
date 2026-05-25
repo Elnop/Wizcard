@@ -203,12 +203,23 @@ export default function DeckDetailPage() {
 			const group = groupByCardId.get(c.oracle_id);
 			const currentZone = getDeckZone(c.entry.tags);
 			if (!group) return null;
+
+			const oracleScryfallIds = Array.from(
+				new Set(
+					Array.from(group.byZone.values())
+						.flat()
+						.map((rc) => rc.id)
+				)
+			);
+
 			const firstCopy = group.byZone.get(currentZone)?.[0];
 			return (
 				<DeckCardOverlay
 					group={group}
 					currentZone={currentZone}
 					zones={zones}
+					deckId={deckId}
+					oracleScryfallIds={oracleScryfallIds}
 					onDuplicate={handleDuplicateCard}
 					onRemove={removeCardFromDeck}
 					onChangeZone={changeZone}
@@ -221,6 +232,7 @@ export default function DeckDetailPage() {
 		[
 			groupByCardId,
 			zones,
+			deckId,
 			handleDuplicateCard,
 			removeCardFromDeck,
 			changeZone,
