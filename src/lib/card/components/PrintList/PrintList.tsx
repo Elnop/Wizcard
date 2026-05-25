@@ -58,9 +58,24 @@ export function PrintList({
 	function renderOverlay(anyCard: AnyCard): ReactNode {
 		if ('entry' in anyCard) {
 			const card = anyCard as Card;
-			const assignedDeckName = (collectionCopies ?? []).find(
-				(c) => c.rowId === card.entry.rowId
-			)?.assignedToDeckName;
+			const copyMeta = (collectionCopies ?? []).find((c) => c.rowId === card.entry.rowId);
+			const assignedDeckName = copyMeta?.assignedToDeckName;
+			const isCurrentDeck = copyMeta?.isCurrentDeck ?? false;
+
+			if (isCurrentDeck) {
+				return (
+					<button
+						type="button"
+						className={`${styles.selectBtn} ${styles.selectBtnActive}`}
+						onClick={(e) => {
+							e.stopPropagation();
+							onSelectCollectionCopy?.(card.entry.rowId);
+						}}
+					>
+						Sélectionné
+					</button>
+				);
+			}
 
 			return (
 				<>
