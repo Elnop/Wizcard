@@ -41,12 +41,15 @@ export function useCollectionBadge(
 
 		const zoneCopies = group.byZone.get(currentZone) ?? [];
 		const neededCount = zoneCopies.length;
-		const ownedCount = zoneCopies.filter((c) => c.entry.deckId === currentDeckId).length;
+		const ownedCount = zoneCopies.filter((c) => !!c.entry.ownerId).length;
 
 		const relevantEntries = collectionEntries.filter((e) => scryfallIdSet.has(e.scryfallId));
 		const availableCopies = relevantEntries.filter((e) => !e.entry.deckId);
 		const lockedCopies = relevantEntries.filter(
 			(e) => e.entry.deckId != null && e.entry.deckId !== currentDeckId
+		);
+		const ownedInCurrentDeck = relevantEntries.filter(
+			(e) => e.entry.deckId === currentDeckId && !!e.entry.ownerId
 		);
 
 		let badgeState: BadgeState;
@@ -100,6 +103,9 @@ export function useCollectionBadge(
 			}
 		};
 
+		for (const e of ownedInCurrentDeck) {
+			stackEntry(e.scryfallId, e.entry);
+		}
 		for (const e of availableCopies) {
 			stackEntry(e.scryfallId, e.entry);
 		}
