@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import type { DeckCardGroup } from '../../useDeckCardSections';
 import type { DeckZone } from '@/types/decks';
+import type { CardEntry } from '@/types/cards';
 
 export type BadgeState = 'none' | 'locked' | 'partial' | 'owned';
 
@@ -19,6 +20,10 @@ export type UseCollectionBadgeResult = {
 	tooltipCopies: TooltipCopy[];
 };
 
+/**
+ * @param oracleScryfallIds All scryfallIds for this oracle_id across all prints.
+ * Must be a stable reference (e.g. from a parent useMemo) to avoid busting this memo on every render.
+ */
 export function useCollectionBadge(
 	group: DeckCardGroup,
 	currentZone: DeckZone,
@@ -56,7 +61,7 @@ export function useCollectionBadge(
 
 		const formatLine = (
 			scryfallId: string,
-			entry: { condition?: string; isFoil?: boolean; language?: string },
+			entry: Pick<CardEntry, 'condition' | 'isFoil' | 'language'>,
 			count: number
 		): string => {
 			const parts: string[] = [];
@@ -74,7 +79,7 @@ export function useCollectionBadge(
 			string,
 			{
 				scryfallId: string;
-				entry: { condition?: string; isFoil?: boolean; language?: string };
+				entry: Pick<CardEntry, 'condition' | 'isFoil' | 'language'>;
 				count: number;
 				lockedDeckName?: string;
 			}
@@ -82,7 +87,7 @@ export function useCollectionBadge(
 
 		const stackEntry = (
 			scryfallId: string,
-			entry: { condition?: string; isFoil?: boolean; language?: string },
+			entry: Pick<CardEntry, 'condition' | 'isFoil' | 'language'>,
 			lockedDeckName?: string
 		) => {
 			const key = `${scryfallId}·${entry.condition ?? 'NM'}·${entry.isFoil ? '1' : '0'}·${entry.language ?? 'en'}`;
@@ -98,7 +103,7 @@ export function useCollectionBadge(
 			stackEntry(e.scryfallId, e.entry);
 		}
 		for (const e of lockedCopies) {
-			stackEntry(e.scryfallId, e.entry, undefined);
+			stackEntry(e.scryfallId, e.entry, undefined); // deck name resolver added in Task 5
 		}
 
 		const tooltipCopies: TooltipCopy[] = Array.from(stackMap.entries()).map(
