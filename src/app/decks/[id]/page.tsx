@@ -47,6 +47,9 @@ export default function DeckDetailPage() {
 	const [panelSelectedCard, setPanelSelectedCard] = useState<ScryfallCard | null>(null);
 	const [panelInCollectionOnly, setPanelInCollectionOnly] = useState(false);
 
+	const [bulkSelectMode, setBulkSelectMode] = useState(false);
+	const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
+
 	const showCommander = deck?.format === 'commander' || deck?.format === 'brawl';
 
 	const zones: DeckZone[] = useMemo(
@@ -130,13 +133,27 @@ export default function DeckDetailPage() {
 		return map;
 	}, [panelCollectionStacks]);
 
+	const toggleBulkSelect = useCallback((oracleId: string) => {
+		setBulkSelected((prev) => {
+			const next = new Set(prev);
+			if (next.has(oracleId)) next.delete(oracleId);
+			else next.add(oracleId);
+			return next;
+		});
+	}, []);
+
 	const handleCardClick = useCallback(
 		(card: AnyCard) => {
+			if (bulkSelectMode) {
+				const c = card as ResolvedDeckCard;
+				toggleBulkSelect(c.oracle_id);
+				return;
+			}
 			const c = card as ResolvedDeckCard;
 			const group = groupByCardId.get(c.oracle_id);
 			if (group) handleCardGroupClick(group, c.entry.rowId);
 		},
-		[groupByCardId, handleCardGroupClick]
+		[bulkSelectMode, toggleBulkSelect, groupByCardId, handleCardGroupClick]
 	);
 
 	const tableColumns: CardListColumn[] = useMemo(
@@ -201,12 +218,56 @@ export default function DeckDetailPage() {
 		[deckId, addCardToDeck]
 	);
 
+	const handleBulkAddToWishlist = useCallback(() => {
+		for (const oracleId of bulkSelected) {
+			const group = groupByCardId.get(oracleId);
+			if (!group) continue;
+			const representativeCard = group.representative as ResolvedDeckCard;
+			addToWishlist({ id: representativeCard.id } as ScryfallCard);
+		}
+		setBulkSelected(new Set());
+		setBulkSelectMode(false);
+	}, [bulkSelected, groupByCardId, addToWishlist]);
+
 	const renderOverlay = useCallback(
 		(card: AnyCard) => {
 			const c = card as ResolvedDeckCard;
 			const group = groupByCardId.get(c.oracle_id);
 			const currentZone = getDeckZone(c.entry.tags);
 			if (!group) return null;
+
+			if (bulkSelectMode) {
+				const checked = bulkSelected.has(c.oracle_id);
+				return (
+					<div
+						style={{
+							position: 'absolute',
+							inset: 0,
+							cursor: 'pointer',
+							display: 'flex',
+							alignItems: 'flex-start',
+							justifyContent: 'flex-start',
+							padding: '8px',
+							background: checked ? 'rgba(124,106,245,0.18)' : 'transparent',
+							border: checked ? '2px solid rgba(124,106,245,0.7)' : '2px solid transparent',
+							borderRadius: '4px',
+							boxSizing: 'border-box',
+						}}
+						onClick={(e) => {
+							e.stopPropagation();
+							toggleBulkSelect(c.oracle_id);
+						}}
+					>
+						<input
+							type="checkbox"
+							checked={checked}
+							onChange={() => toggleBulkSelect(c.oracle_id)}
+							onClick={(e) => e.stopPropagation()}
+							style={{ width: 18, height: 18, cursor: 'pointer' }}
+						/>
+					</div>
+				);
+			}
 
 			const oracleScryfallIds = Array.from(
 				new Set(
@@ -239,6 +300,9 @@ export default function DeckDetailPage() {
 		},
 		[
 			groupByCardId,
+			bulkSelectMode,
+			bulkSelected,
+			toggleBulkSelect,
 			zones,
 			deckId,
 			deckNameResolver,
@@ -292,6 +356,19 @@ export default function DeckDetailPage() {
 					/>
 
 					<DeckStats stats={stats} warnings={warnings} />
+
+					<div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+						<button
+							type="button"
+							className={`${styles.bulkSelectToggle} ${bulkSelectMode ? styles.bulkSelectToggleActive : ''}`}
+							onClick={() => {
+								setBulkSelectMode((v) => !v);
+								setBulkSelected(new Set());
+							}}
+						>
+							{bulkSelectMode ? 'Cancel select' : 'Select cards'}
+						</button>
+					</div>
 				</div>
 
 				{searchPanelOpen && (
@@ -305,6 +382,35 @@ export default function DeckDetailPage() {
 					/>
 				)}
 			</div>
+
+			{bulkSelectMode && bulkSelected.size > 0 && (
+				<div className={styles.bulkBar}>
+					<span className={styles.bulkBarCount}>{bulkSelected.size} selected</span>
+					<button
+						type="button"
+						className="btn btn-primary"
+						style={{
+							padding: '6px 14px',
+							fontSize: 'var(--text-sm)',
+							borderRadius: '4px',
+							cursor: 'pointer',
+							background: 'var(--primary)',
+							color: 'var(--primary-text)',
+							border: 'none',
+						}}
+						onClick={handleBulkAddToWishlist}
+					>
+						Add to Wishlist
+					</button>
+					<button
+						type="button"
+						className={styles.bulkBarCancel}
+						onClick={() => setBulkSelected(new Set())}
+					>
+						Clear
+					</button>
+				</div>
+			)}
 
 			<DeckFooter
 				stats={stats}
