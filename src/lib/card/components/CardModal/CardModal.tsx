@@ -19,6 +19,7 @@ import { Button } from '@/components/Button/Button';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
+import { WishlistIcon } from '@/components/WishlistIcon/WishlistIcon';
 import { CopyCardOverlay } from './CopyCardOverlay';
 import styles from './CardModal.module.css';
 
@@ -440,7 +441,7 @@ function CardModalInner({
 										variant="secondary"
 										onClick={() => onAddToWishlistFromEntry(selectedCard.id)}
 									>
-										Add to Wishlist
+										<WishlistIcon size={13} /> Add to Wishlist
 									</Button>
 								)}
 							</div>
@@ -571,7 +572,7 @@ function ScryfallCardModalInner({
 								)}
 								{onAddToWishlist && (
 									<Button variant="secondary" onClick={() => setAddingToWishlist(true)}>
-										Add to Wishlist
+										<WishlistIcon size={13} /> Add to Wishlist
 									</Button>
 								)}
 							</div>

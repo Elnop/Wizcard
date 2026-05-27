@@ -12,18 +12,19 @@
 
 ## File Map
 
-| File | Action | Responsabilité |
-|------|--------|----------------|
-| `src/lib/card/components/PrintList/PrintList.types.ts` | Modify | Ajouter `assignedToDeckName` + `groupCollectionByPrint()` |
-| `src/lib/card/components/PrintList/PrintList.tsx` | Modify | Utiliser `groupCollectionByPrint` + badge dans `renderOverlay` |
-| `src/lib/card/components/PrintList/PrintList.module.css` | Modify | Ajouter `.assignedBadge` |
-| `src/app/decks/[id]/page.tsx` | Modify | Passer toutes les copies (+ assignées) avec `assignedToDeckName` |
+| File                                                     | Action | Responsabilité                                                   |
+| -------------------------------------------------------- | ------ | ---------------------------------------------------------------- |
+| `src/lib/card/components/PrintList/PrintList.types.ts`   | Modify | Ajouter `assignedToDeckName` + `groupCollectionByPrint()`        |
+| `src/lib/card/components/PrintList/PrintList.tsx`        | Modify | Utiliser `groupCollectionByPrint` + badge dans `renderOverlay`   |
+| `src/lib/card/components/PrintList/PrintList.module.css` | Modify | Ajouter `.assignedBadge`                                         |
+| `src/app/decks/[id]/page.tsx`                            | Modify | Passer toutes les copies (+ assignées) avec `assignedToDeckName` |
 
 ---
 
 ### Task 1 : Étendre `CollectionCopyEntry` et ajouter `groupCollectionByPrint`
 
 **Files:**
+
 - Modify: `src/lib/card/components/PrintList/PrintList.types.ts`
 
 - [ ] **Step 1 : Ajouter `assignedToDeckName` à `CollectionCopyEntry`**
@@ -32,12 +33,12 @@ Dans `PrintList.types.ts`, remplacer l'interface `CollectionCopyEntry` :
 
 ```typescript
 export interface CollectionCopyEntry {
-  rowId: string;
-  scryfallId: string;
-  condition?: string;
-  isFoil?: boolean;
-  language?: string;
-  assignedToDeckName?: string;
+	rowId: string;
+	scryfallId: string;
+	condition?: string;
+	isFoil?: boolean;
+	language?: string;
+	assignedToDeckName?: string;
 }
 ```
 
@@ -47,55 +48,55 @@ Ajouter après `groupPrintsByLang` dans `PrintList.types.ts` :
 
 ```typescript
 export function groupCollectionByPrint(
-  copies: CollectionCopyEntry[],
-  printMap: Map<string, ScryfallCard>
+	copies: CollectionCopyEntry[],
+	printMap: Map<string, ScryfallCard>
 ): CardListSection[] {
-  const byPrint = new Map<string, CollectionCopyEntry[]>();
-  const orphans: CollectionCopyEntry[] = [];
+	const byPrint = new Map<string, CollectionCopyEntry[]>();
+	const orphans: CollectionCopyEntry[] = [];
 
-  for (const copy of copies) {
-    if (printMap.has(copy.scryfallId)) {
-      const group = byPrint.get(copy.scryfallId) ?? [];
-      group.push(copy);
-      byPrint.set(copy.scryfallId, group);
-    } else {
-      orphans.push(copy);
-    }
-  }
+	for (const copy of copies) {
+		if (printMap.has(copy.scryfallId)) {
+			const group = byPrint.get(copy.scryfallId) ?? [];
+			group.push(copy);
+			byPrint.set(copy.scryfallId, group);
+		} else {
+			orphans.push(copy);
+		}
+	}
 
-  const sections: CardListSection[] = [];
+	const sections: CardListSection[] = [];
 
-  for (const [scryfallId, group] of byPrint.entries()) {
-    const scryfallCard = printMap.get(scryfallId)!;
-    sections.push({
-      label: `${scryfallCard.set_name} #${scryfallCard.collector_number} (${group.length})`,
-      cards: group.map((copy) => {
-        const card: Card = {
-          ...scryfallCard,
-          entry: {
-            rowId: copy.rowId,
-            dateAdded: '',
-            condition: (copy.condition as Card['entry']['condition']) ?? 'NM',
-            isFoil: copy.isFoil,
-            language: copy.language as Card['entry']['language'],
-          },
-        };
-        return card as AnyCard;
-      }),
-    });
-  }
+	for (const [scryfallId, group] of byPrint.entries()) {
+		const scryfallCard = printMap.get(scryfallId)!;
+		sections.push({
+			label: `${scryfallCard.set_name} #${scryfallCard.collector_number} (${group.length})`,
+			cards: group.map((copy) => {
+				const card: Card = {
+					...scryfallCard,
+					entry: {
+						rowId: copy.rowId,
+						dateAdded: '',
+						condition: (copy.condition as Card['entry']['condition']) ?? 'NM',
+						isFoil: copy.isFoil,
+						language: copy.language as Card['entry']['language'],
+					},
+				};
+				return card as AnyCard;
+			}),
+		});
+	}
 
-  if (orphans.length > 0) {
-    // Orphans have no matching Scryfall print — build minimal Card objects
-    // We can't render a proper CardImage without a ScryfallCard, so we skip them for now
-    // They're included in the count but shown in "Autre" without image
-    sections.push({
-      label: `Autre (${orphans.length})`,
-      cards: [],
-    });
-  }
+	if (orphans.length > 0) {
+		// Orphans have no matching Scryfall print — build minimal Card objects
+		// We can't render a proper CardImage without a ScryfallCard, so we skip them for now
+		// They're included in the count but shown in "Autre" without image
+		sections.push({
+			label: `Autre (${orphans.length})`,
+			cards: [],
+		});
+	}
 
-  return sections;
+	return sections;
 }
 ```
 
@@ -127,6 +128,7 @@ git commit -m "feat: add groupCollectionByPrint and assignedToDeckName to Collec
 ### Task 2 : Ajouter le badge CSS `.assignedBadge`
 
 **Files:**
+
 - Modify: `src/lib/card/components/PrintList/PrintList.module.css`
 
 - [ ] **Step 1 : Ajouter la règle `.assignedBadge`**
@@ -135,20 +137,20 @@ git commit -m "feat: add groupCollectionByPrint and assignedToDeckName to Collec
 
 ```css
 .assignedBadge {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  background: #d97706;
-  color: #fff;
-  cursor: help;
-  pointer-events: auto;
-  z-index: 1;
-  line-height: 1.4;
-  white-space: nowrap;
+	position: absolute;
+	top: 4px;
+	left: 4px;
+	padding: 2px 6px;
+	border-radius: 4px;
+	font-size: 10px;
+	font-weight: 700;
+	background: #d97706;
+	color: #fff;
+	cursor: help;
+	pointer-events: auto;
+	z-index: 1;
+	line-height: 1.4;
+	white-space: nowrap;
 }
 ```
 
@@ -164,6 +166,7 @@ git commit -m "feat: add assignedBadge CSS for collection copy overlay"
 ### Task 3 : Mettre à jour `PrintList.tsx` — groupage et badge
 
 **Files:**
+
 - Modify: `src/lib/card/components/PrintList/PrintList.tsx`
 
 - [ ] **Step 1 : Importer `groupCollectionByPrint`**
@@ -180,17 +183,17 @@ Remplacer le bloc `if (collectionCopies && collectionCopies.length > 0 && prints
 
 ```typescript
 if (collectionCopies && collectionCopies.length > 0 && prints.length > 0) {
-  const printMap = new Map<string, ScryfallCard>(prints.map((p) => [p.id, p]));
-  const printSections = groupCollectionByPrint(collectionCopies, printMap);
+	const printMap = new Map<string, ScryfallCard>(prints.map((p) => [p.id, p]));
+	const printSections = groupCollectionByPrint(collectionCopies, printMap);
 
-  if (printSections.length > 0) {
-    const totalCopies = collectionCopies.length;
-    sections.push({
-      label: `Ma collection (${totalCopies})`,
-      cards: [],
-      children: printSections,
-    });
-  }
+	if (printSections.length > 0) {
+		const totalCopies = collectionCopies.length;
+		sections.push({
+			label: `Ma collection (${totalCopies})`,
+			cards: [],
+			children: printSections,
+		});
+	}
 }
 ```
 
@@ -252,6 +255,7 @@ git commit -m "feat: group collection copies by print with children sections and
 Le caller actuel filtre `!e.entry.deckId` — les copies assignées sont donc exclues. On doit passer toutes les copies pertinentes (assignées comprises) et ajouter `assignedToDeckName`.
 
 **Files:**
+
 - Modify: `src/app/decks/[id]/page.tsx`
 
 - [ ] **Step 1 : Lire le contexte du deck pour récupérer le nom**
@@ -264,18 +268,18 @@ Localiser le `useMemo` de `freeCollectionCopies` (actuellement filtre `!e.entry.
 
 ```typescript
 const allCollectionCopies = useMemo(
-  () =>
-    entries
-      .filter((e) => selectedScryfallIds.has(e.scryfallId))
-      .map((e) => ({
-        rowId: e.entry.rowId,
-        scryfallId: e.scryfallId,
-        condition: e.entry.condition,
-        isFoil: e.entry.isFoil,
-        language: e.entry.language,
-        assignedToDeckName: e.entry.deckId === deck?.id ? deck?.name : undefined,
-      })),
-  [entries, selectedScryfallIds, deck]
+	() =>
+		entries
+			.filter((e) => selectedScryfallIds.has(e.scryfallId))
+			.map((e) => ({
+				rowId: e.entry.rowId,
+				scryfallId: e.scryfallId,
+				condition: e.entry.condition,
+				isFoil: e.entry.isFoil,
+				language: e.entry.language,
+				assignedToDeckName: e.entry.deckId === deck?.id ? deck?.name : undefined,
+			})),
+	[entries, selectedScryfallIds, deck]
 );
 ```
 

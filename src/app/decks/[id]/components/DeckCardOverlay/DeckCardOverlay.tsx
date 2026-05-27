@@ -113,7 +113,7 @@ export function DeckCardOverlay({
 					{
 						type: 'action' as const,
 						label: 'Add to Wishlist',
-						icon: '♥',
+						icon: '🛒',
 						onClick: () => {
 							onAddToWishlist(representativeScryfallId);
 							closeMenu();

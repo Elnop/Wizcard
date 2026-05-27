@@ -15,6 +15,7 @@ L'objectif est que **en mode "in collection only", ajouter une carte au deck ass
 ### Règle de résolution de copie
 
 Quand l'utilisateur ajoute une carte au deck en mode "in collection" :
+
 1. Chercher parmi les `collectionEntries` la première copie libre (`!entry.deckId`) avec le **même `scryfallId`** (même édition)
 2. Si aucune → chercher la première copie libre avec le **même `oracle_id`** (autre édition)
 3. Si aucune → fallback : `addCardToDeck` classique (nouvelle ligne deck sans copie physique)
@@ -24,6 +25,7 @@ Quand l'utilisateur ajoute une carte au deck en mode "in collection" :
 **A) Context menu → `+ Mainboard` / `+ Sideboard` / `+ Maybeboard` / `+ Commander`**
 
 En mode "in collection only", chaque handler de zone :
+
 1. Appelle le resolver avec `(card.id, card.oracle_id, collectionEntries)`
 2. Si copie trouvée → `addCardToDeck(deckId, card, zone)` + `collectionContext.assignToDeck(rowId, deckId)`
 3. Sinon → `addCardToDeck(deckId, card, zone)` seul
@@ -44,11 +46,11 @@ Fonction pure exportée :
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 
 export function findFreeCollectionCopy(
-  scryfallId: string,
-  oracleId: string,
-  entries: Array<{ scryfallId: string; entry: CardEntry }>,
-  scryfallIdToOracleId: Map<string, string>
-): { rowId: string; scryfallId: string } | null
+	scryfallId: string,
+	oracleId: string,
+	entries: Array<{ scryfallId: string; entry: CardEntry }>,
+	scryfallIdToOracleId: Map<string, string>
+): { rowId: string; scryfallId: string } | null;
 ```
 
 - Cherche d'abord `e.scryfallId === scryfallId && !e.entry.deckId`
@@ -62,6 +64,7 @@ La map `scryfallIdToOracleId` est construite à partir des `Card` des stacks de 
 **`src/app/decks/[id]/components/CardSearchPanel/SearchCardContextMenu.tsx`**
 
 Nouveaux props :
+
 ```typescript
 inCollectionOnly: boolean;
 collectionEntries: Array<{ scryfallId: string; entry: CardEntry }>;
@@ -71,15 +74,21 @@ scryfallIdToOracleId: Map<string, string>;
 Accède à `useCollectionContext().assignToDeck` via le hook existant.
 
 Chaque handler de zone est conditionné :
+
 ```typescript
 onClick: () => {
-  if (inCollectionOnly) {
-    const copy = findFreeCollectionCopy(card.id, card.oracle_id ?? '', collectionEntries, scryfallIdToOracleId);
-    if (copy) assignToDeck(copy.rowId, deckId);
-  }
-  addCardToDeck(deckId, card, 'mainboard');
-  onClose();
-}
+	if (inCollectionOnly) {
+		const copy = findFreeCollectionCopy(
+			card.id,
+			card.oracle_id ?? '',
+			collectionEntries,
+			scryfallIdToOracleId
+		);
+		if (copy) assignToDeck(copy.rowId, deckId);
+	}
+	addCardToDeck(deckId, card, 'mainboard');
+	onClose();
+};
 ```
 
 **`src/app/decks/[id]/components/CardSearchPanel/CardSearchPanel.tsx`**
@@ -87,13 +96,13 @@ onClick: () => {
 - Construit `scryfallIdToOracleId: Map<string, string>` à partir de `collectionStacks` (déjà disponibles) :
   ```typescript
   const scryfallIdToOracleId = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const stack of collectionStacks) {
-      for (const card of stack.cards) {
-        map.set(card.id, stack.oracleId);
-      }
-    }
-    return map;
+  	const map = new Map<string, string>();
+  	for (const stack of collectionStacks) {
+  		for (const card of stack.cards) {
+  			map.set(card.id, stack.oracleId);
+  		}
+  	}
+  	return map;
   }, [collectionStacks]);
   ```
 - Passe `inCollectionOnly`, `collectionEntries` (déjà disponible : `entries` du `useCollectionContext()`), et `scryfallIdToOracleId` au `SearchCardContextMenu`.
@@ -148,9 +157,9 @@ Utilisateur → clic carte → modal → Confirmer
 
 ## Fichiers touchés
 
-| Fichier | Modification |
-|---|---|
-| `src/lib/deck/utils/collectionCopyResolver.ts` | **Créer** — fonction pure `findFreeCollectionCopy` |
-| `src/app/decks/[id]/components/CardSearchPanel/SearchCardContextMenu.tsx` | Nouveaux props + branche resolver dans les handlers de zone |
-| `src/app/decks/[id]/components/CardSearchPanel/CardSearchPanel.tsx` | Construire `scryfallIdToOracleId`, passer props au context menu, exposer `onCollectionModeChange` |
-| `src/app/decks/[id]/page.tsx` | State `panelInCollectionOnly`, branche resolver dans `onAddToCollection`, construire `scryfallIdToOracleId` |
+| Fichier                                                                   | Modification                                                                                                |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `src/lib/deck/utils/collectionCopyResolver.ts`                            | **Créer** — fonction pure `findFreeCollectionCopy`                                                          |
+| `src/app/decks/[id]/components/CardSearchPanel/SearchCardContextMenu.tsx` | Nouveaux props + branche resolver dans les handlers de zone                                                 |
+| `src/app/decks/[id]/components/CardSearchPanel/CardSearchPanel.tsx`       | Construire `scryfallIdToOracleId`, passer props au context menu, exposer `onCollectionModeChange`           |
+| `src/app/decks/[id]/page.tsx`                                             | State `panelInCollectionOnly`, branche resolver dans `onAddToCollection`, construire `scryfallIdToOracleId` |

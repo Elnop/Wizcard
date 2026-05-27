@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { CardStack } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
+import { WishlistIcon } from '@/components/WishlistIcon/WishlistIcon';
 import { useCollectionCards } from '@/app/collection/useCollectionCards';
 import { useCardModal } from '@/lib/card/hooks/useCardModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
@@ -64,7 +65,9 @@ export default function WishlistPage() {
 			<main className={styles.main}>
 				<div className={styles.titleSection}>
 					<div className={styles.titleLeft}>
-						<h1 className={styles.title}>My Wishlist</h1>
+						<h1 className={styles.title}>
+							<WishlistIcon size={22} /> My Wishlist
+						</h1>
 						{entries.length > 0 && !isHydrating && (
 							<p className={styles.statsLine}>
 								{totalCards} card{totalCards !== 1 ? 's' : ''} &middot; {uniqueCards} unique

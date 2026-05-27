@@ -26,6 +26,7 @@ import { DeckStats } from './components/DeckStats/DeckStats';
 import { DeckCardOverlay } from './components/DeckCardOverlay/DeckCardOverlay';
 import { DeckFooter } from './components/DeckFooter/DeckFooter';
 import { CardSearchPanel } from './components/CardSearchPanel/CardSearchPanel';
+import { WishlistIcon } from '@/components/WishlistIcon/WishlistIcon';
 import styles from './page.module.css';
 
 export default function DeckDetailPage() {
@@ -397,10 +398,13 @@ export default function DeckDetailPage() {
 							background: 'var(--primary)',
 							color: 'var(--primary-text)',
 							border: 'none',
+							display: 'flex',
+							alignItems: 'center',
+							gap: '6px',
 						}}
 						onClick={handleBulkAddToWishlist}
 					>
-						Add to Wishlist
+						<WishlistIcon size={13} /> Add to Wishlist
 					</button>
 					<button
 						type="button"

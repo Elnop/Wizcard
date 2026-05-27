@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { getQueueLength } from '@/lib/supabase/sync-queue';
 import { SyncIndicator } from '@/lib/supabase/components/SyncIndicator/SyncIndicator';
+import { WishlistIcon } from '@/components/WishlistIcon/WishlistIcon';
 import styles from './Navbar.module.css';
 
 const NavbarDrawer = dynamic(() => import('./NavbarDrawer').then((m) => m.NavbarDrawer), {
@@ -59,22 +60,7 @@ export function Navbar() {
 						href="/wishlist"
 						className={`${styles.navLink} ${pathname === '/wishlist' ? styles.navLinkActive : ''}`}
 					>
-						<svg
-							width="14"
-							height="14"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="2"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							aria-hidden="true"
-							style={{ flexShrink: 0 }}
-						>
-							<circle cx="9" cy="21" r="1" />
-							<circle cx="20" cy="21" r="1" />
-							<path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61H19a2 2 0 001.96-1.64l1.54-7.96H6" />
-						</svg>
+						<WishlistIcon />
 						Wishlist
 					</Link>
 					<Link
