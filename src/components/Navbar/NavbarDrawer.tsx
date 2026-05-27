@@ -74,6 +74,13 @@ export function NavbarDrawer() {
 					Decks
 				</Link>
 				<Link
+					href="/wishlist"
+					className={`${styles.drawerLink} ${pathname === '/wishlist' ? styles.drawerLinkActive : ''}`}
+					onClick={closeDrawer}
+				>
+					Wishlist
+				</Link>
+				<Link
 					href="/collection"
 					className={`${styles.drawerLink} ${pathname === '/collection' ? styles.drawerLinkActive : ''}`}
 					onClick={closeDrawer}

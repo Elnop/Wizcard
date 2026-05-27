@@ -56,6 +56,12 @@ export function Navbar() {
 						Decks
 					</Link>
 					<Link
+						href="/wishlist"
+						className={`${styles.navLink} ${pathname === '/wishlist' ? styles.navLinkActive : ''}`}
+					>
+						Wishlist
+					</Link>
+					<Link
 						href="/collection"
 						className={`${styles.navLink} ${pathname === '/collection' ? styles.navLinkActive : ''}`}
 					>
