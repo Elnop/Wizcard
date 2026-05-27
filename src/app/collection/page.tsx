@@ -135,7 +135,7 @@ export default function CollectionPage() {
 										Export CSV
 									</Button>
 									<Button variant="danger" onClick={handleClearCollection} disabled={isBusy}>
-										Clear Collection
+										Clear
 									</Button>
 								</>
 							)}
