@@ -35,6 +35,7 @@ type DbRow = {
 	proxy: boolean | null;
 	tags: string[] | null;
 	deck_id: string | null;
+	wishlist: boolean;
 };
 
 function rowToEntry(row: DbRow): CardEntry {
@@ -65,6 +66,7 @@ export async function fetchCollectionPage(
 		.from('cards')
 		.select('*')
 		.eq('owner_id', userId)
+		.eq('wishlist', false)
 		.range(from, from + DB_FETCH_PAGE_SIZE - 1);
 
 	if (error) {
