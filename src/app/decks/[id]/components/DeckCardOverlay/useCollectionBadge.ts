@@ -18,6 +18,7 @@ export type UseCollectionBadgeResult = {
 	ownedCount: number;
 	neededCount: number;
 	tooltipCopies: TooltipCopy[];
+	wishlistTooltipCopies: TooltipCopy[];
 };
 
 /**
@@ -30,7 +31,7 @@ export function useCollectionBadge(
 	currentDeckId: string,
 	oracleScryfallIds: string[],
 	deckNameResolver: (deckId: string) => string | undefined,
-	wishlistScryfallIds?: Set<string>
+	wishlistEntries?: Array<{ scryfallId: string; entry: CardEntry }>
 ): UseCollectionBadgeResult {
 	const { entries: collectionEntries } = useCollectionContext();
 
@@ -127,14 +128,43 @@ export function useCollectionBadge(
 			})
 		);
 
-		const effectiveBadgeState: BadgeState =
-			badgeState === 'none' &&
-			wishlistScryfallIds &&
-			oracleScryfallIds.some((id) => wishlistScryfallIds.has(id))
-				? 'wishlist'
-				: badgeState;
+		// Wishlist copies for this oracle's prints
+		const relevantWishlist = (wishlistEntries ?? []).filter((e) => scryfallIdSet.has(e.scryfallId));
+		const wishlistStackMap = new Map<
+			string,
+			{
+				scryfallId: string;
+				entry: Pick<CardEntry, 'condition' | 'isFoil' | 'language'>;
+				count: number;
+			}
+		>();
+		for (const e of relevantWishlist) {
+			const key = `${e.scryfallId}·${e.entry.condition ?? 'NM'}·${e.entry.isFoil ? '1' : '0'}·${e.entry.language ?? 'en'}`;
+			const existing = wishlistStackMap.get(key);
+			if (existing) {
+				existing.count += 1;
+			} else {
+				wishlistStackMap.set(key, { scryfallId: e.scryfallId, entry: e.entry, count: 1 });
+			}
+		}
+		const wishlistTooltipCopies: TooltipCopy[] = Array.from(wishlistStackMap.entries()).map(
+			([key, { scryfallId, entry, count }]) => ({
+				key,
+				line: formatLine(scryfallId, entry, count),
+				count,
+			})
+		);
 
-		return { badgeState: effectiveBadgeState, ownedCount, neededCount, tooltipCopies };
+		const effectiveBadgeState: BadgeState =
+			badgeState === 'none' && relevantWishlist.length > 0 ? 'wishlist' : badgeState;
+
+		return {
+			badgeState: effectiveBadgeState,
+			ownedCount,
+			neededCount,
+			tooltipCopies,
+			wishlistTooltipCopies,
+		};
 	}, [
 		collectionEntries,
 		group,
@@ -142,6 +172,6 @@ export function useCollectionBadge(
 		currentDeckId,
 		oracleScryfallIds,
 		deckNameResolver,
-		wishlistScryfallIds,
+		wishlistEntries,
 	]);
 }

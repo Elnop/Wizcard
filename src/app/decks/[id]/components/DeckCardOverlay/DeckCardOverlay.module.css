@@ -75,6 +75,12 @@
 	color: #fff;
 }
 
+.ownershipTooltipHeaderWishlist {
+	margin-top: 6px;
+	border-top: 1px solid var(--glass-border);
+	padding-top: 4px;
+}
+
 .ownershipTooltipItemLocked {
 	color: var(--foreground);
 	opacity: 0.65;

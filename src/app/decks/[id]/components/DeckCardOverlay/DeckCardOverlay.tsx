@@ -3,7 +3,7 @@ import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import type { DeckCardGroup } from '../../useDeckCardSections';
 import type { DeckZone } from '@/types/decks';
-import type { Card } from '@/types/cards';
+import type { Card, CardEntry } from '@/types/cards';
 import { useCollectionBadge } from './useCollectionBadge';
 import styles from './DeckCardOverlay.module.css';
 
@@ -26,7 +26,7 @@ type Props = {
 	onChangeZone: (rowId: string, zone: DeckZone) => void;
 	onBadgeClick?: () => void;
 	onAddToWishlist?: (scryfallId: string) => void;
-	wishlistScryfallIds?: Set<string>;
+	wishlistEntries?: Array<{ scryfallId: string; entry: CardEntry }>;
 };
 
 export function DeckCardOverlay({
@@ -41,21 +41,22 @@ export function DeckCardOverlay({
 	onChangeZone,
 	onBadgeClick,
 	onAddToWishlist,
-	wishlistScryfallIds,
+	wishlistEntries,
 }: Props) {
 	const otherZones = zones.filter((z) => z !== currentZone);
 	const zoneCopies = group.byZone.get(currentZone) ?? [];
 	const lastCopy = zoneCopies[zoneCopies.length - 1];
 	const count = zoneCopies.length;
 
-	const { badgeState, ownedCount, neededCount, tooltipCopies } = useCollectionBadge(
-		group,
-		currentZone,
-		deckId,
-		oracleScryfallIds,
-		deckNameResolver,
-		wishlistScryfallIds
-	);
+	const { badgeState, ownedCount, neededCount, tooltipCopies, wishlistTooltipCopies } =
+		useCollectionBadge(
+			group,
+			currentZone,
+			deckId,
+			oracleScryfallIds,
+			deckNameResolver,
+			wishlistEntries
+		);
 
 	const badgeClass =
 		badgeState === 'owned'
@@ -153,10 +154,8 @@ export function DeckCardOverlay({
 				{badgeText}
 				<span className={styles.ownershipTooltip}>
 					<span className={styles.ownershipTooltipHeader}>Ma collection</span>
-					{badgeState === 'none' ? (
+					{badgeState === 'none' || badgeState === 'wishlist' ? (
 						<span className={styles.ownershipTooltipItem}>Pas dans ma collection</span>
-					) : badgeState === 'wishlist' ? (
-						<span className={styles.ownershipTooltipItem}>En wishlist</span>
 					) : (
 						tooltipCopies.map((copy) => (
 							<span
@@ -167,6 +166,20 @@ export function DeckCardOverlay({
 								{copy.lockedDeckName ? ` 🔒 ${copy.lockedDeckName}` : ''}
 							</span>
 						))
+					)}
+					{wishlistTooltipCopies.length > 0 && (
+						<>
+							<span
+								className={`${styles.ownershipTooltipHeader} ${styles.ownershipTooltipHeaderWishlist}`}
+							>
+								Ma wishlist
+							</span>
+							{wishlistTooltipCopies.map((copy) => (
+								<span key={copy.key} className={styles.ownershipTooltipItem}>
+									{copy.line}
+								</span>
+							))}
+						</>
 					)}
 				</span>
 			</span>

@@ -83,11 +83,6 @@ export default function DeckDetailPage() {
 	const { entries } = useCollectionContext();
 	const { addToWishlist, entries: wishlistEntries } = useWishlistContext();
 
-	const wishlistScryfallIds = useMemo(
-		() => new Set(wishlistEntries.map((e) => e.scryfallId)),
-		[wishlistEntries]
-	);
-
 	// scryfallIds of all prints in the currently selected card group
 	const selectedScryfallIds = useMemo(
 		() => new Set(selectedCards?.map((c) => c.id) ?? []),
@@ -301,7 +296,7 @@ export default function DeckDetailPage() {
 					onAddToWishlist={(scryfallId) => {
 						addToWishlist({ id: scryfallId } as ScryfallCard);
 					}}
-					wishlistScryfallIds={wishlistScryfallIds}
+					wishlistEntries={wishlistEntries}
 				/>
 			);
 		},
@@ -318,7 +313,7 @@ export default function DeckDetailPage() {
 			changeZone,
 			handleCardGroupClickWithPrintPicker,
 			addToWishlist,
-			wishlistScryfallIds,
+			wishlistEntries,
 		]
 	);
 
