@@ -94,7 +94,12 @@ export function useSyncQueue(userId: string | null | undefined) {
 
 			try {
 				if (op.type === 'insert') {
-					await insertEntry(op.payload.userId, op.payload.scryfallId, op.payload.entry);
+					await insertEntry(
+						op.payload.userId,
+						op.payload.scryfallId,
+						op.payload.entry,
+						op.payload.wishlist ?? false
+					);
 				} else if (op.type === 'delete') {
 					await deleteEntryById(op.payload.userId, op.payload.rowId);
 				} else if (op.type === 'bulk-insert') {

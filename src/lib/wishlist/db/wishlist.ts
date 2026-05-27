@@ -57,7 +57,7 @@ function rowToEntry(row: DbRow): CardEntry {
 
 const DB_FETCH_PAGE_SIZE = 1000;
 
-export async function fetchCollectionPage(
+export async function fetchWishlistPage(
 	userId: string,
 	from: number
 ): Promise<{ rows: Array<{ scryfallId: string; entry: CardEntry }>; hasMore: boolean }> {
@@ -66,11 +66,11 @@ export async function fetchCollectionPage(
 		.from('cards')
 		.select('*')
 		.eq('owner_id', userId)
-		.eq('wishlist', false)
+		.eq('wishlist', true)
 		.range(from, from + DB_FETCH_PAGE_SIZE - 1);
 
 	if (error) {
-		console.error('[collection] fetchCollectionPage error:', error);
+		console.error('[wishlist] fetchWishlistPage error:', error);
 		return { rows: [], hasMore: false };
 	}
 
@@ -81,11 +81,10 @@ export async function fetchCollectionPage(
 	return { rows, hasMore: data.length === DB_FETCH_PAGE_SIZE };
 }
 
-export async function insertEntry(
+export async function insertWishlistItem(
 	userId: string,
 	scryfallId: string,
-	entry: CardEntry,
-	wishlist = false
+	entry: CardEntry
 ): Promise<void> {
 	const supabase = createClient();
 	const { error } = await supabase.from('cards').insert({
@@ -102,89 +101,25 @@ export async function insertEntry(
 		alter: entry.alter ?? null,
 		proxy: entry.proxy ?? null,
 		tags: entry.tags ?? null,
-		deck_id: entry.deckId ?? null,
-		wishlist,
+		deck_id: null,
+		wishlist: true,
 	});
 
 	if (error) {
-		throw new Error(`[collection] insertEntry error: ${error.message}`);
+		throw new Error(`[wishlist] insertWishlistItem error: ${error.message}`);
 	}
 }
 
-export async function insertEntries(
-	userId: string,
-	rows: Array<{ scryfallId: string; entry: CardEntry }>
-): Promise<void> {
-	if (rows.length === 0) return;
-	const supabase = createClient();
-	const { error } = await supabase.from('cards').insert(
-		rows.map((r) => ({
-			id: r.entry.rowId,
-			owner_id: userId,
-			scryfall_id: r.scryfallId,
-			date_added: r.entry.dateAdded,
-			is_foil: r.entry.isFoil ?? null,
-			foil_type: r.entry.foilType ?? null,
-			condition: normalizeCondition(r.entry.condition),
-			language: r.entry.language ?? null,
-			purchase_price: r.entry.purchasePrice ?? null,
-			for_trade: r.entry.forTrade ?? null,
-			alter: r.entry.alter ?? null,
-			proxy: r.entry.proxy ?? null,
-			tags: r.entry.tags ?? null,
-			deck_id: r.entry.deckId ?? null,
-		}))
-	);
-
-	if (error) {
-		throw new Error(`[collection] insertEntries error: ${error.message}`);
-	}
-}
-
-export async function deleteEntryById(userId: string, rowId: string): Promise<void> {
-	const supabase = createClient();
-	const { error } = await supabase.from('cards').delete().eq('owner_id', userId).eq('id', rowId);
-
-	if (error) {
-		throw new Error(`[collection] deleteEntryById error: ${error.message}`);
-	}
-}
-
-const DELETE_BATCH_SIZE = 50;
-
-export async function deleteEntries(userId: string, rowIds: string[]): Promise<void> {
-	if (rowIds.length === 0) return;
-	const supabase = createClient();
-	for (let i = 0; i < rowIds.length; i += DELETE_BATCH_SIZE) {
-		const batch = rowIds.slice(i, i + DELETE_BATCH_SIZE);
-		const { error } = await supabase.from('cards').delete().eq('owner_id', userId).in('id', batch);
-		if (error) {
-			throw new Error(`[collection] deleteEntries error: ${error.message}`);
-		}
-	}
-}
-
-export async function updateEntry(userId: string, rowId: string, entry: CardEntry): Promise<void> {
+export async function deleteWishlistItem(userId: string, rowId: string): Promise<void> {
 	const supabase = createClient();
 	const { error } = await supabase
 		.from('cards')
-		.update({
-			date_added: entry.dateAdded,
-			is_foil: entry.isFoil ?? null,
-			foil_type: entry.foilType ?? null,
-			condition: normalizeCondition(entry.condition),
-			language: entry.language ?? null,
-			purchase_price: entry.purchasePrice ?? null,
-			for_trade: entry.forTrade ?? null,
-			alter: entry.alter ?? null,
-			proxy: entry.proxy ?? null,
-			tags: entry.tags ?? null,
-			deck_id: entry.deckId ?? null,
-		})
+		.delete()
 		.eq('owner_id', userId)
-		.eq('id', rowId);
+		.eq('id', rowId)
+		.eq('wishlist', true);
 
 	if (error) {
-		throw new Error(`[collection] updateEntry error: ${error.message}`);
+		throw new Error(`[wishlist] deleteWishlistItem error: ${error.message}`);
 	}
 }

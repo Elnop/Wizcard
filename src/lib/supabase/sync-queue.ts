@@ -7,7 +7,13 @@ export type SyncOp =
 	| {
 			id: string;
 			type: 'insert';
-			payload: { rowId: string; userId: string; scryfallId: string; entry: CardEntry };
+			payload: {
+				rowId: string;
+				userId: string;
+				scryfallId: string;
+				entry: CardEntry;
+				wishlist?: boolean;
+			};
 			retries: number;
 			createdAt: string;
 	  }
