@@ -4,7 +4,7 @@ import type { DeckCardGroup } from '../../useDeckCardSections';
 import type { DeckZone } from '@/types/decks';
 import type { CardEntry } from '@/types/cards';
 
-export type BadgeState = 'none' | 'locked' | 'partial' | 'owned';
+export type BadgeState = 'none' | 'locked' | 'partial' | 'owned' | 'wishlist';
 
 export type TooltipCopy = {
 	key: string;
@@ -29,7 +29,8 @@ export function useCollectionBadge(
 	currentZone: DeckZone,
 	currentDeckId: string,
 	oracleScryfallIds: string[],
-	deckNameResolver: (deckId: string) => string | undefined
+	deckNameResolver: (deckId: string) => string | undefined,
+	wishlistScryfallIds?: Set<string>
 ): UseCollectionBadgeResult {
 	const { entries: collectionEntries } = useCollectionContext();
 
@@ -126,6 +127,21 @@ export function useCollectionBadge(
 			})
 		);
 
-		return { badgeState, ownedCount, neededCount, tooltipCopies };
-	}, [collectionEntries, group, currentZone, currentDeckId, oracleScryfallIds, deckNameResolver]);
+		const effectiveBadgeState: BadgeState =
+			badgeState === 'none' &&
+			wishlistScryfallIds &&
+			oracleScryfallIds.some((id) => wishlistScryfallIds.has(id))
+				? 'wishlist'
+				: badgeState;
+
+		return { badgeState: effectiveBadgeState, ownedCount, neededCount, tooltipCopies };
+	}, [
+		collectionEntries,
+		group,
+		currentZone,
+		currentDeckId,
+		oracleScryfallIds,
+		deckNameResolver,
+		wishlistScryfallIds,
+	]);
 }

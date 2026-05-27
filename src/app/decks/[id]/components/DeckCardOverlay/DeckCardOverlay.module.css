@@ -70,6 +70,11 @@
 	color: #fff;
 }
 
+.ownershipBadgeWishlist {
+	background: rgba(100, 120, 220, 0.92);
+	color: #fff;
+}
+
 .ownershipTooltipItemLocked {
 	color: var(--foreground);
 	opacity: 0.65;

@@ -26,6 +26,7 @@ type Props = {
 	onChangeZone: (rowId: string, zone: DeckZone) => void;
 	onBadgeClick?: () => void;
 	onAddToWishlist?: (scryfallId: string) => void;
+	wishlistScryfallIds?: Set<string>;
 };
 
 export function DeckCardOverlay({
@@ -40,6 +41,7 @@ export function DeckCardOverlay({
 	onChangeZone,
 	onBadgeClick,
 	onAddToWishlist,
+	wishlistScryfallIds,
 }: Props) {
 	const otherZones = zones.filter((z) => z !== currentZone);
 	const zoneCopies = group.byZone.get(currentZone) ?? [];
@@ -51,7 +53,8 @@ export function DeckCardOverlay({
 		currentZone,
 		deckId,
 		oracleScryfallIds,
-		deckNameResolver
+		deckNameResolver,
+		wishlistScryfallIds
 	);
 
 	const badgeClass =
@@ -61,7 +64,9 @@ export function DeckCardOverlay({
 				? styles.ownershipBadgeOrange
 				: badgeState === 'locked'
 					? styles.ownershipBadgeLocked
-					: styles.ownershipBadgeGrey;
+					: badgeState === 'wishlist'
+						? styles.ownershipBadgeWishlist
+						: styles.ownershipBadgeGrey;
 
 	const badgeText =
 		badgeState === 'owned'
@@ -70,7 +75,9 @@ export function DeckCardOverlay({
 				? `${ownedCount}/${neededCount}`
 				: badgeState === 'locked'
 					? `0/${neededCount}`
-					: '';
+					: badgeState === 'wishlist'
+						? '🛒'
+						: '';
 
 	const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
 	const closeMenu = useCallback(() => setMenuPos(null), []);
@@ -148,6 +155,8 @@ export function DeckCardOverlay({
 					<span className={styles.ownershipTooltipHeader}>Ma collection</span>
 					{badgeState === 'none' ? (
 						<span className={styles.ownershipTooltipItem}>Pas dans ma collection</span>
+					) : badgeState === 'wishlist' ? (
+						<span className={styles.ownershipTooltipItem}>En wishlist</span>
 					) : (
 						tooltipCopies.map((copy) => (
 							<span
