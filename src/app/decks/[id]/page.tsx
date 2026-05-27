@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { validateDeck } from '@/lib/deck/utils/format-rules';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { CardList } from '@/lib/card/components/CardList/CardList';
@@ -76,6 +77,7 @@ export default function DeckDetailPage() {
 	} = useDeckCardModal(deckId, groupByCardId);
 
 	const { entries } = useCollectionContext();
+	const { addToWishlist } = useWishlistContext();
 
 	// scryfallIds of all prints in the currently selected card group
 	const selectedScryfallIds = useMemo(
@@ -229,6 +231,9 @@ export default function DeckDetailPage() {
 					onBadgeClick={() =>
 						handleCardGroupClickWithPrintPicker(group, firstCopy?.entry.rowId ?? c.entry.rowId)
 					}
+					onAddToWishlist={(scryfallId) => {
+						addToWishlist({ id: scryfallId } as ScryfallCard);
+					}}
 				/>
 			);
 		},
@@ -241,6 +246,7 @@ export default function DeckDetailPage() {
 			removeCardFromDeck,
 			changeZone,
 			handleCardGroupClickWithPrintPicker,
+			addToWishlist,
 		]
 	);
 
@@ -322,6 +328,9 @@ export default function DeckDetailPage() {
 				onChangePrint={handleChangePrint}
 				collectionCopies={allCollectionCopies}
 				onAssignCollectionCopy={handleAssignCollectionCopy}
+				onAddToWishlistFromEntry={(scryfallId) => {
+					addToWishlist({ id: scryfallId } as ScryfallCard);
+				}}
 			/>
 
 			<CardModal
@@ -329,6 +338,9 @@ export default function DeckDetailPage() {
 				onClose={() => setPanelSelectedCard(null)}
 				addLabel="Add to Deck"
 				availableZones={zones}
+				onAddToWishlist={(card, entry) => {
+					addToWishlist(card, entry);
+				}}
 				onAddToCollection={(card, entry) => {
 					const zone = getDeckZone(entry.tags);
 					if (panelInCollectionOnly) {

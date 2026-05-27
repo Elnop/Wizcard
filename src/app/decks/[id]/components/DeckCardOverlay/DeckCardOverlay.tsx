@@ -25,6 +25,7 @@ type Props = {
 	onRemove: (rowId: string) => void;
 	onChangeZone: (rowId: string, zone: DeckZone) => void;
 	onBadgeClick?: () => void;
+	onAddToWishlist?: (scryfallId: string) => void;
 };
 
 export function DeckCardOverlay({
@@ -38,6 +39,7 @@ export function DeckCardOverlay({
 	onRemove,
 	onChangeZone,
 	onBadgeClick,
+	onAddToWishlist,
 }: Props) {
 	const otherZones = zones.filter((z) => z !== currentZone);
 	const zoneCopies = group.byZone.get(currentZone) ?? [];
@@ -79,6 +81,8 @@ export function DeckCardOverlay({
 		setMenuPos({ x: e.clientX, y: e.clientY });
 	}, []);
 
+	const representativeScryfallId = (zoneCopies[0]?.id ?? (group.representative as Card).id) || '';
+
 	const items: ContextMenuAction[] = [
 		{
 			type: 'action',
@@ -98,6 +102,20 @@ export function DeckCardOverlay({
 						danger: true,
 						onClick: () => {
 							onRemove(lastCopy.entry.rowId);
+							closeMenu();
+						},
+					},
+				]
+			: []),
+		...(onAddToWishlist
+			? [
+					{ type: 'divider' as const },
+					{
+						type: 'action' as const,
+						label: 'Add to Wishlist',
+						icon: '♥',
+						onClick: () => {
+							onAddToWishlist(representativeScryfallId);
 							closeMenu();
 						},
 					},
