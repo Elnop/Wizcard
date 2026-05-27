@@ -15,6 +15,7 @@ type WishlistContextValue = {
 	isLoaded: boolean;
 	addToWishlist: (card: ScryfallCard, entryPatch?: Partial<CardEntry>) => void;
 	removeFromWishlist: (rowId: string) => void;
+	clearWishlist: () => void;
 	moveToCollection: (rowId: string) => void;
 	changePrint: (rowId: string, newScryfallId: string) => void;
 };
@@ -60,6 +61,11 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		[store, userId, triggerSync]
 	);
 
+	const clearWishlist = useCallback(
+		() => store.clearWishlist(userId, triggerSync),
+		[store, userId, triggerSync]
+	);
+
 	const moveToCollection = useCallback(
 		(rowId: string) => {
 			const copy = store.entries[rowId];
@@ -85,6 +91,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		isLoaded: store.isLoaded,
 		addToWishlist,
 		removeFromWishlist,
+		clearWishlist,
 		moveToCollection,
 		changePrint,
 	};

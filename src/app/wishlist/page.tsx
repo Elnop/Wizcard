@@ -14,7 +14,7 @@ import { Button } from '@/components/Button/Button';
 import styles from './page.module.css';
 
 export default function WishlistPage() {
-	const { entries, isLoaded, removeFromWishlist, moveToCollection, changePrint } =
+	const { entries, isLoaded, removeFromWishlist, clearWishlist, moveToCollection, changePrint } =
 		useWishlistContext();
 
 	const { stacks, isLoading: isHydrating } = useCollectionCards(entries);
@@ -28,6 +28,12 @@ export default function WishlistPage() {
 		},
 		[removeFromWishlist, handleCloseModal]
 	);
+
+	const handleClearWishlist = useCallback(() => {
+		if (confirm('Effacer toute la wishlist ? Cette action est irréversible.')) {
+			clearWishlist();
+		}
+	}, [clearWishlist]);
 
 	const handleChangePrint = useCallback(
 		(rowId: string, newCard: ScryfallCard) => {
@@ -74,6 +80,13 @@ export default function WishlistPage() {
 							</p>
 						)}
 					</div>
+					{entries.length > 0 && (
+						<div className={styles.actions}>
+							<Button variant="danger" onClick={handleClearWishlist}>
+								Clear
+							</Button>
+						</div>
+					)}
 				</div>
 
 				{entries.length === 0 ? (

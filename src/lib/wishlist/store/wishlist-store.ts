@@ -28,6 +28,7 @@ type WishlistActions = {
 		entryPatch?: Partial<CardEntry>
 	) => void;
 	removeFromWishlist: (rowId: string, userId: string | null, triggerSync: () => void) => void;
+	clearWishlist: (userId: string | null, triggerSync: () => void) => void;
 	changePrint: (
 		rowId: string,
 		newScryfallId: string,
@@ -80,6 +81,18 @@ export const useWishlistStore = create<WishlistState & WishlistActions>()((set, 
 		set({ entries: next });
 		if (userId) {
 			enqueue({ type: 'delete', payload: { userId, rowId } });
+			triggerSync();
+		}
+	},
+
+	clearWishlist: (userId, triggerSync) => {
+		const current = get().entries;
+		set({ entries: {} });
+		if (userId) {
+			const rowIds = Object.keys(current);
+			if (rowIds.length > 0) {
+				enqueue({ type: 'bulk-delete', payload: { userId, rowIds } });
+			}
 			triggerSync();
 		}
 	},

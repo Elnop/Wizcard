@@ -38,6 +38,12 @@
 	margin: 0;
 }
 
+.actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
 .emptyState {
 	text-align: center;
 	padding: 64px 24px;
