@@ -48,6 +48,7 @@ create table public.cards (
   language       text,
   purchase_price text,
   for_trade      boolean     default false,
+  wishlist       boolean     not null default false,
   alter          boolean,
   proxy          boolean,
   tags           text[],
