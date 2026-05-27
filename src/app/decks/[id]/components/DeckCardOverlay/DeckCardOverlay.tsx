@@ -153,24 +153,24 @@ export function DeckCardOverlay({
 			>
 				{badgeText}
 				<span className={styles.ownershipTooltip}>
-					<span className={styles.ownershipTooltipHeader}>Ma collection</span>
-					{badgeState === 'none' || badgeState === 'wishlist' ? (
-						<span className={styles.ownershipTooltipItem}>Pas dans ma collection</span>
-					) : (
-						tooltipCopies.map((copy) => (
-							<span
-								key={copy.key}
-								className={`${styles.ownershipTooltipItem}${copy.lockedDeckName ? ` ${styles.ownershipTooltipItemLocked}` : ''}`}
-							>
-								{copy.line}
-								{copy.lockedDeckName ? ` 🔒 ${copy.lockedDeckName}` : ''}
-							</span>
-						))
+					{tooltipCopies.length > 0 && (
+						<>
+							<span className={styles.ownershipTooltipHeader}>Ma collection</span>
+							{tooltipCopies.map((copy) => (
+								<span
+									key={copy.key}
+									className={`${styles.ownershipTooltipItem}${copy.lockedDeckName ? ` ${styles.ownershipTooltipItemLocked}` : ''}`}
+								>
+									{copy.line}
+									{copy.lockedDeckName ? ` 🔒 ${copy.lockedDeckName}` : ''}
+								</span>
+							))}
+						</>
 					)}
 					{wishlistTooltipCopies.length > 0 && (
 						<>
 							<span
-								className={`${styles.ownershipTooltipHeader} ${styles.ownershipTooltipHeaderWishlist}`}
+								className={`${styles.ownershipTooltipHeader} ${tooltipCopies.length > 0 ? styles.ownershipTooltipHeaderWishlist : ''}`}
 							>
 								Ma wishlist
 							</span>
@@ -180,6 +180,9 @@ export function DeckCardOverlay({
 								</span>
 							))}
 						</>
+					)}
+					{tooltipCopies.length === 0 && wishlistTooltipCopies.length === 0 && (
+						<span className={styles.ownershipTooltipItem}>Pas dans ma collection</span>
 					)}
 				</span>
 			</span>
