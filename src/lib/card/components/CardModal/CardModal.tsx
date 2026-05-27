@@ -61,6 +61,7 @@ interface Props {
 	onAssignCollectionCopy?: (rowId: string) => void;
 	onMoveToCollection?: (rowId: string) => void;
 	onAddToWishlistFromEntry?: (scryfallId: string) => void;
+	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
 }
 
 interface InnerProps {
@@ -525,15 +526,18 @@ function ScryfallCardModalInner({
 	onAddToCollection,
 	addLabel = 'Add to Collection',
 	availableZones,
+	onAddToWishlist,
 }: {
 	card: ScryfallCard;
 	onClose: () => void;
 	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
 	addLabel?: string;
 	availableZones?: DeckZone[];
+	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
 }) {
 	const [lightbox, setLightbox] = useState(false);
 	const [addingCard, setAddingCard] = useState(false);
+	const [addingToWishlist, setAddingToWishlist] = useState(false);
 	const symbolMap = useScryfallSymbols();
 
 	return (
@@ -558,11 +562,18 @@ function ScryfallCardModalInner({
 					<div className={styles.infoCol}>
 						<CardDetailSection card={card} symbolMap={symbolMap} />
 
-						{onAddToCollection && (
+						{(onAddToCollection || onAddToWishlist) && (
 							<div className={styles.addSection}>
-								<Button variant="primary" onClick={() => setAddingCard(true)}>
-									{addLabel}
-								</Button>
+								{onAddToCollection && (
+									<Button variant="primary" onClick={() => setAddingCard(true)}>
+										{addLabel}
+									</Button>
+								)}
+								{onAddToWishlist && (
+									<Button variant="secondary" onClick={() => setAddingToWishlist(true)}>
+										Add to Wishlist
+									</Button>
+								)}
 							</div>
 						)}
 					</div>
@@ -581,6 +592,18 @@ function ScryfallCardModalInner({
 						setAddingCard(false);
 					}}
 					onClose={() => setAddingCard(false)}
+				/>
+			)}
+
+			{addingToWishlist && onAddToWishlist && (
+				<EditCardModal
+					mode="add"
+					scryfallCard={card}
+					onAdd={(selectedPrint, entry) => {
+						onAddToWishlist(selectedPrint, entry);
+						setAddingToWishlist(false);
+					}}
+					onClose={() => setAddingToWishlist(false)}
 				/>
 			)}
 		</>
@@ -608,6 +631,7 @@ export function CardModal({
 	onAssignCollectionCopy,
 	onMoveToCollection,
 	onAddToWishlistFromEntry,
+	onAddToWishlist,
 }: Props) {
 	if (cards === null) return null;
 
@@ -625,6 +649,7 @@ export function CardModal({
 				onAddToCollection={onAddToCollection}
 				addLabel={addLabel}
 				availableZones={availableZones}
+				onAddToWishlist={onAddToWishlist}
 			/>
 		);
 	}
