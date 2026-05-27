@@ -59,6 +59,8 @@ interface Props {
 	onChangeZone?: (rowId: string, zone: DeckZone) => void;
 	collectionCopies?: CollectionCopyEntry[];
 	onAssignCollectionCopy?: (rowId: string) => void;
+	onMoveToCollection?: (rowId: string) => void;
+	onAddToWishlistFromEntry?: (scryfallId: string) => void;
 }
 
 interface InnerProps {
@@ -78,6 +80,8 @@ interface InnerProps {
 	onChangeZone?: (rowId: string, zone: DeckZone) => void;
 	collectionCopies?: CollectionCopyEntry[];
 	onAssignCollectionCopy?: (rowId: string) => void;
+	onMoveToCollection?: (rowId: string) => void;
+	onAddToWishlistFromEntry?: (scryfallId: string) => void;
 }
 
 function CardDetailSection({
@@ -186,6 +190,8 @@ function CardModalInner({
 	onChangeZone,
 	collectionCopies,
 	onAssignCollectionCopy,
+	onMoveToCollection,
+	onAddToWishlistFromEntry,
 }: InnerProps) {
 	const [lightbox, setLightbox] = useState(false);
 	const [selectedRowId, setSelectedRowId] = useState<string>(initialRowId ?? cards[0].entry.rowId);
@@ -417,6 +423,27 @@ function CardModalInner({
 								</button>
 							)}
 						</div>
+
+						{(onMoveToCollection || onAddToWishlistFromEntry) && (
+							<div className={styles.addSection}>
+								{onMoveToCollection && (
+									<Button
+										variant="primary"
+										onClick={() => onMoveToCollection(selectedCard.entry.rowId)}
+									>
+										Move to Collection
+									</Button>
+								)}
+								{onAddToWishlistFromEntry && (
+									<Button
+										variant="secondary"
+										onClick={() => onAddToWishlistFromEntry(selectedCard.id)}
+									>
+										Add to Wishlist
+									</Button>
+								)}
+							</div>
+						)}
 					</div>
 				</div>
 			</Modal>
@@ -579,6 +606,8 @@ export function CardModal({
 	onChangeZone,
 	collectionCopies,
 	onAssignCollectionCopy,
+	onMoveToCollection,
+	onAddToWishlistFromEntry,
 }: Props) {
 	if (cards === null) return null;
 
@@ -619,6 +648,8 @@ export function CardModal({
 			onChangeZone={onChangeZone}
 			collectionCopies={collectionCopies}
 			onAssignCollectionCopy={onAssignCollectionCopy}
+			onMoveToCollection={onMoveToCollection}
+			onAddToWishlistFromEntry={onAddToWishlistFromEntry}
 		/>
 	);
 }

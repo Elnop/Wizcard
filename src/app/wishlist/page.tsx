@@ -4,7 +4,6 @@ import { useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import type { CardStack } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { CardEntry } from '@/types/cards';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useCollectionCards } from '@/app/collection/useCollectionCards';
 import { useCardModal } from '@/lib/card/hooks/useCardModal';
@@ -27,16 +26,6 @@ export default function WishlistPage() {
 			handleCloseModal();
 		},
 		[removeFromWishlist, handleCloseModal]
-	);
-
-	const handleMoveToCollection = useCallback(
-		(_card: ScryfallCard, _entry: Partial<CardEntry>) => {
-			if (!resolvedStack) return;
-			const rowId = resolvedStack.cards[0]?.entry.rowId;
-			if (rowId) moveToCollection(rowId);
-			handleCloseModal();
-		},
-		[resolvedStack, moveToCollection, handleCloseModal]
 	);
 
 	const handleChangePrint = useCallback(
@@ -141,8 +130,10 @@ export default function WishlistPage() {
 				onClose={handleCloseModal}
 				onRemoveEntry={handleRemoveEntry}
 				onChangePrint={handleChangePrint}
-				onAddToCollection={handleMoveToCollection}
-				addLabel="Move to Collection"
+				onMoveToCollection={(rowId) => {
+					moveToCollection(rowId);
+					handleCloseModal();
+				}}
 			/>
 		</div>
 	);
