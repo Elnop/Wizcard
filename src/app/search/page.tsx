@@ -10,6 +10,7 @@ import { CardList } from '@/lib/card/components/CardList/CardList';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
 import styles from './page.module.css';
 
@@ -33,6 +34,7 @@ export default function SearchPage() {
 
 function SearchPageContent() {
 	const { addCard } = useCollectionContext();
+	const { addToWishlist } = useWishlistContext();
 	const [selectedCard, setSelectedCard] = useState<ScryfallCard | null>(null);
 
 	const {
@@ -231,6 +233,9 @@ function SearchPageContent() {
 						onClose={() => setSelectedCard(null)}
 						onAddToCollection={(card, entry) => {
 							addCard(card, entry);
+						}}
+						onAddToWishlist={(card, entry) => {
+							addToWishlist(card, entry);
 						}}
 					/>
 				)}
