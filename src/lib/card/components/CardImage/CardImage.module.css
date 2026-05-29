@@ -93,3 +93,83 @@
 	background-color: rgba(0, 0, 0, 0.9);
 	transform: rotate(180deg);
 }
+
+@keyframes foilShimmer {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}
+
+.foilOverlay {
+	position: absolute;
+	inset: 0;
+	border-radius: 4.75% / 3.4%;
+	pointer-events: none;
+	opacity: 0;
+	background: linear-gradient(
+		125deg,
+		#ff0000 0%,
+		#ff7700 14%,
+		#ffff00 28%,
+		#00ff00 42%,
+		#0000ff 57%,
+		#8b00ff 71%,
+		#ff0000 85%,
+		#ff7700 100%
+	);
+	background-size: 300% 300%;
+	mix-blend-mode: color-dodge;
+	transition: opacity 0.3s ease;
+}
+
+.container:hover .foilOverlay {
+	opacity: 0.35;
+	animation: foilShimmer 1.2s ease-in-out infinite;
+}
+
+.etchedOverlay {
+	position: absolute;
+	inset: 0;
+	border-radius: 4.75% / 3.4%;
+	pointer-events: none;
+	opacity: 0;
+	background: linear-gradient(
+		125deg,
+		#ffffff 0%,
+		#d0d0d0 25%,
+		#f8f8f8 50%,
+		#c0c0c0 75%,
+		#ffffff 100%
+	);
+	background-size: 300% 300%;
+	mix-blend-mode: color-dodge;
+	transition: opacity 0.3s ease;
+}
+
+.container:hover .etchedOverlay {
+	opacity: 0.25;
+	animation: foilShimmer 1.4s ease-in-out infinite;
+}
+
+.proxyOverlay {
+	position: absolute;
+	inset: 0;
+	border-radius: 4.75% / 3.4%;
+	pointer-events: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: white;
+	font-size: clamp(0.9rem, 8cqw, 2rem);
+	font-weight: 900;
+	letter-spacing: 0.15em;
+	opacity: 0.13;
+	transform: rotate(-30deg);
+	overflow: hidden;
+}
