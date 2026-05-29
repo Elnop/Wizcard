@@ -14,6 +14,12 @@
 	max-height: 90vh;
 	width: 100%;
 	cursor: default;
+	display: flex;
+	flex-direction: column;
+}
+
+.lightboxCard > * {
+	width: 100%;
 }
 
 .lightboxCard img {
@@ -22,4 +28,40 @@
 	max-height: 90vh;
 	object-fit: contain;
 	border-radius: 12px;
+}
+
+/* Shared button base */
+.closeBtn,
+.effectsToggle {
+	position: fixed;
+	top: 16px;
+	background: rgba(0, 0, 0, 0.6);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 50%;
+	width: 36px;
+	height: 36px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	color: #fff;
+	z-index: 1201;
+}
+
+.closeBtn {
+	right: 16px;
+}
+
+.effectsToggle {
+	left: 16px;
+	font-size: 14px;
+	opacity: 0.4;
+	transition:
+		opacity 0.15s ease,
+		border-color 0.15s ease;
+}
+
+.effectsToggle[data-active='true'] {
+	opacity: 1;
+	border-color: rgba(255, 220, 100, 0.5);
 }
