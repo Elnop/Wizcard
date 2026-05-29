@@ -418,8 +418,6 @@ export default function DeckDetailPage() {
 						tableColumns={tableColumns}
 						pageSize={false}
 						viewModes={['fluid-grid', 'grid', 'table']}
-						showCardNames={false}
-						className={styles.cardList}
 					/>
 
 					<DeckStats stats={stats} warnings={warnings} />
