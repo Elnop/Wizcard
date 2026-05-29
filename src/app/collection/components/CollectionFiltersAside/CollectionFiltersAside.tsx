@@ -113,6 +113,44 @@ export function CollectionFiltersAside({
 					isLoading={setsLoading}
 				/>
 
+				<div>
+					<label
+						htmlFor="collection-proxy-filter"
+						style={{
+							display: 'block',
+							fontSize: 'var(--text-xs)',
+							fontWeight: 600,
+							color: 'var(--text-muted)',
+							textTransform: 'uppercase' as const,
+							letterSpacing: '0.06em',
+							marginBottom: 6,
+						}}
+					>
+						Cartes
+					</label>
+					<select
+						id="collection-proxy-filter"
+						style={{
+							background: 'var(--surface, rgba(255, 255, 255, 0.06))',
+							border: '1px solid var(--border)',
+							borderRadius: 6,
+							color: 'var(--foreground)',
+							fontSize: 'var(--text-base)',
+							padding: '8px 10px',
+							width: '100%',
+							outline: 'none',
+						}}
+						value={filters.proxyFilter}
+						onChange={(e) =>
+							patch('proxyFilter', e.target.value as CollectionFilters['proxyFilter'])
+						}
+					>
+						<option value="all">Toutes</option>
+						<option value="official">Officielles seulement</option>
+						<option value="proxy">Proxy seulement</option>
+					</select>
+				</div>
+
 				<SortFilter
 					order={filters.order}
 					onOrderChange={(v) => patch('order', v as CollectionFilters['order'])}
