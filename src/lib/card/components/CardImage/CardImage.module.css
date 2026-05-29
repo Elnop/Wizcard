@@ -12,7 +12,6 @@
 	background: transparent;
 	container-type: inline-size;
 	transform: perspective(600px) rotateX(var(--tilt-y, 0deg)) rotateY(var(--tilt-x, 0deg));
-	transform-style: preserve-3d;
 	will-change: transform;
 	transition: transform 0.08s ease-out;
 }

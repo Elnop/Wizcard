@@ -1,6 +1,5 @@
 'use client';
 
-import { createPortal } from 'react-dom';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import styles from './CardLightbox.module.css';
@@ -11,7 +10,7 @@ interface Props {
 }
 
 export function CardLightbox({ card, onClose }: Props) {
-	const content = (
+	return (
 		<div className={styles.lightbox} onClick={onClose}>
 			<button
 				type="button"
@@ -44,11 +43,8 @@ export function CardLightbox({ card, onClose }: Props) {
 				</svg>
 			</button>
 			<div className={styles.lightboxCard} onClick={(e) => e.stopPropagation()}>
-				<CardImage card={card} size="large" priority disableTilt />
+				<CardImage card={card} size="large" priority />
 			</div>
 		</div>
 	);
-
-	if (typeof document === 'undefined') return null;
-	return createPortal(content, document.body);
 }
