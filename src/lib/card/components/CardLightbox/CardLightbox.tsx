@@ -20,19 +20,29 @@ export function CardLightbox({ card, onClose, isFoil = false, foilType = 'foil' 
 
 	const content = (
 		<div className={styles.lightbox} onClick={onClose}>
-			{/* Toggle button — top left */}
-			<button
-				type="button"
+			{/* Effects toggle — top left */}
+			<div
+				className={styles.effectsToggle}
 				onClick={(e) => {
 					e.stopPropagation();
 					setEffectsEnabled((v) => !v);
 				}}
+				role="button"
+				tabIndex={0}
+				aria-pressed={effectsEnabled}
 				aria-label={effectsEnabled ? 'Désactiver les effets' : 'Activer les effets'}
-				className={styles.effectsToggle}
-				data-active={effectsEnabled}
+				onKeyDown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.stopPropagation();
+						setEffectsEnabled((v) => !v);
+					}
+				}}
 			>
-				✦
-			</button>
+				<span className={styles.toggleLabel}>Effets</span>
+				<span className={styles.toggleTrack} data-active={effectsEnabled}>
+					<span className={styles.toggleThumb} />
+				</span>
+			</div>
 
 			{/* Close button — top right */}
 			<button type="button" onClick={onClose} aria-label="Fermer" className={styles.closeBtn}>

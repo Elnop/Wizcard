@@ -30,11 +30,11 @@
 	border-radius: 12px;
 }
 
-/* Shared button base */
-.closeBtn,
-.effectsToggle {
+/* Close button */
+.closeBtn {
 	position: fixed;
 	top: 16px;
+	right: 16px;
 	background: rgba(0, 0, 0, 0.6);
 	border: 1px solid rgba(255, 255, 255, 0.2);
 	border-radius: 50%;
@@ -48,20 +48,56 @@
 	z-index: 1201;
 }
 
-.closeBtn {
-	right: 16px;
-}
-
+/* Effects toggle pill */
 .effectsToggle {
+	position: fixed;
+	top: 16px;
 	left: 16px;
-	font-size: 14px;
-	opacity: 0.4;
-	transition:
-		opacity 0.15s ease,
-		border-color 0.15s ease;
+	z-index: 1201;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	background: rgba(0, 0, 0, 0.65);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 20px;
+	padding: 6px 12px;
+	cursor: pointer;
+	user-select: none;
 }
 
-.effectsToggle[data-active='true'] {
-	opacity: 1;
-	border-color: rgba(255, 220, 100, 0.5);
+.toggleLabel {
+	font-size: 12px;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.85);
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.toggleTrack {
+	position: relative;
+	width: 28px;
+	height: 16px;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.2);
+	transition: background 0.2s ease;
+	flex-shrink: 0;
+}
+
+.toggleTrack[data-active='true'] {
+	background: rgba(255, 220, 100, 0.75);
+}
+
+.toggleThumb {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: #fff;
+	transition: transform 0.2s ease;
+}
+
+.toggleTrack[data-active='true'] .toggleThumb {
+	transform: translateX(12px);
 }
