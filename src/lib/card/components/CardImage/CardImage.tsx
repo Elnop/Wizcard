@@ -35,6 +35,8 @@ const sizeMap = {
 	large: { width: 672, height: 936 },
 };
 
+const TILT_MAX_DEG = 10;
+
 export function CardImage({
 	card,
 	size = 'normal',
@@ -49,7 +51,9 @@ export function CardImage({
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState(false);
 	const [isVisible, setIsVisible] = useState(false);
+	const [isTilting, setIsTilting] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
+	const wrapperRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		const el = containerRef.current;
@@ -84,13 +88,49 @@ export function CardImage({
 		}
 	};
 
+	const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+		const el = wrapperRef.current;
+		if (!el) return;
+		const rect = el.getBoundingClientRect();
+		const x = (e.clientX - rect.left) / rect.width;
+		const y = (e.clientY - rect.top) / rect.height;
+		const tiltX = (x - 0.5) * 2 * TILT_MAX_DEG;
+		const tiltY = (0.5 - y) * 2 * TILT_MAX_DEG;
+		el.style.setProperty('--tilt-x', `${tiltX}deg`);
+		el.style.setProperty('--tilt-y', `${tiltY}deg`);
+		el.style.setProperty('--mouse-x', `${x * 100}%`);
+		el.style.setProperty('--mouse-y', `${y * 100}%`);
+	};
+
+	const handleMouseLeave = () => {
+		const el = wrapperRef.current;
+		if (!el) return;
+		setIsTilting(false);
+		el.style.setProperty('--tilt-x', '0deg');
+		el.style.setProperty('--tilt-y', '0deg');
+		el.style.setProperty('--mouse-x', '50%');
+		el.style.setProperty('--mouse-y', '50%');
+	};
+
+	const handleMouseEnter = () => {
+		setIsTilting(true);
+	};
+
 	const classNames = [styles.container, onClick ? styles.clickable : '', className ?? '']
 		.filter(Boolean)
 		.join(' ');
 
 	return (
 		<div ref={containerRef} className={classNames} onClick={onClick}>
-			<div className={styles.imageWrapper}>
+			<div
+				ref={wrapperRef}
+				className={[styles.imageWrapper, isTilting ? '' : styles.tiltReturning]
+					.filter(Boolean)
+					.join(' ')}
+				onMouseMove={handleMouseMove}
+				onMouseLeave={handleMouseLeave}
+				onMouseEnter={handleMouseEnter}
+			>
 				{!error && imageUri ? (
 					<Image
 						src={imageUri}
