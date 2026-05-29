@@ -346,8 +346,3 @@
 .fluidItemGridCompact {
 	gap: 8px;
 }
-
-.fluidItemGridCompact > * {
-	flex: 0 0 var(--card-width);
-	width: var(--card-width);
-}
