@@ -103,43 +103,27 @@
 	transform: rotate(180deg);
 }
 
-@keyframes foilShimmer {
-	0% {
-		background-position: 0% 50%;
-	}
-	50% {
-		background-position: 100% 50%;
-	}
-	100% {
-		background-position: 0% 50%;
-	}
-}
-
 .foilOverlay {
 	position: absolute;
 	inset: 0;
 	border-radius: 4.75% / 3.4%;
 	pointer-events: none;
 	opacity: 0;
-	background: linear-gradient(
-		125deg,
-		#ff0000 0%,
-		#ff7700 14%,
-		#ffff00 28%,
-		#00ff00 42%,
-		#0000ff 57%,
-		#8b00ff 71%,
-		#ff0000 85%,
-		#ff7700 100%
+	background: radial-gradient(
+		circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+		hsla(280, 40%, 80%, 0.9) 0%,
+		hsla(210, 50%, 75%, 0.7) 20%,
+		hsla(180, 40%, 70%, 0.5) 40%,
+		hsla(120, 30%, 70%, 0.3) 60%,
+		transparent 75%
 	);
-	background-size: 200% 200%;
+	background-size: 100% 100%;
 	mix-blend-mode: color-dodge;
 	transition: opacity 0.3s ease;
 }
 
 .imageWrapper:hover .foilOverlay {
-	opacity: 0.35;
-	animation: foilShimmer 1.2s ease-in-out infinite;
+	opacity: 0.18;
 }
 
 .etchedOverlay {
@@ -148,22 +132,20 @@
 	border-radius: 4.75% / 3.4%;
 	pointer-events: none;
 	opacity: 0;
-	background: linear-gradient(
-		125deg,
-		#ffffff 0%,
-		#d0d0d0 25%,
-		#f8f8f8 50%,
-		#c0c0c0 75%,
-		#ffffff 100%
+	background: radial-gradient(
+		circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+		hsla(0, 0%, 100%, 0.9) 0%,
+		hsla(0, 0%, 85%, 0.6) 25%,
+		hsla(0, 0%, 75%, 0.3) 50%,
+		transparent 70%
 	);
-	background-size: 200% 200%;
+	background-size: 100% 100%;
 	mix-blend-mode: color-dodge;
 	transition: opacity 0.3s ease;
 }
 
 .imageWrapper:hover .etchedOverlay {
-	opacity: 0.25;
-	animation: foilShimmer 1.4s ease-in-out infinite;
+	opacity: 0.15;
 }
 
 .imageProxy {
