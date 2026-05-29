@@ -108,7 +108,7 @@
 	inset: 0;
 	border-radius: 4.75% / 3.4%;
 	pointer-events: none;
-	opacity: 0;
+	opacity: 0.5;
 	background: radial-gradient(
 		circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
 		hsla(280, 40%, 80%, 0.9) 0%,
@@ -123,7 +123,7 @@
 }
 
 .imageWrapper:hover .foilOverlay {
-	opacity: 0.18;
+	opacity: 0.7;
 }
 
 .etchedOverlay {
@@ -134,9 +134,9 @@
 	opacity: 0;
 	background: radial-gradient(
 		circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-		hsla(0, 0%, 100%, 0.9) 0%,
-		hsla(0, 0%, 85%, 0.6) 25%,
-		hsla(0, 0%, 75%, 0.3) 50%,
+		hsla(45, 80%, 85%, 1) 0%,
+		hsla(35, 60%, 75%, 0.7) 25%,
+		hsla(50, 40%, 65%, 0.4) 50%,
 		transparent 70%
 	);
 	background-size: 100% 100%;
@@ -145,7 +145,7 @@
 }
 
 .imageWrapper:hover .etchedOverlay {
-	opacity: 0.15;
+	opacity: 0.25;
 }
 
 .imageProxy {
