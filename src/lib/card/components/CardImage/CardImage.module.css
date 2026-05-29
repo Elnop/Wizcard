@@ -134,9 +134,9 @@
 	background:
 		radial-gradient(
 			circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-			hsla(280, 80%, 55%, 0.55) 0%,
-			hsla(210, 90%, 50%, 0.4) 20%,
-			hsla(160, 80%, 50%, 0.25) 40%,
+			hsla(280, 80%, 55%, 0.35) 0%,
+			hsla(210, 90%, 50%, 0.25) 20%,
+			hsla(160, 80%, 50%, 0.15) 40%,
 			transparent 65%
 		),
 		linear-gradient(
