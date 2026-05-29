@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { DeckMeta } from '@/types/decks';
 import { Button } from '@/components/Button/Button';
 import styles from './DeckHeader.module.css';
@@ -8,12 +8,28 @@ import styles from './DeckHeader.module.css';
 type Props = {
 	deck: DeckMeta;
 	onUpdate: (updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description'>>) => void;
+	onAssignAllFromCollection?: () => void;
+	onAddAllToCollection?: () => void;
 };
 
-export function DeckHeader({ deck, onUpdate }: Props) {
+export function DeckHeader({
+	deck,
+	onUpdate,
+	onAssignAllFromCollection,
+	onAddAllToCollection,
+}: Props) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [name, setName] = useState(deck.name);
 	const [description, setDescription] = useState(deck.description ?? '');
+	const [menuOpen, setMenuOpen] = useState(false);
+	const menuRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!menuOpen) return;
+		const close = () => setMenuOpen(false);
+		document.addEventListener('click', close);
+		return () => document.removeEventListener('click', close);
+	}, [menuOpen]);
 
 	function handleSave() {
 		if (!name.trim()) return;
@@ -64,9 +80,54 @@ export function DeckHeader({ deck, onUpdate }: Props) {
 			<div className={styles.titleRow}>
 				<h1 className={styles.name}>{deck.name}</h1>
 				{deck.format && <span className={styles.format}>{deck.format}</span>}
-				<Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
-					Edit
-				</Button>
+				<div className={styles.menuWrapper} ref={menuRef} onClick={(e) => e.stopPropagation()}>
+					<button
+						type="button"
+						className={styles.kebabBtn}
+						onClick={() => setMenuOpen((v) => !v)}
+						aria-label="Deck actions"
+					>
+						⋮
+					</button>
+					{menuOpen && (
+						<div className={styles.dropdown}>
+							<button
+								type="button"
+								className={styles.dropdownItem}
+								onClick={() => {
+									setMenuOpen(false);
+									setIsEditing(true);
+								}}
+							>
+								✎ Edit
+							</button>
+							{onAssignAllFromCollection && (
+								<button
+									type="button"
+									className={styles.dropdownItem}
+									onClick={() => {
+										setMenuOpen(false);
+										onAssignAllFromCollection();
+									}}
+								>
+									⊕ Assign all from collection
+								</button>
+							)}
+							{onAddAllToCollection && (
+								<button
+									type="button"
+									className={styles.dropdownItem}
+									onClick={() => {
+										setMenuOpen(false);
+										onAddAllToCollection();
+									}}
+								>
+									⊕ Ajouter tout à la collection
+								</button>
+							)}
+						</div>
+					)}
+				</div>
 			</div>
 			{deck.description && <p className={styles.description}>{deck.description}</p>}
 		</div>
