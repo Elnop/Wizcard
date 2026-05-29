@@ -51,4 +51,5 @@ export interface CardListProps {
 	className?: string;
 	pageSize?: number | false;
 	showCardNames?: boolean;
+	cardGap?: 'default' | 'compact';
 }

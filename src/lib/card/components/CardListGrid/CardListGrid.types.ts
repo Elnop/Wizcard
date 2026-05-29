@@ -17,4 +17,5 @@ export interface CardListGridProps {
 	fluidSections?: boolean;
 	className?: string;
 	showCardNames?: boolean;
+	cardGap?: 'default' | 'compact';
 }
