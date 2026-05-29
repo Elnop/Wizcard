@@ -222,6 +222,20 @@ export function EditCardModal(props: Props) {
 							</div>
 						</div>
 
+						{/* Proxy */}
+						<div className={styles.field}>
+							<label className={styles.label}>Proxy</label>
+							<div className={styles.foilRow}>
+								<button
+									type="button"
+									className={`${styles.foilToggle} ${entry.proxy ? styles.proxyToggleActive : ''}`}
+									onClick={() => save({ proxy: !entry.proxy })}
+								>
+									▣ Proxy
+								</button>
+							</div>
+						</div>
+
 						{/* Language */}
 						<div className={styles.field}>
 							<label className={styles.label} htmlFor="copy-edit-language">

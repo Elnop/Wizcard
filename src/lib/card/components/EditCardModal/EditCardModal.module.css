@@ -108,6 +108,12 @@
 	color: #fff;
 }
 
+.proxyToggleActive {
+	background: linear-gradient(135deg, #c2410c 0%, #fb923c 100%);
+	border-color: transparent;
+	color: #fff;
+}
+
 .tagsField {
 	display: flex;
 	flex-wrap: wrap;
