@@ -88,6 +88,7 @@ export function CopyCardOverlay({
 			<div className={styles.badges}>
 				{card.entry.condition && <span className={styles.badge}>{card.entry.condition}</span>}
 				{card.entry.isFoil && <span className={styles.badgeFoil}>✦</span>}
+				{card.entry.proxy && <span className={styles.badgeProxy}>Proxy</span>}
 				{card.entry.language && card.entry.language !== 'English' && (
 					<span className={styles.badge}>{card.entry.language}</span>
 				)}
