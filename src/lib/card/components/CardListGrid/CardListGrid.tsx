@@ -30,6 +30,8 @@ export function CardListGrid({
 	const gridStyle = cardsPerLine
 		? ({ '--cards-per-line': cardsPerLine } as React.CSSProperties)
 		: undefined;
+	const effectiveGridClass =
+		cardGap === 'compact' ? `${gridClass} ${styles.gridCompact}` : gridClass;
 
 	function renderItems(
 		cardItems: typeof cards,
@@ -232,7 +234,7 @@ export function CardListGrid({
 	// Initial skeleton
 	if (isLoading && cards.length === 0) {
 		return (
-			<div className={gridClass} style={gridStyle}>
+			<div className={effectiveGridClass} style={gridStyle}>
 				{Array.from({ length: skeletonCount }).map((_, i) => (
 					<div key={`sk-${i}`} className={styles.item}>
 						<div className={styles.skeletonName} />
