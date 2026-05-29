@@ -7,11 +7,13 @@ export type CollectionSortOrder = ScryfallSortOrder | 'language';
 
 export interface CollectionFilters extends Omit<CardFilters, 'order'> {
 	order: CollectionSortOrder;
+	proxyFilter: 'all' | 'official' | 'proxy';
 }
 
 export const defaultCollectionFilters: CollectionFilters = {
 	...DEFAULT_CARD_FILTERS,
 	order: 'name',
+	proxyFilter: 'all',
 };
 
 function parseCmc(raw: string): ((cmc: number) => boolean) | null {
@@ -134,6 +136,11 @@ export function filterCollectionCards<T extends ScryfallCard | Card>(
 			if (tokens.length > 0 && !tokens.every((t) => text.includes(t))) return false;
 		}
 		if (cmcTest && !cmcTest(card.cmc)) return false;
+		if (filters.proxyFilter !== 'all' && 'entry' in card) {
+			const isProxy = card.entry.proxy === true;
+			if (filters.proxyFilter === 'proxy' && !isProxy) return false;
+			if (filters.proxyFilter === 'official' && isProxy) return false;
+		}
 		return true;
 	});
 

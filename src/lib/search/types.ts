@@ -31,6 +31,10 @@ export function countActiveFilters(
 	filters:
 		| CardFilters
 		| ({ order: string; dir: ScryfallSortDir } & Omit<CardFilters, 'order' | 'dir'>)
+		| ({ order: string; dir: ScryfallSortDir; proxyFilter?: string } & Omit<
+				CardFilters,
+				'order' | 'dir'
+		  >)
 ): number {
 	return (
 		filters.colors.length +
@@ -40,6 +44,9 @@ export function countActiveFilters(
 		filters.rarities.length +
 		(filters.oracleText ? 1 : 0) +
 		(filters.cmc ? 1 : 0) +
-		(filters.name ? 1 : 0)
+		(filters.name ? 1 : 0) +
+		('proxyFilter' in filters && (filters as { proxyFilter?: string }).proxyFilter !== 'all'
+			? 1
+			: 0)
 	);
 }
