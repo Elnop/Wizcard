@@ -378,6 +378,9 @@ function CardModalInner({
 							size="large"
 							priority
 							onClick={() => setLightbox(true)}
+							isFoil={selectedCard.entry.isFoil}
+							foilType={selectedCard.entry.foilType}
+							isProxy={selectedCard.entry.proxy}
 						/>
 						{onChangePrint && (
 							<button

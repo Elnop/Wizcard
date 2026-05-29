@@ -124,12 +124,12 @@
 		#ff0000 85%,
 		#ff7700 100%
 	);
-	background-size: 300% 300%;
+	background-size: 200% 200%;
 	mix-blend-mode: color-dodge;
 	transition: opacity 0.3s ease;
 }
 
-.container:hover .foilOverlay {
+.imageWrapper:hover .foilOverlay {
 	opacity: 0.35;
 	animation: foilShimmer 1.2s ease-in-out infinite;
 }
@@ -148,12 +148,12 @@
 		#c0c0c0 75%,
 		#ffffff 100%
 	);
-	background-size: 300% 300%;
+	background-size: 200% 200%;
 	mix-blend-mode: color-dodge;
 	transition: opacity 0.3s ease;
 }
 
-.container:hover .etchedOverlay {
+.imageWrapper:hover .etchedOverlay {
 	opacity: 0.25;
 	animation: foilShimmer 1.4s ease-in-out infinite;
 }
@@ -167,9 +167,9 @@
 	align-items: center;
 	justify-content: center;
 	color: white;
-	font-size: clamp(0.9rem, 8cqw, 2rem);
+	font-size: clamp(1.2rem, 4cqw, 2rem);
 	font-weight: 900;
 	letter-spacing: 0.15em;
-	opacity: 0.13;
+	opacity: 0.12;
 	transform: rotate(-30deg);
 }
