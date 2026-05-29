@@ -66,9 +66,9 @@ export function CardListGrid({
 									card={c}
 									size="normal"
 									priority={priorityOffset + i < 4}
-									isFoil={'entry' in c ? c.entry?.isFoil : undefined}
-									foilType={'entry' in c ? c.entry?.foilType : undefined}
-									isProxy={'entry' in c ? c.entry?.proxy : undefined}
+									isFoil={'entry' in c ? c.entry.isFoil : undefined}
+									foilType={'entry' in c ? c.entry.foilType : undefined}
+									isProxy={'entry' in c ? c.entry.proxy : undefined}
 								/>
 								{renderOverlay?.(c)}
 							</div>
