@@ -98,7 +98,13 @@ export function CardImage({
 						width={width}
 						height={height}
 						priority={priority}
-						className={`${styles.image} ${isLoading ? styles.loading : ''}`}
+						className={[
+							styles.image,
+							isLoading ? styles.loading : '',
+							isProxy ? styles.imageProxy : '',
+						]
+							.filter(Boolean)
+							.join(' ')}
 						onLoad={() => setIsLoading(false)}
 						onError={() => setError(true)}
 					/>

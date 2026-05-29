@@ -158,6 +158,11 @@
 	animation: foilShimmer 1.4s ease-in-out infinite;
 }
 
+.imageProxy {
+	opacity: 0.75;
+	filter: brightness(0.85);
+}
+
 .proxyOverlay {
 	position: absolute;
 	inset: 0;
