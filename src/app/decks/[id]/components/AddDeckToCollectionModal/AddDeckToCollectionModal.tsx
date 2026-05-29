@@ -1,32 +1,73 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
-import type { AddDeckToCollectionOptions } from '../../useAddDeckToCollection';
+import type { DeckZone } from '@/types/decks';
+import type { AddDeckToCollectionOptions, ZoneStat } from '../../useAddDeckToCollection';
 import styles from './AddDeckToCollectionModal.module.css';
 
+const ZONE_LABELS: Record<DeckZone, string> = {
+	commander: 'Commander',
+	mainboard: 'Mainboard',
+	sideboard: 'Sideboard',
+	maybeboard: 'Maybeboard',
+};
+
+const DEFAULT_SELECTED: Set<DeckZone> = new Set(['commander', 'mainboard', 'sideboard']);
+
 type Props = {
-	ownedCount: number;
-	unownedCount: number;
+	zoneStats: Record<DeckZone, ZoneStat>;
+	availableZones: DeckZone[];
 	wishlistMatchCount: number;
 	onConfirm: (options: AddDeckToCollectionOptions) => void;
 	onClose: () => void;
 };
 
 export function AddDeckToCollectionModal({
-	ownedCount,
-	unownedCount,
+	zoneStats,
+	availableZones,
 	wishlistMatchCount,
 	onConfirm,
 	onClose,
 }: Props) {
-	const [onlyMissing, setOnlyMissing] = useState(ownedCount > 0);
+	const [selectedZones, setSelectedZones] = useState<Set<DeckZone>>(
+		() => new Set(availableZones.filter((z) => DEFAULT_SELECTED.has(z)))
+	);
+
+	const totalInSelectedZones = useMemo(
+		() =>
+			availableZones
+				.filter((z) => selectedZones.has(z))
+				.reduce((sum, z) => sum + zoneStats[z].total, 0),
+		[availableZones, selectedZones, zoneStats]
+	);
+
+	const ownedInSelectedZones = useMemo(
+		() =>
+			availableZones
+				.filter((z) => selectedZones.has(z))
+				.reduce((sum, z) => sum + zoneStats[z].owned, 0),
+		[availableZones, selectedZones, zoneStats]
+	);
+
+	const unownedInSelectedZones = totalInSelectedZones - ownedInSelectedZones;
+
+	const hasAnyOwned = ownedInSelectedZones > 0;
+	const [onlyMissing, setOnlyMissing] = useState(hasAnyOwned);
 	const [asProxy, setAsProxy] = useState(false);
 	const [removeWishlist, setRemoveWishlist] = useState(wishlistMatchCount > 0);
 
-	const totalCount = ownedCount + unownedCount;
-	const addCount = onlyMissing ? unownedCount : totalCount;
+	const addCount = onlyMissing ? unownedInSelectedZones : totalInSelectedZones;
+
+	const toggleZone = (zone: DeckZone) => {
+		setSelectedZones((prev) => {
+			const next = new Set(prev);
+			if (next.has(zone)) next.delete(zone);
+			else next.add(zone);
+			return next;
+		});
+	};
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
@@ -37,33 +78,65 @@ export function AddDeckToCollectionModal({
 				</strong>{' '}
 				à ajouter
 			</p>
-			<div className={styles.options}>
-				{ownedCount > 0 && (
-					<label className={styles.option}>
-						<input
-							type="checkbox"
-							checked={onlyMissing}
-							onChange={(e) => setOnlyMissing(e.target.checked)}
-						/>
-						Seulement les non possédées ({unownedCount} carte{unownedCount !== 1 ? 's' : ''})
-					</label>
-				)}
-				<label className={styles.option}>
-					<input type="checkbox" checked={asProxy} onChange={(e) => setAsProxy(e.target.checked)} />
-					Marquer comme proxy
-				</label>
-				{wishlistMatchCount > 0 && (
-					<label className={styles.option}>
-						<input
-							type="checkbox"
-							checked={removeWishlist}
-							onChange={(e) => setRemoveWishlist(e.target.checked)}
-						/>
-						Supprimer de la wishlist ({wishlistMatchCount} carte
-						{wishlistMatchCount !== 1 ? 's' : ''})
-					</label>
-				)}
+
+			<div className={styles.section}>
+				<p className={styles.sectionTitle}>Zones</p>
+				<div className={styles.options}>
+					{availableZones.map((zone) => {
+						const stat = zoneStats[zone];
+						return (
+							<label key={zone} className={styles.option}>
+								<input
+									type="checkbox"
+									checked={selectedZones.has(zone)}
+									onChange={() => toggleZone(zone)}
+								/>
+								{ZONE_LABELS[zone]}
+								<span className={styles.zoneCount}>
+									({stat.owned} / {stat.total} possédées)
+								</span>
+							</label>
+						);
+					})}
+				</div>
 			</div>
+
+			<div className={styles.section}>
+				<p className={styles.sectionTitle}>Options</p>
+				<div className={styles.options}>
+					{hasAnyOwned && (
+						<label className={styles.option}>
+							<input
+								type="checkbox"
+								checked={onlyMissing}
+								onChange={(e) => setOnlyMissing(e.target.checked)}
+							/>
+							Seulement les non possédées ({unownedInSelectedZones} carte
+							{unownedInSelectedZones !== 1 ? 's' : ''})
+						</label>
+					)}
+					<label className={styles.option}>
+						<input
+							type="checkbox"
+							checked={asProxy}
+							onChange={(e) => setAsProxy(e.target.checked)}
+						/>
+						Marquer comme proxy
+					</label>
+					{wishlistMatchCount > 0 && (
+						<label className={styles.option}>
+							<input
+								type="checkbox"
+								checked={removeWishlist}
+								onChange={(e) => setRemoveWishlist(e.target.checked)}
+							/>
+							Supprimer de la wishlist ({wishlistMatchCount} carte
+							{wishlistMatchCount !== 1 ? 's' : ''})
+						</label>
+					)}
+				</div>
+			</div>
+
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
 					Annuler
@@ -71,8 +144,15 @@ export function AddDeckToCollectionModal({
 				<Button
 					variant="primary"
 					size="sm"
-					onClick={() => onConfirm({ onlyMissing, asProxy, removeWishlist })}
-					disabled={addCount === 0}
+					onClick={() =>
+						onConfirm({
+							onlyMissing: onlyMissing && hasAnyOwned,
+							asProxy,
+							removeWishlist,
+							zones: Array.from(selectedZones),
+						})
+					}
+					disabled={addCount === 0 || selectedZones.size === 0}
 				>
 					Ajouter
 				</Button>
