@@ -50,9 +50,7 @@ export function useCollectionBadge(
 		const lockedCopies = relevantEntries.filter(
 			(e) => e.entry.deckId != null && e.entry.deckId !== currentDeckId
 		);
-		const ownedInCurrentDeck = relevantEntries.filter(
-			(e) => e.entry.deckId === currentDeckId && !!e.entry.ownerId
-		);
+		const ownedInCurrentDeck = relevantEntries.filter((e) => e.entry.deckId === currentDeckId);
 
 		let badgeState: BadgeState;
 		if (ownedCount === neededCount && neededCount > 0) {

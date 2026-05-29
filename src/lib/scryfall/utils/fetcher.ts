@@ -1,6 +1,6 @@
 // Shared fetch functions composing rate-limiter + cache + retry + error handling
 
-import { enforceRateLimit } from './rate-limiter';
+import { scryfallQueue } from './rate-limiter';
 import { getCached, setCached } from './cache';
 import { ScryfallApiError, isScryfallError } from './errors';
 import type { ScryfallError } from '../types/scryfall';
@@ -85,8 +85,6 @@ export function scryfallGet<T>(
 }
 
 async function scryfallGetInner<T>(url: string, externalSignal?: AbortSignal): Promise<T> {
-	await enforceRateLimit();
-
 	let lastError: Error | null = null;
 
 	for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -97,12 +95,18 @@ async function scryfallGetInner<T>(url: string, externalSignal?: AbortSignal): P
 			: controller.signal;
 
 		try {
-			const response = await fetch(url, {
-				headers: {
-					Accept: 'application/json;q=0.9,*/*;q=0.8',
-				},
-				signal: combinedSignal,
-			});
+			const response = await scryfallQueue.enqueue(
+				() =>
+					fetch(url, {
+						headers: {
+							Accept: 'application/json;q=0.9,*/*;q=0.8',
+						},
+						signal: combinedSignal,
+					}),
+				externalSignal
+			);
+
+			clearTimeout(timeoutId);
 
 			if (!response.ok) {
 				const errorData = await parseErrorResponse(response);
@@ -148,8 +152,6 @@ async function scryfallGetInner<T>(url: string, externalSignal?: AbortSignal): P
 export async function scryfallPost<T>(endpoint: string, body: object): Promise<T> {
 	const url = buildUrl(endpoint);
 
-	await enforceRateLimit();
-
 	let lastError: Error | null = null;
 
 	for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -157,15 +159,17 @@ export async function scryfallPost<T>(endpoint: string, body: object): Promise<T
 		const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
 
 		try {
-			const response = await fetch(url, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Accept: 'application/json;q=0.9,*/*;q=0.8',
-				},
-				body: JSON.stringify(body),
-				signal: controller.signal,
-			});
+			const response = await scryfallQueue.enqueue(() =>
+				fetch(url, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Accept: 'application/json;q=0.9,*/*;q=0.8',
+					},
+					body: JSON.stringify(body),
+					signal: controller.signal,
+				})
+			);
 
 			if (!response.ok) {
 				const errorData = await parseErrorResponse(response);

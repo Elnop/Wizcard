@@ -80,9 +80,14 @@ export async function getCardBySetNumber(
 export async function getCardBySetNumberAndLang(
 	setCode: string,
 	collectorNumber: string,
-	lang: string
+	lang: string,
+	signal?: AbortSignal
 ): Promise<ScryfallCard> {
-	return scryfallGet<ScryfallCard>(`/cards/${setCode}/${collectorNumber}/${lang}`);
+	return scryfallGet<ScryfallCard>(
+		`/cards/${setCode}/${collectorNumber}/${lang}`,
+		undefined,
+		signal
+	);
 }
 
 export async function getCardByMultiverseId(id: number): Promise<ScryfallCard> {

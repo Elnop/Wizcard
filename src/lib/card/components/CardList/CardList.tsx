@@ -30,6 +30,7 @@ export function CardList({
 	viewModes = ['grid', 'table'],
 	className,
 	pageSize = PAGE_SIZE,
+	showCardNames = true,
 }: CardListProps) {
 	const [viewMode, setViewMode] = useState<CardListViewMode>(viewModes[0]);
 	const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -134,6 +135,7 @@ export function CardList({
 						sectionClassName={sectionClassName}
 						fluidSections={isFluid}
 						className={className}
+						showCardNames={showCardNames}
 					/>
 				)}
 				{sentinel}
@@ -173,6 +175,7 @@ export function CardList({
 				cardsPerLine={cardsPerLine}
 				fluidSections={isFluid}
 				className={className}
+				showCardNames={showCardNames}
 			/>
 			{sentinel}
 		</>

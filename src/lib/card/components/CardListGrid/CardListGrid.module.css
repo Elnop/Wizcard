@@ -211,6 +211,7 @@
 	padding: 6px 12px 4px;
 	background: none;
 	border: none;
+	border-bottom: 1px solid var(--glass-border);
 	color: var(--section-color, var(--text-muted));
 	font-family: var(--font-display);
 	font-size: var(--text-lg);

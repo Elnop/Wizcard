@@ -21,6 +21,7 @@ export function CardListGrid({
 	sectionClassName,
 	fluidSections = false,
 	className,
+	showCardNames = true,
 }: CardListGridProps) {
 	const gridClass = [cardsPerLine ? styles.gridFixed : styles.grid, className]
 		.filter(Boolean)
@@ -50,7 +51,7 @@ export function CardListGrid({
 							title={c.name}
 							onClick={onCardClick ? () => onCardClick(c) : undefined}
 						>
-							<p className={styles.cardName}>{c.name}</p>
+							{showCardNames && <p className={styles.cardName}>{c.name}</p>}
 							<div className={styles.imageWrapper}>
 								<CardImage card={c} size="normal" priority={priorityOffset + i < 4} />
 								{renderOverlay?.(c)}
@@ -205,7 +206,7 @@ export function CardListGrid({
 	if (sections && sections.length > 0) {
 		if (fluidSections) {
 			return (
-				<div className={styles.fluidSectionsContainer}>
+				<div className={[styles.fluidSectionsContainer, className].filter(Boolean).join(' ')}>
 					{sections.map((section, idx) =>
 						renderSection(section, idx, 0, section.label, idx === 0, false)
 					)}
@@ -213,11 +214,11 @@ export function CardListGrid({
 			);
 		}
 		return (
-			<>
+			<div className={className}>
 				{sections.map((section, idx) =>
 					renderSection(section, idx, 0, section.label, idx === 0, false)
 				)}
-			</>
+			</div>
 		);
 	}
 

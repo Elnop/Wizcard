@@ -50,4 +50,5 @@ export interface CardListProps {
 	viewModes?: CardListViewMode[];
 	className?: string;
 	pageSize?: number | false;
+	showCardNames?: boolean;
 }

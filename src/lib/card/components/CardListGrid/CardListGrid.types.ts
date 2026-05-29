@@ -16,4 +16,5 @@ export interface CardListGridProps {
 	sectionClassName?: string;
 	fluidSections?: boolean;
 	className?: string;
+	showCardNames?: boolean;
 }

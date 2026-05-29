@@ -70,3 +70,64 @@
 	display: flex;
 	gap: 8px;
 }
+
+.menuWrapper {
+	position: relative;
+	display: inline-flex;
+}
+
+.kebabBtn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	background: transparent;
+	border: none;
+	border-radius: 6px;
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: 18px;
+	line-height: 1;
+	transition:
+		background 0.15s,
+		color 0.15s;
+}
+
+.kebabBtn:hover {
+	background: rgba(255, 255, 255, 0.07);
+	color: var(--foreground);
+}
+
+.dropdown {
+	position: absolute;
+	top: calc(100% + 4px);
+	right: 0;
+	z-index: 200;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	min-width: 200px;
+	padding: 4px 0;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dropdownItem {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 7px 12px;
+	background: transparent;
+	border: none;
+	color: var(--foreground);
+	font-size: var(--text-sm);
+	text-align: left;
+	cursor: pointer;
+	transition: background 0.12s;
+}
+
+.dropdownItem:hover {
+	background: rgba(255, 255, 255, 0.06);
+}

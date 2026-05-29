@@ -31,12 +31,12 @@ export function useLocalizedImage(
 
 	useEffect(() => {
 		if (!needsFetch) return;
-		let cancelled = false;
+		const controller = new AbortController();
 
 		(async () => {
 			// 1. Check IndexedDB cache
 			const cached = await getLocalizedImageFromCache(cacheKey);
-			if (cancelled) return;
+			if (controller.signal.aborted) return;
 			if (cached) {
 				setResult({
 					image_uris: cached.image_uris,
@@ -54,8 +54,13 @@ export function useLocalizedImage(
 
 			// 2. Fetch from Scryfall API
 			try {
-				const localized = await getCardBySetNumberAndLang(card.set, card.collector_number, lang!);
-				if (cancelled) return;
+				const localized = await getCardBySetNumberAndLang(
+					card.set,
+					card.collector_number,
+					lang!,
+					controller.signal
+				);
+				if (controller.signal.aborted) return;
 
 				const imageResult: LocalizedImageResult = {
 					image_uris: localized.image_uris,
@@ -70,13 +75,16 @@ export function useLocalizedImage(
 					face_image_uris: localized.card_faces?.map((f) => f.image_uris),
 					cachedAt: Date.now(),
 				});
-			} catch {
+			} catch (e) {
+				// Aborted requests (card left viewport, component unmounted) are not errors —
+				// don't blacklist the cache key so the image can be retried next time.
+				if (e instanceof DOMException && e.name === 'AbortError') return;
 				notFound.add(cacheKey);
 			}
 		})();
 
 		return () => {
-			cancelled = true;
+			controller.abort();
 		};
 	}, [card.set, card.collector_number, lang, needsFetch, cacheKey]);
 
