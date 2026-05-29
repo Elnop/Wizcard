@@ -95,7 +95,12 @@ type DeckActions = {
 	removeCardFromDeck: (rowId: string, triggerSync: () => void) => void;
 	changeZone: (rowId: string, zone: DeckZone, triggerSync: () => void) => void;
 	updateDeckCard: (rowId: string, updates: Partial<CardEntry>, triggerSync: () => void) => void;
-	toggleOwned: (rowId: string, userId: string, triggerSync: () => void) => void;
+	toggleOwned: (
+		rowId: string,
+		userId: string,
+		proxy: boolean | undefined,
+		triggerSync: () => void
+	) => void;
 	changeDeckCardPrint: (
 		rowId: string,
 		newCard: ScryfallCard,
@@ -480,14 +485,19 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		triggerSync();
 	},
 
-	toggleOwned: (rowId, userId, triggerSync) => {
+	toggleOwned: (rowId, userId, proxy, triggerSync) => {
 		const current = get().activeDeckCards;
 		const copy = current[rowId];
 		if (!copy) return;
 		const isCurrentlyOwned = !!copy.entry.ownerId;
 		const newOwnerId = isCurrentlyOwned ? null : userId;
-		const updates = { owner_id: newOwnerId };
-		const newEntry = { ...copy.entry, ownerId: newOwnerId ?? undefined };
+		const updates: { owner_id: string | null; proxy?: boolean | null } = { owner_id: newOwnerId };
+		if (proxy !== undefined) updates.proxy = proxy;
+		const newEntry = {
+			...copy.entry,
+			ownerId: newOwnerId ?? undefined,
+			...(proxy !== undefined ? { proxy } : {}),
+		};
 		set({
 			activeDeckCards: {
 				...current,

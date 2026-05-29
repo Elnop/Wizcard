@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useCallback } from 'react';
-import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import type { ResolvedDeckCard } from './useDeckDetail';
@@ -21,9 +20,8 @@ type UseAddDeckToCollectionResult = {
 
 export function useAddDeckToCollection(
 	resolvedCards: ResolvedDeckCard[],
-	deckId: string
+	_deckId: string
 ): UseAddDeckToCollectionResult {
-	const { addCard } = useCollectionContext();
 	const { toggleOwned } = useDeckContext();
 	const { entries: wishlistEntries, removeFromWishlist } = useWishlistContext();
 
@@ -56,15 +54,8 @@ export function useAddDeckToCollection(
 				: resolvedCards;
 
 			for (const rc of toProcess) {
-				// Add to collection (assigned to this deck, optionally as proxy)
-				addCard({ id: rc.id } as Parameters<typeof addCard>[0], {
-					proxy: options.asProxy || undefined,
-					deckId,
-				});
-				// Mark the deck copy as owned — toggleOwned persists owner_id to DB
-				// and updates activeDeckCards. Skip if already owned to avoid toggling off.
 				if (rc.entry.ownerId == null) {
-					toggleOwned(rc.entry.rowId);
+					toggleOwned(rc.entry.rowId, options.asProxy || undefined);
 				}
 			}
 
@@ -74,7 +65,7 @@ export function useAddDeckToCollection(
 				}
 			}
 		},
-		[resolvedCards, deckId, addCard, toggleOwned, matchingWishlistRowIds, removeFromWishlist]
+		[resolvedCards, toggleOwned, matchingWishlistRowIds, removeFromWishlist]
 	);
 
 	return { ownedCount, unownedCount, wishlistMatchCount, execute };

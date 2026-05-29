@@ -48,7 +48,7 @@ type DeckContextValue = {
 	removeCardFromDeck: (rowId: string) => void;
 	changeZone: (rowId: string, zone: DeckZone) => void;
 	updateDeckCard: (rowId: string, updates: Partial<CardEntry>) => void;
-	toggleOwned: (rowId: string) => void;
+	toggleOwned: (rowId: string, proxy?: boolean) => void;
 	changeDeckCardPrint: (rowId: string, newCard: ScryfallCard, deckId: string) => void;
 	replaceDeckCardWithCollectionCopy: (
 		deckCardRowId: string,
@@ -206,9 +206,9 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const toggleOwned = useCallback(
-		(rowId: string) => {
+		(rowId: string, proxy?: boolean) => {
 			if (!userId) return;
-			store.toggleOwned(rowId, userId, triggerSync);
+			store.toggleOwned(rowId, userId, proxy, triggerSync);
 		},
 		[store, userId, triggerSync]
 	);

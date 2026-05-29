@@ -329,6 +329,7 @@ export async function updateDeckCard(
 	updates: {
 		tags?: string[];
 		owner_id?: string | null;
+		proxy?: boolean | null;
 		is_foil?: boolean | null;
 		foil_type?: string | null;
 		condition?: string | null;
