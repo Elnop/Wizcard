@@ -111,10 +111,10 @@
 	opacity: 0.5;
 	background: radial-gradient(
 		circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-		hsla(280, 40%, 80%, 0.9) 0%,
-		hsla(210, 50%, 75%, 0.7) 20%,
-		hsla(180, 40%, 70%, 0.5) 40%,
-		hsla(120, 30%, 70%, 0.3) 60%,
+		hsla(280, 80%, 55%, 1) 0%,
+		hsla(210, 90%, 50%, 0.8) 20%,
+		hsla(160, 80%, 50%, 0.6) 40%,
+		hsla(60, 70%, 55%, 0.3) 60%,
 		transparent 75%
 	);
 	background-size: 100% 100%;
