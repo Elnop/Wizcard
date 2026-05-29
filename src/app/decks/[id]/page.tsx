@@ -414,6 +414,8 @@ export default function DeckDetailPage() {
 						tableColumns={tableColumns}
 						pageSize={false}
 						viewModes={['fluid-grid', 'grid', 'table']}
+						cardGap="compact"
+						showCardNames={false}
 					/>
 
 					<DeckStats stats={stats} warnings={warnings} />
