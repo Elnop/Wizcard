@@ -28,7 +28,6 @@ import { DeckCardOverlay } from './components/DeckCardOverlay/DeckCardOverlay';
 import { DeckFooter } from './components/DeckFooter/DeckFooter';
 import { CardSearchPanel } from './components/CardSearchPanel/CardSearchPanel';
 import { WishlistIcon } from '@/components/WishlistIcon/WishlistIcon';
-import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useAddDeckToCollection } from './useAddDeckToCollection';
 import { AddDeckToCollectionModal } from './components/AddDeckToCollectionModal/AddDeckToCollectionModal';
 import styles from './page.module.css';
@@ -36,9 +35,6 @@ import styles from './page.module.css';
 export default function DeckDetailPage() {
 	const params = useParams();
 	const deckId = params.id as string;
-
-	const { user } = useAuth();
-	const userId = user?.id ?? null;
 
 	const {
 		decks: allDecks,
@@ -286,7 +282,7 @@ export default function DeckDetailPage() {
 		unownedCount,
 		wishlistMatchCount,
 		execute: executeAddToCollection,
-	} = useAddDeckToCollection(resolvedCards, deckId, userId);
+	} = useAddDeckToCollection(resolvedCards, deckId);
 
 	const renderOverlay = useCallback(
 		(card: AnyCard) => {

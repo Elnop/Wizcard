@@ -21,11 +21,10 @@ type UseAddDeckToCollectionResult = {
 
 export function useAddDeckToCollection(
 	resolvedCards: ResolvedDeckCard[],
-	deckId: string,
-	userId: string | null
+	deckId: string
 ): UseAddDeckToCollectionResult {
 	const { addCard } = useCollectionContext();
-	const { updateDeckCard } = useDeckContext();
+	const { toggleOwned } = useDeckContext();
 	const { entries: wishlistEntries, removeFromWishlist } = useWishlistContext();
 
 	const ownedCount = useMemo(
@@ -62,8 +61,11 @@ export function useAddDeckToCollection(
 					proxy: options.asProxy || undefined,
 					deckId,
 				});
-				// Mark the deck copy as owned with the actual userId
-				updateDeckCard(rc.entry.rowId, { ownerId: userId ?? undefined });
+				// Mark the deck copy as owned — toggleOwned persists owner_id to DB
+				// and updates activeDeckCards. Skip if already owned to avoid toggling off.
+				if (rc.entry.ownerId == null) {
+					toggleOwned(rc.entry.rowId);
+				}
 			}
 
 			if (options.removeWishlist) {
@@ -72,15 +74,7 @@ export function useAddDeckToCollection(
 				}
 			}
 		},
-		[
-			resolvedCards,
-			deckId,
-			userId,
-			addCard,
-			updateDeckCard,
-			matchingWishlistRowIds,
-			removeFromWishlist,
-		]
+		[resolvedCards, deckId, addCard, toggleOwned, matchingWishlistRowIds, removeFromWishlist]
 	);
 
 	return { ownedCount, unownedCount, wishlistMatchCount, execute };
