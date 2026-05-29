@@ -336,3 +336,18 @@
 	background: color-mix(in srgb, var(--section-color, transparent) 6%, transparent);
 	box-shadow: 0 0 16px color-mix(in srgb, var(--section-color, transparent) 15%, transparent);
 }
+
+/* ─── Compact gap variant ───────────────────────────────────────────────── */
+
+.gridCompact {
+	gap: 8px;
+}
+
+.fluidItemGridCompact {
+	gap: 8px;
+}
+
+.fluidItemGridCompact > * {
+	flex: 0 0 var(--card-width);
+	width: var(--card-width);
+}
