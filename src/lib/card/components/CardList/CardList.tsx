@@ -31,6 +31,7 @@ export function CardList({
 	className,
 	pageSize = PAGE_SIZE,
 	showCardNames = true,
+	cardGap = 'default',
 }: CardListProps) {
 	const [viewMode, setViewMode] = useState<CardListViewMode>(viewModes[0]);
 	const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -136,6 +137,7 @@ export function CardList({
 						fluidSections={isFluid}
 						className={className}
 						showCardNames={showCardNames}
+						cardGap={cardGap}
 					/>
 				)}
 				{sentinel}
@@ -176,6 +178,7 @@ export function CardList({
 				fluidSections={isFluid}
 				className={className}
 				showCardNames={showCardNames}
+				cardGap={cardGap}
 			/>
 			{sentinel}
 		</>
