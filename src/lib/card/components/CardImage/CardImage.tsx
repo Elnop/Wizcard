@@ -24,6 +24,9 @@ export interface CardImageProps {
 	priority?: boolean;
 	className?: string;
 	onClick?: () => void;
+	isFoil?: boolean;
+	foilType?: 'foil' | 'etched';
+	isProxy?: boolean;
 }
 
 const sizeMap = {
@@ -38,6 +41,9 @@ export function CardImage({
 	priority = false,
 	className,
 	onClick,
+	isFoil = false,
+	foilType = 'foil',
+	isProxy = false,
 }: CardImageProps) {
 	const [currentFace, setCurrentFace] = useState(0);
 	const [isLoading, setIsLoading] = useState(true);
@@ -102,6 +108,17 @@ export function CardImage({
 					</div>
 				)}
 				{isLoading && !error && <div className={styles.skeleton} />}
+				{isFoil && (
+					<div
+						className={foilType === 'etched' ? styles.etchedOverlay : styles.foilOverlay}
+						aria-hidden="true"
+					/>
+				)}
+				{isProxy && (
+					<div className={styles.proxyOverlay} aria-hidden="true">
+						PROXY
+					</div>
+				)}
 			</div>
 			{isDoubleFaced && (
 				<button
