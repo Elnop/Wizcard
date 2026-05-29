@@ -7,10 +7,6 @@
 	cursor: pointer;
 }
 
-.clickable:hover .image {
-	transform: scale(1.02);
-}
-
 .imageWrapper {
 	position: relative;
 	background: transparent;

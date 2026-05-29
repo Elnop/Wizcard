@@ -22,11 +22,6 @@
 .itemClickable {
 	cursor: pointer;
 	border-radius: 8px;
-	transition: transform 0.15s;
-}
-
-.itemClickable:hover {
-	transform: scale(1.03);
 }
 
 .imageWrapper {
