@@ -49,5 +49,6 @@ export function CardLightbox({ card, onClose }: Props) {
 		</div>
 	);
 
+	if (typeof document === 'undefined') return null;
 	return createPortal(content, document.body);
 }
