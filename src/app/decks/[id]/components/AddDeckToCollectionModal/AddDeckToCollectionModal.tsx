@@ -7,7 +7,6 @@ import type { AddDeckToCollectionOptions } from '../../useAddDeckToCollection';
 import styles from './AddDeckToCollectionModal.module.css';
 
 type Props = {
-	totalCount: number;
 	ownedCount: number;
 	unownedCount: number;
 	wishlistMatchCount: number;
@@ -16,7 +15,6 @@ type Props = {
 };
 
 export function AddDeckToCollectionModal({
-	totalCount,
 	ownedCount,
 	unownedCount,
 	wishlistMatchCount,
@@ -27,6 +25,7 @@ export function AddDeckToCollectionModal({
 	const [asProxy, setAsProxy] = useState(false);
 	const [removeWishlist, setRemoveWishlist] = useState(wishlistMatchCount > 0);
 
+	const totalCount = ownedCount + unownedCount;
 	const addCount = onlyMissing ? unownedCount : totalCount;
 
 	return (
