@@ -453,7 +453,14 @@ function CardModalInner({
 				</div>
 			</Modal>
 
-			{lightbox && <CardLightbox card={selectedCard} onClose={() => setLightbox(false)} />}
+			{lightbox && (
+				<CardLightbox
+					card={selectedCard}
+					onClose={() => setLightbox(false)}
+					isFoil={selectedCard.entry.isFoil}
+					foilType={selectedCard.entry.foilType}
+				/>
+			)}
 
 			{confirmRemoveAll && (
 				<ConfirmModal
