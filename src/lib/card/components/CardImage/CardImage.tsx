@@ -27,6 +27,7 @@ export interface CardImageProps {
 	isFoil?: boolean;
 	foilType?: 'foil' | 'etched';
 	isProxy?: boolean;
+	disableTilt?: boolean;
 }
 
 const sizeMap = {
@@ -46,6 +47,7 @@ export function CardImage({
 	isFoil = false,
 	foilType = 'foil',
 	isProxy = false,
+	disableTilt = false,
 }: CardImageProps) {
 	const [currentFace, setCurrentFace] = useState(0);
 	const [isLoading, setIsLoading] = useState(true);
@@ -124,12 +126,15 @@ export function CardImage({
 		<div ref={containerRef} className={classNames} onClick={onClick}>
 			<div
 				ref={wrapperRef}
-				className={[styles.imageWrapper, isTilting ? '' : styles.tiltReturning]
+				className={[
+					styles.imageWrapper,
+					disableTilt ? styles.noTilt : isTilting ? '' : styles.tiltReturning,
+				]
 					.filter(Boolean)
 					.join(' ')}
-				onMouseMove={handleMouseMove}
-				onMouseLeave={handleMouseLeave}
-				onMouseEnter={handleMouseEnter}
+				onMouseMove={disableTilt ? undefined : handleMouseMove}
+				onMouseLeave={disableTilt ? undefined : handleMouseLeave}
+				onMouseEnter={disableTilt ? undefined : handleMouseEnter}
 			>
 				{!error && imageUri ? (
 					<Image

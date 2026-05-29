@@ -21,6 +21,12 @@
 	transition: transform 0.5s ease-out;
 }
 
+.imageWrapper.noTilt {
+	transform: none;
+	will-change: auto;
+	transition: none;
+}
+
 .image {
 	display: block;
 	width: 100%;

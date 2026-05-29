@@ -43,7 +43,7 @@ export function CardLightbox({ card, onClose }: Props) {
 				</svg>
 			</button>
 			<div className={styles.lightboxCard} onClick={(e) => e.stopPropagation()}>
-				<CardImage card={card} size="large" priority />
+				<CardImage card={card} size="large" priority disableTilt />
 			</div>
 		</div>
 	);
