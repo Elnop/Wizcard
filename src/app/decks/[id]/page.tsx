@@ -278,9 +278,9 @@ export default function DeckDetailPage() {
 	}, [resolvedCards, collectionScryfallIdToOracleId, deckId, replaceDeckCardWithCollectionCopy]);
 
 	const {
-		ownedCount,
-		unownedCount,
 		wishlistMatchCount,
+		zoneStats,
+		availableZones,
 		execute: executeAddToCollection,
 	} = useAddDeckToCollection(resolvedCards, deckId);
 
@@ -480,8 +480,8 @@ export default function DeckDetailPage() {
 
 			{addToCollectionModalOpen && (
 				<AddDeckToCollectionModal
-					ownedCount={ownedCount}
-					unownedCount={unownedCount}
+					zoneStats={zoneStats}
+					availableZones={availableZones}
 					wishlistMatchCount={wishlistMatchCount}
 					onConfirm={(options) => {
 						executeAddToCollection(options);
