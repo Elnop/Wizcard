@@ -22,6 +22,7 @@ export function CardListGrid({
 	fluidSections = false,
 	className,
 	showCardNames = true,
+	cardGap = 'default',
 }: CardListGridProps) {
 	const gridClass = [cardsPerLine ? styles.gridFixed : styles.grid, className]
 		.filter(Boolean)
@@ -36,7 +37,13 @@ export function CardListGrid({
 		priorityOffset = 0,
 		fluid = false
 	) {
-		const itemClass = fluid ? styles.fluidItemGrid : gridClass;
+		const itemClass = fluid
+			? cardGap === 'compact'
+				? `${styles.fluidItemGrid} ${styles.fluidItemGridCompact}`
+				: styles.fluidItemGrid
+			: cardGap === 'compact'
+				? `${gridClass} ${styles.gridCompact}`
+				: gridClass;
 		return (
 			<div className={itemClass} style={fluid ? undefined : gridStyle}>
 				{cardItems.map((c, i) =>
