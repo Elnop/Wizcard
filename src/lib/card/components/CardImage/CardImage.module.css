@@ -14,6 +14,7 @@
 .imageWrapper {
 	position: relative;
 	background: transparent;
+	container-type: inline-size;
 }
 
 .image {
@@ -171,5 +172,4 @@
 	letter-spacing: 0.15em;
 	opacity: 0.13;
 	transform: rotate(-30deg);
-	overflow: hidden;
 }
