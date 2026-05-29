@@ -62,7 +62,14 @@ export function CardListGrid({
 						>
 							{showCardNames && <p className={styles.cardName}>{c.name}</p>}
 							<div className={styles.imageWrapper}>
-								<CardImage card={c} size="normal" priority={priorityOffset + i < 4} />
+								<CardImage
+									card={c}
+									size="normal"
+									priority={priorityOffset + i < 4}
+									isFoil={'entry' in c ? c.entry?.isFoil : undefined}
+									foilType={'entry' in c ? c.entry?.foilType : undefined}
+									isProxy={'entry' in c ? c.entry?.proxy : undefined}
+								/>
 								{renderOverlay?.(c)}
 							</div>
 						</div>
