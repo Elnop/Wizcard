@@ -18,6 +18,7 @@ import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useDeckCardModal } from '@/lib/card/hooks/useDeckCardModal';
 import { useCollectionCards } from '@/app/collection/useCollectionCards';
+import { useCollectionStore } from '@/lib/collection/store/collection-store';
 import { findFreeCollectionCopy } from '@/lib/deck/utils/collectionCopyResolver';
 import { useDeckDetail, type ResolvedDeckCard } from './useDeckDetail';
 import { useDeckCardSections } from './useDeckCardSections';
@@ -27,11 +28,17 @@ import { DeckCardOverlay } from './components/DeckCardOverlay/DeckCardOverlay';
 import { DeckFooter } from './components/DeckFooter/DeckFooter';
 import { CardSearchPanel } from './components/CardSearchPanel/CardSearchPanel';
 import { WishlistIcon } from '@/components/WishlistIcon/WishlistIcon';
+import { useAuth } from '@/lib/supabase/contexts/AuthContext';
+import { useAddDeckToCollection } from './useAddDeckToCollection';
+import { AddDeckToCollectionModal } from './components/AddDeckToCollectionModal/AddDeckToCollectionModal';
 import styles from './page.module.css';
 
 export default function DeckDetailPage() {
 	const params = useParams();
 	const deckId = params.id as string;
+
+	const { user } = useAuth();
+	const userId = user?.id ?? null;
 
 	const {
 		decks: allDecks,
@@ -41,6 +48,7 @@ export default function DeckDetailPage() {
 		removeCardFromDeck,
 		changeZone,
 		activeDeckCards,
+		replaceDeckCardWithCollectionCopy,
 	} = useDeckContext();
 	const { deck, cardsByZone, resolvedCards, stats, isLoading, isResolving } = useDeckDetail(deckId);
 
@@ -50,6 +58,7 @@ export default function DeckDetailPage() {
 
 	const [bulkSelectMode, setBulkSelectMode] = useState(false);
 	const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
+	const [addToCollectionModalOpen, setAddToCollectionModalOpen] = useState(false);
 
 	const showCommander = deck?.format === 'commander' || deck?.format === 'brawl';
 
@@ -118,21 +127,46 @@ export default function DeckDetailPage() {
 		[entries, selectedScryfallIds, deck, deckNameById]
 	);
 
-	const emptyEntries = useMemo(() => [], []);
+	// Always resolve collection stacks so oracle_id lookups work for assign-all
+	const { stacks: collectionStacks } = useCollectionCards(entries);
 
-	const { stacks: panelCollectionStacks } = useCollectionCards(
-		panelInCollectionOnly ? entries : emptyEntries
-	);
-
-	const panelScryfallIdToOracleId = useMemo(() => {
+	const collectionScryfallIdToOracleId = useMemo(() => {
 		const map = new Map<string, string>();
-		for (const stack of panelCollectionStacks) {
+		// Deck prints first
+		for (const rc of resolvedCards) {
+			if (rc.oracle_id) map.set(rc.id, rc.oracle_id);
+		}
+		// Collection prints (may be different editions)
+		for (const stack of collectionStacks) {
 			for (const card of stack.cards) {
 				if (card.oracle_id) map.set(card.id, card.oracle_id);
 			}
 		}
 		return map;
-	}, [panelCollectionStacks]);
+	}, [resolvedCards, collectionStacks]);
+
+	// Reverse map: oracle_id → all scryfallIds known from collection + deck entries
+	const oracleIdToAllScryfallIds = useMemo(() => {
+		const map = new Map<string, Set<string>>();
+		for (const [scryfallId, oracleId] of collectionScryfallIdToOracleId) {
+			let set = map.get(oracleId);
+			if (!set) {
+				set = new Set();
+				map.set(oracleId, set);
+			}
+			set.add(scryfallId);
+		}
+		// Also add scryfallIds from collection entries directly (covers locked copies)
+		for (const e of entries) {
+			const oracleId = collectionScryfallIdToOracleId.get(e.scryfallId);
+			if (oracleId) {
+				map.get(oracleId)?.add(e.scryfallId);
+			}
+		}
+		return map;
+	}, [collectionScryfallIdToOracleId, entries]);
+
+	const panelScryfallIdToOracleId = collectionScryfallIdToOracleId;
 
 	const toggleBulkSelect = useCallback((oracleId: string) => {
 		setBulkSelected((prev) => {
@@ -230,6 +264,30 @@ export default function DeckDetailPage() {
 		setBulkSelectMode(false);
 	}, [bulkSelected, groupByCardId, addToWishlist]);
 
+	const handleAssignAllFromCollection = useCallback(() => {
+		for (const rc of resolvedCards) {
+			if (rc.entry.ownerId) continue;
+			const zone = getDeckZone(rc.entry.tags);
+			const liveEntries = Object.values(useCollectionStore.getState().entries);
+			const copy = findFreeCollectionCopy(
+				rc.id,
+				rc.oracle_id ?? '',
+				liveEntries,
+				collectionScryfallIdToOracleId
+			);
+			if (copy) {
+				replaceDeckCardWithCollectionCopy(rc.entry.rowId, copy.rowId, deckId, zone);
+			}
+		}
+	}, [resolvedCards, collectionScryfallIdToOracleId, deckId, replaceDeckCardWithCollectionCopy]);
+
+	const {
+		ownedCount,
+		unownedCount,
+		wishlistMatchCount,
+		execute: executeAddToCollection,
+	} = useAddDeckToCollection(resolvedCards, deckId, userId);
+
 	const renderOverlay = useCallback(
 		(card: AnyCard) => {
 			const c = card as ResolvedDeckCard;
@@ -270,13 +328,11 @@ export default function DeckDetailPage() {
 				);
 			}
 
-			const oracleScryfallIds = Array.from(
-				new Set(
-					Array.from(group.byZone.values())
-						.flat()
-						.map((rc) => rc.id)
-				)
-			);
+			const deckScryfallIds = Array.from(group.byZone.values())
+				.flat()
+				.map((rc) => rc.id);
+			const collectionIds = oracleIdToAllScryfallIds.get(c.oracle_id);
+			const oracleScryfallIds = Array.from(new Set([...deckScryfallIds, ...(collectionIds ?? [])]));
 
 			const firstCopy = group.byZone.get(currentZone)?.[0];
 			return (
@@ -308,6 +364,7 @@ export default function DeckDetailPage() {
 			zones,
 			deckId,
 			deckNameResolver,
+			oracleIdToAllScryfallIds,
 			handleDuplicateCard,
 			removeCardFromDeck,
 			changeZone,
@@ -341,7 +398,12 @@ export default function DeckDetailPage() {
 		<div className={styles.page}>
 			<div className={`${styles.layout} ${searchPanelOpen ? styles.layoutWithPanel : ''}`}>
 				<div className={styles.content}>
-					<DeckHeader deck={deck} onUpdate={(updates) => updateDeck(deckId, updates)} />
+					<DeckHeader
+						deck={deck}
+						onUpdate={(updates) => updateDeck(deckId, updates)}
+						onAssignAllFromCollection={handleAssignAllFromCollection}
+						onAddAllToCollection={() => setAddToCollectionModalOpen(true)}
+					/>
 
 					{isResolving && Object.keys(activeDeckCards).length > 0 && (
 						<div className={styles.resolving}>
@@ -356,6 +418,8 @@ export default function DeckDetailPage() {
 						tableColumns={tableColumns}
 						pageSize={false}
 						viewModes={['fluid-grid', 'grid', 'table']}
+						showCardNames={false}
+						className={styles.cardList}
 					/>
 
 					<DeckStats stats={stats} warnings={warnings} />
@@ -416,6 +480,19 @@ export default function DeckDetailPage() {
 						Clear
 					</button>
 				</div>
+			)}
+
+			{addToCollectionModalOpen && (
+				<AddDeckToCollectionModal
+					ownedCount={ownedCount}
+					unownedCount={unownedCount}
+					wishlistMatchCount={wishlistMatchCount}
+					onConfirm={(options) => {
+						executeAddToCollection(options);
+						setAddToCollectionModalOpen(false);
+					}}
+					onClose={() => setAddToCollectionModalOpen(false)}
+				/>
 			)}
 
 			<DeckFooter
