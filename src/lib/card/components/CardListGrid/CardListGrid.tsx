@@ -6,6 +6,114 @@ import styles from './CardListGrid.module.css';
 
 const DEFAULT_SKELETON_COUNT = 12;
 
+function getSectionWrapperBase(
+	isSubSection: boolean,
+	isFirstTopLevel: boolean,
+	parentIsFluid: boolean
+): string {
+	if (isSubSection) return parentIsFluid ? styles.fluidSubSection : styles.subSectionWrapper;
+	return isFirstTopLevel ? styles.sectionWrapperFirst : styles.sectionWrapper;
+}
+
+function getSectionWrapperClass(
+	isSubSection: boolean,
+	isFirstTopLevel: boolean,
+	parentIsFluid: boolean,
+	isFluid: boolean,
+	hasChildren: boolean,
+	collapsed: boolean,
+	sectionClassName: string | undefined
+): string {
+	const base = getSectionWrapperBase(isSubSection, isFirstTopLevel, parentIsFluid);
+	let fluidVariant: string | undefined;
+	if (isFluid) {
+		fluidVariant = hasChildren ? styles.fluidSectionParent : styles.fluidSection;
+	}
+	return [
+		base,
+		fluidVariant,
+		isFluid && collapsed ? styles.fluidSectionCollapsed : undefined,
+		!isSubSection ? sectionClassName : undefined,
+	]
+		.filter(Boolean)
+		.join(' ');
+}
+
+function getSectionHeaderClass(isSubSection: boolean, isCollapsible: boolean): string {
+	const base = isSubSection ? styles.subSectionHeader : styles.sectionHeader;
+	let collapsible: string | undefined;
+	if (isCollapsible) {
+		collapsible = isSubSection
+			? styles.subSectionHeaderCollapsible
+			: styles.sectionHeaderCollapsible;
+	}
+	return [base, collapsible].filter(Boolean).join(' ');
+}
+
+function getSectionBodyClass(
+	isFluid: boolean,
+	hasChildren: boolean,
+	showBorder: boolean,
+	showBg: boolean,
+	sectionColor: string | undefined
+): string {
+	let base: string;
+	if (isFluid) {
+		base = hasChildren ? styles.fluidSectionBody : styles.fluidSectionBodyCards;
+	} else {
+		base = styles.sectionBody;
+	}
+	return [
+		base,
+		isFluid && showBorder ? styles.fluidSectionBodyBorder : undefined,
+		showBg && sectionColor ? styles.sectionBodyColoredBg : undefined,
+		isFluid && showBg ? styles.fluidSectionBodyBg : undefined,
+	]
+		.filter(Boolean)
+		.join(' ');
+}
+
+function resolveSectionClasses(
+	section: CardListSection,
+	depth: number,
+	isFirstTopLevel: boolean,
+	parentIsFluid: boolean,
+	collapsed: boolean,
+	fluidSections: boolean,
+	isCollapsible: boolean,
+	sectionClassName: string | undefined
+) {
+	const isSubSection = depth > 0;
+	const isFluid = fluidSections && (!isSubSection || parentIsFluid);
+	const hasChildren = !!(section.children && section.children.length > 0);
+	const showBorder = section.border ?? true;
+	const showBg = section.background ?? true;
+	const sectionColor = section.color;
+
+	return {
+		isFluid,
+		hasChildren,
+		wrapperClass: getSectionWrapperClass(
+			isSubSection,
+			isFirstTopLevel,
+			parentIsFluid,
+			isFluid,
+			hasChildren,
+			collapsed,
+			sectionClassName
+		),
+		headerClass: getSectionHeaderClass(isSubSection, isCollapsible),
+		sectionBodyClass: getSectionBodyClass(isFluid, hasChildren, showBorder, showBg, sectionColor),
+		headingClass: [
+			styles.sectionHeading,
+			showBg && sectionColor ? styles.sectionHeadingColoredBg : undefined,
+		]
+			.filter(Boolean)
+			.join(' '),
+		wrapperStyle: (sectionColor ? { '--section-color': sectionColor } : {}) as React.CSSProperties,
+	};
+}
+
 export function CardListGrid({
 	cards,
 	sections,
@@ -39,13 +147,15 @@ export function CardListGrid({
 		priorityOffset = 0,
 		fluid = false
 	) {
-		const itemClass = fluid
-			? cardGap === 'compact'
-				? `${styles.fluidItemGrid} ${styles.fluidItemGridCompact}`
-				: styles.fluidItemGrid
-			: cardGap === 'compact'
-				? `${gridClass} ${styles.gridCompact}`
-				: gridClass;
+		let itemClass: string;
+		if (fluid) {
+			itemClass =
+				cardGap === 'compact'
+					? `${styles.fluidItemGrid} ${styles.fluidItemGridCompact}`
+					: styles.fluidItemGrid;
+		} else {
+			itemClass = cardGap === 'compact' ? `${gridClass} ${styles.gridCompact}` : gridClass;
+		}
 		return (
 			<div className={itemClass} style={fluid ? undefined : gridStyle}>
 				{cardItems.map((c, i) =>
@@ -89,6 +199,32 @@ export function CardListGrid({
 
 	const isCollapsible = !!onSectionToggle;
 
+	function renderSectionHeading(
+		sectionKey: string,
+		headerClass: string,
+		headingClass: string,
+		depth: number,
+		collapsed: boolean,
+		labelText: React.ReactNode
+	) {
+		const Heading = `h${Math.min(depth + 2, 6)}` as 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+		const chevronClass = [styles.chevron, collapsed ? styles.chevronCollapsed : '']
+			.filter(Boolean)
+			.join(' ');
+		return (
+			<Heading className={headingClass}>
+				{isCollapsible ? (
+					<button type="button" className={headerClass} onClick={() => onSectionToggle(sectionKey)}>
+						{labelText}
+						<span className={chevronClass}>▾</span>
+					</button>
+				) : (
+					<span className={headerClass}>{labelText}</span>
+				)}
+			</Heading>
+		);
+	}
+
 	function renderSection(
 		section: CardListSection,
 		idx: number,
@@ -98,49 +234,29 @@ export function CardListGrid({
 		parentIsFluid: boolean
 	) {
 		const collapsed = collapsedSections?.has(sectionKey) ?? false;
+		// eslint-disable-next-line sonarjs/slow-regex -- short section label strings, no ReDoS risk
 		const labelMatch = section.label.match(/^(.+?)\s*(\(\d+\))$/);
 		const labelName = labelMatch?.[1] ?? section.label;
 		const labelCount = labelMatch?.[2] ?? '';
 
-		const isSubSection = depth > 0;
-		const isFluidTopLevel = fluidSections && !isSubSection;
-		const isFluidSub = fluidSections && isSubSection && parentIsFluid;
-		const isFluid = isFluidTopLevel || isFluidSub;
-		const hasChildren = section.children && section.children.length > 0;
-
-		const wrapperClass = [
-			isSubSection
-				? parentIsFluid
-					? styles.fluidSubSection
-					: styles.subSectionWrapper
-				: isFirstTopLevel
-					? styles.sectionWrapperFirst
-					: styles.sectionWrapper,
-			isFluid ? (hasChildren ? styles.fluidSectionParent : styles.fluidSection) : undefined,
-			isFluid && collapsed ? styles.fluidSectionCollapsed : undefined,
-			!isSubSection ? sectionClassName : undefined,
-		]
-			.filter(Boolean)
-			.join(' ');
-
-		const showBorder = section.border ?? true;
-		const showBg = section.background ?? true;
-		const sectionColor = section.color;
-
-		const wrapperStyle = {
-			...(sectionColor ? { '--section-color': sectionColor } : {}),
-		} as React.CSSProperties;
-
-		const headerClass = [
-			isSubSection ? styles.subSectionHeader : styles.sectionHeader,
-			isCollapsible
-				? isSubSection
-					? styles.subSectionHeaderCollapsible
-					: styles.sectionHeaderCollapsible
-				: undefined,
-		]
-			.filter(Boolean)
-			.join(' ');
+		const {
+			isFluid,
+			hasChildren,
+			wrapperClass,
+			headerClass,
+			sectionBodyClass,
+			headingClass,
+			wrapperStyle,
+		} = resolveSectionClasses(
+			section,
+			depth,
+			isFirstTopLevel,
+			parentIsFluid,
+			collapsed,
+			fluidSections,
+			isCollapsible,
+			sectionClassName
+		);
 
 		const labelText = (
 			<>
@@ -149,50 +265,11 @@ export function CardListGrid({
 			</>
 		);
 
-		const Heading = `h${Math.min(depth + 2, 6)}` as 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
-
-		const sectionBodyClass = [
-			isFluid
-				? hasChildren
-					? styles.fluidSectionBody
-					: styles.fluidSectionBodyCards
-				: styles.sectionBody,
-			isFluid && showBorder ? styles.fluidSectionBodyBorder : undefined,
-			showBg && sectionColor ? styles.sectionBodyColoredBg : undefined,
-			isFluid && showBg ? styles.fluidSectionBodyBg : undefined,
-		]
-			.filter(Boolean)
-			.join(' ');
-
-		const headingClass = [
-			styles.sectionHeading,
-			showBg && sectionColor ? styles.sectionHeadingColoredBg : undefined,
-		]
-			.filter(Boolean)
-			.join(' ');
+		const priorityOffset = isFirstTopLevel && depth === 0 ? 0 : Infinity;
 
 		return (
 			<div key={sectionKey} className={wrapperClass} style={wrapperStyle}>
-				<Heading className={headingClass}>
-					{isCollapsible ? (
-						<button
-							type="button"
-							className={headerClass}
-							onClick={() => onSectionToggle(sectionKey)}
-						>
-							{labelText}
-							<span
-								className={[styles.chevron, collapsed ? styles.chevronCollapsed : '']
-									.filter(Boolean)
-									.join(' ')}
-							>
-								▾
-							</span>
-						</button>
-					) : (
-						<span className={headerClass}>{labelText}</span>
-					)}
-				</Heading>
+				{renderSectionHeading(sectionKey, headerClass, headingClass, depth, collapsed, labelText)}
 				{!collapsed && (
 					<div className={sectionBodyClass}>
 						{hasChildren
@@ -206,12 +283,7 @@ export function CardListGrid({
 										fluidSections
 									)
 								)
-							: renderItems(
-									section.cards,
-									false,
-									isFirstTopLevel && depth === 0 ? 0 : Infinity,
-									isFluid
-								)}
+							: renderItems(section.cards, false, priorityOffset, isFluid)}
 					</div>
 				)}
 			</div>

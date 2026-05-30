@@ -1,10 +1,12 @@
 import type { ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 
+export type ColorMatch = 'exact' | 'include' | 'atMost';
+
 export interface CardFilters {
 	name: string;
 	colors: ScryfallColor[];
-	colorMatch: 'exact' | 'include' | 'atMost';
+	colorMatch: ColorMatch;
 	type: string;
 	set: string;
 	rarities: string[];
@@ -35,6 +37,7 @@ export function countActiveFilters(
 				order: string;
 				dir: ScryfallSortDir;
 				proxyFilter?: 'all' | 'official' | 'proxy';
+				foilTypeFilter?: 'none' | 'all' | 'foil' | 'etched';
 		  })
 ): number {
 	return (
@@ -46,6 +49,7 @@ export function countActiveFilters(
 		(filters.oracleText ? 1 : 0) +
 		(filters.cmc ? 1 : 0) +
 		(filters.name ? 1 : 0) +
-		('proxyFilter' in filters && filters.proxyFilter !== 'all' ? 1 : 0)
+		('proxyFilter' in filters && filters.proxyFilter !== 'all' ? 1 : 0) +
+		('foilTypeFilter' in filters && filters.foilTypeFilter !== 'all' ? 1 : 0)
 	);
 }

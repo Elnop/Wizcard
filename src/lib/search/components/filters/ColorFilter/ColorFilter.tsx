@@ -1,6 +1,7 @@
 'use client';
 
 import type { ScryfallColor, ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
+import type { ColorMatch } from '@/lib/search/types';
 import { ManaSymbol } from '@/lib/scryfall/components/ManaSymbol/ManaSymbol';
 import { MTG_COLORS } from '@/lib/mtg/colors';
 import { useMultiSelect } from '@/lib/search/hooks/useMultiSelect';
@@ -9,12 +10,12 @@ import styles from './ColorFilter.module.css';
 export interface ColorFilterProps {
 	selected: ScryfallColor[];
 	onChange: (colors: ScryfallColor[]) => void;
-	colorMatch?: 'exact' | 'include' | 'atMost';
-	onColorMatchChange?: (match: 'exact' | 'include' | 'atMost') => void;
+	colorMatch?: ColorMatch;
+	onColorMatchChange?: (match: ColorMatch) => void;
 	symbolMap?: Record<string, ScryfallCardSymbol>;
 }
 
-const matchOptions: { value: 'include' | 'exact' | 'atMost'; label: string }[] = [
+const matchOptions: { value: ColorMatch; label: string }[] = [
 	{ value: 'include', label: 'Inclut' },
 	{ value: 'exact', label: 'Exactement' },
 	{ value: 'atMost', label: 'Au plus' },

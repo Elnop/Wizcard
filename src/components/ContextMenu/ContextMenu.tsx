@@ -55,7 +55,9 @@ export function ContextMenu({ items, position, onClose }: Props) {
 					<button
 						key={item.label}
 						type="button"
-						className={`${styles.menuItem}${item.danger ? ` ${styles.menuItemDanger}` : ''}`}
+						className={[styles.menuItem, item.danger ? styles.menuItemDanger : '']
+							.filter(Boolean)
+							.join(' ')}
 						onClick={item.onClick}
 					>
 						{item.icon && <span className={styles.menuIcon}>{item.icon}</span>}

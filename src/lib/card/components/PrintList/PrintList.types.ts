@@ -90,5 +90,9 @@ export function groupCollectionByPrint(
 		});
 	}
 
+	if (orphans.length > 0) {
+		sections.push({ label: `Autres éditions (${orphans.length})`, cards: [] });
+	}
+
 	return sections;
 }

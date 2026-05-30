@@ -10,6 +10,10 @@ import { fetchFolders } from '../db/folders';
 import { enqueue } from '@/lib/supabase/sync-queue';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
 
+const SYNC_DECK_CARD_INSERT = 'deck-card-insert' as const;
+const SYNC_DECK_CARD_UPDATE = 'deck-card-update' as const;
+const SYNC_DECK_CARD_DELETE = 'deck-card-delete' as const;
+
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 
 type DeckState = {
@@ -316,7 +320,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			}));
 		}
 		enqueue({
-			type: 'deck-card-insert',
+			type: SYNC_DECK_CARD_INSERT,
 			payload: { deckId, scryfallId: card.id, entry },
 		});
 		triggerSync();
@@ -432,7 +436,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			useCollectionStore.setState({ entries: remainingEntries });
 		}
 
-		enqueue({ type: 'deck-card-delete', payload: { rowId } });
+		enqueue({ type: SYNC_DECK_CARD_DELETE, payload: { rowId } });
 		triggerSync();
 	},
 
@@ -448,7 +452,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 				[rowId]: { ...copy, entry: updatedEntry },
 			},
 		});
-		enqueue({ type: 'deck-card-update', payload: { rowId, updates: { tags: newTags } } });
+		enqueue({ type: SYNC_DECK_CARD_UPDATE, payload: { rowId, updates: { tags: newTags } } });
 		triggerSync();
 	},
 
@@ -481,7 +485,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		if (updates.language !== undefined) dbUpdates.language = updates.language ?? null;
 		if (updates.purchasePrice !== undefined)
 			dbUpdates.purchase_price = updates.purchasePrice ?? null;
-		enqueue({ type: 'deck-card-update', payload: { rowId, updates: dbUpdates } });
+		enqueue({ type: SYNC_DECK_CARD_UPDATE, payload: { rowId, updates: dbUpdates } });
 		triggerSync();
 	},
 
@@ -512,7 +516,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 				entries: { ...colEntries, [rowId]: { ...colEntries[rowId], entry: newEntry } },
 			});
 		}
-		enqueue({ type: 'deck-card-update', payload: { rowId, updates } });
+		enqueue({ type: SYNC_DECK_CARD_UPDATE, payload: { rowId, updates } });
 		triggerSync();
 	},
 
@@ -546,14 +550,14 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 				console.error(
 					'[deck-store] changeDeckCardPrint: collection copy missing ownerId, falling back to deck-card-delete'
 				);
-				enqueue({ type: 'deck-card-delete', payload: { rowId } });
+				enqueue({ type: SYNC_DECK_CARD_DELETE, payload: { rowId } });
 			}
 		} else {
-			enqueue({ type: 'deck-card-delete', payload: { rowId } });
+			enqueue({ type: SYNC_DECK_CARD_DELETE, payload: { rowId } });
 		}
 
 		enqueue({
-			type: 'deck-card-insert',
+			type: SYNC_DECK_CARD_INSERT,
 			payload: { deckId, scryfallId: newCard.id, entry: newEntry },
 		});
 		triggerSync();
@@ -625,7 +629,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			});
 		}
 
-		enqueue({ type: 'deck-card-delete', payload: { rowId: deckCardRowId } });
+		enqueue({ type: SYNC_DECK_CARD_DELETE, payload: { rowId: deckCardRowId } });
 		enqueue({ type: 'update', payload: { userId, rowId: collectionRowId, entry: updatedEntry } });
 		triggerSync();
 	},

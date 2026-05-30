@@ -3,8 +3,11 @@ import type { ParsedImportRow } from '../types';
 import type { DeckFormat, DeckZone } from '@/types/decks';
 
 // Card line patterns (applied after normalizeLine preprocessing)
+// eslint-disable-next-line sonarjs/slow-regex -- inputs are short card-name lines, no ReDoS risk
 const RE_FULL = /^(\d+)\s+(.+?)\s+\(([A-Za-z0-9]+)\)\s+(\d+[a-z]?)$/;
+// eslint-disable-next-line sonarjs/slow-regex -- inputs are short card-name lines, no ReDoS risk
 const RE_SET_ONLY = /^(\d+)\s+(.+?)\s+\(([A-Za-z0-9]+)\)$/;
+// eslint-disable-next-line sonarjs/slow-regex -- inputs are short card-name lines, no ReDoS risk
 const RE_NAME_ONLY = /^(\d+)\s+(.+)$/;
 
 // Zone section headers — map to deck zone
@@ -55,7 +58,8 @@ const TYPE_HEADERS = new Set([
 	'mana base',
 ]);
 
-// Deck name patterns
+// Deck name patterns — short inputs, no ReDoS risk
+/* eslint-disable sonarjs/slow-regex */
 const RE_MTGA_NAME = /^Name\s+(.+)$/i;
 const RE_COMMENT_NAME = /^\/\/\s*(.+)$/;
 const RE_HASH_NAME = /^#\s+(.+)$/;
@@ -64,6 +68,7 @@ const RE_NAME_COLON = /^Name:\s*(.+)$/i;
 // Lines that are metadata / comments to skip
 const RE_COMMENT_LINE = /^(\/\/|#)/;
 const RE_CARD_COUNT_COMMENT = /^(\/\/|#)\s*\d+\s+(cards?|cartes?|sideboard|mainboard)/i;
+/* eslint-enable sonarjs/slow-regex */
 
 export type DeckImportRow = ParsedImportRow & { zone: DeckZone };
 
@@ -75,6 +80,7 @@ export interface DeckImportResult {
 	detectedFormat: DeckFormat | null;
 }
 
+/* eslint-disable sonarjs/slow-regex -- all inputs are short single-line strings, no ReDoS risk */
 /**
  * Normalize a raw line to a standard format before regex matching.
  * Handles: Nx notation, markdown links, URLs, Archidekt brackets.
@@ -100,42 +106,37 @@ function normalizeLine(raw: string): string {
 
 	return line.trim();
 }
+/* eslint-enable sonarjs/slow-regex */
 
-function detectDeckName(lines: string[]): string | null {
-	// MTGA official: "About" followed by "Name <text>"
+function detectMtgaOfficialName(lines: string[]): string | null {
 	for (let i = 0; i < Math.min(lines.length - 1, 5); i++) {
 		if (lines[i].trim().toLowerCase() === 'about') {
 			const nameMatch = RE_MTGA_NAME.exec(lines[i + 1]?.trim() ?? '');
 			if (nameMatch) return nameMatch[1].trim();
 		}
 	}
+	return null;
+}
 
-	// Fallback: check first few lines for name patterns
+function detectFallbackName(lines: string[]): string | null {
 	for (let i = 0; i < Math.min(lines.length, 3); i++) {
 		const line = lines[i].trim();
 		if (!line) continue;
-
 		const nameColonMatch = RE_NAME_COLON.exec(line);
 		if (nameColonMatch) return nameColonMatch[1].trim();
-
-		// Only use comment as name if it's the very first non-empty line
-		// and doesn't look like a card count or section header
 		if (i === 0) {
 			const commentMatch = RE_COMMENT_NAME.exec(line);
-			if (commentMatch && !RE_CARD_COUNT_COMMENT.test(line)) {
-				return commentMatch[1].trim();
-			}
-
+			if (commentMatch && !RE_CARD_COUNT_COMMENT.test(line)) return commentMatch[1].trim();
 			const hashMatch = RE_HASH_NAME.exec(line);
-			if (hashMatch && !RE_CARD_COUNT_COMMENT.test(line)) {
-				return hashMatch[1].trim();
-			}
+			if (hashMatch && !RE_CARD_COUNT_COMMENT.test(line)) return hashMatch[1].trim();
 		}
-
-		break; // Stop after first non-empty line for fallback patterns
+		break;
 	}
-
 	return null;
+}
+
+function detectDeckName(lines: string[]): string | null {
+	return detectMtgaOfficialName(lines) ?? detectFallbackName(lines);
 }
 
 function detectFormat(rows: DeckImportRow[]): DeckFormat | null {
@@ -189,10 +190,42 @@ function isTypeHeader(line: string): boolean {
 	let key = line.toLowerCase();
 	if (key.endsWith(':')) key = key.slice(0, -1).trimEnd();
 	// Also match headers with card counts: "Creatures (12)"
+	// eslint-disable-next-line sonarjs/slow-regex -- short header strings, no ReDoS risk
 	key = key.replace(/\s*\(\d+\)\s*$/, '');
 	return TYPE_HEADERS.has(key);
 }
 
+type ParsedCardLine = {
+	name: string;
+	set: string;
+	collectorNumber: string;
+	quantity: number;
+} | null;
+
+function parseCardLine(line: string): ParsedCardLine {
+	let match = RE_FULL.exec(line);
+	if (match)
+		return {
+			quantity: parseInt(match[1], 10),
+			name: match[2],
+			set: match[3].toLowerCase(),
+			collectorNumber: match[4],
+		};
+	match = RE_SET_ONLY.exec(line);
+	if (match)
+		return {
+			quantity: parseInt(match[1], 10),
+			name: match[2],
+			set: match[3].toLowerCase(),
+			collectorNumber: '',
+		};
+	match = RE_NAME_ONLY.exec(line);
+	if (match)
+		return { quantity: parseInt(match[1], 10), name: match[2], set: '', collectorNumber: '' };
+	return null;
+}
+
+// eslint-disable-next-line sonarjs/cognitive-complexity -- line-by-line MTGA deck parser with zone tracking, inherent complexity
 export function parseMTGADeck(text: string): DeckImportResult {
 	const lines = text.split(/\r?\n/);
 	const rows: DeckImportRow[] = [];
@@ -245,35 +278,13 @@ export function parseMTGADeck(text: string): DeckImportResult {
 		const line = normalizeLine(raw);
 		if (!line) continue;
 
-		let match = RE_FULL.exec(line);
-		if (match) {
-			const quantity = parseInt(match[1], 10);
-			const name = match[2];
-			const set = match[3].toLowerCase();
-			const collectorNumber = match[4];
+		const parsed = parseCardLine(line);
+		if (parsed) {
+			const { name, set, collectorNumber, quantity } = parsed;
 			rows.push({ name, set, collectorNumber, quantity, zone: currentZone });
-			identifiers.push({ set, collector_number: collectorNumber });
-			hasSeenCards = true;
-			continue;
-		}
-
-		match = RE_SET_ONLY.exec(line);
-		if (match) {
-			const quantity = parseInt(match[1], 10);
-			const name = match[2];
-			const set = match[3].toLowerCase();
-			rows.push({ name, set, collectorNumber: '', quantity, zone: currentZone });
-			identifiers.push({ name, set });
-			hasSeenCards = true;
-			continue;
-		}
-
-		match = RE_NAME_ONLY.exec(line);
-		if (match) {
-			const quantity = parseInt(match[1], 10);
-			const name = match[2];
-			rows.push({ name, set: '', collectorNumber: '', quantity, zone: currentZone });
-			identifiers.push({ name });
+			if (collectorNumber && set) identifiers.push({ set, collector_number: collectorNumber });
+			else if (set) identifiers.push({ name, set });
+			else identifiers.push({ name });
 			hasSeenCards = true;
 			continue;
 		}

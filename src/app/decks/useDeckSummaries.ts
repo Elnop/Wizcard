@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from 'react';
 import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
-import type { DeckMeta, DeckZone } from '@/types/decks';
+import type { DeckMeta } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { fetchDeckCardEntries } from '@/lib/deck/db/decks';
 import { getCardsFromCache, putCardsInCache } from '@/lib/scryfall/utils/card-cache';
@@ -11,6 +11,58 @@ import { computeDeckStats } from '@/lib/deck/utils/deck-stats';
 import { validateDeck, getFormatRules } from '@/lib/deck/utils/format-rules';
 
 const WUBRG_ORDER: ScryfallColor[] = ['W', 'U', 'B', 'R', 'G'];
+
+type DeckCardEntry = { scryfallId: string; tags: string[] | null };
+
+async function fetchMissingCards(
+	missingIds: string[],
+	cached: Map<string, ScryfallCard>,
+	runIdRef: React.MutableRefObject<number>,
+	currentRunId: number
+): Promise<boolean> {
+	for (let i = 0; i < missingIds.length; i += 75) {
+		if (runIdRef.current !== currentRunId) return false;
+		const batch = missingIds.slice(i, i + 75);
+		try {
+			const result = await getCardCollection(batch.map((id) => ({ id })));
+			await putCardsInCache(result.data);
+			for (const card of result.data) cached.set(card.id, card);
+		} catch (err) {
+			console.error('[useDeckSummaries] Failed to resolve cards:', err);
+		}
+	}
+	return true;
+}
+
+function buildDeckSummary(
+	deckId: string,
+	entries: DeckCardEntry[],
+	cached: Map<string, ScryfallCard>,
+	format: DeckMeta['format']
+): DeckSummary {
+	const resolvedCards = entries
+		.filter((e) => cached.has(e.scryfallId))
+		.map((e) => ({ card: cached.get(e.scryfallId)!, zone: getDeckZone(e.tags ?? undefined) }));
+
+	const stats = computeDeckStats(resolvedCards);
+	const commanderCards = resolvedCards.filter((c) => c.zone === 'commander');
+	const nonCommanderCards = resolvedCards.filter((c) => c.zone !== 'commander');
+	const warnings = validateDeck(format, nonCommanderCards, commanderCards);
+	const rules = format ? getFormatRules(format) : null;
+
+	return {
+		artCropUrl: pickArtCrop(entries, cached),
+		colors: computeColors(entries, cached),
+		commanderName: findCommanderName(entries, cached),
+		manaCurve: computeManaCurve(entries, cached),
+		totalCards: stats.totalCards,
+		targetCards: rules ? rules.minMainboard + rules.commanderCount : null,
+		landCount: stats.landCount,
+		averageCmc: stats.averageCmc,
+		warningCount: warnings.length,
+		warnings: warnings.map((w) => w.message),
+	};
+}
 
 export type DeckSummary = {
 	artCropUrl: string | undefined;
@@ -47,29 +99,19 @@ function pickArtCrop(
 	entries: Array<{ scryfallId: string; tags: string[] | null }>,
 	cardMap: Map<string, ScryfallCard>
 ): string | undefined {
-	// 1. Commander
-	for (const e of entries) {
-		if (hasCommanderTag(e.tags)) {
-			const card = cardMap.get(e.scryfallId);
-			if (card) {
-				const url = getArtCropUrl(card);
-				if (url) return url;
-			}
-		}
-	}
-	// 2. First non-land
-	for (const e of entries) {
-		const card = cardMap.get(e.scryfallId);
-		if (card && !isLand(card)) {
-			const url = getArtCropUrl(card);
-			if (url) return url;
-		}
-	}
-	// 3. Any card
-	for (const e of entries) {
-		const card = cardMap.get(e.scryfallId);
-		if (card) {
-			const url = getArtCropUrl(card);
+	const candidates = entries
+		.map((e) => ({ e, card: cardMap.get(e.scryfallId) }))
+		.filter(({ card }) => card);
+	// Priority: commander > non-land > any
+	const priorities: Array<(c: (typeof candidates)[0]) => boolean> = [
+		({ e }) => hasCommanderTag(e.tags),
+		({ card }) => !isLand(card!),
+		() => true,
+	];
+	for (const predicate of priorities) {
+		const match = candidates.find(predicate);
+		if (match) {
+			const url = getArtCropUrl(match.card!);
 			if (url) return url;
 		}
 	}
@@ -148,57 +190,21 @@ export function useDeckSummaries(decks: DeckMeta[]): Record<string, DeckSummary>
 			const missingIds = allIdsArr.filter((id) => !cached.has(id));
 
 			if (missingIds.length > 0) {
-				for (let i = 0; i < missingIds.length; i += 75) {
-					if (runIdRef.current !== currentRunId) return;
-					const batch = missingIds.slice(i, i + 75);
-					try {
-						const result = await getCardCollection(batch.map((id) => ({ id })));
-						await putCardsInCache(result.data);
-						for (const card of result.data) {
-							cached.set(card.id, card);
-						}
-					} catch (err) {
-						console.error('[useDeckSummaries] Failed to resolve cards:', err);
-					}
-				}
+				const ok = await fetchMissingCards(missingIds, cached, runIdRef, currentRunId);
+				if (!ok) return;
 			}
 
 			if (runIdRef.current !== currentRunId) return;
 
 			const deckFormatMap = new Map(decks.map((d) => [d.id, d.format]));
-
 			const result: Record<string, DeckSummary> = {};
 			for (const [deckId, entries] of Object.entries(deckEntries)) {
-				// Build resolved cards with zones for stats/validation
-				const resolvedCards: Array<{ card: ScryfallCard; zone: DeckZone }> = [];
-				for (const e of entries) {
-					const card = cached.get(e.scryfallId);
-					if (card) {
-						resolvedCards.push({ card, zone: getDeckZone(e.tags ?? undefined) });
-					}
-				}
-
-				const stats = computeDeckStats(resolvedCards);
-				const format = deckFormatMap.get(deckId) ?? null;
-				const commanderCards = resolvedCards.filter((c) => c.zone === 'commander');
-				const nonCommanderCards = resolvedCards.filter((c) => c.zone !== 'commander');
-				const warnings = validateDeck(format, nonCommanderCards, commanderCards);
-
-				const rules = format ? getFormatRules(format) : null;
-				const targetCards = rules ? rules.minMainboard + rules.commanderCount : null;
-
-				result[deckId] = {
-					artCropUrl: pickArtCrop(entries, cached),
-					colors: computeColors(entries, cached),
-					commanderName: findCommanderName(entries, cached),
-					manaCurve: computeManaCurve(entries, cached),
-					totalCards: stats.totalCards,
-					targetCards,
-					landCount: stats.landCount,
-					averageCmc: stats.averageCmc,
-					warningCount: warnings.length,
-					warnings: warnings.map((w) => w.message),
-				};
+				result[deckId] = buildDeckSummary(
+					deckId,
+					entries,
+					cached,
+					deckFormatMap.get(deckId) ?? null
+				);
 			}
 
 			setSummaries(result);

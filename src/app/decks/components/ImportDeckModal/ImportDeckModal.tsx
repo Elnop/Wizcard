@@ -204,6 +204,7 @@ export function ImportDeckModal({ onClose }: Props) {
 
 	// --- Import handlers ---
 
+	// eslint-disable-next-line sonarjs/cognitive-complexity -- paste import pipeline: resolve identifiers, match cards, add to deck
 	const handleImportPaste = useCallback(async () => {
 		setErrors([]);
 
@@ -274,6 +275,10 @@ export function ImportDeckModal({ onClose }: Props) {
 			}
 
 			bulkAddCardsToDeck(deckId, cardsToAdd);
+
+			if (notFound.length > 0) {
+				setErrors(notFound.map((n) => `Card not found: ${n}`));
+			}
 
 			router.push(`/decks/${deckId}`);
 		} catch (err) {

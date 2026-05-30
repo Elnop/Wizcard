@@ -32,6 +32,16 @@ import { useAddDeckToCollection } from './useAddDeckToCollection';
 import { AddDeckToCollectionModal } from './components/AddDeckToCollectionModal/AddDeckToCollectionModal';
 import styles from './page.module.css';
 
+function resolveAssignedDeckName(
+	deckId: string | undefined,
+	assignedToCurrentDeck: boolean,
+	currentDeckName: string | undefined,
+	deckNameById: Map<string, string>
+): string | undefined {
+	if (deckId == null) return undefined;
+	return assignedToCurrentDeck ? currentDeckName : deckNameById.get(deckId);
+}
+
 export default function DeckDetailPage() {
 	const params = useParams();
 	const deckId = params.id as string;
@@ -111,12 +121,12 @@ export default function DeckDetailPage() {
 						condition: e.entry.condition,
 						isFoil: e.entry.isFoil,
 						language: e.entry.language,
-						assignedToDeckName:
-							e.entry.deckId != null
-								? assignedToCurrentDeck
-									? deck?.name
-									: deckNameById.get(e.entry.deckId)
-								: undefined,
+						assignedToDeckName: resolveAssignedDeckName(
+							e.entry.deckId,
+							assignedToCurrentDeck,
+							deck?.name,
+							deckNameById
+						),
 						isCurrentDeck: assignedToCurrentDeck,
 					};
 				}),

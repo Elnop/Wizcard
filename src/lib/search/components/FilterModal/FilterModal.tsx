@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { ScryfallColor, ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
+import type { ColorMatch } from '@/lib/search/types';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { Modal } from '@/components/Modal/Modal';
 import { ColorFilter } from '@/lib/search/components/filters/ColorFilter/ColorFilter';
@@ -17,7 +18,7 @@ import styles from './FilterModal.module.css';
 interface FilterModalProps {
 	isOpen: boolean;
 	colors: ScryfallColor[];
-	colorMatch?: 'exact' | 'include' | 'atMost';
+	colorMatch?: ColorMatch;
 	type: string;
 	set: string;
 	rarities: string[];
@@ -29,7 +30,7 @@ interface FilterModalProps {
 	dir: ScryfallSortDir;
 	onApply: (filters: {
 		colors: ScryfallColor[];
-		colorMatch: 'exact' | 'include' | 'atMost';
+		colorMatch: ColorMatch;
 		type: string;
 		set: string;
 		rarities: string[];

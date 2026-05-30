@@ -128,6 +128,7 @@ export function CardImage({
 				ref={wrapperRef}
 				className={[
 					styles.imageWrapper,
+					// eslint-disable-next-line sonarjs/no-nested-conditional -- tilt state has 3 values: disabled, active, returning
 					disableTilt ? styles.noTilt : isTilting ? '' : styles.tiltReturning,
 				]
 					.filter(Boolean)

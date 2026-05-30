@@ -69,6 +69,7 @@ export async function validateManaCost(
 export async function findSymbolsInText(
 	text: string
 ): Promise<{ symbols: ScryfallCardSymbol[]; totalManaCost?: number; uniqueSymbols: string[] }> {
+	// eslint-disable-next-line sonarjs/slow-regex -- mana cost strings are short, no ReDoS risk
 	const symbolMatches = text.match(/\{[^}]+\}/g) ?? [];
 	const uniqueSymbolTexts = [...new Set(symbolMatches)];
 

@@ -84,6 +84,7 @@ export function scryfallGet<T>(
 	return promise;
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity -- retry loop with exponential backoff + multiple abort conditions
 async function scryfallGetInner<T>(url: string, externalSignal?: AbortSignal): Promise<T> {
 	let lastError: Error | null = null;
 

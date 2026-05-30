@@ -41,20 +41,23 @@ interface Props {
 	onRemoveRow: (rowIndex: number) => void;
 }
 
+const TITLE_IMPORT_FILE = 'Importer un fichier';
+const LABEL_FETCHING_CARDS = 'Récupération des cartes…';
+
 function modalTitle(status: ImportStatus): string {
 	switch (status) {
 		case 'selecting':
-			return 'Importer un fichier';
+			return TITLE_IMPORT_FILE;
 		case 'parsing':
 			return 'Analyse du fichier…';
 		case 'previewing':
 			return "Aperçu de l'import";
 		case 'fetching':
-			return 'Récupération des cartes…';
+			return LABEL_FETCHING_CARDS;
 		case 'merging':
 			return 'Ajout à la collection…';
 		default:
-			return 'Importer un fichier';
+			return TITLE_IMPORT_FILE;
 	}
 }
 
@@ -122,12 +125,12 @@ export function ImportModal({
 	const previewProgressLabel =
 		previewProgress.total > 0
 			? `Récupération des cartes… (${previewProgress.current}/${previewProgress.total})`
-			: 'Récupération des cartes…';
+			: LABEL_FETCHING_CARDS;
 
 	const fetchProgressLabel =
 		progress.total > 0
 			? `Récupération des cartes… (${progress.current}/${progress.total})`
-			: 'Récupération des cartes…';
+			: LABEL_FETCHING_CARDS;
 
 	function renderContent() {
 		if (status === 'selecting') {
@@ -169,7 +172,7 @@ export function ImportModal({
 				);
 			}
 			if (!preview) {
-				return <LoadingScreen label="Récupération des cartes…" />;
+				return <LoadingScreen label={LABEL_FETCHING_CARDS} />;
 			}
 			if (preview) {
 				return (

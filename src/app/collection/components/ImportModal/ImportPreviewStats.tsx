@@ -68,6 +68,7 @@ export function ImportPreviewStats({
 				<div className={styles.errors}>
 					<button className={styles.errorToggle} onClick={onErrorsToggle}>
 						{errorCount} erreur{errorCount !== 1 ? 's' : ''}
+						{/* eslint-disable-next-line sonarjs/no-nested-conditional -- expand indicator inside button label */}
 						{manyErrors ? (errorsExpanded ? ' ▲' : ' ▼') : ''}
 					</button>
 					{(!manyErrors || errorsExpanded) && (

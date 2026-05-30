@@ -45,12 +45,13 @@ function DirToggle({
 }) {
 	const cycle = allowAuto ? DIR_CYCLE : DIR_CYCLE_NO_AUTO;
 	const next = cycle[(cycle.indexOf(dir) + 1) % cycle.length];
-	const label = dir === 'asc' ? 'Ascending' : dir === 'desc' ? 'Descending' : 'Auto';
+	const DIR_LABELS: Record<string, string> = { asc: 'Ascending', desc: 'Descending', auto: 'Auto' };
+	const label = DIR_LABELS[dir] ?? 'Auto';
 
 	return (
 		<button
 			type="button"
-			className={`${styles.dirToggle} ${styles[`dirToggle_${dir}`]}`}
+			className={[styles.dirToggle, styles[`dirToggle_${dir}`]].join(' ')}
 			onClick={() => onDirChange(next)}
 			aria-label={`Direction: ${label}`}
 			title={label}

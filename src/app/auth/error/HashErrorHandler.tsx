@@ -22,9 +22,6 @@ export function HashErrorHandler({
 		const errorCode = params.get('error_code') ?? params.get('error');
 		if (!errorCode) return;
 
-		// Redirige proprement vers /auth/error avec le code en query param
-		const known = errorCode in messages || errorCode in messages;
-		void known; // used for type narrowing only
 		router.replace(`/auth/error?error_code=${encodeURIComponent(errorCode)}`);
 	}, [messages, defaultMessage, router]);
 

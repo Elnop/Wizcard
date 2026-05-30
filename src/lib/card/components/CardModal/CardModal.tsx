@@ -310,6 +310,7 @@ function CardModalInner({
 											type="button"
 											className={styles.tableActionBtn}
 											title={`Move to ${ZONE_LABELS[z]}`}
+											// eslint-disable-next-line sonarjs/no-nested-functions -- JSX event handler
 											onClick={(e) => {
 												e.stopPropagation();
 												onChangeZone(card.entry.rowId, z);

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import type { ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import { countActiveFilters } from '@/lib/search/types';
+import type { ColorMatch } from '@/lib/search/types';
 
 const VALID_COLORS = new Set(['W', 'U', 'B', 'R', 'G']);
 const VALID_ORDERS = new Set([
@@ -43,8 +44,8 @@ function parseDir(param: string | null): ScryfallSortDir {
 	return 'auto';
 }
 
-function parseColorMatch(param: string | null): 'exact' | 'include' | 'atMost' {
-	if (param && VALID_COLOR_MATCHES.has(param)) return param as 'exact' | 'include' | 'atMost';
+function parseColorMatch(param: string | null): ColorMatch {
+	if (param && VALID_COLOR_MATCHES.has(param)) return param as ColorMatch;
 	return 'include';
 }
 

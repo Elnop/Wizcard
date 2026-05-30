@@ -28,6 +28,7 @@ export function useImportConfirmation(deps: {
 		normalizeSetCodes,
 	} = deps;
 
+	// eslint-disable-next-line sonarjs/cognitive-complexity -- import confirmation pipeline: normalize → fetch → merge, inherently sequential
 	const confirm = useCallback(async () => {
 		if (!preview) return;
 
@@ -43,12 +44,14 @@ export function useImportConfirmation(deps: {
 			// Build lookup map — rows are already deduplicated by mergeRows
 			const lookup = new Map<string, ParsedImportRow>();
 			for (const row of parsed.rows) {
-				const key =
-					row.set && row.collectorNumber
-						? `${row.set.toLowerCase()}/${row.collectorNumber.toLowerCase()}`
-						: row.set
-							? `name:${row.name.toLowerCase()}/set:${row.set.toLowerCase()}`
-							: `name:${row.name.toLowerCase()}`;
+				let key: string;
+				if (row.set && row.collectorNumber) {
+					key = `${row.set.toLowerCase()}/${row.collectorNumber.toLowerCase()}`;
+				} else if (row.set) {
+					key = `name:${row.name.toLowerCase()}/set:${row.set.toLowerCase()}`;
+				} else {
+					key = `name:${row.name.toLowerCase()}`;
+				}
 				lookup.set(key, row);
 			}
 

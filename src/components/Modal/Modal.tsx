@@ -27,7 +27,7 @@ export function Modal({ children, onClose, className, zIndex }: ModalProps) {
 			onClick={onClose}
 		>
 			<div
-				className={`${styles.modal}${className ? ` ${className}` : ''}`}
+				className={[styles.modal, className].filter(Boolean).join(' ')}
 				onClick={(e) => e.stopPropagation()}
 			>
 				<div className={styles.cornerTL} />

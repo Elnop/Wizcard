@@ -39,7 +39,8 @@ export function ImportPreviewFilters({
 			{isFiltered && (
 				<span className={styles.resultCount}>
 					{filteredCount > 0
-						? `${filteredCount} carte${filteredCount !== 1 ? 's' : ''}`
+						? // eslint-disable-next-line sonarjs/no-nested-conditional -- pluralization embedded in label
+							`${filteredCount} carte${filteredCount !== 1 ? 's' : ''}`
 						: 'Aucun résultat'}
 					{totalCardCount > 0 && ` / ${totalCardCount}`}
 				</span>

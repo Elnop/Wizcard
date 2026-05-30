@@ -3,11 +3,11 @@ import type { ParsedImportResult, ParsedImportRow, ImportFormatDescriptor } from
 
 const IGNORED_LINES = new Set(['deck', 'sideboard', 'commander', 'companion']);
 
-// 4 Lightning Bolt (M11) 149
+// eslint-disable-next-line sonarjs/slow-regex -- short card-name lines, no ReDoS risk
 const RE_FULL = /^(\d+)\s+(.+?)\s+\(([A-Za-z0-9]+)\)\s+(\d+[a-z]?)$/;
-// 4 Lightning Bolt (M11)
+// eslint-disable-next-line sonarjs/slow-regex -- short card-name lines, no ReDoS risk
 const RE_SET_ONLY = /^(\d+)\s+(.+?)\s+\(([A-Za-z0-9]+)\)$/;
-// 4 Lightning Bolt
+// eslint-disable-next-line sonarjs/slow-regex -- short card-name lines, no ReDoS risk
 const RE_NAME_ONLY = /^(\d+)\s+(.+)$/;
 
 export function parseMTGA(text: string): ParsedImportResult {

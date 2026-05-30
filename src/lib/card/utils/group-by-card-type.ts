@@ -19,51 +19,23 @@ export function groupByCardType(
 
 	for (const card of cards) {
 		const typeLine = card.type_line?.toLowerCase() ?? '';
-		let matched = false;
-		for (const { key } of CARD_TYPE_ORDER) {
-			if (typeLine.includes(key)) {
-				const existing = buckets.get(key);
-				if (existing) {
-					existing.push(card);
-				} else {
-					buckets.set(key, [card]);
-				}
-				matched = true;
-				break;
-			}
-		}
-		if (!matched) {
-			const existing = buckets.get('other');
-			if (existing) {
-				existing.push(card);
-			} else {
-				buckets.set('other', [card]);
-			}
-		}
+		const matchedKey = CARD_TYPE_ORDER.find(({ key }) => typeLine.includes(key))?.key ?? 'other';
+		const bucket = buckets.get(matchedKey) ?? [];
+		bucket.push(card);
+		buckets.set(matchedKey, bucket);
 	}
 
-	const sections: CardListSection[] = [];
-	for (const { key, label } of CARD_TYPE_ORDER) {
+	function toSection(key: string, label: string): CardListSection | null {
 		const group = buckets.get(key);
-		if (group && group.length > 0) {
-			const total = countById
-				? group.reduce((sum, c) => sum + (countById.get(c.id) ?? 1), 0)
-				: group.length;
-			sections.push({
-				label: `${label} (${total})`,
-				cards: group,
-				border: false,
-				background: false,
-			});
-		}
-	}
-	const other = buckets.get('other');
-	if (other && other.length > 0) {
+		if (!group || group.length === 0) return null;
 		const total = countById
-			? other.reduce((sum, c) => sum + (countById.get(c.id) ?? 1), 0)
-			: other.length;
-		sections.push({ label: `Other (${total})`, cards: other, border: false, background: false });
+			? group.reduce((sum, c) => sum + (countById.get(c.id) ?? 1), 0)
+			: group.length;
+		return { label: `${label} (${total})`, cards: group, border: false, background: false };
 	}
 
-	return sections;
+	return [
+		...CARD_TYPE_ORDER.map(({ key, label }) => toSection(key, label)),
+		toSection('other', 'Other'),
+	].filter((s): s is CardListSection => s !== null);
 }

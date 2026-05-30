@@ -13,6 +13,22 @@ export type CollectionData = Record<string, StoredCopy>; // key = rowId
  * 3. Legacy CollectionStack with cardId: { cardId, rowIds, meta }
  * 4. Legacy flat: { id, quantity, dateAdded, ... }
  */
+function entryFromMeta(rowId: string, meta: Record<string, unknown>): CardEntry {
+	return {
+		rowId,
+		dateAdded: (meta.dateAdded as string) ?? new Date().toISOString(),
+		isFoil: meta.isFoil as boolean | undefined,
+		foilType: meta.foilType as CardEntry['foilType'],
+		condition: meta.condition as CardEntry['condition'],
+		language: meta.language as CardEntry['language'],
+		purchasePrice: meta.purchasePrice as string | undefined,
+		forTrade: meta.forTrade as boolean | undefined,
+		alter: meta.alter as boolean | undefined,
+		proxy: meta.proxy as boolean | undefined,
+		tags: meta.tags as string[] | undefined,
+	};
+}
+
 export function migrateCollectionData(parsed: Record<string, unknown>): CollectionData {
 	const migrated: CollectionData = {};
 
@@ -27,58 +43,14 @@ export function migrateCollectionData(parsed: Record<string, unknown>): Collecti
 			continue;
 		}
 
-		// Legacy CollectionStack format: { scryfallId, count, rowIds, meta }
-		if (
-			typeof obj.scryfallId === 'string' &&
-			Array.isArray(obj.rowIds) &&
-			obj.meta &&
-			typeof obj.meta === 'object'
-		) {
+		// Legacy CollectionStack format: { scryfallId/cardId, rowIds, meta }
+		let stackScryfallId: string | null = null;
+		if (typeof obj.scryfallId === 'string') stackScryfallId = obj.scryfallId;
+		else if (typeof obj.cardId === 'string') stackScryfallId = obj.cardId;
+		if (stackScryfallId && Array.isArray(obj.rowIds) && obj.meta && typeof obj.meta === 'object') {
 			const meta = obj.meta as Record<string, unknown>;
-			const rowIds = obj.rowIds as string[];
-			for (const rowId of rowIds) {
-				const entry: CardEntry = {
-					rowId,
-					dateAdded: (meta.dateAdded as string) ?? new Date().toISOString(),
-					isFoil: meta.isFoil as boolean | undefined,
-					foilType: meta.foilType as 'foil' | 'etched' | undefined,
-					condition: meta.condition as CardEntry['condition'],
-					language: meta.language as CardEntry['language'],
-					purchasePrice: meta.purchasePrice as string | undefined,
-					forTrade: meta.forTrade as boolean | undefined,
-					alter: meta.alter as boolean | undefined,
-					proxy: meta.proxy as boolean | undefined,
-					tags: meta.tags as string[] | undefined,
-				};
-				migrated[rowId] = { scryfallId: obj.scryfallId, entry };
-			}
-			continue;
-		}
-
-		// Legacy CollectionStack with cardId instead of scryfallId
-		if (
-			typeof obj.cardId === 'string' &&
-			Array.isArray(obj.rowIds) &&
-			obj.meta &&
-			typeof obj.meta === 'object'
-		) {
-			const meta = obj.meta as Record<string, unknown>;
-			const rowIds = obj.rowIds as string[];
-			for (const rowId of rowIds) {
-				const entry: CardEntry = {
-					rowId,
-					dateAdded: (meta.dateAdded as string) ?? new Date().toISOString(),
-					isFoil: meta.isFoil as boolean | undefined,
-					foilType: meta.foilType as 'foil' | 'etched' | undefined,
-					condition: meta.condition as CardEntry['condition'],
-					language: meta.language as CardEntry['language'],
-					purchasePrice: meta.purchasePrice as string | undefined,
-					forTrade: meta.forTrade as boolean | undefined,
-					alter: meta.alter as boolean | undefined,
-					proxy: meta.proxy as boolean | undefined,
-					tags: meta.tags as string[] | undefined,
-				};
-				migrated[rowId] = { scryfallId: obj.cardId, entry };
+			for (const rowId of obj.rowIds as string[]) {
+				migrated[rowId] = { scryfallId: stackScryfallId, entry: entryFromMeta(rowId, meta) };
 			}
 			continue;
 		}
@@ -86,24 +58,9 @@ export function migrateCollectionData(parsed: Record<string, unknown>): Collecti
 		// Legacy flat format: { id, quantity, dateAdded, ... }
 		if (typeof obj.id === 'string') {
 			const count = (obj.quantity as number) ?? 1;
-			const rowIds = Array.from({ length: count }, () => crypto.randomUUID());
-			for (const rowId of rowIds) {
-				const entry: CardEntry = {
-					rowId,
-					dateAdded: (obj.dateAdded as string) ?? new Date().toISOString(),
-					isFoil: obj.isFoil as boolean | undefined,
-					foilType: obj.foilType as 'foil' | 'etched' | undefined,
-					condition: obj.condition as CardEntry['condition'],
-					language: obj.language as CardEntry['language'],
-					tags: obj.tags as string[] | undefined,
-					purchasePrice: obj.purchasePrice as string | undefined,
-					forTrade: obj.forTrade as boolean | undefined,
-					alter: obj.alter as boolean | undefined,
-					proxy: obj.proxy as boolean | undefined,
-				};
-				migrated[rowId] = { scryfallId: obj.id, entry };
+			for (const rowId of Array.from({ length: count }, () => crypto.randomUUID())) {
+				migrated[rowId] = { scryfallId: obj.id, entry: entryFromMeta(rowId, obj) };
 			}
-			continue;
 		}
 	}
 

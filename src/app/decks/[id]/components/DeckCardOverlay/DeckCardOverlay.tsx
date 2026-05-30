@@ -14,84 +14,34 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 	commander: 'Commander',
 };
 
-type Props = {
-	group: DeckCardGroup;
-	currentZone: DeckZone;
-	zones: DeckZone[];
-	deckId: string;
-	oracleScryfallIds: string[];
-	deckNameResolver: (deckId: string) => string | undefined;
-	onDuplicate: (rc: Card) => void;
-	onRemove: (rowId: string) => void;
-	onChangeZone: (rowId: string, zone: DeckZone) => void;
-	onBadgeClick?: () => void;
-	onAddToWishlist?: (scryfallId: string) => void;
-	wishlistEntries?: Array<{ scryfallId: string; entry: CardEntry }>;
+const BADGE_CLASS_MAP: Record<string, string> = {
+	owned: styles.ownershipBadgeGreen,
+	partial: styles.ownershipBadgeOrange,
+	locked: styles.ownershipBadgeLocked,
+	wishlist: styles.ownershipBadgeWishlist,
 };
 
-export function DeckCardOverlay({
-	group,
-	currentZone,
-	zones,
-	deckId,
-	oracleScryfallIds,
-	deckNameResolver,
-	onDuplicate,
-	onRemove,
-	onChangeZone,
-	onBadgeClick,
-	onAddToWishlist,
-	wishlistEntries,
-}: Props) {
-	const otherZones = zones.filter((z) => z !== currentZone);
-	const zoneCopies = group.byZone.get(currentZone) ?? [];
-	const lastCopy = zoneCopies[zoneCopies.length - 1];
-	const count = zoneCopies.length;
+const BADGE_TEXT_STATIC: Record<string, string> = { owned: '✓', wishlist: '🛒' };
 
-	const { badgeState, ownedCount, neededCount, tooltipCopies, wishlistTooltipCopies } =
-		useCollectionBadge(
-			group,
-			currentZone,
-			deckId,
-			oracleScryfallIds,
-			deckNameResolver,
-			wishlistEntries
-		);
+function getBadgeText(badgeState: string, ownedCount: number, neededCount: number): string {
+	if (badgeState === 'partial') return `${ownedCount}/${neededCount}`;
+	if (badgeState === 'locked') return `0/${neededCount}`;
+	return BADGE_TEXT_STATIC[badgeState] ?? '';
+}
 
-	const badgeClass =
-		badgeState === 'owned'
-			? styles.ownershipBadgeGreen
-			: badgeState === 'partial'
-				? styles.ownershipBadgeOrange
-				: badgeState === 'locked'
-					? styles.ownershipBadgeLocked
-					: badgeState === 'wishlist'
-						? styles.ownershipBadgeWishlist
-						: styles.ownershipBadgeGrey;
-
-	const badgeText =
-		badgeState === 'owned'
-			? '✓'
-			: badgeState === 'partial'
-				? `${ownedCount}/${neededCount}`
-				: badgeState === 'locked'
-					? `0/${neededCount}`
-					: badgeState === 'wishlist'
-						? '🛒'
-						: '';
-
-	const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
-	const closeMenu = useCallback(() => setMenuPos(null), []);
-
-	const handleContextMenu = useCallback((e: React.MouseEvent) => {
-		e.preventDefault();
-		e.stopPropagation();
-		setMenuPos({ x: e.clientX, y: e.clientY });
-	}, []);
-
-	const representativeScryfallId = (zoneCopies[0]?.id ?? (group.representative as Card).id) || '';
-
-	const items: ContextMenuAction[] = [
+function buildContextMenuItems(
+	zoneCopies: Card[],
+	otherZones: DeckZone[],
+	lastCopy: Card | undefined,
+	representativeScryfallId: string,
+	group: DeckCardGroup,
+	onDuplicate: (card: Card) => void,
+	onRemove: (rowId: string) => void,
+	onChangeZone: (rowId: string, zone: DeckZone) => void,
+	onAddToWishlist: ((id: string) => void) | undefined,
+	closeMenu: () => void
+): ContextMenuAction[] {
+	return [
 		{
 			type: 'action',
 			label: 'Add copy',
@@ -140,6 +90,78 @@ export function DeckCardOverlay({
 			},
 		})),
 	];
+}
+
+type Props = {
+	group: DeckCardGroup;
+	currentZone: DeckZone;
+	zones: DeckZone[];
+	deckId: string;
+	oracleScryfallIds: string[];
+	deckNameResolver: (deckId: string) => string | undefined;
+	onDuplicate: (rc: Card) => void;
+	onRemove: (rowId: string) => void;
+	onChangeZone: (rowId: string, zone: DeckZone) => void;
+	onBadgeClick?: () => void;
+	onAddToWishlist?: (scryfallId: string) => void;
+	wishlistEntries?: Array<{ scryfallId: string; entry: CardEntry }>;
+};
+
+export function DeckCardOverlay({
+	group,
+	currentZone,
+	zones,
+	deckId,
+	oracleScryfallIds,
+	deckNameResolver,
+	onDuplicate,
+	onRemove,
+	onChangeZone,
+	onBadgeClick,
+	onAddToWishlist,
+	wishlistEntries,
+}: Props) {
+	const otherZones = zones.filter((z) => z !== currentZone);
+	const zoneCopies = group.byZone.get(currentZone) ?? [];
+	const lastCopy = zoneCopies[zoneCopies.length - 1];
+	const count = zoneCopies.length;
+
+	const { badgeState, ownedCount, neededCount, tooltipCopies, wishlistTooltipCopies } =
+		useCollectionBadge(
+			group,
+			currentZone,
+			deckId,
+			oracleScryfallIds,
+			deckNameResolver,
+			wishlistEntries
+		);
+
+	const badgeClass = BADGE_CLASS_MAP[badgeState] ?? styles.ownershipBadgeGrey;
+	const badgeText = getBadgeText(badgeState, ownedCount, neededCount);
+
+	const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+	const closeMenu = useCallback(() => setMenuPos(null), []);
+
+	const handleContextMenu = useCallback((e: React.MouseEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setMenuPos({ x: e.clientX, y: e.clientY });
+	}, []);
+
+	const representativeScryfallId = (zoneCopies[0]?.id ?? (group.representative as Card).id) || '';
+
+	const items = buildContextMenuItems(
+		zoneCopies,
+		otherZones,
+		lastCopy,
+		representativeScryfallId,
+		group,
+		onDuplicate,
+		onRemove,
+		onChangeZone,
+		onAddToWishlist,
+		closeMenu
+	);
 
 	return (
 		<div className={styles.overlay} onContextMenu={handleContextMenu}>
@@ -159,7 +181,12 @@ export function DeckCardOverlay({
 							{tooltipCopies.map((copy) => (
 								<span
 									key={copy.key}
-									className={`${styles.ownershipTooltipItem}${copy.lockedDeckName ? ` ${styles.ownershipTooltipItemLocked}` : ''}`}
+									className={[
+										styles.ownershipTooltipItem,
+										copy.lockedDeckName ? styles.ownershipTooltipItemLocked : '',
+									]
+										.filter(Boolean)
+										.join(' ')}
 								>
 									{copy.line}
 									{copy.lockedDeckName && (

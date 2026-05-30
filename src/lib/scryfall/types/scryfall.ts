@@ -1,6 +1,7 @@
 // Scryfall API types based on https://scryfall.com/docs/api
 
 // Base types
+// eslint-disable-next-line sonarjs/redundant-type-aliases -- intentional semantic alias
 export type ScryfallUUID = string;
 export type ScryfallColor = 'W' | 'U' | 'B' | 'R' | 'G';
 export type ScryfallColors = ScryfallColor[];

@@ -88,6 +88,7 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 	);
 
 	const fetchCards = useCallback(
+		// eslint-disable-next-line sonarjs/cognitive-complexity -- search state machine: handles abort, 404, 400, generic errors and pagination
 		async (query: string, pageNum: number, isNewSearch: boolean) => {
 			if (isNewSearch) {
 				abortControllerRef.current?.abort();

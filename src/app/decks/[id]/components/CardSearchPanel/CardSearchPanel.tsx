@@ -36,6 +36,7 @@ type Props = {
 	onCollectionModeChange?: (inCollectionOnly: boolean) => void;
 };
 
+// eslint-disable-next-line sonarjs/cognitive-complexity -- deck card search panel with multiple state branches (zone, qty, collection overlay)
 export function CardSearchPanel({
 	deckId,
 	onCardClick,

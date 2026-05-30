@@ -109,35 +109,23 @@ export type ValidationWarning = {
 	message: string;
 };
 
-export function validateDeck(
-	format: DeckFormat | null,
-	cards: Array<{ card: ScryfallCard; zone: DeckZone }>,
-	commanderCards: Array<{ card: ScryfallCard; zone: DeckZone }>
+function hasPartnerKeyword(card: ScryfallCard): boolean {
+	return (
+		!!card.keywords?.some((k) => k === 'Partner' || k.startsWith('Partner with')) ||
+		/\bPartner\b/.test(card.oracle_text ?? '')
+	);
+}
+
+function checkDeckSize(
+	rules: FormatRules,
+	mainboardCards: unknown[],
+	commanderCards: unknown[],
+	effectiveCommanderMax: number
 ): ValidationWarning[] {
-	if (!format) return [];
-
-	const rules = getFormatRules(format);
 	const warnings: ValidationWarning[] = [];
-
-	// Count cards per zone
-	const mainboardCards = cards.filter((c) => c.zone === 'mainboard');
-	const sideboardCards = cards.filter((c) => c.zone === 'sideboard');
-
-	// Resolve effective commander limit — partners allow 2 commanders in 1-commander formats
-	const hasPartnerKeyword = (card: ScryfallCard) =>
-		card.keywords?.some((k) => k === 'Partner' || k.startsWith('Partner with')) ||
-		/\bPartner\b/.test(card.oracle_text ?? '');
-
-	const allCommandersHavePartner =
-		commanderCards.length > 0 && commanderCards.every(({ card }) => hasPartnerKeyword(card));
-	const effectiveCommanderMax =
-		rules.commanderCount === 1 && allCommandersHavePartner ? 2 : rules.commanderCount;
-
-	// Mainboard size — for formats with a fixed total (commander/brawl), count commanders + mainboard
 	const totalCards = mainboardCards.length + commanderCards.length;
 	const totalMin = rules.maxMainboard ? rules.minMainboard + rules.commanderCount : null;
 	const totalMax = rules.maxMainboard ? rules.maxMainboard + effectiveCommanderMax : null;
-
 	if (totalMin !== null && totalCards < totalMin) {
 		warnings.push({
 			type: 'size',
@@ -156,8 +144,15 @@ export function validateDeck(
 			message: `Mainboard has ${mainboardCards.length} cards, minimum is ${rules.minMainboard}`,
 		});
 	}
+	return warnings;
+}
 
-	// Sideboard size
+function checkSideboardSize(
+	rules: FormatRules,
+	format: DeckFormat,
+	sideboardCards: unknown[]
+): ValidationWarning[] {
+	const warnings: ValidationWarning[] = [];
 	if (rules.maxSideboard !== null && sideboardCards.length > rules.maxSideboard) {
 		warnings.push({
 			type: 'size',
@@ -165,93 +160,131 @@ export function validateDeck(
 		});
 	}
 	if (rules.maxSideboard === null && sideboardCards.length > 0) {
-		warnings.push({
-			type: 'size',
-			message: `${format} does not allow a sideboard`,
-		});
+		warnings.push({ type: 'size', message: `${format} does not allow a sideboard` });
 	}
+	return warnings;
+}
 
-	if (rules.requiresCommander && commanderCards.length === 0) {
-		warnings.push({
-			type: 'commander',
-			message: 'A commander is required for this format',
-		});
+function checkCommanderCount(
+	rules: FormatRules,
+	commanderCards: unknown[],
+	effectiveCommanderMax: number
+): ValidationWarning[] {
+	const warnings: ValidationWarning[] = [];
+	if (!rules.requiresCommander) return warnings;
+	if (commanderCards.length === 0) {
+		warnings.push({ type: 'commander', message: 'A commander is required for this format' });
 	}
-	if (rules.requiresCommander && commanderCards.length > effectiveCommanderMax) {
+	if (commanderCards.length > effectiveCommanderMax) {
 		warnings.push({
 			type: 'commander',
 			message: `Too many commanders: ${commanderCards.length} (max ${effectiveCommanderMax})`,
 		});
 	}
-
-	// Copy limits (check across mainboard + sideboard, exclude basic lands)
-	if (rules.maxCopies !== null) {
-		const nonMaybeCards = cards.filter((c) => c.zone !== 'maybeboard');
-		const counts = new Map<string, number>();
-		for (const { card } of nonMaybeCards) {
-			if (isBasicLand(card)) continue;
-			const name = card.name;
-			counts.set(name, (counts.get(name) ?? 0) + 1);
-		}
-		for (const [name, count] of counts) {
-			if (count > rules.maxCopies) {
-				warnings.push({
-					type: 'copies',
-					message: `${name} has ${count} copies, maximum is ${rules.maxCopies}`,
-				});
-			}
-		}
-	}
-
-	// Format legality
-	const legalityKey = format === 'draft' || format === 'limited' ? null : format;
-	if (legalityKey) {
-		for (const { card, zone } of cards) {
-			if (zone === 'maybeboard') continue;
-			const legality = card.legalities?.[legalityKey];
-			if (legality && legality !== 'legal' && legality !== 'restricted') {
-				warnings.push({
-					type: 'legality',
-					message: `${card.name} is not legal in ${format} (${legality})`,
-				});
-			}
-		}
-	}
-
-	// Commander color identity
-	if (rules.requiresCommander && commanderCards.length > 0) {
-		const commanderIdentity = new Set<string>();
-		for (const { card } of commanderCards) {
-			for (const color of card.color_identity ?? []) {
-				commanderIdentity.add(color);
-			}
-		}
-		for (const { card, zone } of cards) {
-			if (zone === 'maybeboard') continue;
-			for (const color of card.color_identity ?? []) {
-				if (!commanderIdentity.has(color)) {
-					warnings.push({
-						type: 'color-identity',
-						message: `${card.name} has color identity outside commander's (${color})`,
-					});
-					break;
-				}
-			}
-		}
-	}
-
-	// Pauper: only commons
-	if (format === 'pauper') {
-		for (const { card, zone } of cards) {
-			if (zone === 'maybeboard') continue;
-			if (card.rarity && card.rarity !== 'common') {
-				warnings.push({
-					type: 'rarity',
-					message: `${card.name} is ${card.rarity}, only commons are allowed in Pauper`,
-				});
-			}
-		}
-	}
-
 	return warnings;
+}
+
+function checkCopyLimits(
+	rules: FormatRules,
+	cards: Array<{ card: ScryfallCard; zone: DeckZone }>
+): ValidationWarning[] {
+	if (rules.maxCopies === null) return [];
+	const warnings: ValidationWarning[] = [];
+	const counts = new Map<string, number>();
+	for (const { card, zone } of cards) {
+		if (zone === 'maybeboard' || isBasicLand(card)) continue;
+		counts.set(card.name, (counts.get(card.name) ?? 0) + 1);
+	}
+	for (const [name, count] of counts) {
+		if (count > rules.maxCopies) {
+			warnings.push({
+				type: 'copies',
+				message: `${name} has ${count} copies, maximum is ${rules.maxCopies}`,
+			});
+		}
+	}
+	return warnings;
+}
+
+function checkLegality(
+	format: DeckFormat,
+	cards: Array<{ card: ScryfallCard; zone: DeckZone }>
+): ValidationWarning[] {
+	const legalityKey = format === 'draft' || format === 'limited' ? null : format;
+	if (!legalityKey) return [];
+	const warnings: ValidationWarning[] = [];
+	for (const { card, zone } of cards) {
+		if (zone === 'maybeboard') continue;
+		const legality = card.legalities?.[legalityKey];
+		if (legality && legality !== 'legal' && legality !== 'restricted') {
+			warnings.push({
+				type: 'legality',
+				message: `${card.name} is not legal in ${format} (${legality})`,
+			});
+		}
+	}
+	return warnings;
+}
+
+function checkColorIdentity(
+	rules: FormatRules,
+	cards: Array<{ card: ScryfallCard; zone: DeckZone }>,
+	commanderCards: Array<{ card: ScryfallCard; zone: DeckZone }>
+): ValidationWarning[] {
+	if (!rules.requiresCommander || commanderCards.length === 0) return [];
+	const warnings: ValidationWarning[] = [];
+	const commanderIdentity = new Set(
+		commanderCards.flatMap(({ card }) => card.color_identity ?? [])
+	);
+	for (const { card, zone } of cards) {
+		if (zone === 'maybeboard') continue;
+		const offColor = (card.color_identity ?? []).find((c) => !commanderIdentity.has(c));
+		if (offColor) {
+			warnings.push({
+				type: 'color-identity',
+				message: `${card.name} has color identity outside commander's (${offColor})`,
+			});
+		}
+	}
+	return warnings;
+}
+
+function checkPauper(
+	format: DeckFormat,
+	cards: Array<{ card: ScryfallCard; zone: DeckZone }>
+): ValidationWarning[] {
+	if (format !== 'pauper') return [];
+	return cards
+		.filter(({ zone, card }) => zone !== 'maybeboard' && card.rarity && card.rarity !== 'common')
+		.map(({ card }) => ({
+			type: 'rarity' as const,
+			message: `${card.name} is ${card.rarity}, only commons are allowed in Pauper`,
+		}));
+}
+
+export function validateDeck(
+	format: DeckFormat | null,
+	cards: Array<{ card: ScryfallCard; zone: DeckZone }>,
+	commanderCards: Array<{ card: ScryfallCard; zone: DeckZone }>
+): ValidationWarning[] {
+	if (!format) return [];
+
+	const rules = getFormatRules(format);
+	const mainboardCards = cards.filter((c) => c.zone === 'mainboard');
+	const sideboardCards = cards.filter((c) => c.zone === 'sideboard');
+
+	const allCommandersHavePartner =
+		commanderCards.length > 0 && commanderCards.every(({ card }) => hasPartnerKeyword(card));
+	const effectiveCommanderMax =
+		rules.commanderCount === 1 && allCommandersHavePartner ? 2 : rules.commanderCount;
+
+	return [
+		...checkDeckSize(rules, mainboardCards, commanderCards, effectiveCommanderMax),
+		...checkSideboardSize(rules, format, sideboardCards),
+		...checkCommanderCount(rules, commanderCards, effectiveCommanderMax),
+		...checkCopyLimits(rules, cards),
+		...checkLegality(format, cards),
+		...checkColorIdentity(rules, cards, commanderCards),
+		...checkPauper(format, cards),
+	];
 }

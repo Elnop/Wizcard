@@ -33,6 +33,49 @@ import {
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 1000;
 
+import type { SyncOp } from '@/lib/supabase/sync-queue';
+
+async function executeOp(op: SyncOp): Promise<void> {
+	if (op.type === 'insert') {
+		await insertEntry(
+			op.payload.userId,
+			op.payload.scryfallId,
+			op.payload.entry,
+			op.payload.wishlist ?? false
+		);
+	} else if (op.type === 'delete') {
+		await deleteEntryById(op.payload.userId, op.payload.rowId);
+	} else if (op.type === 'bulk-insert') {
+		await insertEntries(op.payload.userId, op.payload.rows);
+	} else if (op.type === 'bulk-delete') {
+		await deleteEntries(op.payload.userId, op.payload.rowIds);
+	} else if (op.type === 'deck-insert') {
+		await insertDeck(op.payload.userId, op.payload.deck);
+	} else if (op.type === 'deck-update') {
+		await updateDeckMeta(op.payload.userId, op.payload.deckId, op.payload.updates);
+	} else if (op.type === 'deck-delete') {
+		await deleteDeck(op.payload.userId, op.payload.deckId, op.payload.deleteCollectionCopies);
+	} else if (op.type === 'deck-card-insert') {
+		await insertDeckCard(op.payload.deckId, op.payload.scryfallId, op.payload.entry);
+	} else if (op.type === 'deck-card-bulk-insert') {
+		await insertDeckCards(op.payload.deckId, op.payload.cards);
+	} else if (op.type === 'deck-card-delete') {
+		await deleteDeckCard(op.payload.rowId);
+	} else if (op.type === 'deck-card-update') {
+		await updateDeckCard(op.payload.rowId, op.payload.updates);
+	} else if (op.type === 'folder-insert') {
+		await insertFolder(op.payload.userId, op.payload.folder);
+	} else if (op.type === 'folder-update') {
+		await updateFolder(op.payload.userId, op.payload.folderId, op.payload.updates);
+	} else if (op.type === 'folder-delete') {
+		await deleteFolder(op.payload.userId, op.payload.folderId);
+	} else if (op.type === 'deck-move') {
+		await moveDeckToFolder(op.payload.userId, op.payload.deckId, op.payload.folderId);
+	} else {
+		await updateEntry(op.payload.userId, op.payload.rowId, op.payload.entry);
+	}
+}
+
 export type SyncStatus = 'idle' | 'syncing' | 'error';
 
 function isAuthError(err: unknown): boolean {
@@ -62,6 +105,7 @@ export function useSyncQueue(userId: string | null | undefined) {
 		}
 	}, []);
 
+	// eslint-disable-next-line sonarjs/cognitive-complexity -- queue state machine: retry/auth/backoff logic is inherently complex
 	const runQueue = useCallback(async () => {
 		if (!userId || isRunning.current) return;
 		isRunning.current = true;
@@ -93,44 +137,7 @@ export function useSyncQueue(userId: string | null | undefined) {
 			}
 
 			try {
-				if (op.type === 'insert') {
-					await insertEntry(
-						op.payload.userId,
-						op.payload.scryfallId,
-						op.payload.entry,
-						op.payload.wishlist ?? false
-					);
-				} else if (op.type === 'delete') {
-					await deleteEntryById(op.payload.userId, op.payload.rowId);
-				} else if (op.type === 'bulk-insert') {
-					await insertEntries(op.payload.userId, op.payload.rows);
-				} else if (op.type === 'bulk-delete') {
-					await deleteEntries(op.payload.userId, op.payload.rowIds);
-				} else if (op.type === 'deck-insert') {
-					await insertDeck(op.payload.userId, op.payload.deck);
-				} else if (op.type === 'deck-update') {
-					await updateDeckMeta(op.payload.userId, op.payload.deckId, op.payload.updates);
-				} else if (op.type === 'deck-delete') {
-					await deleteDeck(op.payload.userId, op.payload.deckId, op.payload.deleteCollectionCopies);
-				} else if (op.type === 'deck-card-insert') {
-					await insertDeckCard(op.payload.deckId, op.payload.scryfallId, op.payload.entry);
-				} else if (op.type === 'deck-card-bulk-insert') {
-					await insertDeckCards(op.payload.deckId, op.payload.cards);
-				} else if (op.type === 'deck-card-delete') {
-					await deleteDeckCard(op.payload.rowId);
-				} else if (op.type === 'deck-card-update') {
-					await updateDeckCard(op.payload.rowId, op.payload.updates);
-				} else if (op.type === 'folder-insert') {
-					await insertFolder(op.payload.userId, op.payload.folder);
-				} else if (op.type === 'folder-update') {
-					await updateFolder(op.payload.userId, op.payload.folderId, op.payload.updates);
-				} else if (op.type === 'folder-delete') {
-					await deleteFolder(op.payload.userId, op.payload.folderId);
-				} else if (op.type === 'deck-move') {
-					await moveDeckToFolder(op.payload.userId, op.payload.deckId, op.payload.folderId);
-				} else {
-					await updateEntry(op.payload.userId, op.payload.rowId, op.payload.entry);
-				}
+				await executeOp(op);
 				dequeue();
 			} catch (err) {
 				// P0-B: Auth errors refresh session without consuming a retry

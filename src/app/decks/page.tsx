@@ -147,12 +147,14 @@ export default function DecksPage() {
 	const draggingDeck = draggingDeckId ? decks.find((d) => d.id === draggingDeckId) : null;
 	const draggingFolder = draggingFolderId ? folders.find((f) => f.id === draggingFolderId) : null;
 
-	const activeFolderName =
-		activeFolderId !== null && activeFolderId !== 'none'
-			? (foldersMap[activeFolderId]?.name ?? 'Dossier')
-			: activeFolderId === 'none'
-				? 'Sans dossier'
-				: 'My Decks';
+	let activeFolderName: string;
+	if (activeFolderId !== null && activeFolderId !== 'none') {
+		activeFolderName = foldersMap[activeFolderId]?.name ?? 'Dossier';
+	} else if (activeFolderId === 'none') {
+		activeFolderName = 'Sans dossier';
+	} else {
+		activeFolderName = 'My Decks';
+	}
 
 	if (!isLoaded) {
 		return (
@@ -250,27 +252,26 @@ export default function DecksPage() {
 						</div>
 					</div>
 
-					{filteredDecks.length === 0 && visibleFolders.length === 0 && activeFolderId !== null ? (
+					{filteredDecks.length === 0 && visibleFolders.length === 0 && activeFolderId !== null && (
 						<div className={styles.emptyState}>
 							<h2>Dossier vide</h2>
 							<p>Glissez des decks ici ou créez-en un nouveau.</p>
 							<Button onClick={() => setShowCreate(true)}>New Deck</Button>
 						</div>
-					) : activeFolderId === null ? (
-						<>
-							{decks.length === 0 && visibleFolders.length === 0 ? (
-								<div className={styles.emptyState}>
-									<h2>No decks yet</h2>
-									<p>Create your first deck to start building.</p>
-									<Button onClick={() => setShowCreate(true)}>New Deck</Button>
-								</div>
-							) : (
-								renderGrid(decks, visibleFolders)
-							)}
-						</>
-					) : (
-						renderGrid(filteredDecks, visibleFolders)
 					)}
+					{activeFolderId === null && decks.length === 0 && visibleFolders.length === 0 && (
+						<div className={styles.emptyState}>
+							<h2>No decks yet</h2>
+							<p>Create your first deck to start building.</p>
+							<Button onClick={() => setShowCreate(true)}>New Deck</Button>
+						</div>
+					)}
+					{activeFolderId === null &&
+						(decks.length > 0 || visibleFolders.length > 0) &&
+						renderGrid(decks, visibleFolders)}
+					{activeFolderId !== null &&
+						(filteredDecks.length > 0 || visibleFolders.length > 0) &&
+						renderGrid(filteredDecks, visibleFolders)}
 				</div>
 			</div>
 

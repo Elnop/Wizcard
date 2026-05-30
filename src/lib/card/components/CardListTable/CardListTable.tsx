@@ -84,6 +84,7 @@ export function CardListTable({
 		const sectionKey = parentKey ? `${parentKey}::${section.label}` : section.label;
 		const collapsed = collapsedSections?.has(sectionKey) ?? false;
 
+		// eslint-disable-next-line sonarjs/slow-regex -- short section label strings, no ReDoS risk
 		const labelMatch = section.label.match(/^(.+?)\s*(\(\d+\))$/);
 		const labelName = labelMatch?.[1] ?? section.label;
 		const labelCount = labelMatch?.[2] ?? '';
@@ -146,7 +147,8 @@ export function CardListTable({
 								className={col.sortKey ? styles.thSortable : undefined}
 								aria-sort={
 									col.sortKey && sortOrder === col.sortKey
-										? sortDir === 'desc'
+										? // eslint-disable-next-line sonarjs/no-nested-conditional -- aria-sort requires exactly these 3 values
+											sortDir === 'desc'
 											? 'descending'
 											: 'ascending'
 										: undefined

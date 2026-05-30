@@ -55,12 +55,12 @@ export function CardList({
 		trackedLength: cards.length,
 	});
 
-	const effectiveVisibleCount =
-		localPageSize !== null
-			? cards.length !== trackedLength
-				? localPageSize
-				: visibleCount
-			: cards.length;
+	let effectiveVisibleCount: number;
+	if (localPageSize !== null) {
+		effectiveVisibleCount = cards.length !== trackedLength ? localPageSize : visibleCount;
+	} else {
+		effectiveVisibleCount = cards.length;
+	}
 
 	const internalHasMore = localPageSize !== null ? effectiveVisibleCount < cards.length : false;
 	const internalLoadMore = () =>

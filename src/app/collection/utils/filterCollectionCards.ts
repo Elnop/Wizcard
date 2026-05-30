@@ -8,12 +8,14 @@ export type CollectionSortOrder = ScryfallSortOrder | 'language';
 export interface CollectionFilters extends Omit<CardFilters, 'order'> {
 	order: CollectionSortOrder;
 	proxyFilter: 'all' | 'official' | 'proxy';
+	foilTypeFilter: 'none' | 'all' | 'foil' | 'etched';
 }
 
 export const defaultCollectionFilters: CollectionFilters = {
 	...DEFAULT_CARD_FILTERS,
 	order: 'name',
 	proxyFilter: 'all',
+	foilTypeFilter: 'all',
 };
 
 function parseCmc(raw: string): ((cmc: number) => boolean) | null {
@@ -38,7 +40,7 @@ function parseCmc(raw: string): ((cmc: number) => boolean) | null {
 
 function parseOracleTokens(raw: string): string[] {
 	// Normalize all quote variants to ASCII double-quote
-	const normalized = raw.replace(/["""]/g, '"');
+	const normalized = raw.replace(/["“”]/g, '"');
 	const tokens: string[] = [];
 	const re = /"([^"]*)"?|(\S+)/g;
 	let match: RegExpExecArray | null;
@@ -67,54 +69,83 @@ function matchColors(
 	}
 }
 
+const RARITY_ORDER: Record<string, number> = {
+	common: 0,
+	uncommon: 1,
+	rare: 2,
+	mythic: 3,
+	special: 4,
+	bonus: 5,
+};
+
 export function getSortValue(
 	card: ScryfallCard | Card,
 	order: CollectionSortOrder
 ): string | number {
-	if (order === 'language') {
-		return 'entry' in card ? (card.entry.language ?? '') : '';
+	if (order === 'language') return 'entry' in card ? (card.entry.language ?? '') : '';
+	if (order === 'name') return card.name.toLowerCase();
+	if (order === 'cmc') return card.cmc;
+	if (order === 'rarity') return RARITY_ORDER[card.rarity] ?? 0;
+	if (order === 'set') return `${card.set}-${card.collector_number.padStart(6, '0')}`;
+	if (order === 'released') return card.released_at;
+	if (order === 'color') return (card.colors ?? []).sort().join('');
+	if (order === 'usd') return parseFloat(card.prices.usd ?? '0');
+	if (order === 'eur') return parseFloat(card.prices.eur ?? '0');
+	if (order === 'tix') return parseFloat(card.prices.tix ?? '0');
+	if (order === 'power') return parseFloat(card.power ?? '0');
+	if (order === 'toughness') return parseFloat(card.toughness ?? '0');
+	if (order === 'edhrec') return card.edhrec_rank ?? 9999999;
+	if (order === 'penny') return card.penny_rank ?? 9999999;
+	if (order === 'artist') return (card.artist ?? '').toLowerCase();
+	return card.name.toLowerCase();
+}
+
+function matchesProxyFilter(card: Card, proxyFilter: CollectionFilters['proxyFilter']): boolean {
+	if (proxyFilter === 'all') return true;
+	const isProxy = card.entry.proxy === true;
+	if (proxyFilter === 'proxy') return isProxy;
+	if (proxyFilter === 'official') return !isProxy;
+	return true;
+}
+
+function matchesFoilFilter(
+	card: Card,
+	foilTypeFilter: CollectionFilters['foilTypeFilter']
+): boolean {
+	if (foilTypeFilter === 'all') return true;
+	const ft = card.entry.foilType;
+	if (foilTypeFilter === 'none') return ft === undefined;
+	if (foilTypeFilter === 'foil') return ft === 'foil';
+	if (foilTypeFilter === 'etched') return ft === 'etched';
+	return true;
+}
+
+function matchesOracleText(card: ScryfallCard, oracleText: string): boolean {
+	if (!oracleText) return true;
+	const tokens = parseOracleTokens(oracleText);
+	if (tokens.length === 0) return true;
+	const text = card.oracle_text?.toLowerCase() ?? '';
+	return tokens.every((t) => text.includes(t));
+}
+
+function cardMatchesFilters(
+	card: ScryfallCard | Card,
+	filters: CollectionFilters,
+	cmcTest: ((v: number) => boolean) | null
+): boolean {
+	if (filters.name && !card.name.toLowerCase().includes(filters.name.toLowerCase())) return false;
+	if (!matchColors(card.colors, filters.colors, filters.colorMatch)) return false;
+	if (filters.type && !card.type_line.toLowerCase().includes(filters.type.toLowerCase()))
+		return false;
+	if (filters.set && card.set !== filters.set) return false;
+	if (filters.rarities.length > 0 && !filters.rarities.includes(card.rarity)) return false;
+	if (!matchesOracleText(card, filters.oracleText)) return false;
+	if (cmcTest && !cmcTest(card.cmc)) return false;
+	if ('entry' in card) {
+		if (!matchesProxyFilter(card, filters.proxyFilter)) return false;
+		if (!matchesFoilFilter(card, filters.foilTypeFilter)) return false;
 	}
-	switch (order) {
-		case 'name':
-			return card.name.toLowerCase();
-		case 'cmc':
-			return card.cmc;
-		case 'rarity': {
-			const rarityOrder: Record<string, number> = {
-				common: 0,
-				uncommon: 1,
-				rare: 2,
-				mythic: 3,
-				special: 4,
-				bonus: 5,
-			};
-			return rarityOrder[card.rarity] ?? 0;
-		}
-		case 'set':
-			return `${card.set}-${card.collector_number.padStart(6, '0')}`;
-		case 'released':
-			return card.released_at;
-		case 'color':
-			return (card.colors ?? []).sort().join('');
-		case 'usd':
-			return parseFloat(card.prices.usd ?? '0');
-		case 'eur':
-			return parseFloat(card.prices.eur ?? '0');
-		case 'tix':
-			return parseFloat(card.prices.tix ?? '0');
-		case 'power':
-			return parseFloat(card.power ?? '0');
-		case 'toughness':
-			return parseFloat(card.toughness ?? '0');
-		case 'edhrec':
-			return card.edhrec_rank ?? 9999999;
-		case 'penny':
-			return card.penny_rank ?? 9999999;
-		case 'artist':
-			return (card.artist ?? '').toLowerCase();
-		default:
-			return card.name.toLowerCase();
-	}
+	return true;
 }
 
 export function filterCollectionCards<T extends ScryfallCard | Card>(
@@ -122,45 +153,18 @@ export function filterCollectionCards<T extends ScryfallCard | Card>(
 	filters: CollectionFilters
 ): T[] {
 	const cmcTest = parseCmc(filters.cmc);
-
-	let filtered = cards.filter((card) => {
-		if (filters.name && !card.name.toLowerCase().includes(filters.name.toLowerCase())) return false;
-		if (!matchColors(card.colors, filters.colors, filters.colorMatch)) return false;
-		if (filters.type && !card.type_line.toLowerCase().includes(filters.type.toLowerCase()))
-			return false;
-		if (filters.set && card.set !== filters.set) return false;
-		if (filters.rarities.length > 0 && !filters.rarities.includes(card.rarity)) return false;
-		if (filters.oracleText) {
-			const tokens = parseOracleTokens(filters.oracleText);
-			const text = card.oracle_text?.toLowerCase() ?? '';
-			if (tokens.length > 0 && !tokens.every((t) => text.includes(t))) return false;
-		}
-		if (cmcTest && !cmcTest(card.cmc)) return false;
-		if (filters.proxyFilter !== 'all' && 'entry' in card) {
-			const isProxy = card.entry.proxy === true;
-			if (filters.proxyFilter === 'proxy' && !isProxy) return false;
-			if (filters.proxyFilter === 'official' && isProxy) return false;
-		}
-		return true;
-	});
+	const filtered = cards.filter((card) => cardMatchesFilters(card, filters, cmcTest));
 
 	if (filtered.length <= 1) return filtered;
 
-	const dir = filters.dir;
-
-	filtered = [...filtered].sort((a, b) => {
+	return [...filtered].sort((a, b) => {
 		const av = getSortValue(a, filters.order);
 		const bv = getSortValue(b, filters.order);
-		let cmp: number;
-		if (typeof av === 'number' && typeof bv === 'number') {
-			cmp = av - bv;
-		} else {
-			cmp = String(av).localeCompare(String(bv));
-		}
+		const cmp =
+			typeof av === 'number' && typeof bv === 'number'
+				? av - bv
+				: String(av).localeCompare(String(bv));
 		// 'auto' behaves like 'asc' for local filtering
-		if (dir === 'desc') cmp = -cmp;
-		return cmp;
+		return filters.dir === 'desc' ? -cmp : cmp;
 	});
-
-	return filtered;
 }

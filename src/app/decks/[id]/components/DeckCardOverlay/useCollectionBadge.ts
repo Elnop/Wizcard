@@ -65,6 +65,7 @@ export function useCollectionBadge(
 
 		const formatLine = (
 			scryfallId: string,
+			// eslint-disable-next-line sonarjs/use-type-alias -- Pick key union is not worth a standalone type alias
 			entry: Pick<CardEntry, 'condition' | 'isFoil' | 'language'>,
 			count: number
 		): string => {

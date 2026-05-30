@@ -7,6 +7,7 @@ interface SymbolTextProps {
 }
 
 export function SymbolText({ text, symbolMap }: SymbolTextProps) {
+	// eslint-disable-next-line sonarjs/slow-regex -- mana symbol strings are short, no ReDoS risk
 	const parts = text.split(/(\{[^}]+\})/g);
 
 	return (
