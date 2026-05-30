@@ -552,13 +552,15 @@ export default function DeckDetailPage() {
 				/>
 			)}
 
-			<DeckFooter
-				stats={stats}
-				format={deck.format}
-				warnings={warnings}
-				searchPanelOpen={searchPanelOpen}
-				onToggleSearchPanel={() => setSearchPanelOpen((v) => !v)}
-			/>
+			<button
+				type="button"
+				className={`${styles.addCardsBtn} ${searchPanelOpen ? styles.addCardsBtnActive : ''}`}
+				onClick={() => setSearchPanelOpen((v) => !v)}
+			>
+				<span className={styles.addCardsBtnLabel}>{searchPanelOpen ? '× Cards' : '+ Cards'}</span>
+			</button>
+
+			<DeckFooter stats={stats} format={deck.format} warnings={warnings} />
 
 			<CardModal
 				cards={selectedCards}

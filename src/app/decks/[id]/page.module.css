@@ -102,6 +102,42 @@
 	--card-gap: 4px;
 }
 
+.addCardsBtn {
+	position: fixed;
+	top: calc(var(--navbar-height) + 16px);
+	right: 24px;
+	z-index: 60;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	background: none;
+	border: 1px solid var(--border);
+	padding: 4px 10px;
+	border-radius: 4px;
+	cursor: pointer;
+	transition:
+		background 0.15s ease,
+		border-color 0.15s ease;
+}
+
+.addCardsBtn:hover {
+	background: var(--surface-alt);
+	border-color: var(--primary);
+}
+
+.addCardsBtnActive {
+	border-color: var(--primary);
+	background: rgba(201, 168, 76, 0.08);
+}
+
+.addCardsBtnLabel {
+	font-size: var(--text-xs);
+	font-weight: 600;
+	color: var(--foreground);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
 @media (max-width: 900px) {
 	.content {
 		padding: 20px 16px 80px;
