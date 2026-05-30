@@ -77,7 +77,7 @@ export default function DecksPage() {
 
 	// Filter decks based on active folder
 	const filteredDecks = useMemo(() => {
-		if (activeFolderId === null) return decks;
+		if (activeFolderId === null) return decks.filter((d) => d.folderId === null);
 		if (activeFolderId === 'none') return decks.filter((d) => d.folderId === null);
 		return decks.filter((d) => d.folderId === activeFolderId);
 	}, [decks, activeFolderId]);
@@ -268,7 +268,7 @@ export default function DecksPage() {
 					)}
 					{activeFolderId === null &&
 						(decks.length > 0 || visibleFolders.length > 0) &&
-						renderGrid(decks, visibleFolders)}
+						renderGrid(filteredDecks, visibleFolders)}
 					{activeFolderId !== null &&
 						(filteredDecks.length > 0 || visibleFolders.length > 0) &&
 						renderGrid(filteredDecks, visibleFolders)}
