@@ -18,6 +18,7 @@ export function CardList({
 	onLoadMore,
 	skeletonCount,
 	onCardClick,
+	onCardContextMenu,
 	renderOverlay,
 	tableColumns,
 	sortOrder,
@@ -128,6 +129,7 @@ export function CardList({
 						cards={[]}
 						sections={sections}
 						onCardClick={onCardClick}
+						onCardContextMenu={onCardContextMenu}
 						renderOverlay={renderOverlay}
 						renderItem={renderItem}
 						cardsPerLine={cardsPerLine}
@@ -172,6 +174,7 @@ export function CardList({
 				isLoadingMore={isLoadingMore}
 				skeletonCount={skeletonCount}
 				onCardClick={onCardClick}
+				onCardContextMenu={onCardContextMenu}
 				renderOverlay={renderOverlay}
 				renderItem={renderItem}
 				cardsPerLine={cardsPerLine}

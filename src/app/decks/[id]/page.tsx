@@ -67,6 +67,9 @@ export default function DeckDetailPage() {
 	const [panelSelectedCard, setPanelSelectedCard] = useState<ScryfallCard | null>(null);
 	const [panelInCollectionOnly, setPanelInCollectionOnly] = useState(false);
 
+	const [contextMenuCard, setContextMenuCard] = useState<AnyCard | null>(null);
+	const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+
 	const [bulkSelectMode, setBulkSelectMode] = useState(false);
 	const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
 	const [addToCollectionModalOpen, setAddToCollectionModalOpen] = useState(false);
@@ -320,7 +323,7 @@ export default function DeckDetailPage() {
 						style={{
 							position: 'absolute',
 							inset: 0,
-							cursor: 'pointer',
+							pointerEvents: 'none',
 							display: 'flex',
 							alignItems: 'flex-start',
 							justifyContent: 'flex-start',
@@ -330,17 +333,12 @@ export default function DeckDetailPage() {
 							borderRadius: '4px',
 							boxSizing: 'border-box',
 						}}
-						onClick={(e) => {
-							e.stopPropagation();
-							toggleBulkSelect(c.oracle_id);
-						}}
 					>
 						<input
 							type="checkbox"
 							checked={checked}
-							onChange={() => toggleBulkSelect(c.oracle_id)}
-							onClick={(e) => e.stopPropagation()}
-							style={{ width: 18, height: 18, cursor: 'pointer' }}
+							readOnly
+							style={{ width: 18, height: 18, cursor: 'pointer', pointerEvents: 'none' }}
 						/>
 					</div>
 				);
@@ -353,6 +351,7 @@ export default function DeckDetailPage() {
 			const oracleScryfallIds = Array.from(new Set([...deckScryfallIds, ...(collectionIds ?? [])]));
 
 			const firstCopy = group.byZone.get(currentZone)?.[0];
+			const isContextCard = contextMenuCard === card;
 			return (
 				<DeckCardOverlay
 					group={group}
@@ -371,6 +370,8 @@ export default function DeckDetailPage() {
 						addToWishlist({ id: scryfallId } as ScryfallCard);
 					}}
 					wishlistEntries={wishlistEntries}
+					contextMenuPos={isContextCard ? contextMenuPos : null}
+					onContextMenuClose={() => setContextMenuPos(null)}
 				/>
 			);
 		},
@@ -378,7 +379,6 @@ export default function DeckDetailPage() {
 			groupByCardId,
 			bulkSelectMode,
 			bulkSelected,
-			toggleBulkSelect,
 			zones,
 			deckId,
 			deckNameResolver,
@@ -389,8 +389,16 @@ export default function DeckDetailPage() {
 			handleCardGroupClickWithPrintPicker,
 			addToWishlist,
 			wishlistEntries,
+			contextMenuCard,
+			contextMenuPos,
 		]
 	);
+
+	const handleCardContextMenu = useCallback((card: AnyCard, e: React.MouseEvent) => {
+		e.preventDefault();
+		setContextMenuCard(card);
+		setContextMenuPos({ x: e.clientX, y: e.clientY });
+	}, []);
 
 	if (isLoading) {
 		return (
@@ -434,6 +442,7 @@ export default function DeckDetailPage() {
 						cards={sections}
 						renderOverlay={renderOverlay}
 						onCardClick={handleCardClick}
+						onCardContextMenu={bulkSelectMode ? undefined : handleCardContextMenu}
 						tableColumns={tableColumns}
 						pageSize={false}
 						viewModes={['fluid-grid', 'grid', 'table']}

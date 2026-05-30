@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import type { Card } from '@/types/cards';
 import type { DeckZone } from '@/types/decks';
@@ -14,49 +14,32 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 type Props = {
 	card: Card;
 	isSelected: boolean;
-	onSelect: () => void;
 	onEdit: () => void;
 	onRemove: () => void;
 	onDuplicate?: () => void;
 	zone?: DeckZone;
 	availableZones?: DeckZone[];
 	onChangeZone?: (zone: DeckZone) => void;
+	contextMenuPos?: { x: number; y: number } | null;
+	onContextMenuClose?: () => void;
 };
 
 export function CopyCardOverlay({
 	card,
 	isSelected,
-	onSelect,
 	onEdit,
 	onRemove,
 	onDuplicate,
 	zone,
 	availableZones,
 	onChangeZone,
+	contextMenuPos,
+	onContextMenuClose,
 }: Props) {
-	const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
-	const closeMenu = useCallback(() => setMenuPos(null), []);
-
-	const handleContextMenu = useCallback((e: React.MouseEvent) => {
-		e.preventDefault();
-		e.stopPropagation();
-		const MENU_WIDTH = 180;
-		const MENU_HEIGHT = 200;
-		const x = e.clientX + MENU_WIDTH > window.innerWidth ? e.clientX - MENU_WIDTH : e.clientX;
-		const y = e.clientY + MENU_HEIGHT > window.innerHeight ? e.clientY - MENU_HEIGHT : e.clientY;
-		setMenuPos({ x, y });
-	}, []);
-
-	const handleClick = useCallback(
-		(e: React.MouseEvent) => {
-			e.stopPropagation();
-			onSelect();
-		},
-		[onSelect]
-	);
+	const closeMenu = useCallback(() => onContextMenuClose?.(), [onContextMenuClose]);
 
 	useEffect(() => {
-		if (!menuPos) return;
+		if (!contextMenuPos) return;
 		const onClick = () => closeMenu();
 		const onContextMenuOutside = () => closeMenu();
 		const onScroll = () => closeMenu();
@@ -73,17 +56,13 @@ export function CopyCardOverlay({
 			document.removeEventListener('keydown', onKey);
 			document.removeEventListener('scroll', onScroll, true);
 		};
-	}, [menuPos, closeMenu]);
+	}, [contextMenuPos, closeMenu]);
 
 	const otherZones = availableZones?.filter((z) => z !== zone) ?? [];
 	const hasDivider = !!onDuplicate || otherZones.length > 0;
 
 	return (
-		<div
-			className={`${styles.overlay} ${isSelected ? styles.selected : ''}`}
-			onClick={handleClick}
-			onContextMenu={handleContextMenu}
-		>
+		<div className={`${styles.overlay} ${isSelected ? styles.selected : ''}`}>
 			{/* Metadata badges always visible */}
 			<div className={styles.badges}>
 				{card.entry.condition && <span className={styles.badge}>{card.entry.condition}</span>}
@@ -95,11 +74,11 @@ export function CopyCardOverlay({
 			</div>
 
 			{/* Context menu rendered in a portal to escape the modal's backdrop-filter stacking context */}
-			{menuPos &&
+			{contextMenuPos &&
 				createPortal(
 					<div
 						className={styles.contextMenu}
-						style={{ left: menuPos.x, top: menuPos.y }}
+						style={{ left: contextMenuPos.x, top: contextMenuPos.y }}
 						onClick={(e) => e.stopPropagation()}
 					>
 						<button

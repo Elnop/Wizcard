@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, MouseEvent } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card } from '@/types/cards';
 import type { ScryfallSortDir } from '@/lib/scryfall/types/sort';
@@ -37,6 +37,7 @@ export interface CardListProps {
 	onLoadMore?: () => void;
 	skeletonCount?: number;
 	onCardClick?: (card: AnyCard) => void;
+	onCardContextMenu?: (card: AnyCard, e: MouseEvent) => void;
 	renderOverlay?: (card: AnyCard) => ReactNode;
 	tableColumns?: CardListColumn[];
 	sortOrder?: string;

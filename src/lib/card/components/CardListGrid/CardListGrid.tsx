@@ -121,6 +121,7 @@ export function CardListGrid({
 	isLoadingMore = false,
 	skeletonCount = DEFAULT_SKELETON_COUNT,
 	onCardClick,
+	onCardContextMenu,
 	renderOverlay,
 	renderItem,
 	cardsPerLine,
@@ -169,6 +170,7 @@ export function CardListGrid({
 								.join(' ')}
 							title={c.name}
 							onClick={onCardClick ? () => onCardClick(c) : undefined}
+							onContextMenu={onCardContextMenu ? (e) => onCardContextMenu(c, e) : undefined}
 						>
 							{showCardNames && <p className={styles.cardName}>{c.name}</p>}
 							<div className={styles.imageWrapper}>

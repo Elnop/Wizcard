@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import type { DeckCardGroup } from '../../useDeckCardSections';
@@ -105,6 +105,8 @@ type Props = {
 	onBadgeClick?: () => void;
 	onAddToWishlist?: (scryfallId: string) => void;
 	wishlistEntries?: Array<{ scryfallId: string; entry: CardEntry }>;
+	contextMenuPos?: { x: number; y: number } | null;
+	onContextMenuClose?: () => void;
 };
 
 export function DeckCardOverlay({
@@ -120,6 +122,8 @@ export function DeckCardOverlay({
 	onBadgeClick,
 	onAddToWishlist,
 	wishlistEntries,
+	contextMenuPos,
+	onContextMenuClose,
 }: Props) {
 	const otherZones = zones.filter((z) => z !== currentZone);
 	const zoneCopies = group.byZone.get(currentZone) ?? [];
@@ -139,14 +143,7 @@ export function DeckCardOverlay({
 	const badgeClass = BADGE_CLASS_MAP[badgeState] ?? styles.ownershipBadgeGrey;
 	const badgeText = getBadgeText(badgeState, ownedCount, neededCount);
 
-	const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
-	const closeMenu = useCallback(() => setMenuPos(null), []);
-
-	const handleContextMenu = useCallback((e: React.MouseEvent) => {
-		e.preventDefault();
-		e.stopPropagation();
-		setMenuPos({ x: e.clientX, y: e.clientY });
-	}, []);
+	const closeMenu = useCallback(() => onContextMenuClose?.(), [onContextMenuClose]);
 
 	const representativeScryfallId = (zoneCopies[0]?.id ?? (group.representative as Card).id) || '';
 
@@ -164,7 +161,7 @@ export function DeckCardOverlay({
 	);
 
 	return (
-		<div className={styles.overlay} onContextMenu={handleContextMenu}>
+		<div className={styles.overlay}>
 			<span
 				className={`${styles.ownershipBadge} ${badgeClass}`}
 				onClick={(e) => {
@@ -221,7 +218,9 @@ export function DeckCardOverlay({
 				</span>
 			</span>
 			{count > 1 && <span className={styles.countBadge}>x{count}</span>}
-			{menuPos && <ContextMenu items={items} position={menuPos} onClose={closeMenu} />}
+			{contextMenuPos && (
+				<ContextMenu items={items} position={contextMenuPos} onClose={closeMenu} />
+			)}
 		</div>
 	);
 }

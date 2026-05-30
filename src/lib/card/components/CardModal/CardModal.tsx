@@ -202,6 +202,10 @@ function CardModalInner({
 		initialChangingPrintRowId ?? null
 	);
 	const [addingCopy, setAddingCopy] = useState(false);
+	const [copyContextMenuCard, setCopyContextMenuCard] = useState<Card | null>(null);
+	const [copyContextMenuPos, setCopyContextMenuPos] = useState<{ x: number; y: number } | null>(
+		null
+	);
 	const [confirmRemoveAll, setConfirmRemoveAll] = useState(false);
 	const symbolMap = useScryfallSymbols();
 
@@ -341,21 +345,32 @@ function CardModalInner({
 		(c: AnyCard) => {
 			const card = c as Card;
 			const cardZone = availableZones ? getDeckZone(card.entry.tags) : zone;
+			const isContextCard = copyContextMenuCard?.entry.rowId === card.entry.rowId;
 			return (
 				<CopyCardOverlay
 					card={card}
 					isSelected={card.entry.rowId === selectedRowId}
-					onSelect={() => setSelectedRowId(card.entry.rowId)}
 					onEdit={() => setEditingRowId(card.entry.rowId)}
 					onRemove={() => handleRemoveCopy(card)}
 					onDuplicate={onDuplicate ? () => onDuplicate(card.id, card.entry) : undefined}
 					zone={cardZone}
 					availableZones={availableZones}
 					onChangeZone={onChangeZone ? (z) => onChangeZone(card.entry.rowId, z) : undefined}
+					contextMenuPos={isContextCard ? copyContextMenuPos : null}
+					onContextMenuClose={() => setCopyContextMenuPos(null)}
 				/>
 			);
 		},
-		[selectedRowId, handleRemoveCopy, onDuplicate, zone, availableZones, onChangeZone]
+		[
+			selectedRowId,
+			handleRemoveCopy,
+			onDuplicate,
+			zone,
+			availableZones,
+			onChangeZone,
+			copyContextMenuCard,
+			copyContextMenuPos,
+		]
 	);
 
 	return (
@@ -414,6 +429,20 @@ function CardModalInner({
 								cards={copySections}
 								pageSize={false}
 								onCardClick={(c) => setSelectedRowId((c as Card).entry.rowId)}
+								onCardContextMenu={(c, e) => {
+									e.preventDefault();
+									const card = c as Card;
+									const MENU_WIDTH = 180;
+									const MENU_HEIGHT = 200;
+									const x =
+										e.clientX + MENU_WIDTH > window.innerWidth ? e.clientX - MENU_WIDTH : e.clientX;
+									const y =
+										e.clientY + MENU_HEIGHT > window.innerHeight
+											? e.clientY - MENU_HEIGHT
+											: e.clientY;
+									setCopyContextMenuCard(card);
+									setCopyContextMenuPos({ x, y });
+								}}
 								renderOverlay={renderCopyOverlay}
 								tableColumns={tableColumns}
 								cardsPerLine={3}

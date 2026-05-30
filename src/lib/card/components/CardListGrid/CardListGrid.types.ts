@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, MouseEvent } from 'react';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 
 export interface CardListGridProps {
@@ -8,6 +8,7 @@ export interface CardListGridProps {
 	isLoadingMore?: boolean;
 	skeletonCount?: number;
 	onCardClick?: (card: AnyCard) => void;
+	onCardContextMenu?: (card: AnyCard, e: MouseEvent) => void;
 	renderOverlay?: (card: AnyCard) => ReactNode;
 	renderItem?: (card: AnyCard, index: number) => ReactNode;
 	cardsPerLine?: number;
