@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import { CardList } from '@/lib/card/components/CardList/CardList';
+import { useCardImageUri } from '@/lib/scryfall/hooks/useCardImageUri';
 import type { Card } from '@/types/cards';
 import styles from './PdfSettingsModal.module.css';
 
@@ -36,10 +37,46 @@ type Props = {
 	onClose: () => void;
 };
 
-function getCardImageUrl(card: Card): string | undefined {
-	if (card.image_uris?.normal) return card.image_uris.normal;
-	if (card.card_faces?.[0]?.image_uris?.normal) return card.card_faces[0].image_uris.normal;
-	return undefined;
+function PreviewCardImage({
+	card,
+	cardWPx,
+	cardHPx,
+	col,
+	row,
+	gapPx,
+	cutLines,
+}: {
+	card: Card;
+	cardWPx: number;
+	cardHPx: number;
+	col: number;
+	row: number;
+	gapPx: number;
+	cutLines: boolean;
+}) {
+	const { uri: url, loading } = useCardImageUri(card, 'normal', true);
+	return (
+		<div
+			key={card.entry.rowId}
+			className={`${styles.previewCard} ${cutLines ? styles.previewCardCutLines : ''}`}
+			style={{
+				width: cardWPx,
+				height: cardHPx,
+				left: col * (cardWPx + gapPx),
+				top: row * (cardHPx + gapPx),
+			}}
+		>
+			{!loading && url && (
+				<Image
+					src={url}
+					alt={card.name}
+					fill
+					sizes={`${Math.round(cardWPx)}px`}
+					style={{ objectFit: 'cover', borderRadius: 2 }}
+				/>
+			)}
+		</div>
+	);
 }
 
 function computeLayout(settings: PdfSettings) {
@@ -166,33 +203,18 @@ export function PdfSettingsModal({ cards, initial, onConfirm, onClose }: Props) 
 												bottom: marginPx,
 											}}
 										>
-											{pageCards.map((card, i) => {
-												const col = i % layout.cols;
-												const row = Math.floor(i / layout.cols);
-												const url = getCardImageUrl(card);
-												return (
-													<div
-														key={card.entry.rowId}
-														className={`${styles.previewCard} ${settings.cutLines ? styles.previewCardCutLines : ''}`}
-														style={{
-															width: cardWPx,
-															height: cardHPx,
-															left: col * (cardWPx + gapPx),
-															top: row * (cardHPx + gapPx),
-														}}
-													>
-														{url && (
-															<Image
-																src={url}
-																alt={card.name}
-																fill
-																sizes={`${Math.round(cardWPx)}px`}
-																style={{ objectFit: 'cover', borderRadius: 2 }}
-															/>
-														)}
-													</div>
-												);
-											})}
+											{pageCards.map((card, i) => (
+												<PreviewCardImage
+													key={card.entry.rowId}
+													card={card}
+													cardWPx={cardWPx}
+													cardHPx={cardHPx}
+													col={i % layout.cols}
+													row={Math.floor(i / layout.cols)}
+													gapPx={gapPx}
+													cutLines={settings.cutLines}
+												/>
+											))}
 										</div>
 									</div>
 								</div>

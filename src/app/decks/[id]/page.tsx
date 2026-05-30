@@ -35,6 +35,7 @@ import type { DeckPdfExportOptions } from './components/DeckPdfExportModal/DeckP
 import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
 import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
 import { filterCardsForPdf } from '@/lib/pdf/filterCardsForPdf';
+import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
 import styles from './page.module.css';
 
 function resolveAssignedDeckName(
@@ -542,9 +543,8 @@ export default function DeckDetailPage() {
 					onConfirm={(settings) => {
 						setPdfSettingsModalOpen(false);
 						const imageUrls = pdfFilteredCards.flatMap((c) => {
-							if (c.image_uris?.normal) return [c.image_uris.normal];
-							if (c.card_faces?.[0]?.image_uris?.normal) return [c.card_faces[0].image_uris.normal];
-							return [];
+							const url = getScryfallCardImageUriBySize(c, 'normal');
+							return url ? [url] : [];
 						});
 						void generateCardsPdf(imageUrls, settings, `${deck.name}.pdf`);
 					}}

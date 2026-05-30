@@ -28,7 +28,7 @@ export function PrintList({
 	onSelectCollectionCopy,
 }: PrintListProps) {
 	const { prints, loading, error } = useCardPrints(prints_search_uri);
-	const [lightboxCard, setLightboxCard] = useState<ScryfallCard | null>(null);
+	const [lightboxCard, setLightboxCard] = useState<Card | ScryfallCard | null>(null);
 
 	function isCurrentPrint(card: ScryfallCard): boolean {
 		if (currentSet && currentCollectorNumber && currentLang) {
@@ -184,7 +184,7 @@ export function PrintList({
 				pageSize={false}
 				viewModes={['grid', 'fluid-grid', 'table']}
 				renderOverlay={renderOverlay}
-				onCardClick={(card) => setLightboxCard(card as ScryfallCard)}
+				onCardClick={(card) => setLightboxCard(card as Card | ScryfallCard)}
 				tableColumns={tableColumns}
 			/>
 			{lightboxCard && <CardLightbox card={lightboxCard} onClose={() => setLightboxCard(null)} />}

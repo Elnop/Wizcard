@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import type { ReactNode } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
@@ -11,6 +10,7 @@ import { CardList } from '@/lib/card/components/CardList/CardList';
 import { groupPrintsByLang } from '@/lib/card/components/PrintList/PrintList.types';
 import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { LocalizedCardThumb } from '@/lib/card/components/LocalizedCardThumb/LocalizedCardThumb';
 import styles from './PrintsTab.module.css';
 
 interface Props {
@@ -18,9 +18,9 @@ interface Props {
 }
 
 function MiniThumb({ card }: { card: ScryfallCard }): ReactNode {
-	const src = card.image_uris?.small ?? card.card_faces?.[0]?.image_uris?.small;
-	if (!src) return null;
-	return <Image src={src} alt={card.name} width={40} height={56} className={styles.thumb} />;
+	return (
+		<LocalizedCardThumb card={card} size="small" width={40} height={56} className={styles.thumb} />
+	);
 }
 
 function SetInfo({ card }: { card: ScryfallCard }): ReactNode {

@@ -2,6 +2,7 @@ import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall'
 import type { ScryfallSortOrder } from '@/lib/scryfall/types/sort';
 import type { Card } from '@/types/cards';
 import { type CardFilters, DEFAULT_CARD_FILTERS } from '@/lib/search/types';
+import type { MtgLanguage } from '@/lib/mtg/languages';
 
 export type CollectionSortOrder = ScryfallSortOrder | 'language';
 
@@ -9,6 +10,7 @@ export interface CollectionFilters extends Omit<CardFilters, 'order'> {
 	order: CollectionSortOrder;
 	proxyFilter: 'all' | 'official' | 'proxy';
 	foilTypeFilter: 'none' | 'all' | 'foil' | 'etched';
+	languageFilter: MtgLanguage | 'all';
 }
 
 export const defaultCollectionFilters: CollectionFilters = {
@@ -16,6 +18,7 @@ export const defaultCollectionFilters: CollectionFilters = {
 	order: 'name',
 	proxyFilter: 'all',
 	foilTypeFilter: 'all',
+	languageFilter: 'all',
 };
 
 function parseCmc(raw: string): ((cmc: number) => boolean) | null {
@@ -120,6 +123,14 @@ function matchesFoilFilter(
 	return true;
 }
 
+function matchesLanguageFilter(
+	card: Card,
+	languageFilter: CollectionFilters['languageFilter']
+): boolean {
+	if (languageFilter === 'all') return true;
+	return (card.entry.language ?? 'English') === languageFilter;
+}
+
 function matchesOracleText(card: ScryfallCard, oracleText: string): boolean {
 	if (!oracleText) return true;
 	const tokens = parseOracleTokens(oracleText);
@@ -144,6 +155,7 @@ function cardMatchesFilters(
 	if ('entry' in card) {
 		if (!matchesProxyFilter(card, filters.proxyFilter)) return false;
 		if (!matchesFoilFilter(card, filters.foilTypeFilter)) return false;
+		if (!matchesLanguageFilter(card, filters.languageFilter)) return false;
 	}
 	return true;
 }

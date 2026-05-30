@@ -11,6 +11,7 @@ type CardImageCard = {
 	set: string;
 	collector_number: string;
 	language?: string;
+	entry?: { language?: string };
 	image_uris?: { small?: string; normal?: string; large?: string };
 	card_faces?: Array<{
 		name?: string;
@@ -70,7 +71,7 @@ export function CardImage({
 		return () => observer.disconnect();
 	}, []);
 
-	const localized = useLocalizedImage(card, priority || isVisible);
+	const { localized, loading: localizedLoading } = useLocalizedImage(card, priority || isVisible);
 	const effectiveCard = localized ? { ...card, ...localized } : card;
 
 	const isDoubleFaced =
@@ -122,6 +123,35 @@ export function CardImage({
 		.filter(Boolean)
 		.join(' ');
 
+	function renderCardImage() {
+		if (localizedLoading) return <div className={styles.localizedPlaceholder} />;
+		if (!error && imageUri) {
+			return (
+				<Image
+					src={imageUri}
+					alt={card.name}
+					width={width}
+					height={height}
+					priority={priority}
+					className={[
+						styles.image,
+						isLoading ? styles.loading : '',
+						isProxy ? styles.imageProxy : '',
+					]
+						.filter(Boolean)
+						.join(' ')}
+					onLoad={() => setIsLoading(false)}
+					onError={() => setError(true)}
+				/>
+			);
+		}
+		return (
+			<div className={styles.placeholder} style={{ width, height }}>
+				<span className={styles.placeholderText}>{card.name}</span>
+			</div>
+		);
+	}
+
 	return (
 		<div ref={containerRef} className={classNames} onClick={onClick}>
 			<div
@@ -137,29 +167,8 @@ export function CardImage({
 				onMouseLeave={disableTilt ? undefined : handleMouseLeave}
 				onMouseEnter={disableTilt ? undefined : handleMouseEnter}
 			>
-				{!error && imageUri ? (
-					<Image
-						src={imageUri}
-						alt={card.name}
-						width={width}
-						height={height}
-						priority={priority}
-						className={[
-							styles.image,
-							isLoading ? styles.loading : '',
-							isProxy ? styles.imageProxy : '',
-						]
-							.filter(Boolean)
-							.join(' ')}
-						onLoad={() => setIsLoading(false)}
-						onError={() => setError(true)}
-					/>
-				) : (
-					<div className={styles.placeholder} style={{ width, height }}>
-						<span className={styles.placeholderText}>{card.name}</span>
-					</div>
-				)}
-				{isLoading && !error && <div className={styles.skeleton} />}
+				{renderCardImage()}
+				{(isLoading || localizedLoading) && !error && <div className={styles.skeleton} />}
 				{isFoil && (
 					<div
 						className={foilType === 'etched' ? styles.etchedOverlay : styles.foilOverlay}

@@ -1,6 +1,16 @@
 import type { CardEntry } from '@/types/cards';
 import type { DeckMeta } from '@/types/decks';
 import { createClient } from '@/lib/supabase/client';
+import { SCRYFALL_CODE_TO_LANGUAGE, MTG_LANGUAGES } from '@/lib/mtg/languages';
+import type { MtgLanguage } from '@/lib/mtg/languages';
+
+const VALID_LANGUAGES = new Set<MtgLanguage>(MTG_LANGUAGES);
+
+function normalizeLanguage(raw: string | undefined): MtgLanguage | undefined {
+	if (!raw) return undefined;
+	if (VALID_LANGUAGES.has(raw as MtgLanguage)) return raw as MtgLanguage;
+	return SCRYFALL_CODE_TO_LANGUAGE[raw] ?? undefined;
+}
 
 type DeckDbRow = {
 	id: string;
@@ -49,7 +59,7 @@ function rowToEntry(row: CardDbRow): CardEntry {
 		isFoil: row.is_foil ?? undefined,
 		foilType: (row.foil_type as CardEntry['foilType']) ?? undefined,
 		condition: (row.condition as CardEntry['condition']) ?? undefined,
-		language: (row.language as CardEntry['language']) ?? undefined,
+		language: normalizeLanguage(row.language ?? undefined),
 		purchasePrice: row.purchase_price ?? undefined,
 		forTrade: row.for_trade ?? undefined,
 		alter: row.alter ?? undefined,

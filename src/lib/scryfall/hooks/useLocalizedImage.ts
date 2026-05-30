@@ -18,11 +18,17 @@ interface LocalizedImageResult {
 // Module-level negative cache: keys that returned 404 — never re-fetch these
 const notFound = new Set<string>();
 
+interface UseLocalizedImageResult {
+	localized: LocalizedImageResult | null;
+	loading: boolean;
+}
+
 export function useLocalizedImage(
 	card: { set: string; collector_number: string; language?: string; entry?: { language?: string } },
 	enabled: boolean
-): LocalizedImageResult | null {
+): UseLocalizedImageResult {
 	const [result, setResult] = useState<LocalizedImageResult | null>(null);
+	const [loading, setLoading] = useState(false);
 
 	const language = card.entry?.language ?? card.language;
 	const lang = language ? LANGUAGE_TO_SCRYFALL_CODE[language as MtgLanguage] : undefined;
@@ -34,6 +40,7 @@ export function useLocalizedImage(
 		const controller = new AbortController();
 
 		(async () => {
+			setLoading(true);
 			// 1. Check IndexedDB cache
 			const cached = await getLocalizedImageFromCache(cacheKey);
 			if (controller.signal.aborted) return;
@@ -49,6 +56,7 @@ export function useLocalizedImage(
 							}))
 						: undefined,
 				});
+				setLoading(false);
 				return;
 			}
 
@@ -67,6 +75,7 @@ export function useLocalizedImage(
 					card_faces: localized.card_faces,
 				};
 				setResult(imageResult);
+				setLoading(false);
 
 				// 3. Persist to IndexedDB
 				void putLocalizedImageInCache({
@@ -80,6 +89,7 @@ export function useLocalizedImage(
 				// don't blacklist the cache key so the image can be retried next time.
 				if (e instanceof DOMException && e.name === 'AbortError') return;
 				notFound.add(cacheKey);
+				setLoading(false);
 			}
 		})();
 
@@ -88,5 +98,5 @@ export function useLocalizedImage(
 		};
 	}, [card.set, card.collector_number, lang, needsFetch, cacheKey]);
 
-	return result;
+	return { localized: result, loading };
 }

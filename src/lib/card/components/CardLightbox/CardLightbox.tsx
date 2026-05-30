@@ -7,7 +7,7 @@ import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import styles from './CardLightbox.module.css';
 
 interface Props {
-	card: ScryfallCard;
+	card: ScryfallCard & { entry?: { language?: string; isFoil?: boolean; foilType?: string } };
 	onClose: () => void;
 	isFoil?: boolean;
 	foilType?: 'foil' | 'etched';

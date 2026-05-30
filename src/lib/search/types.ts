@@ -38,6 +38,7 @@ export function countActiveFilters(
 				dir: ScryfallSortDir;
 				proxyFilter?: 'all' | 'official' | 'proxy';
 				foilTypeFilter?: 'none' | 'all' | 'foil' | 'etched';
+				languageFilter?: string;
 		  })
 ): number {
 	return (
@@ -50,6 +51,7 @@ export function countActiveFilters(
 		(filters.cmc ? 1 : 0) +
 		(filters.name ? 1 : 0) +
 		('proxyFilter' in filters && filters.proxyFilter !== 'all' ? 1 : 0) +
-		('foilTypeFilter' in filters && filters.foilTypeFilter !== 'all' ? 1 : 0)
+		('foilTypeFilter' in filters && filters.foilTypeFilter !== 'all' ? 1 : 0) +
+		('languageFilter' in filters && filters.languageFilter !== 'all' ? 1 : 0)
 	);
 }

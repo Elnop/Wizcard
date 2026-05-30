@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { getCardSimilar } from '@/lib/scryfall/endpoints/cards';
+import { LocalizedCardThumb } from '@/lib/card/components/LocalizedCardThumb/LocalizedCardThumb';
 import styles from './SimilarTab.module.css';
 
 interface Props {
@@ -53,21 +53,11 @@ export function SimilarTab({ card }: Props) {
 
 	return (
 		<div className={styles.grid}>
-			{similar.map((c) => {
-				const imgUri = c.image_uris?.normal ?? c.card_faces?.[0]?.image_uris?.normal;
-				if (!imgUri) return null;
-				return (
-					<Link key={c.id} href={`/card/${c.id}`} className={styles.cardLink} title={c.name}>
-						<Image
-							src={imgUri}
-							alt={c.name}
-							width={488}
-							height={680}
-							className={styles.cardImage}
-						/>
-					</Link>
-				);
-			})}
+			{similar.map((c) => (
+				<Link key={c.id} href={`/card/${c.id}`} className={styles.cardLink} title={c.name}>
+					<LocalizedCardThumb card={c} size="normal" className={styles.cardImage} />
+				</Link>
+			))}
 		</div>
 	);
 }

@@ -13,6 +13,7 @@ import { SetFilter } from '@/lib/search/components/filters/SetFilter/SetFilter';
 import { SortFilter } from '@/lib/search/components/filters/SortFilter/SortFilter';
 import type { CollectionFilters } from '@/app/collection/utils/filterCollectionCards';
 import { defaultCollectionFilters } from '@/app/collection/utils/filterCollectionCards';
+import { MTG_LANGUAGES } from '@/lib/mtg/languages';
 import styles from './CollectionFiltersAside.module.css';
 
 const COLLECTION_EXTRA_SORT_OPTIONS = [{ value: 'language', label: 'Language' }];
@@ -147,6 +148,27 @@ export function CollectionFiltersAside({
 						<option value="none">Non-foil</option>
 						<option value="foil">Foil</option>
 						<option value="etched">Etched</option>
+					</select>
+				</div>
+
+				<div>
+					<label htmlFor="collection-language-filter" className={styles.filterLabel}>
+						Langue
+					</label>
+					<select
+						id="collection-language-filter"
+						className={styles.filterSelect}
+						value={filters.languageFilter}
+						onChange={(e) =>
+							patch('languageFilter', e.target.value as CollectionFilters['languageFilter'])
+						}
+					>
+						<option value="all">Toutes</option>
+						{MTG_LANGUAGES.map((lang) => (
+							<option key={lang} value={lang}>
+								{lang}
+							</option>
+						))}
 					</select>
 				</div>
 

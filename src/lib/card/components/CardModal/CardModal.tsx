@@ -89,9 +89,11 @@ interface InnerProps {
 function CardDetailSection({
 	card,
 	symbolMap,
+	language,
 }: {
 	card: ScryfallCard;
 	symbolMap: Record<string, ScryfallCardSymbol>;
+	language?: string;
 }) {
 	return (
 		<>
@@ -167,6 +169,12 @@ function CardDetailSection({
 						{card.set.toUpperCase()} #{card.collector_number}
 					</span>
 				</div>
+				{language && language !== 'English' && (
+					<div className={styles.detailRow}>
+						<span className={styles.detailLabel}>Langue</span>
+						<span className={styles.detailValue}>{language}</span>
+					</div>
+				)}
 			</div>
 
 			<Link href={`/card/${card.id}`} className={styles.moreInfoLink}>
@@ -410,7 +418,11 @@ function CardModalInner({
 					</div>
 
 					<div className={styles.infoCol}>
-						<CardDetailSection card={selectedCard} symbolMap={symbolMap} />
+						<CardDetailSection
+							card={selectedCard}
+							symbolMap={symbolMap}
+							language={selectedCard.entry.language}
+						/>
 
 						{/* Copies list */}
 						<div className={styles.copiesSection}>

@@ -65,6 +65,12 @@
 	}
 }
 
+.localizedPlaceholder {
+	width: 100%;
+	aspect-ratio: 63 / 88;
+	border-radius: 4.75% / 3.4%;
+}
+
 .placeholder {
 	display: flex;
 	align-items: center;
