@@ -100,7 +100,7 @@ const BASIC_LAND_NAMES = new Set([
 	'Snow-Covered Forest',
 ]);
 
-function isBasicLand(card: ScryfallCard): boolean {
+export function isBasicLand(card: ScryfallCard): boolean {
 	return BASIC_LAND_NAMES.has(card.name);
 }
 

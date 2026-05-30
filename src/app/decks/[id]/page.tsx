@@ -30,6 +30,11 @@ import { CardSearchPanel } from './components/CardSearchPanel/CardSearchPanel';
 import { WishlistIcon } from '@/components/WishlistIcon/WishlistIcon';
 import { useAddDeckToCollection } from './useAddDeckToCollection';
 import { AddDeckToCollectionModal } from './components/AddDeckToCollectionModal/AddDeckToCollectionModal';
+import { DeckPdfExportModal } from './components/DeckPdfExportModal/DeckPdfExportModal';
+import type { DeckPdfExportOptions } from './components/DeckPdfExportModal/DeckPdfExportModal';
+import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
+import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
+import { filterCardsForPdf } from '@/lib/pdf/filterCardsForPdf';
 import styles from './page.module.css';
 
 function resolveAssignedDeckName(
@@ -65,6 +70,13 @@ export default function DeckDetailPage() {
 	const [bulkSelectMode, setBulkSelectMode] = useState(false);
 	const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
 	const [addToCollectionModalOpen, setAddToCollectionModalOpen] = useState(false);
+	const [pdfExportModalOpen, setPdfExportModalOpen] = useState(false);
+	const [pdfSettingsModalOpen, setPdfSettingsModalOpen] = useState(false);
+	const [pdfExportOptions, setPdfExportOptions] = useState<DeckPdfExportOptions | null>(null);
+	const pdfFilteredCards = useMemo(
+		() => (pdfExportOptions ? filterCardsForPdf(resolvedCards, pdfExportOptions) : []),
+		[resolvedCards, pdfExportOptions]
+	);
 
 	const showCommander = deck?.format === 'commander' || deck?.format === 'brawl';
 
@@ -409,6 +421,7 @@ export default function DeckDetailPage() {
 						onUpdate={(updates) => updateDeck(deckId, updates)}
 						onAssignAllFromCollection={handleAssignAllFromCollection}
 						onAddAllToCollection={() => setAddToCollectionModalOpen(true)}
+						onGeneratePdf={() => setPdfExportModalOpen(true)}
 					/>
 
 					{isResolving && Object.keys(activeDeckCards).length > 0 && (
@@ -498,6 +511,35 @@ export default function DeckDetailPage() {
 						setAddToCollectionModalOpen(false);
 					}}
 					onClose={() => setAddToCollectionModalOpen(false)}
+				/>
+			)}
+
+			{pdfExportModalOpen && (
+				<DeckPdfExportModal
+					availableZones={zones}
+					cards={resolvedCards}
+					onConfirm={(options) => {
+						setPdfExportOptions(options);
+						setPdfExportModalOpen(false);
+						setPdfSettingsModalOpen(true);
+					}}
+					onClose={() => setPdfExportModalOpen(false)}
+				/>
+			)}
+
+			{pdfSettingsModalOpen && pdfExportOptions && (
+				<PdfSettingsModal
+					cards={pdfFilteredCards}
+					onConfirm={(settings) => {
+						setPdfSettingsModalOpen(false);
+						const imageUrls = pdfFilteredCards.flatMap((c) => {
+							if (c.image_uris?.normal) return [c.image_uris.normal];
+							if (c.card_faces?.[0]?.image_uris?.normal) return [c.card_faces[0].image_uris.normal];
+							return [];
+						});
+						void generateCardsPdf(imageUrls, settings, `${deck.name}.pdf`);
+					}}
+					onClose={() => setPdfSettingsModalOpen(false)}
 				/>
 			)}
 

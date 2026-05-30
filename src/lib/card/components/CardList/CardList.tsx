@@ -30,7 +30,7 @@ export function CardList({
 	viewModes = ['grid', 'table'],
 	className,
 	pageSize = PAGE_SIZE,
-	showCardNames = true,
+	showCardNames = false,
 	cardGap = 'default',
 }: CardListProps) {
 	const [viewMode, setViewMode] = useState<CardListViewMode>(viewModes[0]);

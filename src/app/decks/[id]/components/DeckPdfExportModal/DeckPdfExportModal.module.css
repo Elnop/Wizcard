@@ -1,0 +1,82 @@
+.dialog {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 24px;
+	width: 900px;
+	max-width: 96vw;
+}
+
+.title {
+	font-size: var(--text-lg);
+	font-weight: 600;
+	margin: 0;
+}
+
+.controls {
+	display: flex;
+	gap: 32px;
+}
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.sectionTitle {
+	font-size: var(--text-xs);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--text-tertiary);
+	margin: 0;
+}
+
+.options {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.option {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: var(--text-sm);
+	cursor: pointer;
+	user-select: none;
+}
+
+.option input[type='checkbox'] {
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+	accent-color: var(--primary);
+	flex-shrink: 0;
+}
+
+/* Preview */
+
+.preview {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.cardListWrapper {
+	overflow-x: hidden;
+	overflow-y: auto;
+	max-height: 420px;
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	padding: 8px;
+	--card-width: 150px;
+	--card-gap: 12px;
+}
+
+.actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}

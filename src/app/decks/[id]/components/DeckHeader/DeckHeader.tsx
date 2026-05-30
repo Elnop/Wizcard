@@ -10,6 +10,7 @@ type Props = {
 	onUpdate: (updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description'>>) => void;
 	onAssignAllFromCollection?: () => void;
 	onAddAllToCollection?: () => void;
+	onGeneratePdf?: () => void;
 };
 
 export function DeckHeader({
@@ -17,6 +18,7 @@ export function DeckHeader({
 	onUpdate,
 	onAssignAllFromCollection,
 	onAddAllToCollection,
+	onGeneratePdf,
 }: Props) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [name, setName] = useState(deck.name);
@@ -123,6 +125,18 @@ export function DeckHeader({
 									}}
 								>
 									⊕ Ajouter tout à la collection
+								</button>
+							)}
+							{onGeneratePdf && (
+								<button
+									type="button"
+									className={styles.dropdownItem}
+									onClick={() => {
+										setMenuOpen(false);
+										onGeneratePdf();
+									}}
+								>
+									⬇ Générer un PDF
 								</button>
 							)}
 						</div>

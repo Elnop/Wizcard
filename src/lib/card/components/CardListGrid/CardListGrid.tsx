@@ -129,7 +129,7 @@ export function CardListGrid({
 	sectionClassName,
 	fluidSections = false,
 	className,
-	showCardNames = true,
+	showCardNames = false,
 	cardGap = 'default',
 }: CardListGridProps) {
 	const gridClass = [cardsPerLine ? styles.gridFixed : styles.grid, className]
