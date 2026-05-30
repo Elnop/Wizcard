@@ -28,8 +28,7 @@ type UseAddDeckToCollectionResult = {
 const ZONE_ORDER: DeckZone[] = ['commander', 'mainboard', 'sideboard', 'maybeboard'];
 
 export function useAddDeckToCollection(
-	resolvedCards: ResolvedDeckCard[],
-	_deckId: string
+	resolvedCards: ResolvedDeckCard[]
 ): UseAddDeckToCollectionResult {
 	const { toggleOwned } = useDeckContext();
 	const { entries: wishlistEntries, removeFromWishlist } = useWishlistContext();

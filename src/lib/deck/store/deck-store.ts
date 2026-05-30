@@ -288,7 +288,9 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			let changed = false;
 			for (const [rowId, copy] of Object.entries(updatedEntries)) {
 				if (copy.entry.deckId === deckId) {
-					const { deckId: _deckId, ...rest } = copy.entry;
+					const rest = Object.fromEntries(
+						Object.entries(copy.entry).filter(([k]) => k !== 'deckId')
+					) as typeof copy.entry;
 					updatedEntries[rowId] = { ...copy, entry: rest };
 					changed = true;
 				}
@@ -432,7 +434,9 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		// If the removed card was a collection copy, remove it from the collection store too
 		const colEntries = useCollectionStore.getState().entries;
 		if (colEntries[rowId]) {
-			const { [rowId]: _removed, ...remainingEntries } = colEntries;
+			const remainingEntries = Object.fromEntries(
+				Object.entries(colEntries).filter(([k]) => k !== rowId)
+			) as typeof colEntries;
 			useCollectionStore.setState({ entries: remainingEntries });
 		}
 

@@ -292,7 +292,7 @@ export default function DeckDetailPage() {
 		zoneStats,
 		availableZones,
 		execute: executeAddToCollection,
-	} = useAddDeckToCollection(resolvedCards, deckId);
+	} = useAddDeckToCollection(resolvedCards);
 
 	const renderOverlay = useCallback(
 		(card: AnyCard) => {
