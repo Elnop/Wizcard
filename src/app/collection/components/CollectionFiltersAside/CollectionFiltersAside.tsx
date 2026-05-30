@@ -115,7 +115,7 @@ export function CollectionFiltersAside({
 
 				<div>
 					<label htmlFor="collection-proxy-filter" className={styles.filterLabel}>
-						Cartes
+						Impression
 					</label>
 					<select
 						id="collection-proxy-filter"
@@ -128,6 +128,25 @@ export function CollectionFiltersAside({
 						<option value="all">Toutes</option>
 						<option value="official">Officielles seulement</option>
 						<option value="proxy">Proxy seulement</option>
+					</select>
+				</div>
+
+				<div>
+					<label htmlFor="collection-foil-filter" className={styles.filterLabel}>
+						Foil
+					</label>
+					<select
+						id="collection-foil-filter"
+						className={styles.filterSelect}
+						value={filters.foilTypeFilter}
+						onChange={(e) =>
+							patch('foilTypeFilter', e.target.value as CollectionFilters['foilTypeFilter'])
+						}
+					>
+						<option value="all">Tous</option>
+						<option value="none">Non-foil</option>
+						<option value="foil">Foil</option>
+						<option value="etched">Etched</option>
 					</select>
 				</div>
 
