@@ -1,7 +1,0 @@
----
-description: Project context
-globs: ["**/*"]
-alwaysApply: true
----
-
-See `AGENTS.md` at the project root for complete project context.

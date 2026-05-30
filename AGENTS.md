@@ -21,9 +21,6 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 - `npm run sb:reset` — **destructive** — drop DB and re-apply all migrations
 - `npm run sb:migrate` — apply pending migrations only
 - `npm run sb:studio` — Supabase Studio (port 54323)
-- `npm run cosmos` — React Cosmos dev server
-- `npm run cosmos:export` — static export of all fixtures
-- Note: `npm run check` includes `cosmos-export --expose-imports` before type-checking
 
 ## Architecture
 
@@ -32,7 +29,6 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 - React Compiler is **disabled** (`reactCompiler: false` in `next.config.ts`)
 - CSS Modules per component, global CSS in `src/app/globals.css`
 - Supabase for auth + database (RLS: all ops scoped to `auth.uid() = owner_id`)
-- React Cosmos for component development — fixtures rendered via `/cosmos/[fixture]`
 
 ## Module Architecture
 
@@ -123,11 +119,6 @@ AuthProvider
 - `src/components/ConfirmModal/` — confirmation dialog
 - `src/components/Navbar/` — top navigation
 - `src/components/Spinner/` — loading indicator
-
-### Component Fixtures (React Cosmos)
-
-- `cosmos.config.json` — Cosmos config (rendererUrl uses `/cosmos/<fixture>`)
-- `src/app/cosmos/[fixture]/page.tsx` — Next.js dynamic route that renders fixtures
 
 ## Data Model
 
