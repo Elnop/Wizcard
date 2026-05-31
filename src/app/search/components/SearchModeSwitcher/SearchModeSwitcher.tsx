@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import styles from './SearchModeSwitcher.module.css';
 
 export type SearchMode = 'official' | 'all' | 'custom';
@@ -18,19 +18,36 @@ type Props = {
 	onChange: (mode: SearchMode) => void;
 };
 
-function readStoredMode(): SearchMode {
-	if (typeof window === 'undefined') return DEFAULT_MODE;
-	const stored = localStorage.getItem(STORAGE_KEY);
-	if (stored === 'official' || stored === 'all' || stored === 'custom') return stored;
+function getSnapshot(): SearchMode {
+	try {
+		const stored = localStorage.getItem(STORAGE_KEY);
+		if (stored === 'official' || stored === 'all' || stored === 'custom') return stored;
+	} catch {
+		// localStorage unavailable
+	}
 	return DEFAULT_MODE;
 }
 
+function getServerSnapshot(): SearchMode {
+	return DEFAULT_MODE;
+}
+
+function subscribe(cb: () => void): () => void {
+	window.addEventListener('storage', cb);
+	return () => window.removeEventListener('storage', cb);
+}
+
 export function SearchModeSwitcher({ onChange }: Props) {
-	const [value, setValue] = useState<SearchMode>(readStoredMode);
+	const value = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
 	function handleClick(next: SearchMode) {
-		setValue(next);
-		localStorage.setItem(STORAGE_KEY, next);
+		try {
+			localStorage.setItem(STORAGE_KEY, next);
+		} catch {
+			// localStorage unavailable
+		}
+		// Dispatch storage event so useSyncExternalStore re-reads
+		window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY, newValue: next }));
 		onChange(next);
 	}
 
