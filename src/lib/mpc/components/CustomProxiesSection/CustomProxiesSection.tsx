@@ -147,11 +147,16 @@ export function CustomProxiesSection() {
 						</div>
 					)}
 
-					{!isLoading && !error && cards.length === 0 && activeSourceId && !sourcesLoading && (
-						<div className={styles.empty}>
-							<p>No cards found in this source.</p>
-						</div>
-					)}
+					{!isLoading &&
+						!error &&
+						!sourcesError &&
+						cards.length === 0 &&
+						activeSourceId &&
+						!sourcesLoading && (
+							<div className={styles.empty}>
+								<p>No cards found in this source.</p>
+							</div>
+						)}
 				</>
 			)}
 		</div>
