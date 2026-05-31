@@ -12,11 +12,7 @@ import { Spinner } from '@/components/Spinner/Spinner';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { CustomProxiesSection } from '@/lib/mpc/components/CustomProxiesSection/CustomProxiesSection';
-import {
-	SearchModeSwitcher,
-	readSearchMode,
-	writeSearchMode,
-} from './components/SearchModeSwitcher/SearchModeSwitcher';
+import { SearchModeSwitcher } from './components/SearchModeSwitcher/SearchModeSwitcher';
 import type { SearchMode } from './components/SearchModeSwitcher/SearchModeSwitcher';
 import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
 import styles from './page.module.css';
@@ -43,7 +39,7 @@ function SearchPageContent() {
 	const { addCard } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();
 	const [selectedCard, setSelectedCard] = useState<ScryfallCard | null>(null);
-	const [mode, setMode] = useState<SearchMode>(readSearchMode);
+	const [mode, setMode] = useState<SearchMode>('official');
 
 	const {
 		name,
@@ -93,7 +89,6 @@ function SearchPageContent() {
 
 	function handleModeChange(next: SearchMode) {
 		setMode(next);
-		writeSearchMode(next);
 	}
 
 	const showOfficial = mode === 'official' || mode === 'all';
@@ -109,7 +104,7 @@ function SearchPageContent() {
 				<div className={styles.searchSection}>
 					<div className={styles.searchRow}>
 						<SearchBar value={name} onChange={setName} placeholder="Search for cards..." />
-						<SearchModeSwitcher value={mode} onChange={handleModeChange} />
+						<SearchModeSwitcher onChange={handleModeChange} />
 						<button
 							type="button"
 							className={styles.filtersButton}

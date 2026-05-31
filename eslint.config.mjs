@@ -46,6 +46,7 @@ const eslintConfig = defineConfig([
 	},
 	globalIgnores([
 		'.next/**',
+		'.claude/worktrees/**',
 		'out/**',
 		'build/**',
 		'tmp/**',
