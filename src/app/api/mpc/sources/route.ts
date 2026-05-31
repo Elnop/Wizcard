@@ -7,12 +7,12 @@ interface MpcfillSourcesResponse {
 	results: Record<string, MpcfillSourceRaw>;
 }
 
-const DRIVE_ID_RE = /[?&]id=([a-zA-Z0-9_-]+)/;
+const DRIVE_ID_RE = /[?&]id=([a-zA-Z0-9_-]+)|\/folders\/([a-zA-Z0-9_-]+)/;
 
 function extractDriveId(externalLink: string): string | null {
 	if (!externalLink) return null;
 	const m = DRIVE_ID_RE.exec(externalLink);
-	return m ? m[1] : null;
+	return m ? (m[1] ?? m[2] ?? null) : null;
 }
 
 export async function GET() {
@@ -46,7 +46,8 @@ export async function GET() {
 			});
 
 		return NextResponse.json(sources);
-	} catch {
+	} catch (err) {
+		console.error('[/api/mpc/sources] fetch failed:', err);
 		return NextResponse.json({ error: 'Failed to reach mpcfill.com' }, { status: 502 });
 	}
 }
