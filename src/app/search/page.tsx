@@ -11,6 +11,13 @@ import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
+import { CustomProxiesSection } from '@/lib/mpc/components/CustomProxiesSection/CustomProxiesSection';
+import {
+	SearchModeSwitcher,
+	readSearchMode,
+	writeSearchMode,
+} from './components/SearchModeSwitcher/SearchModeSwitcher';
+import type { SearchMode } from './components/SearchModeSwitcher/SearchModeSwitcher';
 import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
 import styles from './page.module.css';
 
@@ -36,6 +43,7 @@ function SearchPageContent() {
 	const { addCard } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();
 	const [selectedCard, setSelectedCard] = useState<ScryfallCard | null>(null);
+	const [mode, setMode] = useState<SearchMode>(readSearchMode);
 
 	const {
 		name,
@@ -83,9 +91,17 @@ function SearchPageContent() {
 
 	const handleCardClick = useCallback((card: ScryfallCard) => setSelectedCard(card), []);
 
+	function handleModeChange(next: SearchMode) {
+		setMode(next);
+		writeSearchMode(next);
+	}
+
+	const showOfficial = mode === 'official' || mode === 'all';
+	const showCustom = mode === 'custom' || mode === 'all';
+
 	const hasFilters =
 		name || colors.length > 0 || type || set || rarities.length > 0 || oracleText || cmc;
-	const showEmptyState = !hasFilters && !isLoading && cards.length === 0;
+	const showEmptyState = showOfficial && !hasFilters && !isLoading && cards.length === 0;
 
 	return (
 		<div className={styles.page}>
@@ -93,6 +109,7 @@ function SearchPageContent() {
 				<div className={styles.searchSection}>
 					<div className={styles.searchRow}>
 						<SearchBar value={name} onChange={setName} placeholder="Search for cards..." />
+						<SearchModeSwitcher value={mode} onChange={handleModeChange} />
 						<button
 							type="button"
 							className={styles.filtersButton}
@@ -131,101 +148,107 @@ function SearchPageContent() {
 					onClose={() => setIsModalOpen(false)}
 				/>
 
-				{hasFilters && !isLoading && cards.length > 0 && (
-					<div className={styles.resultInfo}>
-						<span>
-							Showing {cards.length} of {totalCards.toLocaleString()} cards
-						</span>
-					</div>
-				)}
-
-				{error && (
-					<div className={styles.error}>
-						<p>An error occurred. Please try again.</p>
-					</div>
-				)}
-
-				{queryError && (
-					<div className={styles.queryError}>
-						<p>{queryError.message}</p>
-						{queryError.warnings.length > 0 && (
-							<ul className={styles.queryWarnings}>
-								{queryError.warnings.map((w) => (
-									<li key={w}>{w}</li>
-								))}
-							</ul>
+				{showOfficial && (
+					<>
+						{hasFilters && !isLoading && cards.length > 0 && (
+							<div className={styles.resultInfo}>
+								<span>
+									Showing {cards.length} of {totalCards.toLocaleString()} cards
+								</span>
+							</div>
 						)}
-					</div>
-				)}
 
-				{showEmptyState && (
-					<div className={styles.emptyState}>
-						<h2>Start searching</h2>
-						<p>Enter a card name or apply filters to find Magic: The Gathering cards.</p>
-					</div>
-				)}
-
-				<CardList
-					cards={cards}
-					isLoading={isLoading}
-					isLoadingMore={isLoadingMore}
-					hasMore={hasMore}
-					onLoadMore={loadMore}
-					onCardClick={handleCardClick}
-					sortOrder={order}
-					sortDir={dir}
-					onSortChange={(newOrder, newDir) => {
-						setOrder(newOrder as Parameters<typeof setOrder>[0]);
-						setDir(newDir);
-					}}
-					pageSize={false}
-					tableColumns={[
-						{ key: 'name', label: 'Nom', sortKey: 'name' },
-						{
-							key: 'set',
-							label: 'Set',
-							sortKey: 'set',
-							render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
-						},
-						{ key: 'type_line', label: 'Type' },
-						{ key: 'cmc', label: 'CMC', sortKey: 'cmc' },
-						{
-							key: 'prices',
-							label: 'Prix USD',
-							sortKey: 'usd',
-							render: (card) =>
-								'prices' in card && card.prices && 'usd' in card.prices
-									? (card.prices.usd ?? '—')
-									: '—',
-						},
-					]}
-				/>
-
-				{!isLoading && hasFilters && cards.length === 0 && !error && (
-					<div className={styles.noResults}>
-						<h3>No cards found</h3>
-						{suggestions.length > 0 ? (
-							<>
-								<p>Did you mean:</p>
-								<ul className={styles.suggestions}>
-									{suggestions.map((s) => (
-										<li key={s}>
-											<button
-												type="button"
-												className={styles.suggestionLink}
-												onClick={() => setName(s)}
-											>
-												{s}
-											</button>
-										</li>
-									))}
-								</ul>
-							</>
-						) : (
-							<p>Try adjusting your search or filters.</p>
+						{error && (
+							<div className={styles.error}>
+								<p>An error occurred. Please try again.</p>
+							</div>
 						)}
-					</div>
+
+						{queryError && (
+							<div className={styles.queryError}>
+								<p>{queryError.message}</p>
+								{queryError.warnings.length > 0 && (
+									<ul className={styles.queryWarnings}>
+										{queryError.warnings.map((w) => (
+											<li key={w}>{w}</li>
+										))}
+									</ul>
+								)}
+							</div>
+						)}
+
+						{showEmptyState && (
+							<div className={styles.emptyState}>
+								<h2>Start searching</h2>
+								<p>Enter a card name or apply filters to find Magic: The Gathering cards.</p>
+							</div>
+						)}
+
+						<CardList
+							cards={cards}
+							isLoading={isLoading}
+							isLoadingMore={isLoadingMore}
+							hasMore={hasMore}
+							onLoadMore={loadMore}
+							onCardClick={handleCardClick}
+							sortOrder={order}
+							sortDir={dir}
+							onSortChange={(newOrder, newDir) => {
+								setOrder(newOrder as Parameters<typeof setOrder>[0]);
+								setDir(newDir);
+							}}
+							pageSize={false}
+							tableColumns={[
+								{ key: 'name', label: 'Nom', sortKey: 'name' },
+								{
+									key: 'set',
+									label: 'Set',
+									sortKey: 'set',
+									render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
+								},
+								{ key: 'type_line', label: 'Type' },
+								{ key: 'cmc', label: 'CMC', sortKey: 'cmc' },
+								{
+									key: 'prices',
+									label: 'Prix USD',
+									sortKey: 'usd',
+									render: (card) =>
+										'prices' in card && card.prices && 'usd' in card.prices
+											? (card.prices.usd ?? '—')
+											: '—',
+								},
+							]}
+						/>
+
+						{!isLoading && hasFilters && cards.length === 0 && !error && (
+							<div className={styles.noResults}>
+								<h3>No cards found</h3>
+								{suggestions.length > 0 ? (
+									<>
+										<p>Did you mean:</p>
+										<ul className={styles.suggestions}>
+											{suggestions.map((s) => (
+												<li key={s}>
+													<button
+														type="button"
+														className={styles.suggestionLink}
+														onClick={() => setName(s)}
+													>
+														{s}
+													</button>
+												</li>
+											))}
+										</ul>
+									</>
+								) : (
+									<p>Try adjusting your search or filters.</p>
+								)}
+							</div>
+						)}
+					</>
 				)}
+
+				{showCustom && <CustomProxiesSection />}
 
 				{selectedCard && (
 					<CardModal
