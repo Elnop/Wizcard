@@ -1,11 +1,17 @@
 'use client';
 
 import { create } from 'zustand';
-import { loadUserSources, saveUserSource, removeUserSource } from '../sources';
+import {
+	loadUserSources,
+	saveUserSource,
+	removeUserSource as persistRemoveUserSource,
+} from '../sources';
 import { fetchDriveFolder } from '../drive';
 import type { MpcCard, MpcSource } from '../types';
 
 const CACHE_TTL_MS = 60 * 60 * 1000;
+
+let _initPromise: Promise<void> | null = null;
 
 interface CacheEntry {
 	cards: MpcCard[];
@@ -36,30 +42,48 @@ export const useMpcStore = create<MpcState>((set, get) => ({
 	errorBySource: {},
 	_cache: {},
 
-	initSources: async () => {
-		if (get().sources.length > 0 || get().sourcesLoading) return;
-		set({ sourcesLoading: true, sourcesError: null });
-		try {
-			const res = await fetch('/api/mpc/sources');
-			if (!res.ok) throw new Error(`Sources fetch failed: ${res.status}`);
-			const builtIn = (await res.json()) as MpcSource[];
-			const userSources = loadUserSources();
-			const allSourceIds = new Set(builtIn.map((s) => s.id));
-			const uniqueUser = userSources.filter((s) => !allSourceIds.has(s.id));
-			set({ sources: [...builtIn, ...uniqueUser], sourcesLoading: false });
-		} catch (err) {
-			const message = err instanceof Error ? err.message : 'Unknown error';
-			set({ sourcesError: message, sourcesLoading: false });
-		}
+	initSources: () => {
+		if (get().sources.length > 0) return Promise.resolve();
+		if (_initPromise) return _initPromise;
+		_initPromise = (async () => {
+			set({ sourcesLoading: true, sourcesError: null });
+			try {
+				const res = await fetch('/api/mpc/sources');
+				if (!res.ok) throw new Error(`Sources fetch failed: ${res.status}`);
+				const builtIn = (await res.json()) as unknown;
+				if (!Array.isArray(builtIn))
+					throw new Error('Unexpected response shape from /api/mpc/sources');
+				const sources = builtIn as MpcSource[];
+				const userSources = loadUserSources();
+				const allSourceIds = new Set(sources.map((s) => s.id));
+				const uniqueUser = userSources.filter((s) => !allSourceIds.has(s.id));
+				const droppedCount = userSources.length - uniqueUser.length;
+				if (droppedCount > 0) {
+					console.info(
+						`[mpc-store] ${droppedCount} user source(s) hidden: already present as built-in.`
+					);
+				}
+				set({ sources: [...sources, ...uniqueUser], sourcesLoading: false });
+			} catch (err) {
+				const message = err instanceof Error ? err.message : 'Unknown error';
+				set({ sourcesError: message, sourcesLoading: false });
+			} finally {
+				_initPromise = null;
+			}
+		})();
+		return _initPromise;
 	},
 
 	fetchSource: async (sourceId: string) => {
-		const { _cache, cardsBySource } = get();
+		const { _cache } = get();
 		const cached = _cache[sourceId];
 		if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
-			if (!cardsBySource[sourceId]) {
-				set({ cardsBySource: { ...cardsBySource, [sourceId]: cached.cards } });
-			}
+			set((s) => ({
+				cardsBySource: s.cardsBySource[sourceId]
+					? s.cardsBySource
+					: { ...s.cardsBySource, [sourceId]: cached.cards },
+				loadingSourceId: s.loadingSourceId === sourceId ? null : s.loadingSourceId,
+			}));
 			return;
 		}
 
@@ -90,7 +114,7 @@ export const useMpcStore = create<MpcState>((set, get) => ({
 	},
 
 	removeUserSource: (sourceId: string) => {
-		removeUserSource(sourceId);
+		persistRemoveUserSource(sourceId);
 		set((s) => ({
 			sources: s.sources.filter((x) => x.id !== sourceId),
 		}));
