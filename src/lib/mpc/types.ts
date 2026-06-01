@@ -27,3 +27,15 @@ export interface MpcfillSourceRaw {
 	sourceType: string;
 	externalLink: string;
 }
+
+export interface MpcIndexEntry {
+	identifier: string; // Google Drive file ID
+	name: string; // Normalized card name (for matching)
+	rawName: string; // Original name from mpcfill
+	sourceName: string; // e.g. "TwoSheds"
+	sourceKey: string; // e.g. "TwoSheds"
+	smallThumbnailUrl: string;
+	mediumThumbnailUrl: string;
+	tags: string[];
+	dpi: number;
+}
