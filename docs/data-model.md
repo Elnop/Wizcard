@@ -156,23 +156,25 @@ RLS: public SELECT, service_role only for writes.
 
 ### `public.custom_cards`
 
-| Column               | Type        | Notes                                                  |
-| -------------------- | ----------- | ------------------------------------------------------ |
-| `id`                 | text (PK)   | `mpc:{drive_file_id}`                                  |
-| `source_id`          | text (FK)   | → `custom_card_sources.id` (cascade delete)            |
-| `name`               | text        | Normalized name (known suffixes stripped)              |
-| `raw_name`           | text        | Original filename from Drive                           |
-| `image_storage_path` | text        | Path in Storage bucket: `{source_id}/{file_id}.{ext}`  |
-| `image_drive_url`    | text        | Drive thumbnail fallback (`thumbnail?id=...&sz=w400`)  |
-| `artist`             | text        | Optional, extracted from filename when available       |
-| `tags`               | text[]      | `['custom:mpc', 'mpc-source:{source_id}']`             |
-| `is_public`          | bool        | `true` for all community cards                         |
-| `created_by`         | uuid (FK)   | NULL for ingested cards; user ID for future user cards |
-| `created_at`         | timestamptz |                                                        |
+| Column               | Type        | Notes                                                     |
+| -------------------- | ----------- | --------------------------------------------------------- |
+| `id`                 | text (PK)   | `mpc:{drive_file_id}`                                     |
+| `source_id`          | text (FK)   | → `custom_card_sources.id` (cascade delete)               |
+| `name`               | text        | Normalized name (known suffixes stripped)                 |
+| `raw_name`           | text        | Original filename from Drive                              |
+| `image_storage_path` | text        | Path in Storage bucket: `{source_id}/{file_id}.{ext}`     |
+| `image_drive_url`    | text        | Drive thumbnail fallback (`thumbnail?id=...&sz=w400`)     |
+| `artist`             | text        | Optional, extracted from filename when available          |
+| `tags`               | text[]      | `['custom:mpc', 'mpc-source:{source_id}']`                |
+| `is_public`          | bool        | `true` for all community cards                            |
+| `created_by`         | uuid (FK)   | NULL for ingested cards; user ID for future user cards    |
+| `created_at`         | timestamptz |                                                           |
+| `oracle_id`          | text        | Scryfall oracle_id if card was matched (exact name)       |
+| `enriched_at`        | timestamptz | Set when Scryfall match succeeded; NULL = not yet matched |
 
 RLS: public SELECT (where `is_public = true`), service_role only for writes.
 
-**Indexes:** `custom_cards_source_id_idx` (source_id), `custom_cards_name_idx` (name).
+**Indexes:** `custom_cards_source_id_idx` (source_id), `custom_cards_name_idx` (name), `custom_cards_oracle_id_idx` (oracle_id, partial where not null).
 
 **Storage bucket:** `custom-cards` (public read). Images served at:
 `{SUPABASE_URL}/storage/v1/object/public/custom-cards/{image_storage_path}`
@@ -186,6 +188,7 @@ interface MpcCard {
 	sourceId: string; // = custom_card_sources.id
 	imageUrl: string; // Storage URL, or Drive thumbnail fallback
 	isCustom: true;
+	oracleId?: string; // Scryfall oracle_id if matched, undefined otherwise
 }
 ```
 

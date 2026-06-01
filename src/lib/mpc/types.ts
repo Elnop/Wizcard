@@ -12,6 +12,7 @@ export interface MpcCard {
 	sourceId: string;
 	imageUrl: string;
 	isCustom: true;
+	oracleId?: string;
 }
 
 export interface MpcIndexEntry {

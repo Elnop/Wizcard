@@ -14,6 +14,7 @@ interface CustomCardRow {
 	name: string;
 	image_storage_path: string | null;
 	image_drive_url: string;
+	oracle_id: string | null;
 }
 
 function rowToMpcSource(row: CustomCardSourceRow): MpcSource {
@@ -39,6 +40,7 @@ function rowToMpcCard(row: CustomCardRow, supabaseUrl: string): MpcCard {
 		sourceId: row.source_id,
 		imageUrl,
 		isCustom: true,
+		oracleId: row.oracle_id ?? undefined,
 	};
 }
 
@@ -59,7 +61,7 @@ export async function getCustomCards(sourceId: string): Promise<MpcCard[]> {
 
 	const { data, error } = await client
 		.from('custom_cards')
-		.select('id, source_id, name, image_storage_path, image_drive_url')
+		.select('id, source_id, name, image_storage_path, image_drive_url, oracle_id')
 		.eq('source_id', sourceId)
 		.eq('is_public', true)
 		.order('name')

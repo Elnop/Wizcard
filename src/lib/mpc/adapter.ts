@@ -33,7 +33,7 @@ export function toSyntheticScryfallCard(card: MpcCard, source: MpcSource): Scryf
 	const syntheticId = `mpc:${card.id}`;
 	return {
 		id: syntheticId,
-		oracle_id: syntheticId,
+		oracle_id: card.oracleId ?? syntheticId,
 		object: 'card',
 		name: card.name,
 		lang: 'en',
