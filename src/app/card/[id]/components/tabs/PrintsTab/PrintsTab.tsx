@@ -65,7 +65,11 @@ export function PrintsTab({ card }: Props) {
 	const [showMpc, setShowMpc] = useState(true);
 	const { addCard } = useCollectionContext();
 
-	const { prints: mpcPrints, loading: mpcLoading } = useMpcPrints(showMpc ? card.name : '');
+	const {
+		prints: mpcPrints,
+		loading: mpcLoading,
+		error: mpcError,
+	} = useMpcPrints(showMpc ? card.name : '');
 
 	function handleAdd(print: ScryfallCard, entry: Partial<CardEntry>) {
 		addCard(print, entry);
@@ -123,48 +127,47 @@ export function PrintsTab({ card }: Props) {
 			</div>
 
 			{showMpc && (
-				<CardList
-					cards={mpcPrints}
-					isLoading={mpcLoading}
-					pageSize={false}
-					renderOverlay={(p: AnyCard) => (
-						<PrintAction print={p as ScryfallCard} currentId={card.id} onAdd={setAddingCard} />
-					)}
-					tableColumns={[
-						{
-							key: 'image',
-							label: '',
-							render: (p: AnyCard) => <MiniThumb card={p as ScryfallCard} />,
-						},
-						{
-							key: 'set',
-							label: 'Source',
-							render: (p: AnyCard) => (
-								<>
-									<div className={styles.printName}>{(p as ScryfallCard).set_name}</div>
-									<div className={styles.printMeta}>
-										<span className={styles.proxyBadge}>proxy</span>
-									</div>
-								</>
-							),
-						},
-						{
-							key: 'rarity',
-							label: 'DPI',
-							render: (p: AnyCard) => {
-								const id = (p as ScryfallCard).collector_number;
-								return <span className={styles.printMeta}>{id}</span>;
+				<>
+					{mpcError && <p className={styles.printMeta}>Proxies indisponibles : {mpcError}</p>}
+					<CardList
+						cards={mpcPrints}
+						isLoading={mpcLoading}
+						pageSize={false}
+						renderOverlay={(p: AnyCard) => (
+							<PrintAction print={p as ScryfallCard} currentId={card.id} onAdd={setAddingCard} />
+						)}
+						tableColumns={[
+							{
+								key: 'image',
+								label: '',
+								render: (p: AnyCard) => <MiniThumb card={p as ScryfallCard} />,
 							},
-						},
-						{
-							key: 'action',
-							label: '',
-							render: (p: AnyCard) => (
-								<PrintAction print={p as ScryfallCard} currentId={card.id} onAdd={setAddingCard} />
-							),
-						},
-					]}
-				/>
+							{
+								key: 'set',
+								label: 'Source',
+								render: (p: AnyCard) => (
+									<>
+										<div className={styles.printName}>{(p as ScryfallCard).set_name}</div>
+										<div className={styles.printMeta}>
+											<span className={styles.proxyBadge}>proxy</span>
+										</div>
+									</>
+								),
+							},
+							{
+								key: 'action',
+								label: '',
+								render: (p: AnyCard) => (
+									<PrintAction
+										print={p as ScryfallCard}
+										currentId={card.id}
+										onAdd={setAddingCard}
+									/>
+								),
+							},
+						]}
+					/>
+				</>
 			)}
 
 			{addingCard && (
