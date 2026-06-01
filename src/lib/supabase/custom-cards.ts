@@ -34,7 +34,7 @@ function rowToMpcCard(row: CustomCardRow, supabaseUrl: string): MpcCard {
 		imageUrl = row.image_drive_url;
 	}
 	return {
-		id: row.id,
+		id: row.id.startsWith('mpc:') ? row.id.slice(4) : row.id,
 		name: row.name,
 		sourceId: row.source_id,
 		imageUrl,
@@ -62,7 +62,8 @@ export async function getCustomCards(sourceId: string): Promise<MpcCard[]> {
 		.select('id, source_id, name, image_storage_path, image_drive_url')
 		.eq('source_id', sourceId)
 		.eq('is_public', true)
-		.order('name');
+		.order('name')
+		.limit(10_000);
 
 	if (error) throw new Error(`Failed to load custom cards: ${error.message}`);
 	return (data as CustomCardRow[]).map((row) => rowToMpcCard(row, supabaseUrl));
