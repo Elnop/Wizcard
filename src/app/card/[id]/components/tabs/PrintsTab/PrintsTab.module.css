@@ -47,42 +47,6 @@
 	color: var(--primary-text);
 }
 
-.mpcHeader {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 16px 0 8px;
-	border-top: 1px solid var(--border);
-	margin-top: 16px;
-}
-
-.mpcTitle {
-	font-size: var(--text-sm);
-	font-weight: 600;
-	color: var(--foreground);
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.mpcCount {
-	font-size: var(--text-xs);
-	font-weight: 700;
-	padding: 1px 7px;
-	background: var(--primary);
-	color: var(--primary-text);
-	border-radius: 10px;
-}
-
-.mpcToggle {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	font-size: var(--text-sm);
-	color: var(--text-muted);
-	cursor: pointer;
-}
-
 .proxyBadge {
 	font-size: 10px;
 	padding: 1px 5px;
