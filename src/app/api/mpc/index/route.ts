@@ -55,7 +55,10 @@ async function buildIndex(): Promise<MpcIndexEntry[]> {
 		for (let page = 1; page <= sourceData.pages; page++) {
 			const url = `${MPCFILL_BASE}/newCardsPage/?source=${encodeURIComponent(sourceKey)}&page=${page}&cardType=CARD`;
 			const res = await fetch(url, FETCH_OPTS);
-			if (!res.ok) continue;
+			if (!res.ok) {
+				console.warn(`[mpc/index] page fetch failed: ${url} → ${res.status}`);
+				continue;
+			}
 
 			const data = (await res.json()) as { cards: MpcfillCard[] };
 			for (const card of data.cards ?? []) {
@@ -79,15 +82,29 @@ async function buildIndex(): Promise<MpcIndexEntry[]> {
 	return entries;
 }
 
+// NOTE: module-level cache works correctly in long-lived Node.js server processes (next start,
+// self-hosted). In serverless/edge environments (Vercel Functions), each cold start resets this
+// cache and triggers a full buildIndex() crawl. For serverless, migrate to unstable_cache or KV.
 let _cache: MpcIndexEntry[] | null = null;
 let _cacheBuiltAt = 0;
+let _inflight: Promise<MpcIndexEntry[]> | null = null;
 const CACHE_TTL = 86400_000;
 
 async function getIndex(): Promise<MpcIndexEntry[]> {
 	if (_cache && Date.now() - _cacheBuiltAt < CACHE_TTL) return _cache;
-	_cache = await buildIndex();
-	_cacheBuiltAt = Date.now();
-	return _cache;
+	if (_inflight) return _inflight;
+	_inflight = buildIndex()
+		.then((data) => {
+			_cache = data;
+			_cacheBuiltAt = Date.now();
+			_inflight = null;
+			return data;
+		})
+		.catch((err: unknown) => {
+			_inflight = null;
+			throw err;
+		});
+	return _inflight;
 }
 
 export async function GET(req: Request) {
