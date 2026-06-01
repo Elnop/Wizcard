@@ -6,7 +6,6 @@ interface CustomCardSourceRow {
 	name: string;
 	description: string | null;
 	tags: string[];
-	card_count: number;
 }
 
 interface CustomCardRow {
@@ -15,7 +14,6 @@ interface CustomCardRow {
 	name: string;
 	image_storage_path: string | null;
 	image_drive_url: string;
-	tags: string[];
 }
 
 function rowToMpcSource(row: CustomCardSourceRow): MpcSource {
@@ -48,7 +46,7 @@ export async function getCustomCardSources(): Promise<MpcSource[]> {
 	const client = createClient();
 	const { data, error } = await client
 		.from('custom_card_sources')
-		.select('id, name, description, tags, card_count')
+		.select('id, name, description, tags')
 		.order('name');
 
 	if (error) throw new Error(`Failed to load custom card sources: ${error.message}`);
@@ -61,7 +59,7 @@ export async function getCustomCards(sourceId: string): Promise<MpcCard[]> {
 
 	const { data, error } = await client
 		.from('custom_cards')
-		.select('id, source_id, name, image_storage_path, image_drive_url, tags')
+		.select('id, source_id, name, image_storage_path, image_drive_url')
 		.eq('source_id', sourceId)
 		.eq('is_public', true)
 		.order('name');
