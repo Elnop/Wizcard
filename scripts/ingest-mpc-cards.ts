@@ -51,11 +51,6 @@ interface MpcfillSourcesResponse {
 	results: Record<string, MpcfillSourceRaw>;
 }
 
-interface DriveFilesResponse {
-	files: Array<{ id: string; name: string }>;
-	nextPageToken?: string;
-}
-
 interface ScryfallCardMinimal {
 	oracle_id: string;
 	name: string;
@@ -111,13 +106,8 @@ function isImageFile(filename: string): boolean {
 	return IMAGE_EXTENSIONS.has(filename.slice(dot + 1).toLowerCase());
 }
 
-function getExtension(filename: string): string {
-	const dot = filename.lastIndexOf('.');
-	return dot !== -1 ? filename.slice(dot + 1).toLowerCase() : 'jpg';
-}
-
-function driveThumbUrl(fileId: string): string {
-	return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+function driveImageUrl(fileId: string): string {
+	return `https://drive.usercontent.google.com/download?id=${fileId}&export=view`;
 }
 
 async function sleep(ms: number): Promise<void> {
@@ -159,16 +149,27 @@ async function scryfallPost<T>(body: object): Promise<T> {
 
 // ─── Drive helpers ──────────────────────────────────────────────────────────
 
-async function listDriveFolder(folderId: string): Promise<Array<{ id: string; name: string }>> {
-	const files: Array<{ id: string; name: string }> = [];
+interface DriveItem {
+	id: string;
+	name: string;
+	mimeType: string;
+}
+
+interface DriveListResponse {
+	files: DriveItem[];
+	nextPageToken?: string;
+}
+
+async function listDriveFolderChildren(folderId: string): Promise<DriveItem[]> {
+	const items: DriveItem[] = [];
 	let pageToken: string | undefined;
 
 	do {
 		const params = new URLSearchParams({
-			q: `'${folderId}' in parents and mimeType contains 'image/'`,
+			q: `'${folderId}' in parents`,
 			key: GOOGLE_DRIVE_API_KEY,
 			pageSize: '1000',
-			fields: 'nextPageToken,files(id,name)',
+			fields: 'nextPageToken,files(id,name,mimeType)',
 			...(pageToken ? { pageToken } : {}),
 		});
 
@@ -180,23 +181,35 @@ async function listDriveFolder(folderId: string): Promise<Array<{ id: string; na
 				`Drive API fatal error (HTTP ${res.status}) for folder ${folderId} — check GOOGLE_DRIVE_API_KEY permissions`
 			);
 		}
+		if (!res.ok) throw new Error(`Drive list failed for folder ${folderId}: HTTP ${res.status}`);
 
-		if (!res.ok) {
-			throw new Error(`Drive list failed for folder ${folderId}: HTTP ${res.status}`);
-		}
-		const data = (await res.json()) as DriveFilesResponse;
-		files.push(...(data.files ?? []));
+		const data = (await res.json()) as DriveListResponse;
+		items.push(...(data.files ?? []));
 		pageToken = data.nextPageToken;
 	} while (pageToken);
 
-	return files.filter((f) => isImageFile(f.name));
+	return items;
 }
 
-async function downloadDriveFile(fileId: string): Promise<Buffer> {
-	const params = new URLSearchParams({ key: GOOGLE_DRIVE_API_KEY, alt: 'media' });
-	const res = await fetchWithRetry(`${DRIVE_FILES_URL}/${fileId}?${params}`);
-	if (!res.ok) throw new Error(`Drive download failed for ${fileId}: HTTP ${res.status}`);
-	return Buffer.from(await res.arrayBuffer());
+// Recursively collects all image files under a folder (handles nested subfolders)
+async function listDriveFolder(folderId: string): Promise<Array<{ id: string; name: string }>> {
+	const images: Array<{ id: string; name: string }> = [];
+	const queue: string[] = [folderId];
+
+	while (queue.length > 0) {
+		const currentId = queue.shift()!;
+		const children = await listDriveFolderChildren(currentId);
+
+		for (const item of children) {
+			if (item.mimeType === 'application/vnd.google-apps.folder') {
+				queue.push(item.id);
+			} else if (isImageFile(item.name)) {
+				images.push({ id: item.id, name: item.name });
+			}
+		}
+	}
+
+	return images;
 }
 
 // ─── Scryfall enrichment ────────────────────────────────────────────────────
@@ -342,7 +355,7 @@ async function ingestSource(
 	// Check existing cards to skip already-done
 	const { data: existing } = await supabase
 		.from('custom_cards')
-		.select('id, image_storage_path')
+		.select('id')
 		.eq('source_id', sourceId)
 		.limit(100_000);
 
@@ -350,15 +363,13 @@ async function ingestSource(
 		console.warn(`${prefix} — ⚠ existing cards query may be truncated (≥100k rows)`);
 	}
 
-	const doneIds = new Set(
-		(existing ?? []).filter((r) => r.image_storage_path != null).map((r) => r.id)
-	);
+	const doneIds = new Set((existing ?? []).map((r) => r.id));
 
 	let newCount = 0;
 	let skippedCount = 0;
 	let failedCount = 0;
 
-	const limiter = pLimit(10);
+	const limiter = pLimit(20);
 	await Promise.all(
 		files.map((file) =>
 			limiter(async () => {
@@ -368,38 +379,12 @@ async function ingestSource(
 					return;
 				}
 
-				const ext = getExtension(file.name);
-				const storagePath = `${sourceId}/${file.id}.${ext}`;
-
-				let imageBuffer: Buffer;
-				try {
-					imageBuffer = await downloadDriveFile(file.id);
-				} catch (err) {
-					console.warn(`  ⚠ Download failed for ${file.id}: ${(err as Error).message}`);
-					failedCount++;
-					return;
-				}
-
-				const { error: uploadErr } = await supabase.storage
-					.from('custom-cards')
-					.upload(storagePath, imageBuffer, {
-						contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
-						upsert: true,
-					});
-
-				if (uploadErr) {
-					console.warn(`  ⚠ Storage upload failed for ${file.id}: ${uploadErr.message}`);
-					failedCount++;
-					return;
-				}
-
 				const { error: cardErr } = await supabase.from('custom_cards').upsert({
 					id: cardId,
 					source_id: sourceId,
 					name: normalizeName(file.name),
 					raw_name: file.name,
-					image_storage_path: storagePath,
-					image_drive_url: driveThumbUrl(file.id),
+					image_drive_url: driveImageUrl(file.id),
 					tags: ['custom:mpc', `mpc-source:${sourceId}`],
 					is_public: true,
 				});

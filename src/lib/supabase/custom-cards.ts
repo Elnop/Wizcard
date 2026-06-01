@@ -12,7 +12,6 @@ interface CustomCardRow {
 	id: string;
 	source_id: string;
 	name: string;
-	image_storage_path: string | null;
 	image_drive_url: string;
 	oracle_id: string | null;
 }
@@ -27,18 +26,12 @@ function rowToMpcSource(row: CustomCardSourceRow): MpcSource {
 	};
 }
 
-function rowToMpcCard(row: CustomCardRow, supabaseUrl: string): MpcCard {
-	let imageUrl: string;
-	if (row.image_storage_path) {
-		imageUrl = `${supabaseUrl}/storage/v1/object/public/custom-cards/${row.image_storage_path}`;
-	} else {
-		imageUrl = row.image_drive_url;
-	}
+function rowToMpcCard(row: CustomCardRow): MpcCard {
 	return {
 		id: row.id.startsWith('mpc:') ? row.id.slice(4) : row.id,
 		name: row.name,
 		sourceId: row.source_id,
-		imageUrl,
+		imageUrl: row.image_drive_url,
 		isCustom: true,
 		oracleId: row.oracle_id ?? undefined,
 	};
@@ -57,16 +50,15 @@ export async function getCustomCardSources(): Promise<MpcSource[]> {
 
 export async function getCustomCards(sourceId: string): Promise<MpcCard[]> {
 	const client = createClient();
-	const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 
 	const { data, error } = await client
 		.from('custom_cards')
-		.select('id, source_id, name, image_storage_path, image_drive_url, oracle_id')
+		.select('id, source_id, name, image_drive_url, oracle_id')
 		.eq('source_id', sourceId)
 		.eq('is_public', true)
 		.order('name')
 		.limit(10_000);
 
 	if (error) throw new Error(`Failed to load custom cards: ${error.message}`);
-	return (data as CustomCardRow[]).map((row) => rowToMpcCard(row, supabaseUrl));
+	return (data as CustomCardRow[]).map(rowToMpcCard);
 }
