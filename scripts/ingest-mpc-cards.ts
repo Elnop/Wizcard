@@ -189,7 +189,8 @@ async function ingestSource(
 	const { data: existing } = await supabase
 		.from('custom_cards')
 		.select('id, image_storage_path')
-		.eq('source_id', sourceId);
+		.eq('source_id', sourceId)
+		.limit(100_000);
 
 	const doneIds = new Set(
 		(existing ?? []).filter((r) => r.image_storage_path != null).map((r) => r.id)
@@ -253,13 +254,14 @@ async function ingestSource(
 	);
 
 	// Update card_count and last_synced_at
-	await supabase
+	const { error: countErr } = await supabase
 		.from('custom_card_sources')
 		.update({
 			card_count: newCount + skippedCount,
 			last_synced_at: new Date().toISOString(),
 		})
 		.eq('id', sourceId);
+	if (countErr) console.warn(`${prefix} — ⚠ card_count update failed: ${countErr.message}`);
 
 	console.log(`${prefix} — ✓ done (${newCount} new, ${skippedCount} skipped)`);
 }
@@ -279,6 +281,11 @@ async function main(): Promise<void> {
 		: sources;
 
 	if (limitSources > 0) filtered = filtered.slice(0, limitSources);
+
+	if (filterSourceId && filtered.length === 0) {
+		console.error(`Source not found: ${filterSourceId}`);
+		process.exit(1);
+	}
 
 	console.log(`Processing ${filtered.length} sources…\n`);
 
