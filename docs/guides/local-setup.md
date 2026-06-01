@@ -46,6 +46,10 @@ Copy the output values into `.env.local` at the project root:
 # .env.local
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from status output>
+
+# Optional — required only to run the MPC ingestion script
+GOOGLE_DRIVE_API_KEY=<Google Drive API key>
+SUPABASE_SERVICE_ROLE_KEY=<service role key from status output>
 ```
 
 ### 5. Start the dev server

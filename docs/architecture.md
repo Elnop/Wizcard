@@ -61,6 +61,7 @@ src/
 │   │   ├── contexts/           # AuthContext, SyncQueueContext
 │   │   ├── hooks/              # useSyncQueue
 │   │   ├── components/         # SyncQueueRunner, SyncIndicator
+│   │   ├── custom-cards.ts     # getCustomCardSources(), getCustomCards() — MPC queries
 │   │   ├── sync-queue.ts       # Offline queue (localStorage)
 │   │   ├── client.ts           # Supabase browser client
 │   │   ├── server.ts           # Supabase server-side client
@@ -76,6 +77,12 @@ src/
 │   │   ├── components/         # FilterModal, SearchBar (used by search + collection pages)
 │   │   │   └── filters/        # ColorFilter, RarityFilter, TypeFilter, SetFilter, CmcFilter, OracleTextFilter, SortFilter
 │   │   └── hooks/              # useDebounce, useMultiSelect
+│   │
+│   ├── mpc/                    # MPC custom proxy cards
+│   │   ├── adapter.ts          # toSyntheticScryfallCard() — MpcCard → ScryfallCard shim
+│   │   ├── types.ts            # MpcCard, MpcSource, MpcIndexEntry
+│   │   └── components/
+│   │       └── CustomProxiesSection/ # Source tabs + card grid for custom proxies
 │   │
 │   ├── moxfield/               # Moxfield format (parse, serialize, import-adapter)
 │   ├── mtg/                    # MTG-specific utilities (language mappings)
@@ -177,6 +184,29 @@ User action (add/edit/remove card)
     → SyncQueueRunner processes queue
     → Supabase upsert/delete
 ```
+
+### MPC Custom Proxies
+
+```
+/search page (mode = 'custom' ou 'all')
+    → CustomProxiesSection
+    → getCustomCardSources() → Supabase public.custom_card_sources
+    → getCustomCards(sourceId) → Supabase public.custom_cards
+    → toSyntheticScryfallCard() — wraps MpcCard as ScryfallCard shim
+    → addCard() via CollectionContext → proxy=true, tags=['custom:mpc', ...]
+```
+
+L'ingestion (hors-ligne, one-shot) alimente ces tables :
+
+```
+scripts/ingest-mpc-cards.ts
+    → mpcfill.com/2/sources/ — liste des sources communautaires (~274)
+    → Google Drive API — liste des fichiers image par folder
+    → téléchargement + upload → Supabase Storage (bucket custom-cards)
+    → upsert → public.custom_card_sources + public.custom_cards
+```
+
+Voir `docs/guides/mpc-ingestion.md` pour exécuter le script.
 
 ### Import
 
