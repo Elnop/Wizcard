@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, Suspense } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useScryfallCardSearch } from '@/lib/scryfall/hooks/useScryfallCardSearch';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
@@ -11,10 +11,12 @@ import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
-import { CustomProxiesSection } from '@/lib/mpc/components/CustomProxiesSection/CustomProxiesSection';
+import { useCustomCards } from '@/lib/mpc/hooks/useCustomCards';
 import { SearchModeSwitcher } from './components/SearchModeSwitcher/SearchModeSwitcher';
 import type { SearchMode } from './components/SearchModeSwitcher/SearchModeSwitcher';
 import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
+import { getCustomCardSources } from '@/lib/supabase/custom-cards';
+import type { MpcSource } from '@/lib/mpc/types';
 import styles from './page.module.css';
 
 export default function SearchPage() {
@@ -40,6 +42,8 @@ function SearchPageContent() {
 	const { addToWishlist } = useWishlistContext();
 	const [selectedCard, setSelectedCard] = useState<ScryfallCard | null>(null);
 	const [mode, setMode] = useState<SearchMode>('official');
+	const [customSources, setCustomSources] = useState<MpcSource[]>([]);
+	const [customSourceId, setCustomSourceId] = useState<string | null>(null);
 
 	const {
 		name,
@@ -85,18 +89,47 @@ function SearchPageContent() {
 		dir,
 	});
 
-	const handleCardClick = useCallback((card: ScryfallCard) => setSelectedCard(card), []);
-
-	function handleModeChange(next: SearchMode) {
-		setMode(next);
-	}
-
 	const showOfficial = mode === 'official' || mode === 'all';
 	const showCustom = mode === 'custom' || mode === 'all';
+
+	const {
+		cards: customCards,
+		isLoading: customLoading,
+		error: customError,
+	} = useCustomCards(showCustom ? customSourceId : undefined);
+
+	useEffect(() => {
+		getCustomCardSources()
+			.then(setCustomSources)
+			.catch(() => {});
+	}, []);
+
+	const handleCardClick = useCallback((card: ScryfallCard) => setSelectedCard(card), []);
 
 	const hasFilters =
 		name || colors.length > 0 || type || set || rarities.length > 0 || oracleText || cmc;
 	const showEmptyState = showOfficial && !hasFilters && !isLoading && cards.length === 0;
+
+	const totalActiveFilterCount = activeFilterCount + (customSourceId !== null ? 1 : 0);
+
+	const tableColumns = [
+		{ key: 'name', label: 'Nom', sortKey: 'name' },
+		{
+			key: 'set',
+			label: 'Set',
+			sortKey: 'set',
+			render: (card: ScryfallCard) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
+		},
+		{ key: 'type_line', label: 'Type' },
+		{ key: 'cmc', label: 'CMC', sortKey: 'cmc' },
+		{
+			key: 'prices',
+			label: 'Prix USD',
+			sortKey: 'usd',
+			render: (card: ScryfallCard) =>
+				'prices' in card && card.prices && 'usd' in card.prices ? (card.prices.usd ?? '—') : '—',
+		},
+	];
 
 	return (
 		<div className={styles.page}>
@@ -104,7 +137,7 @@ function SearchPageContent() {
 				<div className={styles.searchSection}>
 					<div className={styles.searchRow}>
 						<SearchBar value={name} onChange={setName} placeholder="Search for cards..." />
-						<SearchModeSwitcher onChange={handleModeChange} />
+						<SearchModeSwitcher onChange={setMode} />
 						<button
 							type="button"
 							className={styles.filtersButton}
@@ -119,8 +152,8 @@ function SearchPageContent() {
 								/>
 							</svg>
 							Filtres
-							{activeFilterCount > 0 && (
-								<span className={styles.filterBadge}>{activeFilterCount}</span>
+							{totalActiveFilterCount > 0 && (
+								<span className={styles.filterBadge}>{totalActiveFilterCount}</span>
 							)}
 						</button>
 					</div>
@@ -139,7 +172,12 @@ function SearchPageContent() {
 					setsLoading={setsLoading}
 					order={order}
 					dir={dir}
-					onApply={applyFilters}
+					customSources={customSources}
+					customSourceId={customSourceId}
+					onApply={(filters) => {
+						applyFilters(filters);
+						setCustomSourceId(filters.customSourceId);
+					}}
 					onClose={() => setIsModalOpen(false)}
 				/>
 
@@ -193,26 +231,7 @@ function SearchPageContent() {
 								setDir(newDir);
 							}}
 							pageSize={false}
-							tableColumns={[
-								{ key: 'name', label: 'Nom', sortKey: 'name' },
-								{
-									key: 'set',
-									label: 'Set',
-									sortKey: 'set',
-									render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
-								},
-								{ key: 'type_line', label: 'Type' },
-								{ key: 'cmc', label: 'CMC', sortKey: 'cmc' },
-								{
-									key: 'prices',
-									label: 'Prix USD',
-									sortKey: 'usd',
-									render: (card) =>
-										'prices' in card && card.prices && 'usd' in card.prices
-											? (card.prices.usd ?? '—')
-											: '—',
-								},
-							]}
+							tableColumns={tableColumns}
 						/>
 
 						{!isLoading && hasFilters && cards.length === 0 && !error && (
@@ -243,7 +262,36 @@ function SearchPageContent() {
 					</>
 				)}
 
-				{showCustom && <CustomProxiesSection />}
+				{showCustom && (
+					<>
+						{showOfficial && (
+							<div className={styles.customSectionHeader}>
+								Cartes Custom
+								<span className={styles.customBadge}>MPC</span>
+							</div>
+						)}
+
+						{customError && (
+							<div className={styles.error}>
+								<p>Impossible de charger les cartes custom.</p>
+							</div>
+						)}
+
+						<CardList
+							cards={customCards}
+							isLoading={customLoading}
+							onCardClick={handleCardClick}
+							tableColumns={tableColumns}
+						/>
+
+						{!customLoading && !customError && customCards.length === 0 && (
+							<div className={styles.emptyState}>
+								<h2>Aucune carte custom</h2>
+								<p>Aucune carte personnalisée disponible pour le moment.</p>
+							</div>
+						)}
+					</>
+				)}
 
 				{selectedCard && (
 					<CardModal

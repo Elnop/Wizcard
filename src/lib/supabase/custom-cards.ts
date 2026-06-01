@@ -62,3 +62,17 @@ export async function getCustomCards(sourceId: string): Promise<MpcCard[]> {
 	if (error) throw new Error(`Failed to load custom cards: ${error.message}`);
 	return (data as CustomCardRow[]).map(rowToMpcCard);
 }
+
+export async function getAllCustomCards(): Promise<MpcCard[]> {
+	const client = createClient();
+
+	const { data, error } = await client
+		.from('custom_cards')
+		.select('id, source_id, name, image_drive_url, oracle_id')
+		.eq('is_public', true)
+		.order('name')
+		.limit(10_000);
+
+	if (error) throw new Error(`Failed to load custom cards: ${error.message}`);
+	return (data as CustomCardRow[]).map(rowToMpcCard);
+}

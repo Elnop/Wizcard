@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { ScryfallColor, ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import type { ColorMatch } from '@/lib/search/types';
+import type { MpcSource } from '@/lib/mpc/types';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { Modal } from '@/components/Modal/Modal';
 import { ColorFilter } from '@/lib/search/components/filters/ColorFilter/ColorFilter';
@@ -13,6 +14,7 @@ import { OracleTextFilter } from '@/lib/search/components/filters/OracleTextFilt
 import { CmcFilter } from '@/lib/search/components/filters/CmcFilter/CmcFilter';
 import { SetFilter } from '@/lib/search/components/filters/SetFilter/SetFilter';
 import { SortFilter } from '@/lib/search/components/filters/SortFilter/SortFilter';
+import { CustomSourceFilter } from '@/lib/search/components/filters/CustomSourceFilter/CustomSourceFilter';
 import styles from './FilterModal.module.css';
 
 interface FilterModalProps {
@@ -28,6 +30,8 @@ interface FilterModalProps {
 	setsLoading?: boolean;
 	order: ScryfallSortOrder;
 	dir: ScryfallSortDir;
+	customSources?: MpcSource[];
+	customSourceId?: string | null;
 	onApply: (filters: {
 		colors: ScryfallColor[];
 		colorMatch: ColorMatch;
@@ -38,6 +42,7 @@ interface FilterModalProps {
 		cmc: string;
 		order: ScryfallSortOrder;
 		dir: ScryfallSortDir;
+		customSourceId: string | null;
 	}) => void;
 	onClose: () => void;
 }
@@ -54,6 +59,8 @@ interface FilterModalContentProps {
 	initialCmc: string;
 	initialOrder: ScryfallSortOrder;
 	initialDir: ScryfallSortDir;
+	customSources: MpcSource[];
+	initialCustomSourceId: string | null;
 	onApply: FilterModalProps['onApply'];
 	onClose: () => void;
 }
@@ -70,6 +77,8 @@ function FilterModalContent({
 	initialCmc,
 	initialOrder,
 	initialDir,
+	customSources,
+	initialCustomSourceId,
 	onApply,
 	onClose,
 }: FilterModalContentProps) {
@@ -85,6 +94,9 @@ function FilterModalContent({
 	const [draftCmc, setDraftCmc] = useState(initialCmc);
 	const [draftOrder, setDraftOrder] = useState<ScryfallSortOrder>(initialOrder);
 	const [draftDir, setDraftDir] = useState<ScryfallSortDir>(initialDir);
+	const [draftCustomSourceId, setDraftCustomSourceId] = useState<string | null>(
+		initialCustomSourceId
+	);
 
 	const handleApply = () => {
 		onApply({
@@ -97,6 +109,7 @@ function FilterModalContent({
 			cmc: draftCmc,
 			order: draftOrder,
 			dir: draftDir,
+			customSourceId: draftCustomSourceId,
 		});
 		onClose();
 	};
@@ -111,6 +124,7 @@ function FilterModalContent({
 		setDraftCmc('');
 		setDraftOrder('name');
 		setDraftDir('auto');
+		setDraftCustomSourceId(null);
 	};
 
 	return (
@@ -148,6 +162,18 @@ function FilterModalContent({
 					dir={draftDir}
 					onDirChange={setDraftDir}
 				/>
+
+				{customSources.length > 0 && (
+					<>
+						<div className={styles.sectionDivider} />
+						<div className={styles.sectionTitle}>Cartes Custom</div>
+						<CustomSourceFilter
+							sources={customSources}
+							value={draftCustomSourceId}
+							onChange={setDraftCustomSourceId}
+						/>
+					</>
+				)}
 			</div>
 
 			<div className={styles.footer}>
@@ -175,6 +201,8 @@ export function FilterModal({
 	setsLoading,
 	order,
 	dir,
+	customSources = [],
+	customSourceId = null,
 	onApply,
 	onClose,
 }: FilterModalProps) {
@@ -195,6 +223,8 @@ export function FilterModal({
 				initialCmc={cmc}
 				initialOrder={order}
 				initialDir={dir}
+				customSources={customSources}
+				initialCustomSourceId={customSourceId}
 				onApply={onApply}
 				onClose={onClose}
 			/>
