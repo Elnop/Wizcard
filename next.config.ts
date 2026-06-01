@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
 				protocol: 'https',
 				hostname: 'cards.scryfall.io',
 			},
+			{
+				protocol: 'https',
+				hostname: 'drive.google.com',
+			},
 		],
 	},
 };
