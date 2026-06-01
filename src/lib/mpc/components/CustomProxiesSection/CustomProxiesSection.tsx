@@ -3,42 +3,58 @@
 import { useEffect, useState } from 'react';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { Spinner } from '@/components/Spinner/Spinner';
-import { useMpcStore } from '../../store/mpc-store';
+import { getCustomCardSources, getCustomCards } from '@/lib/supabase/custom-cards';
 import { toSyntheticScryfallCard } from '../../adapter';
-import type { MpcSource } from '../../types';
+import type { MpcCard, MpcSource } from '../../types';
 import styles from './CustomProxiesSection.module.css';
 
 export function CustomProxiesSection() {
 	const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
+	const [sources, setSources] = useState<MpcSource[]>([]);
+	const [sourcesLoading, setSourcesLoading] = useState(false);
+	const [sourcesError, setSourcesError] = useState<string | null>(null);
+	const [cards, setCards] = useState<MpcCard[]>([]);
+	const [cardsLoading, setCardsLoading] = useState(false);
+	const [cardsError, setCardsError] = useState<string | null>(null);
 
-	const {
-		sources,
-		sourcesLoading,
-		sourcesError,
-		cardsBySource,
-		loadingSourceId,
-		errorBySource,
-		initSources,
-		fetchSource,
-	} = useMpcStore();
 	const { addCard } = useCollectionContext();
 
 	const activeSourceId = selectedSourceId ?? sources[0]?.id ?? null;
+	const activeSource = sources.find((s) => s.id === activeSourceId);
 
 	useEffect(() => {
-		void initSources();
-	}, [initSources]);
+		const load = async () => {
+			setSourcesLoading(true);
+			setSourcesError(null);
+			try {
+				const data = await getCustomCardSources();
+				setSources(data);
+			} catch (err: unknown) {
+				setSourcesError(err instanceof Error ? err.message : 'Unknown error');
+			} finally {
+				setSourcesLoading(false);
+			}
+		};
+		void load();
+	}, []);
 
 	useEffect(() => {
-		if (activeSourceId) {
-			void fetchSource(activeSourceId);
-		}
-	}, [activeSourceId, fetchSource]);
-
-	const activeSource: MpcSource | undefined = sources.find((s) => s.id === activeSourceId);
-	const cards = activeSourceId ? (cardsBySource[activeSourceId] ?? []) : [];
-	const isLoading = loadingSourceId === activeSourceId;
-	const error = activeSourceId ? errorBySource[activeSourceId] : undefined;
+		if (!activeSourceId) return;
+		const load = async () => {
+			setCardsLoading(true);
+			setCardsError(null);
+			setCards([]);
+			try {
+				const data = await getCustomCards(activeSourceId);
+				setCards(data);
+			} catch (err: unknown) {
+				setCardsError(err instanceof Error ? err.message : 'Unknown error');
+			} finally {
+				setCardsLoading(false);
+			}
+		};
+		void load();
+	}, [activeSourceId]);
 
 	return (
 		<div className={styles.section}>
@@ -69,10 +85,7 @@ export function CustomProxiesSection() {
 							key={source.id}
 							type="button"
 							className={`${styles.sourceTab} ${source.id === activeSourceId ? styles.sourceTabActive : ''}`}
-							onClick={() => {
-								setSelectedSourceId(source.id);
-								void fetchSource(source.id);
-							}}
+							onClick={() => setSelectedSourceId(source.id)}
 						>
 							{source.name}
 							{!source.isBuiltIn && <span className={styles.userBadge}>custom</span>}
@@ -81,19 +94,19 @@ export function CustomProxiesSection() {
 				</div>
 			)}
 
-			{isLoading && (
+			{cardsLoading && (
 				<div className={styles.loading}>
 					<Spinner size="md" />
 				</div>
 			)}
 
-			{error && !isLoading && (
+			{cardsError && !cardsLoading && (
 				<div className={styles.error}>
-					<p>Failed to load cards: {error}</p>
+					<p>Failed to load cards: {cardsError}</p>
 				</div>
 			)}
 
-			{!isLoading && !error && cards.length > 0 && activeSource && (
+			{!cardsLoading && !cardsError && cards.length > 0 && activeSource && (
 				<div className={styles.grid}>
 					{cards.map((card) => {
 						const synthetic = toSyntheticScryfallCard(card, activeSource);
@@ -127,8 +140,8 @@ export function CustomProxiesSection() {
 				</div>
 			)}
 
-			{!isLoading &&
-				!error &&
+			{!cardsLoading &&
+				!cardsError &&
 				!sourcesError &&
 				cards.length === 0 &&
 				activeSourceId &&
