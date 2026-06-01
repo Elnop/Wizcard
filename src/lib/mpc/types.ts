@@ -14,20 +14,6 @@ export interface MpcCard {
 	isCustom: true;
 }
 
-export interface DriveFileRaw {
-	id: string;
-	name: string;
-}
-
-export interface MpcfillSourceRaw {
-	pk: number;
-	key: string;
-	name: string;
-	description: string;
-	sourceType: string;
-	externalLink: string;
-}
-
 export interface MpcIndexEntry {
 	identifier: string; // Google Drive file ID
 	name: string; // Normalized card name (for matching)
