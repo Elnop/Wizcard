@@ -40,20 +40,24 @@ export function CustomProxiesSection() {
 
 	useEffect(() => {
 		if (!activeSourceId) return;
+		let cancelled = false;
 		const load = async () => {
 			setCardsLoading(true);
 			setCardsError(null);
 			setCards([]);
 			try {
 				const data = await getCustomCards(activeSourceId);
-				setCards(data);
+				if (!cancelled) setCards(data);
 			} catch (err: unknown) {
-				setCardsError(err instanceof Error ? err.message : 'Unknown error');
+				if (!cancelled) setCardsError(err instanceof Error ? err.message : 'Unknown error');
 			} finally {
-				setCardsLoading(false);
+				if (!cancelled) setCardsLoading(false);
 			}
 		};
 		void load();
+		return () => {
+			cancelled = true;
+		};
 	}, [activeSourceId]);
 
 	return (
