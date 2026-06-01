@@ -57,6 +57,10 @@
 	flex-shrink: 0;
 }
 
+.resultImage > * {
+	width: 100%;
+}
+
 .resultInfo {
 	flex: 1;
 	min-width: 0;
