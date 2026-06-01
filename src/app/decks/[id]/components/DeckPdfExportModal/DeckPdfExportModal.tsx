@@ -57,6 +57,14 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 	);
 
 	const filteredCards = useMemo(() => filterCardsForPdf(cards, options), [cards, options]);
+	const customCards = useMemo(
+		() => filteredCards.filter((c) => c.entry.tags?.includes('custom:mpc')),
+		[filteredCards]
+	);
+	const officialCards = useMemo(
+		() => filteredCards.filter((c) => !c.entry.tags?.includes('custom:mpc')),
+		[filteredCards]
+	);
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
@@ -105,10 +113,23 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 			<div className={styles.preview}>
 				<p className={styles.sectionTitle}>
 					{filteredCards.length} carte{filteredCards.length !== 1 ? 's' : ''}
+					{customCards.length > 0 && (
+						<span className={styles.customBadge}>{customCards.length} proxy MPC</span>
+					)}
 				</p>
-				<div className={styles.cardListWrapper}>
-					<CardList cards={filteredCards} viewModes={['grid', 'table']} pageSize={false} />
-				</div>
+				{officialCards.length > 0 && (
+					<div className={styles.cardListWrapper}>
+						<CardList cards={officialCards} viewModes={['grid', 'table']} pageSize={false} />
+					</div>
+				)}
+				{customCards.length > 0 && (
+					<>
+						<p className={styles.sectionSubtitle}>Custom (MPC)</p>
+						<div className={styles.cardListWrapper}>
+							<CardList cards={customCards} viewModes={['grid', 'table']} pageSize={false} />
+						</div>
+					</>
+				)}
 			</div>
 
 			<div className={styles.actions}>
