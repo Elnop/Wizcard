@@ -8,6 +8,8 @@ import { buildScryfallQuery } from '@/lib/scryfall/utils/scryfall-query';
 import { ScryfallApiError } from '@/lib/scryfall/utils/errors';
 import { useDebounce } from '@/lib/search/hooks/useDebounce';
 
+export const DEFAULT_QUERY = 'f:edh order:edhrec';
+
 export interface SearchFilters {
 	name: string;
 	colors: ScryfallColor[];
@@ -56,34 +58,42 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 	const order = filters.order ?? 'name';
 	const dir = filters.dir ?? 'auto';
 
+	// Serialize array deps to strings so useCallback doesn't recreate on every render
+	// when the parent passes a new array reference with the same content.
+	const colorsKey = filters.colors.join(',');
+	const raritiesKey = filters.rarities.join(',');
+	const colorIdentityKey = (filters.colorIdentity ?? []).join(',');
+
 	const buildQuery = useCallback(
 		(name: string) => {
+			const colors = colorsKey ? (colorsKey.split(',') as ScryfallColor[]) : undefined;
+			const rarities = raritiesKey ? raritiesKey.split(',') : undefined;
+			const colorIdentity = colorIdentityKey
+				? (colorIdentityKey.split(',') as ScryfallColor[])
+				: undefined;
 			return buildScryfallQuery({
 				name: name || undefined,
-				colors: filters.colors.length > 0 ? filters.colors : undefined,
+				colors,
 				colorMatch: filters.colorMatch,
 				type: filters.type || undefined,
 				set: filters.set || undefined,
-				rarities: filters.rarities.length > 0 ? filters.rarities : undefined,
+				rarities,
 				text: filters.oracleText || undefined,
 				cmc: filters.cmc || undefined,
 				legal: filters.legal || undefined,
-				colorIdentity:
-					filters.colorIdentity && filters.colorIdentity.length > 0
-						? filters.colorIdentity
-						: undefined,
+				colorIdentity,
 			});
 		},
 		[
-			filters.colors,
+			colorsKey,
 			filters.colorMatch,
 			filters.type,
 			filters.set,
-			filters.rarities,
+			raritiesKey,
 			filters.oracleText,
 			filters.cmc,
 			filters.legal,
-			filters.colorIdentity,
+			colorIdentityKey,
 		]
 	);
 
@@ -96,7 +106,9 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 			}
 			const signal = abortControllerRef.current?.signal;
 
-			if (!query.trim()) {
+			const effectiveQuery = query.trim() || DEFAULT_QUERY;
+
+			if (!effectiveQuery) {
 				setCards([]);
 				setHasMore(false);
 				setTotalCards(0);
@@ -113,7 +125,7 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 				setQueryError(null);
 				setSuggestions([]);
 
-				const result = await searchCards({ q: query, page: pageNum, order, dir }, signal);
+				const result = await searchCards({ q: effectiveQuery, page: pageNum, order, dir }, signal);
 
 				if (isNewSearch) {
 					setCards(result.data);
@@ -161,8 +173,8 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 
 	useEffect(() => {
 		const query = buildQuery(debouncedName);
-		// Include order and dir in the search key to trigger re-fetch when they change
-		const searchKey = `${query}|${order}|${dir}`;
+		const effectiveQuery = query.trim() || DEFAULT_QUERY;
+		const searchKey = `${effectiveQuery}|${order}|${dir}`;
 
 		if (searchKey !== lastSearchKeyRef.current) {
 			lastSearchKeyRef.current = searchKey;

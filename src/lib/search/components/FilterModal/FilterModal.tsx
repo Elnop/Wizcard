@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { ScryfallColor, ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import type { ColorMatch } from '@/lib/search/types';
-import type { MpcSource } from '@/lib/mpc/types';
+import type { MpcSourceWithCount } from '@/lib/supabase/custom-cards';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { Modal } from '@/components/Modal/Modal';
 import { ColorFilter } from '@/lib/search/components/filters/ColorFilter/ColorFilter';
@@ -30,7 +30,7 @@ interface FilterModalProps {
 	setsLoading?: boolean;
 	order: ScryfallSortOrder;
 	dir: ScryfallSortDir;
-	customSources?: MpcSource[];
+	customSources?: MpcSourceWithCount[];
 	customSourceId?: string | null;
 	onApply: (filters: {
 		colors: ScryfallColor[];
@@ -59,7 +59,7 @@ interface FilterModalContentProps {
 	initialCmc: string;
 	initialOrder: ScryfallSortOrder;
 	initialDir: ScryfallSortDir;
-	customSources: MpcSource[];
+	customSources: MpcSourceWithCount[];
 	initialCustomSourceId: string | null;
 	onApply: FilterModalProps['onApply'];
 	onClose: () => void;

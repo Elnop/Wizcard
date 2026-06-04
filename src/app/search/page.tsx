@@ -15,8 +15,8 @@ import { useCustomCards } from '@/lib/mpc/hooks/useCustomCards';
 import { SearchModeSwitcher } from './components/SearchModeSwitcher/SearchModeSwitcher';
 import type { SearchMode } from './components/SearchModeSwitcher/SearchModeSwitcher';
 import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
-import { getCustomCardSources } from '@/lib/supabase/custom-cards';
-import type { MpcSource } from '@/lib/mpc/types';
+import { getCustomCardSourcesWithCount } from '@/lib/supabase/custom-cards';
+import type { MpcSourceWithCount } from '@/lib/supabase/custom-cards';
 import styles from './page.module.css';
 
 export default function SearchPage() {
@@ -42,7 +42,7 @@ function SearchPageContent() {
 	const { addToWishlist } = useWishlistContext();
 	const [selectedCard, setSelectedCard] = useState<ScryfallCard | null>(null);
 	const [mode, setMode] = useState<SearchMode>('official');
-	const [customSources, setCustomSources] = useState<MpcSource[]>([]);
+	const [customSources, setCustomSources] = useState<MpcSourceWithCount[]>([]);
 	const [customSourceId, setCustomSourceId] = useState<string | null>(null);
 
 	const {
@@ -99,7 +99,7 @@ function SearchPageContent() {
 	} = useCustomCards(showCustom ? customSourceId : undefined);
 
 	useEffect(() => {
-		getCustomCardSources()
+		getCustomCardSourcesWithCount()
 			.then(setCustomSources)
 			.catch(() => {});
 	}, []);
@@ -108,7 +108,8 @@ function SearchPageContent() {
 
 	const hasFilters =
 		name || colors.length > 0 || type || set || rarities.length > 0 || oracleText || cmc;
-	const showEmptyState = showOfficial && !hasFilters && !isLoading && cards.length === 0;
+	const isDefaultQuery = !hasFilters;
+	const showEmptyState = showOfficial && !isDefaultQuery && !isLoading && cards.length === 0;
 
 	const totalActiveFilterCount = activeFilterCount + (customSourceId !== null ? 1 : 0);
 
@@ -183,7 +184,13 @@ function SearchPageContent() {
 
 				{showOfficial && (
 					<>
-						{hasFilters && !isLoading && cards.length > 0 && (
+						{isDefaultQuery && !isLoading && (
+							<div className={styles.resultInfo}>
+								<span>Cartes populaires EDH</span>
+							</div>
+						)}
+
+						{!isDefaultQuery && !isLoading && cards.length > 0 && (
 							<div className={styles.resultInfo}>
 								<span>
 									Showing {cards.length} of {totalCards.toLocaleString()} cards
@@ -234,7 +241,7 @@ function SearchPageContent() {
 							tableColumns={tableColumns}
 						/>
 
-						{!isLoading && hasFilters && cards.length === 0 && !error && (
+						{!isLoading && !isDefaultQuery && cards.length === 0 && !error && (
 							<div className={styles.noResults}>
 								<h3>No cards found</h3>
 								{suggestions.length > 0 ? (

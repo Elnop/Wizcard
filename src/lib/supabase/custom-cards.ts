@@ -48,6 +48,36 @@ export async function getCustomCardSources(): Promise<MpcSource[]> {
 	return (data as CustomCardSourceRow[]).map(rowToMpcSource);
 }
 
+export interface MpcSourceWithCount extends MpcSource {
+	cardCount: number;
+}
+
+export async function getCustomCardSourcesWithCount(): Promise<MpcSourceWithCount[]> {
+	const client = createClient();
+
+	const [sourcesResult, cardsResult] = await Promise.all([
+		client.from('custom_card_sources').select('id, name, description, tags').order('name'),
+		client.from('custom_cards').select('source_id').eq('is_public', true),
+	]);
+
+	if (sourcesResult.error)
+		throw new Error(`Failed to load custom card sources: ${sourcesResult.error.message}`);
+	if (cardsResult.error)
+		throw new Error(`Failed to load custom card counts: ${cardsResult.error.message}`);
+
+	const countBySource = new Map<string, number>();
+	for (const row of cardsResult.data as { source_id: string }[]) {
+		countBySource.set(row.source_id, (countBySource.get(row.source_id) ?? 0) + 1);
+	}
+
+	return (sourcesResult.data as CustomCardSourceRow[])
+		.map((row) => ({
+			...rowToMpcSource(row),
+			cardCount: countBySource.get(row.id) ?? 0,
+		}))
+		.filter((s) => s.cardCount > 0);
+}
+
 export async function getCustomCards(sourceId: string): Promise<MpcCard[]> {
 	const client = createClient();
 
