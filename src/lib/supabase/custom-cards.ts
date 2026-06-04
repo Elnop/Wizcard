@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import type { MpcCard, MpcSource } from '@/lib/mpc/types';
+import type { CardSourceType, CardType, MpcCard, MpcSource } from '@/lib/mpc/types';
 
 interface CustomCardSourceRow {
 	id: string;
@@ -10,10 +10,29 @@ interface CustomCardSourceRow {
 
 interface CustomCardRow {
 	id: string;
-	source_id: string;
+	source_id: string | null;
 	name: string;
-	image_drive_url: string;
+	raw_name: string;
+	image_drive_url: string | null;
+	image_storage_path: string | null;
 	oracle_id: string | null;
+	source_type: CardSourceType;
+	is_public: boolean;
+	created_by: string | null;
+	card_type: CardType;
+	language: string | null;
+	tags: string[];
+	variants: string[];
+	set_code: string | null;
+	collector_number: string | null;
+}
+
+function resolveImageUrl(row: CustomCardRow): string {
+	if (row.image_storage_path) {
+		const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+		return `${supabaseUrl}/storage/v1/object/public/custom-cards/${row.image_storage_path}`;
+	}
+	return row.image_drive_url ?? '';
 }
 
 function rowToMpcSource(row: CustomCardSourceRow): MpcSource {
@@ -30,10 +49,20 @@ function rowToMpcCard(row: CustomCardRow): MpcCard {
 	return {
 		id: row.id.startsWith('mpc:') ? row.id.slice(4) : row.id,
 		name: row.name,
+		rawName: row.raw_name,
 		sourceId: row.source_id,
-		imageUrl: row.image_drive_url,
+		imageUrl: resolveImageUrl(row),
 		isCustom: true,
 		oracleId: row.oracle_id ?? undefined,
+		sourceType: row.source_type,
+		isPublic: row.is_public,
+		createdBy: row.created_by ?? undefined,
+		cardType: row.card_type ?? 'card',
+		language: row.language ?? null,
+		tags: row.tags ?? [],
+		variants: row.variants ?? [],
+		setCode: row.set_code ?? null,
+		collectorNumber: row.collector_number ?? null,
 	};
 }
 
@@ -83,7 +112,9 @@ export async function getCustomCards(sourceId: string): Promise<MpcCard[]> {
 
 	const { data, error } = await client
 		.from('custom_cards')
-		.select('id, source_id, name, image_drive_url, oracle_id')
+		.select(
+			'id, source_id, name, raw_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, variants, set_code, collector_number'
+		)
 		.eq('source_id', sourceId)
 		.eq('is_public', true)
 		.order('name')
@@ -98,7 +129,9 @@ export async function getAllCustomCards(): Promise<MpcCard[]> {
 
 	const { data, error } = await client
 		.from('custom_cards')
-		.select('id, source_id, name, image_drive_url, oracle_id')
+		.select(
+			'id, source_id, name, raw_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, variants, set_code, collector_number'
+		)
 		.eq('is_public', true)
 		.order('name')
 		.limit(10_000);

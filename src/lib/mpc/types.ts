@@ -14,6 +14,7 @@ export interface MpcSource {
 export interface MpcCard {
 	id: string;
 	name: string;
+	rawName: string;
 	sourceId: string | null;
 	imageUrl: string;
 	isCustom: true;
@@ -23,6 +24,10 @@ export interface MpcCard {
 	createdBy?: string;
 	cardType: CardType;
 	language: string | null;
+	tags: string[];
+	variants: string[];
+	setCode: string | null;
+	collectorNumber: string | null;
 }
 
 export interface MpcIndexEntry {
