@@ -5,6 +5,7 @@ import type { ScryfallColor, ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import type { ColorMatch } from '@/lib/search/types';
 import type { MpcSourceWithCount } from '@/lib/supabase/custom-cards';
+import type { CardType } from '@/lib/mpc/types';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { Modal } from '@/components/Modal/Modal';
 import { ColorFilter } from '@/lib/search/components/filters/ColorFilter/ColorFilter';
@@ -15,6 +16,8 @@ import { CmcFilter } from '@/lib/search/components/filters/CmcFilter/CmcFilter';
 import { SetFilter } from '@/lib/search/components/filters/SetFilter/SetFilter';
 import { SortFilter } from '@/lib/search/components/filters/SortFilter/SortFilter';
 import { CustomSourceFilter } from '@/lib/search/components/filters/CustomSourceFilter/CustomSourceFilter';
+import { CardTypeFilter } from '@/lib/search/components/filters/CardTypeFilter/CardTypeFilter';
+import { MpcTagsFilter } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
 import styles from './FilterModal.module.css';
 
 interface FilterModalProps {
@@ -32,6 +35,9 @@ interface FilterModalProps {
 	dir: ScryfallSortDir;
 	customSources?: MpcSourceWithCount[];
 	customSourceId?: string | null;
+	cardTypeFilter?: CardType | 'all';
+	mpcTagsFilter?: string[];
+	availableMpcTags?: string[];
 	onApply: (filters: {
 		colors: ScryfallColor[];
 		colorMatch: ColorMatch;
@@ -43,6 +49,8 @@ interface FilterModalProps {
 		order: ScryfallSortOrder;
 		dir: ScryfallSortDir;
 		customSourceId: string | null;
+		cardTypeFilter: CardType | 'all';
+		mpcTagsFilter: string[];
 	}) => void;
 	onClose: () => void;
 }
@@ -61,6 +69,9 @@ interface FilterModalContentProps {
 	initialDir: ScryfallSortDir;
 	customSources: MpcSourceWithCount[];
 	initialCustomSourceId: string | null;
+	initialCardTypeFilter: CardType | 'all';
+	initialMpcTagsFilter: string[];
+	availableMpcTags: string[];
 	onApply: FilterModalProps['onApply'];
 	onClose: () => void;
 }
@@ -79,6 +90,9 @@ function FilterModalContent({
 	initialDir,
 	customSources,
 	initialCustomSourceId,
+	initialCardTypeFilter,
+	initialMpcTagsFilter,
+	availableMpcTags,
 	onApply,
 	onClose,
 }: FilterModalContentProps) {
@@ -97,6 +111,10 @@ function FilterModalContent({
 	const [draftCustomSourceId, setDraftCustomSourceId] = useState<string | null>(
 		initialCustomSourceId
 	);
+	const [draftCardTypeFilter, setDraftCardTypeFilter] = useState<CardType | 'all'>(
+		initialCardTypeFilter
+	);
+	const [draftMpcTagsFilter, setDraftMpcTagsFilter] = useState<string[]>(initialMpcTagsFilter);
 
 	const handleApply = () => {
 		onApply({
@@ -110,6 +128,8 @@ function FilterModalContent({
 			order: draftOrder,
 			dir: draftDir,
 			customSourceId: draftCustomSourceId,
+			cardTypeFilter: draftCardTypeFilter,
+			mpcTagsFilter: draftMpcTagsFilter,
 		});
 		onClose();
 	};
@@ -125,6 +145,8 @@ function FilterModalContent({
 		setDraftOrder('name');
 		setDraftDir('auto');
 		setDraftCustomSourceId(null);
+		setDraftCardTypeFilter('all');
+		setDraftMpcTagsFilter([]);
 	};
 
 	return (
@@ -162,6 +184,7 @@ function FilterModalContent({
 					dir={draftDir}
 					onDirChange={setDraftDir}
 				/>
+				<CardTypeFilter value={draftCardTypeFilter} onChange={setDraftCardTypeFilter} />
 
 				{customSources.length > 0 && (
 					<>
@@ -171,6 +194,11 @@ function FilterModalContent({
 							sources={customSources}
 							value={draftCustomSourceId}
 							onChange={setDraftCustomSourceId}
+						/>
+						<MpcTagsFilter
+							availableTags={availableMpcTags}
+							value={draftMpcTagsFilter}
+							onChange={setDraftMpcTagsFilter}
 						/>
 					</>
 				)}
@@ -203,6 +231,9 @@ export function FilterModal({
 	dir,
 	customSources = [],
 	customSourceId = null,
+	cardTypeFilter = 'all',
+	mpcTagsFilter = [],
+	availableMpcTags = [],
 	onApply,
 	onClose,
 }: FilterModalProps) {
@@ -225,6 +256,9 @@ export function FilterModal({
 				initialDir={dir}
 				customSources={customSources}
 				initialCustomSourceId={customSourceId}
+				initialCardTypeFilter={cardTypeFilter}
+				initialMpcTagsFilter={mpcTagsFilter}
+				availableMpcTags={availableMpcTags}
 				onApply={onApply}
 				onClose={onClose}
 			/>
