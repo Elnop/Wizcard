@@ -16,6 +16,7 @@ export interface CollectionFilters extends Omit<CardFilters, 'order'> {
 	foilTypeFilter: 'none' | 'all' | 'foil' | 'etched';
 	languageFilter: MtgLanguage | 'all';
 	cardTypeFilter: CardType | 'all';
+	mpcTagsFilter: string[];
 }
 
 export const defaultCollectionFilters: CollectionFilters = {
@@ -25,6 +26,7 @@ export const defaultCollectionFilters: CollectionFilters = {
 	foilTypeFilter: 'all',
 	languageFilter: 'all',
 	cardTypeFilter: 'all',
+	mpcTagsFilter: [],
 };
 
 function parseCmc(raw: string): ((cmc: number) => boolean) | null {
@@ -164,6 +166,13 @@ function matchesCardTypeFilter(
 	return getCardType(card) === cardTypeFilter;
 }
 
+function matchesMpcTagsFilter(card: AnyCard, mpcTagsFilter: string[]): boolean {
+	if (mpcTagsFilter.length === 0) return true;
+	if (!isCustomCard(card as ScryfallCard | CustomCard)) return true;
+	const tags = (card as CustomCard).custom.tags;
+	return mpcTagsFilter.every((t) => tags.includes(t));
+}
+
 function matchesOracleText(card: ScryfallCard, oracleText: string): boolean {
 	if (!oracleText) return true;
 	const tokens = parseOracleTokens(oracleText);
@@ -196,6 +205,7 @@ function cardMatchesFilters(
 	}
 	if (!matchesLanguageFilter(card, filters.languageFilter)) return false;
 	if (!matchesCardTypeFilter(card, filters.cardTypeFilter)) return false;
+	if (!matchesMpcTagsFilter(card, filters.mpcTagsFilter)) return false;
 	return true;
 }
 
