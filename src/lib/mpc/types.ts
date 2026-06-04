@@ -1,3 +1,5 @@
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+
 export type CardSourceType = 'mpc_ingested' | 'user_created';
 export type CardType = 'card' | 'token' | 'cardback';
 
@@ -24,18 +26,16 @@ export interface MpcCard {
 }
 
 export interface MpcIndexEntry {
-	identifier: string; // Google Drive file ID
-	name: string; // Normalized card name (for matching)
-	rawName: string; // Original name from mpcfill
-	sourceName: string; // e.g. "TwoSheds"
-	sourceKey: string; // e.g. "TwoSheds"
+	identifier: string;
+	name: string;
+	rawName: string;
+	sourceName: string;
+	sourceKey: string;
 	smallThumbnailUrl: string;
 	mediumThumbnailUrl: string;
 	tags: string[];
 	dpi: number;
 }
-
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
 export interface CustomCardMeta {
 	source_id: string | null;
@@ -52,7 +52,7 @@ export interface CustomCardMeta {
 	raw_name: string;
 }
 
-export type CustomCard = Partial<ScryfallCard> & {
+export type CustomCard = Omit<Partial<ScryfallCard>, 'object'> & {
 	object: 'custom_card';
 	id: string;
 	name: string;
@@ -60,5 +60,5 @@ export type CustomCard = Partial<ScryfallCard> & {
 };
 
 export function isCustomCard(card: ScryfallCard | CustomCard): card is CustomCard {
-	return (card as { object?: string }).object === 'custom_card';
+	return card.object === 'custom_card';
 }
