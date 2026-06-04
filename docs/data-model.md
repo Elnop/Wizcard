@@ -156,25 +156,51 @@ RLS: public SELECT, service_role only for writes.
 
 ### `public.custom_cards`
 
-| Column               | Type        | Notes                                                     |
-| -------------------- | ----------- | --------------------------------------------------------- |
-| `id`                 | text (PK)   | `mpc:{drive_file_id}`                                     |
-| `source_id`          | text (FK)   | → `custom_card_sources.id` (cascade delete)               |
-| `name`               | text        | Normalized name (known suffixes stripped)                 |
-| `raw_name`           | text        | Original filename from Drive                              |
-| `image_storage_path` | text        | Path in Storage bucket: `{source_id}/{file_id}.{ext}`     |
-| `image_drive_url`    | text        | Drive thumbnail fallback (`thumbnail?id=...&sz=w400`)     |
-| `artist`             | text        | Optional, extracted from filename when available          |
-| `tags`               | text[]      | `['custom:mpc', 'mpc-source:{source_id}']`                |
-| `is_public`          | bool        | `true` for all community cards                            |
-| `created_by`         | uuid (FK)   | NULL for ingested cards; user ID for future user cards    |
-| `created_at`         | timestamptz |                                                           |
-| `oracle_id`          | text        | Scryfall oracle_id if card was matched (exact name)       |
-| `enriched_at`        | timestamptz | Set when Scryfall match succeeded; NULL = not yet matched |
+| Column               | Type        | Notes                                                                  |
+| -------------------- | ----------- | ---------------------------------------------------------------------- |
+| `id`                 | text (PK)   | `mpc:{drive_file_id}`                                                  |
+| `source_id`          | text (FK)   | → `custom_card_sources.id` (cascade delete)                            |
+| `name`               | text        | Parsed card name (text before first `(`, `[`, or `{` in filename)      |
+| `raw_name`           | text        | Original filename from Drive                                           |
+| `set_code`           | text        | First `[TAG]` from filename — candidate Scryfall set code (e.g. `LTC`) |
+| `collector_number`   | text        | `{N}` from filename — Scryfall collector number (e.g. `357`)           |
+| `variants`           | text[]      | All `(...)` tags from filename (e.g. `["Balin's Tomb", "Extended"]`)   |
+| `image_storage_path` | text        | Path in Storage bucket: `{source_id}/{file_id}.{ext}`                  |
+| `image_drive_url`    | text        | Drive thumbnail fallback (`thumbnail?id=...&sz=w400`)                  |
+| `artist`             | text        | Optional, extracted from filename when available                       |
+| `tags`               | text[]      | `['custom:mpc', 'mpc-source:{source_id}']`                             |
+| `is_public`          | bool        | `true` for all community cards                                         |
+| `created_by`         | uuid (FK)   | NULL for ingested cards; user ID for future user cards                 |
+| `created_at`         | timestamptz |                                                                        |
+| `oracle_id`          | text        | Scryfall oracle_id if card was matched                                 |
+| `enriched_at`        | timestamptz | Set when Scryfall match succeeded; NULL = not yet matched              |
 
 RLS: public SELECT (where `is_public = true`), service_role only for writes.
 
-**Indexes:** `custom_cards_source_id_idx` (source_id), `custom_cards_name_idx` (name), `custom_cards_oracle_id_idx` (oracle_id, partial where not null).
+**Indexes:** `custom_cards_source_id_idx` (source_id), `custom_cards_name_idx` (name), `custom_cards_oracle_id_idx` (oracle_id, partial where not null), `custom_cards_set_code_idx` (set_code, partial where not null).
+
+### Filename naming convention
+
+Community sources follow the [Proxyshop](https://github.com/Investigamer/Proxyshop) convention:
+
+```
+Card Name (Variant) [SET_CODE] {collector_number}.ext
+```
+
+| Component        | Syntax     | Example          | Meaning                                                           |
+| ---------------- | ---------- | ---------------- | ----------------------------------------------------------------- |
+| Card name        | plain text | `Ancient Tomb`   | Scryfall card name                                                |
+| Variant/subtitle | `(...)`    | `(Balin's Tomb)` | Alt art label, version tag, custom descriptor                     |
+| Set code         | `[ABC]`    | `[LTC]`          | Scryfall set code — or free-form tag if it contains spaces/commas |
+| Collector number | `{N}`      | `{357}`          | Scryfall collector number (only valid if set code also present)   |
+
+Examples:
+
+- `Ancient Tomb (Balin's Tomb) [LTC] {357}.jpg` → `name="Ancient Tomb"`, `set_code="LTC"`, `collector_number="357"`, `variants=["Balin's Tomb"]`
+- `Elesh Norn, Mother of Machines (v2) [third party art, popout].png` → `name="Elesh Norn, Mother of Machines"`, `set_code="third party art, popout"` (not a real set — enrichment will fall back to name lookup), `variants=["v2"]`
+- `Lightning Bolt.png` → `name="Lightning Bolt"`, no set/collector metadata
+
+The parser lives at `src/lib/mpc/parse-filename.ts` (`parseCardFilename()`).
 
 **Storage bucket:** `custom-cards` (public read). Images served at:
 `{SUPABASE_URL}/storage/v1/object/public/custom-cards/{image_storage_path}`

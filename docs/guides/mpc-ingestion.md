@@ -53,18 +53,38 @@ npx tsx scripts/ingest-mpc-cards.ts --skip-scryfall
 1. Fetches all sources from `mpcfill.com/2/sources/`, filters to Google Drive sources
 2. Upserts each source into `custom_card_sources`
 3. For each source:
-   - Lists image files in the Google Drive folder
-   - Skips files already in `custom_cards` with `image_storage_path IS NOT NULL` (resumable)
-   - Downloads each image and uploads to the `custom-cards` Storage bucket at `{source_id}/{file_id}.{ext}`
+   - Lists image files in the Google Drive folder (recursively)
+   - Skips files already in `custom_cards` (resumable)
+   - Parses each filename with `parseCardFilename()` to extract `name`, `set_code`, `collector_number`, and `variants`
    - Upserts a row into `custom_cards`
 4. Updates `card_count` and `last_synced_at` on the source row
-5. **Scryfall enrichment** (unless `--skip-scryfall`):
-   - Loads all cards in the source with `enriched_at IS NULL`
-   - Batches normalized card names (75 per request) → POST `/cards/collection` (exact match only)
+5. **Scryfall enrichment** (unless `--skip-scryfall`), two strategies in order:
+   - **Strategy A** — set + collector number lookup: for cards with both `set_code` and `collector_number`, calls `GET /cards/:set/:number` per card (5 concurrent). Highly reliable when the filename follows the Proxyshop convention.
+   - **Strategy B** — batch name lookup: for all remaining unenriched cards, batches `name` (75 per request) → POST `/cards/collection` (exact name match). Handles cards without set/collector metadata.
    - For each matched card: sets `oracle_id` + `enriched_at` on the row
    - Non-matched cards are left with `enriched_at = NULL` and retried on the next run
 
-Concurrency: 5 sources in parallel, 10 images per source in parallel. Scryfall calls are throttled to 100ms minimum spacing (10 req/s max).
+Concurrency: 5 sources in parallel. Strategy A: 5 Scryfall GETs in parallel. Scryfall calls are throttled to 100 ms minimum spacing (10 req/s max).
+
+## Filename Naming Convention
+
+Sources follow the [Proxyshop](https://github.com/Investigamer/Proxyshop) community convention:
+
+```
+Card Name (Variant) [SET_CODE] {collector_number}.ext
+```
+
+- `[SET_CODE]` — Scryfall set code (e.g. `[LTC]`, `[MH2]`). If it contains spaces or commas, it is a free-form community tag and Strategy A will skip it (falling through to Strategy B).
+- `{N}` — Scryfall collector number. Only meaningful when a set code is also present.
+- `(...)` — variant/subtitle, repeated as needed. Stored in `variants[]` but not used for Scryfall matching.
+
+Examples:
+
+```
+Ancient Tomb (Balin's Tomb) [LTC] {357}.jpg   → Strategy A (set+num lookup)
+Elesh Norn, Mother of Machines (v2) [third party art, popout].png  → Strategy B (name lookup)
+Lightning Bolt.png                             → Strategy B (name lookup)
+```
 
 ## Resumability
 
