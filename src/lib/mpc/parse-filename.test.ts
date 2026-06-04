@@ -1,62 +1,96 @@
-import { describe, it, expect } from 'vitest';
 import { parseCardFilename } from './parse-filename';
 
-describe('parseCardFilename', () => {
-	it('should parse card name with variant, bracket tags, collector number, and extension', () => {
-		const result = parseCardFilename("Ancient Tomb (Balin's Tomb) [LTC] {357}.jpg");
-		expect(result.cardName).toBe('Ancient Tomb');
-		expect(result.variants).toEqual(["Balin's Tomb"]);
-		expect(result.bracketTags).toEqual(['LTC']);
-		expect(result.collectorNumber).toBe('357');
-		expect(result.extension).toBe('jpg');
-	});
+type Case = {
+	input: string;
+	cardName: string;
+	variants: string[];
+	bracketTags: string[];
+	collectorNumber: string | null;
+	extension: string | null;
+};
 
-	it('should parse card with multiple variants and bracket tags', () => {
-		const result = parseCardFilename(
-			'Elesh Norn, Mother of Machines (v2) [third party art, popout].png'
+const cases: Case[] = [
+	{
+		input: "Ancient Tomb (Balin's Tomb) [LTC] {357}.jpg",
+		cardName: 'Ancient Tomb',
+		variants: ["Balin's Tomb"],
+		bracketTags: ['LTC'],
+		collectorNumber: '357',
+		extension: 'jpg',
+	},
+	{
+		input: 'Elesh Norn, Mother of Machines (v2) [third party art, popout].png',
+		cardName: 'Elesh Norn, Mother of Machines',
+		variants: ['v2'],
+		bracketTags: ['third party art, popout'],
+		collectorNumber: null,
+		extension: 'png',
+	},
+	{
+		input: 'Lightning Bolt [M10] {127}.png',
+		cardName: 'Lightning Bolt',
+		variants: [],
+		bracketTags: ['M10'],
+		collectorNumber: '127',
+		extension: 'png',
+	},
+	{
+		input: 'Lightning Bolt.png',
+		cardName: 'Lightning Bolt',
+		variants: [],
+		bracketTags: [],
+		collectorNumber: null,
+		extension: 'png',
+	},
+	{
+		input: 'Jace, the Mind Sculptor (Extended) (Alt Art) [SLD] {123}.jpg',
+		cardName: 'Jace, the Mind Sculptor',
+		variants: ['Extended', 'Alt Art'],
+		bracketTags: ['SLD'],
+		collectorNumber: '123',
+		extension: 'jpg',
+	},
+	{
+		input: 'Ragavan, Nimble Pilferer',
+		cardName: 'Ragavan, Nimble Pilferer',
+		variants: [],
+		bracketTags: [],
+		collectorNumber: null,
+		extension: null,
+	},
+];
+
+let passed = 0;
+let failed = 0;
+
+for (const c of cases) {
+	const result = parseCardFilename(c.input);
+	const errors: string[] = [];
+
+	if (result.cardName !== c.cardName)
+		errors.push(`  cardName: got "${result.cardName}", want "${c.cardName}"`);
+	if (JSON.stringify(result.variants) !== JSON.stringify(c.variants))
+		errors.push(
+			`  variants: got ${JSON.stringify(result.variants)}, want ${JSON.stringify(c.variants)}`
 		);
-		expect(result.cardName).toBe('Elesh Norn, Mother of Machines');
-		expect(result.variants).toEqual(['v2']);
-		expect(result.bracketTags).toEqual(['third party art, popout']);
-		expect(result.collectorNumber).toBeNull();
-		expect(result.extension).toBe('png');
-	});
-
-	it('should parse card with only bracket tags and collector number', () => {
-		const result = parseCardFilename('Lightning Bolt [M10] {127}.png');
-		expect(result.cardName).toBe('Lightning Bolt');
-		expect(result.variants).toEqual([]);
-		expect(result.bracketTags).toEqual(['M10']);
-		expect(result.collectorNumber).toBe('127');
-		expect(result.extension).toBe('png');
-	});
-
-	it('should parse card with only name and extension', () => {
-		const result = parseCardFilename('Lightning Bolt.png');
-		expect(result.cardName).toBe('Lightning Bolt');
-		expect(result.variants).toEqual([]);
-		expect(result.bracketTags).toEqual([]);
-		expect(result.collectorNumber).toBeNull();
-		expect(result.extension).toBe('png');
-	});
-
-	it('should parse card with multiple variant groups', () => {
-		const result = parseCardFilename(
-			'Jace, the Mind Sculptor (Extended) (Alt Art) [SLD] {123}.jpg'
+	if (JSON.stringify(result.bracketTags) !== JSON.stringify(c.bracketTags))
+		errors.push(
+			`  bracketTags: got ${JSON.stringify(result.bracketTags)}, want ${JSON.stringify(c.bracketTags)}`
 		);
-		expect(result.cardName).toBe('Jace, the Mind Sculptor');
-		expect(result.variants).toEqual(['Extended', 'Alt Art']);
-		expect(result.bracketTags).toEqual(['SLD']);
-		expect(result.collectorNumber).toBe('123');
-		expect(result.extension).toBe('jpg');
-	});
+	if (result.collectorNumber !== c.collectorNumber)
+		errors.push(`  collectorNumber: got "${result.collectorNumber}", want "${c.collectorNumber}"`);
+	if (result.extension !== c.extension)
+		errors.push(`  extension: got "${result.extension}", want "${c.extension}"`);
 
-	it('should parse card with no metadata', () => {
-		const result = parseCardFilename('Ragavan, Nimble Pilferer');
-		expect(result.cardName).toBe('Ragavan, Nimble Pilferer');
-		expect(result.variants).toEqual([]);
-		expect(result.bracketTags).toEqual([]);
-		expect(result.collectorNumber).toBeNull();
-		expect(result.extension).toBeNull();
-	});
-});
+	if (errors.length > 0) {
+		console.error(`FAIL: ${c.input}`);
+		errors.forEach((e) => console.error(e));
+		failed++;
+	} else {
+		console.log(`PASS: ${c.input}`);
+		passed++;
+	}
+}
+
+console.log(`\n${passed} passed, ${failed} failed`);
+if (failed > 0) process.exit(1);

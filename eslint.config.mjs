@@ -44,6 +44,13 @@ const eslintConfig = defineConfig([
 			'sonarjs/no-unused-vars': 'off',
 		},
 	},
+	{
+		files: ['**/*.test.ts', '**/*.test.tsx'],
+		rules: {
+			// Standalone test scripts don't use test frameworks, so no-empty-test-file is inappropriate
+			'sonarjs/no-empty-test-file': 'off',
+		},
+	},
 	globalIgnores([
 		'.next/**',
 		'.claude/worktrees/**',
