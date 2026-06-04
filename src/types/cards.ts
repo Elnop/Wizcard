@@ -1,5 +1,6 @@
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { MtgLanguage } from '@/lib/mtg/languages';
+import type { CustomCard } from '@/lib/mpc/types';
 
 export type CardCondition = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG';
 
@@ -21,7 +22,7 @@ export interface CardEntry {
 }
 
 // One copy in the collection = Scryfall print data + per-copy metadata
-export type Card = ScryfallCard & { entry: CardEntry };
+export type Card = (ScryfallCard | CustomCard) & { entry: CardEntry };
 
 // All copies of a card with the same oracle_id (potentially different editions)
 export interface CardStack {

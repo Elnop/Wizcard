@@ -1,3 +1,6 @@
+export type CardSourceType = 'mpc_ingested' | 'user_created';
+export type CardType = 'card' | 'token' | 'cardback';
+
 export interface MpcSource {
 	id: string;
 	name: string;
@@ -9,10 +12,15 @@ export interface MpcSource {
 export interface MpcCard {
 	id: string;
 	name: string;
-	sourceId: string;
+	sourceId: string | null;
 	imageUrl: string;
 	isCustom: true;
 	oracleId?: string;
+	sourceType: CardSourceType;
+	isPublic: boolean;
+	createdBy?: string;
+	cardType: CardType;
+	language: string | null;
 }
 
 export interface MpcIndexEntry {
@@ -25,4 +33,32 @@ export interface MpcIndexEntry {
 	mediumThumbnailUrl: string;
 	tags: string[];
 	dpi: number;
+}
+
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+
+export interface CustomCardMeta {
+	source_id: string | null;
+	source_name: string;
+	source_type: CardSourceType;
+	card_type: CardType;
+	image_url: string;
+	lang: string | null;
+	tags: string[];
+	variants: string[];
+	set_code: string | null;
+	collector_number: string | null;
+	is_public: boolean;
+	raw_name: string;
+}
+
+export type CustomCard = Partial<ScryfallCard> & {
+	object: 'custom_card';
+	id: string;
+	name: string;
+	custom: CustomCardMeta;
+};
+
+export function isCustomCard(card: ScryfallCard | CustomCard): card is CustomCard {
+	return 'custom' in card;
 }
