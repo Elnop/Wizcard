@@ -1,2 +1,2 @@
-export type { MpcCard, MpcSource } from './types';
-export { toSyntheticScryfallCard } from './adapter';
+export type { MpcCard, MpcSource, CustomCard } from './types';
+export { toCustomCard } from './adapter';

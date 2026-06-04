@@ -1,22 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import { toSyntheticScryfallCard } from '../adapter';
-import type { MpcIndexEntry } from '../types';
+import { toCustomCard } from '../adapter';
+import type { CustomCard, MpcIndexEntry } from '../types';
 
 interface UseMpcPrintsResult {
-	prints: ScryfallCard[];
+	prints: CustomCard[];
 	loading: boolean;
 	error: string | null;
 }
 
 export function useMpcPrints(cardName: string): UseMpcPrintsResult {
-	const [state, setState] = useState<{
-		prints: ScryfallCard[];
-		loading: boolean;
-		error: string | null;
-	}>({
+	const [state, setState] = useState<UseMpcPrintsResult>({
 		prints: [],
 		loading: false,
 		error: null,
@@ -40,14 +35,23 @@ export function useMpcPrints(cardName: string): UseMpcPrintsResult {
 
 				if (cancelled) return;
 
-				const synthetic = entries.map((entry) =>
-					toSyntheticScryfallCard(
+				const cards = entries.map((entry) =>
+					toCustomCard(
 						{
 							id: entry.identifier,
 							name: entry.name,
+							rawName: entry.rawName,
 							sourceId: entry.sourceKey,
 							imageUrl: entry.mediumThumbnailUrl,
 							isCustom: true,
+							sourceType: 'mpc_ingested',
+							isPublic: true,
+							cardType: 'card',
+							language: null,
+							tags: entry.tags,
+							variants: [],
+							setCode: null,
+							collectorNumber: null,
 						},
 						{
 							id: entry.sourceKey,
@@ -57,7 +61,7 @@ export function useMpcPrints(cardName: string): UseMpcPrintsResult {
 						}
 					)
 				);
-				setState({ prints: synthetic, loading: false, error: null });
+				setState({ prints: cards, loading: false, error: null });
 			} catch (err: unknown) {
 				if (cancelled) return;
 				setState({

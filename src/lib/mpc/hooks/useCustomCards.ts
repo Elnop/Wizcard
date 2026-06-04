@@ -6,18 +6,18 @@ import {
 	getAllCustomCards,
 	getCustomCardSources,
 } from '@/lib/supabase/custom-cards';
-import { toSyntheticScryfallCard } from '../adapter';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import { toCustomCard } from '../adapter';
+import type { CustomCard } from '../types';
 
 interface State {
-	cards: ScryfallCard[];
+	cards: CustomCard[];
 	isLoading: boolean;
 	error: string | null;
 }
 
 type Action =
 	| { type: 'loading' }
-	| { type: 'success'; cards: ScryfallCard[] }
+	| { type: 'success'; cards: CustomCard[] }
 	| { type: 'error'; message: string };
 
 function reducer(state: State, action: Action): State {
@@ -53,13 +53,13 @@ export function useCustomCards(sourceId?: string | null) {
 				if (cancelled) return;
 				const sourceMap = new Map(sources.map((s) => [s.id, s]));
 				const converted = mpcCards.map((card) => {
-					const source = sourceMap.get(card.sourceId) ?? {
-						id: card.sourceId,
-						name: card.sourceId,
-						isBuiltIn: true,
+					const source = (card.sourceId ? sourceMap.get(card.sourceId) : undefined) ?? {
+						id: card.sourceId ?? 'user',
+						name: card.sourceId ?? 'My Cards',
+						isBuiltIn: false,
 						tags: [],
 					};
-					return toSyntheticScryfallCard(card, source);
+					return toCustomCard(card, source);
 				});
 				dispatch({ type: 'success', cards: converted });
 			} catch (err: unknown) {
