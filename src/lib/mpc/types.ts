@@ -60,5 +60,5 @@ export type CustomCard = Partial<ScryfallCard> & {
 };
 
 export function isCustomCard(card: ScryfallCard | CustomCard): card is CustomCard {
-	return 'custom' in card;
+	return (card as { object?: string }).object === 'custom_card';
 }
