@@ -72,7 +72,7 @@ export function useMpcPrints(cardName: string): UseMpcPrintsResult {
 			}
 		};
 
-		fetchPrints();
+		void fetchPrints();
 
 		return () => {
 			cancelled = true;
