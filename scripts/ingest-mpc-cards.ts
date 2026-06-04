@@ -58,7 +58,7 @@ interface ScryfallCardMinimal {
 }
 
 interface ScryfallSingleCard {
-	oracle_id: string;
+	oracle_id?: string;
 }
 
 interface ScryfallCollectionResponse {
@@ -262,7 +262,7 @@ async function applyScryfallBatch(
 async function enrichBySetAndNumber(
 	sourceId: string,
 	prefix: string
-): Promise<{ matched: number; remaining: string[] }> {
+): Promise<{ matched: number }> {
 	const { data: candidates, error } = await supabase
 		.from('custom_cards')
 		.select('id, set_code, collector_number')
@@ -273,36 +273,47 @@ async function enrichBySetAndNumber(
 		.limit(100_000);
 
 	if (error || !candidates || candidates.length === 0) {
-		return { matched: 0, remaining: [] };
+		return { matched: 0 };
 	}
 
 	let matched = 0;
-	const failedIds: string[] = [];
 	const now = new Date().toISOString();
 
-	for (const card of candidates) {
-		const path = `/cards/${encodeURIComponent(card.set_code!.toLowerCase())}/${encodeURIComponent(card.collector_number!)}`;
-		let result: ScryfallSingleCard | null = null;
-		try {
-			result = await scryfallGet<ScryfallSingleCard>(path);
-		} catch (err) {
-			console.warn(`${prefix} — ⚠ Strategy A GET failed for ${card.id}: ${(err as Error).message}`);
-		}
+	const strategyALimiter = pLimit(5);
+	await Promise.all(
+		candidates.map((card) =>
+			strategyALimiter(async () => {
+				if (!card.set_code || !card.collector_number) return;
+				const path = `/cards/${encodeURIComponent(card.set_code.toLowerCase())}/${encodeURIComponent(card.collector_number)}`;
+				let result: ScryfallSingleCard | null = null;
+				try {
+					result = await scryfallGet<ScryfallSingleCard>(path);
+				} catch (err) {
+					console.warn(
+						`${prefix} — ⚠ Strategy A GET failed for ${card.id}: ${(err as Error).message}`
+					);
+				}
 
-		if (result?.oracle_id) {
-			await supabase
-				.from('custom_cards')
-				.update({ oracle_id: result.oracle_id, enriched_at: now })
-				.eq('id', card.id);
-			matched++;
-		} else {
-			failedIds.push(card.id);
-		}
-	}
+				if (result?.oracle_id) {
+					const { error: updateErr } = await supabase
+						.from('custom_cards')
+						.update({ oracle_id: result.oracle_id, enriched_at: now })
+						.eq('id', card.id);
+					if (updateErr) {
+						console.warn(
+							`${prefix} — ⚠ oracle_id update failed for ${card.id}: ${updateErr.message}`
+						);
+					} else {
+						matched++;
+					}
+				}
+			})
+		)
+	);
 
 	if (matched > 0) console.log(`${prefix} — Strategy A: ${matched} matched by set+num`);
 
-	return { matched, remaining: failedIds };
+	return { matched };
 }
 
 async function enrichSourceWithScryfall(
