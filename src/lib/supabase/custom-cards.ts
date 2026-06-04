@@ -107,14 +107,15 @@ export async function getCustomCardSourcesWithCount(): Promise<MpcSourceWithCoun
 		.filter((s) => s.cardCount > 0);
 }
 
+const CUSTOM_CARD_SELECT =
+	'id, source_id, name, raw_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, variants, set_code, collector_number';
+
 export async function getCustomCards(sourceId: string): Promise<MpcCard[]> {
 	const client = createClient();
 
 	const { data, error } = await client
 		.from('custom_cards')
-		.select(
-			'id, source_id, name, raw_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, variants, set_code, collector_number'
-		)
+		.select(CUSTOM_CARD_SELECT)
 		.eq('source_id', sourceId)
 		.eq('is_public', true)
 		.order('name')
@@ -129,9 +130,7 @@ export async function getAllCustomCards(): Promise<MpcCard[]> {
 
 	const { data, error } = await client
 		.from('custom_cards')
-		.select(
-			'id, source_id, name, raw_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, variants, set_code, collector_number'
-		)
+		.select(CUSTOM_CARD_SELECT)
 		.eq('is_public', true)
 		.order('name')
 		.limit(10_000);
