@@ -128,7 +128,7 @@ export function useImportPreviewState({
 	const selectedImportStack = useMemo((): CardStack | null => {
 		if (!selectedImportCard) return null;
 		return {
-			oracleId: selectedImportCard.oracle_id,
+			oracleId: selectedImportCard.oracle_id ?? selectedImportCard.id,
 			name: selectedImportCard.name,
 			cards: [selectedImportCard],
 		};
