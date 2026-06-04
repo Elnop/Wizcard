@@ -4,6 +4,8 @@ import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard, ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
+import type { CustomCard } from '@/lib/mpc/types';
+import { isCustomCard } from '@/lib/mpc/types';
 import type { DeckZone } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
@@ -21,6 +23,7 @@ import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/Ca
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { WishlistIcon } from '@/components/WishlistIcon/WishlistIcon';
 import { CopyCardOverlay } from './CopyCardOverlay';
+import { CustomCardSection } from './CustomCardSection';
 import styles from './CardModal.module.css';
 
 const ZONE_LABELS: Record<DeckZone, string> = {
@@ -42,7 +45,7 @@ function isCollectionCard(card: Card | ScryfallCard): card is Card {
 }
 
 interface Props {
-	cards: Card | Card[] | ScryfallCard | null;
+	cards: Card | Card[] | ScryfallCard | CustomCard | null;
 	initialRowId?: string;
 	initialChangingPrintRowId?: string;
 	onClose: () => void;
@@ -663,6 +666,50 @@ function ScryfallCardModalInner({
 	);
 }
 
+function CustomCardModalInner({ card, onClose }: { card: CustomCard; onClose: () => void }) {
+	const [lightbox, setLightbox] = useState(false);
+	const symbolMap = useScryfallSymbols();
+
+	return (
+		<>
+			<Modal onClose={onClose} className={styles.modal}>
+				<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path
+							d="M2 2l12 12M14 2L2 14"
+							stroke="currentColor"
+							strokeWidth="1.8"
+							strokeLinecap="round"
+						/>
+					</svg>
+				</button>
+
+				<div className={styles.layout}>
+					<div className={styles.imageCol}>
+						<CardImage
+							card={card as unknown as Parameters<typeof CardImage>[0]['card']}
+							size="large"
+							priority
+							onClick={() => setLightbox(true)}
+						/>
+					</div>
+
+					<div className={styles.infoCol}>
+						{(card.type_line || card.oracle_text) && (
+							<CardDetailSection card={card as unknown as ScryfallCard} symbolMap={symbolMap} />
+						)}
+						<CustomCardSection card={card} />
+					</div>
+				</div>
+			</Modal>
+
+			{lightbox && (
+				<CardLightbox card={card as unknown as ScryfallCard} onClose={() => setLightbox(false)} />
+			)}
+		</>
+	);
+}
+
 export function CardModal({
 	cards,
 	initialRowId,
@@ -693,11 +740,16 @@ export function CardModal({
 
 	const first = normalizedCards[0];
 
-	if (!isCollectionCard(first)) {
+	// Custom card path — must come before isCollectionCard check
+	if (isCustomCard(first as ScryfallCard | CustomCard)) {
+		return <CustomCardModalInner key={first.id} card={first as CustomCard} onClose={onClose} />;
+	}
+
+	if (!isCollectionCard(first as Card | ScryfallCard)) {
 		return (
 			<ScryfallCardModalInner
 				key={first.id}
-				card={first}
+				card={first as ScryfallCard}
 				onClose={onClose}
 				onAddToCollection={onAddToCollection}
 				addLabel={addLabel}
