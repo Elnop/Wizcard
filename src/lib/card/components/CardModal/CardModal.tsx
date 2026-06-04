@@ -686,12 +686,7 @@ function CustomCardModalInner({ card, onClose }: { card: CustomCard; onClose: ()
 
 				<div className={styles.layout}>
 					<div className={styles.imageCol}>
-						<CardImage
-							card={card as unknown as Parameters<typeof CardImage>[0]['card']}
-							size="large"
-							priority
-							onClick={() => setLightbox(true)}
-						/>
+						<CardImage card={card} size="large" priority onClick={() => setLightbox(true)} />
 					</div>
 
 					<div className={styles.infoCol}>
