@@ -1,21 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { MpcIndexEntry } from '@/lib/mpc/types';
+import { parseCardFilename } from '@/lib/mpc/parse-filename';
 
 export const revalidate = 86400;
 
 const MPCFILL_BASE = 'https://mpcfill.com/2';
 const FETCH_OPTS = { headers: { 'User-Agent': 'Wizcard/1.0' } };
-
-// eslint-disable-next-line sonarjs/slow-regex
-const SET_RE = /\s*\[[A-Z0-9]+\]\s*/g;
-// eslint-disable-next-line sonarjs/slow-regex
-const NUM_RE = /\s*\{\d+\}\s*/g;
-// eslint-disable-next-line sonarjs/slow-regex
-const VARIANT_RE = /\s*\([^)]+\)\s*$/;
-
-function normalizeName(raw: string): string {
-	return raw.replace(SET_RE, ' ').replace(NUM_RE, ' ').replace(VARIANT_RE, '').trim();
-}
 
 interface MpcfillCard {
 	name: string;
@@ -64,7 +54,7 @@ async function buildIndex(): Promise<MpcIndexEntry[]> {
 			for (const card of data.cards ?? []) {
 				entries.push({
 					identifier: card.identifier,
-					name: normalizeName(card.name),
+					name: parseCardFilename(card.name).cardName,
 					rawName: card.name,
 					sourceName: card.sourceName ?? sourceKey,
 					sourceKey,
@@ -117,7 +107,7 @@ export async function GET(req: Request) {
 
 	try {
 		const index = await getIndex();
-		const needle = normalizeName(rawName).toLowerCase();
+		const needle = parseCardFilename(rawName).cardName.toLowerCase();
 		const matches = index.filter((e) => e.name.toLowerCase() === needle);
 		return NextResponse.json(matches);
 	} catch (err) {
