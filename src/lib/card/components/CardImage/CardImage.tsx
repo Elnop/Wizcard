@@ -4,12 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
 import { useLocalizedImage } from '@/lib/scryfall/hooks/useLocalizedImage';
+import { isCustomCard } from '@/lib/mpc/types';
+import type { CustomCard } from '@/lib/mpc/types';
 import styles from './CardImage.module.css';
 
 type CardImageCard = {
 	name: string;
-	set: string;
-	collector_number: string;
+	set?: string;
+	collector_number?: string;
 	language?: string;
 	entry?: { language?: string };
 	image_uris?: { small?: string; normal?: string; large?: string };
@@ -17,6 +19,8 @@ type CardImageCard = {
 		name?: string;
 		image_uris?: { small?: string; normal?: string; large?: string };
 	}>;
+	object?: string;
+	custom?: { image_url: string };
 };
 
 export interface CardImageProps {
@@ -71,16 +75,34 @@ export function CardImage({
 		return () => observer.disconnect();
 	}, []);
 
-	const { localized, loading: localizedLoading } = useLocalizedImage(card, priority || isVisible);
+	const isInputCustom = isCustomCard(card as unknown as CustomCard);
+	const { localized, loading: localizedLoading } = useLocalizedImage(
+		card as Parameters<typeof useLocalizedImage>[0],
+		!isInputCustom && (priority || isVisible)
+	);
 	const effectiveCard = localized ? { ...card, ...localized } : card;
 
+	const isCustom = isCustomCard(effectiveCard as unknown as CustomCard);
 	const isDoubleFaced =
+		!isCustom &&
 		effectiveCard.card_faces &&
 		effectiveCard.card_faces.length > 1 &&
 		effectiveCard.card_faces[0].image_uris;
-	const imageUri = isDoubleFaced
-		? (effectiveCard.card_faces![currentFace].image_uris?.[size] ?? '')
-		: getScryfallCardImageUriBySize(effectiveCard, size);
+
+	let imageUri = '';
+	if (isCustom) {
+		imageUri = (effectiveCard as unknown as CustomCard).custom.image_url;
+	} else if (isDoubleFaced) {
+		imageUri = effectiveCard.card_faces![currentFace].image_uris?.[size] ?? '';
+	} else {
+		imageUri = getScryfallCardImageUriBySize(
+			{
+				image_uris: effectiveCard.image_uris,
+				card_faces: effectiveCard.card_faces,
+			},
+			size
+		);
+	}
 
 	const { width, height } = sizeMap[size];
 
@@ -146,7 +168,7 @@ export function CardImage({
 			);
 		}
 		return (
-			<div className={styles.placeholder} style={{ width, height }}>
+			<div className={styles.placeholder}>
 				<span className={styles.placeholderText}>{card.name}</span>
 			</div>
 		);
