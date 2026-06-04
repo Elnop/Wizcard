@@ -268,7 +268,7 @@ function CardModalInner({
 				label: 'Print',
 				render: (c) => {
 					const card = c as Card;
-					return `${card.set.toUpperCase()} #${card.collector_number}`;
+					return `${card.set?.toUpperCase() ?? ''} #${card.collector_number ?? ''}`;
 				},
 			},
 			{
@@ -422,7 +422,7 @@ function CardModalInner({
 
 					<div className={styles.infoCol}>
 						<CardDetailSection
-							card={selectedCard}
+							card={selectedCard as ScryfallCard}
 							symbolMap={symbolMap}
 							language={selectedCard.entry.language}
 						/>
@@ -500,7 +500,7 @@ function CardModalInner({
 
 			{lightbox && (
 				<CardLightbox
-					card={selectedCard}
+					card={selectedCard as ScryfallCard}
 					onClose={() => setLightbox(false)}
 					isFoil={selectedCard.entry.isFoil}
 					foilType={selectedCard.entry.foilType}
@@ -564,7 +564,7 @@ function CardModalInner({
 			{addingCopy && (
 				<EditCardModal
 					mode="add"
-					scryfallCard={selectedCard}
+					scryfallCard={selectedCard as ScryfallCard}
 					onAdd={(_print, entry) => {
 						onIncrement?.(entry);
 						setAddingCopy(false);

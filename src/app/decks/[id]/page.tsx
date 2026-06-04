@@ -203,11 +203,11 @@ export default function DeckDetailPage() {
 		(card: AnyCard) => {
 			if (bulkSelectMode) {
 				const c = card as ResolvedDeckCard;
-				toggleBulkSelect(c.oracle_id);
+				toggleBulkSelect(c.oracle_id ?? c.id);
 				return;
 			}
 			const c = card as ResolvedDeckCard;
-			const group = groupByCardId.get(c.oracle_id);
+			const group = groupByCardId.get(c.oracle_id ?? c.id);
 			if (group) handleCardGroupClick(group, c.entry.rowId);
 		},
 		[bulkSelectMode, toggleBulkSelect, groupByCardId, handleCardGroupClick]
@@ -221,7 +221,7 @@ export default function DeckDetailPage() {
 				render: (card) => {
 					const c = card as ResolvedDeckCard;
 					const zone = getDeckZone(c.entry.tags);
-					return groupByCardId.get(c.oracle_id)?.byZone.get(zone)?.length ?? 1;
+					return groupByCardId.get(c.oracle_id ?? c.id)?.byZone.get(zone)?.length ?? 1;
 				},
 			},
 			{ key: 'name', label: 'Nom' },
@@ -250,8 +250,8 @@ export default function DeckDetailPage() {
 		const commanderCards = resolvedCards.filter((rc) => getDeckZone(rc.entry.tags) === 'commander');
 		return validateDeck(
 			deck.format,
-			allCards.map((rc) => ({ card: rc, zone: getDeckZone(rc.entry.tags) })),
-			commanderCards.map((rc) => ({ card: rc, zone: getDeckZone(rc.entry.tags) }))
+			allCards.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) })),
+			commanderCards.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) }))
 		);
 	}, [deck, resolvedCards]);
 
@@ -270,7 +270,7 @@ export default function DeckDetailPage() {
 
 	const handleDuplicateCard = useCallback(
 		(rc: ResolvedDeckCard) => {
-			addCardToDeck(deckId, rc, getDeckZone(rc.entry.tags));
+			addCardToDeck(deckId, rc as ScryfallCard, getDeckZone(rc.entry.tags));
 		},
 		[deckId, addCardToDeck]
 	);
@@ -313,12 +313,12 @@ export default function DeckDetailPage() {
 	const renderOverlay = useCallback(
 		(card: AnyCard) => {
 			const c = card as ResolvedDeckCard;
-			const group = groupByCardId.get(c.oracle_id);
+			const group = groupByCardId.get(c.oracle_id ?? c.id);
 			const currentZone = getDeckZone(c.entry.tags);
 			if (!group) return null;
 
 			if (bulkSelectMode) {
-				const checked = bulkSelected.has(c.oracle_id);
+				const checked = bulkSelected.has(c.oracle_id ?? c.id);
 				return (
 					<div
 						style={{
@@ -348,7 +348,7 @@ export default function DeckDetailPage() {
 			const deckScryfallIds = Array.from(group.byZone.values())
 				.flat()
 				.map((rc) => rc.id);
-			const collectionIds = oracleIdToAllScryfallIds.get(c.oracle_id);
+			const collectionIds = oracleIdToAllScryfallIds.get(c.oracle_id ?? c.id);
 			const oracleScryfallIds = Array.from(new Set([...deckScryfallIds, ...(collectionIds ?? [])]));
 
 			const firstCopy = group.byZone.get(currentZone)?.[0];

@@ -56,7 +56,7 @@ export function useCardModal(stacks: CardStack[]) {
 	const handleIncrementModal = useCallback(
 		(entryPatch?: Partial<CardEntry>) => {
 			if (resolvedStack && resolvedStack.cards.length > 0) {
-				addCard(resolvedStack.cards[0], entryPatch);
+				addCard(resolvedStack.cards[0] as ScryfallCard, entryPatch);
 			}
 		},
 		[resolvedStack, addCard]

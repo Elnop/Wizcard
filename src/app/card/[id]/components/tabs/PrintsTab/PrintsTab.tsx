@@ -69,7 +69,7 @@ export function PrintsTab({ card }: Props) {
 		mpcPrints.length > 0
 			? {
 					label: 'Proxies MPC',
-					cards: mpcPrints,
+					cards: mpcPrints as unknown as AnyCard[],
 				}
 			: null;
 

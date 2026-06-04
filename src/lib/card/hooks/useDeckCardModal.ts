@@ -48,13 +48,16 @@ export function useDeckCardModal(deckId: string, groupByCardId: Map<string, Deck
 		: null;
 
 	const handleCardGroupClick = useCallback((group: DeckCardGroup, clickedRowId: string) => {
-		setSelection({ oracleId: group.representative.oracle_id, clickedRowId });
+		setSelection({
+			oracleId: group.representative.oracle_id ?? group.representative.id,
+			clickedRowId,
+		});
 	}, []);
 
 	const handleCardGroupClickWithPrintPicker = useCallback(
 		(group: DeckCardGroup, clickedRowId: string) => {
 			setSelection({
-				oracleId: group.representative.oracle_id,
+				oracleId: group.representative.oracle_id ?? group.representative.id,
 				clickedRowId,
 				openPrintPicker: true,
 			});
@@ -80,7 +83,7 @@ export function useDeckCardModal(deckId: string, groupByCardId: Map<string, Deck
 
 	const handleAddCopy = useCallback(() => {
 		if (!selectedGroup || !selectedZone) return;
-		addCardToDeck(deckId, selectedGroup.representative as Card, selectedZone);
+		addCardToDeck(deckId, selectedGroup.representative as unknown as ScryfallCard, selectedZone);
 	}, [selectedGroup, selectedZone, deckId, addCardToDeck]);
 
 	const handleChangeZone = useCallback(

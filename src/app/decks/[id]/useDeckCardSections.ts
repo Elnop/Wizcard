@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card } from '@/types/cards';
 import type { CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { DeckZone } from '@/types/decks';
@@ -7,7 +6,7 @@ import { groupByCardType } from '@/lib/card/utils/group-by-card-type';
 import type { ResolvedDeckCard } from './useDeckDetail';
 
 export type DeckCardGroup = {
-	representative: ScryfallCard;
+	representative: Card;
 	byZone: Map<DeckZone, Card[]>;
 	totalCount: number;
 };
@@ -33,7 +32,7 @@ export function useDeckCardSections(
 
 		for (const zone of zones) {
 			for (const rc of cardsByZone[zone] ?? []) {
-				const key = rc.oracle_id;
+				const key = rc.oracle_id ?? rc.id;
 				if (!groupByCardId.has(key)) {
 					groupByCardId.set(key, {
 						representative: rc,
@@ -62,7 +61,7 @@ export function useDeckCardSections(
 			const countById = new Map<string, number>();
 
 			for (const rc of cards) {
-				const key = rc.oracle_id;
+				const key = rc.oracle_id ?? rc.id;
 				if (seen.has(key)) continue;
 				seen.add(key);
 				const group = groupByCardId.get(key)!;

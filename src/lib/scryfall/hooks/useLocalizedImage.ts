@@ -24,7 +24,12 @@ interface UseLocalizedImageResult {
 }
 
 export function useLocalizedImage(
-	card: { set: string; collector_number: string; language?: string; entry?: { language?: string } },
+	card: {
+		set?: string;
+		collector_number?: string;
+		language?: string;
+		entry?: { language?: string };
+	},
 	enabled: boolean
 ): UseLocalizedImageResult {
 	const [result, setResult] = useState<LocalizedImageResult | null>(null);
@@ -33,7 +38,13 @@ export function useLocalizedImage(
 	const language = card.entry?.language ?? card.language;
 	const lang = language ? LANGUAGE_TO_SCRYFALL_CODE[language as MtgLanguage] : undefined;
 	const cacheKey = `${card.set}/${card.collector_number}/${lang}`;
-	const needsFetch = enabled && !!lang && lang !== 'en' && !notFound.has(cacheKey);
+	const needsFetch =
+		enabled &&
+		!!lang &&
+		lang !== 'en' &&
+		!!card.set &&
+		!!card.collector_number &&
+		!notFound.has(cacheKey);
 
 	useEffect(() => {
 		if (!needsFetch) return;
@@ -63,8 +74,8 @@ export function useLocalizedImage(
 			// 2. Fetch from Scryfall API
 			try {
 				const localized = await getCardBySetNumberAndLang(
-					card.set,
-					card.collector_number,
+					card.set!,
+					card.collector_number!,
 					lang!,
 					controller.signal
 				);

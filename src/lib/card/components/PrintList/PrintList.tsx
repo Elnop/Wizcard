@@ -187,7 +187,9 @@ export function PrintList({
 				onCardClick={(card) => setLightboxCard(card as Card | ScryfallCard)}
 				tableColumns={tableColumns}
 			/>
-			{lightboxCard && <CardLightbox card={lightboxCard} onClose={() => setLightboxCard(null)} />}
+			{lightboxCard && (
+				<CardLightbox card={lightboxCard as ScryfallCard} onClose={() => setLightboxCard(null)} />
+			)}
 		</>
 	);
 }

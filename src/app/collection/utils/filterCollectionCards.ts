@@ -95,19 +95,20 @@ export function getSortValue(
 ): string | number {
 	if (order === 'language') return 'entry' in card ? (card.entry.language ?? '') : '';
 	if (order === 'name') return card.name.toLowerCase();
-	if (order === 'cmc') return card.cmc;
-	if (order === 'rarity') return RARITY_ORDER[card.rarity] ?? 0;
-	if (order === 'set') return `${card.set}-${card.collector_number.padStart(6, '0')}`;
-	if (order === 'released') return card.released_at;
-	if (order === 'color') return (card.colors ?? []).sort().join('');
-	if (order === 'usd') return parseFloat(card.prices.usd ?? '0');
-	if (order === 'eur') return parseFloat(card.prices.eur ?? '0');
-	if (order === 'tix') return parseFloat(card.prices.tix ?? '0');
-	if (order === 'power') return parseFloat(card.power ?? '0');
-	if (order === 'toughness') return parseFloat(card.toughness ?? '0');
-	if (order === 'edhrec') return card.edhrec_rank ?? 9999999;
-	if (order === 'penny') return card.penny_rank ?? 9999999;
-	if (order === 'artist') return (card.artist ?? '').toLowerCase();
+	if (order === 'cmc') return (card as ScryfallCard).cmc ?? 0;
+	if (order === 'rarity') return RARITY_ORDER[(card as ScryfallCard).rarity ?? ''] ?? 0;
+	if (order === 'set')
+		return `${(card as ScryfallCard).set ?? ''}-${(card as ScryfallCard).collector_number?.padStart(6, '0') ?? ''}`;
+	if (order === 'released') return (card as ScryfallCard).released_at ?? '';
+	if (order === 'color') return ((card as ScryfallCard).colors ?? []).sort().join('');
+	if (order === 'usd') return parseFloat((card as ScryfallCard).prices?.usd ?? '0');
+	if (order === 'eur') return parseFloat((card as ScryfallCard).prices?.eur ?? '0');
+	if (order === 'tix') return parseFloat((card as ScryfallCard).prices?.tix ?? '0');
+	if (order === 'power') return parseFloat((card as ScryfallCard).power ?? '0');
+	if (order === 'toughness') return parseFloat((card as ScryfallCard).toughness ?? '0');
+	if (order === 'edhrec') return (card as ScryfallCard).edhrec_rank ?? 9999999;
+	if (order === 'penny') return (card as ScryfallCard).penny_rank ?? 9999999;
+	if (order === 'artist') return ((card as ScryfallCard).artist ?? '').toLowerCase();
 	return card.name.toLowerCase();
 }
 

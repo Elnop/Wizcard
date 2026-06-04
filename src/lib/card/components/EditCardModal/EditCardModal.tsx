@@ -60,7 +60,7 @@ export function EditCardModal(props: Props) {
 		addMode ? { tags: setDeckZone(undefined, initialZone) } : { ...props.card.entry }
 	);
 	const [selectedPrint, setSelectedPrint] = useState<ScryfallCard>(
-		addMode ? props.scryfallCard : props.card
+		addMode ? props.scryfallCard : (props.card as ScryfallCard)
 	);
 
 	const entry: Partial<CardEntry> = draftEntry;
@@ -107,7 +107,7 @@ export function EditCardModal(props: Props) {
 		}
 	}
 
-	const cardForPrint: ScryfallCard = addMode ? selectedPrint : props.card;
+	const cardForPrint: ScryfallCard = addMode ? selectedPrint : (props.card as ScryfallCard);
 
 	const entryLangCode =
 		entry.language && LANGUAGE_TO_SCRYFALL_CODE[entry.language]
@@ -116,7 +116,7 @@ export function EditCardModal(props: Props) {
 
 	const title = addMode
 		? `Ajouter — ${selectedPrint.set_name} #${selectedPrint.collector_number}`
-		: `Edit copy — ${props.card.set.toUpperCase()} #${props.card.collector_number}`;
+		: `Edit copy — ${props.card.set?.toUpperCase() ?? ''} #${props.card.collector_number ?? ''}`;
 
 	return (
 		<>

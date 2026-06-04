@@ -143,10 +143,10 @@ export function CardSearchPanel({
 		const filtered = filterCollectionCards(collectionRepresentatives, collectionFilters);
 		if (showLegalToggle && legalOnly && deckFormat) {
 			const fmt = deckFormat as import('@/lib/scryfall/types/scryfall').ScryfallFormat;
-			const legalFiltered = filtered.filter((c) => c.legalities[fmt] === 'legal');
+			const legalFiltered = filtered.filter((c) => c.legalities?.[fmt] === 'legal');
 			if (isCommanderFormat && commanderColorIdentity && commanderColorIdentity.length > 0) {
 				return legalFiltered.filter((c) =>
-					c.color_identity.every((ci) => commanderColorIdentity.includes(ci))
+					(c.color_identity ?? []).every((ci) => commanderColorIdentity.includes(ci))
 				);
 			}
 			return legalFiltered;

@@ -3,8 +3,8 @@
 import { useLocalizedImage } from './useLocalizedImage';
 
 type ImageCard = {
-	set: string;
-	collector_number: string;
+	set?: string;
+	collector_number?: string;
 	language?: string;
 	entry?: { language?: string };
 	image_uris?: { small?: string; normal?: string; large?: string; art_crop?: string };

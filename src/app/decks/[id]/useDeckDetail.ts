@@ -87,7 +87,7 @@ export function useDeckDetail(deckId: string) {
 	const resolvedCards: ResolvedDeckCard[] = useMemo(() => {
 		if (activeDeckId !== deckId) return [];
 		return Object.values(activeDeckCards)
-			.map((copy) => {
+			.map((copy): ResolvedDeckCard | null => {
 				const card = scryfallCards[copy.scryfallId];
 				if (!card) return null;
 				return { ...card, entry: copy.entry };
@@ -112,7 +112,7 @@ export function useDeckDetail(deckId: string) {
 	// Compute stats
 	const stats: DeckStats = useMemo(() => {
 		return computeDeckStats(
-			resolvedCards.map((rc) => ({ card: rc, zone: getDeckZone(rc.entry.tags) }))
+			resolvedCards.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) }))
 		);
 	}, [resolvedCards]);
 

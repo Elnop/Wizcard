@@ -38,7 +38,7 @@ export function useCollectionBadge(
 	return useMemo(() => {
 		const scryfallIdSet = new Set(oracleScryfallIds);
 		const repScryfallId = group.representative.id;
-		const repSet = group.representative.set.toUpperCase();
+		const repSet = group.representative.set?.toUpperCase() ?? '';
 		const repCollectorNumber = group.representative.collector_number;
 
 		const zoneCopies = group.byZone.get(currentZone) ?? [];

@@ -13,7 +13,7 @@ type StoredCopy = { scryfallId: string; entry: CardEntry };
 function groupByOracleId(cards: Card[]): CardStack[] {
 	const map = new Map<string, Card[]>();
 	for (const card of cards) {
-		const key = card.oracle_id;
+		const key = card.oracle_id ?? card.id;
 		const existing = map.get(key);
 		if (existing) {
 			existing.push(card);

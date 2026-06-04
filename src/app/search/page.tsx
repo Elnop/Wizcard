@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useCallback, useEffect, Suspense } from 'react';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useScryfallCardSearch } from '@/lib/scryfall/hooks/useScryfallCardSearch';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
 import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
 import { CardList } from '@/lib/card/components/CardList/CardList';
+import type { AnyCard, CardListCards } from '@/lib/card/components/CardList/CardList.types';
+import type { CustomCard } from '@/lib/mpc/types';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
@@ -40,7 +41,7 @@ export default function SearchPage() {
 function SearchPageContent() {
 	const { addCard } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();
-	const [selectedCard, setSelectedCard] = useState<ScryfallCard | null>(null);
+	const [selectedCard, setSelectedCard] = useState<AnyCard | CustomCard | null>(null);
 	const [mode, setMode] = useState<SearchMode>('official');
 	const [customSources, setCustomSources] = useState<MpcSourceWithCount[]>([]);
 	const [customSourceId, setCustomSourceId] = useState<string | null>(null);
@@ -104,7 +105,7 @@ function SearchPageContent() {
 			.catch(() => {});
 	}, []);
 
-	const handleCardClick = useCallback((card: ScryfallCard) => setSelectedCard(card), []);
+	const handleCardClick = useCallback((card: AnyCard) => setSelectedCard(card), []);
 
 	const hasFilters =
 		name || colors.length > 0 || type || set || rarities.length > 0 || oracleText || cmc;
@@ -119,7 +120,7 @@ function SearchPageContent() {
 			key: 'set',
 			label: 'Set',
 			sortKey: 'set',
-			render: (card: ScryfallCard) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
+			render: (card: AnyCard) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
 		},
 		{ key: 'type_line', label: 'Type' },
 		{ key: 'cmc', label: 'CMC', sortKey: 'cmc' },
@@ -127,7 +128,7 @@ function SearchPageContent() {
 			key: 'prices',
 			label: 'Prix USD',
 			sortKey: 'usd',
-			render: (card: ScryfallCard) =>
+			render: (card: AnyCard) =>
 				'prices' in card && card.prices && 'usd' in card.prices ? (card.prices.usd ?? '—') : '—',
 		},
 	];
@@ -285,7 +286,7 @@ function SearchPageContent() {
 						)}
 
 						<CardList
-							cards={customCards}
+							cards={customCards as unknown as CardListCards}
 							isLoading={customLoading}
 							onCardClick={handleCardClick}
 							tableColumns={tableColumns}
