@@ -1,0 +1,97 @@
+.section {
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid var(--color-border, #e5e7eb);
+}
+
+.sectionTitle {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--color-text-muted, #6b7280);
+	margin-bottom: 8px;
+}
+
+.badgeRow {
+	display: flex;
+	gap: 6px;
+	margin-bottom: 10px;
+}
+
+.badge {
+	font-size: 11px;
+	font-weight: 600;
+	padding: 2px 8px;
+	border-radius: 4px;
+	background: var(--color-accent, #6366f1);
+	color: #fff;
+}
+
+.badgeSecondary {
+	font-size: 11px;
+	font-weight: 500;
+	padding: 2px 8px;
+	border-radius: 4px;
+	background: var(--color-surface-2, #f3f4f6);
+	color: var(--color-text-muted, #6b7280);
+}
+
+.row {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 6px;
+	font-size: 13px;
+}
+
+.label {
+	color: var(--color-text-muted, #6b7280);
+	min-width: 56px;
+	flex-shrink: 0;
+}
+
+.value {
+	color: var(--color-text, #111827);
+}
+
+.chipGroup {
+	margin-bottom: 8px;
+}
+
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-top: 4px;
+}
+
+.chip {
+	font-size: 11px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: var(--color-surface-2, #f3f4f6);
+	color: var(--color-text, #111827);
+	border: 1px solid var(--color-border, #e5e7eb);
+}
+
+.rawName {
+	margin-top: 10px;
+}
+
+.rawNameSummary {
+	font-size: 11px;
+	color: var(--color-text-muted, #6b7280);
+	cursor: pointer;
+	user-select: none;
+}
+
+.rawNameValue {
+	display: block;
+	margin-top: 4px;
+	font-size: 11px;
+	padding: 4px 8px;
+	background: var(--color-surface-2, #f3f4f6);
+	border-radius: 4px;
+	word-break: break-all;
+	color: var(--color-text-muted, #6b7280);
+}
