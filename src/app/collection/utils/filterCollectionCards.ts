@@ -3,14 +3,19 @@ import type { ScryfallSortOrder } from '@/lib/scryfall/types/sort';
 import type { Card } from '@/types/cards';
 import { type CardFilters, DEFAULT_CARD_FILTERS } from '@/lib/search/types';
 import type { MtgLanguage } from '@/lib/mtg/languages';
+import type { CardType, CustomCard } from '@/lib/mpc/types';
+import { isCustomCard } from '@/lib/mpc/types';
 
 export type CollectionSortOrder = ScryfallSortOrder | 'language';
+
+type AnyCard = ScryfallCard | Card | CustomCard;
 
 export interface CollectionFilters extends Omit<CardFilters, 'order'> {
 	order: CollectionSortOrder;
 	proxyFilter: 'all' | 'official' | 'proxy';
 	foilTypeFilter: 'none' | 'all' | 'foil' | 'etched';
 	languageFilter: MtgLanguage | 'all';
+	cardTypeFilter: CardType | 'all';
 }
 
 export const defaultCollectionFilters: CollectionFilters = {
@@ -19,6 +24,7 @@ export const defaultCollectionFilters: CollectionFilters = {
 	proxyFilter: 'all',
 	foilTypeFilter: 'all',
 	languageFilter: 'all',
+	cardTypeFilter: 'all',
 };
 
 function parseCmc(raw: string): ((cmc: number) => boolean) | null {
@@ -103,6 +109,22 @@ export function getSortValue(
 	return card.name.toLowerCase();
 }
 
+function getCardType(card: AnyCard): CardType {
+	if (isCustomCard(card as ScryfallCard | CustomCard)) {
+		return (card as CustomCard).custom.card_type;
+	}
+	const layout = (card as ScryfallCard).layout;
+	if (layout === 'token' || layout === 'double_faced_token') return 'token';
+	return 'card';
+}
+
+function getCardLang(card: AnyCard): string | null {
+	if (isCustomCard(card as ScryfallCard | CustomCard)) {
+		return (card as CustomCard).custom.lang;
+	}
+	return (card as ScryfallCard).lang ?? null;
+}
+
 function matchesProxyFilter(card: Card, proxyFilter: CollectionFilters['proxyFilter']): boolean {
 	if (proxyFilter === 'all') return true;
 	const isProxy = card.entry.proxy === true;
@@ -124,11 +146,22 @@ function matchesFoilFilter(
 }
 
 function matchesLanguageFilter(
-	card: Card,
+	card: AnyCard,
 	languageFilter: CollectionFilters['languageFilter']
 ): boolean {
 	if (languageFilter === 'all') return true;
-	return (card.entry.language ?? 'English') === languageFilter;
+	if ('entry' in card && (card as Card).entry.language) {
+		return (card as Card).entry.language === languageFilter;
+	}
+	return getCardLang(card) === languageFilter;
+}
+
+function matchesCardTypeFilter(
+	card: AnyCard,
+	cardTypeFilter: CollectionFilters['cardTypeFilter']
+): boolean {
+	if (cardTypeFilter === 'all') return true;
+	return getCardType(card) === cardTypeFilter;
 }
 
 function matchesOracleText(card: ScryfallCard, oracleText: string): boolean {
@@ -140,27 +173,33 @@ function matchesOracleText(card: ScryfallCard, oracleText: string): boolean {
 }
 
 function cardMatchesFilters(
-	card: ScryfallCard | Card,
+	card: AnyCard,
 	filters: CollectionFilters,
 	cmcTest: ((v: number) => boolean) | null
 ): boolean {
 	if (filters.name && !card.name.toLowerCase().includes(filters.name.toLowerCase())) return false;
 	if (!matchColors(card.colors, filters.colors, filters.colorMatch)) return false;
-	if (filters.type && !card.type_line.toLowerCase().includes(filters.type.toLowerCase()))
+	if (filters.type && !(card.type_line ?? '').toLowerCase().includes(filters.type.toLowerCase()))
 		return false;
 	if (filters.set && card.set !== filters.set) return false;
-	if (filters.rarities.length > 0 && !filters.rarities.includes(card.rarity)) return false;
-	if (!matchesOracleText(card, filters.oracleText)) return false;
-	if (cmcTest && !cmcTest(card.cmc)) return false;
+	if (
+		filters.rarities.length > 0 &&
+		card.rarity !== undefined &&
+		!filters.rarities.includes(card.rarity)
+	)
+		return false;
+	if (!matchesOracleText(card as ScryfallCard, filters.oracleText)) return false;
+	if (cmcTest && card.cmc !== undefined && !cmcTest(card.cmc)) return false;
 	if ('entry' in card) {
 		if (!matchesProxyFilter(card, filters.proxyFilter)) return false;
 		if (!matchesFoilFilter(card, filters.foilTypeFilter)) return false;
-		if (!matchesLanguageFilter(card, filters.languageFilter)) return false;
 	}
+	if (!matchesLanguageFilter(card, filters.languageFilter)) return false;
+	if (!matchesCardTypeFilter(card, filters.cardTypeFilter)) return false;
 	return true;
 }
 
-export function filterCollectionCards<T extends ScryfallCard | Card>(
+export function filterCollectionCards<T extends AnyCard>(
 	cards: T[],
 	filters: CollectionFilters
 ): T[] {
@@ -170,8 +209,8 @@ export function filterCollectionCards<T extends ScryfallCard | Card>(
 	if (filtered.length <= 1) return filtered;
 
 	return [...filtered].sort((a, b) => {
-		const av = getSortValue(a, filters.order);
-		const bv = getSortValue(b, filters.order);
+		const av = getSortValue(a as ScryfallCard | Card, filters.order);
+		const bv = getSortValue(b as ScryfallCard | Card, filters.order);
 		const cmp =
 			typeof av === 'number' && typeof bv === 'number'
 				? av - bv
