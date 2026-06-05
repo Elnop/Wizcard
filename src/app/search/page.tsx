@@ -95,9 +95,11 @@ function SearchPageContent() {
 		dir,
 	});
 
-	const { cards: customCards, isLoading: customLoading } = useCustomCards(
-		mode === 'custom' || mode === 'all' ? customSourceId : undefined
-	);
+	const {
+		cards: customCards,
+		isLoading: customLoading,
+		error: customError,
+	} = useCustomCards(mode === 'custom' || mode === 'all' ? customSourceId : undefined);
 
 	const filteredCustomCards = useMemo(
 		() =>
@@ -134,8 +136,6 @@ function SearchPageContent() {
 	const hasFilters =
 		name || colors.length > 0 || type || set || rarities.length > 0 || oracleText || cmc;
 	const isDefaultQuery = !hasFilters;
-	const showEmptyState =
-		!isDefaultQuery && !isLoading && !customLoading && mergedCards.length === 0;
 
 	const totalActiveFilterCount = activeFilterCount + (customSourceId !== null ? 1 : 0);
 
@@ -211,15 +211,16 @@ function SearchPageContent() {
 				{!isDefaultQuery && !isLoading && mergedCards.length > 0 && (
 					<div className={styles.resultInfo}>
 						<span>
-							{cards.length > 0
-								? `Showing ${cards.length} of ${totalCards.toLocaleString()} cards`
-								: ''}
-							{mode === 'all' && filteredCustomCards.length > 0 && (
+							{mode === 'official' &&
+								cards.length > 0 &&
+								`Showing ${cards.length} of ${totalCards.toLocaleString()} cards`}
+							{mode === 'all' && (
 								<>
-									{cards.length > 0 ? ' · ' : ''}
-									{filteredCustomCards.length} custom
+									{cards.length > 0 && `${cards.length} of ${totalCards.toLocaleString()} cards`}
+									{filteredCustomCards.length > 0 && ` · ${filteredCustomCards.length} custom`}
 								</>
 							)}
+							{mode === 'custom' && `${filteredCustomCards.length} custom`}
 						</span>
 					</div>
 				)}
@@ -249,13 +250,6 @@ function SearchPageContent() {
 					</div>
 				)}
 
-				{showEmptyState && (
-					<div className={styles.emptyState}>
-						<h2>Start searching</h2>
-						<p>Enter a card name or apply filters to find Magic: The Gathering cards.</p>
-					</div>
-				)}
-
 				<CardList
 					cards={mergedCards}
 					isLoading={isLoading}
@@ -263,7 +257,7 @@ function SearchPageContent() {
 					hasMore={hasMore}
 					onLoadMore={loadMore}
 					onCardClick={handleCardClick}
-					renderOverlay={(c) => withCustomBadge(c)}
+					renderOverlay={withCustomBadge}
 					sortOrder={order}
 					sortDir={dir}
 					onSortChange={(newOrder, newDir) => {
@@ -274,7 +268,13 @@ function SearchPageContent() {
 					tableColumns={tableColumns}
 				/>
 
-				{!isLoading && !isDefaultQuery && mergedCards.length === 0 && !error && (
+				{customError && (
+					<div className={styles.error}>
+						<p>Impossible de charger les cartes custom.</p>
+					</div>
+				)}
+
+				{!isLoading && !customLoading && !isDefaultQuery && mergedCards.length === 0 && !error && (
 					<div className={styles.noResults}>
 						<h3>No cards found</h3>
 						{suggestions.length > 0 ? (
