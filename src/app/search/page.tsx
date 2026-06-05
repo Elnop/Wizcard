@@ -6,8 +6,9 @@ import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
 import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
 import { CardList } from '@/lib/card/components/CardList/CardList';
-import type { AnyCard, CardListCards } from '@/lib/card/components/CardList/CardList.types';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { CustomCard } from '@/lib/mpc/types';
+import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
@@ -94,14 +95,9 @@ function SearchPageContent() {
 		dir,
 	});
 
-	const showOfficial = mode === 'official' || mode === 'all';
-	const showCustom = mode === 'custom' || mode === 'all';
-
-	const {
-		cards: customCards,
-		isLoading: customLoading,
-		error: customError,
-	} = useCustomCards(showCustom ? customSourceId : undefined);
+	const { cards: customCards, isLoading: customLoading } = useCustomCards(
+		mode === 'custom' || mode === 'all' ? customSourceId : undefined
+	);
 
 	const filteredCustomCards = useMemo(
 		() =>
@@ -121,6 +117,12 @@ function SearchPageContent() {
 		[customCards, name, colors, colorMatch, type, set, rarities, oracleText, cmc, order, dir]
 	);
 
+	const mergedCards: AnyCard[] = useMemo(() => {
+		if (mode === 'all') return [...cards, ...filteredCustomCards];
+		if (mode === 'custom') return filteredCustomCards;
+		return cards;
+	}, [mode, cards, filteredCustomCards]);
+
 	useEffect(() => {
 		getCustomCardSourcesWithCount()
 			.then(setCustomSources)
@@ -132,7 +134,8 @@ function SearchPageContent() {
 	const hasFilters =
 		name || colors.length > 0 || type || set || rarities.length > 0 || oracleText || cmc;
 	const isDefaultQuery = !hasFilters;
-	const showEmptyState = showOfficial && !isDefaultQuery && !isLoading && cards.length === 0;
+	const showEmptyState =
+		!isDefaultQuery && !isLoading && !customLoading && mergedCards.length === 0;
 
 	const totalActiveFilterCount = activeFilterCount + (customSourceId !== null ? 1 : 0);
 
@@ -205,122 +208,96 @@ function SearchPageContent() {
 					onClose={() => setIsModalOpen(false)}
 				/>
 
-				{showOfficial && (
-					<>
-						{isDefaultQuery && !isLoading && (
-							<div className={styles.resultInfo}>
-								<span>Cartes populaires EDH</span>
-							</div>
-						)}
-
-						{!isDefaultQuery && !isLoading && cards.length > 0 && (
-							<div className={styles.resultInfo}>
-								<span>
-									Showing {cards.length} of {totalCards.toLocaleString()} cards
-								</span>
-							</div>
-						)}
-
-						{error && (
-							<div className={styles.error}>
-								<p>An error occurred. Please try again.</p>
-							</div>
-						)}
-
-						{queryError && (
-							<div className={styles.queryError}>
-								<p>{queryError.message}</p>
-								{queryError.warnings.length > 0 && (
-									<ul className={styles.queryWarnings}>
-										{queryError.warnings.map((w) => (
-											<li key={w}>{w}</li>
-										))}
-									</ul>
-								)}
-							</div>
-						)}
-
-						{showEmptyState && (
-							<div className={styles.emptyState}>
-								<h2>Start searching</h2>
-								<p>Enter a card name or apply filters to find Magic: The Gathering cards.</p>
-							</div>
-						)}
-
-						<CardList
-							cards={cards}
-							isLoading={isLoading}
-							isLoadingMore={isLoadingMore}
-							hasMore={hasMore}
-							onLoadMore={loadMore}
-							onCardClick={handleCardClick}
-							sortOrder={order}
-							sortDir={dir}
-							onSortChange={(newOrder, newDir) => {
-								setOrder(newOrder as Parameters<typeof setOrder>[0]);
-								setDir(newDir);
-							}}
-							pageSize={false}
-							tableColumns={tableColumns}
-						/>
-
-						{!isLoading && !isDefaultQuery && cards.length === 0 && !error && (
-							<div className={styles.noResults}>
-								<h3>No cards found</h3>
-								{suggestions.length > 0 ? (
-									<>
-										<p>Did you mean:</p>
-										<ul className={styles.suggestions}>
-											{suggestions.map((s) => (
-												<li key={s}>
-													<button
-														type="button"
-														className={styles.suggestionLink}
-														onClick={() => setName(s)}
-													>
-														{s}
-													</button>
-												</li>
-											))}
-										</ul>
-									</>
-								) : (
-									<p>Try adjusting your search or filters.</p>
-								)}
-							</div>
-						)}
-					</>
+				{!isDefaultQuery && !isLoading && mergedCards.length > 0 && (
+					<div className={styles.resultInfo}>
+						<span>
+							{cards.length > 0
+								? `Showing ${cards.length} of ${totalCards.toLocaleString()} cards`
+								: ''}
+							{mode === 'all' && filteredCustomCards.length > 0 && (
+								<>
+									{cards.length > 0 ? ' · ' : ''}
+									{filteredCustomCards.length} custom
+								</>
+							)}
+						</span>
+					</div>
 				)}
 
-				{showCustom && (
-					<>
-						{showOfficial && (
-							<div className={styles.customSectionHeader}>
-								Cartes Custom
-								<span className={styles.customBadge}>MPC</span>
-							</div>
-						)}
+				{isDefaultQuery && !isLoading && (
+					<div className={styles.resultInfo}>
+						<span>Cartes populaires EDH</span>
+					</div>
+				)}
 
-						{customError && (
-							<div className={styles.error}>
-								<p>Impossible de charger les cartes custom.</p>
-							</div>
-						)}
+				{error && (
+					<div className={styles.error}>
+						<p>An error occurred. Please try again.</p>
+					</div>
+				)}
 
-						<CardList
-							cards={filteredCustomCards as unknown as CardListCards}
-							isLoading={customLoading}
-							onCardClick={handleCardClick}
-							tableColumns={tableColumns}
-						/>
-
-						{!customLoading && !customError && filteredCustomCards.length === 0 && (
-							<div className={styles.emptyState}>
-								<h2>Aucune carte custom</h2>
-								<p>Aucune carte personnalisée disponible pour le moment.</p>
-							</div>
+				{queryError && (
+					<div className={styles.queryError}>
+						<p>{queryError.message}</p>
+						{queryError.warnings.length > 0 && (
+							<ul className={styles.queryWarnings}>
+								{queryError.warnings.map((w) => (
+									<li key={w}>{w}</li>
+								))}
+							</ul>
 						)}
-					</>
+					</div>
+				)}
+
+				{showEmptyState && (
+					<div className={styles.emptyState}>
+						<h2>Start searching</h2>
+						<p>Enter a card name or apply filters to find Magic: The Gathering cards.</p>
+					</div>
+				)}
+
+				<CardList
+					cards={mergedCards}
+					isLoading={isLoading}
+					isLoadingMore={isLoadingMore}
+					hasMore={hasMore}
+					onLoadMore={loadMore}
+					onCardClick={handleCardClick}
+					renderOverlay={(c) => withCustomBadge(c)}
+					sortOrder={order}
+					sortDir={dir}
+					onSortChange={(newOrder, newDir) => {
+						setOrder(newOrder as Parameters<typeof setOrder>[0]);
+						setDir(newDir);
+					}}
+					pageSize={false}
+					tableColumns={tableColumns}
+				/>
+
+				{!isLoading && !isDefaultQuery && mergedCards.length === 0 && !error && (
+					<div className={styles.noResults}>
+						<h3>No cards found</h3>
+						{suggestions.length > 0 ? (
+							<>
+								<p>Did you mean:</p>
+								<ul className={styles.suggestions}>
+									{suggestions.map((s) => (
+										<li key={s}>
+											<button
+												type="button"
+												className={styles.suggestionLink}
+												onClick={() => setName(s)}
+											>
+												{s}
+											</button>
+										</li>
+									))}
+								</ul>
+							</>
+						) : (
+							<p>Try adjusting your search or filters.</p>
+						)}
+					</div>
 				)}
 
 				{selectedCard && (
