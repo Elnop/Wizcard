@@ -4,6 +4,7 @@ dotenv.config({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
 import pLimit from 'p-limit';
 import { parseCardFilename } from '../src/lib/mpc/parse-filename';
+import { resolveCard, type ScryfallResolution } from '../src/lib/mpc/scryfall-resolver';
 
 // ─── Config ────────────────────────────────────────────────────────────────
 
@@ -12,9 +13,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const GOOGLE_DRIVE_API_KEY = process.env.GOOGLE_DRIVE_API_KEY ?? '';
 const MPCFILL_URL = 'https://mpcfill.com/2/sources/';
 const DRIVE_FILES_URL = 'https://www.googleapis.com/drive/v3/files';
-const SCRYFALL_COLLECTION_URL = 'https://api.scryfall.com/cards/collection';
 const SCRYFALL_SETS_URL = 'https://api.scryfall.com/sets';
-const SCRYFALL_BATCH_SIZE = 75;
 const SCRYFALL_USER_AGENT = 'Wizcard/1.0';
 
 if (!SUPABASE_SERVICE_ROLE_KEY) {
@@ -32,7 +31,7 @@ const args = process.argv.slice(2);
 const filterSourceId = args.find((a) => a.startsWith('--source='))?.split('=')[1];
 const limitSources = parseInt(args.find((a) => a.startsWith('--limit='))?.split('=')[1] ?? '0', 10);
 const skipScryfall = args.includes('--skip-scryfall');
-const forceReenrich = args.includes('--force-reenrich');
+const noFuzzy = args.includes('--no-fuzzy');
 
 // ─── Supabase ───────────────────────────────────────────────────────────────
 
@@ -55,45 +54,14 @@ interface MpcfillSourcesResponse {
 	results: Record<string, MpcfillSourceRaw>;
 }
 
-interface ScryfallCardMinimal {
-	oracle_id: string;
-	name: string;
-	colors?: string[];
-	color_identity?: string[];
-	cmc?: number;
-	type_line?: string;
-	mana_cost?: string;
-	oracle_text?: string;
-	rarity?: string;
-	set_name?: string;
-	artist?: string;
-}
-
-interface ScryfallSingleCard {
-	oracle_id?: string;
-	colors?: string[];
-	color_identity?: string[];
-	cmc?: number;
-	type_line?: string;
-	mana_cost?: string;
-	oracle_text?: string;
-	rarity?: string;
-	set_name?: string;
-	artist?: string;
-}
-
-interface ScryfallCollectionResponse {
-	data: ScryfallCardMinimal[];
-	not_found: Array<{ name: string }>;
-}
-
 interface IngestResult {
 	newCount: number;
 	skippedCount: number;
 	failedCount: number;
-	scryfallMatched: number;
-	scryfallUnmatched: number;
-	scryfallFailed: number;
+	resolvedBySetNum: number;
+	resolvedByName: number;
+	resolvedByFuzzy: number;
+	unresolvedFiles: string[];
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -134,42 +102,6 @@ async function fetchWithRetry(url: string, attempt = 0): Promise<Response> {
 		return fetchWithRetry(url, attempt + 1);
 	}
 	return res;
-}
-
-// ─── Scryfall throttle ──────────────────────────────────────────────────────
-
-let lastScryfallCall = 0;
-
-async function scryfallPost<T>(body: object): Promise<T> {
-	const elapsed = Date.now() - lastScryfallCall;
-	if (elapsed < 100) await sleep(100 - elapsed);
-	lastScryfallCall = Date.now();
-
-	const res = await fetch(SCRYFALL_COLLECTION_URL, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'User-Agent': SCRYFALL_USER_AGENT,
-		},
-		body: JSON.stringify(body),
-	});
-
-	if (!res.ok) throw new Error(`Scryfall collection POST failed: HTTP ${res.status}`);
-	return res.json() as Promise<T>;
-}
-
-async function scryfallGet<T>(path: string): Promise<T | null> {
-	const elapsed = Date.now() - lastScryfallCall;
-	if (elapsed < 100) await sleep(100 - elapsed);
-	lastScryfallCall = Date.now();
-
-	const res = await fetch(`https://api.scryfall.com${path}`, {
-		headers: { 'User-Agent': SCRYFALL_USER_AGENT },
-	});
-
-	if (res.status === 404) return null;
-	if (!res.ok) throw new Error(`Scryfall GET ${path} failed: HTTP ${res.status}`);
-	return res.json() as Promise<T>;
 }
 
 async function fetchScryfallSetCodes(): Promise<Set<string>> {
@@ -286,180 +218,6 @@ function folderPathToMeta(folderPath: string[]): {
 	return { cardType, folderTags };
 }
 
-// ─── Scryfall enrichment ────────────────────────────────────────────────────
-
-async function applyScryfallBatch(
-	batch: string[],
-	nameToIds: Map<string, string[]>,
-	prefix: string
-): Promise<{ matched: number; unmatched: number; failed: number }> {
-	let result: ScryfallCollectionResponse;
-	try {
-		result = await scryfallPost<ScryfallCollectionResponse>({
-			identifiers: batch.map((name) => ({ name })),
-		});
-	} catch (err) {
-		console.warn(`${prefix} — ⚠ Scryfall batch failed: ${(err as Error).message}`);
-		return { matched: 0, unmatched: 0, failed: batch.length };
-	}
-
-	const foundByName = new Map<string, ScryfallCardMinimal>();
-	for (const card of result.data ?? []) {
-		foundByName.set(card.name.toLowerCase(), card);
-	}
-
-	let matched = 0;
-	let unmatched = 0;
-	const now = new Date().toISOString();
-
-	for (const name of batch) {
-		const found = foundByName.get(name.toLowerCase());
-		const cardIds = nameToIds.get(name) ?? [];
-
-		if (found) {
-			for (const cardId of cardIds) {
-				const { error: upsertErr } = await supabase
-					.from('custom_cards')
-					.update({
-						oracle_id: found.oracle_id,
-						enriched_at: now,
-						colors: found.colors ?? [],
-						color_identity: found.color_identity ?? [],
-						cmc: found.cmc ?? null,
-						type_line: found.type_line ?? null,
-						mana_cost: found.mana_cost ?? null,
-						oracle_text: found.oracle_text ?? null,
-						rarity: found.rarity ?? null,
-						set_name: found.set_name ?? null,
-						artist: found.artist ?? null,
-					})
-					.eq('id', cardId);
-				if (upsertErr) {
-					console.warn(`${prefix} — ⚠ oracle_id update failed for ${cardId}: ${upsertErr.message}`);
-				}
-			}
-			matched++;
-		} else {
-			unmatched++;
-		}
-	}
-
-	return { matched, unmatched, failed: 0 };
-}
-
-async function enrichBySetAndNumber(
-	sourceId: string,
-	prefix: string
-): Promise<{ matched: number }> {
-	let candidatesQuery = supabase
-		.from('custom_cards')
-		.select('id, set_code, collector_number')
-		.eq('source_id', sourceId)
-		.not('set_code', 'is', null)
-		.not('collector_number', 'is', null);
-	if (!forceReenrich) candidatesQuery = candidatesQuery.is('enriched_at', null);
-	const { data: candidates, error } = await candidatesQuery.limit(100_000);
-
-	if (error || !candidates || candidates.length === 0) {
-		return { matched: 0 };
-	}
-
-	let matched = 0;
-	const now = new Date().toISOString();
-
-	const strategyALimiter = pLimit(5);
-	await Promise.all(
-		candidates.map((card) =>
-			strategyALimiter(async () => {
-				if (!card.set_code || !card.collector_number) return;
-				const path = `/cards/${encodeURIComponent(card.set_code.toLowerCase())}/${encodeURIComponent(card.collector_number)}`;
-				let result: ScryfallSingleCard | null = null;
-				try {
-					result = await scryfallGet<ScryfallSingleCard>(path);
-				} catch (err) {
-					console.warn(
-						`${prefix} — ⚠ Strategy A GET failed for ${card.id}: ${(err as Error).message}`
-					);
-				}
-
-				if (result?.oracle_id) {
-					const { error: updateErr } = await supabase
-						.from('custom_cards')
-						.update({
-							oracle_id: result.oracle_id,
-							enriched_at: now,
-							colors: result.colors ?? [],
-							color_identity: result.color_identity ?? [],
-							cmc: result.cmc ?? null,
-							type_line: result.type_line ?? null,
-							mana_cost: result.mana_cost ?? null,
-							oracle_text: result.oracle_text ?? null,
-							rarity: result.rarity ?? null,
-							set_name: result.set_name ?? null,
-							artist: result.artist ?? null,
-						})
-						.eq('id', card.id);
-					if (updateErr) {
-						console.warn(
-							`${prefix} — ⚠ oracle_id update failed for ${card.id}: ${updateErr.message}`
-						);
-					} else {
-						matched++;
-					}
-				}
-			})
-		)
-	);
-
-	if (matched > 0) console.log(`${prefix} — Strategy A: ${matched} matched by set+num`);
-
-	return { matched };
-}
-
-async function enrichSourceWithScryfall(
-	sourceId: string,
-	prefix: string
-): Promise<{ matched: number; unmatched: number; failed: number }> {
-	// Strategy A: set + collector_number lookup
-	const { matched: matchedA } = await enrichBySetAndNumber(sourceId, prefix);
-
-	// Strategy B: batch name lookup for everything still unenriched
-	let unenrichedQuery = supabase.from('custom_cards').select('id, name').eq('source_id', sourceId);
-	if (!forceReenrich) unenrichedQuery = unenrichedQuery.is('enriched_at', null);
-	const { data: unenriched, error } = await unenrichedQuery.limit(100_000);
-
-	if (error) {
-		console.warn(`${prefix} — ⚠ Scryfall enrichment query failed: ${error.message}`);
-		return { matched: matchedA, unmatched: 0, failed: 0 };
-	}
-
-	if (!unenriched || unenriched.length === 0) {
-		return { matched: matchedA, unmatched: 0, failed: 0 };
-	}
-
-	const nameToIds = new Map<string, string[]>();
-	for (const card of unenriched) {
-		const existing = nameToIds.get(card.name);
-		if (existing) existing.push(card.id);
-		else nameToIds.set(card.name, [card.id]);
-	}
-
-	const uniqueNames = Array.from(nameToIds.keys());
-	let matchedB = 0;
-	let unmatched = 0;
-	let failed = 0;
-
-	for (let i = 0; i < uniqueNames.length; i += SCRYFALL_BATCH_SIZE) {
-		const batch = uniqueNames.slice(i, i + SCRYFALL_BATCH_SIZE);
-		const r = await applyScryfallBatch(batch, nameToIds, prefix);
-		matchedB += r.matched;
-		unmatched += r.unmatched;
-		failed += r.failed;
-	}
-
-	return { matched: matchedA + matchedB, unmatched, failed };
-}
-
 // ─── Main pipeline ──────────────────────────────────────────────────────────
 
 async function fetchSources(): Promise<MpcfillSourceRaw[]> {
@@ -501,9 +259,10 @@ async function ingestSource(
 			newCount: 0,
 			skippedCount: 0,
 			failedCount: 1,
-			scryfallMatched: 0,
-			scryfallUnmatched: 0,
-			scryfallFailed: 0,
+			resolvedBySetNum: 0,
+			resolvedByName: 0,
+			resolvedByFuzzy: 0,
+			unresolvedFiles: [],
 		};
 	}
 
@@ -525,8 +284,12 @@ async function ingestSource(
 	let newCount = 0;
 	let skippedCount = 0;
 	let failedCount = 0;
+	let resolvedBySetNum = 0;
+	let resolvedByName = 0;
+	let resolvedByFuzzy = 0;
+	const unresolvedFiles: string[] = [];
 
-	const limiter = pLimit(20);
+	const limiter = pLimit(5);
 	await Promise.all(
 		files.map((file) =>
 			limiter(async () => {
@@ -545,10 +308,26 @@ async function ingestSource(
 					...folderTags,
 					...parsed.bracketTags,
 				];
+
+				let resolution: ScryfallResolution | null = null;
+				if (!skipScryfall) {
+					try {
+						resolution = await resolveCard({ ...parsed, setCode }, cardType, { fuzzy: !noFuzzy });
+					} catch (err) {
+						console.warn(`  ⚠ Resolution failed for ${file.name}: ${(err as Error).message}`);
+					}
+				}
+
+				if (resolution?.strategy === 'set_num') resolvedBySetNum++;
+				else if (resolution?.strategy === 'name') resolvedByName++;
+				else if (resolution?.strategy === 'fuzzy') resolvedByFuzzy++;
+				else if (!skipScryfall) unresolvedFiles.push(file.name);
+
 				const { error: cardErr } = await supabase.from('custom_cards').upsert({
 					id: cardId,
 					source_id: sourceId,
-					name: parsed.cardName,
+					name: resolution?.oracleName ?? parsed.cardName,
+					display_name: parsed.cardName,
 					raw_name: file.name,
 					set_code: setCode,
 					collector_number: setCode ? parsed.collectorNumber : null,
@@ -558,6 +337,17 @@ async function ingestSource(
 					is_public: true,
 					card_type: cardType,
 					language: parsed.language,
+					oracle_id: resolution?.oracleId ?? null,
+					enriched_at: resolution ? new Date().toISOString() : null,
+					colors: resolution?.colors ?? [],
+					color_identity: resolution?.colorIdentity ?? [],
+					cmc: resolution?.cmc ?? null,
+					type_line: resolution?.typeLine ?? null,
+					mana_cost: resolution?.manaCost ?? null,
+					oracle_text: resolution?.oracleText ?? null,
+					rarity: resolution?.rarity ?? null,
+					set_name: resolution?.setName ?? null,
+					artist: resolution?.artist ?? null,
 				});
 
 				if (cardErr) {
@@ -571,7 +361,6 @@ async function ingestSource(
 		)
 	);
 
-	// Update card_count with the real count from DB (not just this session's counts)
 	const { count: realCount } = await supabase
 		.from('custom_cards')
 		.select('*', { count: 'exact', head: true })
@@ -584,32 +373,25 @@ async function ingestSource(
 		.eq('id', sourceId);
 	if (countErr) console.warn(`${prefix} — ⚠ card_count update failed: ${countErr.message}`);
 
-	console.log(
-		`${prefix} — ✓ images done (${newCount} new, ${skippedCount} skipped, ${failedCount} failed)`
-	);
-
-	// Scryfall enrichment
-	let scryfallMatched = 0;
-	let scryfallUnmatched = 0;
-	let scryfallFailed = 0;
-
+	console.log(`${prefix} — ✓ ${newCount} new, ${skippedCount} skipped, ${failedCount} failed`);
 	if (!skipScryfall) {
-		const enrichResult = await enrichSourceWithScryfall(sourceId, prefix);
-		scryfallMatched = enrichResult.matched;
-		scryfallUnmatched = enrichResult.unmatched;
-		scryfallFailed = enrichResult.failed;
 		console.log(
-			`${prefix} — ✓ scryfall (${scryfallMatched} matched, ${scryfallUnmatched} unmatched, ${scryfallFailed} failed)`
+			`${prefix} — Scryfall: ${resolvedBySetNum} by set+num, ${resolvedByName} by name, ${resolvedByFuzzy} by fuzzy, ${unresolvedFiles.length} unresolved`
 		);
+		if (unresolvedFiles.length > 0) {
+			console.warn(`${prefix} — Unresolved files:`);
+			for (const f of unresolvedFiles) console.warn(`    • ${f}`);
+		}
 	}
 
 	return {
 		newCount,
 		skippedCount,
 		failedCount,
-		scryfallMatched,
-		scryfallUnmatched,
-		scryfallFailed,
+		resolvedBySetNum,
+		resolvedByName,
+		resolvedByFuzzy,
+		unresolvedFiles,
 	};
 }
 
@@ -657,17 +439,19 @@ async function main(): Promise<void> {
 			newCount: acc.newCount + r.newCount,
 			skippedCount: acc.skippedCount + r.skippedCount,
 			failedCount: acc.failedCount + r.failedCount,
-			scryfallMatched: acc.scryfallMatched + r.scryfallMatched,
-			scryfallUnmatched: acc.scryfallUnmatched + r.scryfallUnmatched,
-			scryfallFailed: acc.scryfallFailed + r.scryfallFailed,
+			resolvedBySetNum: acc.resolvedBySetNum + r.resolvedBySetNum,
+			resolvedByName: acc.resolvedByName + r.resolvedByName,
+			resolvedByFuzzy: acc.resolvedByFuzzy + r.resolvedByFuzzy,
+			unresolvedFiles: [...acc.unresolvedFiles, ...r.unresolvedFiles],
 		}),
 		{
 			newCount: 0,
 			skippedCount: 0,
 			failedCount: 0,
-			scryfallMatched: 0,
-			scryfallUnmatched: 0,
-			scryfallFailed: 0,
+			resolvedBySetNum: 0,
+			resolvedByName: 0,
+			resolvedByFuzzy: 0,
+			unresolvedFiles: [] as string[],
 		}
 	);
 
@@ -677,16 +461,18 @@ async function main(): Promise<void> {
 	const sourcesFailed = filtered.length - sourcesOk;
 
 	console.log('\n✅ Ingestion complete.');
-	console.log(`   Sources processed : ${sourcesOk}`);
-	if (sourcesFailed > 0) console.log(`   Sources failed    : ${sourcesFailed}`);
-	console.log(`   Cards new         : ${totals.newCount}`);
-	console.log(`   Cards skipped     : ${totals.skippedCount}`);
-	if (totals.failedCount > 0) console.log(`   Cards failed      : ${totals.failedCount}`);
+	console.log(`   Sources processed  : ${sourcesOk}`);
+	if (sourcesFailed > 0) console.log(`   Sources failed     : ${sourcesFailed}`);
+	console.log(`   Cards new          : ${totals.newCount}`);
+	console.log(`   Cards skipped      : ${totals.skippedCount}`);
+	if (totals.failedCount > 0) console.log(`   Cards failed       : ${totals.failedCount}`);
 	if (!skipScryfall) {
-		console.log(`   Scryfall matched  : ${totals.scryfallMatched}`);
-		if (totals.scryfallUnmatched > 0)
-			console.log(`   Scryfall unmatched: ${totals.scryfallUnmatched}`);
-		if (totals.scryfallFailed > 0) console.log(`   Scryfall failed   : ${totals.scryfallFailed}`);
+		console.log(`   Resolved set+num   : ${totals.resolvedBySetNum}`);
+		console.log(`   Resolved by name   : ${totals.resolvedByName}`);
+		if (totals.resolvedByFuzzy > 0)
+			console.log(`   Resolved by fuzzy  : ${totals.resolvedByFuzzy}`);
+		if (totals.unresolvedFiles.length > 0)
+			console.warn(`   ⚠ Unresolved total : ${totals.unresolvedFiles.length}`);
 	}
 }
 
