@@ -1,10 +1,11 @@
 import type { ReactNode, MouseEvent } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import type { ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 
-export type AnyCard = ScryfallCard | Card;
+export type AnyCard = ScryfallCard | Card | CustomCard;
 
 export interface CardListSection {
 	label: string;
