@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, Suspense } from 'react';
+import { useState, useCallback, useEffect, useMemo, Suspense } from 'react';
 import { useScryfallCardSearch } from '@/lib/scryfall/hooks/useScryfallCardSearch';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
@@ -18,6 +18,10 @@ import type { SearchMode } from './components/SearchModeSwitcher/SearchModeSwitc
 import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
 import { getCustomCardSourcesWithCount } from '@/lib/supabase/custom-cards';
 import type { MpcSourceWithCount } from '@/lib/supabase/custom-cards';
+import {
+	filterCollectionCards,
+	defaultCollectionFilters,
+} from '@/app/collection/utils/filterCollectionCards';
 import styles from './page.module.css';
 
 export default function SearchPage() {
@@ -98,6 +102,24 @@ function SearchPageContent() {
 		isLoading: customLoading,
 		error: customError,
 	} = useCustomCards(showCustom ? customSourceId : undefined);
+
+	const filteredCustomCards = useMemo(
+		() =>
+			filterCollectionCards(customCards, {
+				...defaultCollectionFilters,
+				name,
+				colors,
+				colorMatch,
+				type,
+				set,
+				rarities,
+				oracleText,
+				cmc,
+				order,
+				dir,
+			}),
+		[customCards, name, colors, colorMatch, type, set, rarities, oracleText, cmc, order, dir]
+	);
 
 	useEffect(() => {
 		getCustomCardSourcesWithCount()
@@ -286,13 +308,13 @@ function SearchPageContent() {
 						)}
 
 						<CardList
-							cards={customCards as unknown as CardListCards}
+							cards={filteredCustomCards as unknown as CardListCards}
 							isLoading={customLoading}
 							onCardClick={handleCardClick}
 							tableColumns={tableColumns}
 						/>
 
-						{!customLoading && !customError && customCards.length === 0 && (
+						{!customLoading && !customError && filteredCustomCards.length === 0 && (
 							<div className={styles.emptyState}>
 								<h2>Aucune carte custom</h2>
 								<p>Aucune carte personnalisée disponible pour le moment.</p>

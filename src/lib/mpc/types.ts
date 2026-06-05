@@ -28,6 +28,16 @@ export interface MpcCard {
 	variants: string[];
 	setCode: string | null;
 	collectorNumber: string | null;
+	// Scryfall enrichment — populated only for cards matched by oracle_id
+	colors?: string[];
+	colorIdentity?: string[];
+	cmc?: number;
+	typeLine?: string;
+	manaCost?: string;
+	oracleText?: string;
+	rarity?: string;
+	setName?: string;
+	artist?: string;
 }
 
 export interface MpcIndexEntry {

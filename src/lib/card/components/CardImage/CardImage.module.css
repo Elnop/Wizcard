@@ -78,6 +78,8 @@
 	border: 1px solid var(--border);
 	border-radius: 4.75% / 3.4%;
 	padding: 16px;
+	width: 100%;
+	aspect-ratio: 63 / 88;
 }
 
 .placeholderText {

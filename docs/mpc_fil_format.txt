@@ -1,0 +1,128 @@
+MPC Autofill Contributions
+The MPC Autofill database tracks 305,133 images, with a total size of 1,693.04 GB — comprising 297,265 cards, 479 cardbacks, and 7,389 tokens — from 274 sources.
+
+MPC Autofill databases are typically synced with all sources every day (beginning at midnight UTC) to ensure all changes are recorded in a timely manner.
+
+Contribution Guidelines
+File Format
+Image filetype must be either png (recommended) or jpeg.
+Tagging
+MPC Autofill will attempt to tag images when indexing them according to their names.
+MPC Autofill is configured with the following tags:
+Art , which has the sub-tags:
+Altered Art, which has the aliases [Altered, Filtered] and the sub-tags:
+Pixel Art, which has the aliases [Pixelated, Pixelized]
+Pop-Out Art, which has the aliases [Popout Art, Pop-Out, Popout]
+Sketch Art, which has the aliases [Sketchified]
+Custom Art, which has the aliases [Alt Art, Alternate, Alt, Alternate Art] and the sub-tags:
+AI Art, which has the aliases [AI, Midjourney, GenAI] and the sub-tags:
+AI Remaster
+Artist Art, which has the aliases [Third Party Art, 3rd Party Art]
+Switched Art
+Upscaled Scan, which has the aliases [Upscaled, Upscaled Art, Scryfall Scan, Upscaled Scryfall Scan]
+Frame , which has the sub-tags:
+Borderless, which has the aliases [Borderless Art, Borderless Frame] and the sub-tags:
+Post-2023 Borderless, which has the aliases [Borderless 2023, Borderless Alt]
+Custom-Made Frame, which has the aliases [Custom Frame] and the sub-tags:
+AI Frame
+Minimalist, which has the aliases [Minimalist Frame, Min]
+Stonecutter, which has the aliases [Stonecutter Frame]
+Extended-Art, which has the aliases [Extended, Extended Art, Extended Frame, Extended Art Frame]
+FNM Promo, which has the aliases [FNM Promo Frame, FNM Frame, Universal Promo Frame, Universal Promo, WPN Promo Frame, WPN Promo]
+Foil-Etched, which has the aliases [Foil-Etched Frame, Etched Frame, Etched]
+Full Text, which has the aliases [Full Text Frame]
+Futureshifted, which has the aliases [Futureshifted Frame, FUT Frame, Future Sight Frame, Future Shifted Frame, Future Shifted]
+M15, which has the aliases [M15 Frame, Regular Frame]
+Modern, which has the aliases [Modern Frame, Eighth Edition Frame, 8th Edition Frame, Eighth Edition, 8th Edition, 8ED]
+Planeshifted, which has the aliases [Planeshifted Frame, Colorshifted Frame, Planar Chaos Frame, PLC Frame]
+Retro, which has the aliases [Retro Frame, Ancient Frame, Ancient, Original Frame, OG Frame, Alpha, Beta, Unlimited, ABU, Classic]
+Showcase, which has the aliases [Showcase Frame, Extension Showcase Frame, Extension Frame] and the sub-tags:
+Amonkhet Invocations, which has the aliases [AKH Invocations]
+Capenna Art Deco, which has the aliases [SNC Art Deco Frame, Capenna Art Deco Frame, New Capenna Art Deco, New Capenna Art Deco Frame]
+Capenna Golden Age, which has the aliases [SNC Golden Age Frame, Capenna Golden Age Frame, New Capenna Golden Age, New Capenna Golden Age Frame]
+Capenna Skyscraper, which has the aliases [SNC Skyscraper Frame, Capenna Skyscraper Frame, New Capenna Skyscraper, New Capenna Skyscraper Frame]
+ClassicShifted, which has the aliases [ClassicShifted Frame]
+Commander Legends, which has the aliases [Commander Legends Frame, CMR Frame]
+D&D Module, which has the aliases [D&D Module Frame]
+D&D Sourcebook, which has the aliases [D&D Sourcebook Frame]
+Doctor Who TARDIS, which has the aliases [Doctor Who TARDIS Frame, WHO Frame, Doctor Who, TARDIS, TARDIS Frame]
+Dominaria Stained Glass, which has the aliases [DMU Frame, Stained Glass Frame, Dominaria Stained Glass Frame, Stained Glass]
+Eldraine Enchanting Tales, which has the aliases [WOT Frame, Enchanting Tales Frame, Enchanting Tales, Eldraine Enchanting Tales Frame]
+Eldraine Storybook, which has the aliases [ELD Frame, WOE Frame, Eldraine Frame, Wilds of Eldraine Frame, Storybook Frame, Eldraine Storybook Frame]
+English Mystical Archive, which has the aliases [EN STA Frame]
+FCA Showcase, which has the aliases [FCA Showcase Frame, FCA Frame, Final Fantasy Frame, Borderless Source Material, Source Material]
+Ikoria Crystal, which has the aliases [Ikoria Crystal Frame, Crystal Frame]
+Innistrad Equinox, which has the aliases [MID Frame, Innistrad Equinox Frame, Equinox Frame, Midnight Hunt Frame]
+Innistrad Fang, which has the aliases [VOW Frame, Fang Frame, Crimson Vow Frame, Innistrad Fang Frame]
+Ixalan Coin, which has the aliases [Ixalan Coin Frame, Coin Frame]
+Japanese Mystical Archive, which has the aliases [JP STA Frame]
+Japan Showcase, which has the aliases [Japan Showcase Frame, JP Showcase, JP Showcase Frame]
+Kaladesh Inventions, which has the aliases [KLD Inventions]
+Kaldheim Viking, which has the aliases [KHM Frame, Viking Frame, Kaldheim Frame, Kaldheim Viking Frame]
+Kamigawa Neon, which has the aliases [NEO Neon Frame, Kamigawa Neon Frame, Neon Dynasty Neon Frame, Neon Frame]
+Kamigawa Ninja, which has the aliases [NEO Ninja Frame, Kamigawa Ninja Frame, Neon Dynasty Ninja Frame, Ninja Frame]
+Kamigawa Samurai, which has the aliases [NEO Samurai Frame, Kamigawa Samurai Frame, Neon Dynasty Samurai Frame, Samurai Frame]
+LOTR Ring, which has the aliases [LTR Frame, LOTR Ring Frame, Ring Frame]
+LOTR Scrolls of Middle-earth, which has the aliases [LOTR Scrolls of Middle-earth Frame, Scrolls of Middle-earth Frame, Scrolls of Middle-earth]
+M21 Spellbook, which has the aliases [M21 Frame, Signature Spellbook Frame, Signature Spellbook, M21 Spellbook Frame]
+Phyrexia Oil, which has the aliases [ONE Oil Frame, Phyrexia Oil Frame, Oil Frame, Phyrexian Oil, Phyrexian Oil Frame]
+Ravnica Architecture, which has the aliases [Ravnica Architecture Frame, Architecture Frame]
+Sketch Frame, which has the aliases [MH2 Frame, Sketch]
+Tarkir Dragon Wing, which has the aliases [Tarkir Dragon Wing Frame, Dragon Wing Frame]
+Theros Nyx, which has the aliases [THB Frame, Nyx Frame, Theros Beyond Death Frame, Theros Nyx Frame]
+Zendikar Expeditions, which has the aliases [BFZ Expeditions, EXP Frame]
+Zendikar Hedron, which has the aliases [ZNR Frame, Hedron Frame, Zendikar Rising Frame, Zendikar Hedron Frame]
+Zendikar Rising Expeditions, which has the aliases [ZNR Expeditions, ZNE Frame]
+Universes Beyond, which has the aliases [UB Frame, Universes Beyond Frame, UB]
+Full-Art, which has the aliases [Full Art, Full-Art Frame, Full Art Frame, Fullart Frame, Fullart]
+Misc , which has the sub-tags:
+Alternate Name , which has the sub-tags:
+Nickname, which has the aliases [Godzilla Nickname, Godzilla]
+Card , which has the sub-tags:
+Eternal Night Card, which has the aliases [Black & White Card]
+Realistic, which has the aliases [Realistic WOTC Card, Realistic Card]
+Secret Lair, which has the aliases [Secret Lair Card, SLD, SLD Card]
+Textless, which has the aliases [Textless Card]
+Non-Black Border, which has the aliases [Non-Black, Special Border, Unusual Border] and the sub-tags:
+Gold Border, which has the aliases [Commemorative Border, Collectors Edition Border, World Championship Deck Border, World Championship Border, WC Border, 30th Anniversary Edition Border, 30th Anniversary Border, 30A Border]
+Silver Border, which has the aliases [Unset Border]
+White Border, which has the aliases [Unlimited Border]
+NSFW, which has the aliases [NSFW Art, Not Safe For Work, Not Safe For Work Art, Nudity, Nudity Art, Gore, Gore Art]
+Universe , which has the sub-tags:
+Anime , which has the sub-tags:
+Hatsune Miku, which has the aliases [Miku]
+Avatar The Last Airbender, which has the aliases [Avatar, TLA, TLE]
+Dr Who, which has the aliases [WHO]
+Fallout, which has the aliases [PIP]
+Final Fantasy, which has the aliases [FIN, FF]
+In-Multiverse, which has the aliases [MIP, UW, Universes Within, Magic IP, OM1, Through The Omenpaths]
+League of Legends
+Lord of the Rings, which has the aliases [LTR, LOTR]
+My Little Pony, which has the aliases [MLP, Ponies The Galloping]
+Spider-Man, which has the aliases [SPM, SPE]
+Warhammer 40k, which has the aliases [40K, Warhammer]
+Include tags in your file and folder names inside [] square brackets or inside () parentheses. Separate multiple tags with commas.
+For example, if a file was named Image A [NSFW, Full Art].png, we would read the tags NSFW and Full Art.
+We would read the same tags if a file was named Image A (NSFW, Full Art).png.
+You may specify tags in folder names. If you do, all images within the folder will get those tags.
+Languages
+You may specify the language an image is written in inside {} curly brackets at the start of the file name, using the ISO-639-1 nomenclature.
+For example, if a file was named {DE} Image A.png, we would read the language as German.
+MPC Autofill assumes that cards are written in English unless specified otherwise.
+You may specify a languages in folder names. If you do, all images within the folder are assumed to be that language unless specified otherwise.
+Card Types
+Store your token images in a folder called Tokens (anywhere in your repository).
+Store your cardback images in a folder called Cardbacks (anywhere in your repository).
+Ignored Files
+Prepend the names of any folders you don't want to be indexed by MPC Autofill with !— for example, !Misc and Art
+Other Naming Conventions
+When you have multiple versions of a card in the same folder, use parentheses to differentiate them — e.g. Image A.png and Image A (Extended).png
+If the text in parentheses (e.g. Extended in the above example) doesn't match a tag, it will be ignored by the search engine.
+The first image (Image A.png) will be shown in search results before the second image (Image A (Extended).png).
+If a card has multiple names, use an ampersand to separate them — for example, Fire & Ice.png
+Restrictions
+Limit your files to less than 30 MB per image — this is the maximum that Google Scripts can return in one request and the maximum that MakePlayingCards.com accepts, meaning the desktop client won't work with images that exceed this limit.
+
+'Tis But a Scratch! (Dismember).png a un problem d ingestion, Dismember est une vrai card et 'Tis But a
+  Scratch! est un nom alternatif, les data de Dismember devrai etre presente depuis scryfall, que dis la spec
+  @docs/mpc_fil_format.txt ?

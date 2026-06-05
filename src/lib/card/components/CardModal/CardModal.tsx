@@ -93,10 +93,12 @@ function CardDetailSection({
 	card,
 	symbolMap,
 	language,
+	isCustom,
 }: {
 	card: ScryfallCard;
 	symbolMap: Record<string, ScryfallCardSymbol>;
 	language?: string;
+	isCustom?: boolean;
 }) {
 	return (
 		<>
@@ -166,12 +168,14 @@ function CardDetailSection({
 					<span className={styles.detailLabel}>Artist</span>
 					<span className={styles.detailValue}>{card.artist ?? '—'}</span>
 				</div>
-				<div className={styles.detailRow}>
-					<span className={styles.detailLabel}>Print</span>
-					<span className={styles.detailValue}>
-						{card.set.toUpperCase()} #{card.collector_number}
-					</span>
-				</div>
+				{card.set && (
+					<div className={styles.detailRow}>
+						<span className={styles.detailLabel}>Print</span>
+						<span className={styles.detailValue}>
+							{card.set.toUpperCase()} #{card.collector_number}
+						</span>
+					</div>
+				)}
 				{language && language !== 'English' && (
 					<div className={styles.detailRow}>
 						<span className={styles.detailLabel}>Langue</span>
@@ -180,9 +184,11 @@ function CardDetailSection({
 				)}
 			</div>
 
-			<Link href={`/card/${card.id}`} className={styles.moreInfoLink}>
-				Plus d&apos;informations
-			</Link>
+			{!isCustom && (
+				<Link href={`/card/${card.id}`} className={styles.moreInfoLink}>
+					Plus d&apos;informations
+				</Link>
+			)}
 		</>
 	);
 }
@@ -704,9 +710,11 @@ function CustomCardModalInner({ card, onClose }: { card: CustomCard; onClose: ()
 					</div>
 
 					<div className={styles.infoCol}>
-						{(card.type_line || card.oracle_text) && (
-							<CardDetailSection card={card as unknown as ScryfallCard} symbolMap={symbolMap} />
-						)}
+						<CardDetailSection
+							card={card as unknown as ScryfallCard}
+							symbolMap={symbolMap}
+							isCustom
+						/>
 						<CustomCardSection card={card} />
 					</div>
 				</div>

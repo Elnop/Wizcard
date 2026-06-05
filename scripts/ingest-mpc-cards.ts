@@ -13,7 +13,9 @@ const GOOGLE_DRIVE_API_KEY = process.env.GOOGLE_DRIVE_API_KEY ?? '';
 const MPCFILL_URL = 'https://mpcfill.com/2/sources/';
 const DRIVE_FILES_URL = 'https://www.googleapis.com/drive/v3/files';
 const SCRYFALL_COLLECTION_URL = 'https://api.scryfall.com/cards/collection';
+const SCRYFALL_SETS_URL = 'https://api.scryfall.com/sets';
 const SCRYFALL_BATCH_SIZE = 75;
+const SCRYFALL_USER_AGENT = 'Wizcard/1.0';
 
 if (!SUPABASE_SERVICE_ROLE_KEY) {
 	console.error('Missing SUPABASE_SERVICE_ROLE_KEY — set it in .env.local');
@@ -30,6 +32,7 @@ const args = process.argv.slice(2);
 const filterSourceId = args.find((a) => a.startsWith('--source='))?.split('=')[1];
 const limitSources = parseInt(args.find((a) => a.startsWith('--limit='))?.split('=')[1] ?? '0', 10);
 const skipScryfall = args.includes('--skip-scryfall');
+const forceReenrich = args.includes('--force-reenrich');
 
 // ─── Supabase ───────────────────────────────────────────────────────────────
 
@@ -55,10 +58,28 @@ interface MpcfillSourcesResponse {
 interface ScryfallCardMinimal {
 	oracle_id: string;
 	name: string;
+	colors?: string[];
+	color_identity?: string[];
+	cmc?: number;
+	type_line?: string;
+	mana_cost?: string;
+	oracle_text?: string;
+	rarity?: string;
+	set_name?: string;
+	artist?: string;
 }
 
 interface ScryfallSingleCard {
 	oracle_id?: string;
+	colors?: string[];
+	color_identity?: string[];
+	cmc?: number;
+	type_line?: string;
+	mana_cost?: string;
+	oracle_text?: string;
+	rarity?: string;
+	set_name?: string;
+	artist?: string;
 }
 
 interface ScryfallCollectionResponse {
@@ -79,6 +100,12 @@ interface IngestResult {
 
 const DRIVE_ID_RE = /[?&]id=([a-zA-Z0-9_-]+)|\/folders\/([a-zA-Z0-9_-]+)/;
 const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif']);
+// eslint-disable-next-line sonarjs/slow-regex
+const FOLDER_BRACKET_RE = /\[([^\]]*)\]/gu;
+// eslint-disable-next-line sonarjs/slow-regex
+const FOLDER_PAREN_RE = /\(([^)]*)\)/gu;
+// eslint-disable-next-line sonarjs/slow-regex
+const FOLDER_TAG_SPLIT_RE = /\s*,\s*/u;
 function extractDriveId(url: string): string | null {
 	const m = DRIVE_ID_RE.exec(url);
 	return m ? (m[1] ?? m[2] ?? null) : null;
@@ -91,7 +118,7 @@ function isImageFile(filename: string): boolean {
 }
 
 function driveImageUrl(fileId: string): string {
-	return `https://drive.usercontent.google.com/download?id=${fileId}&export=view`;
+	return `https://drive.google.com/thumbnail?id=${fileId}&sz=w600-h840`;
 }
 
 async function sleep(ms: number): Promise<void> {
@@ -122,7 +149,7 @@ async function scryfallPost<T>(body: object): Promise<T> {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			'User-Agent': 'Wizcard/1.0',
+			'User-Agent': SCRYFALL_USER_AGENT,
 		},
 		body: JSON.stringify(body),
 	});
@@ -137,12 +164,19 @@ async function scryfallGet<T>(path: string): Promise<T | null> {
 	lastScryfallCall = Date.now();
 
 	const res = await fetch(`https://api.scryfall.com${path}`, {
-		headers: { 'User-Agent': 'Wizcard/1.0' },
+		headers: { 'User-Agent': SCRYFALL_USER_AGENT },
 	});
 
 	if (res.status === 404) return null;
 	if (!res.ok) throw new Error(`Scryfall GET ${path} failed: HTTP ${res.status}`);
 	return res.json() as Promise<T>;
+}
+
+async function fetchScryfallSetCodes(): Promise<Set<string>> {
+	const res = await fetch(SCRYFALL_SETS_URL, { headers: { 'User-Agent': SCRYFALL_USER_AGENT } });
+	if (!res.ok) throw new Error(`Scryfall /sets failed: HTTP ${res.status}`);
+	const json = (await res.json()) as { data: Array<{ code: string }> };
+	return new Set(json.data.map((s) => s.code.toUpperCase()));
 }
 
 // ─── Drive helpers ──────────────────────────────────────────────────────────
@@ -189,25 +223,67 @@ async function listDriveFolderChildren(folderId: string): Promise<DriveItem[]> {
 	return items;
 }
 
-// Recursively collects all image files under a folder (handles nested subfolders)
-async function listDriveFolder(folderId: string): Promise<Array<{ id: string; name: string }>> {
-	const images: Array<{ id: string; name: string }> = [];
-	const queue: string[] = [folderId];
+interface DriveImageEntry {
+	id: string;
+	name: string;
+	folderPath: string[]; // Folder names from root to immediate parent
+}
+
+// Recursively collects all image files under a folder (handles nested subfolders).
+// Tracks the folder path so downstream code can infer card_type and folder-level tags.
+// Skips folders whose names start with '!' per MPC Autofill spec.
+async function listDriveFolder(folderId: string): Promise<DriveImageEntry[]> {
+	const images: DriveImageEntry[] = [];
+	const queue: Array<{ id: string; path: string[] }> = [{ id: folderId, path: [] }];
 
 	while (queue.length > 0) {
-		const currentId = queue.shift()!;
+		const { id: currentId, path: currentPath } = queue.shift()!;
 		const children = await listDriveFolderChildren(currentId);
 
 		for (const item of children) {
 			if (item.mimeType === 'application/vnd.google-apps.folder') {
-				queue.push(item.id);
+				if (!item.name.startsWith('!')) {
+					queue.push({ id: item.id, path: [...currentPath, item.name] });
+				}
 			} else if (isImageFile(item.name)) {
-				images.push({ id: item.id, name: item.name });
+				images.push({ id: item.id, name: item.name, folderPath: currentPath });
 			}
 		}
 	}
 
 	return images;
+}
+
+function folderPathToMeta(folderPath: string[]): {
+	cardType: 'card' | 'token' | 'cardback';
+	folderTags: string[];
+} {
+	let cardType: 'card' | 'token' | 'cardback' = 'card';
+	const folderTags: string[] = [];
+
+	for (const folderName of folderPath) {
+		const lower = folderName.toLowerCase();
+		if (lower === 'tokens' || lower.startsWith('tokens ') || lower.startsWith('tokens(')) {
+			cardType = 'token';
+		} else if (lower === 'cardbacks' || lower.startsWith('cardbacks')) {
+			cardType = 'cardback';
+		}
+
+		// Extract tags from folder name brackets [...]
+		FOLDER_BRACKET_RE.lastIndex = 0;
+		for (const m of folderName.matchAll(FOLDER_BRACKET_RE)) {
+			const parts = m[1].trim().split(FOLDER_TAG_SPLIT_RE).filter(Boolean);
+			folderTags.push(...parts);
+		}
+		// Extract tags from folder name parens (...)
+		FOLDER_PAREN_RE.lastIndex = 0;
+		for (const m of folderName.matchAll(FOLDER_PAREN_RE)) {
+			const v = m[1].trim();
+			if (v && !/^\d+$/u.test(v)) folderTags.push(v);
+		}
+	}
+
+	return { cardType, folderTags };
 }
 
 // ─── Scryfall enrichment ────────────────────────────────────────────────────
@@ -227,9 +303,9 @@ async function applyScryfallBatch(
 		return { matched: 0, unmatched: 0, failed: batch.length };
 	}
 
-	const foundByName = new Map<string, string>();
+	const foundByName = new Map<string, ScryfallCardMinimal>();
 	for (const card of result.data ?? []) {
-		foundByName.set(card.name.toLowerCase(), card.oracle_id);
+		foundByName.set(card.name.toLowerCase(), card);
 	}
 
 	let matched = 0;
@@ -237,14 +313,26 @@ async function applyScryfallBatch(
 	const now = new Date().toISOString();
 
 	for (const name of batch) {
-		const oracleId = foundByName.get(name.toLowerCase());
+		const found = foundByName.get(name.toLowerCase());
 		const cardIds = nameToIds.get(name) ?? [];
 
-		if (oracleId) {
+		if (found) {
 			for (const cardId of cardIds) {
 				const { error: upsertErr } = await supabase
 					.from('custom_cards')
-					.update({ oracle_id: oracleId, enriched_at: now })
+					.update({
+						oracle_id: found.oracle_id,
+						enriched_at: now,
+						colors: found.colors ?? [],
+						color_identity: found.color_identity ?? [],
+						cmc: found.cmc ?? null,
+						type_line: found.type_line ?? null,
+						mana_cost: found.mana_cost ?? null,
+						oracle_text: found.oracle_text ?? null,
+						rarity: found.rarity ?? null,
+						set_name: found.set_name ?? null,
+						artist: found.artist ?? null,
+					})
 					.eq('id', cardId);
 				if (upsertErr) {
 					console.warn(`${prefix} — ⚠ oracle_id update failed for ${cardId}: ${upsertErr.message}`);
@@ -263,14 +351,14 @@ async function enrichBySetAndNumber(
 	sourceId: string,
 	prefix: string
 ): Promise<{ matched: number }> {
-	const { data: candidates, error } = await supabase
+	let candidatesQuery = supabase
 		.from('custom_cards')
 		.select('id, set_code, collector_number')
 		.eq('source_id', sourceId)
-		.is('enriched_at', null)
 		.not('set_code', 'is', null)
-		.not('collector_number', 'is', null)
-		.limit(100_000);
+		.not('collector_number', 'is', null);
+	if (!forceReenrich) candidatesQuery = candidatesQuery.is('enriched_at', null);
+	const { data: candidates, error } = await candidatesQuery.limit(100_000);
 
 	if (error || !candidates || candidates.length === 0) {
 		return { matched: 0 };
@@ -297,7 +385,19 @@ async function enrichBySetAndNumber(
 				if (result?.oracle_id) {
 					const { error: updateErr } = await supabase
 						.from('custom_cards')
-						.update({ oracle_id: result.oracle_id, enriched_at: now })
+						.update({
+							oracle_id: result.oracle_id,
+							enriched_at: now,
+							colors: result.colors ?? [],
+							color_identity: result.color_identity ?? [],
+							cmc: result.cmc ?? null,
+							type_line: result.type_line ?? null,
+							mana_cost: result.mana_cost ?? null,
+							oracle_text: result.oracle_text ?? null,
+							rarity: result.rarity ?? null,
+							set_name: result.set_name ?? null,
+							artist: result.artist ?? null,
+						})
 						.eq('id', card.id);
 					if (updateErr) {
 						console.warn(
@@ -324,12 +424,9 @@ async function enrichSourceWithScryfall(
 	const { matched: matchedA } = await enrichBySetAndNumber(sourceId, prefix);
 
 	// Strategy B: batch name lookup for everything still unenriched
-	const { data: unenriched, error } = await supabase
-		.from('custom_cards')
-		.select('id, name')
-		.eq('source_id', sourceId)
-		.is('enriched_at', null)
-		.limit(100_000);
+	let unenrichedQuery = supabase.from('custom_cards').select('id, name').eq('source_id', sourceId);
+	if (!forceReenrich) unenrichedQuery = unenrichedQuery.is('enriched_at', null);
+	const { data: unenriched, error } = await unenrichedQuery.limit(100_000);
 
 	if (error) {
 		console.warn(`${prefix} — ⚠ Scryfall enrichment query failed: ${error.message}`);
@@ -376,7 +473,8 @@ async function ingestSource(
 	source: MpcfillSourceRaw,
 	driveId: string,
 	index: number,
-	total: number
+	total: number,
+	validSetCodes: Set<string>
 ): Promise<IngestResult> {
 	const sourceId = `mpcfill:${source.key}`;
 	const prefix = `[source ${index}/${total}] ${sourceId}`;
@@ -394,7 +492,7 @@ async function ingestSource(
 	if (srcErr) throw new Error(`Source upsert failed: ${srcErr.message}`);
 
 	// List Drive files
-	let files: Array<{ id: string; name: string }>;
+	let files: DriveImageEntry[];
 	try {
 		files = await listDriveFolder(driveId);
 	} catch (err) {
@@ -439,17 +537,27 @@ async function ingestSource(
 				}
 
 				const parsed = parseCardFilename(file.name);
+				const setCode = parsed.setCode && validSetCodes.has(parsed.setCode) ? parsed.setCode : null;
+				const { cardType, folderTags } = folderPathToMeta(file.folderPath);
+				const allTags = [
+					'custom:mpc',
+					`mpc-source:${sourceId}`,
+					...folderTags,
+					...parsed.bracketTags,
+				];
 				const { error: cardErr } = await supabase.from('custom_cards').upsert({
 					id: cardId,
 					source_id: sourceId,
 					name: parsed.cardName,
 					raw_name: file.name,
-					set_code: parsed.bracketTags[0] ?? null,
-					collector_number: parsed.collectorNumber,
+					set_code: setCode,
+					collector_number: setCode ? parsed.collectorNumber : null,
 					variants: parsed.variants,
 					image_drive_url: driveImageUrl(file.id),
-					tags: ['custom:mpc', `mpc-source:${sourceId}`],
+					tags: allTags,
 					is_public: true,
+					card_type: cardType,
+					language: parsed.language,
 				});
 
 				if (cardErr) {
@@ -507,7 +615,11 @@ async function ingestSource(
 
 async function main(): Promise<void> {
 	console.log('Fetching sources from mpcfill.com…');
-	const rawSources = await fetchSources();
+	const [rawSources, validSetCodes] = await Promise.all([
+		fetchSources(),
+		skipScryfall ? Promise.resolve(new Set<string>()) : fetchScryfallSetCodes(),
+	]);
+	console.log(`  ✓ ${validSetCodes.size} Scryfall set codes loaded`);
 
 	const sources = rawSources.flatMap((s) => {
 		const driveId = extractDriveId(s.externalLink);
@@ -536,7 +648,7 @@ async function main(): Promise<void> {
 	const sourceLimiter = pLimit(5);
 	const results = await Promise.all(
 		filtered.map(({ raw, driveId }, i) =>
-			sourceLimiter(() => ingestSource(raw, driveId, i + 1, filtered.length))
+			sourceLimiter(() => ingestSource(raw, driveId, i + 1, filtered.length, validSetCodes))
 		)
 	);
 

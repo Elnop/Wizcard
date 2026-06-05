@@ -25,6 +25,15 @@ interface CustomCardRow {
 	variants: string[];
 	set_code: string | null;
 	collector_number: string | null;
+	colors: string[] | null;
+	color_identity: string[] | null;
+	cmc: number | null;
+	type_line: string | null;
+	mana_cost: string | null;
+	oracle_text: string | null;
+	rarity: string | null;
+	set_name: string | null;
+	artist: string | null;
 }
 
 function resolveImageUrl(row: CustomCardRow): string {
@@ -63,6 +72,15 @@ function rowToMpcCard(row: CustomCardRow): MpcCard {
 		variants: row.variants ?? [],
 		setCode: row.set_code ?? null,
 		collectorNumber: row.collector_number ?? null,
+		colors: row.colors ?? undefined,
+		colorIdentity: row.color_identity ?? undefined,
+		cmc: row.cmc ?? undefined,
+		typeLine: row.type_line ?? undefined,
+		manaCost: row.mana_cost ?? undefined,
+		oracleText: row.oracle_text ?? undefined,
+		rarity: row.rarity ?? undefined,
+		setName: row.set_name ?? undefined,
+		artist: row.artist ?? undefined,
 	};
 }
 
@@ -108,7 +126,7 @@ export async function getCustomCardSourcesWithCount(): Promise<MpcSourceWithCoun
 }
 
 const CUSTOM_CARD_SELECT =
-	'id, source_id, name, raw_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, variants, set_code, collector_number';
+	'id, source_id, name, raw_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, variants, set_code, collector_number, colors, color_identity, cmc, type_line, mana_cost, oracle_text, rarity, set_name, artist';
 
 export async function getCustomCards(sourceId: string): Promise<MpcCard[]> {
 	const client = createClient();
