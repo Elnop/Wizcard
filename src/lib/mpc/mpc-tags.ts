@@ -347,7 +347,7 @@ const MPC_TAG_STRINGS = [
 	'foil',
 ];
 
-export const MPC_TAGS: Set<string> = new Set(MPC_TAG_STRINGS.map((t) => t.toLowerCase()));
+export const MPC_TAGS: Set<string> = new Set(MPC_TAG_STRINGS);
 
 export function isMpcTag(value: string): boolean {
 	return MPC_TAGS.has(value.toLowerCase());
