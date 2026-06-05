@@ -123,6 +123,3 @@ If a card has multiple names, use an ampersand to separate them — for example,
 Restrictions
 Limit your files to less than 30 MB per image — this is the maximum that Google Scripts can return in one request and the maximum that MakePlayingCards.com accepts, meaning the desktop client won't work with images that exceed this limit.
 
-'Tis But a Scratch! (Dismember).png a un problem d ingestion, Dismember est une vrai card et 'Tis But a
-  Scratch! est un nom alternatif, les data de Dismember devrai etre presente depuis scryfall, que dis la spec
-  @docs/mpc_fil_format.txt ?

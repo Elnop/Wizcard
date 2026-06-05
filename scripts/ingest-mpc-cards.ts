@@ -4,7 +4,12 @@ dotenv.config({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
 import pLimit from 'p-limit';
 import { parseCardFilename } from '../src/lib/mpc/parse-filename';
-import { resolveCard, type ScryfallResolution } from '../src/lib/mpc/scryfall-resolver';
+import {
+	resolveBatch,
+	type CardToResolve,
+	type ScryfallResolution,
+} from '../src/lib/mpc/scryfall-resolver';
+import type { CardType } from '../src/lib/mpc/types';
 
 // ─── Config ────────────────────────────────────────────────────────────────
 
@@ -187,10 +192,10 @@ async function listDriveFolder(folderId: string): Promise<DriveImageEntry[]> {
 }
 
 function folderPathToMeta(folderPath: string[]): {
-	cardType: 'card' | 'token' | 'cardback';
+	cardType: CardType;
 	folderTags: string[];
 } {
-	let cardType: 'card' | 'token' | 'cardback' = 'card';
+	let cardType: CardType = 'card';
 	const folderTags: string[] = [];
 
 	for (const folderName of folderPath) {
@@ -281,62 +286,77 @@ async function ingestSource(
 
 	const doneIds = new Set((existing ?? []).map((r) => r.id));
 
+	// ── Phase 1: parse filenames, prepare card rows ─────────────────────────
+	interface PendingCard {
+		cardId: string;
+		file: DriveImageEntry;
+		parsed: ReturnType<typeof parseCardFilename>;
+		setCode: string | null;
+		cardType: CardType;
+		allTags: string[];
+	}
+
+	const skippedCount = files.filter((f) => doneIds.has(`mpc:${f.id}`)).length;
+	const pending: PendingCard[] = [];
+
+	for (const file of files) {
+		const cardId = `mpc:${file.id}`;
+		if (doneIds.has(cardId)) continue;
+		const parsed = parseCardFilename(file.name);
+		const setCode = parsed.setCode && validSetCodes.has(parsed.setCode) ? parsed.setCode : null;
+		const { cardType, folderTags } = folderPathToMeta(file.folderPath);
+		const allTags = ['custom:mpc', `mpc-source:${sourceId}`, ...folderTags, ...parsed.bracketTags];
+		pending.push({ cardId, file, parsed, setCode, cardType, allTags });
+	}
+
+	// ── Phase 2: batch Scryfall resolution ──────────────────────────────────
+	let resolutions = new Map<string, ScryfallResolution>();
+
+	if (!skipScryfall && pending.length > 0) {
+		const cardsToResolve: CardToResolve[] = pending.map((p) => ({
+			id: p.cardId,
+			parsed: p.parsed,
+			cardType: p.cardType,
+			validSetCode: p.setCode,
+		}));
+		resolutions = await resolveBatch(cardsToResolve, { fuzzy: !noFuzzy });
+	}
+
+	// ── Phase 3: upsert all cards ────────────────────────────────────────────
 	let newCount = 0;
-	let skippedCount = 0;
 	let failedCount = 0;
 	let resolvedBySetNum = 0;
 	let resolvedByName = 0;
 	let resolvedByFuzzy = 0;
 	const unresolvedFiles: string[] = [];
 
-	const limiter = pLimit(5);
+	const limiter = pLimit(20);
 	await Promise.all(
-		files.map((file) =>
+		pending.map((p) =>
 			limiter(async () => {
-				const cardId = `mpc:${file.id}`;
-				if (doneIds.has(cardId)) {
-					skippedCount++;
-					return;
-				}
+				const resolution = resolutions.get(p.cardId) ?? null;
 
-				const parsed = parseCardFilename(file.name);
-				const setCode = parsed.setCode && validSetCodes.has(parsed.setCode) ? parsed.setCode : null;
-				const { cardType, folderTags } = folderPathToMeta(file.folderPath);
-				const allTags = [
-					'custom:mpc',
-					`mpc-source:${sourceId}`,
-					...folderTags,
-					...parsed.bracketTags,
-				];
-
-				let resolution: ScryfallResolution | null = null;
 				if (!skipScryfall) {
-					try {
-						resolution = await resolveCard({ ...parsed, setCode }, cardType, { fuzzy: !noFuzzy });
-					} catch (err) {
-						console.warn(`  ⚠ Resolution failed for ${file.name}: ${(err as Error).message}`);
-					}
+					if (resolution?.strategy === 'set_num') resolvedBySetNum++;
+					else if (resolution?.strategy === 'name') resolvedByName++;
+					else if (resolution?.strategy === 'fuzzy') resolvedByFuzzy++;
+					else unresolvedFiles.push(p.file.name);
 				}
-
-				if (resolution?.strategy === 'set_num') resolvedBySetNum++;
-				else if (resolution?.strategy === 'name') resolvedByName++;
-				else if (resolution?.strategy === 'fuzzy') resolvedByFuzzy++;
-				else if (!skipScryfall) unresolvedFiles.push(file.name);
 
 				const { error: cardErr } = await supabase.from('custom_cards').upsert({
-					id: cardId,
+					id: p.cardId,
 					source_id: sourceId,
-					name: resolution?.oracleName ?? parsed.cardName,
-					display_name: parsed.cardName,
-					raw_name: file.name,
-					set_code: setCode,
-					collector_number: setCode ? parsed.collectorNumber : null,
-					variants: parsed.variants,
-					image_drive_url: driveImageUrl(file.id),
-					tags: allTags,
+					name: resolution?.oracleName ?? p.parsed.cardName,
+					display_name: p.parsed.cardName,
+					raw_name: p.file.name,
+					set_code: p.setCode,
+					collector_number: p.setCode ? p.parsed.collectorNumber : null,
+					variants: p.parsed.variants,
+					image_drive_url: driveImageUrl(p.file.id),
+					tags: p.allTags,
 					is_public: true,
-					card_type: cardType,
-					language: parsed.language,
+					card_type: p.cardType,
+					language: p.parsed.language,
 					oracle_id: resolution?.oracleId ?? null,
 					enriched_at: resolution ? new Date().toISOString() : null,
 					colors: resolution?.colors ?? [],
@@ -351,11 +371,10 @@ async function ingestSource(
 				});
 
 				if (cardErr) {
-					console.warn(`  ⚠ Card upsert failed for ${cardId}: ${cardErr.message}`);
+					console.warn(`  ⚠ Card upsert failed for ${p.cardId}: ${cardErr.message}`);
 					failedCount++;
 					return;
 				}
-
 				newCount++;
 			})
 		)
