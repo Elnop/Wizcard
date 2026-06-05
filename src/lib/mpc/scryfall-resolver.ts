@@ -38,14 +38,20 @@ export interface CardToResolve {
 let scryfallQueue: Promise<void> = Promise.resolve();
 
 async function scryfallFetch(url: string, init?: RequestInit, attempt = 0): Promise<Response> {
-	let res!: Response;
+	let res: Response | null = null;
+	let fetchErr: unknown = null;
 
 	scryfallQueue = scryfallQueue.then(async () => {
 		const start = Date.now();
-		res = await fetch(url, {
-			...init,
-			headers: { 'User-Agent': SCRYFALL_USER_AGENT, ...init?.headers },
-		});
+		try {
+			res = await fetch(url, {
+				...init,
+				headers: { 'User-Agent': SCRYFALL_USER_AGENT, ...init?.headers },
+			});
+		} catch (err) {
+			fetchErr = err as Error;
+			res = null;
+		}
 		const elapsed = Date.now() - start;
 		const remaining = SCRYFALL_MIN_GAP_MS - elapsed;
 		if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
@@ -53,13 +59,24 @@ async function scryfallFetch(url: string, init?: RequestInit, attempt = 0): Prom
 
 	await scryfallQueue;
 
-	if (res.status === 429 && attempt < 4) {
+	if (fetchErr !== null) {
+		if (attempt < 4) {
+			const wait = 2000 * Math.pow(2, attempt);
+			const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+			console.warn(`  ⚠ Scryfall network error, retrying in ${wait}ms… (${msg})`);
+			await new Promise((r) => setTimeout(r, wait));
+			return scryfallFetch(url, init, attempt + 1);
+		}
+		throw fetchErr;
+	}
+
+	if (res!.status === 429 && attempt < 4) {
 		const wait = 2000 * Math.pow(2, attempt);
 		console.warn(`  ⚠ Scryfall 429, retrying in ${wait}ms…`);
 		await new Promise((r) => setTimeout(r, wait));
 		return scryfallFetch(url, init, attempt + 1);
 	}
-	return res;
+	return res!;
 }
 
 export function normalizeForScryfall(name: string): string {
