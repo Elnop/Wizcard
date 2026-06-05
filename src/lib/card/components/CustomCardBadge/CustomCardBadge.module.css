@@ -1,0 +1,35 @@
+@property --angle {
+	syntax: '<angle>';
+	inherits: false;
+	initial-value: 0deg;
+}
+
+.badge {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	border-radius: 4.75% / 3.4%;
+	padding: 2px;
+	background: conic-gradient(
+		from var(--angle),
+		#7c3aed 0%,
+		#a78bfa 20%,
+		#c4b5fd 30%,
+		#7c3aed 50%,
+		#5b21b6 70%,
+		#7c3aed 100%
+	);
+	-webkit-mask:
+		linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+	animation: customShimmer 3s linear infinite;
+	box-shadow: 0 0 8px 2px rgba(124, 58, 237, 0.45);
+}
+
+@keyframes customShimmer {
+	to {
+		--angle: 360deg;
+	}
+}
