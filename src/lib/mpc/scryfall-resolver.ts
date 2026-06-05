@@ -20,11 +20,13 @@ export interface ScryfallResolution {
 	artist: string | null;
 }
 
-let lastScryfallMs = 0;
-async function throttle(): Promise<void> {
-	const elapsed = Date.now() - lastScryfallMs;
-	if (elapsed < 100) await new Promise((r) => setTimeout(r, 100 - elapsed));
-	lastScryfallMs = Date.now();
+// Serialized queue: one Scryfall call at a time, minimum 100ms between calls.
+// A simple lastMs check is a race condition under pLimit concurrency — multiple
+// coroutines read the same lastMs before any of them updates it.
+let scryfallQueue: Promise<void> = Promise.resolve();
+function throttle(): Promise<void> {
+	scryfallQueue = scryfallQueue.then(() => new Promise((r) => setTimeout(r, 110)));
+	return scryfallQueue;
 }
 
 function normalizeForScryfall(name: string): string {
@@ -48,13 +50,27 @@ function extractEnrichment(card: Record<string, unknown>): Omit<ScryfallResoluti
 	};
 }
 
+async function scryfallFetch(url: string, init?: RequestInit, attempt = 0): Promise<Response> {
+	await throttle();
+	const res = await fetch(url, {
+		...init,
+		headers: { 'User-Agent': SCRYFALL_USER_AGENT, ...init?.headers },
+	});
+	if (res.status === 429 && attempt < 4) {
+		const wait = 1000 * Math.pow(2, attempt);
+		console.warn(`  ⚠ Scryfall 429, retrying in ${wait}ms…`);
+		await new Promise((r) => setTimeout(r, wait));
+		return scryfallFetch(url, init, attempt + 1);
+	}
+	return res;
+}
+
 async function resolveBySetAndNumber(
 	setCode: string,
 	collectorNumber: string
 ): Promise<Omit<ScryfallResolution, 'strategy'> | null> {
-	await throttle();
 	const url = `${SCRYFALL_BASE}/cards/${encodeURIComponent(setCode.toLowerCase())}/${encodeURIComponent(collectorNumber)}`;
-	const res = await fetch(url, { headers: { 'User-Agent': SCRYFALL_USER_AGENT } });
+	const res = await scryfallFetch(url);
 	if (res.status === 404) return null;
 	if (!res.ok) throw new Error(`Scryfall GET ${url} failed: HTTP ${res.status}`);
 	const card = (await res.json()) as Record<string, unknown>;
@@ -63,13 +79,9 @@ async function resolveBySetAndNumber(
 }
 
 async function resolveByName(name: string): Promise<Omit<ScryfallResolution, 'strategy'> | null> {
-	await throttle();
-	const res = await fetch(`${SCRYFALL_BASE}/cards/collection`, {
+	const res = await scryfallFetch(`${SCRYFALL_BASE}/cards/collection`, {
 		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'User-Agent': SCRYFALL_USER_AGENT,
-		},
+		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ identifiers: [{ name }] }),
 	});
 	if (!res.ok) throw new Error(`Scryfall POST /cards/collection failed: HTTP ${res.status}`);
@@ -81,9 +93,8 @@ async function resolveByName(name: string): Promise<Omit<ScryfallResolution, 'st
 }
 
 async function resolveByFuzzy(name: string): Promise<Omit<ScryfallResolution, 'strategy'> | null> {
-	await throttle();
 	const url = `${SCRYFALL_BASE}/cards/named?fuzzy=${encodeURIComponent(name)}`;
-	const res = await fetch(url, { headers: { 'User-Agent': SCRYFALL_USER_AGENT } });
+	const res = await scryfallFetch(url);
 	if (res.status === 404) return null;
 	if (!res.ok) throw new Error(`Scryfall GET ${url} failed: HTTP ${res.status}`);
 	const card = (await res.json()) as Record<string, unknown>;
