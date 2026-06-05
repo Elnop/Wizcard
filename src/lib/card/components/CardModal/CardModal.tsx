@@ -670,6 +670,20 @@ function CustomCardModalInner({ card, onClose }: { card: CustomCard; onClose: ()
 	const [lightbox, setLightbox] = useState(false);
 	const symbolMap = useScryfallSymbols();
 
+	console.log('[CustomCardModal] card:', {
+		id: card.id,
+		name: card.name,
+		oracle_id: card.oracle_id,
+		object: card.object,
+		// Scryfall fields (present only if enriched)
+		type_line: card.type_line,
+		oracle_text: card.oracle_text,
+		mana_cost: card.mana_cost,
+		set_name: card.set_name,
+		// Custom meta
+		custom: card.custom,
+	});
+
 	return (
 		<>
 			<Modal onClose={onClose} className={styles.modal}>
