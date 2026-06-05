@@ -13,6 +13,7 @@ interface CustomCardRow {
 	source_id: string | null;
 	name: string;
 	raw_name: string;
+	display_name: string | null;
 	image_drive_url: string | null;
 	image_storage_path: string | null;
 	oracle_id: string | null;
@@ -59,6 +60,7 @@ function rowToMpcCard(row: CustomCardRow): MpcCard {
 		id: row.id.startsWith('mpc:') ? row.id.slice(4) : row.id,
 		name: row.name,
 		rawName: row.raw_name,
+		displayName: row.display_name ?? null,
 		sourceId: row.source_id,
 		imageUrl: resolveImageUrl(row),
 		isCustom: true,
@@ -126,7 +128,7 @@ export async function getCustomCardSourcesWithCount(): Promise<MpcSourceWithCoun
 }
 
 const CUSTOM_CARD_SELECT =
-	'id, source_id, name, raw_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, variants, set_code, collector_number, colors, color_identity, cmc, type_line, mana_cost, oracle_text, rarity, set_name, artist';
+	'id, source_id, name, raw_name, display_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, variants, set_code, collector_number, colors, color_identity, cmc, type_line, mana_cost, oracle_text, rarity, set_name, artist';
 
 export async function getCustomCards(sourceId: string): Promise<MpcCard[]> {
 	const client = createClient();

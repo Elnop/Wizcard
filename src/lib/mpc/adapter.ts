@@ -30,6 +30,7 @@ export function toCustomCard(card: MpcCard, source: MpcSource): CustomCard {
 			collector_number: card.collectorNumber,
 			is_public: card.isPublic,
 			raw_name: card.rawName,
+			display_name: card.displayName ?? null,
 		},
 	};
 }
