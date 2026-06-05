@@ -36,7 +36,7 @@ const args = process.argv.slice(2);
 const filterSourceId = args.find((a) => a.startsWith('--source='))?.split('=')[1];
 const limitSources = parseInt(args.find((a) => a.startsWith('--limit='))?.split('=')[1] ?? '0', 10);
 const skipScryfall = args.includes('--skip-scryfall');
-const noFuzzy = args.includes('--no-fuzzy');
+const noFuzzy = !args.includes('--fuzzy'); // fuzzy opt-in only — avoid 429s on large sources
 
 // ─── Supabase ───────────────────────────────────────────────────────────────
 
@@ -446,7 +446,11 @@ async function main(): Promise<void> {
 
 	console.log(`Processing ${filtered.length} sources…\n`);
 
-	const sourceLimiter = pLimit(5);
+	// Scryfall uses a global serialized throttle queue — running sources in
+	// parallel injects concurrent batch calls that overwhelm the 10 req/s limit.
+	// With Scryfall active, process one source at a time.
+	const sourceConcurrency = skipScryfall ? 5 : 1;
+	const sourceLimiter = pLimit(sourceConcurrency);
 	const results = await Promise.all(
 		filtered.map(({ raw, driveId }, i) =>
 			sourceLimiter(() => ingestSource(raw, driveId, i + 1, filtered.length, validSetCodes))

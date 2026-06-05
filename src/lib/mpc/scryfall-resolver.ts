@@ -5,8 +5,9 @@ import { isMpcTag } from './mpc-tags';
 const SCRYFALL_USER_AGENT = 'Wizcard/1.0';
 const SCRYFALL_BASE = 'https://api.scryfall.com';
 const BATCH_SIZE = 75;
-// 200ms between requests — comfortably under Scryfall's 10 req/s limit
-const SCRYFALL_DELAY_MS = 200;
+// Minimum gap between the END of one response and the START of the next request.
+// Scryfall asks for 100ms; we use 110ms as a small buffer.
+const SCRYFALL_MIN_GAP_MS = 110;
 
 export interface ScryfallResolution {
 	oracleName: string;
@@ -31,12 +32,34 @@ export interface CardToResolve {
 	validSetCode: string | null; // setCode pre-validated against Scryfall set list
 }
 
-// Serialized queue: enforces one Scryfall request at a time with a fixed delay.
-// A simple lastMs variable is a race condition under concurrent async callers.
+// Serialized queue: one Scryfall request at a time, with SCRYFALL_MIN_GAP_MS
+// measured from the END of the previous response (not its start). This correctly
+// enforces the gap Scryfall requires regardless of how long each request takes.
 let scryfallQueue: Promise<void> = Promise.resolve();
-function throttle(): Promise<void> {
-	scryfallQueue = scryfallQueue.then(() => new Promise((r) => setTimeout(r, SCRYFALL_DELAY_MS)));
-	return scryfallQueue;
+
+async function scryfallFetch(url: string, init?: RequestInit, attempt = 0): Promise<Response> {
+	let res!: Response;
+
+	scryfallQueue = scryfallQueue.then(async () => {
+		const start = Date.now();
+		res = await fetch(url, {
+			...init,
+			headers: { 'User-Agent': SCRYFALL_USER_AGENT, ...init?.headers },
+		});
+		const elapsed = Date.now() - start;
+		const remaining = SCRYFALL_MIN_GAP_MS - elapsed;
+		if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
+	});
+
+	await scryfallQueue;
+
+	if (res.status === 429 && attempt < 4) {
+		const wait = 2000 * Math.pow(2, attempt);
+		console.warn(`  ⚠ Scryfall 429, retrying in ${wait}ms…`);
+		await new Promise((r) => setTimeout(r, wait));
+		return scryfallFetch(url, init, attempt + 1);
+	}
+	return res;
 }
 
 export function normalizeForScryfall(name: string): string {
@@ -66,35 +89,21 @@ function extractEnrichment(card: Record<string, unknown>): Omit<ScryfallResoluti
 	};
 }
 
-async function scryfallFetch(url: string, init?: RequestInit, attempt = 0): Promise<Response> {
-	await throttle();
-	const res = await fetch(url, {
-		...init,
-		headers: { 'User-Agent': SCRYFALL_USER_AGENT, ...init?.headers },
-	});
-	if (res.status === 429 && attempt < 4) {
-		const wait = 2000 * Math.pow(2, attempt);
-		console.warn(`  ⚠ Scryfall 429, retrying in ${wait}ms…`);
-		await new Promise((r) => setTimeout(r, wait));
-		return scryfallFetch(url, init, attempt + 1);
-	}
-	return res;
-}
-
-// POST /cards/collection with up to 75 name identifiers.
-// Returns a map of lowercased name → enrichment for found cards.
-async function batchByNames(
-	names: string[]
+// POST /cards/collection — generic batch helper.
+// identifiers: array of Scryfall identifier objects ({ name } or { set, collector_number })
+// Returns a map keyed by the card's lowercased oracle name → enrichment.
+async function batchCollection(
+	identifiers: Record<string, string>[]
 ): Promise<Map<string, Omit<ScryfallResolution, 'strategy'>>> {
 	const result = new Map<string, Omit<ScryfallResolution, 'strategy'>>();
-	for (let i = 0; i < names.length; i += BATCH_SIZE) {
-		const batch = names.slice(i, i + BATCH_SIZE);
+	for (let i = 0; i < identifiers.length; i += BATCH_SIZE) {
+		const batch = identifiers.slice(i, i + BATCH_SIZE);
 		let res: Response;
 		try {
 			res = await scryfallFetch(`${SCRYFALL_BASE}/cards/collection`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ identifiers: batch.map((name) => ({ name })) }),
+				body: JSON.stringify({ identifiers: batch }),
 			});
 		} catch (err) {
 			console.warn(`  ⚠ Scryfall batch failed: ${(err as Error).message}`);
@@ -112,29 +121,6 @@ async function batchByNames(
 		}
 	}
 	return result;
-}
-
-// GET /cards/:set/:num — exact lookup, used when both setCode and collectorNumber are present.
-async function resolveBySetAndNumber(
-	setCode: string,
-	collectorNumber: string
-): Promise<Omit<ScryfallResolution, 'strategy'> | null> {
-	const url = `${SCRYFALL_BASE}/cards/${encodeURIComponent(setCode.toLowerCase())}/${encodeURIComponent(collectorNumber)}`;
-	let res: Response;
-	try {
-		res = await scryfallFetch(url);
-	} catch (err) {
-		console.warn(`  ⚠ Scryfall set+num fetch failed: ${(err as Error).message}`);
-		return null;
-	}
-	if (res.status === 404) return null;
-	if (!res.ok) {
-		console.warn(`  ⚠ Scryfall GET ${url} failed: HTTP ${res.status}`);
-		return null;
-	}
-	const card = (await res.json()) as Record<string, unknown>;
-	if (!card['oracle_id']) return null;
-	return extractEnrichment(card);
 }
 
 // GET /cards/named?fuzzy= — one call per name, cards only (not tokens).
@@ -158,19 +144,59 @@ async function resolveByFuzzy(name: string): Promise<Omit<ScryfallResolution, 's
 }
 
 // ── Pass A helper ────────────────────────────────────────────────────────────
+// Batch POST /cards/collection with { set, collector_number } identifiers.
+// Falls back to Pass B for any not_found by set+num.
 async function passA(
 	resolvable: CardToResolve[],
 	resolved: Map<string, ScryfallResolution>
 ): Promise<CardToResolve[]> {
-	const needsNameLookup: CardToResolve[] = [];
-	for (const card of resolvable) {
-		if (card.validSetCode && card.parsed.collectorNumber) {
-			const result = await resolveBySetAndNumber(card.validSetCode, card.parsed.collectorNumber);
-			if (result) {
-				resolved.set(card.id, { ...result, strategy: 'set_num' });
-			} else {
-				needsNameLookup.push(card);
+	const withSetNum = resolvable.filter((c) => c.validSetCode && c.parsed.collectorNumber);
+	const withoutSetNum = resolvable.filter((c) => !c.validSetCode || !c.parsed.collectorNumber);
+
+	if (withSetNum.length === 0) return resolvable;
+
+	// Build identifier list, track cardId → identifier index for mapping results back
+	const identifiers = withSetNum.map((c) => ({
+		set: c.validSetCode!.toLowerCase(),
+		collector_number: c.parsed.collectorNumber!,
+	}));
+
+	// Scryfall returns matched cards in `data`, unmatched in `not_found`.
+	// We key results by set+collector_number since oracle name can differ from filename.
+	// Use a secondary map: "SET/NUM" → enrichment
+	const setNumToEnrichment = new Map<string, Omit<ScryfallResolution, 'strategy'>>();
+	for (let i = 0; i < identifiers.length; i += BATCH_SIZE) {
+		const batch = identifiers.slice(i, i + BATCH_SIZE);
+		let res: Response;
+		try {
+			res = await scryfallFetch(`${SCRYFALL_BASE}/cards/collection`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ identifiers: batch }),
+			});
+		} catch (err) {
+			console.warn(`  ⚠ Scryfall set+num batch failed: ${(err as Error).message}`);
+			continue;
+		}
+		if (!res.ok) {
+			console.warn(`  ⚠ Scryfall set+num batch HTTP ${res.status}`);
+			continue;
+		}
+		const data = (await res.json()) as { data: Record<string, unknown>[] };
+		for (const card of data.data ?? []) {
+			if (card['oracle_id'] && card['set'] && card['collector_number']) {
+				const key = `${card['set']}/${card['collector_number']}`;
+				setNumToEnrichment.set(key, extractEnrichment(card));
 			}
+		}
+	}
+
+	const needsNameLookup: CardToResolve[] = [...withoutSetNum];
+	for (const card of withSetNum) {
+		const key = `${card.validSetCode!.toLowerCase()}/${card.parsed.collectorNumber}`;
+		const found = setNumToEnrichment.get(key);
+		if (found) {
+			resolved.set(card.id, { ...found, strategy: 'set_num' });
 		} else {
 			needsNameLookup.push(card);
 		}
@@ -186,7 +212,7 @@ async function passB(
 	const primaryNames = [
 		...new Set(needsNameLookup.map((c) => normalizeForScryfall(c.parsed.cardName)).filter(Boolean)),
 	];
-	const byPrimaryName = await batchByNames(primaryNames);
+	const byPrimaryName = await batchCollection(primaryNames.map((name) => ({ name })));
 
 	const needsVariantLookup: CardToResolve[] = [];
 	for (const card of needsNameLookup) {
@@ -216,7 +242,7 @@ async function passB(
 
 	if (variantToCards.size === 0) return;
 
-	const byVariantName = await batchByNames([...variantToCards.keys()]);
+	const byVariantName = await batchCollection([...variantToCards.keys()].map((name) => ({ name })));
 	for (const [variantName, cardIds] of variantToCards) {
 		const found = byVariantName.get(variantName.toLowerCase());
 		if (!found) continue;
