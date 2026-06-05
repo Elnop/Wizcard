@@ -41,6 +41,7 @@ export function useMpcPrints(cardName: string): UseMpcPrintsResult {
 							id: entry.identifier,
 							name: entry.name,
 							rawName: entry.rawName,
+							displayName: null,
 							sourceId: entry.sourceKey,
 							imageUrl: entry.mediumThumbnailUrl,
 							isCustom: true,

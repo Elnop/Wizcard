@@ -15,6 +15,7 @@ export interface MpcCard {
 	id: string;
 	name: string;
 	rawName: string;
+	displayName: string | null;
 	sourceId: string | null;
 	imageUrl: string;
 	isCustom: true;
@@ -65,6 +66,7 @@ export interface CustomCardMeta {
 	collector_number: string | null;
 	is_public: boolean;
 	raw_name: string;
+	display_name: string | null;
 }
 
 export type CustomCard = Omit<Partial<ScryfallCard>, 'object'> & {
