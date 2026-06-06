@@ -115,8 +115,22 @@ function SearchPageContent() {
 				cmc,
 				order,
 				dir,
+				mpcTagsFilter,
 			}),
-		[customCards, name, colors, colorMatch, type, set, rarities, oracleText, cmc, order, dir]
+		[
+			customCards,
+			name,
+			colors,
+			colorMatch,
+			type,
+			set,
+			rarities,
+			oracleText,
+			cmc,
+			order,
+			dir,
+			mpcTagsFilter,
+		]
 	);
 
 	const mergedCards: AnyCard[] = useMemo(() => {
@@ -137,7 +151,8 @@ function SearchPageContent() {
 		name || colors.length > 0 || type || set || rarities.length > 0 || oracleText || cmc;
 	const isDefaultQuery = !hasFilters;
 
-	const totalActiveFilterCount = activeFilterCount + (customSourceId !== null ? 1 : 0);
+	const totalActiveFilterCount =
+		activeFilterCount + (customSourceId !== null ? 1 : 0) + mpcTagsFilter.length;
 
 	const tableColumns = [
 		{ key: 'name', label: 'Nom', sortKey: 'name' },
