@@ -37,7 +37,6 @@ interface FilterModalProps {
 	customSourceId?: string | null;
 	cardTypeFilter?: CardType | 'all';
 	mpcTagsFilter?: string[];
-	availableMpcTags?: string[];
 	onApply: (filters: {
 		colors: ScryfallColor[];
 		colorMatch: ColorMatch;
@@ -71,7 +70,6 @@ interface FilterModalContentProps {
 	initialCustomSourceId: string | null;
 	initialCardTypeFilter: CardType | 'all';
 	initialMpcTagsFilter: string[];
-	availableMpcTags: string[];
 	onApply: FilterModalProps['onApply'];
 	onClose: () => void;
 }
@@ -92,7 +90,6 @@ function FilterModalContent({
 	initialCustomSourceId,
 	initialCardTypeFilter,
 	initialMpcTagsFilter,
-	availableMpcTags: _availableMpcTags,
 	onApply,
 	onClose,
 }: FilterModalContentProps) {
@@ -229,7 +226,6 @@ export function FilterModal({
 	customSourceId = null,
 	cardTypeFilter = 'all',
 	mpcTagsFilter = [],
-	availableMpcTags = [],
 	onApply,
 	onClose,
 }: FilterModalProps) {
@@ -254,7 +250,6 @@ export function FilterModal({
 				initialCustomSourceId={customSourceId}
 				initialCardTypeFilter={cardTypeFilter}
 				initialMpcTagsFilter={mpcTagsFilter}
-				availableMpcTags={availableMpcTags}
 				onApply={onApply}
 				onClose={onClose}
 			/>
