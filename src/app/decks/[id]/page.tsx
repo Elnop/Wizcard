@@ -25,6 +25,7 @@ import { useDeckCardSections } from './useDeckCardSections';
 import { DeckHeader } from './components/DeckHeader/DeckHeader';
 import { DeckStats } from './components/DeckStats/DeckStats';
 import { DeckCardOverlay } from './components/DeckCardOverlay/DeckCardOverlay';
+import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import { DeckFooter } from './components/DeckFooter/DeckFooter';
 import { CardSearchPanel } from './components/CardSearchPanel/CardSearchPanel';
 import { WishlistIcon } from '@/components/WishlistIcon/WishlistIcon';
@@ -319,7 +320,8 @@ export default function DeckDetailPage() {
 
 			if (bulkSelectMode) {
 				const checked = bulkSelected.has(c.oracle_id ?? c.id);
-				return (
+				return withCustomBadge(
+					card,
 					<div
 						style={{
 							position: 'absolute',
@@ -353,7 +355,8 @@ export default function DeckDetailPage() {
 
 			const firstCopy = group.byZone.get(currentZone)?.[0];
 			const isContextCard = contextMenuCard === card;
-			return (
+			return withCustomBadge(
+				card,
 				<DeckCardOverlay
 					group={group}
 					currentZone={currentZone}
