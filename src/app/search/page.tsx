@@ -7,7 +7,6 @@ import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
 import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
-import type { CustomCard } from '@/lib/mpc/types';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { Spinner } from '@/components/Spinner/Spinner';
@@ -46,7 +45,7 @@ export default function SearchPage() {
 function SearchPageContent() {
 	const { addCard } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();
-	const [selectedCard, setSelectedCard] = useState<AnyCard | CustomCard | null>(null);
+	const [selectedCard, setSelectedCard] = useState<AnyCard | null>(null);
 	const [mode, setMode] = useState<SearchMode>('official');
 	const [customSources, setCustomSources] = useState<MpcSourceWithCount[]>([]);
 	const [customSourceId, setCustomSourceId] = useState<string | null>(null);
