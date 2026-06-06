@@ -92,7 +92,7 @@ function FilterModalContent({
 	initialCustomSourceId,
 	initialCardTypeFilter,
 	initialMpcTagsFilter,
-	availableMpcTags,
+	availableMpcTags: _availableMpcTags,
 	onApply,
 	onClose,
 }: FilterModalContentProps) {
@@ -195,11 +195,7 @@ function FilterModalContent({
 							value={draftCustomSourceId}
 							onChange={setDraftCustomSourceId}
 						/>
-						<MpcTagsFilter
-							availableTags={availableMpcTags}
-							value={draftMpcTagsFilter}
-							onChange={setDraftMpcTagsFilter}
-						/>
+						<MpcTagsFilter value={draftMpcTagsFilter} onChange={setDraftMpcTagsFilter} />
 					</>
 				)}
 			</div>
