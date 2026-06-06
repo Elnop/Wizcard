@@ -14,7 +14,6 @@ import { useCollectionContext } from '@/lib/collection/context/CollectionContext
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useCustomCards } from '@/lib/mpc/hooks/useCustomCards';
 import { SearchModeSwitcher } from './components/SearchModeSwitcher/SearchModeSwitcher';
-import type { SearchMode } from './components/SearchModeSwitcher/SearchModeSwitcher';
 import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
 import { getCustomCardSourcesWithCount } from '@/lib/supabase/custom-cards';
 import type { MpcSourceWithCount } from '@/lib/supabase/custom-cards';
@@ -46,9 +45,7 @@ function SearchPageContent() {
 	const { addCard } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();
 	const [selectedCard, setSelectedCard] = useState<AnyCard | null>(null);
-	const [mode, setMode] = useState<SearchMode>('official');
 	const [customSources, setCustomSources] = useState<MpcSourceWithCount[]>([]);
-	const [customSourceId, setCustomSourceId] = useState<string | null>(null);
 
 	const {
 		name,
@@ -64,6 +61,10 @@ function SearchPageContent() {
 		setOrder,
 		dir,
 		setDir,
+		mode,
+		setMode,
+		customSourceId,
+		mpcTagsFilter,
 		applyFilters,
 		activeFilterCount,
 	} = useSearchFiltersFromUrl();
@@ -163,7 +164,7 @@ function SearchPageContent() {
 				<div className={styles.searchSection}>
 					<div className={styles.searchRow}>
 						<SearchBar value={name} onChange={setName} placeholder="Search for cards..." />
-						<SearchModeSwitcher onChange={setMode} />
+						<SearchModeSwitcher value={mode} onChange={setMode} />
 						<button
 							type="button"
 							className={styles.filtersButton}
@@ -200,10 +201,8 @@ function SearchPageContent() {
 					dir={dir}
 					customSources={customSources}
 					customSourceId={customSourceId}
-					onApply={(filters) => {
-						applyFilters(filters);
-						setCustomSourceId(filters.customSourceId);
-					}}
+					mpcTagsFilter={mpcTagsFilter}
+					onApply={applyFilters}
 					onClose={() => setIsModalOpen(false)}
 				/>
 

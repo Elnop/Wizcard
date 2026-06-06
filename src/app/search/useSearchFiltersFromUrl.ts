@@ -6,6 +6,7 @@ import type { ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import { countActiveFilters } from '@/lib/search/types';
 import type { ColorMatch } from '@/lib/search/types';
+import type { SearchMode } from '@/lib/search/types';
 
 const VALID_COLORS = new Set(['W', 'U', 'B', 'R', 'G']);
 const VALID_ORDERS = new Set([
@@ -28,6 +29,17 @@ const VALID_ORDERS = new Set([
 const VALID_DIRS = new Set(['auto', 'asc', 'desc']);
 const VALID_COLOR_MATCHES = new Set(['exact', 'include', 'atMost']);
 const VALID_RARITIES = new Set(['common', 'uncommon', 'rare', 'mythic']);
+const VALID_MODES = new Set(['official', 'all', 'custom']);
+
+function parseMode(param: string | null): SearchMode {
+	if (param && VALID_MODES.has(param)) return param as SearchMode;
+	return 'official';
+}
+
+function parseMpcTags(param: string | null): string[] {
+	if (!param) return [];
+	return param.split(',').filter(Boolean);
+}
 
 function parseColors(param: string | null): ScryfallColor[] {
 	if (!param) return [];
@@ -64,6 +76,8 @@ export type SearchFilters = {
 	cmc: string;
 	order: ScryfallSortOrder;
 	dir: ScryfallSortDir;
+	customSourceId: string | null;
+	mpcTagsFilter: string[];
 };
 
 export function useSearchFiltersFromUrl() {
@@ -88,6 +102,13 @@ export function useSearchFiltersFromUrl() {
 		parseOrder(searchParams.get('order'))
 	);
 	const [dir, setDir] = useState<ScryfallSortDir>(() => parseDir(searchParams.get('dir')));
+	const [mode, setMode] = useState<SearchMode>(() => parseMode(searchParams.get('mode')));
+	const [customSourceId, setCustomSourceId] = useState<string | null>(
+		() => searchParams.get('source') ?? null
+	);
+	const [mpcTagsFilter, setMpcTagsFilter] = useState<string[]>(() =>
+		parseMpcTags(searchParams.get('mpcTags'))
+	);
 
 	const isInitialMount = useRef(true);
 
@@ -108,10 +129,28 @@ export function useSearchFiltersFromUrl() {
 		if (cmc) params.set('cmc', cmc);
 		if (order !== 'name') params.set('order', order);
 		if (dir !== 'auto') params.set('dir', dir);
+		if (mode !== 'official') params.set('mode', mode);
+		if (customSourceId) params.set('source', customSourceId);
+		if (mpcTagsFilter.length > 0) params.set('mpcTags', mpcTagsFilter.join(','));
 
 		const queryString = params.toString();
 		router.replace(queryString ? `/search?${queryString}` : '/search', { scroll: false });
-	}, [name, colors, colorMatch, type, set, rarities, oracleText, cmc, order, dir, router]);
+	}, [
+		name,
+		colors,
+		colorMatch,
+		type,
+		set,
+		rarities,
+		oracleText,
+		cmc,
+		order,
+		dir,
+		mode,
+		customSourceId,
+		mpcTagsFilter,
+		router,
+	]);
 
 	const applyFilters = (filters: SearchFilters) => {
 		setColors(filters.colors);
@@ -123,6 +162,8 @@ export function useSearchFiltersFromUrl() {
 		setCmc(filters.cmc);
 		setOrder(filters.order);
 		setDir(filters.dir);
+		setCustomSourceId(filters.customSourceId);
+		setMpcTagsFilter(filters.mpcTagsFilter);
 	};
 
 	const activeFilterCount = countActiveFilters({
@@ -153,6 +194,10 @@ export function useSearchFiltersFromUrl() {
 		setOrder,
 		dir,
 		setDir,
+		mode,
+		setMode,
+		customSourceId,
+		mpcTagsFilter,
 		// Aggregate
 		applyFilters,
 		activeFilterCount,

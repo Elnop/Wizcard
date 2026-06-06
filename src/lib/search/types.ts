@@ -3,6 +3,8 @@ import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/so
 
 export type ColorMatch = 'exact' | 'include' | 'atMost';
 
+export type SearchMode = 'official' | 'all' | 'custom';
+
 export interface CardFilters {
 	name: string;
 	colors: ScryfallColor[];
