@@ -41,14 +41,12 @@ const COLOR_TEXT_MUTED = 'var(--color-text-muted, #6b7280)';
 
 function TagNodeRow({
 	node,
-	depth,
 	selected,
 	onChange,
 	collapsedNodes,
 	onToggleCollapse,
 }: {
 	node: MpcTagNode;
-	depth: number;
 	selected: string[];
 	onChange: (value: string[]) => void;
 	collapsedNodes: Set<string>;
@@ -68,6 +66,7 @@ function TagNodeRow({
 		return (
 			<button
 				type="button"
+				aria-pressed={isActive}
 				onClick={handleClick}
 				style={{
 					fontSize: 11,
@@ -77,7 +76,6 @@ function TagNodeRow({
 					background: isActive ? COLOR_ACCENT : 'var(--color-surface-2, #f3f4f6)',
 					color: isActive ? '#fff' : 'var(--color-text, #111827)',
 					cursor: 'pointer',
-					marginLeft: depth * 8,
 				}}
 			>
 				{node.label}
@@ -101,10 +99,11 @@ function TagNodeRow({
 	else branchPrefix = '';
 
 	return (
-		<div style={{ marginLeft: depth * 8 }}>
+		<div>
 			<div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
 				<button
 					type="button"
+					aria-pressed={isActive || (isPartial ? ('mixed' as const) : false)}
 					onClick={handleClick}
 					style={{
 						fontSize: 11,
@@ -142,7 +141,6 @@ function TagNodeRow({
 						<TagNodeRow
 							key={child.label}
 							node={child}
-							depth={0}
 							selected={selected}
 							onChange={onChange}
 							collapsedNodes={collapsedNodes}
@@ -198,7 +196,6 @@ export function MpcTagsFilter({ value, onChange }: MpcTagsFilterProps) {
 							<TagNodeRow
 								key={node.label}
 								node={node}
-								depth={0}
 								selected={value}
 								onChange={onChange}
 								collapsedNodes={collapsedNodes}
