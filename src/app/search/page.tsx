@@ -288,31 +288,36 @@ function SearchPageContent() {
 					</div>
 				)}
 
-				{!isLoading && !customLoading && !isDefaultQuery && mergedCards.length === 0 && !error && (
-					<div className={styles.noResults}>
-						<h3>No cards found</h3>
-						{suggestions.length > 0 ? (
-							<>
-								<p>Did you mean:</p>
-								<ul className={styles.suggestions}>
-									{suggestions.map((s) => (
-										<li key={s}>
-											<button
-												type="button"
-												className={styles.suggestionLink}
-												onClick={() => setName(s)}
-											>
-												{s}
-											</button>
-										</li>
-									))}
-								</ul>
-							</>
-						) : (
-							<p>Try adjusting your search or filters.</p>
-						)}
-					</div>
-				)}
+				{!isLoading &&
+					!customLoading &&
+					!isDefaultQuery &&
+					mergedCards.length === 0 &&
+					!error &&
+					!customError && (
+						<div className={styles.noResults}>
+							<h3>No cards found</h3>
+							{suggestions.length > 0 ? (
+								<>
+									<p>Did you mean:</p>
+									<ul className={styles.suggestions}>
+										{suggestions.map((s) => (
+											<li key={s}>
+												<button
+													type="button"
+													className={styles.suggestionLink}
+													onClick={() => setName(s)}
+												>
+													{s}
+												</button>
+											</li>
+										))}
+									</ul>
+								</>
+							) : (
+								<p>Try adjusting your search or filters.</p>
+							)}
+						</div>
+					)}
 
 				{selectedCard && (
 					<CardModal

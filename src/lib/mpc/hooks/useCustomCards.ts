@@ -49,6 +49,7 @@ export function useCustomCards(
 
 	const abortRef = useRef<AbortController | null>(null);
 	const lastFilterKeyRef = useRef<string>('');
+	const sourcesRef = useRef<Awaited<ReturnType<typeof getCustomCardSources>> | null>(null);
 
 	const debouncedName = useDebounce(filters.name, 300);
 	const debouncedType = useDebounce(filters.type, 300);
@@ -106,11 +107,12 @@ export function useCustomCards(
 							dir: filters.dir,
 						},
 					}),
-					getCustomCardSources(),
+					sourcesRef.current ? Promise.resolve(sourcesRef.current) : getCustomCardSources(),
 				]);
 
 				if (controller.signal.aborted) return;
 
+				sourcesRef.current = sources;
 				const sourceMap = new Map(sources.map((s) => [s.id, s]));
 				const converted = mpcCards.cards.map((card) => {
 					const source = (card.sourceId ? sourceMap.get(card.sourceId) : undefined) ?? {
