@@ -216,6 +216,7 @@ export async function queryCustomCards(query: CustomCardQuery): Promise<CustomCa
 	if (error) throw new Error(`Failed to load custom cards: ${error.message}`);
 
 	let rows = (data as CustomCardRow[]).map(rowToMpcCard);
+	const rawPageCount = rows.length; // capture before post-filter
 
 	// Post-query color filtering for exact/atMost (Supabase lacks native exact array equality)
 	if (filters.colors?.length) {
@@ -227,7 +228,7 @@ export async function queryCustomCards(query: CustomCardQuery): Promise<CustomCa
 	const total = count ?? 0;
 	return {
 		cards: rows,
-		hasMore: offset + rows.length < total,
+		hasMore: offset + rawPageCount < total,
 		total,
 	};
 }
