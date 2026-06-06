@@ -16,6 +16,7 @@ import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { Button } from '@/components/Button/Button';
 import { serializeToMoxfieldCSV, downloadCSV } from '@/lib/moxfield/serialize';
+import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import styles from './page.module.css';
 
 export default function CollectionPage() {
@@ -165,7 +166,9 @@ export default function CollectionPage() {
 							renderOverlay={(card) => {
 								const stack = stackByCardId.get(card.id);
 								const count = stack?.cards.length ?? 1;
-								return count > 1 ? <span className={styles.cardBadge}>x{count}</span> : null;
+								const countBadge =
+									count > 1 ? <span className={styles.cardBadge}>x{count}</span> : undefined;
+								return withCustomBadge(card, countBadge);
 							}}
 							sortOrder={filters.order}
 							sortDir={filters.dir}
