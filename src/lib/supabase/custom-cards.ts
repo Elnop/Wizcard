@@ -135,6 +135,7 @@ export interface CustomCardQueryFilters {
 	colors?: string[];
 	colorMatch?: 'exact' | 'include' | 'atMost';
 	type?: string;
+	set?: string;
 	cmc?: string;
 	rarities?: string[];
 	oracleText?: string;
@@ -189,6 +190,7 @@ export async function queryCustomCards(query: CustomCardQuery): Promise<CustomCa
 	if (filters.name) q = q.ilike('name', `%${filters.name}%`);
 	if (filters.type) q = q.ilike('type_line', `%${filters.type}%`);
 	if (filters.oracleText) q = q.ilike('oracle_text', `%${filters.oracleText}%`);
+	if (filters.set) q = q.eq('set_code', filters.set);
 	if (filters.rarities?.length) q = q.in('rarity', filters.rarities);
 	if (filters.mpcTagsFilter?.length) q = q.overlaps('tags', filters.mpcTagsFilter);
 	if (filters.colors?.length && filters.colorMatch === 'include')
