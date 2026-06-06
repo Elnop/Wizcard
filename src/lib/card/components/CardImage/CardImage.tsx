@@ -57,12 +57,13 @@ export function CardImage({
 	const [currentFace, setCurrentFace] = useState(0);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState(false);
-	const [isVisible, setIsVisible] = useState(false);
+	const [isVisible, setIsVisible] = useState(priority);
 	const [isTilting, setIsTilting] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
+		if (priority) return;
 		const el = containerRef.current;
 		if (!el) return;
 		const observer = new IntersectionObserver(
@@ -73,7 +74,7 @@ export function CardImage({
 		);
 		observer.observe(el);
 		return () => observer.disconnect();
-	}, []);
+	}, [priority]);
 
 	const isInputCustom = isCustomCard(card as unknown as CustomCard);
 	const { localized, loading: localizedLoading } = useLocalizedImage(

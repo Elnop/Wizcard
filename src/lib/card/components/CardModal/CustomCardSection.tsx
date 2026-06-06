@@ -28,7 +28,18 @@ export function CustomCardSection({ card }: { card: CustomCard }) {
 			{m.source_name && (
 				<div className={styles.row}>
 					<span className={styles.label}>Source</span>
-					<span className={styles.value}>{m.source_name}</span>
+					{m.source_type === 'mpc_ingested' && m.source_drive_folder_id ? (
+						<a
+							className={styles.value}
+							href={`https://drive.google.com/drive/folders/${m.source_drive_folder_id}`}
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							{m.source_name}
+						</a>
+					) : (
+						<span className={styles.value}>{m.source_name}</span>
+					)}
 				</div>
 			)}
 

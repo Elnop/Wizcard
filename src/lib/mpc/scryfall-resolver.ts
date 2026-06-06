@@ -80,8 +80,17 @@ async function scryfallFetch(url: string, init?: RequestInit, attempt = 0): Prom
 }
 
 export function normalizeForScryfall(name: string): string {
-	// eslint-disable-next-line sonarjs/slow-regex
-	return name.replace(/\s*&\s*/gu, ' // ').trim();
+	return (
+		name
+			// Split card names written as "A & B" to Scryfall's "A // B" format
+			// eslint-disable-next-line sonarjs/slow-regex
+			.replace(/\s*&\s*/gu, ' // ')
+			// Normalize typographic quotes/apostrophes to ASCII equivalents so
+			// filenames using straight quotes match Scryfall names using curly quotes
+			.replace(/[‘’ʼ]/gu, "'") // ' ' ʼ  → '
+			.replace(/[“”]/gu, '"') // " "  → "
+			.trim()
+	);
 }
 
 export function variantCandidates(parsed: ParsedCardFilename): string[] {
@@ -133,7 +142,16 @@ async function batchCollection(
 		const data = (await res.json()) as { data: Record<string, unknown>[] };
 		for (const card of data.data ?? []) {
 			if (card['oracle_id']) {
-				result.set((card['name'] as string).toLowerCase(), extractEnrichment(card));
+				const enrichment = extractEnrichment(card);
+				const fullName = normalizeForScryfall(card['name'] as string).toLowerCase();
+				result.set(fullName, enrichment);
+				// Also index by front face alone so filenames that only show the
+				// front face of a double-faced card (e.g. "Nicol Bolas, the Ravager")
+				// can match a Scryfall entry keyed as "nicol bolas, the ravager // ...".
+				const slashIdx = fullName.indexOf(' // ');
+				if (slashIdx !== -1) {
+					result.set(fullName.slice(0, slashIdx), enrichment);
+				}
 			}
 		}
 	}

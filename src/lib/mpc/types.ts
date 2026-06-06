@@ -9,6 +9,7 @@ export interface MpcSource {
 	description?: string;
 	isBuiltIn: boolean;
 	tags: string[];
+	driveFolderId?: string | null;
 }
 
 export interface MpcCard {
@@ -57,6 +58,7 @@ export interface CustomCardMeta {
 	source_id: string | null;
 	source_name: string;
 	source_type: CardSourceType;
+	source_drive_folder_id: string | null;
 	card_type: CardType;
 	image_url: string;
 	lang: string | null;
