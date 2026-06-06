@@ -11,6 +11,7 @@ import { useCardModal } from '@/lib/card/hooks/useCardModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { Button } from '@/components/Button/Button';
+import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import styles from './page.module.css';
 
 export default function WishlistPage() {
@@ -105,6 +106,7 @@ export default function WishlistPage() {
 							const stack = stackByCardId.get(card.id);
 							if (stack) handleCardClick(stack);
 						}}
+						renderOverlay={withCustomBadge}
 						tableColumns={[
 							{ key: 'name', label: 'Nom' },
 							{
