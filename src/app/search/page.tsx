@@ -17,10 +17,6 @@ import { SearchModeSwitcher } from './components/SearchModeSwitcher/SearchModeSw
 import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
 import { getCustomCardSourcesWithCount } from '@/lib/supabase/custom-cards';
 import type { MpcSourceWithCount } from '@/lib/supabase/custom-cards';
-import {
-	filterCollectionCards,
-	defaultCollectionFilters,
-} from '@/app/collection/utils/filterCollectionCards';
 import styles from './page.module.css';
 
 export default function SearchPage() {
@@ -98,46 +94,51 @@ function SearchPageContent() {
 	const {
 		cards: customCards,
 		isLoading: customLoading,
+		isLoadingMore: customLoadingMore,
+		hasMore: customHasMore,
+		total: customTotal,
+		loadMore: loadMoreCustom,
 		error: customError,
-	} = useCustomCards(mode === 'custom' || mode === 'all' ? customSourceId : undefined);
-
-	const filteredCustomCards = useMemo(
-		() =>
-			filterCollectionCards(customCards, {
-				...defaultCollectionFilters,
-				name,
-				colors,
-				colorMatch,
-				type,
-				set,
-				rarities,
-				oracleText,
-				cmc,
-				order,
-				dir,
-				mpcTagsFilter,
-			}),
-		[
-			customCards,
-			name,
-			colors,
-			colorMatch,
-			type,
-			set,
-			rarities,
-			oracleText,
-			cmc,
-			order,
-			dir,
-			mpcTagsFilter,
-		]
-	);
+	} = useCustomCards(mode === 'custom' || mode === 'all' ? customSourceId : undefined, {
+		name,
+		colors,
+		colorMatch,
+		type,
+		set,
+		rarities,
+		oracleText,
+		cmc,
+		order,
+		dir,
+		mpcTagsFilter,
+	});
 
 	const mergedCards: AnyCard[] = useMemo(() => {
-		if (mode === 'all') return [...cards, ...filteredCustomCards];
-		if (mode === 'custom') return filteredCustomCards;
+		if (mode === 'all') return [...cards, ...customCards.filter((c) => !c.oracle_id)];
+		if (mode === 'custom') return customCards;
 		return cards;
-	}, [mode, cards, filteredCustomCards]);
+	}, [mode, cards, customCards]);
+
+	let resolvedHasMore: boolean;
+	if (mode === 'all') resolvedHasMore = hasMore || customHasMore;
+	else if (mode === 'custom') resolvedHasMore = customHasMore;
+	else resolvedHasMore = hasMore;
+
+	const resolvedLoadMore = useCallback(() => {
+		if (mode === 'all') {
+			if (hasMore) loadMore();
+			if (customHasMore) loadMoreCustom();
+		} else if (mode === 'custom') {
+			loadMoreCustom();
+		} else {
+			loadMore();
+		}
+	}, [mode, hasMore, customHasMore, loadMore, loadMoreCustom]);
+
+	let resolvedIsLoadingMore: boolean;
+	if (mode === 'all') resolvedIsLoadingMore = isLoadingMore || customLoadingMore;
+	else if (mode === 'custom') resolvedIsLoadingMore = customLoadingMore;
+	else resolvedIsLoadingMore = isLoadingMore;
 
 	useEffect(() => {
 		getCustomCardSourcesWithCount()
@@ -230,10 +231,10 @@ function SearchPageContent() {
 							{mode === 'all' && (
 								<>
 									{cards.length > 0 && `${cards.length} of ${totalCards.toLocaleString()} cards`}
-									{filteredCustomCards.length > 0 && ` · ${filteredCustomCards.length} custom`}
+									{customTotal > 0 && ` · ${customTotal} custom`}
 								</>
 							)}
-							{mode === 'custom' && `${filteredCustomCards.length} custom`}
+							{mode === 'custom' && `${customTotal} custom`}
 						</span>
 					</div>
 				)}
@@ -265,10 +266,10 @@ function SearchPageContent() {
 
 				<CardList
 					cards={mergedCards}
-					isLoading={isLoading}
-					isLoadingMore={isLoadingMore}
-					hasMore={hasMore}
-					onLoadMore={loadMore}
+					isLoading={isLoading || customLoading}
+					isLoadingMore={resolvedIsLoadingMore}
+					hasMore={resolvedHasMore}
+					onLoadMore={resolvedLoadMore}
 					onCardClick={handleCardClick}
 					renderOverlay={withCustomBadge}
 					sortOrder={order}
