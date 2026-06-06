@@ -222,7 +222,7 @@ function SearchPageContent() {
 					onClose={() => setIsModalOpen(false)}
 				/>
 
-				{!isDefaultQuery && !isLoading && mergedCards.length > 0 && (
+				{!isDefaultQuery && !isLoading && !customLoading && mergedCards.length > 0 && (
 					<div className={styles.resultInfo}>
 						<span>
 							{mode === 'official' &&
