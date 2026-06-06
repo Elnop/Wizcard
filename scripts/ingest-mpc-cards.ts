@@ -1,6 +1,7 @@
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
+import { writeFile } from 'node:fs/promises';
 import { createClient } from '@supabase/supabase-js';
 import pLimit from 'p-limit';
 import { parseCardFilename } from '../src/lib/mpc/parse-filename';
@@ -37,6 +38,14 @@ const filterSourceId = args.find((a) => a.startsWith('--source='))?.split('=')[1
 const limitSources = parseInt(args.find((a) => a.startsWith('--limit='))?.split('=')[1] ?? '0', 10);
 const skipScryfall = args.includes('--skip-scryfall');
 const noFuzzy = !args.includes('--fuzzy'); // fuzzy opt-in only — avoid 429s on large sources
+const reEnrich = args.includes('--re-enrich');
+const reEnrichDays = parseInt(
+	args.find((a) => a.startsWith('--re-enrich-days='))?.split('=')[1] ?? '30',
+	10
+);
+const checkImageHash = args.includes('--check-image-hash');
+const mirrorImages = args.includes('--mirror-images');
+const reportPath = args.find((a) => a.startsWith('--report='))?.split('=')[1];
 
 // ─── Supabase ───────────────────────────────────────────────────────────────
 
@@ -63,10 +72,46 @@ interface IngestResult {
 	newCount: number;
 	skippedCount: number;
 	failedCount: number;
+	reEnrichedCount: number;
+	imagesMirrored: number;
+	duplicateImages: number;
 	resolvedBySetNum: number;
 	resolvedByName: number;
 	resolvedByFuzzy: number;
 	unresolvedFiles: string[];
+	warnings: string[];
+}
+
+interface SourceReport {
+	sourceId: string;
+	resolved: number;
+	skipped: number;
+	failed: number;
+	upserted: number;
+	reEnriched: number;
+	imagesMirrored: number;
+	duplicateImages: number;
+	unresolvedFiles: string[];
+	warnings: string[];
+}
+
+interface RunReport {
+	startedAt: string;
+	finishedAt: string;
+	flags: {
+		source?: string;
+		limit?: number;
+		skipScryfall: boolean;
+		fuzzy: boolean;
+		reEnrich: boolean;
+		reEnrichDays: number;
+		checkImageHash: boolean;
+		mirrorImages: boolean;
+		reportPath?: string;
+	};
+	sources: SourceReport[];
+	totals: Omit<SourceReport, 'sourceId'>;
+	warnings: string[];
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -114,6 +159,39 @@ async function fetchScryfallSetCodes(): Promise<Set<string>> {
 	if (!res.ok) throw new Error(`Scryfall /sets failed: HTTP ${res.status}`);
 	const json = (await res.json()) as { data: Array<{ code: string }> };
 	return new Set(json.data.map((s) => s.code.toUpperCase()));
+}
+
+// ─── Image helpers ──────────────────────────────────────────────────────────
+
+async function fetchImageBytes(fileId: string): Promise<ArrayBuffer | null> {
+	try {
+		const res = await fetchWithRetry(driveImageUrl(fileId));
+		if (!res.ok) return null;
+		return await res.arrayBuffer();
+	} catch {
+		return null;
+	}
+}
+
+async function computeSHA256Hex(buf: ArrayBuffer): Promise<string> {
+	const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+	return Array.from(new Uint8Array(hashBuf))
+		.map((b) => b.toString(16).padStart(2, '0'))
+		.join('');
+}
+
+async function uploadToStorage(
+	sourceKey: string,
+	driveFileId: string,
+	ext: string,
+	bytes: ArrayBuffer
+): Promise<string | null> {
+	const path = `mpc/${sourceKey}/${driveFileId}.${ext}`;
+	const { error } = await supabase.storage
+		.from('custom-cards')
+		.upload(path, bytes, { contentType: 'image/jpeg', upsert: true });
+	if (error) return null;
+	return path;
 }
 
 // ─── Drive helpers ──────────────────────────────────────────────────────────
@@ -223,6 +301,217 @@ function folderPathToMeta(folderPath: string[]): {
 	return { cardType, folderTags };
 }
 
+// ─── Card processing helpers ────────────────────────────────────────────────
+
+interface PendingCard {
+	cardId: string;
+	file: DriveImageEntry;
+	parsed: ReturnType<typeof parseCardFilename>;
+	setCode: string | null;
+	cardType: CardType;
+	allTags: string[];
+	isReEnrich: boolean;
+	alreadyMirrored: boolean;
+}
+
+interface ImageResult {
+	imageHash: string | null;
+	storagePath: string | null;
+	isDuplicate: boolean;
+	imagesMirrored: number;
+	warnings: string[];
+}
+
+async function processCardImage(
+	p: PendingCard,
+	sourceId: string,
+	sourceKey: string
+): Promise<ImageResult> {
+	const warnings: string[] = [];
+	let imageHash: string | null = null;
+	let storagePath: string | null = null;
+	let imagesMirrored = 0;
+
+	const imageBytes = await fetchImageBytes(p.file.id);
+	if (!imageBytes) {
+		warnings.push(`Image fetch failed for ${p.cardId}`);
+		return { imageHash, storagePath, isDuplicate: false, imagesMirrored, warnings };
+	}
+
+	if (checkImageHash) {
+		imageHash = await computeSHA256Hex(imageBytes);
+		const { data: dup } = await supabase
+			.from('custom_cards')
+			.select('id')
+			.eq('source_id', sourceId)
+			.eq('image_hash', imageHash)
+			.neq('id', p.cardId)
+			.limit(1)
+			.maybeSingle();
+		if (dup) {
+			const msg = `Duplicate image detected for ${p.cardId} (same hash as ${(dup as { id: string }).id})`;
+			warnings.push(msg);
+			return { imageHash, storagePath, isDuplicate: true, imagesMirrored, warnings };
+		}
+	}
+
+	if (mirrorImages && !p.alreadyMirrored) {
+		const ext = p.parsed.extension ?? 'jpg';
+		storagePath = await uploadToStorage(sourceKey, p.file.id, ext, imageBytes);
+		if (storagePath) {
+			imagesMirrored++;
+		} else {
+			warnings.push(`Storage upload failed for ${p.cardId}`);
+		}
+	}
+
+	return { imageHash, storagePath, isDuplicate: false, imagesMirrored, warnings };
+}
+
+async function upsertNewCard(
+	p: PendingCard,
+	sourceId: string,
+	resolution: ScryfallResolution | null,
+	imageHash: string | null,
+	storagePath: string | null
+): Promise<{ error: string | null }> {
+	const { error } = await supabase.from('custom_cards').upsert({
+		id: p.cardId,
+		source_id: sourceId,
+		name: resolution?.oracleName ?? p.parsed.cardName,
+		display_name: p.parsed.cardName,
+		raw_name: p.file.name,
+		set_code: p.setCode,
+		collector_number: p.setCode ? p.parsed.collectorNumber : null,
+		variants: p.parsed.variants,
+		image_drive_url: driveImageUrl(p.file.id),
+		...(storagePath ? { image_storage_path: storagePath } : {}),
+		...(imageHash ? { image_hash: imageHash } : {}),
+		tags: p.allTags,
+		is_public: true,
+		card_type: p.cardType,
+		language: p.parsed.language,
+		oracle_id: resolution?.oracleId ?? null,
+		enriched_at: resolution ? new Date().toISOString() : null,
+		colors: resolution?.colors ?? [],
+		color_identity: resolution?.colorIdentity ?? [],
+		cmc: resolution?.cmc ?? null,
+		type_line: resolution?.typeLine ?? null,
+		mana_cost: resolution?.manaCost ?? null,
+		oracle_text: resolution?.oracleText ?? null,
+		rarity: resolution?.rarity ?? null,
+		set_name: resolution?.setName ?? null,
+		artist: resolution?.artist ?? null,
+	});
+	return { error: error?.message ?? null };
+}
+
+async function reEnrichCard(
+	cardId: string,
+	resolution: ScryfallResolution | null
+): Promise<{ error: string | null }> {
+	const { error } = await supabase
+		.from('custom_cards')
+		.update({
+			name: resolution?.oracleName ?? undefined,
+			oracle_id: resolution?.oracleId ?? null,
+			enriched_at: resolution ? new Date().toISOString() : null,
+			colors: resolution?.colors ?? [],
+			color_identity: resolution?.colorIdentity ?? [],
+			cmc: resolution?.cmc ?? null,
+			type_line: resolution?.typeLine ?? null,
+			mana_cost: resolution?.manaCost ?? null,
+			oracle_text: resolution?.oracleText ?? null,
+			rarity: resolution?.rarity ?? null,
+			set_name: resolution?.setName ?? null,
+			artist: resolution?.artist ?? null,
+		})
+		.eq('id', cardId);
+	return { error: error?.message ?? null };
+}
+
+function logScryfallStats(
+	prefix: string,
+	resolvedBySetNum: number,
+	resolvedByName: number,
+	resolvedByFuzzy: number,
+	unresolvedFiles: string[]
+): void {
+	console.log(
+		`${prefix} — Scryfall: ${resolvedBySetNum} by set+num, ${resolvedByName} by name, ${resolvedByFuzzy} by fuzzy, ${unresolvedFiles.length} unresolved`
+	);
+	if (unresolvedFiles.length > 0) {
+		console.warn(`${prefix} — Unresolved files:`);
+		for (const f of unresolvedFiles) console.warn(`    • ${f}`);
+	}
+}
+
+function buildPendingFromDrive(
+	files: DriveImageEntry[],
+	doneIds: Set<string>,
+	mirroredIds: Set<string>,
+	sourceId: string,
+	validSetCodes: Set<string>
+): PendingCard[] {
+	const pending: PendingCard[] = [];
+	for (const file of files) {
+		const cardId = `mpc:${file.id}`;
+		const alreadyMirrored = mirroredIds.has(cardId);
+		if (doneIds.has(cardId) && !(mirrorImages && !alreadyMirrored)) continue;
+		const parsed = parseCardFilename(file.name);
+		const setCode = parsed.setCode && validSetCodes.has(parsed.setCode) ? parsed.setCode : null;
+		const { cardType, folderTags } = folderPathToMeta(file.folderPath);
+		const allTags = ['custom:mpc', `mpc-source:${sourceId}`, ...folderTags, ...parsed.bracketTags];
+		pending.push({
+			cardId,
+			file,
+			parsed,
+			setCode,
+			cardType,
+			allTags,
+			isReEnrich: false,
+			alreadyMirrored,
+		});
+	}
+	return pending;
+}
+
+async function fetchStaleCards(
+	sourceId: string,
+	validSetCodes: Set<string>
+): Promise<PendingCard[]> {
+	const threshold = new Date(Date.now() - reEnrichDays * 86_400_000).toISOString();
+	const { data: stale } = await supabase
+		.from('custom_cards')
+		.select('id, raw_name, card_type, set_code, collector_number, variants, tags')
+		.eq('source_id', sourceId)
+		.or(`enriched_at.is.null,enriched_at.lt.${threshold}`)
+		.limit(100_000);
+
+	return (stale ?? []).map((row) => {
+		const fakeFile: DriveImageEntry = {
+			id: (row.id as string).replace(/^mpc:/, ''),
+			name: row.raw_name as string,
+			folderPath: [],
+		};
+		const parsed = parseCardFilename(row.raw_name as string);
+		parsed.setCode = (row.set_code as string | null) ?? null;
+		parsed.collectorNumber = (row.collector_number as string | null) ?? null;
+		parsed.variants = (row.variants as string[]) ?? [];
+		const setCode = parsed.setCode && validSetCodes.has(parsed.setCode) ? parsed.setCode : null;
+		return {
+			cardId: row.id as string,
+			file: fakeFile,
+			parsed,
+			setCode,
+			cardType: (row.card_type as CardType) ?? 'card',
+			allTags: (row.tags as string[]) ?? [],
+			isReEnrich: true,
+			alreadyMirrored: true,
+		};
+	});
+}
+
 // ─── Main pipeline ──────────────────────────────────────────────────────────
 
 async function fetchSources(): Promise<MpcfillSourceRaw[]> {
@@ -241,6 +530,11 @@ async function ingestSource(
 ): Promise<IngestResult> {
 	const sourceId = `mpcfill:${source.key}`;
 	const prefix = `[source ${index}/${total}] ${sourceId}`;
+	const warnings: string[] = [];
+
+	if (reEnrich && skipScryfall) {
+		warnings.push('--re-enrich ignoré car --skip-scryfall actif');
+	}
 
 	// Upsert source row
 	const { error: srcErr } = await supabase.from('custom_card_sources').upsert({
@@ -259,61 +553,59 @@ async function ingestSource(
 	try {
 		files = await listDriveFolder(driveId);
 	} catch (err) {
-		console.warn(`${prefix} — ⚠ Drive list failed: ${(err as Error).message}, skipping`);
+		const msg = `Drive list failed: ${(err as Error).message}, skipping`;
+		warnings.push(msg);
+		console.warn(`${prefix} — ⚠ ${msg}`);
 		return {
 			newCount: 0,
 			skippedCount: 0,
 			failedCount: 1,
+			reEnrichedCount: 0,
+			imagesMirrored: 0,
+			duplicateImages: 0,
 			resolvedBySetNum: 0,
 			resolvedByName: 0,
 			resolvedByFuzzy: 0,
 			unresolvedFiles: [],
+			warnings,
 		};
 	}
 
 	console.log(`${prefix} — ${files.length} images found`);
 
-	// Check existing cards to skip already-done
+	// Check existing cards — select id + image_storage_path when mirroring
+	const existingSelect = mirrorImages ? 'id, image_storage_path' : 'id';
 	const { data: existing } = await supabase
 		.from('custom_cards')
-		.select('id')
+		.select(existingSelect)
 		.eq('source_id', sourceId)
 		.limit(100_000);
 
 	if ((existing?.length ?? 0) >= 100_000) {
-		console.warn(`${prefix} — ⚠ existing cards query may be truncated (≥100k rows)`);
+		const msg = 'existing cards query may be truncated (≥100k rows)';
+		warnings.push(msg);
+		console.warn(`${prefix} — ⚠ ${msg}`);
 	}
 
-	const doneIds = new Set((existing ?? []).map((r) => r.id));
+	type ExistingRow = { id: string; image_storage_path?: string | null };
+	const existingRows = (existing ?? []) as unknown as ExistingRow[];
+	const doneIds = new Set(existingRows.map((r) => r.id));
+	const mirroredIds = mirrorImages
+		? new Set(existingRows.filter((r) => r.image_storage_path).map((r) => r.id))
+		: new Set<string>();
 
 	// ── Phase 1: parse filenames, prepare card rows ─────────────────────────
-	interface PendingCard {
-		cardId: string;
-		file: DriveImageEntry;
-		parsed: ReturnType<typeof parseCardFilename>;
-		setCode: string | null;
-		cardType: CardType;
-		allTags: string[];
-	}
-
-	const skippedCount = files.filter((f) => doneIds.has(`mpc:${f.id}`)).length;
-	const pending: PendingCard[] = [];
-
-	for (const file of files) {
-		const cardId = `mpc:${file.id}`;
-		if (doneIds.has(cardId)) continue;
-		const parsed = parseCardFilename(file.name);
-		const setCode = parsed.setCode && validSetCodes.has(parsed.setCode) ? parsed.setCode : null;
-		const { cardType, folderTags } = folderPathToMeta(file.folderPath);
-		const allTags = ['custom:mpc', `mpc-source:${sourceId}`, ...folderTags, ...parsed.bracketTags];
-		pending.push({ cardId, file, parsed, setCode, cardType, allTags });
-	}
+	const skippedCount = files.filter((f) => doneIds.has(`mpc:${f.id}`) && !mirrorImages).length;
+	const pending = buildPendingFromDrive(files, doneIds, mirroredIds, sourceId, validSetCodes);
+	const staleCards =
+		reEnrich && !skipScryfall ? await fetchStaleCards(sourceId, validSetCodes) : [];
+	const allPending = [...pending, ...staleCards];
 
 	// ── Phase 2: batch Scryfall resolution ──────────────────────────────────
 	let resolutions = new Map<string, ScryfallResolution>();
 
-	if (!skipScryfall && pending.length > 0) {
-		const cardsToResolve: CardToResolve[] = pending.map((p) => ({
+	if (!skipScryfall && allPending.length > 0) {
+		const cardsToResolve: CardToResolve[] = allPending.map((p) => ({
 			id: p.cardId,
 			parsed: p.parsed,
 			cardType: p.cardType,
@@ -325,6 +617,9 @@ async function ingestSource(
 	// ── Phase 3: upsert all cards ────────────────────────────────────────────
 	let newCount = 0;
 	let failedCount = 0;
+	let reEnrichedCount = 0;
+	let imagesMirrored = 0;
+	let duplicateImages = 0;
 	let resolvedBySetNum = 0;
 	let resolvedByName = 0;
 	let resolvedByFuzzy = 0;
@@ -332,46 +627,48 @@ async function ingestSource(
 
 	const limiter = pLimit(20);
 	await Promise.all(
-		pending.map((p) =>
+		allPending.map((p) =>
 			limiter(async () => {
 				const resolution = resolutions.get(p.cardId) ?? null;
 
-				if (!skipScryfall) {
+				if (!skipScryfall && !p.isReEnrich) {
 					if (resolution?.strategy === 'set_num') resolvedBySetNum++;
 					else if (resolution?.strategy === 'name') resolvedByName++;
 					else if (resolution?.strategy === 'fuzzy') resolvedByFuzzy++;
 					else unresolvedFiles.push(p.file.name);
 				}
 
-				const { error: cardErr } = await supabase.from('custom_cards').upsert({
-					id: p.cardId,
-					source_id: sourceId,
-					name: resolution?.oracleName ?? p.parsed.cardName,
-					display_name: p.parsed.cardName,
-					raw_name: p.file.name,
-					set_code: p.setCode,
-					collector_number: p.setCode ? p.parsed.collectorNumber : null,
-					variants: p.parsed.variants,
-					image_drive_url: driveImageUrl(p.file.id),
-					tags: p.allTags,
-					is_public: true,
-					card_type: p.cardType,
-					language: p.parsed.language,
-					oracle_id: resolution?.oracleId ?? null,
-					enriched_at: resolution ? new Date().toISOString() : null,
-					colors: resolution?.colors ?? [],
-					color_identity: resolution?.colorIdentity ?? [],
-					cmc: resolution?.cmc ?? null,
-					type_line: resolution?.typeLine ?? null,
-					mana_cost: resolution?.manaCost ?? null,
-					oracle_text: resolution?.oracleText ?? null,
-					rarity: resolution?.rarity ?? null,
-					set_name: resolution?.setName ?? null,
-					artist: resolution?.artist ?? null,
-				});
+				if (p.isReEnrich) {
+					const { error } = await reEnrichCard(p.cardId, resolution);
+					if (error) {
+						const msg = `Re-enrich update failed for ${p.cardId}: ${error}`;
+						warnings.push(msg);
+						failedCount++;
+						return;
+					}
+					reEnrichedCount++;
+					return;
+				}
 
-				if (cardErr) {
-					console.warn(`  ⚠ Card upsert failed for ${p.cardId}: ${cardErr.message}`);
+				let imageHash: string | null = null;
+				let storagePath: string | null = null;
+				if (checkImageHash || mirrorImages) {
+					const img = await processCardImage(p, sourceId, source.key);
+					warnings.push(...img.warnings);
+					if (img.isDuplicate) {
+						duplicateImages++;
+						return;
+					}
+					imageHash = img.imageHash;
+					storagePath = img.storagePath;
+					imagesMirrored += img.imagesMirrored;
+				}
+
+				const { error } = await upsertNewCard(p, sourceId, resolution, imageHash, storagePath);
+				if (error) {
+					const msg = `Card upsert failed for ${p.cardId}: ${error}`;
+					warnings.push(msg);
+					console.warn(`  ⚠ ${msg}`);
 					failedCount++;
 					return;
 				}
@@ -390,31 +687,41 @@ async function ingestSource(
 		.from('custom_card_sources')
 		.update({ card_count: realCount ?? 0, last_synced_at: new Date().toISOString() })
 		.eq('id', sourceId);
-	if (countErr) console.warn(`${prefix} — ⚠ card_count update failed: ${countErr.message}`);
+	if (countErr) {
+		const msg = `card_count update failed: ${countErr.message}`;
+		warnings.push(msg);
+		console.warn(`${prefix} — ⚠ ${msg}`);
+	}
 
-	console.log(`${prefix} — ✓ ${newCount} new, ${skippedCount} skipped, ${failedCount} failed`);
+	console.log(
+		`${prefix} — ✓ ${newCount} new, ${skippedCount} skipped, ${failedCount} failed` +
+			(reEnrichedCount ? `, ${reEnrichedCount} re-enriched` : '') +
+			(imagesMirrored ? `, ${imagesMirrored} mirrored` : '') +
+			(duplicateImages ? `, ${duplicateImages} duplicate images` : '')
+	);
 	if (!skipScryfall) {
-		console.log(
-			`${prefix} — Scryfall: ${resolvedBySetNum} by set+num, ${resolvedByName} by name, ${resolvedByFuzzy} by fuzzy, ${unresolvedFiles.length} unresolved`
-		);
-		if (unresolvedFiles.length > 0) {
-			console.warn(`${prefix} — Unresolved files:`);
-			for (const f of unresolvedFiles) console.warn(`    • ${f}`);
-		}
+		logScryfallStats(prefix, resolvedBySetNum, resolvedByName, resolvedByFuzzy, unresolvedFiles);
 	}
 
 	return {
 		newCount,
 		skippedCount,
 		failedCount,
+		reEnrichedCount,
+		imagesMirrored,
+		duplicateImages,
 		resolvedBySetNum,
 		resolvedByName,
 		resolvedByFuzzy,
 		unresolvedFiles,
+		warnings,
 	};
 }
 
 async function main(): Promise<void> {
+	const startedAt = new Date().toISOString();
+	const runWarnings: string[] = [];
+
 	console.log('Fetching sources from mpcfill.com…');
 	const [rawSources, validSetCodes] = await Promise.all([
 		fetchSources(),
@@ -425,7 +732,9 @@ async function main(): Promise<void> {
 	const sources = rawSources.flatMap((s) => {
 		const driveId = extractDriveId(s.externalLink);
 		if (!driveId) {
-			console.warn(`  ⚠ No Drive ID found for source "${s.key}" — externalLink: ${s.externalLink}`);
+			const msg = `No Drive ID found for source "${s.key}" — externalLink: ${s.externalLink}`;
+			runWarnings.push(msg);
+			console.warn(`  ⚠ ${msg}`);
 			return [];
 		}
 		return [{ raw: s, driveId }];
@@ -443,6 +752,8 @@ async function main(): Promise<void> {
 	}
 
 	if (skipScryfall) console.log('ℹ Scryfall enrichment skipped (--skip-scryfall)\n');
+	if (reEnrich && !skipScryfall)
+		console.log(`ℹ Re-enrichment active — cards older than ${reEnrichDays} days will be updated\n`);
 
 	console.log(`Processing ${filtered.length} sources…\n`);
 
@@ -457,45 +768,74 @@ async function main(): Promise<void> {
 		)
 	);
 
-	const totals = results.reduce(
-		(acc, r) => ({
-			newCount: acc.newCount + r.newCount,
-			skippedCount: acc.skippedCount + r.skippedCount,
-			failedCount: acc.failedCount + r.failedCount,
-			resolvedBySetNum: acc.resolvedBySetNum + r.resolvedBySetNum,
-			resolvedByName: acc.resolvedByName + r.resolvedByName,
-			resolvedByFuzzy: acc.resolvedByFuzzy + r.resolvedByFuzzy,
-			unresolvedFiles: [...acc.unresolvedFiles, ...r.unresolvedFiles],
+	const finishedAt = new Date().toISOString();
+
+	const zeroTotals = {
+		resolved: 0,
+		skipped: 0,
+		failed: 0,
+		upserted: 0,
+		reEnriched: 0,
+		imagesMirrored: 0,
+		duplicateImages: 0,
+		unresolvedFiles: [] as string[],
+		warnings: [] as string[],
+	};
+
+	const sourceReports: SourceReport[] = results.map((r, i) => ({
+		sourceId: `mpcfill:${filtered[i].raw.key}`,
+		resolved: r.resolvedBySetNum + r.resolvedByName + r.resolvedByFuzzy,
+		skipped: r.skippedCount,
+		failed: r.failedCount,
+		upserted: r.newCount,
+		reEnriched: r.reEnrichedCount,
+		imagesMirrored: r.imagesMirrored,
+		duplicateImages: r.duplicateImages,
+		unresolvedFiles: r.unresolvedFiles,
+		warnings: r.warnings,
+	}));
+
+	const totals = sourceReports.reduce(
+		(acc, s) => ({
+			resolved: acc.resolved + s.resolved,
+			skipped: acc.skipped + s.skipped,
+			failed: acc.failed + s.failed,
+			upserted: acc.upserted + s.upserted,
+			reEnriched: acc.reEnriched + s.reEnriched,
+			imagesMirrored: acc.imagesMirrored + s.imagesMirrored,
+			duplicateImages: acc.duplicateImages + s.duplicateImages,
+			unresolvedFiles: [...acc.unresolvedFiles, ...s.unresolvedFiles],
+			warnings: [...acc.warnings, ...s.warnings],
 		}),
-		{
-			newCount: 0,
-			skippedCount: 0,
-			failedCount: 0,
-			resolvedBySetNum: 0,
-			resolvedByName: 0,
-			resolvedByFuzzy: 0,
-			unresolvedFiles: [] as string[],
-		}
+		zeroTotals
 	);
 
-	const sourcesOk = results.filter(
-		(r) => r.newCount + r.skippedCount > 0 || r.failedCount === 0
-	).length;
-	const sourcesFailed = filtered.length - sourcesOk;
+	const report: RunReport = {
+		startedAt,
+		finishedAt,
+		flags: {
+			...(filterSourceId ? { source: filterSourceId } : {}),
+			...(limitSources > 0 ? { limit: limitSources } : {}),
+			skipScryfall,
+			fuzzy: !noFuzzy,
+			reEnrich,
+			reEnrichDays,
+			checkImageHash,
+			mirrorImages,
+			...(reportPath ? { reportPath } : {}),
+		},
+		sources: sourceReports,
+		totals,
+		warnings: runWarnings,
+	};
 
-	console.log('\n✅ Ingestion complete.');
-	console.log(`   Sources processed  : ${sourcesOk}`);
-	if (sourcesFailed > 0) console.log(`   Sources failed     : ${sourcesFailed}`);
-	console.log(`   Cards new          : ${totals.newCount}`);
-	console.log(`   Cards skipped      : ${totals.skippedCount}`);
-	if (totals.failedCount > 0) console.log(`   Cards failed       : ${totals.failedCount}`);
-	if (!skipScryfall) {
-		console.log(`   Resolved set+num   : ${totals.resolvedBySetNum}`);
-		console.log(`   Resolved by name   : ${totals.resolvedByName}`);
-		if (totals.resolvedByFuzzy > 0)
-			console.log(`   Resolved by fuzzy  : ${totals.resolvedByFuzzy}`);
-		if (totals.unresolvedFiles.length > 0)
-			console.warn(`   ⚠ Unresolved total : ${totals.unresolvedFiles.length}`);
+	const reportJson = JSON.stringify(report, null, 2);
+	console.log('\n✅ Ingestion complete.\n');
+	console.log(reportJson);
+
+	if (reportPath) {
+		await writeFile(reportPath, reportJson, 'utf-8');
+		console.log(`\nReport written to ${reportPath}`);
 	}
 }
 

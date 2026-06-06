@@ -1,58 +1,116 @@
 'use client';
 
-import { useEffect, useReducer } from 'react';
-import {
-	getCustomCards,
-	getAllCustomCards,
-	getCustomCardSources,
-} from '@/lib/supabase/custom-cards';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { queryCustomCards, getCustomCardSources } from '@/lib/supabase/custom-cards';
 import { toCustomCard } from '../adapter';
+import { useDebounce } from '@/lib/search/hooks/useDebounce';
 import type { CustomCard } from '../types';
+import type { CardFilters } from '@/lib/search/types';
 
-interface State {
+export interface UseCustomCardsFilters extends CardFilters {
+	mpcTagsFilter: string[];
+}
+
+interface UseCustomCardsResult {
 	cards: CustomCard[];
 	isLoading: boolean;
+	isLoadingMore: boolean;
+	hasMore: boolean;
+	total: number;
 	error: string | null;
+	loadMore: () => void;
 }
 
-type Action =
-	| { type: 'loading' }
-	| { type: 'success'; cards: CustomCard[] }
-	| { type: 'error'; message: string };
+const PAGE_SIZE = 48;
 
-function reducer(state: State, action: Action): State {
-	switch (action.type) {
-		case 'loading':
-			return { cards: [], isLoading: true, error: null };
-		case 'success':
-			return { cards: action.cards, isLoading: false, error: null };
-		case 'error':
-			return { cards: [], isLoading: false, error: action.message };
-		default:
-			return state;
+export function useCustomCards(
+	sourceId: string | null | undefined,
+	filters: UseCustomCardsFilters = {
+		name: '',
+		colors: [],
+		colorMatch: 'include',
+		type: '',
+		set: '',
+		rarities: [],
+		oracleText: '',
+		cmc: '',
+		order: 'name',
+		dir: 'asc',
+		mpcTagsFilter: [],
 	}
-}
+): UseCustomCardsResult {
+	const [cards, setCards] = useState<CustomCard[]>([]);
+	const [isLoading, setIsLoading] = useState(false);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const [hasMore, setHasMore] = useState(false);
+	const [total, setTotal] = useState(0);
+	const [error, setError] = useState<string | null>(null);
+	const [page, setPage] = useState(1);
 
-export function useCustomCards(sourceId?: string | null) {
-	const [state, dispatch] = useReducer(reducer, {
-		cards: [],
-		isLoading: false,
-		error: null,
-	});
+	const abortRef = useRef<AbortController | null>(null);
+	const lastFilterKeyRef = useRef<string>('');
 
-	useEffect(() => {
-		let cancelled = false;
+	const debouncedName = useDebounce(filters.name, 300);
+	const debouncedType = useDebounce(filters.type, 300);
+	const debouncedOracleText = useDebounce(filters.oracleText, 300);
+	const debouncedCmc = useDebounce(filters.cmc, 300);
 
-		async function load() {
-			dispatch({ type: 'loading' });
+	const colorsKey = filters.colors.join(',');
+	const raritiesKey = filters.rarities.join(',');
+	const tagsKey = filters.mpcTagsFilter.join(',');
+
+	const filterKey = [
+		sourceId ?? '__all__',
+		debouncedName,
+		colorsKey,
+		filters.colorMatch,
+		debouncedType,
+		raritiesKey,
+		debouncedOracleText,
+		debouncedCmc,
+		filters.order,
+		filters.dir,
+		tagsKey,
+	].join('|');
+
+	const fetchPage = useCallback(
+		async (pageNum: number, isNewSearch: boolean) => {
+			if (sourceId === undefined) return;
+
+			abortRef.current?.abort();
+			const controller = new AbortController();
+			abortRef.current = controller;
+
+			if (isNewSearch) setIsLoading(true);
+			else setIsLoadingMore(true);
+			setError(null);
+
 			try {
 				const [mpcCards, sources] = await Promise.all([
-					sourceId ? getCustomCards(sourceId) : getAllCustomCards(),
+					queryCustomCards({
+						sourceId: sourceId,
+						page: pageNum,
+						pageSize: PAGE_SIZE,
+						filters: {
+							name: debouncedName || undefined,
+							colors: colorsKey ? colorsKey.split(',') : undefined,
+							colorMatch: filters.colorMatch,
+							type: debouncedType || undefined,
+							cmc: debouncedCmc || undefined,
+							rarities: raritiesKey ? raritiesKey.split(',') : undefined,
+							oracleText: debouncedOracleText || undefined,
+							mpcTagsFilter: tagsKey ? tagsKey.split(',') : undefined,
+							order: filters.order,
+							dir: filters.dir,
+						},
+					}),
 					getCustomCardSources(),
 				]);
-				if (cancelled) return;
+
+				if (controller.signal.aborted) return;
+
 				const sourceMap = new Map(sources.map((s) => [s.id, s]));
-				const converted = mpcCards.map((card) => {
+				const converted = mpcCards.cards.map((card) => {
 					const source = (card.sourceId ? sourceMap.get(card.sourceId) : undefined) ?? {
 						id: card.sourceId ?? 'user',
 						name: card.sourceId ?? 'My Cards',
@@ -61,22 +119,67 @@ export function useCustomCards(sourceId?: string | null) {
 					};
 					return toCustomCard(card, source);
 				});
-				dispatch({ type: 'success', cards: converted });
-			} catch (err: unknown) {
-				if (!cancelled) {
-					dispatch({
-						type: 'error',
-						message: err instanceof Error ? err.message : 'Unknown error',
-					});
+
+				if (isNewSearch) {
+					setCards(converted);
+				} else {
+					setCards((prev) => [...prev, ...converted]);
+				}
+				setHasMore(mpcCards.hasMore);
+				setTotal(mpcCards.total);
+			} catch (err) {
+				if (controller.signal.aborted) return;
+				setError(err instanceof Error ? err.message : 'Unknown error');
+			} finally {
+				if (!controller.signal.aborted) {
+					setIsLoading(false);
+					setIsLoadingMore(false);
 				}
 			}
+		},
+		[
+			sourceId,
+			debouncedName,
+			colorsKey,
+			filters.colorMatch,
+			debouncedType,
+			raritiesKey,
+			debouncedOracleText,
+			debouncedCmc,
+			filters.order,
+			filters.dir,
+			tagsKey,
+		]
+	);
+
+	useEffect(() => {
+		if (sourceId === undefined) {
+			setCards([]);
+			setHasMore(false);
+			setTotal(0);
+			setError(null);
+			return;
 		}
+		if (filterKey !== lastFilterKeyRef.current) {
+			lastFilterKeyRef.current = filterKey;
+			setPage(1);
+			fetchPage(1, true);
+		}
+	}, [filterKey, sourceId, fetchPage]);
 
-		void load();
+	useEffect(() => {
 		return () => {
-			cancelled = true;
+			abortRef.current?.abort();
 		};
-	}, [sourceId]);
+	}, []);
 
-	return state;
+	const loadMore = useCallback(() => {
+		if (!isLoading && !isLoadingMore && hasMore) {
+			const next = page + 1;
+			setPage(next);
+			fetchPage(next, false);
+		}
+	}, [isLoading, isLoadingMore, hasMore, page, fetchPage]);
+
+	return { cards, isLoading, isLoadingMore, hasMore, total, error, loadMore };
 }
