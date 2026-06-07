@@ -76,7 +76,8 @@ function extractEnrichment(card: Record<string, unknown>): Omit<ScryfallResoluti
 // cards concatenated. Shared by passA (set+num keys) and batchCollection (name
 // keys); each caller indexes the raw cards its own way.
 async function postCollection(
-	identifiers: Record<string, string>[]
+	identifiers: Record<string, string>[],
+	label = 'batch'
 ): Promise<Record<string, unknown>[]> {
 	const cards: Record<string, unknown>[] = [];
 	for (let i = 0; i < identifiers.length; i += BATCH_SIZE) {
@@ -89,11 +90,11 @@ async function postCollection(
 				body: JSON.stringify({ identifiers: batch }),
 			});
 		} catch (err) {
-			console.warn(`  ⚠ Scryfall batch failed: ${(err as Error).message}`);
+			console.warn(`  ⚠ Scryfall ${label} failed: ${(err as Error).message}`);
 			continue;
 		}
 		if (!res.ok) {
-			console.warn(`  ⚠ Scryfall batch HTTP ${res.status}`);
+			console.warn(`  ⚠ Scryfall ${label} HTTP ${res.status}`);
 			continue;
 		}
 		const data = (await res.json()) as { data: Record<string, unknown>[] };
@@ -108,7 +109,7 @@ async function batchCollection(
 	identifiers: Record<string, string>[]
 ): Promise<Map<string, Omit<ScryfallResolution, 'strategy'>>> {
 	const result = new Map<string, Omit<ScryfallResolution, 'strategy'>>();
-	const cards = await postCollection(identifiers);
+	const cards = await postCollection(identifiers, 'name batch');
 	for (const card of cards) {
 		if (!card['oracle_id']) continue;
 		const enrichment = extractEnrichment(card);
@@ -163,7 +164,7 @@ async function passA(
 	}));
 
 	const setNumToEnrichment = new Map<string, Omit<ScryfallResolution, 'strategy'>>();
-	const cards = await postCollection(identifiers);
+	const cards = await postCollection(identifiers, 'set+num batch');
 	for (const card of cards) {
 		if (card['oracle_id'] && card['set'] && card['collector_number']) {
 			const key = `${card['set']}/${card['collector_number']}`;
