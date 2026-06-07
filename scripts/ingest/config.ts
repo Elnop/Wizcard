@@ -1,14 +1,27 @@
 // Centralized config + clients for the MPC ingest pipeline.
 //
-// Loads .env.local, resolves env vars with NEXT_PUBLIC_* fallbacks (so the same
-// .env.local that powers the Next.js app works for this script without edits),
-// validates required vars with a clear error, and exposes the Supabase client
-// and parsed CLI flags as singletons the ingest modules import.
+// Loads .env.local (shared with the Next.js app), then layers .env.ingest on
+// top if present so ingestion-specific overrides (e.g. a prod SUPABASE_URL +
+// service-role key) live separately from the app's dev config. Resolves env
+// vars with NEXT_PUBLIC_* fallbacks, validates required vars with a clear
+// error, and exposes the Supabase client and parsed CLI flags as singletons
+// the ingest modules import.
 
+import { existsSync } from 'node:fs';
 import * as dotenv from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-dotenv.config({ path: '.env.local' });
+const BASE_ENV_PATH = '.env.local';
+// Ingestion-specific overrides (gitignored). Optional: only the keys it defines
+// win over .env.local; if the file is absent, nothing changes.
+const INGEST_ENV_PATH = '.env.ingest';
+
+// Base config, shared with the app.
+dotenv.config({ path: BASE_ENV_PATH });
+const usingIngestEnv = existsSync(INGEST_ENV_PATH);
+if (usingIngestEnv) {
+	dotenv.config({ path: INGEST_ENV_PATH, override: true });
+}
 
 // ─── Endpoints / constants ───────────────────────────────────────────────────
 
@@ -43,9 +56,17 @@ function loadConfig(): Config {
 	if (!googleDriveApiKey) missing.push('GOOGLE_DRIVE_API_KEY');
 
 	if (missing.length > 0) {
-		console.error(`Missing required env var(s): ${missing.join(', ')} — set them in .env.local`);
+		const where = usingIngestEnv ? `${INGEST_ENV_PATH} or ${BASE_ENV_PATH}` : BASE_ENV_PATH;
+		console.error(`Missing required env var(s): ${missing.join(', ')} — set them in ${where}`);
 		process.exit(1);
 	}
+
+	// Surface which config is active and where it points — important when
+	// ingestion can target prod via .env.ingest.
+	const envDesc = usingIngestEnv
+		? `${BASE_ENV_PATH} + ${INGEST_ENV_PATH} (override)`
+		: BASE_ENV_PATH;
+	console.log(`ℹ env: ${envDesc} → Supabase ${supabaseUrl}`);
 
 	return { supabaseUrl, supabaseServiceRoleKey, googleDriveApiKey };
 }
