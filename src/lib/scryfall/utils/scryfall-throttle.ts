@@ -68,7 +68,7 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 	const slowGap = opts.slowGapMs ?? SLOW_GAP_MS;
 	const fastGap = opts.fastGapMs ?? FAST_GAP_MS;
 	const maxRetries = opts.maxRetries ?? DEFAULT_MAX_RETRIES;
-	const userAgent = opts.userAgent ?? 'Wizcard/1.0';
+	const userAgent = opts.userAgent ?? 'Wizcard/1.0 (https://github.com/devinedev/wizcard)';
 
 	// Serializes callers so only one request is in flight and gaps are measured
 	// correctly. Each caller chains onto the previous one's release.
@@ -129,6 +129,11 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 	}
 
 	async function throttledFetch(url: string, init?: RequestInit): Promise<Response> {
+		// An already-aborted request must not consume a serialized spacing slot —
+		// reject before queueing so live requests behind it aren't delayed.
+		if (init?.signal?.aborted) {
+			return Promise.reject(init.signal.reason);
+		}
 		// Acquire the mutex: wait for the previous caller, then hold our own slot.
 		let releaseMutex!: () => void;
 		const acquired = new Promise<void>((resolve) => {

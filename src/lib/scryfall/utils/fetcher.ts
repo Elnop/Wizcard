@@ -144,6 +144,7 @@ async function scryfallGetInner<T>(url: string, externalSignal?: AbortSignal): P
 	throw lastError ?? new Error('Request failed after retries');
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity -- retry loop with exponential backoff + multiple abort conditions
 export async function scryfallPost<T>(endpoint: string, body: object): Promise<T> {
 	const url = buildUrl(endpoint);
 
@@ -176,9 +177,15 @@ export async function scryfallPost<T>(endpoint: string, body: object): Promise<T
 
 			if (error instanceof ScryfallApiError) {
 				const status = error.error.status;
-				if (status >= 400 && status < 500 && status !== 429) {
+				if (status >= 400 && status < 500) {
 					throw error;
 				}
+			}
+
+			// Network errors are already retried (with backoff) by the throttle;
+			// don't let the fetcher loop retry them again.
+			if (error instanceof TypeError) {
+				throw error;
 			}
 
 			if (attempt < MAX_RETRIES) {
