@@ -1,7 +1,7 @@
 // Google Drive I/O: recursive folder listing, retrying fetch, and folder-path
 // metadata extraction (card_type + folder-level tags).
 
-import { config, DRIVE_FILES_URL } from './config';
+import { config, DRIVE_FILES_URL, logger } from './config';
 import type { CardType } from '../../src/lib/mpc/types';
 import type { DriveImageEntry } from './types';
 
@@ -22,7 +22,7 @@ export async function fetchWithRetry(url: string, attempt = 0): Promise<Response
 	const res = await fetch(url);
 	if ((res.status === 429 || res.status >= 500) && attempt < 4) {
 		const wait = 500 * Math.pow(2, attempt);
-		console.warn(`  ⚠ HTTP ${res.status}, retrying in ${wait}ms…`);
+		logger.warn('drive.retry', { status: res.status, wait_ms: wait });
 		await sleep(wait);
 		return fetchWithRetry(url, attempt + 1);
 	}
