@@ -29,10 +29,11 @@ export interface CardToResolve {
 	validSetCode: string | null; // setCode pre-validated against Scryfall set list
 }
 
-// ── Rate-limiter ──────────────────────────────────────────────────────────────
-// Shared throttle: serializes requests, paces below Scryfall's hard limit, and
-// absorbs 429s with adaptive backoff (widening the gap after each 429). The
-// per-name fuzzy pass fires many GETs, so this is what keeps it under the limit.
+// ── Throttle ────────────────────────────────────────────────────────────────
+// Shared throttle: serializes requests, paces per-endpoint below Scryfall's
+// hard limits (~550ms on /cards/named|search|random|collection, ~110ms else),
+// and absorbs 429s with adaptive backoff. The per-name fuzzy pass fires many
+// /cards/named GETs, so this is what keeps it under the 2 req/s limit.
 
 const scryfallFetch = sharedScryfallThrottle.fetch;
 
