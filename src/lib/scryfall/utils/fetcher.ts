@@ -1,6 +1,6 @@
-// Shared fetch functions composing rate-limiter + cache + retry + error handling
+// Shared fetch functions composing throttle + cache + retry + error handling
 
-import { scryfallQueue } from './rate-limiter';
+import { sharedScryfallThrottle } from './scryfall-throttle';
 import { getCached, setCached } from './cache';
 import { ScryfallApiError, isScryfallError } from './errors';
 import type { ScryfallError } from '../types/scryfall';
@@ -96,17 +96,10 @@ async function scryfallGetInner<T>(url: string, externalSignal?: AbortSignal): P
 			: controller.signal;
 
 		try {
-			const response = await scryfallQueue.enqueue(
-				() =>
-					fetch(url, {
-						headers: {
-							Accept: 'application/json;q=0.9,*/*;q=0.8',
-							'User-Agent': 'Wizcard/1.0 (https://github.com/devinedev/wizcard)',
-						},
-						signal: combinedSignal,
-					}),
-				externalSignal
-			);
+			const response = await sharedScryfallThrottle.fetch(url, {
+				headers: { Accept: 'application/json;q=0.9,*/*;q=0.8' },
+				signal: combinedSignal,
+			});
 
 			clearTimeout(timeoutId);
 
@@ -125,7 +118,7 @@ async function scryfallGetInner<T>(url: string, externalSignal?: AbortSignal): P
 			if (error instanceof DOMException && error.name === 'AbortError') throw error;
 
 			// Don't retry on any client errors (4xx) — 429s are not retried either,
-			// as the rate-limiter should prevent them; retrying would worsen the situation.
+			// as the throttle should prevent them; retrying would worsen the situation.
 			if (error instanceof ScryfallApiError) {
 				const status = error.error.status;
 				if (status >= 400 && status < 500) {
@@ -161,18 +154,15 @@ export async function scryfallPost<T>(endpoint: string, body: object): Promise<T
 		const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
 
 		try {
-			const response = await scryfallQueue.enqueue(() =>
-				fetch(url, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						Accept: 'application/json;q=0.9,*/*;q=0.8',
-						'User-Agent': 'Wizcard/1.0 (https://github.com/devinedev/wizcard)',
-					},
-					body: JSON.stringify(body),
-					signal: controller.signal,
-				})
-			);
+			const response = await sharedScryfallThrottle.fetch(url, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json;q=0.9,*/*;q=0.8',
+				},
+				body: JSON.stringify(body),
+				signal: controller.signal,
+			});
 
 			if (!response.ok) {
 				const errorData = await parseErrorResponse(response);
