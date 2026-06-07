@@ -23,6 +23,7 @@ const MAX_TASK_BARS = 8;
 const ETA_WINDOW_MS = 30_000;
 const REDRAW_MIN_INTERVAL_MS = 250; // ~4 fps
 const NON_TTY_PROGRESS_INTERVAL_MS = 10_000;
+const ETA_SAMPLE_INTERVAL_MS = 1_000;
 
 type EventLevel = 'info' | 'warn' | 'error';
 
@@ -62,6 +63,7 @@ export function createLogger(level: LogLevel): Logger {
 	let renderedLines = 0;
 	let lastRedraw = 0;
 	let lastNonTtyProgress = 0;
+	let lastEtaSample = 0;
 	let warnings = 0;
 	// Cards finished by tasks that already ended (removed from the map).
 	let finishedDone = 0;
@@ -156,7 +158,14 @@ export function createLogger(level: LogLevel): Logger {
 		let total = 0;
 		for (const t of tasks.values()) total += t.ok + t.failed;
 		globalDone = total + finishedDone;
-		eta?.record(globalDone);
+	}
+
+	function sampleEta(force: boolean): void {
+		if (!eta) return;
+		const now = Date.now();
+		if (!force && now - lastEtaSample < ETA_SAMPLE_INTERVAL_MS) return;
+		lastEtaSample = now;
+		eta.record(globalDone);
 	}
 
 	return {
@@ -168,6 +177,7 @@ export function createLogger(level: LogLevel): Logger {
 				globalTotal = total;
 				eta = createEtaEstimator(total, ETA_WINDOW_MS);
 				eta.record(0);
+				lastEtaSample = Date.now();
 			},
 			taskStart(id: string, label: string, of: number): void {
 				tasks.set(id, { label, done: 0, of, ok: 0, failed: 0, order: taskOrderSeq++ });
@@ -180,6 +190,7 @@ export function createLogger(level: LogLevel): Logger {
 				t.failed += delta.failed ?? 0;
 				t.done = t.ok + t.failed;
 				recomputeGlobalDone();
+				sampleEta(false);
 				render(false);
 				nonTtyProgress(false);
 			},
@@ -188,6 +199,7 @@ export function createLogger(level: LogLevel): Logger {
 				if (t) finishedDone += t.ok + t.failed;
 				tasks.delete(id);
 				recomputeGlobalDone();
+				sampleEta(true);
 				render(true);
 			},
 			done(): void {
