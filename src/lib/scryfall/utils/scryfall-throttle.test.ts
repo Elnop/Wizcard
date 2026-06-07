@@ -51,6 +51,7 @@ async function spacingTest(): Promise<void> {
 	await throttle.fetch('https://api.scryfall.com/sets');
 	const fastDelta = times[t0 + 1] - times[t0];
 	check(`fast spacing >= 20ms (got ${fastDelta})`, fastDelta >= 18);
+	check(`fast spacing < slow rate (got ${fastDelta})`, fastDelta < 50);
 }
 
 // ── 429 exhaustion returns the last Response (not thrown) ────────────────────

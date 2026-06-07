@@ -19,14 +19,18 @@ const SLOW_PATHS = /^\/cards\/(search|named|random|collection)\b/u;
 export const SLOW_GAP_MS = 550; // < 500ms cap, with margin (~1.8 req/s)
 export const FAST_GAP_MS = 110; // < 100ms cap, with margin (~9 req/s)
 
-export function gapForUrl(url: string): number {
+function isSlowUrl(url: string): boolean {
 	let path: string;
 	try {
 		path = new URL(url).pathname;
 	} catch {
-		return SLOW_GAP_MS; // unknown shape → be conservative
+		return true; // unknown shape → be conservative (slow)
 	}
-	return SLOW_PATHS.test(path) ? SLOW_GAP_MS : FAST_GAP_MS;
+	return SLOW_PATHS.test(path);
+}
+
+export function gapForUrl(url: string): number {
+	return isSlowUrl(url) ? SLOW_GAP_MS : FAST_GAP_MS;
 }
 
 // After a 429 we multiply the gap by this factor and let it decay back to the
@@ -74,9 +78,7 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 	let penaltyRemaining = 0;
 
 	function baseGapFor(url: string): number {
-		// Mirror gapForUrl but honour the instance overrides for tests.
-		const isSlow = gapForUrl(url) === SLOW_GAP_MS;
-		return isSlow ? slowGap : fastGap;
+		return isSlowUrl(url) ? slowGap : fastGap;
 	}
 
 	function currentGap(url: string): number {
@@ -85,6 +87,7 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 	}
 
 	async function doFetch(url: string, init?: RequestInit): Promise<Response> {
+		let lastResponse: Response | null = null;
 		for (let attempt = 0; attempt < maxRetries; attempt++) {
 			let res: Response;
 			try {
@@ -106,6 +109,7 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 			if (res.status !== 429) return res;
 
 			// 429 — engage the penalty so subsequent requests pace slower, then wait.
+			lastResponse = res;
 			penaltyRemaining = PENALTY_DECAY_REQUESTS;
 			const retryAfterSec = parseInt(res.headers.get('retry-after') ?? '', 10);
 			const wait = isNaN(retryAfterSec)
@@ -117,11 +121,11 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 			await sleep(wait);
 		}
 
-		// All attempts exhausted — one final try, returned as-is for the caller.
-		return fetch(url, {
-			...init,
-			headers: { 'User-Agent': userAgent, ...init?.headers },
-		});
+		// All attempts exhausted — return the last 429 Response for the caller.
+		return (
+			lastResponse ??
+			(await fetch(url, { ...init, headers: { 'User-Agent': userAgent, ...init?.headers } }))
+		);
 	}
 
 	async function throttledFetch(url: string, init?: RequestInit): Promise<Response> {
