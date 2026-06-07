@@ -42,7 +42,7 @@ export interface Logger {
 	error(name: string, fields?: LogfmtFields): void;
 	progress: {
 		start(globalTotal: number): void;
-		taskStart(id: string, label: string, of: number): void;
+		taskStart(id: string, label: string, of: number, alreadyDone?: number): void;
 		taskTick(id: string, delta: { ok?: number; failed?: number }): void;
 		taskEnd(id: string): void;
 		done(): void;
@@ -179,8 +179,19 @@ export function createLogger(level: LogLevel): Logger {
 				eta.record(0);
 				lastEtaSample = Date.now();
 			},
-			taskStart(id: string, label: string, of: number): void {
-				tasks.set(id, { label, done: 0, of, ok: 0, failed: 0, order: taskOrderSeq++ });
+			taskStart(id: string, label: string, of: number, alreadyDone = 0): void {
+				// `alreadyDone` seeds cards that count toward the GLOBAL total but are
+				// not ticked individually (e.g. skipped/already-ingested on re-runs),
+				// so the global bar's denominator (all Drive files) stays honest.
+				tasks.set(id, {
+					label,
+					done: alreadyDone,
+					of: of + alreadyDone,
+					ok: alreadyDone,
+					failed: 0,
+					order: taskOrderSeq++,
+				});
+				recomputeGlobalDone();
 				render(true);
 			},
 			taskTick(id: string, delta: { ok?: number; failed?: number }): void {

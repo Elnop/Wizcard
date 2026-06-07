@@ -75,7 +75,7 @@ async function main(): Promise<void> {
 					try {
 						const driveFiles = await listDriveFolder(driveId);
 						listings.set(sourceId, driveFiles);
-						logger.event('listing.source', {
+						logger.event('source.listed', {
 							source: sourceId,
 							idx: i + 1,
 							total: filtered.length,
@@ -181,14 +181,14 @@ async function main(): Promise<void> {
 	};
 
 	const durationS = Math.round((Date.parse(finishedAt) - Date.parse(startedAt)) / 1000);
-	const cardsTotal = sourceReports.reduce(
+	const processedCards = sourceReports.reduce(
 		(n, s) => n + s.upserted + s.skipped + s.failed + s.reEnriched,
 		0
 	);
 
 	logger.event('run.done', {
 		sources: sourceReports.length,
-		cards_total: cardsTotal,
+		cards_total: processedCards,
 		new: totals.upserted,
 		failed: totals.failed,
 		unresolved: totals.unresolvedFiles.length,
@@ -202,7 +202,7 @@ async function main(): Promise<void> {
 	logger.recap(
 		`\n─── Ingestion terminée en ${dur} ───\n` +
 			`  Sources     ${sourceReports.length} traitées · ${failedSources} avec échecs\n` +
-			`  Cartes      ${cardsTotal} vues · ${totals.upserted} nouvelles · ` +
+			`  Cartes      ${processedCards} vues · ${totals.upserted} nouvelles · ` +
 			`${totals.skipped} skip · ${totals.failed} échec\n` +
 			`  Scryfall    ${sumBy(sourceReports, 'resolved')} résolues · ` +
 			`${totals.unresolvedFiles.length} non résolues\n` +

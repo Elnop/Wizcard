@@ -93,7 +93,7 @@ export async function ingestSource(
 		pending: pending.length,
 		stale: staleCards.length,
 	});
-	logger.progress.taskStart(sourceId, sourceId, allPending.length);
+	logger.progress.taskStart(sourceId, sourceId, allPending.length, skippedCount);
 
 	// ── Phase 2: batch Scryfall resolution ──────────────────────────────────
 	let resolutions = new Map<string, ScryfallResolution>();
