@@ -101,6 +101,7 @@ async function scryfallGetInner<T>(url: string, externalSignal?: AbortSignal): P
 					fetch(url, {
 						headers: {
 							Accept: 'application/json;q=0.9,*/*;q=0.8',
+							'User-Agent': 'Wizcard/1.0 (https://github.com/devinedev/wizcard)',
 						},
 						signal: combinedSignal,
 					}),
@@ -166,6 +167,7 @@ export async function scryfallPost<T>(endpoint: string, body: object): Promise<T
 					headers: {
 						'Content-Type': 'application/json',
 						Accept: 'application/json;q=0.9,*/*;q=0.8',
+						'User-Agent': 'Wizcard/1.0 (https://github.com/devinedev/wizcard)',
 					},
 					body: JSON.stringify(body),
 					signal: controller.signal,

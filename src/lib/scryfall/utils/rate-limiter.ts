@@ -1,8 +1,14 @@
-// Scryfall request queue: serializes all API calls with 100ms spacing.
+// Scryfall request queue: serializes all API calls with end-to-start spacing.
 // Entries with an aborted signal are skipped; priority 'high' entries jump
 // ahead of 'normal' ones (used for viewport-visible cards).
+//
+// Spacing is measured from the END of the previous request to the START of the
+// next (not start-to-start), pacing below Scryfall's hard ceiling to leave the
+// margin that prevents 429 bursts. Gap shared with scryfall-throttle.ts.
 
-const MIN_DELAY = 100; // ms between requests
+import { SCRYFALL_MIN_GAP_MS } from './scryfall-throttle';
+
+const MIN_DELAY = SCRYFALL_MIN_GAP_MS; // ms between end of one request and start of next
 
 function delay(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -19,7 +25,7 @@ interface QueueEntry {
 class ScryfallQueue {
 	private queue: QueueEntry[] = [];
 	private active = false;
-	private lastStartTime = 0;
+	private lastEndTime = 0;
 
 	enqueue<T>(
 		fn: () => Promise<T>,
@@ -65,7 +71,7 @@ class ScryfallQueue {
 		this.active = true;
 
 		const now = Date.now();
-		const wait = Math.max(0, MIN_DELAY - (now - this.lastStartTime));
+		const wait = Math.max(0, MIN_DELAY - (now - this.lastEndTime));
 		if (wait > 0) await delay(wait);
 
 		// Re-check abort after the delay
@@ -80,7 +86,6 @@ class ScryfallQueue {
 		}
 
 		const entry = this.queue.shift()!;
-		this.lastStartTime = Date.now();
 
 		try {
 			const result = await entry.run();
@@ -88,6 +93,7 @@ class ScryfallQueue {
 		} catch (e) {
 			entry.reject(e);
 		} finally {
+			this.lastEndTime = Date.now();
 			this.active = false;
 			void this.drain();
 		}

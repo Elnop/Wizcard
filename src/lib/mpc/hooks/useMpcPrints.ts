@@ -53,6 +53,7 @@ export function useMpcPrints(cardName: string): UseMpcPrintsResult {
 							variants: [],
 							setCode: null,
 							collectorNumber: null,
+							driveFolderPath: null,
 						},
 						{
 							id: entry.sourceKey,

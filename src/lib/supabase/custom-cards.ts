@@ -36,6 +36,7 @@ interface CustomCardRow {
 	rarity: string | null;
 	set_name: string | null;
 	artist: string | null;
+	drive_folder_path: string | null;
 }
 
 function resolveImageUrl(row: CustomCardRow): string {
@@ -85,6 +86,7 @@ function rowToMpcCard(row: CustomCardRow): MpcCard {
 		rarity: row.rarity ?? undefined,
 		setName: row.set_name ?? undefined,
 		artist: row.artist ?? undefined,
+		driveFolderPath: row.drive_folder_path ?? null,
 	};
 }
 
@@ -133,7 +135,7 @@ export async function getCustomCardSourcesWithCount(): Promise<MpcSourceWithCoun
 }
 
 const CUSTOM_CARD_SELECT =
-	'id, source_id, name, raw_name, display_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, variants, set_code, collector_number, colors, color_identity, cmc, type_line, mana_cost, oracle_text, rarity, set_name, artist';
+	'id, source_id, name, raw_name, display_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, variants, set_code, collector_number, colors, color_identity, cmc, type_line, mana_cost, oracle_text, rarity, set_name, artist, drive_folder_path';
 
 export interface CustomCardQueryFilters {
 	name?: string;

@@ -23,6 +23,7 @@ export function toCustomCard(card: MpcCard, source: MpcSource): CustomCard {
 			source_type: card.sourceType,
 			source_drive_folder_id: source.driveFolderId ?? null,
 			card_type: card.cardType,
+			drive_folder_path: card.driveFolderPath,
 			image_url: card.imageUrl,
 			lang: card.language,
 			tags: card.tags,

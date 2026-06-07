@@ -87,8 +87,19 @@ export function CustomCardSection({ card }: { card: CustomCard }) {
 			)}
 
 			<details className={styles.rawName}>
-				<summary className={styles.rawNameSummary}>Filename</summary>
-				<code className={styles.rawNameValue}>{m.raw_name}</code>
+				<summary className={styles.rawNameSummary}>Fichier</summary>
+				{m.source_type === 'mpc_ingested' && m.source_drive_folder_id ? (
+					<a
+						className={styles.rawNameValue}
+						href={`https://drive.google.com/drive/folders/${m.source_drive_folder_id}`}
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						{[m.drive_folder_path, m.raw_name].filter(Boolean).join(' / ')}
+					</a>
+				) : (
+					<code className={styles.rawNameValue}>{m.raw_name}</code>
+				)}
 			</details>
 		</div>
 	);

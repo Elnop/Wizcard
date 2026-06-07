@@ -1,13 +1,10 @@
 import type { ParsedCardFilename } from './parse-filename';
 import type { CardType } from './types';
 import { isMpcTag } from './mpc-tags';
+import { sharedScryfallThrottle } from '../scryfall/utils/scryfall-throttle';
 
-const SCRYFALL_USER_AGENT = 'Wizcard/1.0';
 const SCRYFALL_BASE = 'https://api.scryfall.com';
 const BATCH_SIZE = 75;
-// Minimum gap between the END of one response and the START of the next request.
-// Scryfall asks for 100ms; we use 110ms as a small buffer.
-const SCRYFALL_MIN_GAP_MS = 110;
 
 export interface ScryfallResolution {
 	oracleName: string;
@@ -32,52 +29,12 @@ export interface CardToResolve {
 	validSetCode: string | null; // setCode pre-validated against Scryfall set list
 }
 
-// Serialized queue: one Scryfall request at a time, with SCRYFALL_MIN_GAP_MS
-// measured from the END of the previous response (not its start). This correctly
-// enforces the gap Scryfall requires regardless of how long each request takes.
-let scryfallQueue: Promise<void> = Promise.resolve();
+// ── Rate-limiter ──────────────────────────────────────────────────────────────
+// Shared throttle: serializes requests, paces below Scryfall's hard limit, and
+// absorbs 429s with adaptive backoff (widening the gap after each 429). The
+// per-name fuzzy pass fires many GETs, so this is what keeps it under the limit.
 
-async function scryfallFetch(url: string, init?: RequestInit, attempt = 0): Promise<Response> {
-	let res: Response | null = null;
-	let fetchErr: unknown = null;
-
-	scryfallQueue = scryfallQueue.then(async () => {
-		const start = Date.now();
-		try {
-			res = await fetch(url, {
-				...init,
-				headers: { 'User-Agent': SCRYFALL_USER_AGENT, ...init?.headers },
-			});
-		} catch (err) {
-			fetchErr = err as Error;
-			res = null;
-		}
-		const elapsed = Date.now() - start;
-		const remaining = SCRYFALL_MIN_GAP_MS - elapsed;
-		if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
-	});
-
-	await scryfallQueue;
-
-	if (fetchErr !== null) {
-		if (attempt < 4) {
-			const wait = 2000 * Math.pow(2, attempt);
-			const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-			console.warn(`  ⚠ Scryfall network error, retrying in ${wait}ms… (${msg})`);
-			await new Promise((r) => setTimeout(r, wait));
-			return scryfallFetch(url, init, attempt + 1);
-		}
-		throw fetchErr;
-	}
-
-	if (res!.status === 429 && attempt < 4) {
-		const wait = 2000 * Math.pow(2, attempt);
-		console.warn(`  ⚠ Scryfall 429, retrying in ${wait}ms…`);
-		await new Promise((r) => setTimeout(r, wait));
-		return scryfallFetch(url, init, attempt + 1);
-	}
-	return res!;
-}
+const scryfallFetch = sharedScryfallThrottle.fetch;
 
 export function normalizeForScryfall(name: string): string {
 	return (
@@ -87,8 +44,8 @@ export function normalizeForScryfall(name: string): string {
 			.replace(/\s*&\s*/gu, ' // ')
 			// Normalize typographic quotes/apostrophes to ASCII equivalents so
 			// filenames using straight quotes match Scryfall names using curly quotes
-			.replace(/[‘’ʼ]/gu, "'") // ' ' ʼ  → '
-			.replace(/[“”]/gu, '"') // " "  → "
+			.replace(/[‘’ʼ]/gu, "'") // ‘ ’ ʼ → '
+			.replace(/[“”]/gu, '"') // “ ” → "
 			.trim()
 	);
 }
@@ -190,15 +147,11 @@ async function passA(
 
 	if (withSetNum.length === 0) return resolvable;
 
-	// Build identifier list, track cardId → identifier index for mapping results back
 	const identifiers = withSetNum.map((c) => ({
 		set: c.validSetCode!.toLowerCase(),
 		collector_number: c.parsed.collectorNumber!,
 	}));
 
-	// Scryfall returns matched cards in `data`, unmatched in `not_found`.
-	// We key results by set+collector_number since oracle name can differ from filename.
-	// Use a secondary map: "SET/NUM" → enrichment
 	const setNumToEnrichment = new Map<string, Omit<ScryfallResolution, 'strategy'>>();
 	for (let i = 0; i < identifiers.length; i += BATCH_SIZE) {
 		const batch = identifiers.slice(i, i + BATCH_SIZE);
@@ -303,10 +256,21 @@ async function passC(
 		}
 	}
 
+	// Negative cache: candidates that returned no match. Each card contributes
+	// several variant candidates, and the same normalized candidate can recur
+	// across cards — caching the misses avoids re-firing fuzzy GETs (the calls
+	// that drive us toward the rate limit) for names we already know fail.
+	const knownMisses = new Set<string>();
+
 	for (const [candidate, cardIds] of fuzzyCandidateToCards) {
+		// Skip if every card is already resolved, or this candidate already missed.
+		if (knownMisses.has(candidate)) continue;
 		if (cardIds.every((id) => resolved.has(id))) continue;
 		const result = await resolveByFuzzy(candidate);
-		if (!result) continue;
+		if (!result) {
+			knownMisses.add(candidate);
+			continue;
+		}
 		for (const cardId of cardIds) {
 			if (!resolved.has(cardId)) resolved.set(cardId, { ...result, strategy: 'fuzzy' });
 		}

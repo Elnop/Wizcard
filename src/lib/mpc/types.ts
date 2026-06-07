@@ -30,6 +30,7 @@ export interface MpcCard {
 	variants: string[];
 	setCode: string | null;
 	collectorNumber: string | null;
+	driveFolderPath: string | null;
 	// Scryfall enrichment — populated only for cards matched by oracle_id
 	colors?: string[];
 	colorIdentity?: string[];
@@ -60,6 +61,7 @@ export interface CustomCardMeta {
 	source_type: CardSourceType;
 	source_drive_folder_id: string | null;
 	card_type: CardType;
+	drive_folder_path: string | null;
 	image_url: string;
 	lang: string | null;
 	tags: string[];
