@@ -78,13 +78,17 @@ export async function ingestSource(
 	}
 
 	// ── Phase 1: parse filenames, prepare card rows ─────────────────────────
-	const skippedCount = files.filter(
-		(f) => doneIds.has(`mpc:${f.id}`) && !flags.mirrorImages
-	).length;
 	const pending = buildPendingFromDrive(files, doneIds, mirroredIds, sourceId, validSetCodes);
 	const staleCards =
 		flags.reEnrich && !flags.skipScryfall ? await fetchStaleCards(sourceId, validSetCodes) : [];
 	const allPending = [...pending, ...staleCards];
+	// Drive files that are already ingested and not being re-processed. Defined as
+	// the partition complement so that (skippedCount + allPending) == files.length
+	// in every mode — keeping the global progress bar's denominator (total Drive
+	// files) honest. staleCards are re-enrich work over already-done files, so they
+	// move from the skipped bucket into ticked work (subtracted here). Clamped at 0
+	// for the rare case of a stale DB card whose Drive file no longer exists.
+	const skippedCount = Math.max(0, files.length - pending.length - staleCards.length);
 
 	logger.event('source.start', {
 		source: sourceId,
