@@ -1,14 +1,33 @@
-// Shared Scryfall throttle: serializes requests, enforces an end-to-start gap
-// below Scryfall's hard limit, and absorbs 429s with adaptive backoff.
+// Shared Scryfall throttle: serializes all Scryfall requests, enforces an
+// end-to-start gap that respects Scryfall's PER-ENDPOINT limits, and absorbs
+// 429s with adaptive backoff.
 //
-// Scryfall's documented ceiling is ~10 req/s (100ms gap). Pacing exactly at that
-// ceiling leaves no margin and gets punished with 429s under sustained bursts
-// (e.g. the per-name fuzzy pass firing hundreds of GETs back-to-back). We pace
-// at SCRYFALL_MIN_GAP_MS (130ms ≈ 7.7 req/s) and, after any 429, temporarily
-// widen the gap so we back off instead of immediately re-saturating.
+// Scryfall caps /cards/{search,named,random,collection} at 2 req/s (500ms) and
+// all other methods at 10 req/s (100ms). A single uniform gap either violates
+// the slow endpoints (→ 429 bursts on the fuzzy pass) or needlessly throttles
+// the fast ones. We classify by URL path and pace each tier just under its cap.
+//
+// This is the single rate-limiting authority for ALL Scryfall traffic — browser
+// (via fetcher.ts) and Node ingestion (resolver, /sets). Using one shared
+// instance means every endpoint shares the same serialized queue and 429
+// penalty, so nothing escapes the limiter or races it.
 
-// Default minimum gap between the END of one response and the START of the next.
-export const SCRYFALL_MIN_GAP_MS = 130;
+// Endpoints Scryfall caps at 2 req/s. Path-based; method is irrelevant
+// (/cards/collection is POST, the rest GET — the path alone classifies them).
+const SLOW_PATHS = /^\/cards\/(search|named|random|collection)\b/u;
+
+export const SLOW_GAP_MS = 550; // < 500ms cap, with margin (~1.8 req/s)
+export const FAST_GAP_MS = 110; // < 100ms cap, with margin (~9 req/s)
+
+export function gapForUrl(url: string): number {
+	let path: string;
+	try {
+		path = new URL(url).pathname;
+	} catch {
+		return SLOW_GAP_MS; // unknown shape → be conservative
+	}
+	return SLOW_PATHS.test(path) ? SLOW_GAP_MS : FAST_GAP_MS;
+}
 
 // After a 429 we multiply the gap by this factor and let it decay back to the
 // baseline over the following requests — prevents an immediate re-saturation.
@@ -31,7 +50,8 @@ export interface ScryfallThrottle {
 }
 
 interface ThrottleOptions {
-	minGapMs?: number;
+	slowGapMs?: number;
+	fastGapMs?: number;
 	maxRetries?: number;
 	userAgent?: string;
 }
@@ -41,7 +61,8 @@ function sleep(ms: number): Promise<void> {
 }
 
 export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThrottle {
-	const baseGapMs = opts.minGapMs ?? SCRYFALL_MIN_GAP_MS;
+	const slowGap = opts.slowGapMs ?? SLOW_GAP_MS;
+	const fastGap = opts.fastGapMs ?? FAST_GAP_MS;
 	const maxRetries = opts.maxRetries ?? DEFAULT_MAX_RETRIES;
 	const userAgent = opts.userAgent ?? 'Wizcard/1.0';
 
@@ -52,8 +73,15 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 	// Remaining requests over which the post-429 penalty still applies.
 	let penaltyRemaining = 0;
 
-	function currentGap(): number {
-		return penaltyRemaining > 0 ? baseGapMs * PENALTY_FACTOR : baseGapMs;
+	function baseGapFor(url: string): number {
+		// Mirror gapForUrl but honour the instance overrides for tests.
+		const isSlow = gapForUrl(url) === SLOW_GAP_MS;
+		return isSlow ? slowGap : fastGap;
+	}
+
+	function currentGap(url: string): number {
+		const base = baseGapFor(url);
+		return penaltyRemaining > 0 ? base * PENALTY_FACTOR : base;
 	}
 
 	async function doFetch(url: string, init?: RequestInit): Promise<Response> {
@@ -109,7 +137,7 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 		try {
 			// Enforce the minimum gap since the last response ended.
 			const gap = Date.now() - lastRequestEndMs;
-			const needed = currentGap();
+			const needed = currentGap(url);
 			if (gap < needed) {
 				await sleep(needed - gap);
 			}
@@ -124,7 +152,6 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 	return { fetch: throttledFetch };
 }
 
-// Shared throttle instance for all Node-side Scryfall traffic (resolver batches,
-// fuzzy GETs, /sets). Using one instance means every endpoint shares the same
-// gap counter and 429 penalty, so nothing escapes the limiter or races it.
+// Shared throttle instance for ALL Scryfall traffic (browser + Node). One
+// instance = one serialized queue and one shared 429 penalty.
 export const sharedScryfallThrottle = createScryfallThrottle();
