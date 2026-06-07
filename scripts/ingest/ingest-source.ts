@@ -8,8 +8,7 @@ import {
 	type CardToResolve,
 	type ScryfallResolution,
 } from '../../src/lib/mpc/scryfall-resolver';
-import { flags } from './config';
-import { listDriveFolder } from './drive-client';
+import { flags, logger } from './config';
 import { processCardImage } from './image-pipeline';
 import {
 	upsertSource,
@@ -40,31 +39,15 @@ function emptyResult(overrides: Partial<IngestResult>): IngestResult {
 	};
 }
 
-function logScryfallStats(
-	prefix: string,
-	resolvedBySetNum: number,
-	resolvedByName: number,
-	resolvedByFuzzy: number,
-	unresolvedFiles: string[]
-): void {
-	console.log(
-		`${prefix} — Scryfall: ${resolvedBySetNum} by set+num, ${resolvedByName} by name, ${resolvedByFuzzy} by fuzzy, ${unresolvedFiles.length} unresolved`
-	);
-	if (unresolvedFiles.length > 0) {
-		console.warn(`${prefix} — Unresolved files:`);
-		for (const f of unresolvedFiles) console.warn(`    • ${f}`);
-	}
-}
-
 export async function ingestSource(
 	source: MpcfillSourceRaw,
 	driveId: string,
+	files: DriveImageEntry[],
 	index: number,
 	total: number,
 	validSetCodes: Set<string>
 ): Promise<IngestResult> {
 	const sourceId = `mpcfill:${source.key}`;
-	const prefix = `[source ${index}/${total}] ${sourceId}`;
 	const warnings: string[] = [];
 
 	if (flags.reEnrich && flags.skipScryfall) {
@@ -87,24 +70,11 @@ export async function ingestSource(
 
 	await upsertSource(source, sourceId, driveId);
 
-	// List Drive files
-	let files: DriveImageEntry[];
-	try {
-		files = await listDriveFolder(driveId);
-	} catch (err) {
-		const msg = `Drive list failed: ${(err as Error).message}, skipping`;
-		warnings.push(msg);
-		console.warn(`${prefix} — ⚠ ${msg}`);
-		return emptyResult({ failedCount: 1, warnings });
-	}
-
-	console.log(`${prefix} — ${files.length} images found`);
-
 	const { doneIds, mirroredIds, truncated } = await fetchExistingCards(sourceId);
 	if (truncated) {
 		const msg = 'existing cards query may be truncated (≥100k rows)';
 		warnings.push(msg);
-		console.warn(`${prefix} — ⚠ ${msg}`);
+		logger.warn('source.truncated', { source: sourceId });
 	}
 
 	// ── Phase 1: parse filenames, prepare card rows ─────────────────────────
@@ -115,6 +85,15 @@ export async function ingestSource(
 	const staleCards =
 		flags.reEnrich && !flags.skipScryfall ? await fetchStaleCards(sourceId, validSetCodes) : [];
 	const allPending = [...pending, ...staleCards];
+
+	logger.event('source.start', {
+		source: sourceId,
+		idx: index,
+		total,
+		pending: pending.length,
+		stale: staleCards.length,
+	});
+	logger.progress.taskStart(sourceId, sourceId, allPending.length);
 
 	// ── Phase 2: batch Scryfall resolution ──────────────────────────────────
 	let resolutions = new Map<string, ScryfallResolution>();
@@ -147,10 +126,19 @@ export async function ingestSource(
 				const resolution = resolutions.get(p.cardId) ?? null;
 
 				if (!flags.skipScryfall && !p.isReEnrich) {
-					if (resolution?.strategy === 'set_num') resolvedBySetNum++;
-					else if (resolution?.strategy === 'name') resolvedByName++;
-					else if (resolution?.strategy === 'fuzzy') resolvedByFuzzy++;
-					else unresolvedFiles.push(p.file.name);
+					if (resolution?.strategy) {
+						if (resolution.strategy === 'set_num') resolvedBySetNum++;
+						else if (resolution.strategy === 'name') resolvedByName++;
+						else if (resolution.strategy === 'fuzzy') resolvedByFuzzy++;
+						logger.event('card.resolved', {
+							source: sourceId,
+							card: p.cardId,
+							strategy: resolution.strategy,
+						});
+					} else {
+						unresolvedFiles.push(p.file.name);
+						logger.warn('card.unresolved', { source: sourceId, file: p.file.name });
+					}
 				}
 
 				if (p.isReEnrich) {
@@ -158,10 +146,13 @@ export async function ingestSource(
 					if (error) {
 						const msg = `Re-enrich update failed for ${p.cardId}: ${error}`;
 						warnings.push(msg);
+						logger.warn('card.failed', { source: sourceId, card: p.cardId, reason: error });
 						failedCount++;
+						logger.progress.taskTick(sourceId, { failed: 1 });
 						return;
 					}
 					reEnrichedCount++;
+					logger.progress.taskTick(sourceId, { ok: 1 });
 					return;
 				}
 
@@ -172,6 +163,7 @@ export async function ingestSource(
 					warnings.push(...img.warnings);
 					if (img.isDuplicate) {
 						duplicateImages++;
+						logger.progress.taskTick(sourceId, { ok: 1 });
 						return;
 					}
 					imageHash = img.imageHash;
@@ -183,11 +175,13 @@ export async function ingestSource(
 				if (error) {
 					const msg = `Card upsert failed for ${p.cardId}: ${error}`;
 					warnings.push(msg);
-					console.warn(`  ⚠ ${msg}`);
+					logger.warn('card.failed', { source: sourceId, card: p.cardId, reason: error });
 					failedCount++;
+					logger.progress.taskTick(sourceId, { failed: 1 });
 					return;
 				}
 				newCount++;
+				logger.progress.taskTick(sourceId, { ok: 1 });
 			})
 		)
 	);
@@ -196,18 +190,23 @@ export async function ingestSource(
 	if (countErr) {
 		const msg = `card_count update failed: ${countErr}`;
 		warnings.push(msg);
-		console.warn(`${prefix} — ⚠ ${msg}`);
+		logger.warn('source.count_failed', { source: sourceId, reason: countErr });
 	}
 
-	console.log(
-		`${prefix} — ✓ ${newCount} new, ${skippedCount} skipped, ${failedCount} failed` +
-			(reEnrichedCount ? `, ${reEnrichedCount} re-enriched` : '') +
-			(imagesMirrored ? `, ${imagesMirrored} mirrored` : '') +
-			(duplicateImages ? `, ${duplicateImages} duplicate images` : '')
-	);
-	if (!flags.skipScryfall) {
-		logScryfallStats(prefix, resolvedBySetNum, resolvedByName, resolvedByFuzzy, unresolvedFiles);
-	}
+	logger.progress.taskEnd(sourceId);
+	logger.event('source.done', {
+		source: sourceId,
+		new: newCount,
+		skipped: skippedCount,
+		failed: failedCount,
+		re_enriched: reEnrichedCount,
+		mirrored: imagesMirrored,
+		dup_images: duplicateImages,
+		by_setnum: resolvedBySetNum,
+		by_name: resolvedByName,
+		by_fuzzy: resolvedByFuzzy,
+		unresolved: unresolvedFiles.length,
+	});
 
 	return {
 		newCount,
