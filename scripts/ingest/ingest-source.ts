@@ -77,7 +77,7 @@ export async function ingestSource(
 			updated,
 			failed,
 			warnings: bfWarnings,
-		} = await backfillDrivePathForSource(sourceId, driveId, prefix);
+		} = await backfillDrivePathForSource(sourceId, driveId);
 		return emptyResult({
 			failedCount: failed,
 			warnings: [...warnings, ...bfWarnings],

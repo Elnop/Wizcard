@@ -5,7 +5,7 @@ import pLimit from 'p-limit';
 import { parseCardFilename } from '../../src/lib/mpc/parse-filename';
 import type { CardType } from '../../src/lib/mpc/types';
 import type { ScryfallResolution } from '../../src/lib/mpc/scryfall-resolver';
-import { supabase, flags } from './config';
+import { supabase, flags, logger } from './config';
 import { listDriveFolder, driveImageUrl, folderPathToMeta } from './drive-client';
 import type { DriveImageEntry, MpcfillSourceRaw, PendingCard } from './types';
 
@@ -191,8 +191,7 @@ export async function updateSourceCount(sourceId: string): Promise<{ error: stri
 
 export async function backfillDrivePathForSource(
 	sourceId: string,
-	driveId: string,
-	prefix: string
+	driveId: string
 ): Promise<{ updated: number; failed: number; warnings: string[] }> {
 	const warnings: string[] = [];
 	let updated = 0;
@@ -204,11 +203,11 @@ export async function backfillDrivePathForSource(
 	} catch (err) {
 		const msg = `Drive list failed: ${(err as Error).message}, skipping`;
 		warnings.push(msg);
-		console.warn(`${prefix} — ⚠ ${msg}`);
+		logger.warn('backfill.drive_list_failed', { source: sourceId, reason: msg });
 		return { updated: 0, failed: 1, warnings };
 	}
 
-	console.log(`${prefix} — ${files.length} files to backfill`);
+	logger.event('backfill.listed', { source: sourceId, files: files.length });
 
 	const limiter = pLimit(20);
 	await Promise.all(
@@ -231,6 +230,6 @@ export async function backfillDrivePathForSource(
 		)
 	);
 
-	console.log(`${prefix} — ✓ ${updated} updated, ${failed} failed`);
+	logger.event('backfill.done', { source: sourceId, updated, failed });
 	return { updated, failed, warnings };
 }
