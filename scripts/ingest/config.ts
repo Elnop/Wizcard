@@ -10,6 +10,7 @@
 import { existsSync } from 'node:fs';
 import * as dotenv from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { LogLevel } from './types';
 
 const BASE_ENV_PATH = '.env.local';
 // Ingestion-specific overrides (gitignored). Optional: only the keys it defines
@@ -94,6 +95,7 @@ export interface Flags {
 	mirrorImages: boolean;
 	backfillDrivePath: boolean;
 	reportPath?: string;
+	logLevel: LogLevel;
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -113,6 +115,10 @@ function parseFlags(argv: string[]): Flags {
 		mirrorImages: argv.includes('--mirror-images'),
 		backfillDrivePath: argv.includes('--backfill-drive-path'),
 		reportPath: get('--report='),
+		logLevel: ((): LogLevel => {
+			const raw = get('--log-level=');
+			return raw === 'debug' || raw === 'warn' ? raw : 'info';
+		})(),
 	};
 }
 

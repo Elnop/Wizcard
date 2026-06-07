@@ -3,6 +3,8 @@
 import type { parseCardFilename } from '../../src/lib/mpc/parse-filename';
 import type { CardType } from '../../src/lib/mpc/types';
 
+export type LogLevel = 'debug' | 'info' | 'warn';
+
 export interface MpcfillSourceRaw {
 	pk: number;
 	key: string;
