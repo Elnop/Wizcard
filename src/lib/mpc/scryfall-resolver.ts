@@ -72,13 +72,13 @@ function extractEnrichment(card: Record<string, unknown>): Omit<ScryfallResoluti
 	};
 }
 
-// POST /cards/collection — generic batch helper.
-// identifiers: array of Scryfall identifier objects ({ name } or { set, collector_number })
-// Returns a map keyed by the card's lowercased oracle name → enrichment.
-async function batchCollection(
+// POST /cards/collection in batches of BATCH_SIZE, returning all returned raw
+// cards concatenated. Shared by passA (set+num keys) and batchCollection (name
+// keys); each caller indexes the raw cards its own way.
+async function postCollection(
 	identifiers: Record<string, string>[]
-): Promise<Map<string, Omit<ScryfallResolution, 'strategy'>>> {
-	const result = new Map<string, Omit<ScryfallResolution, 'strategy'>>();
+): Promise<Record<string, unknown>[]> {
+	const cards: Record<string, unknown>[] = [];
 	for (let i = 0; i < identifiers.length; i += BATCH_SIZE) {
 		const batch = identifiers.slice(i, i + BATCH_SIZE);
 		let res: Response;
@@ -97,19 +97,29 @@ async function batchCollection(
 			continue;
 		}
 		const data = (await res.json()) as { data: Record<string, unknown>[] };
-		for (const card of data.data ?? []) {
-			if (card['oracle_id']) {
-				const enrichment = extractEnrichment(card);
-				const fullName = normalizeForScryfall(card['name'] as string).toLowerCase();
-				result.set(fullName, enrichment);
-				// Also index by front face alone so filenames that only show the
-				// front face of a double-faced card (e.g. "Nicol Bolas, the Ravager")
-				// can match a Scryfall entry keyed as "nicol bolas, the ravager // ...".
-				const slashIdx = fullName.indexOf(' // ');
-				if (slashIdx !== -1) {
-					result.set(fullName.slice(0, slashIdx), enrichment);
-				}
-			}
+		for (const card of data.data ?? []) cards.push(card);
+	}
+	return cards;
+}
+
+// Resolve a set of identifiers via POST /cards/collection.
+// Returns a map keyed by the card's lowercased oracle name → enrichment.
+async function batchCollection(
+	identifiers: Record<string, string>[]
+): Promise<Map<string, Omit<ScryfallResolution, 'strategy'>>> {
+	const result = new Map<string, Omit<ScryfallResolution, 'strategy'>>();
+	const cards = await postCollection(identifiers);
+	for (const card of cards) {
+		if (!card['oracle_id']) continue;
+		const enrichment = extractEnrichment(card);
+		const fullName = normalizeForScryfall(card['name'] as string).toLowerCase();
+		result.set(fullName, enrichment);
+		// Also index by front face alone so filenames that only show the front
+		// face of a double-faced card (e.g. "Nicol Bolas, the Ravager") match a
+		// Scryfall entry keyed as "nicol bolas, the ravager // ...".
+		const slashIdx = fullName.indexOf(' // ');
+		if (slashIdx !== -1) {
+			result.set(fullName.slice(0, slashIdx), enrichment);
 		}
 	}
 	return result;
@@ -153,29 +163,11 @@ async function passA(
 	}));
 
 	const setNumToEnrichment = new Map<string, Omit<ScryfallResolution, 'strategy'>>();
-	for (let i = 0; i < identifiers.length; i += BATCH_SIZE) {
-		const batch = identifiers.slice(i, i + BATCH_SIZE);
-		let res: Response;
-		try {
-			res = await scryfallFetch(`${SCRYFALL_BASE}/cards/collection`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ identifiers: batch }),
-			});
-		} catch (err) {
-			console.warn(`  ⚠ Scryfall set+num batch failed: ${(err as Error).message}`);
-			continue;
-		}
-		if (!res.ok) {
-			console.warn(`  ⚠ Scryfall set+num batch HTTP ${res.status}`);
-			continue;
-		}
-		const data = (await res.json()) as { data: Record<string, unknown>[] };
-		for (const card of data.data ?? []) {
-			if (card['oracle_id'] && card['set'] && card['collector_number']) {
-				const key = `${card['set']}/${card['collector_number']}`;
-				setNumToEnrichment.set(key, extractEnrichment(card));
-			}
+	const cards = await postCollection(identifiers);
+	for (const card of cards) {
+		if (card['oracle_id'] && card['set'] && card['collector_number']) {
+			const key = `${card['set']}/${card['collector_number']}`;
+			setNumToEnrichment.set(key, extractEnrichment(card));
 		}
 	}
 
