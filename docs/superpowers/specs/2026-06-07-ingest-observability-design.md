@@ -63,18 +63,18 @@ Formatting rules:
 
 ### Event vocabulary
 
-| event             | when                                                | key fields                                                                                                            |
-| ----------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `run.start`       | startup                                             | `sources_total` `skip_scryfall` `fuzzy` `re_enrich` `mirror`                                                          |
-| `listing.source`  | Phase 0 pre-listing of a source                     | `source` `idx` `total` `images`                                                                                       |
-| `listing.done`    | end of Phase 0                                      | `sources` `cards_total`                                                                                               |
-| `source.start`    | begin processing a source                           | `source` `idx` `total` `pending` `stale`                                                                              |
-| `source.progress` | periodic during a source (throttled ~1/s on stdout) | `source` `done` `of` `ok` `failed` `eta_s`                                                                            |
-| `card.resolved`   | per-card resolution (debug only)                    | `source` `card` `strategy`                                                                                            |
-| `card.failed`     | upsert / re-enrich failure                          | `source` `card` `reason`                                                                                              |
-| `card.unresolved` | Scryfall could not resolve                          | `source` `file`                                                                                                       |
-| `source.done`     | end of a source                                     | `source` `new` `skipped` `failed` `re_enriched` `mirrored` `dup_images` `by_setnum` `by_name` `by_fuzzy` `unresolved` |
-| `run.done`        | end of run                                          | `sources` `cards_total` `new` `failed` `unresolved` `duration_s`                                                      |
+| event             | when                                          | key fields                                                                                                            |
+| ----------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `run.start`       | startup                                       | `sources_total` `skip_scryfall` `fuzzy` `re_enrich` `mirror`                                                          |
+| `source.listed`   | Phase 0 pre-listing of a source               | `source` `idx` `total` `images`                                                                                       |
+| `listing.done`    | end of Phase 0                                | `sources` `cards_total`                                                                                               |
+| `source.start`    | begin processing a source                     | `source` `idx` `total` `pending` `stale`                                                                              |
+| `run.progress`    | periodic global progress, non-TTY only (~10s) | `cards_done` `cards_total` `eta_s`                                                                                    |
+| `card.resolved`   | per-card resolution (debug only)              | `source` `card` `strategy`                                                                                            |
+| `card.failed`     | upsert / re-enrich failure                    | `source` `card` `reason`                                                                                              |
+| `card.unresolved` | Scryfall could not resolve                    | `source` `file`                                                                                                       |
+| `source.done`     | end of a source                               | `source` `new` `skipped` `failed` `re_enriched` `mirrored` `dup_images` `by_setnum` `by_name` `by_fuzzy` `unresolved` |
+| `run.done`        | end of run                                    | `sources` `cards_total` `new` `failed` `unresolved` `duration_s`                                                      |
 
 ## Human progress (stderr) — multi-bar
 
@@ -103,7 +103,7 @@ samples over ~30s → recent `cards/s`. `eta_s = (cards_total − cards_done) / 
 Shown as `Xm YYs` for humans, `eta_s=<int>` for machines. Before ~5s of samples: `ETA —`.
 
 **Non-TTY fallback:** when `process.stderr.isTTY` is false (piped/redirected), emit no
-ANSI multi-bar; instead append a readable `source.progress` line every ~10s.
+ANSI multi-bar; instead append a readable `run.progress` line every ~10s.
 
 ## Final recap
 
@@ -130,7 +130,7 @@ report file; the stdout stream carries one event per item).
 List Drive for **all** sources first (Phase 0), then process (Phase 1). This yields the
 exact global card total up front for a precise global ETA. `listDriveFolder` results from
 Phase 0 are reused in Phase 1 — no re-listing. Each source's listing emits a
-`listing.source` event; `listing.done` closes the phase with `cards_total`.
+`source.listed` event; `listing.done` closes the phase with `cards_total`.
 
 ## Verbosity
 

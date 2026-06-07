@@ -60,11 +60,11 @@ function capture(fn: () => void): string[] {
 {
 	const log = createLogger('warn');
 	const out = capture(() => {
-		log.event('source.progress', { source: SRC, done: 10 });
+		log.event('run.progress', { cards_done: 10, cards_total: 100 });
 		log.event('source.done', { source: SRC, new: 5 });
 		log.warn('card.failed', { card: 'mpc:2', reason: 'boom' });
 	});
-	check('warn drops source.progress', !out.some((l) => l.includes('event=source.progress')));
+	check('warn drops run.progress', !out.some((l) => l.includes('event=run.progress')));
 	check(
 		'warn keeps source.done',
 		out.some((l) => l.includes('event=source.done'))
