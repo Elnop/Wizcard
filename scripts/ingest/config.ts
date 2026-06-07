@@ -19,10 +19,10 @@ const BASE_ENV_PATH = '.env.local';
 const INGEST_ENV_PATH = '.env.ingest';
 
 // Base config, shared with the app.
-dotenv.config({ path: BASE_ENV_PATH });
+dotenv.config({ path: BASE_ENV_PATH, quiet: true });
 const usingIngestEnv = existsSync(INGEST_ENV_PATH);
 if (usingIngestEnv) {
-	dotenv.config({ path: INGEST_ENV_PATH, override: true });
+	dotenv.config({ path: INGEST_ENV_PATH, override: true, quiet: true });
 }
 
 // ─── Endpoints / constants ───────────────────────────────────────────────────
@@ -68,7 +68,7 @@ function loadConfig(): Config {
 	const envDesc = usingIngestEnv
 		? `${BASE_ENV_PATH} + ${INGEST_ENV_PATH} (override)`
 		: BASE_ENV_PATH;
-	console.log(`ℹ env: ${envDesc} → Supabase ${supabaseUrl}`);
+	console.error(`ℹ env: ${envDesc} → Supabase ${supabaseUrl}`);
 
 	return { supabaseUrl, supabaseServiceRoleKey, googleDriveApiKey };
 }
