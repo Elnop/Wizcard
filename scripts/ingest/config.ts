@@ -83,8 +83,9 @@ function parseFlags(argv: string[]): Flags {
 		filterSourceId: get('--source='),
 		limitSources: parseInt(get('--limit=') ?? '0', 10),
 		skipScryfall: argv.includes('--skip-scryfall'),
-		// fuzzy opt-in only — avoid 429s on large sources
-		fuzzy: argv.includes('--fuzzy'),
+		// fuzzy enabled by default — the 550ms gap on /cards/named makes it safe.
+		// Pass --no-fuzzy to disable (e.g. fast runs where fuzzy adds nothing).
+		fuzzy: !argv.includes('--no-fuzzy'),
 		reEnrich: argv.includes('--re-enrich'),
 		reEnrichDays: parseInt(get('--re-enrich-days=') ?? '30', 10),
 		checkImageHash: argv.includes('--check-image-hash'),
