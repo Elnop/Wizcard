@@ -10,6 +10,7 @@
 import { existsSync } from 'node:fs';
 import * as dotenv from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createLogger } from './logger';
 import type { LogLevel } from './types';
 
 const BASE_ENV_PATH = '.env.local';
@@ -123,3 +124,6 @@ function parseFlags(argv: string[]): Flags {
 }
 
 export const flags = parseFlags(process.argv.slice(2));
+
+// Shared logger singleton — the sole output owner for all ingest modules.
+export const logger = createLogger(flags.logLevel);
