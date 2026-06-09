@@ -203,7 +203,7 @@ export async function backfillDrivePathForSource(
 	} catch (err) {
 		const msg = `Drive list failed: ${(err as Error).message}, skipping`;
 		warnings.push(msg);
-		logger.warn('backfill.drive_list_failed', { source: sourceId, reason: msg });
+		logger.error('backfill.drive_list_failed', { source: sourceId, reason: msg });
 		return { updated: 0, failed: 1, warnings };
 	}
 

@@ -8,3 +8,4 @@ node_modules
 next-env.d.ts
 cosmos-export
 cosmos.imports.ts
+*.log

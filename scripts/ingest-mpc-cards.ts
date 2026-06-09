@@ -8,6 +8,7 @@
 import { writeFile } from 'node:fs/promises';
 import pLimit from 'p-limit';
 import { flags, logger } from './ingest/config';
+import { startHud, stopHud } from './ingest/hud-runner';
 import { extractDriveId, listDriveFolder } from './ingest/drive-client';
 import { fetchSources, fetchScryfallSetCodes } from './ingest/sources';
 import { ingestSource } from './ingest/ingest-source';
@@ -20,6 +21,10 @@ function sumBy(rows: SourceReport[], key: 'resolved'): number {
 async function main(): Promise<void> {
 	const startedAt = new Date().toISOString();
 	const runWarnings: string[] = [];
+
+	// Start HUD immediately so all events (including source.no_drive_id warns
+	// from fetchSources) are captured and visible from the first frame.
+	startHud(logger);
 
 	const [rawSources, validSetCodes] = await Promise.all([
 		fetchSources(),
@@ -61,6 +66,13 @@ async function main(): Promise<void> {
 		mirror: flags.mirrorImages,
 		log_level: flags.logLevel,
 	});
+	logger.setHudFlags({
+		sources: filtered.length,
+		scryfall: !flags.skipScryfall,
+		mirror: flags.mirrorImages,
+		fuzzy: flags.fuzzy,
+		reEnrich: flags.reEnrich,
+	});
 
 	// ── Phase 0: pre-list every source's Drive folder so the global card total
 	// (and thus the global ETA) is known before any processing starts. Backfill
@@ -84,7 +96,7 @@ async function main(): Promise<void> {
 					} catch (err) {
 						const msg = `Drive list failed: ${(err as Error).message}`;
 						runWarnings.push(`${sourceId}: ${msg}`);
-						logger.warn('listing.failed', { source: sourceId, reason: (err as Error).message });
+						logger.error('listing.failed', { source: sourceId, reason: (err as Error).message });
 						listings.set(sourceId, []);
 					}
 				})
@@ -117,6 +129,7 @@ async function main(): Promise<void> {
 
 	const finishedAt = new Date().toISOString();
 	logger.progress.done();
+	stopHud();
 
 	const zeroTotals = {
 		resolved: 0,
@@ -219,6 +232,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
+	stopHud();
 	logger.error('run.fatal', { reason: (err as Error).message });
 	process.exit(1);
 });

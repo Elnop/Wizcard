@@ -97,7 +97,7 @@ export async function ingestSource(
 		pending: pending.length,
 		stale: staleCards.length,
 	});
-	logger.progress.taskStart(sourceId, sourceId, allPending.length, skippedCount);
+	logger.progress.taskStart(sourceId, sourceId, allPending.length, skippedCount, skippedCount);
 
 	// ── Phase 2: batch Scryfall resolution ──────────────────────────────────
 	let resolutions = new Map<string, ScryfallResolution>();
@@ -141,7 +141,11 @@ export async function ingestSource(
 						});
 					} else {
 						unresolvedFiles.push(p.file.name);
-						logger.warn('card.unresolved', { source: sourceId, file: p.file.name });
+						const filePath =
+							p.file.folderPath.length > 0
+								? `${p.file.folderPath.join('/')}/${p.file.name}`
+								: p.file.name;
+						logger.event('card.unresolved', { source: sourceId, file: filePath });
 					}
 				}
 
@@ -150,7 +154,7 @@ export async function ingestSource(
 					if (error) {
 						const msg = `Re-enrich update failed for ${p.cardId}: ${error}`;
 						warnings.push(msg);
-						logger.warn('card.failed', { source: sourceId, card: p.cardId, reason: error });
+						logger.error('card.failed', { source: sourceId, card: p.cardId, reason: error });
 						failedCount++;
 						logger.progress.taskTick(sourceId, { failed: 1 });
 						return;
@@ -179,13 +183,13 @@ export async function ingestSource(
 				if (error) {
 					const msg = `Card upsert failed for ${p.cardId}: ${error}`;
 					warnings.push(msg);
-					logger.warn('card.failed', { source: sourceId, card: p.cardId, reason: error });
+					logger.error('card.failed', { source: sourceId, card: p.cardId, reason: error });
 					failedCount++;
 					logger.progress.taskTick(sourceId, { failed: 1 });
 					return;
 				}
 				newCount++;
-				logger.progress.taskTick(sourceId, { ok: 1 });
+				logger.progress.taskTick(sourceId, { ok: 1, new: 1 });
 			})
 		)
 	);
@@ -194,7 +198,7 @@ export async function ingestSource(
 	if (countErr) {
 		const msg = `card_count update failed: ${countErr}`;
 		warnings.push(msg);
-		logger.warn('source.count_failed', { source: sourceId, reason: countErr });
+		logger.error('source.count_failed', { source: sourceId, reason: countErr });
 	}
 
 	logger.progress.taskEnd(sourceId);

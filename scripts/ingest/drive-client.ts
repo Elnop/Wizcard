@@ -19,14 +19,29 @@ export function sleep(ms: number): Promise<void> {
 }
 
 export async function fetchWithRetry(url: string, attempt = 0): Promise<Response> {
-	const res = await fetch(url);
-	if ((res.status === 429 || res.status >= 500) && attempt < 4) {
-		const wait = 500 * Math.pow(2, attempt);
-		logger.warn('drive.retry', { status: res.status, wait_ms: wait });
-		await sleep(wait);
-		return fetchWithRetry(url, attempt + 1);
+	try {
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+		const res = await fetch(url, { signal: controller.signal });
+		clearTimeout(timeoutId);
+
+		if ((res.status === 429 || res.status >= 500) && attempt < 4) {
+			const wait = 500 * Math.pow(2, attempt);
+			logger.event('drive.retry', { status: res.status, wait_ms: wait });
+			await sleep(wait);
+			return fetchWithRetry(url, attempt + 1);
+		}
+		return res;
+	} catch (err) {
+		if (attempt < 4) {
+			const wait = 500 * Math.pow(2, attempt);
+			logger.event('drive.retry', { reason: (err as Error).message, wait_ms: wait });
+			await sleep(wait);
+			return fetchWithRetry(url, attempt + 1);
+		}
+		throw err;
 	}
-	return res;
 }
 
 export function extractDriveId(url: string): string | null {

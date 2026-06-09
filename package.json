@@ -20,6 +20,7 @@
 		"sb:migrate": "supabase migration up --local",
 		"sb:studio": "xdg-open http://127.0.0.1:54323",
 		"sb:mail": "xdg-open http://127.0.0.1:54324",
+		"ingest": "systemd-inhibit npx tsx scripts/ingest-mpc-cards.ts",
 		"clean": "rm -rf node_modules .next",
 		"prepare": "husky"
 	},
@@ -40,6 +41,7 @@
 		"@supabase/ssr": "^0.9.0",
 		"@supabase/supabase-js": "^2.99.1",
 		"html2canvas": "^1.4.1",
+		"ink": "^7.0.5",
 		"jspdf": "^4.2.1",
 		"next": "^16.2.1",
 		"p-limit": "^7.3.0",
