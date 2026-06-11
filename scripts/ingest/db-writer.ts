@@ -26,6 +26,27 @@ export async function upsertSource(
 	if (error) throw new Error(`Source upsert failed: ${error.message}`);
 }
 
+export interface SourceDbState {
+	doneIds: Set<string>;
+	mirroredIds: Set<string>;
+	staleCards: PendingCard[];
+	skippedCount: number; // doneIds.size - staleCards.length (clamped ≥ 0)
+	staleCount: number; // staleCards.length
+	truncated: boolean;
+}
+
+export async function fetchSourceDbState(
+	sourceId: string,
+	validSetCodes: Set<string>
+): Promise<SourceDbState> {
+	const { doneIds, mirroredIds, truncated } = await fetchExistingCards(sourceId);
+	const staleCards =
+		flags.reEnrich && !flags.skipScryfall ? await fetchStaleCards(sourceId, validSetCodes) : [];
+	const staleCount = staleCards.length;
+	const skippedCount = Math.max(0, doneIds.size - staleCount);
+	return { doneIds, mirroredIds, staleCards, skippedCount, staleCount, truncated };
+}
+
 export async function fetchExistingCards(
 	sourceId: string
 ): Promise<{ doneIds: Set<string>; mirroredIds: Set<string>; truncated: boolean }> {
@@ -89,6 +110,54 @@ export async function fetchStaleCards(
 		.limit(100_000);
 
 	return (stale ?? []).map((row) => {
+		const fakeFile: DriveImageEntry = {
+			id: (row.id as string).replace(/^mpc:/, ''),
+			name: row.raw_name as string,
+			folderPath: [],
+		};
+		const parsed = parseCardFilename(row.raw_name as string);
+		parsed.setCode = (row.set_code as string | null) ?? null;
+		parsed.collectorNumber = (row.collector_number as string | null) ?? null;
+		parsed.variants = (row.variants as string[]) ?? [];
+		const setCode = parsed.setCode && validSetCodes.has(parsed.setCode) ? parsed.setCode : null;
+		return {
+			cardId: row.id as string,
+			file: fakeFile,
+			parsed,
+			setCode,
+			cardType: (row.card_type as CardType) ?? 'card',
+			allTags: (row.tags as string[]) ?? [],
+			isReEnrich: true,
+			alreadyMirrored: true,
+		};
+	});
+}
+
+// Global scan for cards needing Scryfall enrichment (Stage 2 final sweep).
+// `enriched_at IS NULL` covers never-enriched + Stage-1-inserted cards. When
+// `includeStale` is set (--re-enrich), also re-pull cards enriched long ago.
+// `sourceId` optionally narrows the scan to one source (--source / per-source
+// --enrich-only). Mirrors fetchStaleCards' row→PendingCard mapping.
+export async function fetchUnenrichedCards(opts: {
+	validSetCodes: Set<string>;
+	includeStale?: boolean;
+	sourceId?: string;
+	limit?: number;
+}): Promise<PendingCard[]> {
+	const { validSetCodes, includeStale = false, sourceId, limit = 100_000 } = opts;
+	let query = supabase
+		.from('custom_cards')
+		.select('id, source_id, raw_name, card_type, set_code, collector_number, variants, tags');
+	if (sourceId) query = query.eq('source_id', sourceId);
+	if (includeStale) {
+		const threshold = new Date(Date.now() - flags.reEnrichDays * 86_400_000).toISOString();
+		query = query.or(`enriched_at.is.null,enriched_at.lt.${threshold}`);
+	} else {
+		query = query.is('enriched_at', null);
+	}
+	const { data: rows } = await query.limit(limit);
+
+	return (rows ?? []).map((row) => {
 		const fakeFile: DriveImageEntry = {
 			id: (row.id as string).replace(/^mpc:/, ''),
 			name: row.raw_name as string,
