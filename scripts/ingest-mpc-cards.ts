@@ -12,7 +12,11 @@ import { startHud, stopHud } from './ingest/hud-runner';
 import { extractDriveId, listDriveFolder } from './ingest/drive-client';
 import { fetchSources, fetchScryfallSetCodes } from './ingest/sources';
 import { ingestSource } from './ingest/ingest-source';
-import type { RunReport, SourceReport, DriveImageEntry } from './ingest/types';
+import { fetchSourceDbState } from './ingest/db-writer';
+import { createEnrichQueue } from './ingest/enrich-queue';
+import { runEnrichWorker } from './ingest/enrich-worker';
+import type { RunReport, SourceReport, DriveImageEntry, IngestResult } from './ingest/types';
+import type { SourceDbState } from './ingest/db-writer';
 
 function sumBy(rows: SourceReport[], key: 'resolved'): number {
 	return rows.reduce((n, r) => n + r[key], 0);
@@ -21,6 +25,7 @@ function sumBy(rows: SourceReport[], key: 'resolved'): number {
 async function main(): Promise<void> {
 	const startedAt = new Date().toISOString();
 	const runWarnings: string[] = [];
+	let results: IngestResult[] = [];
 
 	// Start HUD immediately so all events (including source.no_drive_id warns
 	// from fetchSources) are captured and visible from the first frame.
@@ -64,6 +69,8 @@ async function main(): Promise<void> {
 		re_enrich: flags.reEnrich,
 		re_enrich_days: flags.reEnrichDays,
 		mirror: flags.mirrorImages,
+		parse_only: flags.parseOnly,
+		enrich_only: flags.enrichOnly,
 		log_level: flags.logLevel,
 	});
 	logger.setHudFlags({
@@ -74,58 +81,171 @@ async function main(): Promise<void> {
 		reEnrich: flags.reEnrich,
 	});
 
-	// ── Phase 0: pre-list every source's Drive folder so the global card total
-	// (and thus the global ETA) is known before any processing starts. Backfill
-	// mode skips this — it relists internally and has no card total. ──────────
-	const listings = new Map<string, DriveImageEntry[]>();
-	if (!flags.backfillDrivePath) {
-		const listLimiter = pLimit(5);
-		await Promise.all(
-			filtered.map(({ raw, driveId }, i) =>
-				listLimiter(async () => {
-					const sourceId = `mpcfill:${raw.key}`;
-					try {
-						const driveFiles = await listDriveFolder(driveId);
-						listings.set(sourceId, driveFiles);
-						logger.event('source.listed', {
-							source: sourceId,
-							idx: i + 1,
-							total: filtered.length,
-							images: driveFiles.length,
-						});
-					} catch (err) {
-						const msg = `Drive list failed: ${(err as Error).message}`;
-						runWarnings.push(`${sourceId}: ${msg}`);
-						logger.error('listing.failed', { source: sourceId, reason: (err as Error).message });
-						listings.set(sourceId, []);
-					}
-				})
-			)
+	const enrichQueue = createEnrichQueue();
+	const runEnrich = !flags.skipScryfall && !flags.parseOnly;
+
+	// --enrich-only: skip Drive listing + Stage 1 entirely; sweep the DB.
+	if (flags.enrichOnly) {
+		enrichQueue.close();
+		logger.progress.enrichStart(0);
+		const enrichResult = await runEnrichWorker({
+			queue: enrichQueue,
+			validSetCodes,
+			includeStale: flags.reEnrich,
+			sourceId: flags.filterSourceId,
+		});
+		logger.progress.done();
+		stopHud();
+		logger.recap(
+			`\n─── Enrichissement terminé ───\n` +
+				`  Cartes      ${enrichResult.resolved} résolues · ` +
+				`${enrichResult.unresolved} non résolues · ${enrichResult.failed} échec\n`
 		);
-		const cardsTotal = [...listings.values()].reduce((n, f) => n + f.length, 0);
-		logger.event('listing.done', { sources: filtered.length, cards_total: cardsTotal });
-		logger.progress.start(cardsTotal);
+		return;
 	}
 
-	// Scryfall uses a global serialized throttle queue — running sources in
-	// parallel injects concurrent batch calls that overwhelm the rate limit.
-	// With Scryfall active, process one source at a time.
-	const sourceConcurrency = flags.skipScryfall ? 5 : 1;
-	const sourceLimiter = pLimit(sourceConcurrency);
-	const results = await Promise.all(
-		filtered.map(({ raw, driveId }, i) =>
-			sourceLimiter(() =>
-				ingestSource(
-					raw,
-					driveId,
-					listings.get(`mpcfill:${raw.key}`) ?? [],
-					i + 1,
-					filtered.length,
-					validSetCodes
-				)
+	// ── Phase 0: prepare every source concurrently ───────────────────────────
+	// Drive listing and DB pre-check hit two independent systems (Google Drive vs
+	// Supabase) with no data dependency between them, so they run in parallel,
+	// each under its own concurrency pool with its own rate budget. As soon as a
+	// source's listing AND db-state are both ready, its HUD bar is registered "on
+	// the fly" (the HUD already re-sorts active tasks by progress, so display
+	// order self-organises). Once all listings are in, the global card total is
+	// known and the ETA is started. Backfill mode skips this — it relists
+	// internally and has no card total. ──────────────────────────────────────
+	const listings = new Map<string, DriveImageEntry[]>();
+	const dbStates = new Map<string, SourceDbState>();
+	if (!flags.backfillDrivePath) {
+		// Drive quota is the sensitive one (Google) — keep it at 5. Supabase has no
+		// throttle here, so the DB pre-check can run hotter to finish sooner.
+		const listLimiter = pLimit(5);
+		const dbStateLimiter = pLimit(10);
+		// Several sources ingest in parallel; Stage 1 no longer calls Scryfall
+		// inline (Stage 2 does, serialized), so concurrency is safe here.
+		const ingestLimiter = pLimit(5);
+		const ingestPromises: Array<Promise<{ idx: number; result: IngestResult }>> = [];
+		const idxById = new Map<string, number>();
+		filtered.forEach(({ raw }, i) => idxById.set(`mpcfill:${raw.key}`, i));
+
+		// Guards against the second pool re-registering a source whose pair is
+		// already complete (taskStart is not idempotent — it re-seeds skipCount).
+		const registered = new Set<string>();
+		const registerTaskHud = (sourceId: string): void => {
+			const state = dbStates.get(sourceId);
+			const driveFiles = listings.get(sourceId);
+			// Register only when BOTH halves are ready, and only once per source.
+			if (!state || !driveFiles || registered.has(sourceId)) return;
+			registered.add(sourceId);
+			const driveCount = driveFiles.length;
+			// Mirror ingestSource's skippedCount formula so segments are consistent:
+			// skipped = drive files already in DB and not being re-processed.
+			// staleCards count toward pending work, not skip. Clamped at driveCount
+			// so skipped never exceeds total Drive files.
+			const pendingNew = Math.max(0, driveCount - state.doneIds.size);
+			const skippedCount = Math.max(0, driveCount - pendingNew - state.staleCount);
+			logger.progress.taskStart(
+				sourceId,
+				sourceId,
+				pendingNew + state.staleCount,
+				skippedCount,
+				skippedCount,
+				state.staleCount
+			);
+
+			// Pipeline: kick off this source's ingest the moment both halves are
+			// ready, rather than waiting on the whole listing barrier.
+			const idx = idxById.get(sourceId) ?? 0;
+			const { raw, driveId } = filtered[idx];
+			ingestPromises.push(
+				ingestLimiter(async () => ({
+					idx,
+					result: await ingestSource(
+						raw,
+						driveId,
+						driveFiles,
+						idx + 1,
+						filtered.length,
+						validSetCodes,
+						state,
+						runEnrich ? enrichQueue : undefined
+					),
+				}))
+			);
+		};
+
+		const listJobs = filtered.map(({ raw, driveId }, i) =>
+			listLimiter(async () => {
+				const sourceId = `mpcfill:${raw.key}`;
+				try {
+					const driveFiles = await listDriveFolder(driveId);
+					listings.set(sourceId, driveFiles);
+					logger.event('source.listed', {
+						source: sourceId,
+						idx: i + 1,
+						total: filtered.length,
+						images: driveFiles.length,
+					});
+				} catch (err) {
+					const msg = `Drive list failed: ${(err as Error).message}`;
+					runWarnings.push(`${sourceId}: ${msg}`);
+					logger.error('listing.failed', { source: sourceId, reason: (err as Error).message });
+					listings.set(sourceId, []);
+				}
+				registerTaskHud(sourceId);
+			})
+		);
+
+		const dbJobs = filtered.map(({ raw }) =>
+			dbStateLimiter(async () => {
+				const sourceId = `mpcfill:${raw.key}`;
+				dbStates.set(sourceId, await fetchSourceDbState(sourceId, validSetCodes));
+				registerTaskHud(sourceId);
+			})
+		);
+
+		// Start the global ETA as soon as the card total is known (all listings in),
+		// without waiting on the DB pre-check — which is masked behind the listings.
+		const listingsDone = Promise.all(listJobs).then(() => {
+			const cardsTotal = [...listings.values()].reduce((n, f) => n + f.length, 0);
+			logger.event('listing.done', { sources: filtered.length, cards_total: cardsTotal });
+			logger.progress.start(cardsTotal);
+			logger.progress.enrichStart(0);
+		});
+
+		// Stage 2 runs in parallel with Stage 1: it drains the queue as cards are
+		// inserted, then does a final DB sweep once the queue is closed.
+		const enrichPromise: Promise<{ resolved: number; unresolved: number; failed: number }> =
+			runEnrich
+				? runEnrichWorker({
+						queue: enrichQueue,
+						validSetCodes,
+						includeStale: flags.reEnrich,
+						sourceId: flags.filterSourceId,
+					})
+				: Promise.resolve({ resolved: 0, unresolved: 0, failed: 0 });
+
+		// By the time this barrier resolves, every source has had both halves
+		// listed + pre-checked, so registerTaskHud has fired for each and
+		// ingestPromises is fully populated.
+		await Promise.all([listingsDone, ...dbJobs]);
+		logger.event('precheck.done', { sources: dbStates.size });
+		const settled = await Promise.all(ingestPromises);
+
+		// All Stage-1 inserts have pushed to the queue; closing lets the worker's
+		// Phase A drain to completion, then run its final DB sweep.
+		enrichQueue.close();
+		await enrichPromise;
+
+		for (const { idx, result } of settled) results[idx] = result;
+	}
+
+	if (flags.backfillDrivePath) {
+		results = await Promise.all(
+			filtered.map(({ raw, driveId }, i) =>
+				ingestSource(raw, driveId, [], i + 1, filtered.length, validSetCodes)
 			)
-		)
-	);
+		);
+	}
 
 	const finishedAt = new Date().toISOString();
 	logger.progress.done();
