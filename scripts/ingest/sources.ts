@@ -9,7 +9,9 @@ export async function fetchSources(): Promise<MpcfillSourceRaw[]> {
 	const res = await fetchWithRetry(MPCFILL_URL);
 	if (!res.ok) throw new Error(`mpcfill fetch failed: HTTP ${res.status}`);
 	const data = (await res.json()) as MpcfillSourcesResponse;
-	return Object.values(data.results ?? {}).filter((s) => s.sourceType === 'Google Drive');
+	return Object.values(data.results ?? {}).filter(
+		(s) => s.sourceType === 'Google Drive' && s.externalLink
+	);
 }
 
 export async function fetchScryfallSetCodes(): Promise<Set<string>> {

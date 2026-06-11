@@ -46,6 +46,7 @@ export interface ImageResult {
 export interface IngestResult {
 	newCount: number;
 	skippedCount: number;
+	staleCount: number;
 	failedCount: number;
 	reEnrichedCount: number;
 	imagesMirrored: number;
