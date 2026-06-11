@@ -200,6 +200,26 @@ export async function fetchUnenrichedCards(opts: {
 	});
 }
 
+// Cheap exact count of cards still needing enrichment (same filters as
+// fetchUnenrichedCards). head:true fetches no rows — just the count — so the
+// Stage-2 worker can show an accurate progress denominator without pulling data.
+export async function countUnenrichedCards(opts: {
+	includeStale?: boolean;
+	sourceId?: string;
+}): Promise<number> {
+	const { includeStale = false, sourceId } = opts;
+	let query = supabase.from('custom_cards').select('*', { count: 'exact', head: true });
+	if (sourceId) query = query.eq('source_id', sourceId);
+	if (includeStale) {
+		const threshold = new Date(Date.now() - flags.reEnrichDays * 86_400_000).toISOString();
+		query = query.or(`enriched_at.is.null,enriched_at.lt.${threshold}`);
+	} else {
+		query = query.is('enriched_at', null);
+	}
+	const { count } = await query;
+	return count ?? 0;
+}
+
 // Build the custom_cards row payload for one pending card. Shared by the
 // single-card and batch upsert paths so they never drift.
 function buildCardRow(

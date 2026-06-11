@@ -68,6 +68,7 @@ async function run(): Promise<void> {
 					return { error: null };
 				},
 				fetchUnenrichedCards: async () => scans[Math.min(scanCalls++, scans.length - 1)],
+				countUnenrichedCards: async () => 0,
 			},
 		});
 
@@ -95,6 +96,7 @@ async function run(): Promise<void> {
 					error: cardId === 'boom' ? 'write failed' : null,
 				}),
 				fetchUnenrichedCards: async () => scans[Math.min(scanCalls++, scans.length - 1)],
+				countUnenrichedCards: async () => 0,
 			},
 		});
 		check('failed path counts error card', result.failed === 1);
@@ -136,10 +138,39 @@ async function run(): Promise<void> {
 					return { error: null };
 				},
 				fetchUnenrichedCards: async () => scanResult(),
+				countUnenrichedCards: async () => 0,
 			},
 		});
 		check('late insert is enriched after idle poll', reEnriched.includes('late'));
 		check('worker terminates once parsing done + empty', result.resolved === 1);
+	}
+
+	// progress total reflects the DB count (done + remaining), not the running sum
+	// of processed batches.
+	{
+		const { logger } = await import('./config');
+		const scans: PendingCard[][] = [[card('z')], []];
+		let scanCalls = 0;
+		await runEnrichWorker({
+			validSetCodes: new Set<string>(),
+			isParsingDone: () => true,
+			batchSize: 75,
+			idlePollMs: 1,
+			deps: {
+				resolveBatch: async (cards) => {
+					const map = new Map<string, ScryfallResolution>();
+					for (const c of cards) map.set(c.id, resolution(c.id));
+					return map;
+				},
+				reEnrichCard: async () => ({ error: null }),
+				fetchUnenrichedCards: async () => scans[Math.min(scanCalls++, scans.length - 1)],
+				// At start the DB reports 50 cards still to do (e.g. Stage 1 inserted a
+				// lot); the bar denominator must reflect that, not just batch sizes.
+				countUnenrichedCards: async () => 50,
+			},
+		});
+		// done()=1 (card z) + remaining=50 from the final refresh => total 51.
+		check('enrich total reflects DB count', logger.getHudState().enrichTotal === 51);
 	}
 
 	console.log(`\n${passed} passed, ${failed} failed`);

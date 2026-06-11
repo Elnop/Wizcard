@@ -17,7 +17,11 @@ import {
 	type ScryfallResolution,
 } from '../../src/lib/mpc/scryfall-resolver';
 import { flags, logger } from './config';
-import { reEnrichCard as realReEnrichCard, fetchUnenrichedCards as realScan } from './db-writer';
+import {
+	reEnrichCard as realReEnrichCard,
+	fetchUnenrichedCards as realScan,
+	countUnenrichedCards as realCount,
+} from './db-writer';
 import type { PendingCard } from './types';
 
 export interface EnrichWorkerDeps {
@@ -35,6 +39,7 @@ export interface EnrichWorkerDeps {
 		sourceId?: string;
 		limit?: number;
 	}) => Promise<PendingCard[]>;
+	countUnenrichedCards: (opts: { includeStale?: boolean; sourceId?: string }) => Promise<number>;
 }
 
 export interface EnrichWorkerResult {
@@ -47,6 +52,7 @@ const defaultDeps: EnrichWorkerDeps = {
 	resolveBatch: realResolveBatch,
 	reEnrichCard: realReEnrichCard,
 	fetchUnenrichedCards: realScan,
+	countUnenrichedCards: realCount,
 };
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
@@ -92,6 +98,7 @@ export async function runEnrichWorker(opts: {
 	sourceId?: string;
 	batchSize?: number;
 	idlePollMs?: number;
+	totalRefreshMs?: number;
 	fuzzy?: boolean;
 	deps?: EnrichWorkerDeps;
 }): Promise<EnrichWorkerResult> {
@@ -102,10 +109,24 @@ export async function runEnrichWorker(opts: {
 		sourceId,
 		batchSize = 75,
 		idlePollMs = 500,
+		totalRefreshMs = 3000,
 		fuzzy = flags.fuzzy,
 	} = opts;
 	const deps = opts.deps ?? defaultDeps;
 	const result: EnrichWorkerResult = { resolved: 0, unresolved: 0, failed: 0 };
+
+	// Keep the progress denominator accurate: total = cards already processed this
+	// run + the live DB count of what's still un-enriched. Refresh from the DB
+	// periodically while Stage 1 is still inserting (so the bar grows with new
+	// inserts), and re-count once parsing is done to pin the final total.
+	const done = (): number => result.resolved + result.unresolved + result.failed;
+	const refreshTotal = async (): Promise<void> => {
+		const remaining = await deps.countUnenrichedCards({ includeStale, sourceId });
+		logger.progress.enrichSetTotal(done() + remaining);
+	};
+	let lastTotalRefresh = 0;
+
+	await refreshTotal();
 
 	// Poll the DB for un-enriched cards until Stage 1 is done AND nothing is left.
 	for (;;) {
@@ -118,15 +139,26 @@ export async function runEnrichWorker(opts: {
 
 		if (batch.length === 0) {
 			// Caught up. If Stage 1 has finished inserting, we're done; otherwise
-			// wait briefly for more inserts to land, then re-poll.
+			// wait briefly for more inserts to land, then re-poll (with a fresh total).
 			if (isParsingDone()) break;
+			await refreshTotal();
 			await sleep(idlePollMs);
 			continue;
 		}
 
-		logger.progress.enrichTick({ addTotal: batch.length });
 		await processBatch(batch, deps, result, fuzzy);
+
+		// Re-count at most every totalRefreshMs so the denominator tracks Stage-1
+		// inserts without a count query per batch.
+		const nowMs = Date.now();
+		if (!isParsingDone() && nowMs - lastTotalRefresh >= totalRefreshMs) {
+			lastTotalRefresh = nowMs;
+			await refreshTotal();
+		}
 	}
+
+	// Final pin: parsing is done, so this count is the authoritative remaining work.
+	await refreshTotal();
 
 	logger.event('enrich.done', {
 		resolved: result.resolved,

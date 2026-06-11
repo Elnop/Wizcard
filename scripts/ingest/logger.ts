@@ -114,12 +114,8 @@ export interface Logger {
 		taskEnd(id: string): void;
 		done(): void;
 		enrichStart(total: number): void;
-		enrichTick(delta: {
-			resolved?: number;
-			unresolved?: number;
-			failed?: number;
-			addTotal?: number;
-		}): void;
+		enrichSetTotal(total: number): void;
+		enrichTick(delta: { resolved?: number; unresolved?: number; failed?: number }): void;
 	};
 	recap(text: string): void;
 	warningCount(): number;
@@ -504,16 +500,16 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 				notifyHud();
 			},
 			enrichStart(total: number): void {
-				hudState.enrichTotal += total;
+				hudState.enrichTotal = total;
 				notifyHud();
 			},
-			enrichTick(delta: {
-				resolved?: number;
-				unresolved?: number;
-				failed?: number;
-				addTotal?: number;
-			}): void {
-				hudState.enrichTotal += delta.addTotal ?? 0;
+			enrichSetTotal(total: number): void {
+				// Absolute denominator from a DB count. Never let it drop below the work
+				// already done, so the bar can't show done > total mid-refresh.
+				hudState.enrichTotal = Math.max(total, hudState.enrichDone);
+				notifyHud();
+			},
+			enrichTick(delta: { resolved?: number; unresolved?: number; failed?: number }): void {
 				hudState.enrichResolved += delta.resolved ?? 0;
 				hudState.enrichUnresolved += delta.unresolved ?? 0;
 				hudState.enrichFailed += delta.failed ?? 0;
