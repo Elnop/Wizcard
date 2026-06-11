@@ -90,25 +90,26 @@ Fichiers : `scripts/ingest-mpc-cards.ts`, `scripts/ingest/ingest-source.ts`.
 - Le mode re-enrich (`fetchStaleCards`) n'a plus de rôle dans le Stage 1 ; la logique de
   re-enrichissement bascule dans le Stage 2 (cf. ci-dessous).
 
-## Stage 2 — Enrich Scryfall (worker transversal)
+## Stage 2 — Enrich Scryfall (worker transversal, DB-driven)
 
-Nouveau module : `scripts/ingest/enrich-worker.ts` (ou similaire).
+Module : `scripts/ingest/enrich-worker.ts`.
 
-- **Source de travail (hybride)** :
-  1. Une **queue mémoire** alimentée par le Stage 1 (cartes du run courant) — drainée par batches
-     de 75.
-  2. Un **scan DB final** : une fois le Stage 1 terminé ET la queue vidée, exécuter une requête
-     globale `enriched_at IS NULL` (+ `OR enriched_at < threshold` si `--re-enrich`) pour rattraper
-     les cartes restantes (anciens runs, échecs partiels). Réutiliser le pattern `fetchStaleCards`,
-     généralisé (pas de `.eq('source_id', ...)` sauf si `--source`/`--limit-sources` passés).
-- **Résolution** : `resolveBatch(cards, { fuzzy: flags.fuzzy })` (réutilisé tel quel) → renvoie un
-  `Map<cardId, ScryfallResolution>`.
-- **Écriture** : `reEnrichCard(cardId, resolution ?? null)` pour chaque carte — pose les champs
-  Scryfall + `enriched_at` (ou `enriched_at=null` si non résolue, ce qui la laisse rattrapable).
-- **Condition de fin** : Stage 1 signalé fini (flag/promesse `parsingDone`) ET queue vide ET un scan
-  DB final ne retourne plus rien.
-- **Rate limit** : tous les appels passent par `sharedScryfallThrottle` (déjà le cas dans
-  `resolveBatch`). Un seul worker → pas de sur-débit.
+> **Note d'implémentation** : la conception initiale utilisait une **queue mémoire** alimentée par
+> le Stage 1. Elle a été **supprimée** : le Stage 1 insère ~350 cartes/s, le Stage 2 enrichit
+> ~7 cartes/s (rate limit Scryfall) → la queue non-bornée grossissait de ~340/s jusqu'à faire
+> **OOM-crasher le process** (SIGKILL). Le worker est désormais **piloté par la DB**, mémoire bornée.
+
+- **Source de travail** : boucle de polling DB. À chaque tour, `fetchUnenrichedCards({ limit })`
+  (`enriched_at IS NULL`, + `OR enriched_at < threshold` si `--re-enrich`, filtrable par `--source`).
+- **Résolution** : `resolveBatch(cards, { fuzzy })` → `Map<cardId, ScryfallResolution>`.
+- **Écriture** : `reEnrichCard(cardId, resolution ?? null)` — pose les champs Scryfall +
+  `enriched_at` sur **chaque tentative** (résolue ou non), donc la carte quitte le set
+  `enriched_at IS NULL` immédiatement (pas de re-pioche infinie).
+- **Condition de fin** : un scan retourne 0 ligne ET `isParsingDone()` est vrai. Tant que le Stage 1
+  tourne, un scan vide = « rattrapé » → on dort `idlePollMs` et on re-poll pour capter les nouveaux
+  inserts. L'orchestrateur passe `parsingDone = true` une fois tous les ingests Stage 1 settled.
+- **Rate limit** : tous les appels passent par `sharedScryfallThrottle`. Un seul worker → pas de
+  sur-débit. **Mémoire bornée** : aucune queue, la DB est la work-list.
 
 ## Flags de la commande `ingest`
 
