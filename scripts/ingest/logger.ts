@@ -30,7 +30,10 @@ interface TaskState {
 	of: number;
 	ok: number;
 	failed: number;
+	skipped: number; // cards already in DB, will not be ticked (blue segment)
+	stale: number; // cards pending re-enrich (yellow segment)
 	order: number;
+	activatedAt?: number; // Date.now() when the source started being processed
 }
 
 export interface TaskHudState {
@@ -40,7 +43,10 @@ export interface TaskHudState {
 	of: number;
 	ok: number;
 	failed: number;
+	skipped: number; // blue segment: already in DB
+	stale: number; // yellow segment: pending re-enrich
 	order: number;
+	activatedAt?: number; // set once processing begins — distinguishes active vs waiting
 	finishedAt?: number; // Date.now() when taskEnd was called
 }
 
@@ -63,6 +69,9 @@ export interface HudState {
 	startedAt: number; // Date.now() at progress.start()
 	globalTotal: number;
 	globalDone: number;
+	globalSkipped: number; // sum of skipped (blue) across all tasks
+	globalStale: number; // sum of stale remaining (yellow) across all tasks
+	globalFailed: number; // sum of failed (red) across all tasks
 	etaSeconds: number | null;
 	cardsPerSec: number | null; // derived from speed samples
 	newCount: number;
@@ -76,6 +85,11 @@ export interface HudState {
 	recentWarnings: HudEvent[]; // circular buffer, max 50, warn+error only
 	warningTotal: number; // total warn-level events
 	errorTotal: number; // total error-level events
+	enrichTotal: number; // cards queued for Scryfall enrichment
+	enrichDone: number; // resolved + unresolved + failed (enrich attempts completed)
+	enrichResolved: number; // green
+	enrichUnresolved: number; // yellow — attempted, 0 Scryfall match
+	enrichFailed: number; // red — network/Scryfall error
 }
 
 export interface Logger {
@@ -89,14 +103,23 @@ export interface Logger {
 			label: string,
 			of: number,
 			alreadyDone?: number,
-			alreadySkipped?: number
+			alreadySkipped?: number,
+			alreadyStale?: number
 		): void;
+		taskActivate(id: string): void;
 		taskTick(
 			id: string,
 			delta: { ok?: number; failed?: number; new?: number; skip?: number }
 		): void;
 		taskEnd(id: string): void;
 		done(): void;
+		enrichStart(total: number): void;
+		enrichTick(delta: {
+			resolved?: number;
+			unresolved?: number;
+			failed?: number;
+			addTotal?: number;
+		}): void;
 	};
 	recap(text: string): void;
 	warningCount(): number;
@@ -118,6 +141,10 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 	let warnings = 0;
 	// Cards finished by tasks that already ended (removed from the map).
 	let finishedDone = 0;
+	// Until progress.start() pins the authoritative card total (known once all
+	// Drive listings are in), GLOBAL's denominator grows provisionally from each
+	// task registered on the fly — so it never shows "/0" during pre-listing.
+	let globalTotalPinned = false;
 
 	// ── HudState ─────────────────────────────────────────────────────────────
 	const hudState: HudState = {
@@ -125,6 +152,9 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 		startedAt: 0,
 		globalTotal: 0,
 		globalDone: 0,
+		globalSkipped: 0,
+		globalStale: 0,
+		globalFailed: 0,
 		etaSeconds: null,
 		cardsPerSec: null,
 		newCount: 0,
@@ -138,6 +168,11 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 		phase: 'init',
 		listingDone: 0,
 		listingTotal: 0,
+		enrichTotal: 0,
+		enrichDone: 0,
+		enrichResolved: 0,
+		enrichUnresolved: 0,
+		enrichFailed: 0,
 	};
 	const hudSubscribers = new Set<() => void>();
 	const finishedTasks = new Map<string, TaskHudState>();
@@ -256,7 +291,10 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 
 	// ── Task sync helper ──────────────────────────────────────────────────────
 	function syncTasksToHud(): void {
-		hudState.tasks = [...tasks.entries()]
+		// Unfinished tasks, ordered: actively-processing sources first (most recently
+		// activated on top), then waiting sources by least progress. This keeps the
+		// source(s) currently being worked on pinned to the top of the list.
+		const active = [...tasks.entries()]
 			.map(([id, t]) => ({
 				id,
 				label: t.label,
@@ -264,9 +302,52 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 				of: t.of,
 				ok: t.ok,
 				failed: t.failed,
+				skipped: t.skipped,
+				stale: t.stale,
 				order: t.order,
+				activatedAt: t.activatedAt,
 			}))
-			.sort((a, b) => a.order - b.order);
+			.sort((a, b) => {
+				// Active (activatedAt set) sorts before waiting.
+				const aActive = a.activatedAt !== undefined;
+				const bActive = b.activatedAt !== undefined;
+				if (aActive !== bActive) return aActive ? -1 : 1;
+				// Both active: most recently activated first.
+				if (aActive && bActive) return (b.activatedAt ?? 0) - (a.activatedAt ?? 0);
+				// Both waiting: least progress first.
+				const ratioA = a.of > 0 ? a.done / a.of : 1;
+				const ratioB = b.of > 0 ? b.done / b.of : 1;
+				return ratioA - ratioB;
+			});
+
+		// Finished tasks: completion order (earliest finished at top of finished group).
+		const finished = [...finishedTasks.values()].sort(
+			(a, b) => (a.finishedAt ?? 0) - (b.finishedAt ?? 0)
+		);
+
+		hudState.tasks = [...active, ...finished];
+	}
+
+	function syncGlobalSegments(): void {
+		// Aggregate skipped/stale/failed across all tasks (active + finished).
+		let skipped = 0;
+		let stale = 0;
+		let failed = 0;
+		for (const t of tasks.values()) {
+			skipped += t.skipped;
+			// stale remaining = original stale minus ok ticks that consumed stale first
+			const okBeyondSkipped = Math.max(0, t.ok - t.skipped);
+			stale += Math.max(0, t.stale - okBeyondSkipped);
+			failed += t.failed;
+		}
+		for (const t of finishedTasks.values()) {
+			skipped += t.skipped;
+			// finished tasks: all stale consumed (ok reached end), no remaining stale
+			failed += t.failed;
+		}
+		hudState.globalSkipped = skipped;
+		hudState.globalStale = stale;
+		hudState.globalFailed = failed;
 	}
 
 	function recomputeGlobalDone(): void {
@@ -292,32 +373,87 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 		error: (name, fields = {}) => emit(name, 'error', fields),
 		progress: {
 			start(total: number): void {
+				// Tasks may already be registered when sources are pre-listed on the fly
+				// (Drive listing + DB pre-check run concurrently, each source's bar is
+				// seeded as soon as its pair is ready). So start() must NOT wipe the task
+				// map or the skip seed — it only sets the global total + ETA, then
+				// re-derives the running counters from whatever tasks already exist.
 				eta = createEtaEstimator(total, ETA_WINDOW_MS);
-				eta.record(0);
-				lastEtaSample = Date.now();
-				hudState.startedAt = Date.now();
+				if (hudState.startedAt === 0) hudState.startedAt = Date.now();
+				globalTotalPinned = true;
 				hudState.globalTotal = total;
-				hudState.globalDone = 0;
 				hudState.newCount = 0;
-				hudState.skipCount = 0;
 				hudState.failCount = 0;
-				hudState.tasks = [];
+				// skipCount is the sum of each task's seeded skip; rebuild it from tasks.
+				let skip = 0;
+				for (const t of tasks.values()) skip += t.skipped;
+				hudState.skipCount = skip;
+				recomputeGlobalDone();
+				eta.record(globalDone);
+				lastEtaSample = Date.now();
+				syncTasksToHud();
+				syncGlobalSegments();
 				notifyHud();
 			},
-			taskStart(id: string, label: string, of: number, alreadyDone = 0, alreadySkipped = 0): void {
+			taskStart(
+				id: string,
+				label: string,
+				of: number,
+				alreadyDone = 0,
+				alreadySkipped = 0,
+				alreadyStale = 0
+			): void {
 				// `alreadyDone` seeds cards that count toward the GLOBAL total but are
 				// not ticked individually (e.g. skipped/already-ingested on re-runs),
 				// so the global bar's denominator (all Drive files) stays honest.
-				tasks.set(id, {
-					label,
-					done: alreadyDone,
-					of: of + alreadyDone,
-					ok: alreadyDone,
-					failed: 0,
-					order: taskOrderSeq++,
-				});
+				const order = taskOrderSeq++;
+				// A source with nothing to tick (of === 0) is fully skipped / already
+				// up to date — there's no real work, so register it as finished right
+				// away instead of parking it as "waiting" then flashing a spinner.
+				if (of === 0) {
+					finishedDone += alreadyDone;
+					finishedTasks.set(id, {
+						id,
+						label,
+						done: alreadyDone,
+						of: alreadyDone,
+						ok: alreadyDone,
+						failed: 0,
+						skipped: alreadySkipped,
+						stale: alreadyStale,
+						order,
+						finishedAt: Date.now(),
+					});
+				} else {
+					tasks.set(id, {
+						label,
+						done: alreadyDone,
+						of: of + alreadyDone,
+						ok: alreadyDone,
+						failed: 0,
+						skipped: alreadySkipped,
+						stale: alreadyStale,
+						order,
+					});
+				}
 				hudState.skipCount += alreadySkipped;
+				// Before the real total is pinned (pre-listing), grow GLOBAL's
+				// denominator with each task so it stays coherent (no "/0").
+				if (!globalTotalPinned) hudState.globalTotal += of + alreadyDone;
 				recomputeGlobalDone();
+				// Sample ETA after seeding alreadyDone so the estimator sees the
+				// correct globalDone before any ticks arrive (avoids inflated rate).
+				sampleEta(true);
+				syncTasksToHud();
+				syncGlobalSegments();
+				notifyHud();
+			},
+			taskActivate(id: string): void {
+				// Marks a source as actively processing (vs merely listed/waiting), so
+				// the HUD can swap its icon and pin it to the top of the source list.
+				const t = tasks.get(id);
+				if (!t || t.activatedAt !== undefined) return;
+				t.activatedAt = Date.now();
 				syncTasksToHud();
 				notifyHud();
 			},
@@ -336,6 +472,7 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 				recomputeGlobalDone();
 				sampleEta(false);
 				syncTasksToHud();
+				syncGlobalSegments();
 				notifyHud();
 			},
 			taskEnd(id: string): void {
@@ -349,21 +486,39 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 						of: t.of,
 						ok: t.ok,
 						failed: t.failed,
+						skipped: t.skipped,
+						stale: t.stale,
 						order: t.order,
+						activatedAt: t.activatedAt,
 						finishedAt: Date.now(),
 					});
 				}
 				tasks.delete(id);
 				recomputeGlobalDone();
 				sampleEta(true);
-				syncTasksToHud(); // will only include active tasks
-				// also include recently finished tasks in hudState
-				hudState.tasks = [...hudState.tasks, ...finishedTasks.values()].sort(
-					(a, b) => a.order - b.order
-				);
+				syncTasksToHud();
+				syncGlobalSegments();
 				notifyHud();
 			},
 			done(): void {
+				notifyHud();
+			},
+			enrichStart(total: number): void {
+				hudState.enrichTotal += total;
+				notifyHud();
+			},
+			enrichTick(delta: {
+				resolved?: number;
+				unresolved?: number;
+				failed?: number;
+				addTotal?: number;
+			}): void {
+				hudState.enrichTotal += delta.addTotal ?? 0;
+				hudState.enrichResolved += delta.resolved ?? 0;
+				hudState.enrichUnresolved += delta.unresolved ?? 0;
+				hudState.enrichFailed += delta.failed ?? 0;
+				hudState.enrichDone =
+					hudState.enrichResolved + hudState.enrichUnresolved + hudState.enrichFailed;
 				notifyHud();
 			},
 		},
