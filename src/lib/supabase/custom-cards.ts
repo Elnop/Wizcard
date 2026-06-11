@@ -147,6 +147,7 @@ export interface CustomCardQueryFilters {
 	rarities?: string[];
 	oracleText?: string;
 	mpcTagsFilter?: string[];
+	oracleIdFilter?: 'all' | 'defined' | 'undefined';
 	order?: string;
 	dir?: 'asc' | 'desc' | 'auto';
 }
@@ -200,6 +201,8 @@ export async function queryCustomCards(query: CustomCardQuery): Promise<CustomCa
 	if (filters.set) q = q.eq('set_code', filters.set);
 	if (filters.rarities?.length) q = q.in('rarity', filters.rarities);
 	if (filters.mpcTagsFilter?.length) q = q.overlaps('tags', filters.mpcTagsFilter);
+	if (filters.oracleIdFilter === 'defined') q = q.not('oracle_id', 'is', null);
+	else if (filters.oracleIdFilter === 'undefined') q = q.is('oracle_id', null);
 	if (filters.colors?.length && filters.colorMatch === 'include')
 		q = q.overlaps('colors', filters.colors);
 

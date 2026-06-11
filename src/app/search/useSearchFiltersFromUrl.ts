@@ -7,6 +7,7 @@ import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/so
 import { countActiveFilters } from '@/lib/search/types';
 import type { ColorMatch } from '@/lib/search/types';
 import type { SearchMode } from '@/lib/search/types';
+import type { OracleIdFilterValue } from '@/lib/search/components/filters/OracleIdFilter/OracleIdFilter';
 
 const VALID_COLORS = new Set(['W', 'U', 'B', 'R', 'G']);
 const VALID_ORDERS = new Set([
@@ -78,6 +79,7 @@ export type SearchFilters = {
 	dir: ScryfallSortDir;
 	customSourceId: string | null;
 	mpcTagsFilter: string[];
+	oracleIdFilter: OracleIdFilterValue;
 };
 
 export function useSearchFiltersFromUrl() {
@@ -109,6 +111,11 @@ export function useSearchFiltersFromUrl() {
 	const [mpcTagsFilter, setMpcTagsFilter] = useState<string[]>(() =>
 		parseMpcTags(searchParams.get('mpcTags'))
 	);
+	const [oracleIdFilter, setOracleIdFilter] = useState<OracleIdFilterValue>(() => {
+		const raw = searchParams.get('oracleId');
+		if (raw === 'defined' || raw === 'undefined') return raw;
+		return 'all';
+	});
 
 	const isInitialMount = useRef(true);
 
@@ -132,6 +139,7 @@ export function useSearchFiltersFromUrl() {
 		if (mode !== 'official') params.set('mode', mode);
 		if (customSourceId) params.set('source', customSourceId);
 		if (mpcTagsFilter.length > 0) params.set('mpcTags', mpcTagsFilter.join(','));
+		if (oracleIdFilter !== 'all') params.set('oracleId', oracleIdFilter);
 
 		const queryString = params.toString();
 		router.replace(queryString ? `/search?${queryString}` : '/search', { scroll: false });
@@ -149,6 +157,7 @@ export function useSearchFiltersFromUrl() {
 		mode,
 		customSourceId,
 		mpcTagsFilter,
+		oracleIdFilter,
 		router,
 	]);
 
@@ -164,6 +173,7 @@ export function useSearchFiltersFromUrl() {
 		setDir(filters.dir);
 		setCustomSourceId(filters.customSourceId);
 		setMpcTagsFilter(filters.mpcTagsFilter);
+		setOracleIdFilter(filters.oracleIdFilter);
 	};
 
 	const activeFilterCount = countActiveFilters({
@@ -198,6 +208,7 @@ export function useSearchFiltersFromUrl() {
 		setMode,
 		customSourceId,
 		mpcTagsFilter,
+		oracleIdFilter,
 		// Aggregate
 		applyFilters,
 		activeFilterCount,

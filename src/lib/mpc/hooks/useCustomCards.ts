@@ -9,6 +9,7 @@ import type { CardFilters } from '@/lib/search/types';
 
 export interface UseCustomCardsFilters extends CardFilters {
 	mpcTagsFilter: string[];
+	oracleIdFilter?: 'all' | 'defined' | 'undefined';
 }
 
 interface UseCustomCardsResult {
@@ -59,6 +60,7 @@ export function useCustomCards(
 	const colorsKey = filters.colors.join(',');
 	const raritiesKey = filters.rarities.join(',');
 	const tagsKey = filters.mpcTagsFilter.join(',');
+	const oracleIdFilter = filters.oracleIdFilter ?? 'all';
 
 	const filterKey = [
 		sourceId ?? '__all__',
@@ -73,6 +75,7 @@ export function useCustomCards(
 		filters.order,
 		filters.dir,
 		tagsKey,
+		oracleIdFilter,
 	].join('|');
 
 	const fetchPage = useCallback(
@@ -103,6 +106,7 @@ export function useCustomCards(
 							rarities: raritiesKey ? raritiesKey.split(',') : undefined,
 							oracleText: debouncedOracleText || undefined,
 							mpcTagsFilter: tagsKey ? tagsKey.split(',') : undefined,
+							oracleIdFilter: oracleIdFilter !== 'all' ? oracleIdFilter : undefined,
 							order: filters.order,
 							dir: filters.dir,
 						},
@@ -154,6 +158,7 @@ export function useCustomCards(
 			filters.order,
 			filters.dir,
 			tagsKey,
+			oracleIdFilter,
 		]
 	);
 

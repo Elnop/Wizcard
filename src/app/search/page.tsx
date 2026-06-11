@@ -61,6 +61,7 @@ function SearchPageContent() {
 		setMode,
 		customSourceId,
 		mpcTagsFilter,
+		oracleIdFilter,
 		applyFilters,
 		activeFilterCount,
 	} = useSearchFiltersFromUrl();
@@ -111,6 +112,7 @@ function SearchPageContent() {
 		order,
 		dir,
 		mpcTagsFilter,
+		oracleIdFilter,
 	});
 
 	const mergedCards: AnyCard[] = useMemo(() => {
@@ -153,7 +155,10 @@ function SearchPageContent() {
 	const isDefaultQuery = !hasFilters;
 
 	const totalActiveFilterCount =
-		activeFilterCount + (customSourceId !== null ? 1 : 0) + mpcTagsFilter.length;
+		activeFilterCount +
+		(customSourceId !== null ? 1 : 0) +
+		mpcTagsFilter.length +
+		(oracleIdFilter !== 'all' ? 1 : 0);
 
 	const tableColumns = [
 		{ key: 'name', label: 'Nom', sortKey: 'name' },
@@ -218,6 +223,7 @@ function SearchPageContent() {
 					customSources={customSources}
 					customSourceId={customSourceId}
 					mpcTagsFilter={mpcTagsFilter}
+					oracleIdFilter={oracleIdFilter}
 					onApply={applyFilters}
 					onClose={() => setIsModalOpen(false)}
 				/>

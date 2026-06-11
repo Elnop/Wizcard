@@ -1,4 +1,5 @@
 import type { CardType } from '@/lib/mpc/types';
+import styles from './CardTypeFilter.module.css';
 
 const OPTIONS: { value: CardType | 'all'; label: string }[] = [
 	{ value: 'all', label: 'Tous' },
@@ -14,28 +15,12 @@ interface CardTypeFilterProps {
 
 export function CardTypeFilter({ value, onChange }: CardTypeFilterProps) {
 	return (
-		<div>
-			<div
-				style={{
-					fontSize: 12,
-					fontWeight: 600,
-					marginBottom: 6,
-					color: 'var(--color-text-muted, #6b7280)',
-				}}
-			>
-				Type de carte
-			</div>
+		<div className={styles.container}>
+			<span className={styles.label}>Type de carte</span>
 			<select
+				className={styles.select}
 				value={value}
 				onChange={(e) => onChange(e.target.value as CardType | 'all')}
-				style={{
-					width: '100%',
-					padding: '6px 8px',
-					borderRadius: 6,
-					border: '1px solid var(--color-border, #e5e7eb)',
-					background: 'var(--color-surface, #fff)',
-					fontSize: 13,
-				}}
 			>
 				{OPTIONS.map((opt) => (
 					<option key={opt.value} value={opt.value}>

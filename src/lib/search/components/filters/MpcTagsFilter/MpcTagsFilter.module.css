@@ -1,0 +1,128 @@
+.root {
+}
+
+.header {
+	font-size: var(--text-xs);
+	font-weight: 600;
+	font-family: var(--font-display);
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--brass);
+	margin-bottom: 8px;
+}
+
+.groupLabel {
+	font-size: var(--text-2xs);
+	font-weight: 700;
+	font-family: var(--font-display);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+	margin-bottom: 6px;
+}
+
+.group {
+	margin-bottom: 10px;
+}
+
+.tagRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.leafTag {
+	font-size: var(--text-2xs);
+	padding: 2px 8px;
+	border-radius: 2px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--foreground);
+	cursor: pointer;
+	transition:
+		border-color 0.15s,
+		box-shadow 0.15s,
+		background 0.15s,
+		color 0.15s;
+}
+
+.leafTag:hover {
+	border-color: var(--gold);
+	box-shadow: 0 0 6px rgba(201, 168, 76, 0.2);
+}
+
+.leafTagActive {
+	background: var(--primary);
+	color: var(--primary-text);
+	border-color: var(--primary);
+}
+
+.leafTagActive:hover {
+	border-color: var(--primary-hover);
+	box-shadow: 0 0 6px rgba(201, 168, 76, 0.3);
+}
+
+.branchRow {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin-bottom: 4px;
+}
+
+.branchBtn {
+	font-size: var(--text-2xs);
+	font-weight: 600;
+	padding: 2px 6px;
+	border-radius: 2px;
+	border: 1px solid var(--border);
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition:
+		border-color 0.15s,
+		box-shadow 0.15s,
+		background 0.15s,
+		color 0.15s;
+}
+
+.branchBtn:hover {
+	border-color: var(--gold);
+	box-shadow: 0 0 6px rgba(201, 168, 76, 0.2);
+}
+
+.branchBtnPartial {
+	background: rgba(201, 168, 76, 0.12);
+	color: var(--gold);
+	border-color: rgba(201, 168, 76, 0.3);
+}
+
+.branchBtnActive {
+	background: var(--primary);
+	color: var(--primary-text);
+	border-color: var(--primary);
+}
+
+.branchBtnActive:hover {
+	border-color: var(--primary-hover);
+}
+
+.collapseBtn {
+	font-size: 10px;
+	padding: 1px 4px;
+	border: none;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: color 0.15s;
+}
+
+.collapseBtn:hover {
+	color: var(--foreground);
+}
+
+.children {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-bottom: 4px;
+}

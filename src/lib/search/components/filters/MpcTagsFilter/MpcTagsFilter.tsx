@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { MPC_TAG_GROUPS } from '@/lib/mpc/mpc-tag-taxonomy';
 import type { MpcTagNode } from '@/lib/mpc/mpc-tag-taxonomy';
+import styles from './MpcTagsFilter.module.css';
 
 interface MpcTagsFilterProps {
 	value: string[];
@@ -35,10 +36,6 @@ function toggleNode(
 
 const SHOWCASE_LABEL = 'Showcase';
 
-const COLOR_ACCENT = 'var(--color-accent, #6366f1)';
-const COLOR_BORDER = '1px solid var(--color-border, #e5e7eb)';
-const COLOR_TEXT_MUTED = 'var(--color-text-muted, #6b7280)';
-
 function TagNodeRow({
 	node,
 	selected,
@@ -68,53 +65,29 @@ function TagNodeRow({
 				type="button"
 				aria-pressed={isActive}
 				onClick={handleClick}
-				style={{
-					fontSize: 11,
-					padding: '2px 8px',
-					borderRadius: 999,
-					border: COLOR_BORDER,
-					background: isActive ? COLOR_ACCENT : 'var(--color-surface-2, #f3f4f6)',
-					color: isActive ? '#fff' : 'var(--color-text, #111827)',
-					cursor: 'pointer',
-				}}
+				className={`${styles.leafTag} ${isActive ? styles.leafTagActive : ''}`}
 			>
 				{node.label}
 			</button>
 		);
 	}
 
-	let branchBg: string;
-	if (isActive) branchBg = COLOR_ACCENT;
-	else if (isPartial) branchBg = 'var(--color-accent-muted, #e0e7ff)';
-	else branchBg = 'transparent';
+	let branchBtnClass = styles.branchBtn;
+	if (isActive) branchBtnClass += ` ${styles.branchBtnActive}`;
+	else if (isPartial) branchBtnClass += ` ${styles.branchBtnPartial}`;
 
-	let branchColor: string;
-	if (isActive) branchColor = '#fff';
-	else if (isPartial) branchColor = COLOR_ACCENT;
-	else branchColor = COLOR_TEXT_MUTED;
-
-	let branchPrefix: string;
+	let branchPrefix = '';
 	if (isActive) branchPrefix = '✓ ';
 	else if (isPartial) branchPrefix = '– ';
-	else branchPrefix = '';
 
 	return (
 		<div>
-			<div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+			<div className={styles.branchRow}>
 				<button
 					type="button"
 					aria-pressed={isActive || (isPartial ? ('mixed' as const) : false)}
 					onClick={handleClick}
-					style={{
-						fontSize: 11,
-						fontWeight: 600,
-						padding: '2px 6px',
-						borderRadius: 4,
-						border: COLOR_BORDER,
-						background: branchBg,
-						color: branchColor,
-						cursor: 'pointer',
-					}}
+					className={branchBtnClass}
 				>
 					{branchPrefix}
 					{node.label}
@@ -123,20 +96,13 @@ function TagNodeRow({
 					type="button"
 					onClick={() => onToggleCollapse(node.label)}
 					aria-label={isCollapsed ? 'Expand' : 'Collapse'}
-					style={{
-						fontSize: 10,
-						padding: '1px 4px',
-						border: 'none',
-						background: 'transparent',
-						color: COLOR_TEXT_MUTED,
-						cursor: 'pointer',
-					}}
+					className={styles.collapseBtn}
 				>
 					{isCollapsed ? '▶' : '▼'}
 				</button>
 			</div>
 			{!isCollapsed && (
-				<div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 4 }}>
+				<div className={styles.children}>
 					{node.children!.map((child) => (
 						<TagNodeRow
 							key={child.label}
@@ -166,32 +132,12 @@ export function MpcTagsFilter({ value, onChange }: MpcTagsFilterProps) {
 	};
 
 	return (
-		<div>
-			<div
-				style={{
-					fontSize: 12,
-					fontWeight: 600,
-					marginBottom: 8,
-					color: COLOR_TEXT_MUTED,
-				}}
-			>
-				Tags MPC
-			</div>
+		<div className={styles.root}>
+			<div className={styles.header}>Tags MPC</div>
 			{MPC_TAG_GROUPS.map((group) => (
-				<div key={group.label} style={{ marginBottom: 10 }}>
-					<div
-						style={{
-							fontSize: 10,
-							fontWeight: 700,
-							textTransform: 'uppercase',
-							letterSpacing: '0.05em',
-							color: COLOR_TEXT_MUTED,
-							marginBottom: 6,
-						}}
-					>
-						{group.label}
-					</div>
-					<div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+				<div key={group.label} className={styles.group}>
+					<div className={styles.groupLabel}>{group.label}</div>
+					<div className={styles.tagRow}>
 						{group.tags.map((node) => (
 							<TagNodeRow
 								key={node.label}
