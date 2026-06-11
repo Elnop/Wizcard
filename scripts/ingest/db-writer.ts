@@ -66,24 +66,56 @@ export async function fetchSourceDbState(
 	return { doneIds, mirroredIds, staleCards, skippedCount, staleCount, truncated };
 }
 
+// PostgREST caps every response at `max_rows` (1000 in supabase/config.toml) —
+// a bare `.limit(100_000)` is silently truncated to 1000, which made re-runs
+// re-process every card past the first 1000 of a source (they looked "not done").
+// Page through with `.range()` until a short page comes back to read ALL rows
+// regardless of the server cap. `build` re-creates the filtered query per page.
+const PAGE_SIZE = 1000;
+// Minimal shape of a PostgREST query that supports .range() and resolves to a
+// { data, error } result — enough to paginate without importing supabase-js's
+// heavily-generic builder types.
+interface Rangeable<T> {
+	// A stable order is required: without ORDER BY, PostgREST returns rows in an
+	// undefined order, so paged .range() windows can overlap or skip rows — which
+	// made doneIds non-deterministically incomplete across re-runs.
+	order(column: string): {
+		range(from: number, to: number): PromiseLike<{ data: T[] | null; error: unknown }>;
+	};
+}
+async function fetchAllRows<T>(build: () => Rangeable<T>): Promise<{ rows: T[]; error: unknown }> {
+	const rows: T[] = [];
+	for (let from = 0; ; from += PAGE_SIZE) {
+		const { data, error } = await build()
+			.order('id')
+			.range(from, from + PAGE_SIZE - 1);
+		if (error) return { rows, error };
+		const page = data ?? [];
+		rows.push(...page);
+		if (page.length < PAGE_SIZE) break;
+	}
+	return { rows, error: null };
+}
+
 export async function fetchExistingCards(
 	sourceId: string
 ): Promise<{ doneIds: Set<string>; mirroredIds: Set<string>; truncated: boolean }> {
 	const existingSelect = flags.mirrorImages ? 'id, image_storage_path' : 'id';
-	const { data: existing } = await supabase
-		.from('custom_cards')
-		.select(existingSelect)
-		.eq('source_id', sourceId)
-		.limit(100_000);
-
 	type ExistingRow = { id: string; image_storage_path?: string | null };
-	const existingRows = (existing ?? []) as unknown as ExistingRow[];
+	const { rows: existingRows } = await fetchAllRows<ExistingRow>(
+		() =>
+			supabase
+				.from('custom_cards')
+				.select(existingSelect)
+				.eq('source_id', sourceId) as unknown as Rangeable<ExistingRow>
+	);
 	const doneIds = new Set(existingRows.map((r) => r.id));
 	const mirroredIds = flags.mirrorImages
 		? new Set(existingRows.filter((r) => r.image_storage_path).map((r) => r.id))
 		: new Set<string>();
 
-	return { doneIds, mirroredIds, truncated: (existing?.length ?? 0) >= 100_000 };
+	// No artificial cap any more — pagination reads everything.
+	return { doneIds, mirroredIds, truncated: false };
 }
 
 export function buildPendingFromDrive(
@@ -121,14 +153,17 @@ export async function fetchStaleCards(
 	validSetCodes: Set<string>
 ): Promise<PendingCard[]> {
 	const threshold = new Date(Date.now() - flags.reEnrichDays * 86_400_000).toISOString();
-	const { data: stale } = await supabase
-		.from('custom_cards')
-		.select('id, raw_name, card_type, set_code, collector_number, variants, tags')
-		.eq('source_id', sourceId)
-		.or(`enriched_at.is.null,enriched_at.lt.${threshold}`)
-		.limit(100_000);
+	type StaleRow = Record<string, unknown>;
+	const { rows: stale } = await fetchAllRows<StaleRow>(
+		() =>
+			supabase
+				.from('custom_cards')
+				.select('id, raw_name, card_type, set_code, collector_number, variants, tags')
+				.eq('source_id', sourceId)
+				.or(`enriched_at.is.null,enriched_at.lt.${threshold}`) as unknown as Rangeable<StaleRow>
+	);
 
-	return (stale ?? []).map((row) => {
+	return stale.map((row) => {
 		const fakeFile: DriveImageEntry = {
 			id: (row.id as string).replace(/^mpc:/, ''),
 			name: row.raw_name as string,
