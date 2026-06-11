@@ -18,10 +18,6 @@ import { runEnrichWorker, type EnrichWorkerResult } from './ingest/enrich-worker
 import type { RunReport, SourceReport, DriveImageEntry, IngestResult } from './ingest/types';
 import type { SourceDbState } from './ingest/db-writer';
 
-function sumBy(rows: SourceReport[], key: 'resolved'): number {
-	return rows.reduce((n, r) => n + r[key], 0);
-}
-
 // Partition settled ingest outcomes: keep the fulfilled values, log the rest as
 // fatal source failures. Extracted so a single rejected source never aborts the
 // whole run (caller still closes the enrich queue in a finally).
@@ -40,6 +36,9 @@ async function main(): Promise<void> {
 	const startedAt = new Date().toISOString();
 	const runWarnings: string[] = [];
 	let results: IngestResult[] = [];
+	// Stage-2 outcome — surfaced in the recap/report. Stays zero when enrichment
+	// is off (--skip-scryfall / --parse-only).
+	let enrichTotals: EnrichWorkerResult = { resolved: 0, unresolved: 0, failed: 0 };
 
 	// Start HUD immediately so all events (including source.no_drive_id warns
 	// from fetchSources) are captured and visible from the first frame.
@@ -251,7 +250,7 @@ async function main(): Promise<void> {
 			// otherwise its `while (!queue.isDone())` loop never terminates.
 			enrichQueue.close();
 		}
-		await enrichPromise;
+		enrichTotals = await enrichPromise;
 
 		for (const { idx, result } of settled) results[idx] = result;
 	}
@@ -310,6 +309,9 @@ async function main(): Promise<void> {
 		}),
 		zeroTotals
 	);
+	// Resolution now happens in Stage 2 (global), not per-source — take the count
+	// from the enrich worker rather than the always-zero per-source reports.
+	totals.resolved = enrichTotals.resolved;
 
 	const report: RunReport = {
 		startedAt,
@@ -349,13 +351,14 @@ async function main(): Promise<void> {
 	const secs = durationS % 60;
 	const dur = mins > 0 ? `${mins}m${String(secs).padStart(2, '0')}` : `${secs}s`;
 	const failedSources = sourceReports.filter((s) => s.failed > 0).length;
+	const enrichFailedStr = enrichTotals.failed > 0 ? ` · ${enrichTotals.failed} échec` : '';
 	logger.recap(
 		`\n─── Ingestion terminée en ${dur} ───\n` +
 			`  Sources     ${sourceReports.length} traitées · ${failedSources} avec échecs\n` +
 			`  Cartes      ${processedCards} vues · ${totals.upserted} nouvelles · ` +
 			`${totals.skipped} skip · ${totals.failed} échec\n` +
-			`  Scryfall    ${sumBy(sourceReports, 'resolved')} résolues · ` +
-			`${totals.unresolvedFiles.length} non résolues\n` +
+			`  Scryfall    ${enrichTotals.resolved} résolues · ` +
+			`${enrichTotals.unresolved} non résolues${enrichFailedStr}\n` +
 			`  Images      ${totals.imagesMirrored} mirrorées · ${totals.duplicateImages} doublons\n` +
 			(logger.warningCount() > 0
 				? `  ⚠ ${logger.warningCount()} avertissements (voir events level=warn / --report)\n`
