@@ -229,7 +229,11 @@ export async function reEnrichCard(
 		.update({
 			name: resolution?.oracleName ?? undefined,
 			oracle_id: resolution?.oracleId ?? null,
-			enriched_at: resolution ? new Date().toISOString() : null,
+			// Stamp enriched_at on every attempt, resolved or not: an attempted-but-
+			// unmatched card is "processed", so the Stage-2 enriched_at IS NULL scan
+			// won't re-pull it every run. --re-enrich (enriched_at < threshold) still
+			// re-attempts it once it goes stale.
+			enriched_at: new Date().toISOString(),
 			colors: resolution?.colors ?? [],
 			color_identity: resolution?.colorIdentity ?? [],
 			cmc: resolution?.cmc ?? null,
