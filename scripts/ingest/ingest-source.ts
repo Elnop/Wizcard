@@ -1,6 +1,6 @@
 // Orchestration for a single MPC source: list Drive, then upsert cards
 // un-enriched (Stage 1). Scryfall resolution and enrichment are handled by
-// Stage 2 (enrich-worker), which consumes the enrichQueue.
+// Stage 2 (enrich-worker), which scans the DB for un-enriched cards.
 
 import pLimit from 'p-limit';
 import { flags, logger } from './config';
@@ -14,7 +14,6 @@ import {
 	backfillDrivePathForSource,
 } from './db-writer';
 import type { SourceDbState } from './db-writer';
-import type { EnrichQueue } from './enrich-queue';
 import type { DriveImageEntry, IngestResult, MpcfillSourceRaw } from './types';
 
 function emptyResult(overrides: Partial<IngestResult>): IngestResult {
@@ -42,8 +41,7 @@ export async function ingestSource(
 	index: number,
 	total: number,
 	validSetCodes: Set<string>,
-	preChecked?: SourceDbState,
-	enrichQueue?: EnrichQueue
+	preChecked?: SourceDbState
 ): Promise<IngestResult> {
 	const sourceId = `mpcfill:${source.key}`;
 	const warnings: string[] = [];
@@ -154,8 +152,8 @@ export async function ingestSource(
 				}
 				newCount++;
 				logger.progress.taskTick(sourceId, { ok: 1, new: 1 });
-				// Hand off to Stage 2 unless Scryfall is disabled for this run.
-				if (!flags.skipScryfall && enrichQueue) enrichQueue.push(p);
+				// Stage 2 (enrich-worker) picks this card up via its DB scan
+				// (enriched_at IS NULL) — no in-memory hand-off needed.
 			})
 		)
 	);

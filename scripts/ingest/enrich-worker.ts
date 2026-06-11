@@ -1,8 +1,15 @@
-// Stage 2 — Scryfall enrichment worker. Single consumer: drains the in-memory
-// queue fed by Stage 1, then does one final DB scan for any remaining
-// `enriched_at IS NULL` cards (catch-up across runs). Every Scryfall call goes
-// through resolveBatch → sharedScryfallThrottle, so a single worker respects the
-// global rate limit without blocking Stage 1. Writes results via reEnrichCard.
+// Stage 2 — Scryfall enrichment worker. DB-driven: it repeatedly scans the DB
+// for `enriched_at IS NULL` cards (in batches), resolves them via Scryfall and
+// writes results via reEnrichCard. No in-memory queue — the DB is the work list,
+// so memory stays flat no matter how fast Stage 1 inserts. Every Scryfall call
+// goes through resolveBatch → sharedScryfallThrottle, so a single worker respects
+// the global rate limit without blocking Stage 1.
+//
+// Termination: reEnrichCard stamps `enriched_at` on every attempt (resolved or
+// not), so processed cards leave the scan set immediately. The loop stops once a
+// scan returns no rows AND Stage 1 has signalled it is done inserting. While
+// Stage 1 is still running, an empty scan just means "caught up" — the worker
+// briefly sleeps and re-polls so new inserts get picked up.
 
 import {
 	resolveBatch as realResolveBatch,
@@ -11,7 +18,6 @@ import {
 } from '../../src/lib/mpc/scryfall-resolver';
 import { flags, logger } from './config';
 import { reEnrichCard as realReEnrichCard, fetchUnenrichedCards as realScan } from './db-writer';
-import type { EnrichQueue } from './enrich-queue';
 import type { PendingCard } from './types';
 
 export interface EnrichWorkerDeps {
@@ -27,6 +33,7 @@ export interface EnrichWorkerDeps {
 		validSetCodes: Set<string>;
 		includeStale?: boolean;
 		sourceId?: string;
+		limit?: number;
 	}) => Promise<PendingCard[]>;
 }
 
@@ -41,6 +48,8 @@ const defaultDeps: EnrichWorkerDeps = {
 	reEnrichCard: realReEnrichCard,
 	fetchUnenrichedCards: realScan,
 };
+
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 async function processBatch(
 	batch: PendingCard[],
@@ -77,41 +86,46 @@ async function processBatch(
 }
 
 export async function runEnrichWorker(opts: {
-	queue: EnrichQueue;
 	validSetCodes: Set<string>;
+	isParsingDone: () => boolean;
 	includeStale?: boolean;
 	sourceId?: string;
 	batchSize?: number;
+	idlePollMs?: number;
 	fuzzy?: boolean;
 	deps?: EnrichWorkerDeps;
 }): Promise<EnrichWorkerResult> {
 	const {
-		queue,
 		validSetCodes,
+		isParsingDone,
 		includeStale = false,
 		sourceId,
 		batchSize = 75,
+		idlePollMs = 500,
 		fuzzy = flags.fuzzy,
 	} = opts;
 	const deps = opts.deps ?? defaultDeps;
 	const result: EnrichWorkerResult = { resolved: 0, unresolved: 0, failed: 0 };
 
-	// Phase A: drain the live queue (Stage-1 inserts of the current run).
-	while (!queue.isDone()) {
-		const batch = await queue.pull(batchSize);
-		if (batch.length === 0) continue;
+	// Poll the DB for un-enriched cards until Stage 1 is done AND nothing is left.
+	for (;;) {
+		const batch = await deps.fetchUnenrichedCards({
+			validSetCodes,
+			includeStale,
+			sourceId,
+			limit: batchSize,
+		});
+
+		if (batch.length === 0) {
+			// Caught up. If Stage 1 has finished inserting, we're done; otherwise
+			// wait briefly for more inserts to land, then re-poll.
+			if (isParsingDone()) break;
+			await sleep(idlePollMs);
+			continue;
+		}
+
 		logger.progress.enrichTick({ addTotal: batch.length });
 		await processBatch(batch, deps, result, fuzzy);
-	}
-
-	// Phase B: one final DB sweep for leftover un-enriched cards (other runs,
-	// queue items that raced past isDone, or --enrich-only with an empty queue).
-	const leftover = await deps.fetchUnenrichedCards({ validSetCodes, includeStale, sourceId });
-	if (leftover.length > 0) {
-		logger.progress.enrichTick({ addTotal: leftover.length });
-		for (let i = 0; i < leftover.length; i += batchSize) {
-			await processBatch(leftover.slice(i, i + batchSize), deps, result, fuzzy);
-		}
 	}
 
 	logger.event('enrich.done', {

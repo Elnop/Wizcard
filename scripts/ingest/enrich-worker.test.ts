@@ -1,5 +1,4 @@
 import { runEnrichWorker } from './enrich-worker';
-import { createEnrichQueue } from './enrich-queue';
 import type { PendingCard } from './types';
 import type { ScryfallResolution } from '../../src/lib/mpc/scryfall-resolver';
 
@@ -46,18 +45,18 @@ function resolution(id: string): ScryfallResolution {
 }
 
 async function run(): Promise<void> {
+	// Drains the DB scan in batches until empty + parsing done. a,c resolve; b doesn't.
 	{
-		const q = createEnrichQueue();
-		q.push(card('a')); // will resolve
-		q.push(card('b')); // will NOT resolve (unresolved)
+		// Three "rows" delivered across scans (limit=2): [a,b] then [c] then [].
+		const scans: PendingCard[][] = [[card('a'), card('b')], [card('c')], []];
 		const reEnriched: string[] = [];
-		const scanned: string[] = [];
+		let scanCalls = 0;
 
-		const workerPromise = runEnrichWorker({
-			queue: q,
+		const result = await runEnrichWorker({
 			validSetCodes: new Set<string>(),
-			includeStale: false,
-			batchSize: 75,
+			isParsingDone: () => true, // already done; empty scan => stop
+			batchSize: 2,
+			idlePollMs: 1,
 			deps: {
 				resolveBatch: async (cards) => {
 					const map = new Map<string, ScryfallResolution>();
@@ -68,33 +67,24 @@ async function run(): Promise<void> {
 					reEnriched.push(cardId);
 					return { error: null };
 				},
-				fetchUnenrichedCards: async () => {
-					if (scanned.length > 0) return [];
-					scanned.push('scan');
-					return [card('c')];
-				},
+				fetchUnenrichedCards: async () => scans[Math.min(scanCalls++, scans.length - 1)],
 			},
 		});
-
-		setTimeout(() => q.close(), 20);
-		const result = await workerPromise;
 
 		check('all three cards written', reEnriched.length === 3);
 		check('resolved count = 2 (a,c)', result.resolved === 2);
 		check('unresolved count = 1 (b)', result.unresolved === 1);
-		check('final scan ran once', scanned.length === 1);
 	}
 
 	// failure path: reEnrichCard error increments failed, others still counted
 	{
-		const q = createEnrichQueue();
-		q.push(card('ok')); // resolves + writes fine
-		q.push(card('boom')); // resolves but write fails
-		setTimeout(() => q.close(), 20);
+		const scans: PendingCard[][] = [[card('ok'), card('boom')], []];
+		let scanCalls = 0;
 		const result = await runEnrichWorker({
-			queue: q,
 			validSetCodes: new Set<string>(),
+			isParsingDone: () => true,
 			batchSize: 75,
+			idlePollMs: 1,
 			deps: {
 				resolveBatch: async (cards) => {
 					const map = new Map<string, ScryfallResolution>();
@@ -104,11 +94,52 @@ async function run(): Promise<void> {
 				reEnrichCard: async (cardId) => ({
 					error: cardId === 'boom' ? 'write failed' : null,
 				}),
-				fetchUnenrichedCards: async () => [],
+				fetchUnenrichedCards: async () => scans[Math.min(scanCalls++, scans.length - 1)],
 			},
 		});
 		check('failed path counts error card', result.failed === 1);
 		check('failed path still counts success', result.resolved === 1);
+	}
+
+	// keeps polling while parsing is in-flight: empty scan + not-done => waits, then
+	// picks up a late insert once it appears.
+	{
+		let parsingDone = false;
+		const reEnriched: string[] = [];
+		let scanCalls = 0;
+		const scanResult = (): PendingCard[] => {
+			scanCalls++;
+			// scan 1: empty (caught up, parsing still running)
+			// scan 2: a late card appears
+			// scan 3+: empty
+			if (scanCalls === 2) return [card('late')];
+			return [];
+		};
+		// Flip parsingDone shortly after the worker starts idling.
+		setTimeout(() => {
+			parsingDone = true;
+		}, 30);
+
+		const result = await runEnrichWorker({
+			validSetCodes: new Set<string>(),
+			isParsingDone: () => parsingDone,
+			batchSize: 75,
+			idlePollMs: 5,
+			deps: {
+				resolveBatch: async (cards) => {
+					const map = new Map<string, ScryfallResolution>();
+					for (const c of cards) map.set(c.id, resolution(c.id));
+					return map;
+				},
+				reEnrichCard: async (cardId) => {
+					reEnriched.push(cardId);
+					return { error: null };
+				},
+				fetchUnenrichedCards: async () => scanResult(),
+			},
+		});
+		check('late insert is enriched after idle poll', reEnriched.includes('late'));
+		check('worker terminates once parsing done + empty', result.resolved === 1);
 	}
 
 	console.log(`\n${passed} passed, ${failed} failed`);

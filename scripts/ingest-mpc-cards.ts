@@ -13,7 +13,6 @@ import { extractDriveId, listDriveFolder } from './ingest/drive-client';
 import { fetchSources, fetchScryfallSetCodes } from './ingest/sources';
 import { ingestSource } from './ingest/ingest-source';
 import { fetchSourceDbState } from './ingest/db-writer';
-import { createEnrichQueue } from './ingest/enrich-queue';
 import { runEnrichWorker, type EnrichWorkerResult } from './ingest/enrich-worker';
 import type { RunReport, SourceReport, DriveImageEntry, IngestResult } from './ingest/types';
 import type { SourceDbState } from './ingest/db-writer';
@@ -94,16 +93,18 @@ async function main(): Promise<void> {
 		reEnrich: flags.reEnrich,
 	});
 
-	const enrichQueue = createEnrichQueue();
 	const runEnrich = !flags.skipScryfall && !flags.parseOnly;
+	// Stage 2 polls the DB for un-enriched cards until parsing is done. Flipped
+	// true once all Stage-1 ingests settle (or immediately for --enrich-only).
+	let parsingDone = false;
 
 	// --enrich-only: skip Drive listing + Stage 1 entirely; sweep the DB.
 	if (flags.enrichOnly) {
-		enrichQueue.close();
+		parsingDone = true;
 		logger.progress.enrichStart(0);
 		const enrichResult = await runEnrichWorker({
-			queue: enrichQueue,
 			validSetCodes,
+			isParsingDone: () => parsingDone,
 			includeStale: flags.reEnrich,
 			sourceId: flags.filterSourceId,
 		});
@@ -179,8 +180,7 @@ async function main(): Promise<void> {
 						idx + 1,
 						filtered.length,
 						validSetCodes,
-						state,
-						runEnrich ? enrichQueue : undefined
+						state
 					),
 				}))
 			);
@@ -225,12 +225,14 @@ async function main(): Promise<void> {
 			logger.progress.enrichStart(0);
 		});
 
-		// Stage 2 runs in parallel with Stage 1: it drains the queue as cards are
-		// inserted, then does a final DB sweep once the queue is closed.
+		// Stage 2 runs in parallel with Stage 1: it polls the DB for un-enriched
+		// cards as they are inserted, and stops once parsing is done and the DB
+		// scan comes back empty. No in-memory queue → memory stays flat regardless
+		// of how far ahead Stage 1 races.
 		const enrichPromise: Promise<EnrichWorkerResult> = runEnrich
 			? runEnrichWorker({
-					queue: enrichQueue,
 					validSetCodes,
+					isParsingDone: () => parsingDone,
 					includeStale: flags.reEnrich,
 					sourceId: flags.filterSourceId,
 				})
@@ -246,9 +248,9 @@ async function main(): Promise<void> {
 		try {
 			settled = collectSettled(await Promise.allSettled(ingestPromises));
 		} finally {
-			// Always release the Stage-2 worker, even if a source ingest threw —
-			// otherwise its `while (!queue.isDone())` loop never terminates.
-			enrichQueue.close();
+			// Always signal the Stage-2 worker that inserts are done, even if a
+			// source ingest threw — otherwise its DB-poll loop never terminates.
+			parsingDone = true;
 		}
 		enrichTotals = await enrichPromise;
 
