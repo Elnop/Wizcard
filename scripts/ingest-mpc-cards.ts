@@ -14,12 +14,26 @@ import { fetchSources, fetchScryfallSetCodes } from './ingest/sources';
 import { ingestSource } from './ingest/ingest-source';
 import { fetchSourceDbState } from './ingest/db-writer';
 import { createEnrichQueue } from './ingest/enrich-queue';
-import { runEnrichWorker } from './ingest/enrich-worker';
+import { runEnrichWorker, type EnrichWorkerResult } from './ingest/enrich-worker';
 import type { RunReport, SourceReport, DriveImageEntry, IngestResult } from './ingest/types';
 import type { SourceDbState } from './ingest/db-writer';
 
 function sumBy(rows: SourceReport[], key: 'resolved'): number {
 	return rows.reduce((n, r) => n + r[key], 0);
+}
+
+// Partition settled ingest outcomes: keep the fulfilled values, log the rest as
+// fatal source failures. Extracted so a single rejected source never aborts the
+// whole run (caller still closes the enrich queue in a finally).
+function collectSettled(
+	outcomes: Array<PromiseSettledResult<{ idx: number; result: IngestResult }>>
+): Array<{ idx: number; result: IngestResult }> {
+	const settled: Array<{ idx: number; result: IngestResult }> = [];
+	for (const o of outcomes) {
+		if (o.status === 'fulfilled') settled.push(o.value);
+		else logger.error('source.fatal', { reason: (o.reason as Error).message });
+	}
+	return settled;
 }
 
 async function main(): Promise<void> {
@@ -214,26 +228,29 @@ async function main(): Promise<void> {
 
 		// Stage 2 runs in parallel with Stage 1: it drains the queue as cards are
 		// inserted, then does a final DB sweep once the queue is closed.
-		const enrichPromise: Promise<{ resolved: number; unresolved: number; failed: number }> =
-			runEnrich
-				? runEnrichWorker({
-						queue: enrichQueue,
-						validSetCodes,
-						includeStale: flags.reEnrich,
-						sourceId: flags.filterSourceId,
-					})
-				: Promise.resolve({ resolved: 0, unresolved: 0, failed: 0 });
+		const enrichPromise: Promise<EnrichWorkerResult> = runEnrich
+			? runEnrichWorker({
+					queue: enrichQueue,
+					validSetCodes,
+					includeStale: flags.reEnrich,
+					sourceId: flags.filterSourceId,
+				})
+			: Promise.resolve({ resolved: 0, unresolved: 0, failed: 0 });
 
 		// By the time this barrier resolves, every source has had both halves
 		// listed + pre-checked, so registerTaskHud has fired for each and
 		// ingestPromises is fully populated.
 		await Promise.all([listingsDone, ...dbJobs]);
 		logger.event('precheck.done', { sources: dbStates.size });
-		const settled = await Promise.all(ingestPromises);
 
-		// All Stage-1 inserts have pushed to the queue; closing lets the worker's
-		// Phase A drain to completion, then run its final DB sweep.
-		enrichQueue.close();
+		let settled: Array<{ idx: number; result: IngestResult }> = [];
+		try {
+			settled = collectSettled(await Promise.allSettled(ingestPromises));
+		} finally {
+			// Always release the Stage-2 worker, even if a source ingest threw —
+			// otherwise its `while (!queue.isDone())` loop never terminates.
+			enrichQueue.close();
+		}
 		await enrichPromise;
 
 		for (const { idx, result } of settled) results[idx] = result;
