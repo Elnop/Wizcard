@@ -9,6 +9,25 @@ import { supabase, flags, logger } from './config';
 import { listDriveFolder, driveImageUrl, folderPathToMeta } from './drive-client';
 import type { DriveImageEntry, MpcfillSourceRaw, PendingCard } from './types';
 
+// Supabase errors carry structured fields (code/details/hint) on top of message;
+// the bare .message alone (e.g. "An invalid response was received from the
+// upstream server" for a 502 gateway error) doesn't say which layer failed or
+// why. Fold the available fields into one diagnosable string for logs/reports.
+interface DbErrorLike {
+	message?: string;
+	code?: string;
+	details?: string;
+	hint?: string;
+}
+function formatDbError(error: DbErrorLike | null): string | null {
+	if (!error) return null;
+	const parts = [error.message ?? 'unknown error'];
+	if (error.code) parts.push(`code=${error.code}`);
+	if (error.details) parts.push(`details=${error.details}`);
+	if (error.hint) parts.push(`hint=${error.hint}`);
+	return parts.join(' · ');
+}
+
 export async function upsertSource(
 	source: MpcfillSourceRaw,
 	sourceId: string,
@@ -181,14 +200,16 @@ export async function fetchUnenrichedCards(opts: {
 	});
 }
 
-export async function upsertNewCard(
+// Build the custom_cards row payload for one pending card. Shared by the
+// single-card and batch upsert paths so they never drift.
+function buildCardRow(
 	p: PendingCard,
 	sourceId: string,
 	resolution: ScryfallResolution | null,
 	imageHash: string | null,
 	storagePath: string | null
-): Promise<{ error: string | null }> {
-	const { error } = await supabase.from('custom_cards').upsert({
+): Record<string, unknown> {
+	return {
 		id: p.cardId,
 		source_id: sourceId,
 		name: resolution?.oracleName ?? p.parsed.cardName,
@@ -216,8 +237,42 @@ export async function upsertNewCard(
 		rarity: resolution?.rarity ?? null,
 		set_name: resolution?.setName ?? null,
 		artist: resolution?.artist ?? null,
-	});
-	return { error: error?.message ?? null };
+	};
+}
+
+export async function upsertNewCard(
+	p: PendingCard,
+	sourceId: string,
+	resolution: ScryfallResolution | null,
+	imageHash: string | null,
+	storagePath: string | null
+): Promise<{ error: string | null }> {
+	const { error } = await supabase
+		.from('custom_cards')
+		.upsert(buildCardRow(p, sourceId, resolution, imageHash, storagePath));
+	return { error: formatDbError(error) };
+}
+
+// Default-path insert: no per-card image work, so all cards for a source go in as
+// a few bulk upserts (chunks of CARD_UPSERT_CHUNK) instead of one HTTP request
+// per card. This is what keeps Supabase from being flooded — a 20k-card source
+// becomes ~40 requests, not 20k — and it's far faster. Returns the per-card
+// outcome so the caller can tick progress and count failures exactly as before:
+// a failed chunk marks all its cards failed (with the chunk's error reason).
+const CARD_UPSERT_CHUNK = 500;
+export async function upsertNewCardsBatch(
+	cards: PendingCard[],
+	sourceId: string
+): Promise<Array<{ cardId: string; error: string | null }>> {
+	const out: Array<{ cardId: string; error: string | null }> = [];
+	for (let i = 0; i < cards.length; i += CARD_UPSERT_CHUNK) {
+		const chunk = cards.slice(i, i + CARD_UPSERT_CHUNK);
+		const rows = chunk.map((p) => buildCardRow(p, sourceId, null, null, null));
+		const { error } = await supabase.from('custom_cards').upsert(rows);
+		const reason = formatDbError(error);
+		for (const p of chunk) out.push({ cardId: p.cardId, error: reason });
+	}
+	return out;
 }
 
 export async function reEnrichCard(
@@ -245,7 +300,7 @@ export async function reEnrichCard(
 			artist: resolution?.artist ?? null,
 		})
 		.eq('id', cardId);
-	return { error: error?.message ?? null };
+	return { error: formatDbError(error) };
 }
 
 export async function updateSourceCount(sourceId: string): Promise<{ error: string | null }> {
@@ -259,7 +314,7 @@ export async function updateSourceCount(sourceId: string): Promise<{ error: stri
 		.from('custom_card_sources')
 		.update({ card_count: realCount ?? 0, last_synced_at: new Date().toISOString() })
 		.eq('id', sourceId);
-	return { error: error?.message ?? null };
+	return { error: formatDbError(error) };
 }
 
 export async function backfillDrivePathForSource(

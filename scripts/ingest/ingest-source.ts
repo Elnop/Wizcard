@@ -10,11 +10,12 @@ import {
 	fetchExistingCards,
 	buildPendingFromDrive,
 	upsertNewCard,
+	upsertNewCardsBatch,
 	updateSourceCount,
 	backfillDrivePathForSource,
 } from './db-writer';
 import type { SourceDbState } from './db-writer';
-import type { DriveImageEntry, IngestResult, MpcfillSourceRaw } from './types';
+import type { DriveImageEntry, IngestResult, MpcfillSourceRaw, PendingCard } from './types';
 
 function emptyResult(overrides: Partial<IngestResult>): IngestResult {
 	return {
@@ -32,6 +33,83 @@ function emptyResult(overrides: Partial<IngestResult>): IngestResult {
 		warnings: [],
 		...overrides,
 	};
+}
+
+interface InsertCounts {
+	newCount: number;
+	failedCount: number;
+	imagesMirrored: number;
+	duplicateImages: number;
+	warnings: string[];
+}
+
+// Default path: no per-card image work → bulk-upsert in chunks. One HTTP request
+// per ~500 cards instead of per card, so Stage 1 doesn't flood Supabase (a 20k
+// source becomes ~40 requests, not 20k) and runs far faster.
+async function insertBulk(toInsert: PendingCard[], sourceId: string): Promise<InsertCounts> {
+	const c: InsertCounts = {
+		newCount: 0,
+		failedCount: 0,
+		imagesMirrored: 0,
+		duplicateImages: 0,
+		warnings: [],
+	};
+	const results = await upsertNewCardsBatch(toInsert, sourceId);
+	for (const r of results) {
+		if (r.error) {
+			c.warnings.push(`Card upsert failed for ${r.cardId}: ${r.error}`);
+			logger.error('card.failed', { source: sourceId, card: r.cardId, reason: r.error });
+			c.failedCount++;
+			logger.progress.taskTick(sourceId, { failed: 1 });
+		} else {
+			c.newCount++;
+			logger.progress.taskTick(sourceId, { ok: 1, new: 1 });
+		}
+	}
+	return c;
+}
+
+// Image path: each card needs an async hash/mirror step, so keep the bounded
+// per-card loop (the image work, not the DB, is the bottleneck here).
+async function insertWithImages(
+	toInsert: PendingCard[],
+	sourceId: string,
+	sourceKey: string
+): Promise<InsertCounts> {
+	const c: InsertCounts = {
+		newCount: 0,
+		failedCount: 0,
+		imagesMirrored: 0,
+		duplicateImages: 0,
+		warnings: [],
+	};
+	const limiter = pLimit(20);
+	await Promise.all(
+		toInsert.map((p) =>
+			limiter(async () => {
+				const img = await processCardImage(p, sourceId, sourceKey);
+				c.warnings.push(...img.warnings);
+				if (img.isDuplicate) {
+					c.duplicateImages++;
+					logger.progress.taskTick(sourceId, { ok: 1 });
+					return;
+				}
+				c.imagesMirrored += img.imagesMirrored;
+
+				const { error } = await upsertNewCard(p, sourceId, null, img.imageHash, img.storagePath);
+				if (error) {
+					c.warnings.push(`Card upsert failed for ${p.cardId}: ${error}`);
+					logger.error('card.failed', { source: sourceId, card: p.cardId, reason: error });
+					c.failedCount++;
+					logger.progress.taskTick(sourceId, { failed: 1 });
+					return;
+				}
+				c.newCount++;
+				logger.progress.taskTick(sourceId, { ok: 1, new: 1 });
+			})
+		)
+	);
+	return c;
 }
 
 export async function ingestSource(
@@ -109,54 +187,20 @@ export async function ingestSource(
 	// Mark as actively processing now — swaps its HUD icon and pins it to the top.
 	logger.progress.taskActivate(sourceId);
 
-	// ── Phase 2: upsert cards un-enriched, push to enrich queue ─────────────
-	let newCount = 0;
-	let failedCount = 0;
-	let imagesMirrored = 0;
-	let duplicateImages = 0;
+	// ── Phase 2: upsert cards un-enriched ───────────────────────────────────
+	// Stage 2 (enrich-worker) picks every inserted card up via its DB scan
+	// (enriched_at IS NULL) — no in-memory hand-off needed here.
+	// Re-enrich rows are Stage 2's job; Stage 1 only inserts genuinely new cards.
+	const toInsert = allPending.filter((p) => !p.isReEnrich);
+	const reEnrichOnly = allPending.length - toInsert.length;
+	if (reEnrichOnly > 0) logger.progress.taskTick(sourceId, { ok: reEnrichOnly });
 
-	const limiter = pLimit(20);
-	await Promise.all(
-		allPending.map((p) =>
-			limiter(async () => {
-				// Re-enrich rows are handled by Stage 2 now; Stage 1 only inserts new
-				// cards un-enriched. Skip any isReEnrich entries here.
-				if (p.isReEnrich) {
-					logger.progress.taskTick(sourceId, { ok: 1 });
-					return;
-				}
-
-				let imageHash: string | null = null;
-				let storagePath: string | null = null;
-				if (flags.checkImageHash || flags.mirrorImages) {
-					const img = await processCardImage(p, sourceId, source.key);
-					warnings.push(...img.warnings);
-					if (img.isDuplicate) {
-						duplicateImages++;
-						logger.progress.taskTick(sourceId, { ok: 1 });
-						return;
-					}
-					imageHash = img.imageHash;
-					storagePath = img.storagePath;
-					imagesMirrored += img.imagesMirrored;
-				}
-
-				const { error } = await upsertNewCard(p, sourceId, null, imageHash, storagePath);
-				if (error) {
-					const msg = `Card upsert failed for ${p.cardId}: ${error}`;
-					warnings.push(msg);
-					logger.error('card.failed', { source: sourceId, card: p.cardId, reason: error });
-					failedCount++;
-					logger.progress.taskTick(sourceId, { failed: 1 });
-					return;
-				}
-				newCount++;
-				logger.progress.taskTick(sourceId, { ok: 1, new: 1 });
-				// Stage 2 (enrich-worker) picks this card up via its DB scan
-				// (enriched_at IS NULL) — no in-memory hand-off needed.
-			})
-		)
-	);
+	const ins =
+		flags.checkImageHash || flags.mirrorImages
+			? await insertWithImages(toInsert, sourceId, source.key)
+			: await insertBulk(toInsert, sourceId);
+	const { newCount, failedCount, imagesMirrored, duplicateImages } = ins;
+	warnings.push(...ins.warnings);
 
 	const { error: countErr } = await updateSourceCount(sourceId);
 	if (countErr) {
