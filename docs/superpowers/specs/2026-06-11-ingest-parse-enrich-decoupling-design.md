@@ -140,18 +140,19 @@ visualisation.
 - **Contenu** (comme GLOBAL) : barre segmentée + `done/total + %` + ETA/vitesse + compteurs
   `resolved / unresolved` + badges warn/error.
 
-### Compteur GLOBAL = combinaison des deux stages
+### Deux barres séparées : GLOBAL (Stage 1) + SCRYFALL (Stage 2)
 
-La barre **GLOBAL** agrège la progression des deux stages. Chaque carte représente **2 unités de
-travail** : « insérée » (Stage 1) + « enrichie » (Stage 2). Donc `globalTotal = 2 × nb_cartes`
-(cartes nouvelles ; les skip ne comptent pas pour l'enrich). Un tick `insert` et un tick `enrich`
-avancent la barre globale. Cela reflète honnêtement que le parsing finit avant l'enrichissement.
+> Note d'implémentation : finalement, **deux barres distinctes** plutôt qu'une seule barre GLOBAL
+> combinée. La barre **GLOBAL** suit le Stage 1 (parse + insert / skip) ; la section **SCRYFALL
+> ENRICH** suit le Stage 2 (résolu / non résolu / échec). C'est plus lisible qu'une barre combinée
+> qui mélangerait deux rythmes très différents (insert rapide, enrich lent au rate limit Scryfall),
+> et ça montre clairement que le parsing finit avant l'enrichissement.
 
-Implémentation : étendre l'état HUD (`scripts/ingest/logger.ts`) avec des compteurs d'enrich
+Implémentation : l'état HUD (`scripts/ingest/logger.ts`) est étendu avec des compteurs d'enrich
 (`enrichTotal`, `enrichDone`, `enrichResolved`, `enrichUnresolved`, `enrichFailed`) et des méthodes
 `logger.progress.enrichStart(total)` / `enrichTick({...})`, sur le modèle des méthodes
-`start`/`taskTick` existantes. Le `globalTotal` dynamique croissant existant (`globalTotalPinned`)
-reste compatible : l'enrich ajoute sa part au total au fur et à mesure.
+`start`/`taskTick` existantes. La section SCRYFALL lit ces compteurs ; le `globalTotal` reste celui
+du Stage 1 (cartes Drive).
 
 ## Fichiers impactés (récap)
 
