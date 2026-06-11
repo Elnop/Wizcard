@@ -85,6 +85,32 @@ async function run(): Promise<void> {
 		check('final scan ran once', scanned.length === 1);
 	}
 
+	// failure path: reEnrichCard error increments failed, others still counted
+	{
+		const q = createEnrichQueue();
+		q.push(card('ok')); // resolves + writes fine
+		q.push(card('boom')); // resolves but write fails
+		setTimeout(() => q.close(), 20);
+		const result = await runEnrichWorker({
+			queue: q,
+			validSetCodes: new Set<string>(),
+			batchSize: 75,
+			deps: {
+				resolveBatch: async (cards) => {
+					const map = new Map<string, ScryfallResolution>();
+					for (const c of cards) map.set(c.id, resolution(c.id));
+					return map;
+				},
+				reEnrichCard: async (cardId) => ({
+					error: cardId === 'boom' ? 'write failed' : null,
+				}),
+				fetchUnenrichedCards: async () => [],
+			},
+		});
+		check('failed path counts error card', result.failed === 1);
+		check('failed path still counts success', result.resolved === 1);
+	}
+
 	console.log(`\n${passed} passed, ${failed} failed`);
 	if (failed > 0) process.exit(1);
 }

@@ -45,7 +45,8 @@ const defaultDeps: EnrichWorkerDeps = {
 async function processBatch(
 	batch: PendingCard[],
 	deps: EnrichWorkerDeps,
-	result: EnrichWorkerResult
+	result: EnrichWorkerResult,
+	fuzzy: boolean
 ): Promise<void> {
 	const toResolve: CardToResolve[] = batch.map((p) => ({
 		id: p.cardId,
@@ -53,7 +54,7 @@ async function processBatch(
 		cardType: p.cardType,
 		validSetCode: p.setCode,
 	}));
-	const resolutions = await deps.resolveBatch(toResolve, { fuzzy: flags.fuzzy });
+	const resolutions = await deps.resolveBatch(toResolve, { fuzzy });
 
 	for (const p of batch) {
 		const resolution = resolutions.get(p.cardId) ?? null;
@@ -81,9 +82,17 @@ export async function runEnrichWorker(opts: {
 	includeStale?: boolean;
 	sourceId?: string;
 	batchSize?: number;
+	fuzzy?: boolean;
 	deps?: EnrichWorkerDeps;
 }): Promise<EnrichWorkerResult> {
-	const { queue, validSetCodes, includeStale = false, sourceId, batchSize = 75 } = opts;
+	const {
+		queue,
+		validSetCodes,
+		includeStale = false,
+		sourceId,
+		batchSize = 75,
+		fuzzy = flags.fuzzy,
+	} = opts;
 	const deps = opts.deps ?? defaultDeps;
 	const result: EnrichWorkerResult = { resolved: 0, unresolved: 0, failed: 0 };
 
@@ -92,7 +101,7 @@ export async function runEnrichWorker(opts: {
 		const batch = await queue.pull(batchSize);
 		if (batch.length === 0) continue;
 		logger.progress.enrichTick({ addTotal: batch.length });
-		await processBatch(batch, deps, result);
+		await processBatch(batch, deps, result, fuzzy);
 	}
 
 	// Phase B: one final DB sweep for leftover un-enriched cards (other runs,
@@ -101,7 +110,7 @@ export async function runEnrichWorker(opts: {
 	if (leftover.length > 0) {
 		logger.progress.enrichTick({ addTotal: leftover.length });
 		for (let i = 0; i < leftover.length; i += batchSize) {
-			await processBatch(leftover.slice(i, i + batchSize), deps, result);
+			await processBatch(leftover.slice(i, i + batchSize), deps, result, fuzzy);
 		}
 	}
 
