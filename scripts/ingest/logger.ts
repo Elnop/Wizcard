@@ -310,7 +310,15 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 				if (aActive !== bActive) return aActive ? -1 : 1;
 				// Both active: most recently activated first.
 				if (aActive && bActive) return (b.activatedAt ?? 0) - (a.activatedAt ?? 0);
-				// Both waiting: least progress first.
+				// Both waiting: sources with the most NEW work on top, the most
+				// already-skipped (already in DB) sinking to the bottom. Sort by skip
+				// ratio = skipped / total Drive files (skipped + tickable work) ascending,
+				// tie-broken by least progress so barely-started work stays higher.
+				const totalA = a.skipped + a.of;
+				const totalB = b.skipped + b.of;
+				const skipRatioA = totalA > 0 ? a.skipped / totalA : 1;
+				const skipRatioB = totalB > 0 ? b.skipped / totalB : 1;
+				if (skipRatioA !== skipRatioB) return skipRatioA - skipRatioB;
 				const ratioA = a.of > 0 ? a.done / a.of : 1;
 				const ratioB = b.of > 0 ? b.done / b.of : 1;
 				return ratioA - ratioB;

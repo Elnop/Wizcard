@@ -87,5 +87,24 @@ function capture(fn: () => void): string[] {
 	);
 }
 
+// waiting sources are ordered by skip ratio ascending: most new work on top,
+// most-already-skipped sinking to the bottom.
+{
+	const log = createLogger('info');
+	const HIGH = 'mpcfill:high';
+	const LOW = 'mpcfill:low';
+	const MID = 'mpcfill:mid';
+	// taskStart(id, label, of, alreadyDone, alreadySkipped, alreadyStale).
+	// HIGH: 90 skipped / 100 total = 0.9 skip ratio (should sink).
+	// LOW:  10 skipped / 100 total = 0.1 skip ratio (should rise).
+	// MID:  50 skipped / 100 total = 0.5.
+	log.progress.taskStart(HIGH, HIGH, 10, 0, 90, 0);
+	log.progress.taskStart(LOW, LOW, 90, 0, 10, 0);
+	log.progress.taskStart(MID, MID, 50, 0, 50, 0);
+	const order = log.getHudState().tasks.map((t) => t.id);
+	check('least-skipped source on top', order[0] === LOW);
+	check('most-skipped source at bottom', order[order.length - 1] === HIGH);
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
