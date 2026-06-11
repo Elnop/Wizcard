@@ -95,6 +95,8 @@ export interface Flags {
 	checkImageHash: boolean;
 	mirrorImages: boolean;
 	backfillDrivePath: boolean;
+	parseOnly: boolean;
+	enrichOnly: boolean;
 	reportPath?: string;
 	logLevel: LogLevel;
 }
@@ -115,6 +117,8 @@ function parseFlags(argv: string[]): Flags {
 		checkImageHash: argv.includes('--check-image-hash'),
 		mirrorImages: argv.includes('--mirror-images'),
 		backfillDrivePath: argv.includes('--backfill-drive-path'),
+		parseOnly: argv.includes('--parse-only'),
+		enrichOnly: argv.includes('--enrich-only'),
 		reportPath: get('--report='),
 		logLevel: ((): LogLevel => {
 			const raw = get('--log-level=');
