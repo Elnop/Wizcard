@@ -68,7 +68,7 @@ async function run(): Promise<void> {
 					return { error: null };
 				},
 				fetchUnenrichedCards: async () => scans[Math.min(scanCalls++, scans.length - 1)],
-				countUnenrichedCards: async () => 0,
+				countEnrichSnapshot: async () => ({ total: 0, remaining: 0, failedPre: 0, stale: 0 }),
 			},
 		});
 
@@ -96,7 +96,7 @@ async function run(): Promise<void> {
 					error: cardId === 'boom' ? 'write failed' : null,
 				}),
 				fetchUnenrichedCards: async () => scans[Math.min(scanCalls++, scans.length - 1)],
-				countUnenrichedCards: async () => 0,
+				countEnrichSnapshot: async () => ({ total: 0, remaining: 0, failedPre: 0, stale: 0 }),
 			},
 		});
 		check('failed path counts error card', result.failed === 1);
@@ -138,7 +138,7 @@ async function run(): Promise<void> {
 					return { error: null };
 				},
 				fetchUnenrichedCards: async () => scanResult(),
-				countUnenrichedCards: async () => 0,
+				countEnrichSnapshot: async () => ({ total: 0, remaining: 0, failedPre: 0, stale: 0 }),
 			},
 		});
 		check('late insert is enriched after idle poll', reEnriched.includes('late'));
@@ -149,6 +149,9 @@ async function run(): Promise<void> {
 	// of processed batches.
 	{
 		const { logger } = await import('./config');
+		// enrichResolved is cumulative on the shared logger singleton across these
+		// in-process tests, so assert on the delta this run produced, not absolutes.
+		const resolvedBefore = logger.getHudState().enrichResolved;
 		const scans: PendingCard[][] = [[card('z')], []];
 		let scanCalls = 0;
 		await runEnrichWorker({
@@ -164,13 +167,87 @@ async function run(): Promise<void> {
 				},
 				reEnrichCard: async () => ({ error: null }),
 				fetchUnenrichedCards: async () => scans[Math.min(scanCalls++, scans.length - 1)],
-				// At start the DB reports 50 cards still to do (e.g. Stage 1 inserted a
-				// lot); the bar denominator must reflect that, not just batch sizes.
-				countUnenrichedCards: async () => 50,
+				// Snapshot: 200 cards total in scope, 10 never enriched (grey), 0 stale →
+				// 190 already enriched before this run (blue). The bar spans the whole DB.
+				countEnrichSnapshot: async () => ({ total: 200, remaining: 10, failedPre: 0, stale: 0 }),
 			},
 		});
-		// done()=1 (card z) + remaining=50 from the final refresh => total 51.
-		check('enrich total reflects DB count', logger.getHudState().enrichTotal === 51);
+		const s = logger.getHudState();
+		// Denominator is the fixed DB total (not done+remaining as before).
+		check('enrich total is the DB total', s.enrichTotal === 200);
+		check('blue = total - remaining - failedPre - stale', s.enrichBlue === 190);
+		check('green grows by this run (card z resolved)', s.enrichResolved - resolvedBefore === 1);
+	}
+
+	// Pre-existing failures (enriched_at set but no oracle_id) show as RED at launch
+	// and feed the snapshot, while blue (skip) excludes them.
+	{
+		const { logger } = await import('./config');
+		await runEnrichWorker({
+			validSetCodes: new Set<string>(),
+			isParsingDone: () => true,
+			batchSize: 75,
+			idlePollMs: 1,
+			deps: {
+				resolveBatch: async () => new Map<string, ScryfallResolution>(),
+				reEnrichCard: async () => ({ error: null }),
+				fetchUnenrichedCards: async () => [], // nothing to do — just read the snapshot
+				// 100 total: 70 resolved-before (blue), 25 unmatched (red), 5 grey.
+				countEnrichSnapshot: async () => ({
+					total: 100,
+					remaining: 5,
+					failedPre: 25,
+					stale: 0,
+				}),
+			},
+		});
+		const s = logger.getHudState();
+		check('red = pre-existing unmatched (failedPre)', s.enrichFailed === 25);
+		check('blue excludes pre-existing failures', s.enrichBlue === 70);
+	}
+
+	// --re-enrich: yellow (outdated) is a LIVE count that shrinks as the worker
+	// re-attempts stale cards. reEnrichCard stamps a fresh enriched_at, so the next
+	// snapshot reports fewer stale → yellow drops while blue stays frozen.
+	{
+		const { logger } = await import('./config');
+		// Two stale cards to re-enrich, then nothing.
+		const scans: PendingCard[][] = [[card('s1'), card('s2')], []];
+		let scanCalls = 0;
+		// Snapshot reflects the stale count dropping from 2 → 0 once re-enriched.
+		let staleLeft = 2;
+		await runEnrichWorker({
+			validSetCodes: new Set<string>(),
+			isParsingDone: () => true,
+			includeStale: true,
+			batchSize: 75,
+			idlePollMs: 1,
+			totalRefreshMs: 0, // re-snapshot every batch so the drop is observable
+			deps: {
+				resolveBatch: async (cards) => {
+					const map = new Map<string, ScryfallResolution>();
+					for (const c of cards) map.set(c.id, resolution(c.id));
+					return map;
+				},
+				reEnrichCard: async () => {
+					if (staleLeft > 0) staleLeft--;
+					return { error: null };
+				},
+				fetchUnenrichedCards: async () => scans[Math.min(scanCalls++, scans.length - 1)],
+				// total 100: blue baseline 90 at launch, `staleLeft` outdated, rest grey.
+				countEnrichSnapshot: async () => ({
+					total: 100,
+					remaining: 100 - 90 - staleLeft,
+					failedPre: 0,
+					stale: staleLeft,
+				}),
+			},
+		});
+		const s = logger.getHudState();
+		check('yellow shrinks to 0 after re-enriching outdated', s.enrichStale === 0);
+		// frozenBlue at first snapshot = total - remaining - failedPre - stale
+		//                              = 100 - (100-90-2) - 0 - 2 = 90, then frozen.
+		check('blue stays frozen at launch baseline (90)', s.enrichBlue === 90);
 	}
 
 	console.log(`\n${passed} passed, ${failed} failed`);

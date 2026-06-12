@@ -85,11 +85,17 @@ export interface HudState {
 	recentWarnings: HudEvent[]; // circular buffer, max 50, warn+error only
 	warningTotal: number; // total warn-level events
 	errorTotal: number; // total error-level events
-	enrichTotal: number; // cards queued for Scryfall enrichment
-	enrichDone: number; // resolved + unresolved + failed (enrich attempts completed)
-	enrichResolved: number; // green
-	enrichUnresolved: number; // yellow — attempted, 0 Scryfall match
-	enrichFailed: number; // red — network/Scryfall error
+	// SCRYFALL bar — segments over EVERY card in the scan scope (the whole DB, or
+	// one source when filtered). Re-seeded periodically from a DB snapshot (the
+	// total moves: listing + Stage 1 insert cards in parallel); green grows from
+	// this run's resolutions:
+	enrichTotal: number; // total cards in scope (bar denominator) — from DB snapshot
+	enrichBlue: number; // resolved before this run (skipped) — blue, from DB snapshot
+	enrichStale: number; // outdated, pending re-enrich (--re-enrich only) — yellow
+	enrichFailed: number; // attempted but unmatched (pre-existing + this run) — red, from DB snapshot
+	enrichResolved: number; // resolved during this run — green, run counter
+	enrichDone: number; // resolved + unresolved + failed — attempts completed this run
+	enrichUnresolved: number; // this run, 0 Scryfall match — folds into red via the DB snapshot
 }
 
 export interface Logger {
@@ -113,8 +119,11 @@ export interface Logger {
 		): void;
 		taskEnd(id: string): void;
 		done(): void;
-		enrichStart(total: number): void;
-		enrichSetTotal(total: number): void;
+		// Seed the SCRYFALL bar's DB-driven segments from a periodic snapshot:
+		// total cards in scope, blue (resolved before this run), failed (attempted
+		// but unmatched — pre-existing + this run), stale (outdated, --re-enrich).
+		// Green grows from enrichTick (this run's resolutions) on top.
+		enrichSnapshot(snapshot: { total: number; blue: number; failed: number; stale: number }): void;
 		enrichTick(delta: { resolved?: number; unresolved?: number; failed?: number }): void;
 	};
 	recap(text: string): void;
@@ -135,6 +144,9 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 	let eta: EtaEstimator | null = null;
 	let lastEtaSample = 0;
 	let warnings = 0;
+	// This run's Stage-2 failures (DB write errors). Kept separate from the bar's
+	// red segment (snapshot-owned) — only feeds enrichDone for the counters line.
+	let runFailed = 0;
 	// Cards finished by tasks that already ended (removed from the map).
 	let finishedDone = 0;
 	// Until progress.start() pins the authoritative card total (known once all
@@ -165,6 +177,8 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 		listingDone: 0,
 		listingTotal: 0,
 		enrichTotal: 0,
+		enrichBlue: 0,
+		enrichStale: 0,
 		enrichDone: 0,
 		enrichResolved: 0,
 		enrichUnresolved: 0,
@@ -507,22 +521,34 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 			done(): void {
 				notifyHud();
 			},
-			enrichStart(total: number): void {
-				hudState.enrichTotal = total;
-				notifyHud();
-			},
-			enrichSetTotal(total: number): void {
-				// Absolute denominator from a DB count. Never let it drop below the work
-				// already done, so the bar can't show done > total mid-refresh.
-				hudState.enrichTotal = Math.max(total, hudState.enrichDone);
+			enrichSnapshot(snapshot: {
+				total: number;
+				blue: number;
+				failed: number;
+				stale: number;
+			}): void {
+				// DB-driven segments for the whole scan scope. blue = resolved before
+				// this run; failed = attempted-but-unmatched (pre-existing + whatever
+				// this run has marked, since the snapshot re-reads the DB); stale =
+				// outdated pending re-enrich. Grey (to do) is derived in the view as
+				// total - blue - failed - stale - green(run).
+				hudState.enrichTotal = snapshot.total;
+				hudState.enrichBlue = snapshot.blue;
+				hudState.enrichFailed = snapshot.failed;
+				hudState.enrichStale = snapshot.stale;
 				notifyHud();
 			},
 			enrichTick(delta: { resolved?: number; unresolved?: number; failed?: number }): void {
+				// Only green (resolved) drives a bar segment as a live run counter.
+				// unresolved/failed surface through the RED segment via the DB snapshot
+				// (reEnrichCard stamps enriched_at with oracle_id NULL, so the next
+				// snapshot re-reads them as red) — so enrichFailed is snapshot-owned and
+				// must NOT be ticked here, or it would double-count. We still tally the
+				// run's resolved/unresolved/failed for the recap & counters line.
 				hudState.enrichResolved += delta.resolved ?? 0;
 				hudState.enrichUnresolved += delta.unresolved ?? 0;
-				hudState.enrichFailed += delta.failed ?? 0;
-				hudState.enrichDone =
-					hudState.enrichResolved + hudState.enrichUnresolved + hudState.enrichFailed;
+				runFailed += delta.failed ?? 0;
+				hudState.enrichDone = hudState.enrichResolved + hudState.enrichUnresolved + runFailed;
 				notifyHud();
 			},
 		},

@@ -20,7 +20,8 @@ import { flags, logger } from './config';
 import {
 	reEnrichCard as realReEnrichCard,
 	fetchUnenrichedCards as realScan,
-	countUnenrichedCards as realCount,
+	countEnrichSnapshot as realSnapshot,
+	type EnrichSnapshot,
 } from './db-writer';
 import type { PendingCard } from './types';
 
@@ -39,7 +40,10 @@ export interface EnrichWorkerDeps {
 		sourceId?: string;
 		limit?: number;
 	}) => Promise<PendingCard[]>;
-	countUnenrichedCards: (opts: { includeStale?: boolean; sourceId?: string }) => Promise<number>;
+	countEnrichSnapshot: (opts: {
+		includeStale?: boolean;
+		sourceId?: string;
+	}) => Promise<EnrichSnapshot>;
 }
 
 export interface EnrichWorkerResult {
@@ -52,7 +56,7 @@ const defaultDeps: EnrichWorkerDeps = {
 	resolveBatch: realResolveBatch,
 	reEnrichCard: realReEnrichCard,
 	fetchUnenrichedCards: realScan,
-	countUnenrichedCards: realCount,
+	countEnrichSnapshot: realSnapshot,
 };
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
@@ -115,18 +119,38 @@ export async function runEnrichWorker(opts: {
 	const deps = opts.deps ?? defaultDeps;
 	const result: EnrichWorkerResult = { resolved: 0, unresolved: 0, failed: 0 };
 
-	// Keep the progress denominator accurate: total = cards already processed this
-	// run + the live DB count of what's still un-enriched. Refresh from the DB
-	// periodically while Stage 1 is still inserting (so the bar grows with new
-	// inserts), and re-count once parsing is done to pin the final total.
-	const done = (): number => result.resolved + result.unresolved + result.failed;
-	const refreshTotal = async (): Promise<void> => {
-		const remaining = await deps.countUnenrichedCards({ includeStale, sourceId });
-		logger.progress.enrichSetTotal(done() + remaining);
+	// SCRYFALL bar segments span EVERY card in scope, DB-driven via the snapshot.
+	// Only BLUE is frozen; everything else updates live so the segments flow into
+	// one another as work happens:
+	//   blue  (frozen) = resolved before this run started (skip). Frozen because a
+	//                    card this run resolves would otherwise be re-read into blue
+	//                    AND counted in green — double-counting. Frozen, it stays a
+	//                    clean "was already done before I started" baseline.
+	//   total (live)   = every card in scope — moves as listing + Stage 1 insert
+	//   yellow (live)  = still-outdated, NOT yet re-attempted this run (--re-enrich).
+	//                    As the worker re-enriches a stale card, reEnrichCard stamps
+	//                    a fresh enriched_at → it leaves the stale set, so yellow
+	//                    shrinks and the card reappears as green (resolved) or red
+	//                    (unmatched). Live count makes that transition automatic.
+	//   red   (live)   = attempted-but-unmatched (enriched_at set, oracle_id NULL):
+	//                    pre-existing + whatever this run just marked.
+	//   green (live)   = this run's resolutions (enrichTick counter)
+	//   grey  (derived in the view) = total - blue - yellow - green - red
+	let frozenBlue: number | null = null;
+	const pushSnapshot = async (): Promise<void> => {
+		const snap = await deps.countEnrichSnapshot({ includeStale, sourceId });
+		// First snapshot pins the skip baseline (resolved before this run started).
+		frozenBlue ??= Math.max(0, snap.total - snap.remaining - snap.failedPre - snap.stale);
+		logger.progress.enrichSnapshot({
+			total: snap.total,
+			blue: frozenBlue,
+			failed: snap.failedPre,
+			stale: snap.stale, // live: shrinks as outdated cards are re-attempted
+		});
 	};
-	let lastTotalRefresh = 0;
+	let lastSnapshot = 0;
 
-	await refreshTotal();
+	await pushSnapshot();
 
 	// Poll the DB for un-enriched cards until Stage 1 is done AND nothing is left.
 	for (;;) {
@@ -141,24 +165,25 @@ export async function runEnrichWorker(opts: {
 			// Caught up. If Stage 1 has finished inserting, we're done; otherwise
 			// wait briefly for more inserts to land, then re-poll (with a fresh total).
 			if (isParsingDone()) break;
-			await refreshTotal();
+			await pushSnapshot();
 			await sleep(idlePollMs);
 			continue;
 		}
 
 		await processBatch(batch, deps, result, fuzzy);
 
-		// Re-count at most every totalRefreshMs so the denominator tracks Stage-1
-		// inserts without a count query per batch.
+		// Re-snapshot at most every totalRefreshMs (one count query, not per batch)
+		// so red (this run's unmatched) and the denominator (Stage-1 inserts) both
+		// track live — including in --enrich-only, where parsing is "done" upfront.
 		const nowMs = Date.now();
-		if (!isParsingDone() && nowMs - lastTotalRefresh >= totalRefreshMs) {
-			lastTotalRefresh = nowMs;
-			await refreshTotal();
+		if (nowMs - lastSnapshot >= totalRefreshMs) {
+			lastSnapshot = nowMs;
+			await pushSnapshot();
 		}
 	}
 
-	// Final pin: parsing is done, so this count is the authoritative remaining work.
-	await refreshTotal();
+	// Final pin: parsing is done, so this snapshot is the authoritative breakdown.
+	await pushSnapshot();
 
 	logger.event('enrich.done', {
 		resolved: result.resolved,

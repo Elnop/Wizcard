@@ -235,24 +235,59 @@ export async function fetchUnenrichedCards(opts: {
 	});
 }
 
-// Cheap exact count of cards still needing enrichment (same filters as
-// fetchUnenrichedCards). head:true fetches no rows — just the count — so the
-// Stage-2 worker can show an accurate progress denominator without pulling data.
-export async function countUnenrichedCards(opts: {
+// Snapshot of the enrichment landscape across the whole scan scope, taken at
+// Stage-2 start AND re-taken periodically (the total moves: listing + Stage 1
+// insert new cards in parallel). Seeds the SCRYFALL bar's segments:
+//   total     — every card in scope (optionally narrowed to one source)
+//   remaining — never enriched (enriched_at IS NULL) → grey "to do"
+//   failedPre — attempted but unmatched (enriched_at NOT NULL, oracle_id NULL,
+//               not stale) → red "failed" already on the books at launch
+//   stale     — enriched long ago (only when --re-enrich) → yellow "outdated"
+// The blue "already resolved / skipped" segment is derived by the caller as
+// total - remaining - failedPre - stale. head:true keeps each count row-free.
+export interface EnrichSnapshot {
+	total: number;
+	remaining: number;
+	failedPre: number;
+	stale: number;
+}
+export async function countEnrichSnapshot(opts: {
 	includeStale?: boolean;
 	sourceId?: string;
-}): Promise<number> {
+}): Promise<EnrichSnapshot> {
 	const { includeStale = false, sourceId } = opts;
-	let query = supabase.from('custom_cards').select('*', { count: 'exact', head: true });
-	if (sourceId) query = query.eq('source_id', sourceId);
-	if (includeStale) {
-		const threshold = new Date(Date.now() - flags.reEnrichDays * 86_400_000).toISOString();
-		query = query.or(`enriched_at.is.null,enriched_at.lt.${threshold}`);
-	} else {
-		query = query.is('enriched_at', null);
+	// head:true count query, optionally narrowed to one source. Built fresh per
+	// call so each can chain its own predicate without sharing state.
+	const countQuery = (): ReturnType<typeof baseCount> => {
+		const q = baseCount();
+		return sourceId ? q.eq('source_id', sourceId) : q;
+	};
+	function baseCount() {
+		return supabase.from('custom_cards').select('*', { count: 'exact', head: true });
 	}
-	const { count } = await query;
-	return count ?? 0;
+
+	// Stale is only meaningful when --re-enrich actually re-pulls aged cards;
+	// otherwise it stays 0 and folds into blue/red. When stale IS counted it takes
+	// priority over failedPre (those cards will be re-attempted), so failedPre is
+	// always restricted to NON-stale rows to avoid double-counting.
+	const threshold = new Date(Date.now() - flags.reEnrichDays * 86_400_000).toISOString();
+
+	const totalQ = countQuery();
+	const remainingQ = countQuery().is('enriched_at', null);
+	// Attempted-but-unmatched (red), excluding stale rows when --re-enrich is on.
+	let failedPreQ = countQuery().not('enriched_at', 'is', null).is('oracle_id', null);
+	if (includeStale) failedPreQ = failedPreQ.gte('enriched_at', threshold);
+	const staleQ = includeStale
+		? countQuery().not('enriched_at', 'is', null).lt('enriched_at', threshold)
+		: null;
+
+	const [total, remaining, failedPre, stale] = await Promise.all([
+		totalQ.then((r) => r.count ?? 0),
+		remainingQ.then((r) => r.count ?? 0),
+		failedPreQ.then((r) => r.count ?? 0),
+		staleQ ? staleQ.then((r) => r.count ?? 0) : Promise.resolve(0),
+	]);
+	return { total, remaining, failedPre, stale };
 }
 
 // Build the custom_cards row payload for one pending card. Shared by the

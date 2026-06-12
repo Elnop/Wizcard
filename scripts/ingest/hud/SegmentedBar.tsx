@@ -22,7 +22,8 @@ function computeSegments(
 	ok: number,
 	failed: number,
 	of: number,
-	width: number
+	width: number,
+	consumeStale: boolean
 ): BarSegment[] {
 	if (of <= 0) return [{ text: '░'.repeat(width), color: undefined, dimColor: true }];
 
@@ -32,9 +33,13 @@ function computeSegments(
 	const safeOk = Math.min(ok, of - safeSkipped - safeStale);
 	const safeFailed = Math.min(failed, of - safeSkipped - safeStale - safeOk);
 
-	// ok ticks consume stale first, then new — so green grows left from stale boundary
-	const okInStale = Math.min(safeOk, safeStale);
-	const okInNew = Math.max(0, safeOk - safeStale);
+	// consumeStale=true (default): ok ticks eat the stale band first, then new — for
+	// bars where `stale` is a fixed at-launch count and green grows on top of it.
+	// consumeStale=false: `stale` is already a LIVE count that shrinks on its own as
+	// cards are re-attempted (the SCRYFALL bar), so green must NOT also eat it — that
+	// would subtract the same cards twice. There, green sits entirely in the new band.
+	const okInStale = consumeStale ? Math.min(safeOk, safeStale) : 0;
+	const okInNew = Math.max(0, safeOk - okInStale);
 	const staleRemaining = safeStale - okInStale;
 	const newRemaining = Math.max(0, of - safeSkipped - safeStale - okInNew - safeFailed);
 
@@ -76,6 +81,10 @@ interface SegmentedBarProps {
 	failed: number;
 	of: number;
 	width: number;
+	// Whether green (ok) consumes the stale band. Default true (per-source / global
+	// bars where stale is fixed at launch). The SCRYFALL bar sets false: its stale
+	// is a live DB count that already shrinks as cards are re-attempted.
+	consumeStale?: boolean;
 }
 
 export function SegmentedBar({
@@ -85,8 +94,9 @@ export function SegmentedBar({
 	failed,
 	of,
 	width,
+	consumeStale = true,
 }: SegmentedBarProps): React.ReactElement {
-	const segments = computeSegments(skipped, stale, ok, failed, of, width);
+	const segments = computeSegments(skipped, stale, ok, failed, of, width, consumeStale);
 	return (
 		<>
 			{segments.map((seg, i) => (

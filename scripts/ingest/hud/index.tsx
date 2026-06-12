@@ -38,7 +38,29 @@ function HudInner({ getState, subscribe }: HudProps): React.ReactElement {
 	const cols = stdout.columns ?? 80;
 	const rows = stdout.rows ?? 24;
 
-	useEffect(() => subscribe(() => setState(getState())), [getState, subscribe]);
+	// Coalesce notifications into at most one re-render per frame. The logger
+	// fires events at card-rate (the enrich worker alone emits ~2/card over
+	// hundreds of thousands of cards); rendering the full Ink tree on every one
+	// floods the GC with layout allocations faster than it can reclaim them and
+	// the process OOMs. A trailing timer guarantees the final state still paints.
+	useEffect(() => {
+		let scheduled = false;
+		let timer: NodeJS.Timeout | null = null;
+		const flush = (): void => {
+			scheduled = false;
+			timer = null;
+			setState(getState());
+		};
+		const unsubscribe = subscribe(() => {
+			if (scheduled) return;
+			scheduled = true;
+			timer = setTimeout(flush, 66); // ~15fps cap
+		});
+		return () => {
+			if (timer) clearTimeout(timer);
+			unsubscribe();
+		};
+	}, [getState, subscribe]);
 
 	const focus = useFocusPane('events');
 	// Show the LISTING DRIVE bar until every source folder is listed; the SOURCES

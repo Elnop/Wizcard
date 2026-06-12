@@ -41,6 +41,12 @@ const PENALTY_DECAY_REQUESTS = 10;
 const DEFAULT_MAX_RETRIES = 8;
 const BACKOFF_BASE_MS = 1000;
 const BACKOFF_CAP_MS = 30_000;
+// Per-request hard timeout. Node's fetch (undici) has no default request
+// timeout: a socket that connects but never responds leaves `await fetch`
+// pending forever, which wedges the serialized mutex and hangs every queued
+// Scryfall request behind it (and, in ingestion, the whole enrich worker). We
+// abort stalled requests so they surface as a network error and get retried.
+const REQUEST_TIMEOUT_MS = 30_000;
 
 export interface ScryfallThrottle {
 	/**
@@ -57,6 +63,7 @@ interface ThrottleOptions {
 	slowGapMs?: number;
 	fastGapMs?: number;
 	maxRetries?: number;
+	requestTimeoutMs?: number;
 	userAgent?: string;
 }
 
@@ -68,6 +75,7 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 	const slowGap = opts.slowGapMs ?? SLOW_GAP_MS;
 	const fastGap = opts.fastGapMs ?? FAST_GAP_MS;
 	const maxRetries = opts.maxRetries ?? DEFAULT_MAX_RETRIES;
+	const requestTimeoutMs = opts.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
 	const userAgent = opts.userAgent ?? 'Wizcard/1.0 (https://github.com/devinedev/wizcard)';
 
 	// Serializes callers so only one request is in flight and gaps are measured
@@ -90,12 +98,20 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 		let lastResponse: Response | null = null;
 		for (let attempt = 0; attempt < maxRetries; attempt++) {
 			let res: Response;
+			// Abort a request that stalls past the timeout so a dead socket can't
+			// pin the mutex forever; combine with the caller's signal so an
+			// upstream abort still propagates.
+			const timeoutSignal = AbortSignal.timeout(requestTimeoutMs);
+			const signal = init?.signal ? AbortSignal.any([init.signal, timeoutSignal]) : timeoutSignal;
 			try {
 				res = await fetch(url, {
 					...init,
 					headers: { 'User-Agent': userAgent, ...init?.headers },
+					signal,
 				});
 			} catch (err) {
+				// A caller-initiated abort is intentional — propagate it, don't retry.
+				if (init?.signal?.aborted) throw err;
 				const msg = err instanceof Error ? err.message : String(err);
 				if (attempt < maxRetries - 1) {
 					const wait = Math.min(BACKOFF_BASE_MS * Math.pow(2, attempt), BACKOFF_CAP_MS);
@@ -124,7 +140,11 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 		// All attempts exhausted — return the last 429 Response for the caller.
 		return (
 			lastResponse ??
-			(await fetch(url, { ...init, headers: { 'User-Agent': userAgent, ...init?.headers } }))
+			(await fetch(url, {
+				...init,
+				headers: { 'User-Agent': userAgent, ...init?.headers },
+				signal: AbortSignal.timeout(requestTimeoutMs),
+			}))
 		);
 	}
 

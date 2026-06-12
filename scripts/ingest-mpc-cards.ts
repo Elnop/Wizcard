@@ -101,7 +101,6 @@ async function main(): Promise<void> {
 	// --enrich-only: skip Drive listing + Stage 1 entirely; sweep the DB.
 	if (flags.enrichOnly) {
 		parsingDone = true;
-		logger.progress.enrichStart(0);
 		const enrichResult = await runEnrichWorker({
 			validSetCodes,
 			isParsingDone: () => parsingDone,
@@ -222,7 +221,9 @@ async function main(): Promise<void> {
 			const cardsTotal = [...listings.values()].reduce((n, f) => n + f.length, 0);
 			logger.event('listing.done', { sources: filtered.length, cards_total: cardsTotal });
 			logger.progress.start(cardsTotal);
-			logger.progress.enrichStart(0);
+			// The SCRYFALL bar is seeded by the enrich worker's own DB snapshot — no
+			// reset here (a stray enrichStart(0) used to wipe the total to 0% right
+			// after listing, freezing the bar while enrichment was already running).
 		});
 
 		// Stage 2 runs in parallel with Stage 1: it polls the DB for un-enriched
