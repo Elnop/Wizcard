@@ -184,6 +184,7 @@ export function useCustomCards(
 		if (filterKey !== lastFilterKeyRef.current) {
 			lastFilterKeyRef.current = filterKey;
 			setPage(1);
+			setIsLoading(true);
 			fetchPage(1, true);
 		}
 	}, [filterKey, sourceId, fetchPage]);
