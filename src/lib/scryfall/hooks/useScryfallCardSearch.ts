@@ -38,7 +38,11 @@ interface UseScryfallCardSearchResult {
 	reset: () => void;
 }
 
-export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSearchResult {
+export function useScryfallCardSearch(
+	filters: SearchFilters,
+	options: { enabled?: boolean } = {}
+): UseScryfallCardSearchResult {
+	const enabled = options.enabled ?? true;
 	const [cards, setCards] = useState<ScryfallCard[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -172,6 +176,12 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 	);
 
 	useEffect(() => {
+		if (!enabled) {
+			// Reset the key so re-enabling triggers a fresh search
+			lastSearchKeyRef.current = '';
+			abortControllerRef.current?.abort();
+			return;
+		}
 		const query = buildQuery(debouncedName);
 		const effectiveQuery = query.trim() || DEFAULT_QUERY;
 		const searchKey = `${effectiveQuery}|${order}|${dir}`;
@@ -181,7 +191,7 @@ export function useScryfallCardSearch(filters: SearchFilters): UseScryfallCardSe
 			setPage(1);
 			fetchCards(query, 1, true);
 		}
-	}, [debouncedName, buildQuery, fetchCards, order, dir]);
+	}, [enabled, debouncedName, buildQuery, fetchCards, order, dir]);
 
 	useEffect(() => {
 		return () => {
