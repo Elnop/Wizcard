@@ -179,6 +179,7 @@ export function useCustomCards(
 			setHasMore(false);
 			setTotal(0);
 			setError(null);
+			lastFilterKeyRef.current = '';
 			return;
 		}
 		if (filterKey !== lastFilterKeyRef.current) {
