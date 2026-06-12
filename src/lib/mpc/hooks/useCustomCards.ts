@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { queryCustomCards, getCustomCardSources } from '@/lib/supabase/custom-cards';
 import { toCustomCard } from '../adapter';
 import { useDebounce } from '@/lib/search/hooks/useDebounce';
-import type { CustomCard } from '../types';
+import type { CustomCard, CardType } from '../types';
 import type { CardFilters } from '@/lib/search/types';
 
 export interface UseCustomCardsFilters extends CardFilters {
 	mpcTagsMustHave: string[];
 	mpcTagsMustNotHave: string[];
 	oracleIdFilter?: 'all' | 'defined' | 'undefined';
+	cardTypes?: CardType[];
 }
 
 interface UseCustomCardsResult {
@@ -64,6 +65,7 @@ export function useCustomCards(
 	const mustHaveKey = filters.mpcTagsMustHave.join(',');
 	const mustNotHaveKey = filters.mpcTagsMustNotHave.join(',');
 	const oracleIdFilter = filters.oracleIdFilter ?? 'all';
+	const cardTypesKey = (filters.cardTypes ?? []).join(',');
 
 	const filterKey = [
 		sourceId ?? '__all__',
@@ -80,6 +82,7 @@ export function useCustomCards(
 		mustHaveKey,
 		mustNotHaveKey,
 		oracleIdFilter,
+		cardTypesKey,
 	].join('|');
 
 	const fetchPage = useCallback(
@@ -112,6 +115,7 @@ export function useCustomCards(
 							mpcTagsMustHave: mustHaveKey ? mustHaveKey.split(',') : undefined,
 							mpcTagsMustNotHave: mustNotHaveKey ? mustNotHaveKey.split(',') : undefined,
 							oracleIdFilter: oracleIdFilter !== 'all' ? oracleIdFilter : undefined,
+							cardTypes: cardTypesKey ? (cardTypesKey.split(',') as CardType[]) : undefined,
 							order: filters.order,
 							dir: filters.dir,
 						},
@@ -165,6 +169,7 @@ export function useCustomCards(
 			mustHaveKey,
 			mustNotHaveKey,
 			oracleIdFilter,
+			cardTypesKey,
 		]
 	);
 
