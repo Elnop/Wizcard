@@ -159,24 +159,29 @@ function SearchPageContent() {
 		? customFilterCount
 		: activeFilterCount + customFilterCount + oracleIdFilterCount;
 
-	const tableColumns = [
-		{ key: 'name', label: 'Nom', sortKey: 'name' },
-		{
-			key: 'set',
-			label: 'Set',
-			sortKey: 'set',
-			render: (card: AnyCard) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
-		},
-		{ key: 'type_line', label: 'Type' },
-		{ key: 'cmc', label: 'CMC', sortKey: 'cmc' },
-		{
-			key: 'prices',
-			label: 'Prix USD',
-			sortKey: 'usd',
-			render: (card: AnyCard) =>
-				'prices' in card && card.prices && 'usd' in card.prices ? (card.prices.usd ?? '—') : '—',
-		},
-	];
+	// Les cardbacks n'ont ni set, ni type, ni CMC, ni prix : seule la colonne nom a du sens.
+	const tableColumns = isBacks
+		? [{ key: 'name', label: 'Nom', sortKey: 'name' }]
+		: [
+				{ key: 'name', label: 'Nom', sortKey: 'name' },
+				{
+					key: 'set',
+					label: 'Set',
+					sortKey: 'set',
+					render: (card: AnyCard) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
+				},
+				{ key: 'type_line', label: 'Type' },
+				{ key: 'cmc', label: 'CMC', sortKey: 'cmc' },
+				{
+					key: 'prices',
+					label: 'Prix USD',
+					sortKey: 'usd',
+					render: (card: AnyCard) =>
+						'prices' in card && card.prices && 'usd' in card.prices
+							? (card.prices.usd ?? '—')
+							: '—',
+				},
+			];
 
 	return (
 		<div className={styles.page}>
