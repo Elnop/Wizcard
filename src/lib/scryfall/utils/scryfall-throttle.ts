@@ -98,16 +98,24 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 		let lastResponse: Response | null = null;
 		for (let attempt = 0; attempt < maxRetries; attempt++) {
 			let res: Response;
-			// Abort a request that stalls past the timeout so a dead socket can't
-			// pin the mutex forever; combine with the caller's signal so an
-			// upstream abort still propagates.
-			const timeoutSignal = AbortSignal.timeout(requestTimeoutMs);
-			const signal = init?.signal ? AbortSignal.any([init.signal, timeoutSignal]) : timeoutSignal;
+			// Abort a request that stalls past the timeout so a dead socket can't pin
+			// the mutex forever. Use an explicit AbortController + clearTimeout rather
+			// than AbortSignal.timeout: the latter leaves a live 30s libuv timer (and
+			// the listener undici attaches to its signal) dangling on EVERY request
+			// until it fires, which on a long run of 100k+ requests leaks native RSS
+			// steadily (heap stays flat) until OOM. Clearing the timer on completion
+			// releases the timer and signal immediately.
+			const controller = new AbortController();
+			const timer = setTimeout(() => controller.abort(), requestTimeoutMs);
+			// Forward a caller abort onto our controller without AbortSignal.any (which
+			// would itself register a never-removed listener on a long-lived signal).
+			const onCallerAbort = (): void => controller.abort(init?.signal?.reason);
+			if (init?.signal) init.signal.addEventListener('abort', onCallerAbort, { once: true });
 			try {
 				res = await fetch(url, {
 					...init,
 					headers: { 'User-Agent': userAgent, ...init?.headers },
-					signal,
+					signal: controller.signal,
 				});
 			} catch (err) {
 				// A caller-initiated abort is intentional — propagate it, don't retry.
@@ -120,11 +128,18 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 					continue;
 				}
 				throw err;
+			} finally {
+				clearTimeout(timer);
+				init?.signal?.removeEventListener('abort', onCallerAbort);
 			}
 
 			if (res.status !== 429) return res;
 
 			// 429 — engage the penalty so subsequent requests pace slower, then wait.
+			// Drain the previous 429's body before discarding it (and we'll drain this
+			// one too on the next loop): an unread Response keeps undici holding the
+			// socket/buffer, which leaks native RSS across a long run of retries.
+			await lastResponse?.body?.cancel();
 			lastResponse = res;
 			penaltyRemaining = PENALTY_DECAY_REQUESTS;
 			const retryAfterSec = parseInt(res.headers.get('retry-after') ?? '', 10);

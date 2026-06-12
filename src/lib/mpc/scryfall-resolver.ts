@@ -95,6 +95,7 @@ async function postCollection(
 			continue;
 		}
 		if (!res.ok) {
+			await res.body?.cancel(); // release the socket/buffer — see resolveByFuzzy
 			console.warn(`  ⚠ Scryfall ${label} HTTP ${res.status}`);
 			continue;
 		}
@@ -137,8 +138,16 @@ async function resolveByFuzzy(name: string): Promise<Omit<ScryfallResolution, 's
 		console.warn(`  ⚠ Scryfall fuzzy fetch failed: ${(err as Error).message}`);
 		return null;
 	}
-	if (res.status === 404) return null;
+	// Drain the body on every non-consumed path: a 404 (very common on the fuzzy
+	// pass — most no-match names land here) or any other non-ok leaves undici
+	// holding the response buffer/socket until GC, which leaks native RSS steadily
+	// over a long enrich run. cancel() releases it immediately.
+	if (res.status === 404) {
+		await res.body?.cancel();
+		return null;
+	}
 	if (!res.ok) {
+		await res.body?.cancel();
 		console.warn(`  ⚠ Scryfall fuzzy HTTP ${res.status} for "${name}"`);
 		return null;
 	}
