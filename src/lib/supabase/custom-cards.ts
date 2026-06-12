@@ -1,9 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
-import { createClient as createServerClient } from '@/lib/supabase/server';
-import { toCustomCard } from '@/lib/mpc/adapter';
-import type { CardSourceType, CardType, CustomCard, MpcCard, MpcSource } from '@/lib/mpc/types';
+import type { CardSourceType, CardType, MpcCard, MpcSource } from '@/lib/mpc/types';
 
-interface CustomCardSourceRow {
+export interface CustomCardSourceRow {
 	id: string;
 	name: string;
 	description: string | null;
@@ -11,7 +9,7 @@ interface CustomCardSourceRow {
 	tags: string[];
 }
 
-interface CustomCardRow {
+export interface CustomCardRow {
 	id: string;
 	source_id: string | null;
 	name: string;
@@ -49,7 +47,7 @@ function resolveImageUrl(row: CustomCardRow): string {
 	return row.image_drive_url ?? '';
 }
 
-function rowToMpcSource(row: CustomCardSourceRow): MpcSource {
+export function rowToMpcSource(row: CustomCardSourceRow): MpcSource {
 	return {
 		id: row.id,
 		name: row.name,
@@ -60,7 +58,7 @@ function rowToMpcSource(row: CustomCardSourceRow): MpcSource {
 	};
 }
 
-function rowToMpcCard(row: CustomCardRow): MpcCard {
+export function rowToMpcCard(row: CustomCardRow): MpcCard {
 	return {
 		id: row.id.startsWith('mpc:') ? row.id.slice(4) : row.id,
 		name: row.name,
@@ -133,9 +131,9 @@ export async function getCustomCardSourcesWithCount(): Promise<MpcSourceWithCoun
 		.filter((s) => s.cardCount > 0);
 }
 
-const CUSTOM_CARD_SOURCE_SELECT = 'id, name, description, drive_folder_id, tags';
+export const CUSTOM_CARD_SOURCE_SELECT = 'id, name, description, drive_folder_id, tags';
 
-const CUSTOM_CARD_SELECT =
+export const CUSTOM_CARD_SELECT =
 	'id, source_id, name, raw_name, display_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, variants, set_code, collector_number, colors, color_identity, cmc, type_line, mana_cost, oracle_text, rarity, set_name, artist, drive_folder_path';
 
 export interface CustomCardQueryFilters {
@@ -252,38 +250,4 @@ export async function queryCustomCards(query: CustomCardQuery): Promise<CustomCa
 		hasMore: offset + rawPageCount < total,
 		total,
 	};
-}
-
-export async function getCustomCardWithSource(id: string): Promise<CustomCard | null> {
-	const rawId = id.startsWith('mpc:') ? id.slice(4) : id;
-	const client = await createServerClient();
-
-	const { data: cardRow, error: cardError } = await client
-		.from('custom_cards')
-		.select(CUSTOM_CARD_SELECT)
-		.eq('id', rawId)
-		.single();
-
-	if (cardError || !cardRow) return null;
-
-	const row = cardRow as CustomCardRow;
-	let source: MpcSource = {
-		id: row.source_id ?? 'unknown',
-		name: row.source_id ?? 'Custom',
-		isBuiltIn: false,
-		tags: [],
-		driveFolderId: null,
-	};
-
-	if (row.source_id) {
-		const { data: sourceRow } = await client
-			.from('custom_card_sources')
-			.select(CUSTOM_CARD_SOURCE_SELECT)
-			.eq('id', row.source_id)
-			.single();
-		if (sourceRow) source = rowToMpcSource(sourceRow as CustomCardSourceRow);
-	}
-
-	const mpcCard = rowToMpcCard(row);
-	return toCustomCard(mpcCard, source);
 }

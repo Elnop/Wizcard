@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { getCardById } from '@/lib/scryfall/endpoints/cards';
-import { getCustomCardWithSource } from '@/lib/supabase/custom-cards';
+import { getCustomCardWithSource } from '@/lib/supabase/custom-cards.server';
 import { CardPageHeader } from './components/CardPageHeader/CardPageHeader';
 import { CardTabs } from './components/CardTabs/CardTabs';
 import { CustomCardPage } from './components/CustomCardPage/CustomCardPage';
