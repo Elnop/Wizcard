@@ -38,6 +38,11 @@ interface UseScryfallCardSearchResult {
 	reset: () => void;
 }
 
+/**
+ * @param options.enabled — when false, no request fires and in-flight requests are
+ * aborted, but `cards`/`isLoading` keep their last values: callers must gate their
+ * rendering on the same condition.
+ */
 export function useScryfallCardSearch(
 	filters: SearchFilters,
 	options: { enabled?: boolean } = {}
@@ -202,6 +207,7 @@ export function useScryfallCardSearch(
 	const lastQueryRef = useRef<string>('');
 
 	const loadMore = useCallback(() => {
+		if (!enabled) return;
 		if (!isLoading && !isLoadingMore && hasMore) {
 			const nextPage = page + 1;
 			setPage(nextPage);
@@ -210,7 +216,7 @@ export function useScryfallCardSearch(
 			lastQueryRef.current = query;
 			fetchCards(query, nextPage, false);
 		}
-	}, [isLoading, isLoadingMore, hasMore, page, fetchCards]);
+	}, [enabled, isLoading, isLoadingMore, hasMore, page, fetchCards]);
 
 	const reset = useCallback(() => {
 		setCards([]);
