@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo, Suspense } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useScryfallCardSearch } from '@/lib/scryfall/hooks/useScryfallCardSearch';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
@@ -17,7 +17,19 @@ import { SearchModeSwitcher } from './components/SearchModeSwitcher/SearchModeSw
 import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
 import { getCustomCardSourcesWithCount } from '@/lib/supabase/custom-cards';
 import type { MpcSourceWithCount } from '@/lib/supabase/custom-cards';
+import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
 import styles from './page.module.css';
+
+function computeCustomFilterCount(
+	customSourceId: string | null,
+	mpcTags: MpcTagsFilterValue
+): number {
+	return (
+		(customSourceId !== null ? 1 : 0) +
+		mpcTags.mustHave.length +
+		(mpcTags.mustNotHave.join(',') !== 'NSFW' ? mpcTags.mustNotHave.length : 0)
+	);
+}
 
 export default function SearchPage() {
 	return (
@@ -69,6 +81,9 @@ function SearchPageContent() {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
 	const { sets, isLoading: setsLoading } = useScryfallSets();
+
+	const isBacks = mode === 'backs';
+
 	const {
 		cards,
 		isLoading,
@@ -79,18 +94,21 @@ function SearchPageContent() {
 		totalCards,
 		suggestions,
 		loadMore,
-	} = useScryfallCardSearch({
-		name,
-		colors,
-		colorMatch,
-		type,
-		set,
-		rarities,
-		oracleText,
-		cmc,
-		order,
-		dir,
-	});
+	} = useScryfallCardSearch(
+		{
+			name,
+			colors,
+			colorMatch,
+			type,
+			set,
+			rarities,
+			oracleText,
+			cmc,
+			order,
+			dir,
+		},
+		{ enabled: mode === 'official' }
+	);
 
 	const {
 		cards: customCards,
@@ -100,48 +118,27 @@ function SearchPageContent() {
 		total: customTotal,
 		loadMore: loadMoreCustom,
 		error: customError,
-	} = useCustomCards(mode === 'custom' || mode === 'all' ? customSourceId : undefined, {
+	} = useCustomCards(mode !== 'official' ? customSourceId : undefined, {
 		name,
-		colors,
+		colors: isBacks ? [] : colors,
 		colorMatch,
-		type,
-		set,
-		rarities,
-		oracleText,
-		cmc,
-		order,
+		type: isBacks ? '' : type,
+		set: isBacks ? '' : set,
+		rarities: isBacks ? [] : rarities,
+		oracleText: isBacks ? '' : oracleText,
+		cmc: isBacks ? '' : cmc,
+		order: isBacks ? 'name' : order,
 		dir,
 		mpcTagsMustHave: mpcTags.mustHave,
 		mpcTagsMustNotHave: mpcTags.mustNotHave,
-		oracleIdFilter,
+		oracleIdFilter: isBacks ? 'all' : oracleIdFilter,
+		cardTypes: isBacks ? ['cardback'] : ['card', 'token'],
 	});
 
-	const mergedCards: AnyCard[] = useMemo(() => {
-		if (mode === 'all') return [...cards, ...customCards.filter((c) => !c.oracle_id)];
-		if (mode === 'custom') return customCards;
-		return cards;
-	}, [mode, cards, customCards]);
-
-	let resolvedHasMore: boolean;
-	if (mode === 'all') resolvedHasMore = hasMore || customHasMore;
-	else if (mode === 'custom') resolvedHasMore = customHasMore;
-	else resolvedHasMore = hasMore;
-
-	const resolvedLoadMore = useCallback(() => {
-		if (mode === 'all') {
-			if (hasMore) loadMore();
-			if (customHasMore) loadMoreCustom();
-		} else if (mode === 'custom') {
-			loadMoreCustom();
-		} else {
-			loadMore();
-		}
-	}, [mode, hasMore, customHasMore, loadMore, loadMoreCustom]);
-
-	let resolvedIsLoadingMore: boolean;
-	if (mode === 'all') resolvedIsLoadingMore = isLoadingMore || customLoadingMore;
-	else if (mode === 'custom') resolvedIsLoadingMore = customLoadingMore;
-	else resolvedIsLoadingMore = isLoadingMore;
+	const displayedCards: AnyCard[] = mode === 'official' ? cards : customCards;
+	const displayedHasMore = mode === 'official' ? hasMore : customHasMore;
+	const displayedLoadMore = mode === 'official' ? loadMore : loadMoreCustom;
+	const displayedIsLoadingMore = mode === 'official' ? isLoadingMore : customLoadingMore;
 
 	useEffect(() => {
 		getCustomCardSourcesWithCount()
@@ -153,14 +150,14 @@ function SearchPageContent() {
 
 	const hasFilters =
 		name || colors.length > 0 || type || set || rarities.length > 0 || oracleText || cmc;
-	const isDefaultQuery = !hasFilters;
+	const isDefaultQuery = !hasFilters && mode === 'official';
 
-	const totalActiveFilterCount =
-		activeFilterCount +
-		(customSourceId !== null ? 1 : 0) +
-		mpcTags.mustHave.length +
-		(mpcTags.mustNotHave.join(',') !== 'NSFW' ? mpcTags.mustNotHave.length : 0) +
-		(oracleIdFilter !== 'all' ? 1 : 0);
+	const customFilterCount = computeCustomFilterCount(customSourceId, mpcTags);
+
+	const oracleIdFilterCount = oracleIdFilter !== 'all' ? 1 : 0;
+	const totalActiveFilterCount = isBacks
+		? customFilterCount
+		: activeFilterCount + customFilterCount + oracleIdFilterCount;
 
 	const tableColumns = [
 		{ key: 'name', label: 'Nom', sortKey: 'name' },
@@ -211,6 +208,7 @@ function SearchPageContent() {
 
 				<FilterModal
 					isOpen={isModalOpen}
+					variant={isBacks ? 'backs' : 'search'}
 					colors={colors}
 					colorMatch={colorMatch}
 					type={type}
@@ -230,19 +228,14 @@ function SearchPageContent() {
 					onClose={() => setIsModalOpen(false)}
 				/>
 
-				{!isDefaultQuery && !isLoading && !customLoading && mergedCards.length > 0 && (
+				{!isDefaultQuery && !isLoading && !customLoading && displayedCards.length > 0 && (
 					<div className={styles.resultInfo}>
 						<span>
 							{mode === 'official' &&
 								cards.length > 0 &&
 								`Showing ${cards.length} of ${totalCards.toLocaleString()} cards`}
-							{mode === 'all' && (
-								<>
-									{cards.length > 0 && `${cards.length} of ${totalCards.toLocaleString()} cards`}
-									{customTotal > 0 && ` · ${customTotal} custom`}
-								</>
-							)}
 							{mode === 'custom' && `${customTotal} custom`}
+							{mode === 'backs' && `${customTotal} cardbacks`}
 						</span>
 					</div>
 				)}
@@ -253,13 +246,13 @@ function SearchPageContent() {
 					</div>
 				)}
 
-				{error && (
+				{mode === 'official' && error && (
 					<div className={styles.error}>
 						<p>An error occurred. Please try again.</p>
 					</div>
 				)}
 
-				{queryError && (
+				{mode === 'official' && queryError && (
 					<div className={styles.queryError}>
 						<p>{queryError.message}</p>
 						{queryError.warnings.length > 0 && (
@@ -273,11 +266,11 @@ function SearchPageContent() {
 				)}
 
 				<CardList
-					cards={mergedCards}
+					cards={displayedCards}
 					isLoading={isLoading || customLoading}
-					isLoadingMore={resolvedIsLoadingMore}
-					hasMore={resolvedHasMore}
-					onLoadMore={resolvedLoadMore}
+					isLoadingMore={displayedIsLoadingMore}
+					hasMore={displayedHasMore}
+					onLoadMore={displayedLoadMore}
 					onCardClick={handleCardClick}
 					renderOverlay={withCustomBadge}
 					sortOrder={order}
@@ -299,7 +292,7 @@ function SearchPageContent() {
 				{!isLoading &&
 					!customLoading &&
 					!isDefaultQuery &&
-					mergedCards.length === 0 &&
+					displayedCards.length === 0 &&
 					!error &&
 					!customError && (
 						<div className={styles.noResults}>

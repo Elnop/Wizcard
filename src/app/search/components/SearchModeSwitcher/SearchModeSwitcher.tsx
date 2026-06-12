@@ -7,8 +7,8 @@ export type { SearchMode } from '@/lib/search/types';
 
 const OPTIONS: { value: SearchMode; label: string }[] = [
 	{ value: 'official', label: 'Officiel' },
-	{ value: 'all', label: 'Tout' },
 	{ value: 'custom', label: 'Custom' },
+	{ value: 'backs', label: 'Backs' },
 ];
 
 type Props = {

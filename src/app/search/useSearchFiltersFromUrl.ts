@@ -31,7 +31,7 @@ const VALID_ORDERS = new Set([
 const VALID_DIRS = new Set(['auto', 'asc', 'desc']);
 const VALID_COLOR_MATCHES = new Set(['exact', 'include', 'atMost']);
 const VALID_RARITIES = new Set(['common', 'uncommon', 'rare', 'mythic']);
-const VALID_MODES = new Set(['official', 'all', 'custom']);
+const VALID_MODES = new Set(['official', 'custom', 'backs']);
 
 function parseMode(param: string | null): SearchMode {
 	if (param && VALID_MODES.has(param)) return param as SearchMode;
