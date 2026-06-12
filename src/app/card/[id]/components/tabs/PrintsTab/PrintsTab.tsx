@@ -13,6 +13,7 @@ import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { LocalizedCardThumb } from '@/lib/card/components/LocalizedCardThumb/LocalizedCardThumb';
 import { useMpcPrints } from '@/lib/mpc/hooks/useMpcPrints';
+import { useCustomCardPrints } from '@/lib/mpc/hooks/useCustomCardPrints';
 import styles from './PrintsTab.module.css';
 
 interface Props {
@@ -57,6 +58,7 @@ export function PrintsTab({ card }: Props) {
 	const { addCard } = useCollectionContext();
 
 	const { prints: mpcPrints, loading: mpcLoading, error: mpcError } = useMpcPrints(card.name);
+	const { prints: customPrints, loading: customLoading } = useCustomCardPrints(card.oracle_id, '');
 
 	function handleAdd(print: ScryfallCard, entry: Partial<CardEntry>) {
 		addCard(print, entry);
@@ -73,9 +75,19 @@ export function PrintsTab({ card }: Props) {
 				}
 			: null;
 
-	const sections: CardListSection[] = mpcSection
-		? [...officialSections, mpcSection]
-		: officialSections;
+	const customSection: CardListSection | null =
+		customPrints.length > 0
+			? {
+					label: 'Cartes Custom',
+					cards: customPrints as unknown as AnyCard[],
+				}
+			: null;
+
+	const sections: CardListSection[] = [
+		...officialSections,
+		...(mpcSection ? [mpcSection] : []),
+		...(customSection ? [customSection] : []),
+	];
 
 	return (
 		<>
@@ -83,7 +95,7 @@ export function PrintsTab({ card }: Props) {
 
 			<CardList
 				cards={sections}
-				isLoading={loading || mpcLoading}
+				isLoading={loading || mpcLoading || customLoading}
 				pageSize={false}
 				renderOverlay={(p: AnyCard) => (
 					<PrintAction print={p as ScryfallCard} currentId={card.id} onAdd={setAddingCard} />
