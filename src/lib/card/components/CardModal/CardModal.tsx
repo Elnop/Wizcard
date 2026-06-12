@@ -715,6 +715,9 @@ function CustomCardModalInner({ card, onClose }: { card: CustomCard; onClose: ()
 							symbolMap={symbolMap}
 							isCustom
 						/>
+						<Link href={`/card/${card.id}`} className={styles.moreInfoLink}>
+							Plus d&apos;informations
+						</Link>
 						<CustomCardSection card={card} />
 					</div>
 				</div>
