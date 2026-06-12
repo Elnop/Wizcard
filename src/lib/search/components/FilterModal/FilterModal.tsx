@@ -129,6 +129,8 @@ function FilterModalContent({
 	const [draftOracleIdFilter, setDraftOracleIdFilter] =
 		useState<OracleIdFilterValue>(initialOracleIdFilter);
 
+	// Hidden sections' drafts are emitted unchanged on purpose: filters set in another
+	// variant survive in the URL, and the consumer neutralizes them at query time.
 	const handleApply = () => {
 		onApply({
 			colors: draftColors,
@@ -149,19 +151,23 @@ function FilterModalContent({
 	};
 
 	const handleReset = () => {
-		setDraftColors([]);
-		setDraftColorMatch('include');
-		setDraftType('');
-		setDraftSet('');
-		setDraftRarities([]);
-		setDraftOracleText('');
-		setDraftCmc('');
-		setDraftOrder('name');
-		setDraftDir('auto');
+		if (variant !== 'backs') {
+			setDraftColors([]);
+			setDraftColorMatch('include');
+			setDraftType('');
+			setDraftSet('');
+			setDraftRarities([]);
+			setDraftOracleText('');
+			setDraftCmc('');
+			setDraftOrder('name');
+			setDraftDir('auto');
+			setDraftOracleIdFilter('all');
+		}
+		if (variant === 'default') {
+			setDraftCardTypeFilter('all');
+		}
 		setDraftCustomSourceId(null);
-		setDraftCardTypeFilter('all');
 		setDraftMpcTags(DEFAULT_MPC_TAGS);
-		setDraftOracleIdFilter('all');
 	};
 
 	return (
