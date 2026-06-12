@@ -25,6 +25,8 @@ import styles from './FilterModal.module.css';
 
 const DEFAULT_MPC_TAGS: MpcTagsFilterValue = { mustHave: [], mustNotHave: ['NSFW'] };
 
+export type FilterModalVariant = 'default' | 'search' | 'backs';
+
 interface FilterModalProps {
 	isOpen: boolean;
 	colors: ScryfallColor[];
@@ -43,6 +45,7 @@ interface FilterModalProps {
 	cardTypeFilter?: CardType | 'all';
 	mpcTags?: MpcTagsFilterValue;
 	oracleIdFilter?: OracleIdFilterValue;
+	variant?: FilterModalVariant;
 	onApply: (filters: {
 		colors: ScryfallColor[];
 		colorMatch: ColorMatch;
@@ -78,6 +81,7 @@ interface FilterModalContentProps {
 	initialCardTypeFilter: CardType | 'all';
 	initialMpcTags: MpcTagsFilterValue;
 	initialOracleIdFilter: OracleIdFilterValue;
+	variant: FilterModalVariant;
 	onApply: FilterModalProps['onApply'];
 	onClose: () => void;
 }
@@ -99,6 +103,7 @@ function FilterModalContent({
 	initialCardTypeFilter,
 	initialMpcTags,
 	initialOracleIdFilter,
+	variant,
 	onApply,
 	onClose,
 }: FilterModalContentProps) {
@@ -176,25 +181,36 @@ function FilterModalContent({
 			</div>
 
 			<div className={styles.body}>
-				<ColorFilter
-					selected={draftColors}
-					onChange={setDraftColors}
-					colorMatch={draftColorMatch}
-					onColorMatchChange={setDraftColorMatch}
-					symbolMap={symbolMap}
-				/>
-				<RarityFilter value={draftRarities} onChange={setDraftRarities} />
-				<TypeFilter value={draftType} onChange={setDraftType} />
-				<OracleTextFilter value={draftOracleText} onChange={setDraftOracleText} />
-				<CmcFilter value={draftCmc} onChange={setDraftCmc} />
-				<SetFilter value={draftSet} onChange={setDraftSet} sets={sets} isLoading={setsLoading} />
-				<SortFilter
-					order={draftOrder}
-					onOrderChange={(v) => setDraftOrder(v as ScryfallSortOrder)}
-					dir={draftDir}
-					onDirChange={setDraftDir}
-				/>
-				<CardTypeFilter value={draftCardTypeFilter} onChange={setDraftCardTypeFilter} />
+				{variant !== 'backs' && (
+					<>
+						<ColorFilter
+							selected={draftColors}
+							onChange={setDraftColors}
+							colorMatch={draftColorMatch}
+							onColorMatchChange={setDraftColorMatch}
+							symbolMap={symbolMap}
+						/>
+						<RarityFilter value={draftRarities} onChange={setDraftRarities} />
+						<TypeFilter value={draftType} onChange={setDraftType} />
+						<OracleTextFilter value={draftOracleText} onChange={setDraftOracleText} />
+						<CmcFilter value={draftCmc} onChange={setDraftCmc} />
+						<SetFilter
+							value={draftSet}
+							onChange={setDraftSet}
+							sets={sets}
+							isLoading={setsLoading}
+						/>
+						<SortFilter
+							order={draftOrder}
+							onOrderChange={(v) => setDraftOrder(v as ScryfallSortOrder)}
+							dir={draftDir}
+							onDirChange={setDraftDir}
+						/>
+					</>
+				)}
+				{variant === 'default' && (
+					<CardTypeFilter value={draftCardTypeFilter} onChange={setDraftCardTypeFilter} />
+				)}
 
 				{customSources.length > 0 && (
 					<>
@@ -206,7 +222,9 @@ function FilterModalContent({
 							onChange={setDraftCustomSourceId}
 						/>
 						<MpcTagsFilter value={draftMpcTags} onChange={setDraftMpcTags} />
-						<OracleIdFilter value={draftOracleIdFilter} onChange={setDraftOracleIdFilter} />
+						{variant !== 'backs' && (
+							<OracleIdFilter value={draftOracleIdFilter} onChange={setDraftOracleIdFilter} />
+						)}
 					</>
 				)}
 			</div>
@@ -241,6 +259,7 @@ export function FilterModal({
 	cardTypeFilter = 'all',
 	mpcTags = DEFAULT_MPC_TAGS,
 	oracleIdFilter = 'all',
+	variant = 'default',
 	onApply,
 	onClose,
 }: FilterModalProps) {
@@ -266,6 +285,7 @@ export function FilterModal({
 				initialCardTypeFilter={cardTypeFilter}
 				initialMpcTags={mpcTags}
 				initialOracleIdFilter={oracleIdFilter}
+				variant={variant}
 				onApply={onApply}
 				onClose={onClose}
 			/>
