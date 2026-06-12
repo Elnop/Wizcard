@@ -1,8 +1,10 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { getCardById } from '@/lib/scryfall/endpoints/cards';
+import { getCustomCardWithSource } from '@/lib/supabase/custom-cards';
 import { CardPageHeader } from './components/CardPageHeader/CardPageHeader';
 import { CardTabs } from './components/CardTabs/CardTabs';
+import { CustomCardPage } from './components/CustomCardPage/CustomCardPage';
 import styles from './page.module.css';
 
 interface CardPageProps {
@@ -13,6 +15,16 @@ interface CardPageProps {
 
 export async function generateMetadata({ params }: CardPageProps) {
 	const { id } = await params;
+
+	if (id.startsWith('mpc:')) {
+		const card = await getCustomCardWithSource(id);
+		if (!card) return { title: 'Card Not Found | Wizcard' };
+		return {
+			title: `${card.name} | Wizcard`,
+			description: card.type_line ?? card.name,
+		};
+	}
+
 	try {
 		const card = await getCardById(id);
 		return {
@@ -29,12 +41,20 @@ export async function generateMetadata({ params }: CardPageProps) {
 export default async function CardPage({ params }: CardPageProps) {
 	const { id } = await params;
 
+	if (id.startsWith('mpc:')) {
+		const card = await getCustomCardWithSource(id);
+		if (!card) notFound();
+		return <CustomCardPage card={card} />;
+	}
+
 	let card;
 	try {
 		card = await getCardById(id);
 	} catch {
 		notFound();
 	}
+
+	if (!card) notFound();
 
 	return (
 		<div className={styles.page}>
