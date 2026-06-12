@@ -8,7 +8,8 @@ import type { CustomCard } from '../types';
 import type { CardFilters } from '@/lib/search/types';
 
 export interface UseCustomCardsFilters extends CardFilters {
-	mpcTagsFilter: string[];
+	mpcTagsMustHave: string[];
+	mpcTagsMustNotHave: string[];
 	oracleIdFilter?: 'all' | 'defined' | 'undefined';
 }
 
@@ -37,7 +38,8 @@ export function useCustomCards(
 		cmc: '',
 		order: 'name',
 		dir: 'asc',
-		mpcTagsFilter: [],
+		mpcTagsMustHave: [],
+		mpcTagsMustNotHave: [],
 	}
 ): UseCustomCardsResult {
 	const [cards, setCards] = useState<CustomCard[]>([]);
@@ -59,7 +61,8 @@ export function useCustomCards(
 
 	const colorsKey = filters.colors.join(',');
 	const raritiesKey = filters.rarities.join(',');
-	const tagsKey = filters.mpcTagsFilter.join(',');
+	const mustHaveKey = filters.mpcTagsMustHave.join(',');
+	const mustNotHaveKey = filters.mpcTagsMustNotHave.join(',');
 	const oracleIdFilter = filters.oracleIdFilter ?? 'all';
 
 	const filterKey = [
@@ -74,7 +77,8 @@ export function useCustomCards(
 		debouncedCmc,
 		filters.order,
 		filters.dir,
-		tagsKey,
+		mustHaveKey,
+		mustNotHaveKey,
 		oracleIdFilter,
 	].join('|');
 
@@ -105,7 +109,8 @@ export function useCustomCards(
 							cmc: debouncedCmc || undefined,
 							rarities: raritiesKey ? raritiesKey.split(',') : undefined,
 							oracleText: debouncedOracleText || undefined,
-							mpcTagsFilter: tagsKey ? tagsKey.split(',') : undefined,
+							mpcTagsMustHave: mustHaveKey ? mustHaveKey.split(',') : undefined,
+							mpcTagsMustNotHave: mustNotHaveKey ? mustNotHaveKey.split(',') : undefined,
 							oracleIdFilter: oracleIdFilter !== 'all' ? oracleIdFilter : undefined,
 							order: filters.order,
 							dir: filters.dir,
@@ -157,7 +162,8 @@ export function useCustomCards(
 			debouncedCmc,
 			filters.order,
 			filters.dir,
-			tagsKey,
+			mustHaveKey,
+			mustNotHaveKey,
 			oracleIdFilter,
 		]
 	);

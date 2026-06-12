@@ -18,9 +18,12 @@ import { SortFilter } from '@/lib/search/components/filters/SortFilter/SortFilte
 import { CustomSourceFilter } from '@/lib/search/components/filters/CustomSourceFilter/CustomSourceFilter';
 import { CardTypeFilter } from '@/lib/search/components/filters/CardTypeFilter/CardTypeFilter';
 import { MpcTagsFilter } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
+import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
 import { OracleIdFilter } from '@/lib/search/components/filters/OracleIdFilter/OracleIdFilter';
 import type { OracleIdFilterValue } from '@/lib/search/components/filters/OracleIdFilter/OracleIdFilter';
 import styles from './FilterModal.module.css';
+
+const DEFAULT_MPC_TAGS: MpcTagsFilterValue = { mustHave: [], mustNotHave: ['NSFW'] };
 
 interface FilterModalProps {
 	isOpen: boolean;
@@ -38,7 +41,7 @@ interface FilterModalProps {
 	customSources?: MpcSourceWithCount[];
 	customSourceId?: string | null;
 	cardTypeFilter?: CardType | 'all';
-	mpcTagsFilter?: string[];
+	mpcTags?: MpcTagsFilterValue;
 	oracleIdFilter?: OracleIdFilterValue;
 	onApply: (filters: {
 		colors: ScryfallColor[];
@@ -52,7 +55,7 @@ interface FilterModalProps {
 		dir: ScryfallSortDir;
 		customSourceId: string | null;
 		cardTypeFilter: CardType | 'all';
-		mpcTagsFilter: string[];
+		mpcTags: MpcTagsFilterValue;
 		oracleIdFilter: OracleIdFilterValue;
 	}) => void;
 	onClose: () => void;
@@ -73,7 +76,7 @@ interface FilterModalContentProps {
 	customSources: MpcSourceWithCount[];
 	initialCustomSourceId: string | null;
 	initialCardTypeFilter: CardType | 'all';
-	initialMpcTagsFilter: string[];
+	initialMpcTags: MpcTagsFilterValue;
 	initialOracleIdFilter: OracleIdFilterValue;
 	onApply: FilterModalProps['onApply'];
 	onClose: () => void;
@@ -94,7 +97,7 @@ function FilterModalContent({
 	customSources,
 	initialCustomSourceId,
 	initialCardTypeFilter,
-	initialMpcTagsFilter,
+	initialMpcTags,
 	initialOracleIdFilter,
 	onApply,
 	onClose,
@@ -117,7 +120,7 @@ function FilterModalContent({
 	const [draftCardTypeFilter, setDraftCardTypeFilter] = useState<CardType | 'all'>(
 		initialCardTypeFilter
 	);
-	const [draftMpcTagsFilter, setDraftMpcTagsFilter] = useState<string[]>(initialMpcTagsFilter);
+	const [draftMpcTags, setDraftMpcTags] = useState<MpcTagsFilterValue>(initialMpcTags);
 	const [draftOracleIdFilter, setDraftOracleIdFilter] =
 		useState<OracleIdFilterValue>(initialOracleIdFilter);
 
@@ -134,7 +137,7 @@ function FilterModalContent({
 			dir: draftDir,
 			customSourceId: draftCustomSourceId,
 			cardTypeFilter: draftCardTypeFilter,
-			mpcTagsFilter: draftMpcTagsFilter,
+			mpcTags: draftMpcTags,
 			oracleIdFilter: draftOracleIdFilter,
 		});
 		onClose();
@@ -152,7 +155,7 @@ function FilterModalContent({
 		setDraftDir('auto');
 		setDraftCustomSourceId(null);
 		setDraftCardTypeFilter('all');
-		setDraftMpcTagsFilter([]);
+		setDraftMpcTags(DEFAULT_MPC_TAGS);
 		setDraftOracleIdFilter('all');
 	};
 
@@ -202,7 +205,7 @@ function FilterModalContent({
 							value={draftCustomSourceId}
 							onChange={setDraftCustomSourceId}
 						/>
-						<MpcTagsFilter value={draftMpcTagsFilter} onChange={setDraftMpcTagsFilter} />
+						<MpcTagsFilter value={draftMpcTags} onChange={setDraftMpcTags} />
 						<OracleIdFilter value={draftOracleIdFilter} onChange={setDraftOracleIdFilter} />
 					</>
 				)}
@@ -236,7 +239,7 @@ export function FilterModal({
 	customSources = [],
 	customSourceId = null,
 	cardTypeFilter = 'all',
-	mpcTagsFilter = [],
+	mpcTags = DEFAULT_MPC_TAGS,
 	oracleIdFilter = 'all',
 	onApply,
 	onClose,
@@ -261,7 +264,7 @@ export function FilterModal({
 				customSources={customSources}
 				initialCustomSourceId={customSourceId}
 				initialCardTypeFilter={cardTypeFilter}
-				initialMpcTagsFilter={mpcTagsFilter}
+				initialMpcTags={mpcTags}
 				initialOracleIdFilter={oracleIdFilter}
 				onApply={onApply}
 				onClose={onClose}

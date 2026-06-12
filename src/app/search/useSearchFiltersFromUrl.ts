@@ -8,6 +8,7 @@ import { countActiveFilters } from '@/lib/search/types';
 import type { ColorMatch } from '@/lib/search/types';
 import type { SearchMode } from '@/lib/search/types';
 import type { OracleIdFilterValue } from '@/lib/search/components/filters/OracleIdFilter/OracleIdFilter';
+import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
 
 const VALID_COLORS = new Set(['W', 'U', 'B', 'R', 'G']);
 const VALID_ORDERS = new Set([
@@ -37,9 +38,18 @@ function parseMode(param: string | null): SearchMode {
 	return 'official';
 }
 
-function parseMpcTags(param: string | null): string[] {
+function parseTags(param: string | null): string[] {
 	if (!param) return [];
 	return param.split(',').filter(Boolean);
+}
+
+function parseMpcTags(
+	mustHaveParam: string | null,
+	mustNotHaveParam: string | null
+): MpcTagsFilterValue {
+	const mustHave = parseTags(mustHaveParam);
+	const mustNotHave = mustNotHaveParam !== null ? parseTags(mustNotHaveParam) : ['NSFW'];
+	return { mustHave, mustNotHave };
 }
 
 function parseColors(param: string | null): ScryfallColor[] {
@@ -78,7 +88,7 @@ export type SearchFilters = {
 	order: ScryfallSortOrder;
 	dir: ScryfallSortDir;
 	customSourceId: string | null;
-	mpcTagsFilter: string[];
+	mpcTags: MpcTagsFilterValue;
 	oracleIdFilter: OracleIdFilterValue;
 };
 
@@ -108,8 +118,8 @@ export function useSearchFiltersFromUrl() {
 	const [customSourceId, setCustomSourceId] = useState<string | null>(
 		() => searchParams.get('source') ?? null
 	);
-	const [mpcTagsFilter, setMpcTagsFilter] = useState<string[]>(() =>
-		parseMpcTags(searchParams.get('mpcTags'))
+	const [mpcTags, setMpcTags] = useState<MpcTagsFilterValue>(() =>
+		parseMpcTags(searchParams.get('mpcMust'), searchParams.get('mpcNot'))
 	);
 	const [oracleIdFilter, setOracleIdFilter] = useState<OracleIdFilterValue>(() => {
 		const raw = searchParams.get('oracleId');
@@ -119,7 +129,6 @@ export function useSearchFiltersFromUrl() {
 
 	const isInitialMount = useRef(true);
 
-	// Sync state to URL when filters change
 	useEffect(() => {
 		if (isInitialMount.current) {
 			isInitialMount.current = false;
@@ -138,7 +147,9 @@ export function useSearchFiltersFromUrl() {
 		if (dir !== 'auto') params.set('dir', dir);
 		if (mode !== 'official') params.set('mode', mode);
 		if (customSourceId) params.set('source', customSourceId);
-		if (mpcTagsFilter.length > 0) params.set('mpcTags', mpcTagsFilter.join(','));
+		if (mpcTags.mustHave.length > 0) params.set('mpcMust', mpcTags.mustHave.join(','));
+		// Always persist mustNotHave so we can distinguish "empty by choice" from "default NSFW"
+		params.set('mpcNot', mpcTags.mustNotHave.join(','));
 		if (oracleIdFilter !== 'all') params.set('oracleId', oracleIdFilter);
 
 		const queryString = params.toString();
@@ -156,7 +167,7 @@ export function useSearchFiltersFromUrl() {
 		dir,
 		mode,
 		customSourceId,
-		mpcTagsFilter,
+		mpcTags,
 		oracleIdFilter,
 		router,
 	]);
@@ -172,7 +183,7 @@ export function useSearchFiltersFromUrl() {
 		setOrder(filters.order);
 		setDir(filters.dir);
 		setCustomSourceId(filters.customSourceId);
-		setMpcTagsFilter(filters.mpcTagsFilter);
+		setMpcTags(filters.mpcTags);
 		setOracleIdFilter(filters.oracleIdFilter);
 	};
 
@@ -190,7 +201,6 @@ export function useSearchFiltersFromUrl() {
 	});
 
 	return {
-		// Individual filter values (needed by useScryfallCardSearch and FilterModal)
 		name,
 		setName,
 		colors,
@@ -207,9 +217,8 @@ export function useSearchFiltersFromUrl() {
 		mode,
 		setMode,
 		customSourceId,
-		mpcTagsFilter,
+		mpcTags,
 		oracleIdFilter,
-		// Aggregate
 		applyFilters,
 		activeFilterCount,
 	};

@@ -1,7 +1,7 @@
 .container {
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
+	gap: 8px;
 }
 
 .label {
@@ -14,39 +14,43 @@
 }
 
 .options {
-	display: flex;
-	gap: 8px;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 4px;
 }
 
 .optionButton {
-	padding: 8px 18px;
-	font-size: var(--text-xs);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 28px;
+	padding: 0 8px;
+	font-size: var(--text-2xs);
 	font-weight: 600;
 	font-family: var(--font-display);
 	letter-spacing: 0.06em;
 	text-transform: uppercase;
-	background: var(--glass-bg);
-	border: 1px solid var(--glass-border);
+	background: var(--surface);
+	border: 1px solid var(--border);
 	border-radius: 2px;
 	cursor: pointer;
 	color: var(--text-muted);
-	backdrop-filter: blur(var(--glass-blur));
 	transition:
-		border-color 0.25s,
-		color 0.25s,
-		box-shadow 0.25s,
-		transform 0.2s;
+		border-color 0.15s,
+		box-shadow 0.15s,
+		background 0.15s,
+		color 0.15s;
 }
 
 .optionButton:hover {
-	transform: scale(1.03);
 	border-color: var(--gold);
 	color: var(--foreground);
+	box-shadow: 0 0 6px rgba(201, 168, 76, 0.2);
 }
 
 .optionButton.selected {
 	border-color: var(--gold);
 	color: var(--gold);
+	background: rgba(201, 168, 76, 0.08);
 	box-shadow: 0 0 8px rgba(201, 168, 76, 0.2);
 }

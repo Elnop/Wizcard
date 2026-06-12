@@ -60,7 +60,7 @@ function SearchPageContent() {
 		mode,
 		setMode,
 		customSourceId,
-		mpcTagsFilter,
+		mpcTags,
 		oracleIdFilter,
 		applyFilters,
 		activeFilterCount,
@@ -111,7 +111,8 @@ function SearchPageContent() {
 		cmc,
 		order,
 		dir,
-		mpcTagsFilter,
+		mpcTagsMustHave: mpcTags.mustHave,
+		mpcTagsMustNotHave: mpcTags.mustNotHave,
 		oracleIdFilter,
 	});
 
@@ -157,7 +158,8 @@ function SearchPageContent() {
 	const totalActiveFilterCount =
 		activeFilterCount +
 		(customSourceId !== null ? 1 : 0) +
-		mpcTagsFilter.length +
+		mpcTags.mustHave.length +
+		(mpcTags.mustNotHave.join(',') !== 'NSFW' ? mpcTags.mustNotHave.length : 0) +
 		(oracleIdFilter !== 'all' ? 1 : 0);
 
 	const tableColumns = [
@@ -222,7 +224,7 @@ function SearchPageContent() {
 					dir={dir}
 					customSources={customSources}
 					customSourceId={customSourceId}
-					mpcTagsFilter={mpcTagsFilter}
+					mpcTags={mpcTags}
 					oracleIdFilter={oracleIdFilter}
 					onApply={applyFilters}
 					onClose={() => setIsModalOpen(false)}

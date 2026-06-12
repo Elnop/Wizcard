@@ -39,8 +39,22 @@ export function startHud(logger: Logger, logPath = 'ingest.log'): void {
 		}
 	);
 
+	// Safety net for the React performance-track leak. react-reconciler's DEV build
+	// (NODE_ENV !== 'production') calls performance.measure() on every commit
+	// ("Components ⚛", "Changed Props", …); Node never evicts those entries, so a
+	// long-running HUD accumulates hundreds of thousands of PerformanceMeasure
+	// objects until OOM (~40 min). `npm run ingest` sets NODE_ENV=production (loads
+	// the prod reconciler, no measures), but if this is launched some other way we
+	// still periodically flush the buffer so the entries can't pile up.
+	const perfFlush = setInterval(() => {
+		performance.clearMeasures();
+		performance.clearMarks();
+	}, 10_000);
+	perfFlush.unref();
+
 	function cleanup(): void {
 		if (runner) {
+			clearInterval(perfFlush);
 			unmount();
 			// Restore logfmt to stdout before closing the file
 			logger.setLogStream(process.stdout);
