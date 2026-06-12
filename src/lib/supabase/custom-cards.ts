@@ -149,6 +149,7 @@ export interface CustomCardQueryFilters {
 	mpcTagsMustHave?: string[];
 	mpcTagsMustNotHave?: string[];
 	oracleIdFilter?: 'all' | 'defined' | 'undefined';
+	cardTypes?: CardType[];
 	order?: string;
 	dir?: 'asc' | 'desc' | 'auto';
 }
@@ -185,6 +186,7 @@ function colorMatchesAtMost(c: MpcCard, sel: string[]): boolean {
 	return c.colors === undefined || c.colors.every((col) => sel.includes(col));
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity -- query builder: one conditional per optional filter
 export async function queryCustomCards(query: CustomCardQuery): Promise<CustomCardPage> {
 	const client = createClient();
 	const { sourceId, page, pageSize, filters } = query;
@@ -201,6 +203,7 @@ export async function queryCustomCards(query: CustomCardQuery): Promise<CustomCa
 	if (filters.oracleText) q = q.ilike('oracle_text', `%${filters.oracleText}%`);
 	if (filters.set) q = q.eq('set_code', filters.set);
 	if (filters.rarities?.length) q = q.in('rarity', filters.rarities);
+	if (filters.cardTypes?.length) q = q.in('card_type', filters.cardTypes);
 	if (filters.mpcTagsMustHave?.length) q = q.overlaps('tags', filters.mpcTagsMustHave);
 	if (filters.mpcTagsMustNotHave?.length)
 		q = filters.mpcTagsMustNotHave.reduce((acc, tag) => acc.not('tags', 'cs', `{${tag}}`), q);
