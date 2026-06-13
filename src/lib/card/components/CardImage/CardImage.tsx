@@ -58,9 +58,9 @@ export function CardImage({
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState(false);
 	const [isVisible, setIsVisible] = useState(priority);
-	const [isTilting, setIsTilting] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
+	const rectRef = useRef<DOMRect | null>(null);
 
 	useEffect(() => {
 		if (priority) return;
@@ -114,10 +114,17 @@ export function CardImage({
 		}
 	};
 
-	const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+	const handleMouseEnter = () => {
 		const el = wrapperRef.current;
 		if (!el) return;
-		const rect = el.getBoundingClientRect();
+		rectRef.current = el.getBoundingClientRect();
+		el.style.setProperty('--tilt-duration', '0ms');
+	};
+
+	const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+		const el = wrapperRef.current;
+		const rect = rectRef.current;
+		if (!el || !rect) return;
 		const x = (e.clientX - rect.left) / rect.width;
 		const y = (e.clientY - rect.top) / rect.height;
 		const tiltX = (x - 0.5) * 2 * TILT_MAX_DEG;
@@ -131,15 +138,12 @@ export function CardImage({
 	const handleMouseLeave = () => {
 		const el = wrapperRef.current;
 		if (!el) return;
-		setIsTilting(false);
+		rectRef.current = null;
+		el.style.setProperty('--tilt-duration', '500ms');
 		el.style.setProperty('--tilt-x', '0deg');
 		el.style.setProperty('--tilt-y', '0deg');
 		el.style.setProperty('--mouse-x', '50%');
 		el.style.setProperty('--mouse-y', '50%');
-	};
-
-	const handleMouseEnter = () => {
-		setIsTilting(true);
 	};
 
 	const classNames = [styles.container, onClick ? styles.clickable : '', className ?? '']
@@ -179,16 +183,12 @@ export function CardImage({
 		<div ref={containerRef} className={classNames} onClick={onClick}>
 			<div
 				ref={wrapperRef}
-				className={[
-					styles.imageWrapper,
-					// eslint-disable-next-line sonarjs/no-nested-conditional -- tilt state has 3 values: disabled, active, returning
-					disableTilt ? styles.noTilt : isTilting ? '' : styles.tiltReturning,
-				]
+				className={[styles.imageWrapper, disableTilt ? styles.noTilt : '']
 					.filter(Boolean)
 					.join(' ')}
+				onMouseEnter={disableTilt ? undefined : handleMouseEnter}
 				onMouseMove={disableTilt ? undefined : handleMouseMove}
 				onMouseLeave={disableTilt ? undefined : handleMouseLeave}
-				onMouseEnter={disableTilt ? undefined : handleMouseEnter}
 			>
 				{renderCardImage()}
 				{(isLoading || localizedLoading) && !error && <div className={styles.skeleton} />}
