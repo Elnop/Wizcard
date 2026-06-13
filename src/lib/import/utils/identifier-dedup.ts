@@ -6,7 +6,8 @@ import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
  */
 export function buildIdentifierKey(id: ScryfallCardIdentifier): string {
 	if ('set' in id && 'collector_number' in id && id.set && id.collector_number) {
-		return `${id.set.toLowerCase()}/${id.collector_number.toLowerCase()}`;
+		const base = `${id.set.toLowerCase()}/${id.collector_number.toLowerCase()}`;
+		return id.lang && id.lang !== 'en' ? `${base}/${id.lang}` : base;
 	}
 	if ('set' in id && id.set) {
 		return `name:${(id.name ?? '').toLowerCase()}/set:${id.set.toLowerCase()}`;

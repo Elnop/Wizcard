@@ -76,6 +76,25 @@
 	color: var(--foreground);
 }
 
+.badge {
+	font-size: var(--text-xs);
+	padding: 2px 8px;
+	border-radius: 10px;
+	background: var(--primary);
+	color: var(--primary-text);
+	font-weight: 500;
+}
+
+.sourceInfo {
+	display: flex;
+	align-items: center;
+}
+
+.sourceName {
+	font-size: var(--text-sm);
+	color: var(--text-muted);
+}
+
 .externalLinks {
 	display: flex;
 	gap: 12px;

@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { CustomCard } from '@/lib/mpc/types';
 import { getCardSimilar } from '@/lib/scryfall/endpoints/cards';
 import { LocalizedCardThumb } from '@/lib/card/components/LocalizedCardThumb/LocalizedCardThumb';
 import styles from './SimilarTab.module.css';
 
 interface Props {
-	card: ScryfallCard;
+	card: ScryfallCard | CustomCard;
 }
 
 export function SimilarTab({ card }: Props) {
@@ -21,7 +22,7 @@ export function SimilarTab({ card }: Props) {
 		const fetchSimilar = async () => {
 			try {
 				setLoading(true);
-				const data = await getCardSimilar(card, controller.signal);
+				const data = await getCardSimilar(card as ScryfallCard, controller.signal);
 				if (!controller.signal.aborted) {
 					setSimilar(data);
 				}

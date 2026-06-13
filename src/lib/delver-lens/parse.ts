@@ -130,6 +130,7 @@ export const parseDelverLens: BinaryFormatParser = async (buffer) => {
 				return {
 					set: row.set,
 					collector_number: row.collectorNumber,
+					...(row.language && row.language !== 'en' ? { lang: row.language } : {}),
 				};
 			}
 			return {

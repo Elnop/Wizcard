@@ -363,6 +363,7 @@ export interface ScryfallCardIdentifier {
 	name?: string;
 	set?: string;
 	collector_number?: string;
+	lang?: string;
 }
 
 export interface ScryfallImageOptions {

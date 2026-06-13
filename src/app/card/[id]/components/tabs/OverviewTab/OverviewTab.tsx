@@ -69,17 +69,19 @@ export function OverviewTab({ card }: Props) {
 				)}
 			</div>
 
-			<div className={styles.legalities}>
-				<h3 className={styles.legalitiesTitle}>Legalities</h3>
-				<div className={styles.legalityGrid}>
-					{Object.entries(card.legalities).map(([format, legality]) => (
-						<div key={format} className={styles.legalityItem} data-legality={legality}>
-							<span className={styles.formatName}>{format}</span>
-							<span className={styles.legalityStatus}>{legality.replace('_', ' ')}</span>
-						</div>
-					))}
+			{card.legalities && (
+				<div className={styles.legalities}>
+					<h3 className={styles.legalitiesTitle}>Legalities</h3>
+					<div className={styles.legalityGrid}>
+						{Object.entries(card.legalities).map(([format, legality]) => (
+							<div key={format} className={styles.legalityItem} data-legality={legality}>
+								<span className={styles.formatName}>{format}</span>
+								<span className={styles.legalityStatus}>{legality.replace('_', ' ')}</span>
+							</div>
+						))}
+					</div>
 				</div>
-			</div>
+			)}
 		</div>
 	);
 }

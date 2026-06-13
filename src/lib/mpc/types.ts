@@ -42,18 +42,6 @@ export interface MpcCard {
 	artist?: string;
 }
 
-export interface MpcIndexEntry {
-	identifier: string;
-	name: string;
-	rawName: string;
-	sourceName: string;
-	sourceKey: string;
-	smallThumbnailUrl: string;
-	mediumThumbnailUrl: string;
-	tags: string[];
-	dpi: number;
-}
-
 export interface CustomCardMeta {
 	source_id: string | null;
 	source_name: string;

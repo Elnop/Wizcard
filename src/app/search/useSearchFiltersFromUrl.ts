@@ -148,8 +148,9 @@ export function useSearchFiltersFromUrl() {
 		if (mode !== 'official') params.set('mode', mode);
 		if (customSourceId) params.set('source', customSourceId);
 		if (mpcTags.mustHave.length > 0) params.set('mpcMust', mpcTags.mustHave.join(','));
-		// Always persist mustNotHave so we can distinguish "empty by choice" from "default NSFW"
-		params.set('mpcNot', mpcTags.mustNotHave.join(','));
+		// Omit mpcNot when it's the default ['NSFW']; use mpcNot= (empty) to signal "cleared by user"
+		const isDefaultMpcNot = mpcTags.mustNotHave.length === 1 && mpcTags.mustNotHave[0] === 'NSFW';
+		if (!isDefaultMpcNot) params.set('mpcNot', mpcTags.mustNotHave.join(','));
 		if (oracleIdFilter !== 'all') params.set('oracleId', oracleIdFilter);
 
 		const queryString = params.toString();

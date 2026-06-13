@@ -94,62 +94,78 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 		return penaltyRemaining > 0 ? base * PENALTY_FACTOR : base;
 	}
 
+	// Executes a single HTTP attempt with an abort timer and caller-signal forwarding.
+	// Returns the Response or throws. Does NOT handle 429 or retry logic.
+	async function fetchOnce(url: string, init?: RequestInit): Promise<Response> {
+		// Use an explicit AbortController + clearTimeout rather than AbortSignal.timeout:
+		// the latter leaves a live 30s libuv timer dangling on EVERY request until it
+		// fires, leaking native RSS across a long run of 100k+ requests.
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), requestTimeoutMs);
+		const onCallerAbort = (): void => controller.abort(init?.signal?.reason);
+		if (init?.signal) init.signal.addEventListener('abort', onCallerAbort, { once: true });
+		try {
+			return await fetch(url, {
+				...init,
+				headers: { 'User-Agent': userAgent, ...init?.headers },
+				signal: controller.signal,
+			});
+		} finally {
+			clearTimeout(timer);
+			init?.signal?.removeEventListener('abort', onCallerAbort);
+		}
+	}
+
+	async function handle429(
+		res: Response,
+		lastResponse: Response | null,
+		attempt: number,
+		url: string,
+		init?: RequestInit
+	): Promise<void> {
+		// Drain the previous 429 body: an unread Response keeps undici holding the
+		// socket/buffer, leaking native RSS across a long run of retries.
+		await lastResponse?.body?.cancel();
+		penaltyRemaining = PENALTY_DECAY_REQUESTS;
+		const retryAfterSec = parseInt(res.headers.get('retry-after') ?? '', 10);
+		const wait = isNaN(retryAfterSec)
+			? Math.min(BACKOFF_BASE_MS * Math.pow(2, attempt), BACKOFF_CAP_MS)
+			: (retryAfterSec + 1) * 1000;
+		console.warn(
+			`  ⚠ Scryfall 429 (retry-after=${retryAfterSec}s) on ${init?.method ?? 'GET'} ${url.replace('https://api.scryfall.com', '')}, waiting ${wait}ms…`
+		);
+		await sleep(wait);
+	}
+
 	async function doFetch(url: string, init?: RequestInit): Promise<Response> {
 		let lastResponse: Response | null = null;
 		for (let attempt = 0; attempt < maxRetries; attempt++) {
 			let res: Response;
-			// Abort a request that stalls past the timeout so a dead socket can't pin
-			// the mutex forever. Use an explicit AbortController + clearTimeout rather
-			// than AbortSignal.timeout: the latter leaves a live 30s libuv timer (and
-			// the listener undici attaches to its signal) dangling on EVERY request
-			// until it fires, which on a long run of 100k+ requests leaks native RSS
-			// steadily (heap stays flat) until OOM. Clearing the timer on completion
-			// releases the timer and signal immediately.
-			const controller = new AbortController();
-			const timer = setTimeout(() => controller.abort(), requestTimeoutMs);
-			// Forward a caller abort onto our controller without AbortSignal.any (which
-			// would itself register a never-removed listener on a long-lived signal).
-			const onCallerAbort = (): void => controller.abort(init?.signal?.reason);
-			if (init?.signal) init.signal.addEventListener('abort', onCallerAbort, { once: true });
 			try {
-				res = await fetch(url, {
-					...init,
-					headers: { 'User-Agent': userAgent, ...init?.headers },
-					signal: controller.signal,
-				});
+				res = await fetchOnce(url, init);
 			} catch (err) {
 				// A caller-initiated abort is intentional — propagate it, don't retry.
 				if (init?.signal?.aborted) throw err;
 				const msg = err instanceof Error ? err.message : String(err);
 				if (attempt < maxRetries - 1) {
+					// In the browser, Scryfall 429s arrive as TypeError (CORS blocks the
+					// error response body). Treat network errors on slow endpoints as
+					// likely 429s and engage the penalty so queued requests back off.
+					if (typeof window !== 'undefined' && isSlowUrl(url)) {
+						penaltyRemaining = PENALTY_DECAY_REQUESTS;
+					}
 					const wait = Math.min(BACKOFF_BASE_MS * Math.pow(2, attempt), BACKOFF_CAP_MS);
 					console.warn(`  ⚠ Scryfall network error, retrying in ${wait}ms… (${msg})`);
 					await sleep(wait);
 					continue;
 				}
 				throw err;
-			} finally {
-				clearTimeout(timer);
-				init?.signal?.removeEventListener('abort', onCallerAbort);
 			}
 
 			if (res.status !== 429) return res;
 
-			// 429 — engage the penalty so subsequent requests pace slower, then wait.
-			// Drain the previous 429's body before discarding it (and we'll drain this
-			// one too on the next loop): an unread Response keeps undici holding the
-			// socket/buffer, which leaks native RSS across a long run of retries.
-			await lastResponse?.body?.cancel();
+			await handle429(res, lastResponse, attempt, url, init);
 			lastResponse = res;
-			penaltyRemaining = PENALTY_DECAY_REQUESTS;
-			const retryAfterSec = parseInt(res.headers.get('retry-after') ?? '', 10);
-			const wait = isNaN(retryAfterSec)
-				? Math.min(BACKOFF_BASE_MS * Math.pow(2, attempt), BACKOFF_CAP_MS)
-				: (retryAfterSec + 1) * 1000;
-			console.warn(
-				`  ⚠ Scryfall 429 (retry-after=${retryAfterSec}s) on ${init?.method ?? 'GET'} ${url.replace('https://api.scryfall.com', '')}, waiting ${wait}ms…`
-			);
-			await sleep(wait);
 		}
 
 		// All attempts exhausted — return the last 429 Response for the caller.

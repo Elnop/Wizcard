@@ -1,15 +1,38 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { ScryfallRuling, ScryfallUUID } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallRuling } from '@/lib/scryfall/types/scryfall';
 import { getCardRulings } from '@/lib/scryfall/endpoints/cards';
+import { scryfallGet } from '@/lib/scryfall/utils/fetcher';
+import type { ScryfallCardSearchResult } from '@/lib/scryfall/types/scryfall';
 import styles from './RulingsTab.module.css';
 
 interface Props {
-	cardId: ScryfallUUID;
+	cardId: string;
+	oracleId?: string;
 }
 
-export function RulingsTab({ cardId }: Props) {
+async function resolveRulings(
+	cardId: string,
+	oracleId: string | undefined,
+	signal: AbortSignal
+): Promise<ScryfallRuling[]> {
+	const isMpcId = cardId.startsWith('mpc:');
+	if (!isMpcId) {
+		return getCardRulings(cardId, signal);
+	}
+	if (!oracleId) return [];
+	const result = await scryfallGet<ScryfallCardSearchResult>(
+		'/cards/search',
+		{ q: `oracle_id:${oracleId}`, unique: 'cards', order: 'released' },
+		signal
+	);
+	const first = result.data[0];
+	if (!first) return [];
+	return getCardRulings(first.id, signal);
+}
+
+export function RulingsTab({ cardId, oracleId }: Props) {
 	const [rulings, setRulings] = useState<ScryfallRuling[]>([]);
 	const [loading, setLoading] = useState(true);
 
@@ -19,7 +42,7 @@ export function RulingsTab({ cardId }: Props) {
 		const fetchRulings = async () => {
 			try {
 				setLoading(true);
-				const data = await getCardRulings(cardId, controller.signal);
+				const data = await resolveRulings(cardId, oracleId, controller.signal);
 				if (!controller.signal.aborted) {
 					setRulings(data);
 				}
@@ -39,7 +62,7 @@ export function RulingsTab({ cardId }: Props) {
 		return () => {
 			controller.abort();
 		};
-	}, [cardId]);
+	}, [cardId, oracleId]);
 
 	if (loading) {
 		return <div className={styles.loading}>Chargement des rulings…</div>;

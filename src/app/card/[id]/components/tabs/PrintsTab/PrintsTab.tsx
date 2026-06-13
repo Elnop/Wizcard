@@ -3,21 +3,27 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { CardEntry } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
+import { isCustomCard } from '@/lib/mpc/types';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { groupPrintsByLang } from '@/lib/card/components/PrintList/PrintList.types';
 import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
+import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { LocalizedCardThumb } from '@/lib/card/components/LocalizedCardThumb/LocalizedCardThumb';
-import { useMpcPrints } from '@/lib/mpc/hooks/useMpcPrints';
 import { useCustomCardPrints } from '@/lib/mpc/hooks/useCustomCardPrints';
+import { PrintContextMenu } from './PrintContextMenu';
 import styles from './PrintsTab.module.css';
 
+const MENU_WIDTH = 200;
+const MENU_HEIGHT = 100;
+
 interface Props {
-	card: ScryfallCard;
+	card: ScryfallCard | CustomCard;
 }
 
 function MiniThumb({ card }: { card: ScryfallCard }): ReactNode {
@@ -26,54 +32,41 @@ function MiniThumb({ card }: { card: ScryfallCard }): ReactNode {
 	);
 }
 
-function PrintAction({
-	print,
-	currentId,
-	onAdd,
-}: {
-	print: ScryfallCard;
-	currentId: string;
-	onAdd: (print: ScryfallCard) => void;
-}): ReactNode {
-	if (print.id === currentId) {
-		return <span className={styles.currentBadge}>Affiché</span>;
-	}
-	return (
-		<button
-			type="button"
-			className={styles.addBtn}
-			onClick={(e) => {
-				e.stopPropagation();
-				onAdd(print);
-			}}
-		>
-			Ajouter
-		</button>
-	);
-}
-
 export function PrintsTab({ card }: Props) {
-	const { prints, loading } = useCardPrints(card.prints_search_uri);
-	const [addingCard, setAddingCard] = useState<ScryfallCard | null>(null);
+	const custom = isCustomCard(card) ? card : null;
+	const scryfall = custom ? null : (card as ScryfallCard);
+
+	const printsUri =
+		scryfall?.prints_search_uri ??
+		(card.oracle_id
+			? `https://api.scryfall.com/cards/search?q=oracle_id%3A${card.oracle_id}&unique=prints&order=released`
+			: undefined);
+
+	const { prints, loading } = useCardPrints(printsUri);
+	const { prints: customPrints, loading: customLoading } = useCustomCardPrints(
+		card.oracle_id,
+		card.id
+	);
+
 	const { addCard } = useCollectionContext();
+	const { addToWishlist } = useWishlistContext();
 
-	const { prints: mpcPrints, loading: mpcLoading, error: mpcError } = useMpcPrints(card.name);
-	const { prints: customPrints, loading: customLoading } = useCustomCardPrints(card.oracle_id, '');
+	const [viewingCard, setViewingCard] = useState<ScryfallCard | null>(null);
+	const [contextMenuCard, setContextMenuCard] = useState<ScryfallCard | null>(null);
+	const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+	const [addingCard, setAddingCard] = useState<ScryfallCard | null>(null);
+	const [addingToWishlist, setAddingToWishlist] = useState<ScryfallCard | null>(null);
 
-	function handleAdd(print: ScryfallCard, entry: Partial<CardEntry>) {
-		addCard(print, entry);
-		setAddingCard(null);
+	const currentLang = scryfall?.lang ?? custom?.custom.lang ?? 'en';
+	const hasCustomPrints = customPrints.length > 0;
+
+	let officialSections: CardListSection[] = [];
+	if (prints.length > 0) {
+		const byLang = groupPrintsByLang(prints, currentLang);
+		officialSections = hasCustomPrints
+			? [{ label: 'Prints officiels', cards: [], children: byLang }]
+			: byLang;
 	}
-
-	const officialSections = groupPrintsByLang(prints, card.lang);
-
-	const mpcSection: CardListSection | null =
-		mpcPrints.length > 0
-			? {
-					label: 'Proxies MPC',
-					cards: mpcPrints as unknown as AnyCard[],
-				}
-			: null;
 
 	const customSection: CardListSection | null =
 		customPrints.length > 0
@@ -85,21 +78,24 @@ export function PrintsTab({ card }: Props) {
 
 	const sections: CardListSection[] = [
 		...officialSections,
-		...(mpcSection ? [mpcSection] : []),
 		...(customSection ? [customSection] : []),
 	];
 
 	return (
 		<>
-			{mpcError && <p className={styles.printMeta}>Proxies indisponibles : {mpcError}</p>}
-
 			<CardList
 				cards={sections}
-				isLoading={loading || mpcLoading || customLoading}
+				isLoading={loading || customLoading}
 				pageSize={false}
-				renderOverlay={(p: AnyCard) => (
-					<PrintAction print={p as ScryfallCard} currentId={card.id} onAdd={setAddingCard} />
-				)}
+				onCardClick={(p) => setViewingCard(p as ScryfallCard)}
+				onCardContextMenu={(p, e) => {
+					e.preventDefault();
+					const x = e.clientX + MENU_WIDTH > window.innerWidth ? e.clientX - MENU_WIDTH : e.clientX;
+					const y =
+						e.clientY + MENU_HEIGHT > window.innerHeight ? e.clientY - MENU_HEIGHT : e.clientY;
+					setContextMenuCard(p as ScryfallCard);
+					setContextMenuPos({ x, y });
+				}}
 				tableColumns={[
 					{
 						key: 'image',
@@ -136,21 +132,67 @@ export function PrintsTab({ card }: Props) {
 						},
 					},
 					{
-						key: 'action',
+						key: 'current',
 						label: '',
-						render: (p: AnyCard) => (
-							<PrintAction print={p as ScryfallCard} currentId={card.id} onAdd={setAddingCard} />
-						),
+						render: (p: AnyCard) => {
+							if ((p as ScryfallCard).id === card.id) {
+								return <span className={styles.currentBadge}>Affiché</span>;
+							}
+							return null;
+						},
 					},
 				]}
 			/>
+
+			{contextMenuCard && (
+				<PrintContextMenu
+					card={contextMenuCard}
+					pos={contextMenuPos}
+					onClose={() => {
+						setContextMenuCard(null);
+						setContextMenuPos(null);
+					}}
+					onAddToCollection={(c) => setAddingCard(c)}
+					onAddToWishlist={(c) => setAddingToWishlist(c)}
+				/>
+			)}
+
+			{viewingCard && (
+				<CardModal
+					cards={viewingCard}
+					onClose={() => setViewingCard(null)}
+					onAddToCollection={(selectedPrint, entry) => {
+						addCard(selectedPrint, entry);
+						setViewingCard(null);
+					}}
+					onAddToWishlist={(selectedPrint, entry) => {
+						addToWishlist(selectedPrint, entry);
+						setViewingCard(null);
+					}}
+				/>
+			)}
 
 			{addingCard && (
 				<EditCardModal
 					mode="add"
 					scryfallCard={addingCard}
-					onAdd={handleAdd}
+					onAdd={(selectedPrint, entry) => {
+						addCard(selectedPrint, entry);
+						setAddingCard(null);
+					}}
 					onClose={() => setAddingCard(null)}
+				/>
+			)}
+
+			{addingToWishlist && (
+				<EditCardModal
+					mode="add"
+					scryfallCard={addingToWishlist}
+					onAdd={(selectedPrint, entry) => {
+						addToWishlist(selectedPrint, entry);
+						setAddingToWishlist(null);
+					}}
+					onClose={() => setAddingToWishlist(null)}
 				/>
 			)}
 		</>

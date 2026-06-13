@@ -10,7 +10,7 @@ import {
 import type { CustomCardRow, CustomCardSourceRow } from './custom-cards';
 
 export async function getCustomCardWithSource(id: string): Promise<CustomCard | null> {
-	const rawId = id.startsWith('mpc:') ? id.slice(4) : id;
+	const rawId = id;
 	const client = await createClient();
 
 	const { data: cardRow, error: cardError } = await client

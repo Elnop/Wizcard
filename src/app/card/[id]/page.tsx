@@ -4,7 +4,6 @@ import { getCardById } from '@/lib/scryfall/endpoints/cards';
 import { getCustomCardWithSource } from '@/lib/supabase/custom-cards.server';
 import { CardPageHeader } from './components/CardPageHeader/CardPageHeader';
 import { CardTabs } from './components/CardTabs/CardTabs';
-import { CustomCardPage } from './components/CustomCardPage/CustomCardPage';
 import styles from './page.module.css';
 
 interface CardPageProps {
@@ -14,7 +13,8 @@ interface CardPageProps {
 }
 
 export async function generateMetadata({ params }: CardPageProps) {
-	const { id } = await params;
+	const { id: rawId } = await params;
+	const id = decodeURIComponent(rawId);
 
 	if (id.startsWith('mpc:')) {
 		const card = await getCustomCardWithSource(id);
@@ -39,12 +39,20 @@ export async function generateMetadata({ params }: CardPageProps) {
 }
 
 export default async function CardPage({ params }: CardPageProps) {
-	const { id } = await params;
+	const { id: rawId } = await params;
+	const id = decodeURIComponent(rawId);
 
 	if (id.startsWith('mpc:')) {
 		const card = await getCustomCardWithSource(id);
 		if (!card) notFound();
-		return <CustomCardPage card={card} />;
+		return (
+			<div className={styles.page}>
+				<CardPageHeader card={card} />
+				<Suspense>
+					<CardTabs card={card} />
+				</Suspense>
+			</div>
+		);
 	}
 
 	let card;
