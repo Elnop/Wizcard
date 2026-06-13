@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
-import { BATCH_SIZE } from '@/lib/scryfall/constants';
-import { getCardsFromCache, putCardsInCache } from '@/lib/scryfall/utils/card-cache';
+import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
 import type { Card, CardStack } from '@/types/cards';
 import type { CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
@@ -62,52 +60,14 @@ export function useCollectionCards(entries: StoredCopy[]): {
 				return;
 			}
 
-			// Phase 1: read from IndexedDB cache
-			const cachedMap = await getCardsFromCache(pendingIds);
+			// Resolve pending IDs (IndexedDB cache → network for misses → cache write)
+			const resolvedMap = await resolveCardsByScryfallIds(pendingIds, {
+				isCancelled: () => cancelledRef.current,
+			});
 			if (cancelledRef.current) return;
 
-			const missIds = pendingIds.filter((id) => !cachedMap.has(id));
-
-			// Merge cache hits into the running map (monotonic growth)
-			const merged = new Map([...scryfallMapRef.current, ...cachedMap]);
-
-			if (missIds.length === 0) {
-				if (!cancelledRef.current) {
-					scryfallMapRef.current = merged;
-					setScryfallMap(merged);
-					setIsLoading(false);
-				}
-				return;
-			}
-
-			// Keep the running map up to date with cache hits (no publish: the grid
-			// is gated on isLoading and revealed once hydration is complete).
-			scryfallMapRef.current = merged;
-
-			// Phase 2: fetch only the cache misses from the network
-			const identifiers = missIds.map((id) => ({ id }));
-			const chunks: (typeof identifiers)[] = [];
-			for (let i = 0; i < identifiers.length; i += BATCH_SIZE) {
-				chunks.push(identifiers.slice(i, i + BATCH_SIZE));
-			}
-
-			const fetchedScryfallCards: ScryfallCard[] = [];
-			for (let i = 0; i < chunks.length; i++) {
-				if (cancelledRef.current) return;
-				try {
-					const result = await getCardCollection(chunks[i]);
-					for (const scryfallCard of result.data) {
-						fetchedScryfallCards.push(scryfallCard);
-					}
-				} catch (err) {
-					console.error(`[useCollectionCards] batch ${i + 1}/${chunks.length} failed:`, err);
-				}
-			}
-
-			void putCardsInCache(fetchedScryfallCards);
-
-			const fetchedMap = new Map(fetchedScryfallCards.map((c) => [c.id, c]));
-			const allMap = new Map([...merged, ...fetchedMap]);
+			// Merge into the running map (monotonic growth across paged re-runs)
+			const allMap = new Map([...scryfallMapRef.current, ...resolvedMap]);
 
 			if (!cancelledRef.current) {
 				scryfallMapRef.current = allMap;

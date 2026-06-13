@@ -6,7 +6,7 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckZone } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
-import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
+import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
 import { computeDeckStats, type DeckStats } from '@/lib/deck/utils/deck-stats';
 
 export type ResolvedDeckCard = Card;
@@ -50,23 +50,12 @@ export function useDeckDetail(deckId: string) {
 		setResolveGeneration(generation);
 
 		async function resolve() {
-			const resolved: Record<string, ScryfallCard> = {};
-			// Batch in groups of 75 (Scryfall limit)
-			for (let i = 0; i < toResolve.length; i += 75) {
-				if (activeResolveRef.current !== capturedGeneration) return;
-				const batch = toResolve.slice(i, i + 75);
-				const identifiers = batch.map((id) => ({ id }));
-				try {
-					const result = await getCardCollection(identifiers);
-					for (const card of result.data) {
-						resolved[card.id] = card;
-					}
-				} catch (err) {
-					console.error('[useDeckDetail] Failed to resolve cards:', err);
-				}
-			}
+			const resolvedMap = await resolveCardsByScryfallIds(toResolve, {
+				isCancelled: () => activeResolveRef.current !== capturedGeneration,
+			});
 			if (activeResolveRef.current === capturedGeneration) {
-				for (const id of Object.keys(resolved)) {
+				const resolved = Object.fromEntries(resolvedMap);
+				for (const id of resolvedMap.keys()) {
 					resolvedIdsRef.current.add(id);
 				}
 				setScryfallCards((prev) => ({ ...prev, ...resolved }));
