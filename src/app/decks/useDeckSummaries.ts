@@ -5,34 +5,13 @@ import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall'
 import type { DeckMeta } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { fetchDeckCardEntries } from '@/lib/deck/db/decks';
-import { getCardsFromCache, putCardsInCache } from '@/lib/scryfall/utils/card-cache';
-import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
+import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
 import { computeDeckStats } from '@/lib/deck/utils/deck-stats';
 import { validateDeck, getFormatRules } from '@/lib/deck/utils/format-rules';
 
 const WUBRG_ORDER: ScryfallColor[] = ['W', 'U', 'B', 'R', 'G'];
 
 type DeckCardEntry = { scryfallId: string; tags: string[] | null };
-
-async function fetchMissingCards(
-	missingIds: string[],
-	cached: Map<string, ScryfallCard>,
-	runIdRef: React.MutableRefObject<number>,
-	currentRunId: number
-): Promise<boolean> {
-	for (let i = 0; i < missingIds.length; i += 75) {
-		if (runIdRef.current !== currentRunId) return false;
-		const batch = missingIds.slice(i, i + 75);
-		try {
-			const result = await getCardCollection(batch.map((id) => ({ id })));
-			await putCardsInCache(result.data);
-			for (const card of result.data) cached.set(card.id, card);
-		} catch (err) {
-			console.error('[useDeckSummaries] Failed to resolve cards:', err);
-		}
-	}
-	return true;
-}
 
 function buildDeckSummary(
 	deckId: string,
@@ -185,14 +164,9 @@ export function useDeckSummaries(decks: DeckMeta[]): Record<string, DeckSummary>
 			}
 			if (allIds.size === 0 || runIdRef.current !== currentRunId) return;
 
-			const allIdsArr = [...allIds];
-			const cached = await getCardsFromCache(allIdsArr);
-			const missingIds = allIdsArr.filter((id) => !cached.has(id));
-
-			if (missingIds.length > 0) {
-				const ok = await fetchMissingCards(missingIds, cached, runIdRef, currentRunId);
-				if (!ok) return;
-			}
+			const cached = await resolveCardsByScryfallIds([...allIds], {
+				isCancelled: () => runIdRef.current !== currentRunId,
+			});
 
 			if (runIdRef.current !== currentRunId) return;
 

@@ -9,6 +9,7 @@ import type { DeckZone } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { parseMTGADeck, type DeckImportResult } from '@/lib/import/formats/mtga-deck';
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
+import { BATCH_SIZE } from '@/lib/scryfall/constants';
 import { deduplicateIdentifiers } from '@/lib/import/utils/identifier-dedup';
 import { useSetCodeNormalizer } from '@/lib/import/hooks/useSetCodeNormalizer';
 import { extractMoxfieldId, fetchMoxfieldDeck } from '@/lib/moxfield/fetch-deck';
@@ -34,8 +35,6 @@ const FORMATS: { value: DeckFormat | ''; label: string }[] = [
 export const FORMAT_LABELS: Record<string, string> = Object.fromEntries(
 	FORMATS.filter((f) => f.value).map((f) => [f.value, f.label])
 );
-
-const BATCH_SIZE = 75;
 
 const PLACEHOLDER = `4 Lightning Bolt (M11) 149
 4x Counterspell
