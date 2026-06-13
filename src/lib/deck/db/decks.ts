@@ -1,16 +1,7 @@
 import type { CardEntry } from '@/types/cards';
 import type { DeckMeta } from '@/types/decks';
 import { createClient } from '@/lib/supabase/client';
-import { SCRYFALL_CODE_TO_LANGUAGE, MTG_LANGUAGES } from '@/lib/mtg/languages';
-import type { MtgLanguage } from '@/lib/mtg/languages';
-
-const VALID_LANGUAGES = new Set<MtgLanguage>(MTG_LANGUAGES);
-
-function normalizeLanguage(raw: string | undefined): MtgLanguage | undefined {
-	if (!raw) return undefined;
-	if (VALID_LANGUAGES.has(raw as MtgLanguage)) return raw as MtgLanguage;
-	return SCRYFALL_CODE_TO_LANGUAGE[raw] ?? undefined;
-}
+import { type CardDbRow, rowToCardEntry, cardEntryToRow } from '@/lib/card/db/cardRow';
 
 type DeckDbRow = {
 	id: string;
@@ -32,41 +23,6 @@ function rowToDeckMeta(row: DeckDbRow): DeckMeta {
 		folderId: row.folder_id ?? null,
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,
-	};
-}
-
-type CardDbRow = {
-	id: string;
-	owner_id: string | null;
-	scryfall_id: string;
-	date_added: string;
-	is_foil: boolean | null;
-	foil_type: string | null;
-	condition: string | null;
-	language: string | null;
-	purchase_price: string | null;
-	for_trade: boolean | null;
-	alter: boolean | null;
-	proxy: boolean | null;
-	tags: string[] | null;
-	deck_id: string | null;
-};
-
-function rowToEntry(row: CardDbRow): CardEntry {
-	return {
-		rowId: row.id,
-		dateAdded: row.date_added,
-		isFoil: row.is_foil ?? undefined,
-		foilType: (row.foil_type as CardEntry['foilType']) ?? undefined,
-		condition: (row.condition as CardEntry['condition']) ?? undefined,
-		language: normalizeLanguage(row.language ?? undefined),
-		purchasePrice: row.purchase_price ?? undefined,
-		forTrade: row.for_trade ?? undefined,
-		alter: row.alter ?? undefined,
-		proxy: row.proxy ?? undefined,
-		tags: row.tags ?? undefined,
-		deckId: row.deck_id ?? undefined,
-		ownerId: row.owner_id ?? undefined,
 	};
 }
 
@@ -265,7 +221,7 @@ export async function fetchDeckCards(
 
 	return (data as CardDbRow[]).map((row) => ({
 		scryfallId: row.scryfall_id,
-		entry: rowToEntry(row),
+		entry: rowToCardEntry(row, { includeOwnerId: true }),
 	}));
 }
 
@@ -276,19 +232,8 @@ export async function insertDeckCard(
 ): Promise<void> {
 	const supabase = createClient();
 	const { error } = await supabase.from('cards').insert({
-		id: entry.rowId,
-		scryfall_id: scryfallId,
-		date_added: entry.dateAdded,
+		...cardEntryToRow(scryfallId, entry),
 		deck_id: deckId,
-		is_foil: entry.isFoil ?? null,
-		foil_type: entry.foilType ?? null,
-		condition: entry.condition ?? null,
-		language: entry.language ?? null,
-		purchase_price: entry.purchasePrice ?? null,
-		for_trade: entry.forTrade ?? null,
-		alter: entry.alter ?? null,
-		proxy: entry.proxy ?? null,
-		tags: entry.tags ?? null,
 	});
 
 	if (error) {
@@ -303,19 +248,8 @@ export async function insertDeckCards(
 	if (cards.length === 0) return;
 	const supabase = createClient();
 	const rows = cards.map(({ scryfallId, entry }) => ({
-		id: entry.rowId,
-		scryfall_id: scryfallId,
-		date_added: entry.dateAdded,
+		...cardEntryToRow(scryfallId, entry),
 		deck_id: deckId,
-		is_foil: entry.isFoil ?? null,
-		foil_type: entry.foilType ?? null,
-		condition: entry.condition ?? null,
-		language: entry.language ?? null,
-		purchase_price: entry.purchasePrice ?? null,
-		for_trade: entry.forTrade ?? null,
-		alter: entry.alter ?? null,
-		proxy: entry.proxy ?? null,
-		tags: entry.tags ?? null,
 	}));
 
 	const { error } = await supabase.from('cards').insert(rows);
