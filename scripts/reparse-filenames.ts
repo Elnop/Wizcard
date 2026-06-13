@@ -51,7 +51,6 @@ async function main() {
 							name: parsed.cardName,
 							set_code: parsed.setCode,
 							collector_number: parsed.collectorNumber,
-							variants: parsed.variants,
 						})
 						.eq('id', row.id);
 

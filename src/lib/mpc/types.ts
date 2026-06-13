@@ -27,7 +27,6 @@ export interface MpcCard {
 	cardType: CardType;
 	language: string | null;
 	tags: string[];
-	variants: string[];
 	setCode: string | null;
 	collectorNumber: string | null;
 	driveFolderPath: string | null;
@@ -65,7 +64,6 @@ export interface CustomCardMeta {
 	image_url: string;
 	lang: string | null;
 	tags: string[];
-	variants: string[];
 	set_code: string | null;
 	collector_number: string | null;
 	is_public: boolean;

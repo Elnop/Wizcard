@@ -133,7 +133,13 @@ export function buildPendingFromDrive(
 		const parsed = parseCardFilename(file.name);
 		const setCode = parsed.setCode && validSetCodes.has(parsed.setCode) ? parsed.setCode : null;
 		const { cardType, folderTags } = folderPathToMeta(file.folderPath);
-		const allTags = ['custom:mpc', `mpc-source:${sourceId}`, ...folderTags, ...parsed.bracketTags];
+		const allTags = [
+			'custom:mpc',
+			`mpc-source:${sourceId}`,
+			...folderTags,
+			...parsed.bracketTags,
+			...parsed.variants,
+		];
 		pending.push({
 			cardId,
 			file,
@@ -158,7 +164,7 @@ export async function fetchStaleCards(
 		() =>
 			supabase
 				.from('custom_cards')
-				.select('id, raw_name, card_type, set_code, collector_number, variants, tags')
+				.select('id, raw_name, card_type, set_code, collector_number, tags')
 				.eq('source_id', sourceId)
 				.or(`enriched_at.is.null,enriched_at.lt.${threshold}`) as unknown as Rangeable<StaleRow>
 	);
@@ -172,7 +178,6 @@ export async function fetchStaleCards(
 		const parsed = parseCardFilename(row.raw_name as string);
 		parsed.setCode = (row.set_code as string | null) ?? null;
 		parsed.collectorNumber = (row.collector_number as string | null) ?? null;
-		parsed.variants = (row.variants as string[]) ?? [];
 		const setCode = parsed.setCode && validSetCodes.has(parsed.setCode) ? parsed.setCode : null;
 		return {
 			cardId: row.id as string,
@@ -201,7 +206,7 @@ export async function fetchUnenrichedCards(opts: {
 	const { validSetCodes, includeStale = false, sourceId, limit = 100_000 } = opts;
 	let query = supabase
 		.from('custom_cards')
-		.select('id, source_id, raw_name, card_type, set_code, collector_number, variants, tags');
+		.select('id, source_id, raw_name, card_type, set_code, collector_number, tags');
 	if (sourceId) query = query.eq('source_id', sourceId);
 	if (includeStale) {
 		const threshold = new Date(Date.now() - flags.reEnrichDays * 86_400_000).toISOString();
@@ -220,7 +225,6 @@ export async function fetchUnenrichedCards(opts: {
 		const parsed = parseCardFilename(row.raw_name as string);
 		parsed.setCode = (row.set_code as string | null) ?? null;
 		parsed.collectorNumber = (row.collector_number as string | null) ?? null;
-		parsed.variants = (row.variants as string[]) ?? [];
 		const setCode = parsed.setCode && validSetCodes.has(parsed.setCode) ? parsed.setCode : null;
 		return {
 			cardId: row.id as string,
@@ -307,7 +311,6 @@ function buildCardRow(
 		raw_name: p.file.name,
 		set_code: p.setCode,
 		collector_number: p.setCode ? p.parsed.collectorNumber : null,
-		variants: p.parsed.variants,
 		image_drive_url: driveImageUrl(p.file.id),
 		drive_folder_path: p.file.folderPath.length > 0 ? p.file.folderPath.join(' / ') : null,
 		...(storagePath ? { image_storage_path: storagePath } : {}),

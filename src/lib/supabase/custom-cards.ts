@@ -24,7 +24,6 @@ export interface CustomCardRow {
 	card_type: CardType;
 	language: string | null;
 	tags: string[];
-	variants: string[];
 	set_code: string | null;
 	collector_number: string | null;
 	colors: string[] | null;
@@ -74,7 +73,6 @@ export function rowToMpcCard(row: CustomCardRow): MpcCard {
 		cardType: row.card_type ?? 'card',
 		language: row.language ?? null,
 		tags: row.tags ?? [],
-		variants: row.variants ?? [],
 		setCode: row.set_code ?? null,
 		collectorNumber: row.collector_number ?? null,
 		colors: row.colors ?? undefined,
@@ -134,7 +132,7 @@ export async function getCustomCardSourcesWithCount(): Promise<MpcSourceWithCoun
 export const CUSTOM_CARD_SOURCE_SELECT = 'id, name, description, drive_folder_id, tags';
 
 export const CUSTOM_CARD_SELECT =
-	'id, source_id, name, raw_name, display_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, variants, set_code, collector_number, colors, color_identity, cmc, type_line, mana_cost, oracle_text, rarity, set_name, artist, drive_folder_path';
+	'id, source_id, name, raw_name, display_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, set_code, collector_number, colors, color_identity, cmc, type_line, mana_cost, oracle_text, rarity, set_name, artist, drive_folder_path';
 
 export interface CustomCardQueryFilters {
 	name?: string;

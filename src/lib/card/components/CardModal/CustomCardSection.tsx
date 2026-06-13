@@ -73,19 +73,6 @@ export function CustomCardSection({ card }: { card: CustomCard }) {
 				</div>
 			)}
 
-			{m.variants.length > 0 && (
-				<div className={styles.chipGroup}>
-					<span className={styles.label}>Variants</span>
-					<div className={styles.chips}>
-						{m.variants.map((v) => (
-							<span key={v} className={styles.chip}>
-								{v}
-							</span>
-						))}
-					</div>
-				</div>
-			)}
-
 			<details className={styles.rawName}>
 				<summary className={styles.rawNameSummary}>Fichier</summary>
 				{m.source_type === 'mpc_ingested' && m.source_drive_folder_id ? (

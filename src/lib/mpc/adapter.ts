@@ -27,7 +27,6 @@ export function toCustomCard(card: MpcCard, source: MpcSource): CustomCard {
 			image_url: card.imageUrl,
 			lang: card.language,
 			tags: card.tags,
-			variants: card.variants,
 			set_code: card.setCode,
 			collector_number: card.collectorNumber,
 			is_public: card.isPublic,

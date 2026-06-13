@@ -50,7 +50,6 @@ export function useMpcPrints(cardName: string): UseMpcPrintsResult {
 							cardType: 'card',
 							language: null,
 							tags: entry.tags,
-							variants: [],
 							setCode: null,
 							collectorNumber: null,
 							driveFolderPath: null,
