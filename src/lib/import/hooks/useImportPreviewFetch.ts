@@ -44,9 +44,17 @@ export function useImportPreviewFetch(deps: {
 				if (abortRef.current) break;
 				const listResult = await getCardCollection(chunks[i]);
 				if (listResult.not_found && listResult.not_found.length > 0) {
-					console.error(
-						`[Import preview] batch ${i + 1}/${chunks.length}: ${listResult.not_found.length} cards not found`,
-						listResult.not_found
+					const lines = listResult.not_found.map((id) => {
+						if ('set' in id && 'collector_number' in id) {
+							const langPart = id.lang ? ` lang=${id.lang}` : '';
+							return `  • set=${id.set} num=${id.collector_number}${langPart}`;
+						}
+						if ('name' in id && 'set' in id) return `  • name="${id.name}" set=${id.set}`;
+						if ('name' in id) return `  • name="${id.name}"`;
+						return `  • ${JSON.stringify(id)}`;
+					});
+					console.warn(
+						`[Import preview] batch ${i + 1}/${chunks.length}: ${listResult.not_found.length} not found:\n${lines.join('\n')}`
 					);
 				}
 				cards.push(...listResult.data);
@@ -54,7 +62,14 @@ export function useImportPreviewFetch(deps: {
 			}
 
 			if (!abortRef.current) {
-				setFetchedCards(cards);
+				// Deduplicate by Scryfall ID — same card can appear from multiple identifiers
+				const seen = new Set<string>();
+				const deduped = cards.filter((c) => {
+					if (seen.has(c.id)) return false;
+					seen.add(c.id);
+					return true;
+				});
+				setFetchedCards(deduped);
 			}
 			setIsLoadingPreview(false);
 		},

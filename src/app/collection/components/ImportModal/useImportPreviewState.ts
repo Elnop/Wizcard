@@ -107,32 +107,44 @@ export function useImportPreviewState({
 		return map;
 	}, [preview, fetchedCards]);
 
-	const selectedImportCard = useMemo((): Card | null => {
+	const selectedImportStack = useMemo((): CardStack | null => {
 		if (!selectedCardId || !preview) return null;
 		const scryfallCard = fetchedCards.find((c) => c.id === selectedCardId);
 		if (!scryfallCard) return null;
-		const row = rowMap.get(selectedCardId);
-		if (!row) return null;
-		const entry: CardEntry = {
-			rowId: selectedCardId,
-			dateAdded: new Date().toISOString(),
-			isFoil: !!row.foil,
-			foilType: row.foil || undefined,
-			condition: row.condition as CardEntry['condition'],
-			language: row.language as CardEntry['language'],
-			tags: row.tags,
-		};
-		return { ...scryfallCard, entry };
-	}, [selectedCardId, preview, fetchedCards, rowMap]);
 
-	const selectedImportStack = useMemo((): CardStack | null => {
-		if (!selectedImportCard) return null;
+		// Find all rows for this card (foil + non-foil share the same set/num key)
+		const cardKey = buildIdentifierKey({
+			set: scryfallCard.set,
+			collector_number: scryfallCard.collector_number,
+		});
+		const rows = preview.parsed.rows.filter((r) =>
+			r.set && r.collectorNumber
+				? buildIdentifierKey({ set: r.set, collector_number: r.collectorNumber }) === cardKey
+				: r.name.toLowerCase() === scryfallCard.name.toLowerCase()
+		);
+		if (rows.length === 0) return null;
+
+		const cards: Card[] = rows.flatMap((row) =>
+			Array.from({ length: row.quantity }, (_, i) => ({
+				...scryfallCard,
+				entry: {
+					rowId: `${selectedCardId}-${row.foil || 'nonfoil'}-${i}`,
+					dateAdded: new Date().toISOString(),
+					isFoil: !!row.foil,
+					foilType: row.foil || undefined,
+					condition: row.condition as CardEntry['condition'],
+					language: row.language as CardEntry['language'],
+					tags: row.tags,
+				},
+			}))
+		);
+
 		return {
-			oracleId: selectedImportCard.oracle_id ?? selectedImportCard.id,
-			name: selectedImportCard.name,
-			cards: [selectedImportCard],
+			oracleId: scryfallCard.oracle_id ?? scryfallCard.id,
+			name: scryfallCard.name,
+			cards,
 		};
-	}, [selectedImportCard]);
+	}, [selectedCardId, preview, fetchedCards]);
 
 	// Deduplicated identifier count for skeleton placeholders
 	const uniqueIdentifierCount = useMemo(() => {
@@ -182,6 +194,21 @@ export function useImportPreviewState({
 		setSelectedCardId(null);
 	}
 
+	// Sum quantities across all rows with the same set/collector_number (foil + non-foil)
+	function getTotalQty(card: ScryfallCard): number {
+		if (!preview) return 1;
+		const cardKey = buildIdentifierKey({ set: card.set, collector_number: card.collector_number });
+		return (
+			preview.parsed.rows
+				.filter((r) =>
+					r.set && r.collectorNumber
+						? buildIdentifierKey({ set: r.set, collector_number: r.collectorNumber }) === cardKey
+						: r.name.toLowerCase() === card.name.toLowerCase()
+				)
+				.reduce((sum, r) => sum + r.quantity, 0) || 1
+		);
+	}
+
 	return {
 		// State
 		isDragging,
@@ -204,13 +231,13 @@ export function useImportPreviewState({
 		filteredCards,
 		activeFilterCount,
 		rowMap,
-		selectedImportCard,
 		selectedImportStack,
 		uniqueIdentifierCount,
 		filteredRows,
 		isFiltered,
 		totalCardCount,
 		filteredCount,
+		getTotalQty,
 		// Handlers
 		handleDragOver,
 		handleDragLeave,

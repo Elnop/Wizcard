@@ -94,18 +94,24 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 		}
 
 		// Phase 2 : fetch progressif depuis Supabase, page par page
+		// On reconstruit depuis zéro pour ne pas merger avec un cache potentiellement périmé
+		const fresh: CollectionData = {};
 		let from = 0;
 		while (true) {
 			const { rows, hasMore } = await fetchCollectionPage(userId, from);
-			const current = get().entries;
-			const merged: CollectionData = { ...current };
-			for (const copy of rows) merged[copy.entry.rowId] = copy;
-			set({ entries: merged, isLoaded: true });
-			void putCollectionEntriesInCache(
-				rows.map((r) => ({ rowId: r.entry.rowId, scryfallId: r.scryfallId, entry: r.entry }))
-			);
+			for (const copy of rows) fresh[copy.entry.rowId] = copy;
+			set({ entries: { ...fresh }, isLoaded: true });
+			if (rows.length > 0) {
+				void putCollectionEntriesInCache(
+					rows.map((r) => ({ rowId: r.entry.rowId, scryfallId: r.scryfallId, entry: r.entry }))
+				);
+			}
 			if (!hasMore) break;
 			from += 1000;
+		}
+		// Si Supabase retourne une collection vide, s'assurer que le cache est bien vide
+		if (Object.keys(fresh).length === 0) {
+			void clearCollectionCache();
 		}
 
 		triggerSync();

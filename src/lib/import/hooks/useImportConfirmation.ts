@@ -41,18 +41,26 @@ export function useImportConfirmation(deps: {
 				return;
 			}
 
-			// Build lookup map — rows are already deduplicated by mergeRows
-			const lookup = new Map<string, ParsedImportRow>();
+			// Build lookup map — key includes lang + foil so each physical variant maps to its own rows.
+			const lookup = new Map<string, ParsedImportRow[]>();
 			for (const row of parsed.rows) {
+				const foilKey = row.foil || 'nonfoil';
+				const langKey =
+					row.language && row.language !== 'en' ? `/${row.language.toLowerCase()}` : '';
 				let key: string;
 				if (row.set && row.collectorNumber) {
-					key = `${row.set.toLowerCase()}/${row.collectorNumber.toLowerCase()}`;
+					key = `${row.set.toLowerCase()}/${row.collectorNumber.toLowerCase()}${langKey}/${foilKey}`;
 				} else if (row.set) {
-					key = `name:${row.name.toLowerCase()}/set:${row.set.toLowerCase()}`;
+					key = `name:${row.name.toLowerCase()}/set:${row.set.toLowerCase()}${langKey}/${foilKey}`;
 				} else {
-					key = `name:${row.name.toLowerCase()}`;
+					key = `name:${row.name.toLowerCase()}${langKey}/${foilKey}`;
 				}
-				lookup.set(key, row);
+				const existing = lookup.get(key);
+				if (existing) {
+					existing.push(row);
+				} else {
+					lookup.set(key, [row]);
+				}
 			}
 
 			// Use already-fetched cards if available, otherwise fetch now
@@ -93,23 +101,33 @@ export function useImportConfirmation(deps: {
 			const cardsToImport: Array<{ scryfallId: string; entry: CardEntry }> = [];
 
 			for (const card of cards) {
-				// Try set/collector_number key first
-				const setKey = `${card.set.toLowerCase()}/${card.collector_number.toLowerCase()}`;
-				let row = lookup.get(setKey);
+				const setBase = `${card.set.toLowerCase()}/${card.collector_number.toLowerCase()}`;
+				const nameSetBase = `name:${card.name.toLowerCase()}/set:${card.set.toLowerCase()}`;
+				const nameBase = `name:${card.name.toLowerCase()}`;
+				const cardLang = card.lang && card.lang !== 'en' ? `/${card.lang.toLowerCase()}` : '';
 
-				// Fallback to name/set key
-				if (!row) {
-					const nameSetKey = `name:${card.name.toLowerCase()}/set:${card.set.toLowerCase()}`;
-					row = lookup.get(nameSetKey);
+				// Collect all rows for this card across all foil variants and the card's language
+				const allRows: ParsedImportRow[] = [];
+				for (const foilKey of ['foil', 'etched', 'nonfoil']) {
+					const bySet =
+						lookup.get(`${setBase}${cardLang}/${foilKey}`) ?? lookup.get(`${setBase}/${foilKey}`);
+					if (bySet) {
+						allRows.push(...bySet);
+						continue;
+					}
+					const byNameSet =
+						lookup.get(`${nameSetBase}${cardLang}/${foilKey}`) ??
+						lookup.get(`${nameSetBase}/${foilKey}`);
+					if (byNameSet) {
+						allRows.push(...byNameSet);
+						continue;
+					}
+					const byName =
+						lookup.get(`${nameBase}${cardLang}/${foilKey}`) ?? lookup.get(`${nameBase}/${foilKey}`);
+					if (byName) allRows.push(...byName);
 				}
 
-				// Fallback to name-only key
-				if (!row) {
-					const nameKey = `name:${card.name.toLowerCase()}`;
-					row = lookup.get(nameKey);
-				}
-
-				if (!row) {
+				if (allRows.length === 0) {
 					console.error(
 						'[Import] fetched card has no matching lookup row:',
 						card.name,
@@ -119,24 +137,26 @@ export function useImportConfirmation(deps: {
 					continue;
 				}
 
-				// One CardEntry per physical copy
-				for (let i = 0; i < row.quantity; i++) {
-					cardsToImport.push({
-						scryfallId: card.id,
-						entry: {
-							rowId: crypto.randomUUID(),
-							dateAdded: new Date().toISOString(),
-							foilType: row.foil || undefined,
-							isFoil: !!row.foil,
-							condition: row.condition as CardEntry['condition'],
-							language: row.language as CardEntry['language'],
-							purchasePrice: row.purchasePrice || undefined,
-							forTrade: row.forTrade || undefined,
-							alter: row.alter || undefined,
-							proxy: row.proxy || undefined,
-							tags: row.tags,
-						},
-					});
+				// One CardEntry per physical copy, preserving foil/nonfoil per row
+				for (const row of allRows) {
+					for (let i = 0; i < row.quantity; i++) {
+						cardsToImport.push({
+							scryfallId: card.id,
+							entry: {
+								rowId: crypto.randomUUID(),
+								dateAdded: new Date().toISOString(),
+								foilType: row.foil || undefined,
+								isFoil: !!row.foil,
+								condition: row.condition as CardEntry['condition'],
+								language: row.language as CardEntry['language'],
+								purchasePrice: row.purchasePrice || undefined,
+								forTrade: row.forTrade || undefined,
+								alter: row.alter || undefined,
+								proxy: row.proxy || undefined,
+								tags: row.tags,
+							},
+						});
+					}
 				}
 			}
 

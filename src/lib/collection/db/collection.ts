@@ -121,33 +121,37 @@ export async function insertEntry(
 	}
 }
 
+const INSERT_BATCH_SIZE = 500;
+
 export async function insertEntries(
 	userId: string,
 	rows: Array<{ scryfallId: string; entry: CardEntry }>
 ): Promise<void> {
 	if (rows.length === 0) return;
 	const supabase = createClient();
-	const { error } = await supabase.from('cards').insert(
-		rows.map((r) => ({
-			id: r.entry.rowId,
-			owner_id: userId,
-			scryfall_id: r.scryfallId,
-			date_added: r.entry.dateAdded,
-			is_foil: r.entry.isFoil ?? null,
-			foil_type: r.entry.foilType ?? null,
-			condition: normalizeCondition(r.entry.condition),
-			language: r.entry.language ?? null,
-			purchase_price: r.entry.purchasePrice ?? null,
-			for_trade: r.entry.forTrade ?? null,
-			alter: r.entry.alter ?? null,
-			proxy: r.entry.proxy ?? null,
-			tags: r.entry.tags ?? null,
-			deck_id: r.entry.deckId ?? null,
-		}))
-	);
-
-	if (error) {
-		throw new Error(`[collection] insertEntries error: ${error.message}`);
+	for (let i = 0; i < rows.length; i += INSERT_BATCH_SIZE) {
+		const batch = rows.slice(i, i + INSERT_BATCH_SIZE);
+		const { error } = await supabase.from('cards').insert(
+			batch.map((r) => ({
+				id: r.entry.rowId,
+				owner_id: userId,
+				scryfall_id: r.scryfallId,
+				date_added: r.entry.dateAdded,
+				is_foil: r.entry.isFoil ?? null,
+				foil_type: r.entry.foilType ?? null,
+				condition: normalizeCondition(r.entry.condition),
+				language: r.entry.language ?? null,
+				purchase_price: r.entry.purchasePrice ?? null,
+				for_trade: r.entry.forTrade ?? null,
+				alter: r.entry.alter ?? null,
+				proxy: r.entry.proxy ?? null,
+				tags: r.entry.tags ?? null,
+				deck_id: r.entry.deckId ?? null,
+			}))
+		);
+		if (error) {
+			throw new Error(`[collection] insertEntries error: ${error.message}`);
+		}
 	}
 }
 

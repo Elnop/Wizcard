@@ -7,6 +7,17 @@ import type { ScryfallError } from '../types/scryfall';
 
 const BASE_URL = 'https://api.scryfall.com';
 const MAX_RETRIES = 3;
+
+// Endpoints that must be proxied through the Next.js API to avoid CORS issues
+// when called from the browser (Scryfall returns 429 on preflight, no CORS headers).
+const PROXIED_ENDPOINTS = new Set(['/cards/collection']);
+
+function resolvePostUrl(endpoint: string): string {
+	if (PROXIED_ENDPOINTS.has(endpoint) && typeof window !== 'undefined') {
+		return `/api/scryfall${endpoint}`;
+	}
+	return `${BASE_URL}${endpoint}`;
+}
 const TIMEOUT = 30_000;
 
 // In-flight request deduplication: concurrent calls with the same URL share one fetch
@@ -146,7 +157,7 @@ async function scryfallGetInner<T>(url: string, externalSignal?: AbortSignal): P
 
 // eslint-disable-next-line sonarjs/cognitive-complexity -- retry loop with exponential backoff + multiple abort conditions
 export async function scryfallPost<T>(endpoint: string, body: object): Promise<T> {
-	const url = buildUrl(endpoint);
+	const url = resolvePostUrl(endpoint);
 
 	let lastError: Error | null = null;
 

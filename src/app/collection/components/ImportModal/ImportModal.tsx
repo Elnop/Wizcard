@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from 'react';
 import type { ImportFormatId, ParsedImportRow } from '@/lib/import/types';
 import type { ImportPreview, ImportStatus, ImportProgress } from '@/lib/import/hooks/useImport';
 import type { ScryfallCard, ScryfallSet } from '@/lib/scryfall/types/scryfall';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { PAGE_SIZE } from '@/lib/collection/constants';
 import { useImportPreviewState } from './useImportPreviewState';
 import { ImportFileInput } from './ImportFileInput';
@@ -114,11 +115,11 @@ export function ImportModal({
 			? 6
 			: Math.min(PAGE_SIZE, Math.max(0, state.uniqueIdentifierCount - fetchedCards.length));
 	const tableColumns: CardListColumn[] = [
-		{ key: 'qty', label: 'Qté', render: (card) => state.rowMap.get(card.id)?.quantity ?? 1 },
+		{ key: 'qty', label: 'Qté', render: (card) => state.getTotalQty(card as ScryfallCard) },
 		...STATIC_IMPORT_COLUMNS,
 	];
-	const renderOverlay = (card: { id: string }) => {
-		const qty = state.rowMap.get(card.id)?.quantity ?? 1;
+	const renderOverlay = (card: AnyCard) => {
+		const qty = state.getTotalQty(card as ScryfallCard);
 		return qty > 1 ? <span className={styles.gridBadge}>x{qty}</span> : null;
 	};
 

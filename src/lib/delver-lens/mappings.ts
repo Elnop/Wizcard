@@ -61,7 +61,9 @@ export function normalizeDelverCondition(
 	return DELVER_CONDITION_MAP[raw] ?? undefined;
 }
 
-const DELVER_SUFFIX_RE = /^(\d+)[eps]$/i;
+// 'e' (etched) and 'p' (prerelease) are Delver Lens internal variants — Scryfall uses the plain number.
+// 's' (showcase) is kept because Scryfall uses it as part of the collector number (e.g. "252s").
+const DELVER_SUFFIX_RE = /^(\d+)[ep]$/i;
 
 export function cleanCollectorNumber(raw: string): string {
 	const match = DELVER_SUFFIX_RE.exec(raw);

@@ -10,10 +10,13 @@ import type { ImportStatus, ImportPreview } from '@/lib/import/hooks/useImport';
 function mergeRows(rows: ParsedImportRow[]): ParsedImportRow[] {
 	const map = new Map<string, ParsedImportRow>();
 	for (const row of rows) {
-		const key =
+		const foilKey = row.foil || 'nonfoil';
+		const langKey = row.language && row.language !== 'en' ? `/${row.language.toLowerCase()}` : '';
+		const base =
 			row.set && row.collectorNumber
 				? `${row.set.toLowerCase()}/${row.collectorNumber.toLowerCase()}`
 				: `name:${row.name.toLowerCase()}`;
+		const key = `${base}${langKey}/${foilKey}`;
 		const existing = map.get(key);
 		if (existing) {
 			existing.quantity += row.quantity;
