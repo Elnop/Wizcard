@@ -1,5 +1,6 @@
 import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
 import type { DeckFormat, DeckZone } from '@/types/decks';
+import { parseMtgaCardLine } from './mtgaCardLine';
 
 // Minimal deck card row (separate from collection PendingCard)
 interface ParsedImportRow {
@@ -8,14 +9,6 @@ interface ParsedImportRow {
 	collectorNumber: string;
 	quantity: number;
 }
-
-// Card line patterns (applied after normalizeLine preprocessing)
-// eslint-disable-next-line sonarjs/slow-regex -- inputs are short card-name lines, no ReDoS risk
-const RE_FULL = /^(\d+)\s+(.+?)\s+\(([A-Za-z0-9]+)\)\s+(\d+[a-z]?)$/;
-// eslint-disable-next-line sonarjs/slow-regex -- inputs are short card-name lines, no ReDoS risk
-const RE_SET_ONLY = /^(\d+)\s+(.+?)\s+\(([A-Za-z0-9]+)\)$/;
-// eslint-disable-next-line sonarjs/slow-regex -- inputs are short card-name lines, no ReDoS risk
-const RE_NAME_ONLY = /^(\d+)\s+(.+)$/;
 
 // Zone section headers — map to deck zone
 const SECTION_HEADERS: Record<string, DeckZone> = {
@@ -202,36 +195,6 @@ function isTypeHeader(line: string): boolean {
 	return TYPE_HEADERS.has(key);
 }
 
-type ParsedCardLine = {
-	name: string;
-	set: string;
-	collectorNumber: string;
-	quantity: number;
-} | null;
-
-function parseCardLine(line: string): ParsedCardLine {
-	let match = RE_FULL.exec(line);
-	if (match)
-		return {
-			quantity: parseInt(match[1], 10),
-			name: match[2],
-			set: match[3].toLowerCase(),
-			collectorNumber: match[4],
-		};
-	match = RE_SET_ONLY.exec(line);
-	if (match)
-		return {
-			quantity: parseInt(match[1], 10),
-			name: match[2],
-			set: match[3].toLowerCase(),
-			collectorNumber: '',
-		};
-	match = RE_NAME_ONLY.exec(line);
-	if (match)
-		return { quantity: parseInt(match[1], 10), name: match[2], set: '', collectorNumber: '' };
-	return null;
-}
-
 // eslint-disable-next-line sonarjs/cognitive-complexity -- line-by-line MTGA deck parser with zone tracking, inherent complexity
 export function parseMTGADeck(text: string): DeckImportResult {
 	const lines = text.split(/\r?\n/);
@@ -285,7 +248,7 @@ export function parseMTGADeck(text: string): DeckImportResult {
 		const line = normalizeLine(raw);
 		if (!line) continue;
 
-		const parsed = parseCardLine(line);
+		const parsed = parseMtgaCardLine(line);
 		if (parsed) {
 			const { name, set, collectorNumber, quantity } = parsed;
 			rows.push({ name, set, collectorNumber, quantity, zone: currentZone });
