@@ -21,6 +21,10 @@ function newEntry(rowId: string, overrides?: Partial<CardEntry>): CardEntry {
 type CollectionState = {
 	entries: CollectionData;
 	isLoaded: boolean;
+	// true uniquement quand TOUTES les pages Supabase ont été chargées. isLoaded
+	// passe true dès la 1re page (pour afficher vite), mais entries continue de
+	// grandir page par page ; isFullyLoaded sert à geler la grille jusqu'à la fin.
+	isFullyLoaded: boolean;
 };
 
 type CollectionActions = {
@@ -80,6 +84,7 @@ type CollectionActions = {
 export const useCollectionStore = create<CollectionState & CollectionActions>()((set, get) => ({
 	entries: {},
 	isLoaded: false,
+	isFullyLoaded: false,
 
 	hydrateFromSupabase: async (userId, triggerSync) => {
 		// Purge ancien cache localStorage (migration one-time)
@@ -100,7 +105,9 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 		while (true) {
 			const { rows, hasMore } = await fetchCollectionPage(userId, from);
 			for (const copy of rows) fresh[copy.entry.rowId] = copy;
-			set({ entries: { ...fresh }, isLoaded: true });
+			// isFullyLoaded reste false tant qu'il reste des pages : la grille est
+			// gelée sur des skeletons jusqu'à ce que entries soit complet.
+			set({ entries: { ...fresh }, isLoaded: true, isFullyLoaded: !hasMore });
 			if (rows.length > 0) {
 				void putCollectionEntriesInCache(
 					rows.map((r) => ({ rowId: r.entry.rowId, scryfallId: r.scryfallId, entry: r.entry }))
@@ -124,9 +131,9 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 			localStorage.removeItem('wizcard-signed-in');
 			clearQueue();
 			void clearCollectionCache();
-			set({ entries: {}, isLoaded: true });
+			set({ entries: {}, isLoaded: true, isFullyLoaded: true });
 		} else if (userId === null) {
-			set({ isLoaded: true });
+			set({ isLoaded: true, isFullyLoaded: true });
 		}
 	},
 

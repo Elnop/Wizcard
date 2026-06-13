@@ -52,13 +52,23 @@ export function useCollectionCards(entries: StoredCopy[]): {
 		async function hydrate() {
 			const uniqueIds = [...new Set(entries.map((e) => e.scryfallId))];
 
+			// Only process IDs we haven't already hydrated. This keeps scryfallMap
+			// monotonically growing across re-runs (entries arrive page by page from
+			// Supabase) instead of re-reading/re-fetching everything each time.
+			const pendingIds = uniqueIds.filter((id) => !scryfallMapRef.current.has(id));
+
+			if (pendingIds.length === 0) {
+				if (!cancelledRef.current) setIsLoading(false);
+				return;
+			}
+
 			// Phase 1: read from IndexedDB cache
-			const cachedMap = await getCardsFromCache(uniqueIds);
+			const cachedMap = await getCardsFromCache(pendingIds);
 			if (cancelledRef.current) return;
 
-			const missIds = uniqueIds.filter((id) => !cachedMap.has(id));
+			const missIds = pendingIds.filter((id) => !cachedMap.has(id));
 
-			// Merge cache hits into the running map and publish
+			// Merge cache hits into the running map (monotonic growth)
 			const merged = new Map([...scryfallMapRef.current, ...cachedMap]);
 
 			if (missIds.length === 0) {
@@ -70,11 +80,9 @@ export function useCollectionCards(entries: StoredCopy[]): {
 				return;
 			}
 
-			// Publish cache hits immediately so the UI can show them while we fetch
-			if (cachedMap.size > 0 && !cancelledRef.current) {
-				scryfallMapRef.current = merged;
-				setScryfallMap(merged);
-			}
+			// Keep the running map up to date with cache hits (no publish: the grid
+			// is gated on isLoading and revealed once hydration is complete).
+			scryfallMapRef.current = merged;
 
 			// Phase 2: fetch only the cache misses from the network
 			const identifiers = missIds.map((id) => ({ id }));

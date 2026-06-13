@@ -13,6 +13,7 @@ type CollectionContextValue = {
 	collection: CollectionData;
 	entries: Array<{ scryfallId: string; entry: CardEntry }>;
 	isLoaded: boolean;
+	isFullyLoaded: boolean;
 	addCard: (card: ScryfallCard, entryPatch?: Partial<CardEntry>) => void;
 	duplicateEntry: (scryfallId: string, sourceEntry: CardEntry) => void;
 	removeCard: (scryfallId: string) => void;
@@ -51,7 +52,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 
 		// User switched accounts — wipe local state first
 		if (prevUserId !== undefined && prevUserId !== null && prevUserId !== userId) {
-			useCollectionStore.setState({ entries: {}, isLoaded: false });
+			useCollectionStore.setState({ entries: {}, isLoaded: false, isFullyLoaded: false });
 			store.handleLogout(null);
 		}
 
@@ -120,6 +121,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 		collection: store.entries,
 		entries,
 		isLoaded: store.isLoaded,
+		isFullyLoaded: store.isFullyLoaded,
 		addCard,
 		duplicateEntry,
 		removeCard,
