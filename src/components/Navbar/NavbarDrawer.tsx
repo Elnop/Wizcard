@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
-import { useImportContext } from '@/lib/import/contexts/ImportContext';
+import { useImportContext } from '@/lib/import/context/ImportContext';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { getQueueLength } from '@/lib/supabase/sync-queue';
-import { WishlistIcon } from '@/components/WishlistIcon/WishlistIcon';
+import { WishlistIcon } from '@/components/WishlistIcon';
 import styles from './Navbar.module.css';
 
 export function NavbarDrawer() {

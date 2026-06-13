@@ -1,3 +1,5 @@
+import type { Card } from '@/types/cards';
+
 export type DeckFormat =
 	| 'standard'
 	| 'modern'
@@ -54,6 +56,12 @@ export interface DeckMeta {
 	createdAt: string;
 	updatedAt: string;
 }
+
+export type DeckCardGroup = {
+	representative: Card;
+	byZone: Map<DeckZone, Card[]>;
+	totalCount: number;
+};
 
 export interface FolderMeta {
 	id: string;

@@ -3,10 +3,9 @@
 import { useState, useCallback } from 'react';
 import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { DeckZone } from '@/types/decks';
+import type { DeckZone, DeckCardGroup } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
-import type { DeckCardGroup } from '@/app/decks/[id]/useDeckCardSections';
 
 type Selection = { oracleId: string; clickedRowId: string; openPrintPicker?: boolean };
 

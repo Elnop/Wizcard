@@ -14,7 +14,7 @@ import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
-import { LocalizedCardThumb } from '@/lib/card/components/LocalizedCardThumb/LocalizedCardThumb';
+import { LocalizedCardThumb } from '@/lib/card/components/LocalizedCardThumb';
 import { useCustomCardPrints } from '@/lib/mpc/hooks/useCustomCardPrints';
 import { PrintContextMenu } from './PrintContextMenu';
 import styles from './PrintsTab.module.css';

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
 import { getCardSimilar } from '@/lib/scryfall/endpoints/cards';
-import { LocalizedCardThumb } from '@/lib/card/components/LocalizedCardThumb/LocalizedCardThumb';
+import { LocalizedCardThumb } from '@/lib/card/components/LocalizedCardThumb';
 import styles from './SimilarTab.module.css';
 
 interface Props {

@@ -1,15 +1,8 @@
 import { useMemo } from 'react';
-import type { Card } from '@/types/cards';
 import type { CardListSection } from '@/lib/card/components/CardList/CardList.types';
-import type { DeckZone } from '@/types/decks';
+import type { DeckZone, DeckCardGroup } from '@/types/decks';
 import { groupByCardType } from '@/lib/card/utils/group-by-card-type';
 import type { ResolvedDeckCard } from './useDeckDetail';
-
-export type DeckCardGroup = {
-	representative: Card;
-	byZone: Map<DeckZone, Card[]>;
-	totalCount: number;
-};
 
 const ZONE_LABELS: Record<DeckZone, string> = {
 	mainboard: 'Mainboard',

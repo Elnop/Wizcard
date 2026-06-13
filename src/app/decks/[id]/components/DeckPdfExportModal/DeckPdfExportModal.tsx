@@ -5,6 +5,7 @@ import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { DeckZone } from '@/types/decks';
+import type { DeckPdfExportOptions } from '@/lib/pdf/types';
 import type { ResolvedDeckCard } from '../../useDeckDetail';
 import { filterCardsForPdf } from '@/lib/pdf/filterCardsForPdf';
 import styles from './DeckPdfExportModal.module.css';
@@ -17,12 +18,6 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 };
 
 const DEFAULT_SELECTED: Set<DeckZone> = new Set(['commander', 'mainboard', 'sideboard']);
-
-export type DeckPdfExportOptions = {
-	zones: DeckZone[];
-	ignoreOwned: boolean;
-	ignoreBasicLands: boolean;
-};
 
 type Props = {
 	availableZones: DeckZone[];

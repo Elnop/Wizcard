@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
-import type { DeckCardGroup } from '../../useDeckCardSections';
-import type { DeckZone } from '@/types/decks';
+import type { DeckZone, DeckCardGroup } from '@/types/decks';
 import type { CardEntry } from '@/types/cards';
 
 export type BadgeState = 'none' | 'locked' | 'partial' | 'owned' | 'wishlist';

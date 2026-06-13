@@ -6,7 +6,7 @@ import type { CardStack } from '@/types/cards';
 import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useCollectionCards } from './useCollectionCards';
-import { useImportContext } from '@/lib/import/contexts/ImportContext';
+import { useImportContext } from '@/lib/import/context/ImportContext';
 import { useCollectionFiltering } from './useCollectionFiltering';
 import { PAGE_SIZE } from '@/lib/collection/constants';
 import { useCardModal } from '@/lib/card/hooks/useCardModal';

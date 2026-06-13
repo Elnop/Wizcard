@@ -2,7 +2,7 @@ import type { Card } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { getDeckZone } from '@/types/decks';
 import { isBasicLand } from '@/lib/deck/utils/format-rules';
-import type { DeckPdfExportOptions } from '@/app/decks/[id]/components/DeckPdfExportModal/DeckPdfExportModal';
+import type { DeckPdfExportOptions } from '@/lib/pdf/types';
 
 export function filterCardsForPdf(cards: Card[], options: DeckPdfExportOptions): Card[] {
 	return cards.filter((card) => {

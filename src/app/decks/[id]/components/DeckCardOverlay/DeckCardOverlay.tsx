@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
 import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
-import type { DeckCardGroup } from '../../useDeckCardSections';
-import type { DeckZone } from '@/types/decks';
+import type { DeckZone, DeckCardGroup } from '@/types/decks';
 import type { Card, CardEntry } from '@/types/cards';
 import { useCollectionBadge } from './useCollectionBadge';
 import styles from './DeckCardOverlay.module.css';

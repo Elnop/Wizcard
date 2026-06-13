@@ -21,7 +21,7 @@ import { Button } from '@/components/Button/Button';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
-import { WishlistIcon } from '@/components/WishlistIcon/WishlistIcon';
+import { WishlistIcon } from '@/components/WishlistIcon';
 import { CopyCardOverlay } from './CopyCardOverlay';
 import { CustomCardSection } from './CustomCardSection';
 import styles from './CardModal.module.css';
