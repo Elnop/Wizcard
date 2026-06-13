@@ -66,6 +66,7 @@ export default function DeckDetailPage() {
 	const { deck, cardsByZone, resolvedCards, stats, isLoading, isResolving } = useDeckDetail(deckId);
 
 	const [searchPanelOpen, setSearchPanelOpen] = useState(false);
+	const [searchPanelExpanded, setSearchPanelExpanded] = useState(false);
 	const [panelSelectedCard, setPanelSelectedCard] = useState<ScryfallCard | null>(null);
 	const [panelInCollectionOnly, setPanelInCollectionOnly] = useState(false);
 
@@ -426,7 +427,9 @@ export default function DeckDetailPage() {
 
 	return (
 		<div className={styles.page}>
-			<div className={`${styles.layout} ${searchPanelOpen ? styles.layoutWithPanel : ''}`}>
+			<div
+				className={`${styles.layout} ${searchPanelOpen && !searchPanelExpanded ? styles.layoutWithPanel : ''}`}
+			>
 				<div className={styles.content}>
 					<DeckHeader
 						deck={deck}
@@ -474,10 +477,15 @@ export default function DeckDetailPage() {
 					<CardSearchPanel
 						deckId={deckId}
 						onCardClick={setPanelSelectedCard}
-						onClose={() => setSearchPanelOpen(false)}
+						onClose={() => {
+							setSearchPanelOpen(false);
+							setSearchPanelExpanded(false);
+						}}
 						deckFormat={deck.format}
 						commanderColorIdentity={commanderColorIdentity}
 						onCollectionModeChange={setPanelInCollectionOnly}
+						expanded={searchPanelExpanded}
+						onToggleExpand={() => setSearchPanelExpanded((v) => !v)}
 					/>
 				)}
 			</div>
@@ -555,13 +563,15 @@ export default function DeckDetailPage() {
 				/>
 			)}
 
-			<button
-				type="button"
-				className={`${styles.addCardsBtn} ${searchPanelOpen ? styles.addCardsBtnActive : ''}`}
-				onClick={() => setSearchPanelOpen((v) => !v)}
-			>
-				<span className={styles.addCardsBtnLabel}>{searchPanelOpen ? '× Cards' : '+ Cards'}</span>
-			</button>
+			{!searchPanelOpen && (
+				<button
+					type="button"
+					className={styles.addCardsBtn}
+					onClick={() => setSearchPanelOpen(true)}
+				>
+					<span className={styles.addCardsBtnLabel}>+ Cards</span>
+				</button>
+			)}
 
 			<DeckFooter stats={stats} format={deck.format} warnings={warnings} />
 

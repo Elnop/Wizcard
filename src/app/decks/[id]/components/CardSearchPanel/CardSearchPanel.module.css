@@ -5,11 +5,29 @@
 	flex-direction: column;
 	height: calc(100vh - var(--navbar-height));
 	border-left: 1px solid var(--glass-border);
-	background: var(--glass-bg);
+	background: var(--surface);
 	position: fixed;
 	top: var(--navbar-height);
 	right: 0;
 	z-index: 40;
+	transition: width 0.2s ease;
+}
+
+.panelExpanded {
+	width: 100vw;
+	border-left: none;
+}
+
+.panelExpanded .header {
+	padding: 20px 48px 12px;
+}
+
+.panelExpanded .search {
+	padding: 0 48px 12px;
+}
+
+.panelExpanded .results {
+	padding: 0 40px 16px;
 }
 
 .header {
@@ -18,6 +36,12 @@
 	justify-content: space-between;
 	padding: 20px 20px 12px;
 	flex-shrink: 0;
+}
+
+.headerActions {
+	display: flex;
+	align-items: center;
+	gap: 4px;
 }
 
 .title {
@@ -49,6 +73,10 @@
 .search {
 	padding: 0 16px 12px;
 	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
 }
 
 .results {
@@ -65,7 +93,7 @@
 }
 
 .toggleLabel {
-	display: flex;
+	display: inline-flex;
 	align-items: center;
 	gap: 8px;
 	padding: 6px 0 2px;

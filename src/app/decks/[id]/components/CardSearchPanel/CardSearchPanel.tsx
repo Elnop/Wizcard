@@ -34,6 +34,8 @@ type Props = {
 	deckFormat?: DeckFormat | null;
 	commanderColorIdentity?: ScryfallColor[];
 	onCollectionModeChange?: (inCollectionOnly: boolean) => void;
+	expanded?: boolean;
+	onToggleExpand?: () => void;
 };
 
 // eslint-disable-next-line sonarjs/cognitive-complexity -- deck card search panel with multiple state branches (zone, qty, collection overlay)
@@ -44,6 +46,8 @@ export function CardSearchPanel({
 	deckFormat,
 	commanderColorIdentity,
 	onCollectionModeChange,
+	expanded = false,
+	onToggleExpand,
 }: Props) {
 	const [searchName, setSearchName] = useState('');
 	const [legalOnly, setLegalOnly] = useState(true);
@@ -202,6 +206,7 @@ export function CardSearchPanel({
 		(card: AnyCard) => (
 			<div
 				className={styles.searchCardOverlay}
+				onClick={(e) => e.stopPropagation()}
 				onContextMenu={(e) => openContextMenu(card as ScryfallCard, e)}
 			/>
 		),
@@ -209,24 +214,56 @@ export function CardSearchPanel({
 	);
 
 	return (
-		<aside className={styles.panel}>
+		<aside className={`${styles.panel} ${expanded ? styles.panelExpanded : ''}`}>
 			<div className={styles.header}>
 				<span className={styles.title}>Add Cards</span>
-				<button
-					type="button"
-					className={styles.closeBtn}
-					onClick={onClose}
-					aria-label="Close panel"
-				>
-					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-						<path
-							d="M2 2l12 12M14 2L2 14"
-							stroke="currentColor"
-							strokeWidth="1.8"
-							strokeLinecap="round"
-						/>
-					</svg>
-				</button>
+				<div className={styles.headerActions}>
+					{onToggleExpand && (
+						<button
+							type="button"
+							className={styles.closeBtn}
+							onClick={onToggleExpand}
+							aria-label={expanded ? 'Réduire le panel' : 'Étendre le panel'}
+						>
+							{expanded ? (
+								<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+									<path
+										d="M6 2H2v4M10 2h4v4M6 14H2v-4M10 14h4v-4"
+										stroke="currentColor"
+										strokeWidth="1.8"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									/>
+								</svg>
+							) : (
+								<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+									<path
+										d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"
+										stroke="currentColor"
+										strokeWidth="1.8"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+									/>
+								</svg>
+							)}
+						</button>
+					)}
+					<button
+						type="button"
+						className={styles.closeBtn}
+						onClick={onClose}
+						aria-label="Close panel"
+					>
+						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+							<path
+								d="M2 2l12 12M14 2L2 14"
+								stroke="currentColor"
+								strokeWidth="1.8"
+								strokeLinecap="round"
+							/>
+						</svg>
+					</button>
+				</div>
 			</div>
 
 			<div className={styles.search}>
