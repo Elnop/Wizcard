@@ -7,26 +7,9 @@ import { getCardsFromCache, putCardsInCache } from '@/lib/scryfall/utils/card-ca
 import type { Card, CardStack } from '@/types/cards';
 import type { CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import { groupByOracleId } from '@/lib/card/utils/group-cards';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
-
-function groupByOracleId(cards: Card[]): CardStack[] {
-	const map = new Map<string, Card[]>();
-	for (const card of cards) {
-		const key = card.oracle_id ?? card.id;
-		const existing = map.get(key);
-		if (existing) {
-			existing.push(card);
-		} else {
-			map.set(key, [card]);
-		}
-	}
-	return Array.from(map.entries()).map(([oracleId, cards]) => ({
-		oracleId,
-		name: cards[0].name,
-		cards,
-	}));
-}
 
 function buildCards(entries: StoredCopy[], scryfallMap: Map<string, ScryfallCard>): Card[] {
 	const result: Card[] = [];

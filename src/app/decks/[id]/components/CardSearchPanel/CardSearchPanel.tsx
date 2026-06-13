@@ -16,8 +16,8 @@ import { useCollectionCards } from '@/app/collection/useCollectionCards';
 import {
 	filterCollectionCards,
 	defaultCollectionFilters,
-} from '@/app/collection/utils/filterCollectionCards';
-import type { CollectionFilters } from '@/app/collection/utils/filterCollectionCards';
+} from '@/lib/card/utils/filterCollectionCards';
+import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';

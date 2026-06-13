@@ -1,30 +1,33 @@
 import { parseMoxfieldCSV } from './parse';
-import type { ParsedImportResult, ImportFormatDescriptor } from '@/lib/import/types';
+import type { ParsedImportResult, PendingCard, ImportFormatDescriptor } from '@/lib/import/types';
+import type { CardCondition } from '@/types/cards';
+import type { MtgLanguage } from '@/lib/mtg/languages';
 
 export function parseMoxfield(text: string): ParsedImportResult {
 	const { rows, parseErrors } = parseMoxfieldCSV(text);
 
-	const parsedRows = rows.map((row) => ({
-		name: row.name,
-		set: row.edition,
-		collectorNumber: row.collectorNumber,
-		quantity: row.count,
-		foil: row.foil,
-		condition: row.condition,
-		language: row.language,
-		purchasePrice: row.purchasePrice,
-		forTrade: (row.tradelistCount ?? 0) > 0,
-		alter: row.alter,
-		proxy: row.proxy,
-		tags: row.tags,
-	}));
+	const cards: PendingCard[] = [];
+	for (const row of rows) {
+		const card: PendingCard = {
+			name: row.name,
+			set: row.edition,
+			collectorNumber: row.collectorNumber,
+			isFoil: !!row.foil,
+			foilType: row.foil || undefined,
+			condition: row.condition as CardCondition | undefined,
+			language: row.language as MtgLanguage | undefined,
+			purchasePrice: row.purchasePrice,
+			forTrade: (row.tradelistCount ?? 0) > 0,
+			alter: row.alter,
+			proxy: row.proxy,
+			tags: row.tags,
+		};
+		for (let i = 0; i < row.count; i++) {
+			cards.push(card);
+		}
+	}
 
-	const identifiers = rows.map((row) => ({
-		set: row.edition,
-		collector_number: row.collectorNumber,
-	}));
-
-	return { rows: parsedRows, parseErrors, identifiers };
+	return { cards, parseErrors };
 }
 
 export const moxfieldDescriptor: ImportFormatDescriptor = {

@@ -1,5 +1,4 @@
-import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
-import type { ParsedImportResult, ParsedImportRow, ImportFormatDescriptor } from '../types';
+import type { ParsedImportResult, PendingCard, ImportFormatDescriptor } from '../types';
 
 const IGNORED_LINES = new Set(['deck', 'sideboard', 'commander', 'companion']);
 
@@ -12,9 +11,8 @@ const RE_NAME_ONLY = /^(\d+)\s+(.+)$/;
 
 export function parseMTGA(text: string): ParsedImportResult {
 	const lines = text.split(/\r?\n/);
-	const rows: ParsedImportRow[] = [];
+	const cards: PendingCard[] = [];
 	const parseErrors: string[] = [];
-	const identifiers: ScryfallCardIdentifier[] = [];
 
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i].trim();
@@ -27,8 +25,8 @@ export function parseMTGA(text: string): ParsedImportResult {
 			const name = match[2];
 			const set = match[3].toLowerCase();
 			const collectorNumber = match[4];
-			rows.push({ name, set, collectorNumber, quantity });
-			identifiers.push({ set, collector_number: collectorNumber });
+			const card: PendingCard = { name, set, collectorNumber };
+			for (let q = 0; q < quantity; q++) cards.push(card);
 			continue;
 		}
 
@@ -37,8 +35,8 @@ export function parseMTGA(text: string): ParsedImportResult {
 			const quantity = parseInt(match[1], 10);
 			const name = match[2];
 			const set = match[3].toLowerCase();
-			rows.push({ name, set, collectorNumber: '', quantity });
-			identifiers.push({ name, set });
+			const card: PendingCard = { name, set, collectorNumber: '' };
+			for (let q = 0; q < quantity; q++) cards.push(card);
 			continue;
 		}
 
@@ -46,15 +44,15 @@ export function parseMTGA(text: string): ParsedImportResult {
 		if (match) {
 			const quantity = parseInt(match[1], 10);
 			const name = match[2];
-			rows.push({ name, set: '', collectorNumber: '', quantity });
-			identifiers.push({ name });
+			const card: PendingCard = { name, set: '', collectorNumber: '' };
+			for (let q = 0; q < quantity; q++) cards.push(card);
 			continue;
 		}
 
 		parseErrors.push(`Line ${i + 1}: unrecognized format "${line}"`);
 	}
 
-	return { rows, parseErrors, identifiers };
+	return { cards, parseErrors };
 }
 
 export const mtgaDescriptor: ImportFormatDescriptor = {

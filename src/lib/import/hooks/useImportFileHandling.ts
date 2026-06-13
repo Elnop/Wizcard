@@ -4,28 +4,8 @@ import { useCallback } from 'react';
 import { detectFormat, detectBinaryFormat } from '@/lib/import/utils/detect';
 import { getParser, getBinaryParser } from '@/lib/import/formats/registry';
 import { isBinaryFormat } from '@/lib/import/types';
-import type { ImportFormatId, ParsedImportRow, ParsedImportResult } from '@/lib/import/types';
+import type { ImportFormatId, ParsedImportResult } from '@/lib/import/types';
 import type { ImportStatus, ImportPreview } from '@/lib/import/hooks/useImport';
-
-function mergeRows(rows: ParsedImportRow[]): ParsedImportRow[] {
-	const map = new Map<string, ParsedImportRow>();
-	for (const row of rows) {
-		const foilKey = row.foil || 'nonfoil';
-		const langKey = row.language && row.language !== 'en' ? `/${row.language.toLowerCase()}` : '';
-		const base =
-			row.set && row.collectorNumber
-				? `${row.set.toLowerCase()}/${row.collectorNumber.toLowerCase()}`
-				: `name:${row.name.toLowerCase()}`;
-		const key = `${base}${langKey}/${foilKey}`;
-		const existing = map.get(key);
-		if (existing) {
-			existing.quantity += row.quantity;
-		} else {
-			map.set(key, { ...row });
-		}
-	}
-	return Array.from(map.values());
-}
 
 export function useImportFileHandling(deps: {
 	setFileText: (t: string) => void;
@@ -51,17 +31,15 @@ export function useImportFileHandling(deps: {
 					const parser = getBinaryParser(binaryFormatId);
 					if (!parser) throw new Error(`Pas de parser pour ${binaryFormatId}`);
 					const parsed = await parser(buffer);
-					const mergedRows = mergeRows(parsed.rows);
-					const mergedParsed: ParsedImportResult = { ...parsed, rows: mergedRows };
 					setPreview({
 						fileName: file.name,
 						fileSize: file.size,
 						detectedFormat: binaryFormatId,
 						scores: { [binaryFormatId]: 1 } as Record<ImportFormatId, number>,
-						parsed: mergedParsed,
+						parsed,
 					});
 					setStatus('previewing');
-					void fetchPreviewCards(mergedParsed);
+					void fetchPreviewCards(parsed);
 				} catch {
 					setStatus('error');
 				}
@@ -79,15 +57,13 @@ export function useImportFileHandling(deps: {
 				const parser = getParser(formatId);
 				if (!parser) return;
 				const parsed = parser(text);
-				const mergedRows = mergeRows(parsed.rows);
-				const mergedParsed: ParsedImportResult = { ...parsed, rows: mergedRows };
 
 				setPreview({
 					fileName: file.name,
 					fileSize: file.size,
 					detectedFormat: formatId,
 					scores,
-					parsed: mergedParsed,
+					parsed,
 				});
 				setStatus('previewing');
 				void fetchPreviewCards(parsed);
@@ -108,15 +84,13 @@ export function useImportFileHandling(deps: {
 				const parser = getParser(formatId);
 				if (!parser) return;
 				const parsed = parser(text);
-				const mergedRows = mergeRows(parsed.rows);
-				const mergedParsed: ParsedImportResult = { ...parsed, rows: mergedRows };
 
 				setPreview({
 					fileName: 'Collage texte',
 					fileSize: new Blob([text]).size,
 					detectedFormat: formatId,
 					scores,
-					parsed: mergedParsed,
+					parsed,
 				});
 				setStatus('previewing');
 				void fetchPreviewCards(parsed);
@@ -131,9 +105,7 @@ export function useImportFileHandling(deps: {
 			const parser = getParser(formatId);
 			if (!parser) return;
 			const parsed = parser(fileText);
-			const mergedRows = mergeRows(parsed.rows);
-			const mergedParsed: ParsedImportResult = { ...parsed, rows: mergedRows };
-			setPreview({ ...currentPreview, detectedFormat: formatId, parsed: mergedParsed });
+			setPreview({ ...currentPreview, detectedFormat: formatId, parsed });
 			cancelPreviewFetch();
 			void fetchPreviewCards(parsed);
 		},

@@ -1,4 +1,5 @@
-import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
+import type { CardCondition, Card } from '@/types/cards';
+import type { MtgLanguage } from '@/lib/mtg/languages';
 
 export type ImportFormatId = 'moxfield' | 'mtga' | 'delverlens';
 
@@ -9,14 +10,18 @@ export interface ImportFormatDescriptor {
 	detect: (text: string) => number;
 }
 
-export interface ParsedImportRow {
+// One physical copy before Scryfall resolution — quantity expanded (N copies = N PendingCard)
+export interface PendingCard {
+	// Scryfall identification
 	name: string;
 	set: string;
-	collectorNumber: string;
-	quantity: number;
-	foil?: '' | 'foil' | 'etched';
-	condition?: string;
-	language?: string;
+	collectorNumber: string; // '' when unknown → name-only fallback
+	language?: MtgLanguage;
+
+	// Physical attributes (CardEntry fields without rowId/dateAdded)
+	isFoil?: boolean;
+	foilType?: 'foil' | 'etched';
+	condition?: CardCondition;
 	purchasePrice?: string;
 	forTrade?: boolean;
 	alter?: boolean;
@@ -25,9 +30,14 @@ export interface ParsedImportRow {
 }
 
 export interface ParsedImportResult {
-	rows: ParsedImportRow[];
+	cards: PendingCard[];
 	parseErrors: string[];
-	identifiers: ScryfallCardIdentifier[];
+}
+
+// Result after Scryfall fetch + resolve, stored in useImport state
+export interface ResolvedImportResult {
+	resolved: Card[]; // PendingCard matched with their ScryfallCard
+	notFound: PendingCard[]; // identifiers Scryfall did not find
 }
 
 export interface ImportResult {

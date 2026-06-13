@@ -2,8 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { ALL_FORMATS } from '@/lib/import/formats/registry';
-import type { ImportFormatId, ImportResult } from '@/lib/import/types';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { ImportFormatId, ImportResult, ResolvedImportResult } from '@/lib/import/types';
 import type { CardEntry } from '@/types/cards';
 import { useImportPreviewFetch } from '@/lib/import/hooks/useImportPreviewFetch';
 import { useImportFileHandling } from '@/lib/import/hooks/useImportFileHandling';
@@ -42,20 +41,22 @@ export function useImport(
 	const [result, setResult] = useState<ImportResult | null>(null);
 	const [preview, setPreview] = useState<ImportPreview | null>(null);
 	const [fileText, setFileText] = useState<string>('');
-	const [fetchedCards, setFetchedCards] = useState<ScryfallCard[]>([]);
+	const [resolved, setResolved] = useState<ResolvedImportResult | null>(null);
 	const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 	const [previewProgress, setPreviewProgress] = useState<ImportProgress>({
 		current: 0,
 		total: 0,
 	});
 
-	const normalizeSetCodes = useSetCodeNormalizer();
+	// Collection import only needs PendingCard[] normalization; the rows+identifiers
+	// variant (normalize) is consumed directly by ImportDeckModal via the hook.
+	const { normalizePending } = useSetCodeNormalizer();
 
 	const { fetchPreviewCards, cancelPreviewFetch } = useImportPreviewFetch({
-		setFetchedCards,
+		setResolved,
 		setIsLoadingPreview,
 		setPreviewProgress,
-		normalizeSetCodes,
+		normalizePending,
 	});
 
 	const fileHandling = useImportFileHandling({
@@ -67,16 +68,14 @@ export function useImport(
 	});
 
 	const { confirm } = useImportConfirmation({
-		fetchedCards,
-		preview,
+		resolved,
 		setStatus,
 		setProgress,
 		setResult,
 		importCards,
-		normalizeSetCodes,
 	});
 
-	const { updateRow, removeRow } = useImportRowEditing({ setPreview });
+	const { updateCard, removeCard } = useImportRowEditing({ setResolved });
 
 	const changeFormat = useCallback(
 		(formatId: ImportFormatId) => {
@@ -90,7 +89,7 @@ export function useImport(
 		setPreview(null);
 		setResult(null);
 		setFileText('');
-		setFetchedCards([]);
+		setResolved(null);
 		setIsLoadingPreview(false);
 		setPreviewProgress({ current: 0, total: 0 });
 		cancelPreviewFetch();
@@ -101,7 +100,7 @@ export function useImport(
 		setStatus('idle');
 		setPreview(null);
 		setFileText('');
-		setFetchedCards([]);
+		setResolved(null);
 		setIsLoadingPreview(false);
 	}, [cancelPreviewFetch]);
 
@@ -111,7 +110,7 @@ export function useImport(
 		setResult(null);
 		setPreview(null);
 		setFileText('');
-		setFetchedCards([]);
+		setResolved(null);
 		setIsLoadingPreview(false);
 		setPreviewProgress({ current: 0, total: 0 });
 		cancelPreviewFetch();
@@ -122,7 +121,7 @@ export function useImport(
 		progress,
 		result,
 		preview,
-		fetchedCards,
+		resolved,
 		isLoadingPreview,
 		previewProgress,
 		openModal,
@@ -132,8 +131,8 @@ export function useImport(
 		confirm,
 		cancel,
 		reset,
-		updateRow,
-		removeRow,
+		updateCard,
+		removeCard,
 		formatRegistry: ALL_FORMATS,
 	};
 }

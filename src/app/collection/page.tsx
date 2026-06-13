@@ -3,7 +3,7 @@
 import { useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import type { CardStack } from '@/types/cards';
-import type { CollectionFilters } from '@/app/collection/utils/filterCollectionCards';
+import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useCollectionCards } from './useCollectionCards';
 import { useImportContext } from '@/lib/import/contexts/ImportContext';
@@ -83,7 +83,7 @@ export default function CollectionPage() {
 		status,
 		progress,
 		preview,
-		fetchedCards,
+		resolved,
 		isLoadingPreview,
 		previewProgress,
 		openModal,
@@ -92,8 +92,8 @@ export default function CollectionPage() {
 		changeFormat,
 		cancel,
 		reset,
-		updateRow,
-		removeRow,
+		updateCard,
+		removeCard,
 		formatRegistry,
 	} = importCtx;
 	const isBusy =
@@ -233,8 +233,8 @@ export default function CollectionPage() {
 				isOpen={status !== 'idle'}
 				status={status}
 				preview={preview}
+				resolved={resolved}
 				formatRegistry={formatRegistry}
-				fetchedCards={fetchedCards}
 				isLoadingPreview={isLoadingPreview}
 				previewProgress={previewProgress}
 				progress={progress}
@@ -247,8 +247,8 @@ export default function CollectionPage() {
 				onConfirm={handleConfirmImport}
 				onCancel={cancel}
 				onClose={reset}
-				onUpdateRow={updateRow}
-				onRemoveRow={removeRow}
+				onUpdateCard={updateCard}
+				onRemoveCard={removeCard}
 			/>
 			<CardModal
 				cards={resolvedStack?.cards ?? null}

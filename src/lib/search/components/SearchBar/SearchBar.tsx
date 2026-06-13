@@ -37,7 +37,7 @@ export function SearchBar({ value, onChange, placeholder = 'Search cards...' }: 
 			</svg>
 			<input
 				type="text"
-				className={styles.input}
+				className={[styles.input, value ? styles.inputWithClear : ''].filter(Boolean).join(' ')}
 				value={value}
 				onChange={handleChange}
 				placeholder={placeholder}

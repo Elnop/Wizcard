@@ -7,14 +7,14 @@
 
 .icon {
 	position: absolute;
-	left: 16px;
+	left: 12px;
 	color: var(--brass);
 	pointer-events: none;
 }
 
 .input {
 	width: 100%;
-	padding: 14px 48px;
+	padding: 10px 16px 10px 36px;
 	font-size: var(--text-md);
 	font-family: var(--font-body);
 	color: var(--foreground);
@@ -26,6 +26,10 @@
 	transition:
 		border-color 0.25s,
 		box-shadow 0.25s;
+}
+
+.inputWithClear {
+	padding-right: 44px;
 }
 
 .input::placeholder {

@@ -1,35 +1,31 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import type { ImportFormatId, ParsedImportRow } from '@/lib/import/types';
+import type { ImportFormatId, ResolvedImportResult } from '@/lib/import/types';
 import type { ImportPreview } from '@/lib/import/hooks/useImport';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { CardEntry, CardStack, Card } from '@/types/cards';
-import {
-	filterCollectionCards,
-	defaultCollectionFilters,
-} from '@/app/collection/utils/filterCollectionCards';
-import type { CollectionFilters } from '@/app/collection/utils/filterCollectionCards';
+import type { Card, CardEntry, CardStack } from '@/types/cards';
+import { defaultCollectionFilters } from '@/lib/card/utils/filterCollectionCards';
+import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
+import { groupByOracleId, filterStacks, cardGroupKey } from '@/lib/card/utils/group-cards';
 import { countActiveFilters } from '@/lib/search/types';
-import { buildIdentifierKey } from '@/lib/import/utils/identifier-dedup';
 import type { InputMode } from './types';
 
 interface UseImportPreviewStateProps {
 	preview: ImportPreview | null;
-	fetchedCards: ScryfallCard[];
+	resolved: ResolvedImportResult | null;
 	onFileSelect: (file: File, forcedFormat?: ImportFormatId) => void;
 	onTextSubmit: (text: string, forcedFormat?: ImportFormatId) => void;
-	onUpdateRow: (rowIndex: number, updates: Partial<ParsedImportRow>) => void;
-	onRemoveRow: (rowIndex: number) => void;
+	onUpdateCard: (cardIndex: number, updates: Partial<CardEntry>) => void;
+	onRemoveCard: (cardIndex: number) => void;
 }
 
 export function useImportPreviewState({
 	preview,
-	fetchedCards,
+	resolved,
 	onFileSelect,
 	onTextSubmit,
-	onUpdateRow,
-	onRemoveRow,
+	onUpdateCard,
+	onRemoveCard,
 }: UseImportPreviewStateProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const [errorsExpanded, setErrorsExpanded] = useState(false);
@@ -65,148 +61,99 @@ export function useImportPreviewState({
 		onTextSubmit(pastedText, forcedFormat !== 'auto' ? forcedFormat : undefined);
 	}, [onTextSubmit, pastedText, forcedFormat]);
 
-	// Filter out fetched cards whose row was removed
-	const activeCards = useMemo(() => {
-		if (!preview) return fetchedCards;
-		return fetchedCards.filter((card) => {
-			const cardKey = buildIdentifierKey({
-				set: card.set,
-				collector_number: card.collector_number,
-			});
-			return preview.parsed.rows.some((r) =>
-				r.set && r.collectorNumber
-					? buildIdentifierKey({ set: r.set, collector_number: r.collectorNumber }) === cardKey
-					: r.name.toLowerCase() === card.name.toLowerCase()
-			);
-		});
-	}, [fetchedCards, preview]);
+	// All resolved cards (one entry per physical copy)
+	const activeCards = useMemo((): Card[] => resolved?.resolved ?? [], [resolved]);
 
+	// Group copies into stacks by oracle_id — the same logic the collection uses,
+	// so grouping, representative-print choice and filtering stay consistent.
+	const stacks = useMemo(() => groupByOracleId(activeCards), [activeCards]);
+	const filteredStacks = useMemo(() => filterStacks(stacks, filters), [stacks, filters]);
+
+	// Representative print of each (filtered) stack — what the grid/table renders.
+	const uniqueCards = useMemo(() => stacks.map((s) => s.cards[0]).filter(Boolean), [stacks]);
 	const filteredCards = useMemo(
-		() => filterCollectionCards(activeCards, filters),
-		[activeCards, filters]
+		() => filteredStacks.map((s) => s.cards[0]).filter(Boolean),
+		[filteredStacks]
 	);
 
 	const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
 
-	// Card → row mapping
-	const rowMap = useMemo(() => {
-		if (!preview) return new Map<string, ParsedImportRow>();
-		const map = new Map<string, ParsedImportRow>();
-		for (const card of fetchedCards) {
-			const cardKey = buildIdentifierKey({
-				set: card.set,
-				collector_number: card.collector_number,
-			});
-			const row = preview.parsed.rows.find((r) =>
-				r.set && r.collectorNumber
-					? buildIdentifierKey({ set: r.set, collector_number: r.collectorNumber }) === cardKey
-					: r.name.toLowerCase() === card.name.toLowerCase()
-			);
-			if (row) map.set(card.id, row);
+	// Map a representative print id (what the grid emits on click) to its stack.
+	const stackByRepId = useMemo(() => {
+		const m = new Map<string, CardStack>();
+		for (const s of stacks) {
+			const rep = s.cards[0];
+			if (rep) m.set(rep.id, s);
 		}
-		return map;
-	}, [preview, fetchedCards]);
+		return m;
+	}, [stacks]);
 
+	// Stack for the detail modal — all copies of the selected logical card, so the
+	// modal shows every edition/foil/language imported.
 	const selectedImportStack = useMemo((): CardStack | null => {
-		if (!selectedCardId || !preview) return null;
-		const scryfallCard = fetchedCards.find((c) => c.id === selectedCardId);
-		if (!scryfallCard) return null;
+		if (!selectedCardId) return null;
+		return stackByRepId.get(selectedCardId) ?? null;
+	}, [selectedCardId, stackByRepId]);
 
-		// Find all rows for this card (foil + non-foil share the same set/num key)
-		const cardKey = buildIdentifierKey({
-			set: scryfallCard.set,
-			collector_number: scryfallCard.collector_number,
-		});
-		const rows = preview.parsed.rows.filter((r) =>
-			r.set && r.collectorNumber
-				? buildIdentifierKey({ set: r.set, collector_number: r.collectorNumber }) === cardKey
-				: r.name.toLowerCase() === scryfallCard.name.toLowerCase()
-		);
-		if (rows.length === 0) return null;
-
-		const cards: Card[] = rows.flatMap((row) =>
-			Array.from({ length: row.quantity }, (_, i) => ({
-				...scryfallCard,
-				entry: {
-					rowId: `${selectedCardId}-${row.foil || 'nonfoil'}-${i}`,
-					dateAdded: new Date().toISOString(),
-					isFoil: !!row.foil,
-					foilType: row.foil || undefined,
-					condition: row.condition as CardEntry['condition'],
-					language: row.language as CardEntry['language'],
-					tags: row.tags,
-				},
-			}))
-		);
-
-		return {
-			oracleId: scryfallCard.oracle_id ?? scryfallCard.id,
-			name: scryfallCard.name,
-			cards,
-		};
-	}, [selectedCardId, preview, fetchedCards]);
-
-	// Deduplicated identifier count for skeleton placeholders
+	// Unique card count for skeleton placeholders (distinct Scryfall IDs)
 	const uniqueIdentifierCount = useMemo(() => {
 		if (!preview) return 0;
-		return new Set(preview.parsed.identifiers.map((id) => buildIdentifierKey(id))).size;
+		return new Set(preview.parsed.cards.map((c) => `${c.set}/${c.collectorNumber || c.name}`)).size;
 	}, [preview]);
 
-	// Rows filtered by name only (for fallback table before Scryfall fetch)
+	// Fallback rows for cards not yet fetched (name filter only)
 	const filteredRows = useMemo(() => {
 		if (!preview) return [];
-		if (!filters.name) return preview.parsed.rows;
-		return preview.parsed.rows.filter((row) =>
-			row.name.toLowerCase().includes(filters.name.toLowerCase())
-		);
+		const seen = new Set<string>();
+		const unique = preview.parsed.cards.filter((c) => {
+			const key = c.name.toLowerCase();
+			if (seen.has(key)) return false;
+			seen.add(key);
+			return true;
+		});
+		if (!filters.name) return unique;
+		return unique.filter((c) => c.name.toLowerCase().includes(filters.name.toLowerCase()));
 	}, [preview, filters.name]);
 
 	const isFiltered = !!(filters.name || activeFilterCount > 0);
 	const totalCardCount =
-		activeCards.length > 0 ? activeCards.length : (preview?.parsed.rows.length ?? 0);
-
-	// The displayed count for ImportPreviewFilters
+		uniqueCards.length > 0 ? uniqueCards.length : (preview?.parsed.cards.length ?? 0);
 	const filteredCount = filteredCards.length > 0 ? filteredCards.length : filteredRows.length;
 
+	// Total copies of the logical card, keyed by the representative print id the grid
+	// passes in (= the size of its stack).
+	function getTotalQty(representativeId: string): number {
+		const stack = stackByRepId.get(representativeId);
+		return stack ? stack.cards.length : 1;
+	}
+
+	// CardModal calls onSave with a rowId. Resolve that copy's logical-card group and
+	// apply the edit to every copy of that card (all editions), matching the
+	// "remove all editions" grouping semantics.
 	function handleEditSave(rowId: string, updates: Partial<CardEntry>) {
-		if (!preview) return;
-		const row = rowMap.get(rowId);
-		if (!row) return;
-		const rowIndex = preview.parsed.rows.indexOf(row);
-		if (rowIndex === -1) return;
-		const rowUpdates: Partial<ParsedImportRow> = {};
-		if (updates.isFoil !== undefined || updates.foilType !== undefined) {
-			rowUpdates.foil = updates.isFoil ? ((updates.foilType ?? 'foil') as 'foil' | 'etched') : '';
+		if (!resolved) return;
+		const target = resolved.resolved.find((c) => c.entry.rowId === rowId);
+		if (!target) return;
+		const group = cardGroupKey(target);
+		resolved.resolved.forEach((card, index) => {
+			if (cardGroupKey(card) === group) onUpdateCard(index, updates);
+		});
+	}
+
+	// CardModal calls onRemove with a print id. Resolve its logical-card group and
+	// remove all copies (every edition), in reverse to keep indices stable.
+	function handleEditRemove(printId: string) {
+		if (!resolved) return;
+		const target = resolved.resolved.find((c) => c.id === printId);
+		const group = target ? cardGroupKey(target) : printId;
+		const indices = resolved.resolved
+			.map((card, i) => (cardGroupKey(card) === group ? i : -1))
+			.filter((i) => i !== -1)
+			.reverse();
+		for (const i of indices) {
+			onRemoveCard(i);
 		}
-		if (updates.condition !== undefined) rowUpdates.condition = updates.condition;
-		if (updates.language !== undefined) rowUpdates.language = updates.language;
-		if (updates.tags !== undefined) rowUpdates.tags = updates.tags;
-		onUpdateRow(rowIndex, rowUpdates);
-	}
-
-	function handleEditRemove(scryfallId: string) {
-		if (!preview) return;
-		const row = rowMap.get(scryfallId);
-		if (!row) return;
-		const rowIndex = preview.parsed.rows.indexOf(row);
-		if (rowIndex === -1) return;
-		onRemoveRow(rowIndex);
 		setSelectedCardId(null);
-	}
-
-	// Sum quantities across all rows with the same set/collector_number (foil + non-foil)
-	function getTotalQty(card: ScryfallCard): number {
-		if (!preview) return 1;
-		const cardKey = buildIdentifierKey({ set: card.set, collector_number: card.collector_number });
-		return (
-			preview.parsed.rows
-				.filter((r) =>
-					r.set && r.collectorNumber
-						? buildIdentifierKey({ set: r.set, collector_number: r.collectorNumber }) === cardKey
-						: r.name.toLowerCase() === card.name.toLowerCase()
-				)
-				.reduce((sum, r) => sum + r.quantity, 0) || 1
-		);
 	}
 
 	return {
@@ -228,9 +175,9 @@ export function useImportPreviewState({
 		setSelectedCardId,
 		// Derived
 		activeCards,
+		uniqueCards,
 		filteredCards,
 		activeFilterCount,
-		rowMap,
 		selectedImportStack,
 		uniqueIdentifierCount,
 		filteredRows,
@@ -238,6 +185,10 @@ export function useImportPreviewState({
 		totalCardCount,
 		filteredCount,
 		getTotalQty,
+		notFound: resolved?.notFound ?? [],
+		uniqueNotFoundCount: new Set(
+			(resolved?.notFound ?? []).map((c) => `${c.set}/${c.collectorNumber || c.name}`)
+		).size,
 		// Handlers
 		handleDragOver,
 		handleDragLeave,

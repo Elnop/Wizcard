@@ -11,8 +11,8 @@ import { OracleTextFilter } from '@/lib/search/components/filters/OracleTextFilt
 import { CmcFilter } from '@/lib/search/components/filters/CmcFilter/CmcFilter';
 import { SetFilter } from '@/lib/search/components/filters/SetFilter/SetFilter';
 import { SortFilter } from '@/lib/search/components/filters/SortFilter/SortFilter';
-import type { CollectionFilters } from '@/app/collection/utils/filterCollectionCards';
-import { defaultCollectionFilters } from '@/app/collection/utils/filterCollectionCards';
+import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
+import { defaultCollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 import { MTG_LANGUAGES } from '@/lib/mtg/languages';
 import styles from './CollectionFiltersAside.module.css';
 

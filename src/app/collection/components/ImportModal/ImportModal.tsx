@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import type { ImportFormatId, ParsedImportRow } from '@/lib/import/types';
+import type { ImportFormatId } from '@/lib/import/types';
+import type { ResolvedImportResult } from '@/lib/import/types';
 import type { ImportPreview, ImportStatus, ImportProgress } from '@/lib/import/hooks/useImport';
-import type { ScryfallCard, ScryfallSet } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import type { CardEntry } from '@/types/cards';
 import { PAGE_SIZE } from '@/lib/collection/constants';
 import { useImportPreviewState } from './useImportPreviewState';
 import { ImportFileInput } from './ImportFileInput';
@@ -24,8 +26,8 @@ interface Props {
 	isOpen: boolean;
 	status: ImportStatus;
 	preview: ImportPreview | null;
+	resolved: ResolvedImportResult | null;
 	formatRegistry: Array<{ id: ImportFormatId; label: string }>;
-	fetchedCards: ScryfallCard[];
 	isLoadingPreview: boolean;
 	previewProgress: ImportProgress;
 	progress: ImportProgress;
@@ -38,8 +40,8 @@ interface Props {
 	onConfirm: () => void;
 	onCancel: () => void;
 	onClose: () => void;
-	onUpdateRow: (rowIndex: number, updates: Partial<ParsedImportRow>) => void;
-	onRemoveRow: (rowIndex: number) => void;
+	onUpdateCard: (cardIndex: number, updates: Partial<CardEntry>) => void;
+	onRemoveCard: (cardIndex: number) => void;
 }
 
 const TITLE_IMPORT_FILE = 'Importer un fichier';
@@ -76,8 +78,8 @@ export function ImportModal({
 	isOpen,
 	status,
 	preview,
+	resolved,
 	formatRegistry,
-	fetchedCards,
 	isLoadingPreview,
 	previewProgress,
 	progress,
@@ -90,16 +92,16 @@ export function ImportModal({
 	onConfirm,
 	onCancel,
 	onClose,
-	onUpdateRow,
-	onRemoveRow,
+	onUpdateCard,
+	onRemoveCard,
 }: Props) {
 	const state = useImportPreviewState({
 		preview,
-		fetchedCards,
+		resolved,
 		onFileSelect,
 		onTextSubmit,
-		onUpdateRow,
-		onRemoveRow,
+		onUpdateCard,
+		onRemoveCard,
 	});
 
 	useEffect(() => {
@@ -110,16 +112,22 @@ export function ImportModal({
 
 	const isPreviewWide = status === 'previewing';
 
+	const uniqueResolvedCount = state.uniqueCards.length;
 	const skeletonCount =
-		fetchedCards.length === 0
+		uniqueResolvedCount === 0
 			? 6
-			: Math.min(PAGE_SIZE, Math.max(0, state.uniqueIdentifierCount - fetchedCards.length));
+			: Math.min(PAGE_SIZE, Math.max(0, state.uniqueIdentifierCount - uniqueResolvedCount));
+
 	const tableColumns: CardListColumn[] = [
-		{ key: 'qty', label: 'Qté', render: (card) => state.getTotalQty(card as ScryfallCard) },
+		{
+			key: 'qty',
+			label: 'Qté',
+			render: (card) => state.getTotalQty((card as AnyCard & { id: string }).id),
+		},
 		...STATIC_IMPORT_COLUMNS,
 	];
 	const renderOverlay = (card: AnyCard) => {
-		const qty = state.getTotalQty(card as ScryfallCard);
+		const qty = state.getTotalQty((card as AnyCard & { id: string }).id);
 		return qty > 1 ? <span className={styles.gridBadge}>x{qty}</span> : null;
 	};
 
@@ -132,6 +140,89 @@ export function ImportModal({
 		progress.total > 0
 			? `Récupération des cartes… (${progress.current}/${progress.total})`
 			: LABEL_FETCHING_CARDS;
+
+	function renderPreviewBody() {
+		if (isLoadingPreview && uniqueResolvedCount === 0) {
+			return (
+				<LoadingScreen label={previewProgressLabel}>
+					<Button variant="ghost" onClick={onCancel}>
+						Annuler
+					</Button>
+					<Button variant="secondary" onClick={onChangeFile}>
+						Changer de fichier
+					</Button>
+				</LoadingScreen>
+			);
+		}
+		if (!preview) return <LoadingScreen label={LABEL_FETCHING_CARDS} />;
+		return (
+			<div className={styles.previewLayout}>
+				{/* Left column: meta + filters + not-found + actions */}
+				<div className={styles.previewLeft}>
+					<ImportPreviewStats
+						preview={preview}
+						formatRegistry={formatRegistry}
+						errorsExpanded={state.errorsExpanded}
+						onErrorsToggle={() => state.setErrorsExpanded((v) => !v)}
+						onChangeFile={onChangeFile}
+						onChangeFormat={onChangeFormat}
+					/>
+					<ImportPreviewFilters
+						nameFilter={state.filters.name}
+						onNameFilterChange={(value) => state.setFilters((prev) => ({ ...prev, name: value }))}
+						activeFilterCount={state.activeFilterCount}
+						onOpenFilterModal={() => state.setIsFilterModalOpen(true)}
+						isFiltered={state.isFiltered}
+						filteredCount={state.filteredCount}
+						totalCardCount={state.totalCardCount}
+					/>
+					{state.notFound.length > 0 && (
+						<div className={styles.scrollArea}>
+							<div className={styles.notFoundSection}>
+								<p className={styles.notFoundLabel}>
+									{state.uniqueNotFoundCount} print
+									{state.uniqueNotFoundCount > 1 ? 's' : ''} non trouvé
+									{state.uniqueNotFoundCount > 1 ? 's' : ''} sur Scryfall ({state.notFound.length}{' '}
+									cop{state.notFound.length > 1 ? 'ies' : 'ie'})
+								</p>
+								<ImportFallbackTable rows={state.notFound} />
+							</div>
+						</div>
+					)}
+					<div className={styles.actions}>
+						<Button variant="ghost" onClick={onCancel}>
+							Annuler
+						</Button>
+						<Button
+							variant="primary"
+							onClick={onConfirm}
+							disabled={!resolved || resolved.resolved.length === 0}
+						>
+							Confirmer l&apos;import
+						</Button>
+					</div>
+				</div>
+				{/* Right column: card grid */}
+				<div className={styles.previewRight}>
+					{state.filteredCards.length === 0 &&
+						state.filteredRows.length > 0 &&
+						!isLoadingPreview && <ImportFallbackTable rows={state.filteredRows} />}
+					{(state.filteredCards.length > 0 || isLoadingPreview) && (
+						<CardList
+							cards={state.filteredCards}
+							isLoading={isLoadingPreview && state.filteredCards.length === 0}
+							isLoadingMore={isLoadingPreview && state.filteredCards.length > 0}
+							skeletonCount={skeletonCount}
+							cardsPerLine={4}
+							onCardClick={(card) => state.setSelectedCardId(card.id)}
+							renderOverlay={renderOverlay}
+							tableColumns={tableColumns}
+						/>
+					)}
+				</div>
+			</div>
+		);
+	}
 
 	function renderContent() {
 		if (status === 'selecting') {
@@ -154,89 +245,10 @@ export function ImportModal({
 				/>
 			);
 		}
-
-		if (status === 'parsing') {
-			return <LoadingScreen label="Analyse du fichier…" />;
-		}
-
-		if (status === 'previewing') {
-			if (isLoadingPreview && fetchedCards.length === 0) {
-				return (
-					<LoadingScreen label={previewProgressLabel}>
-						<Button variant="ghost" onClick={onCancel}>
-							Annuler
-						</Button>
-						<Button variant="secondary" onClick={onChangeFile}>
-							Changer de fichier
-						</Button>
-					</LoadingScreen>
-				);
-			}
-			if (!preview) {
-				return <LoadingScreen label={LABEL_FETCHING_CARDS} />;
-			}
-			if (preview) {
-				return (
-					<>
-						<ImportPreviewStats
-							preview={preview}
-							formatRegistry={formatRegistry}
-							errorsExpanded={state.errorsExpanded}
-							onErrorsToggle={() => state.setErrorsExpanded((v) => !v)}
-							onChangeFile={onChangeFile}
-							onChangeFormat={onChangeFormat}
-						/>
-						<ImportPreviewFilters
-							nameFilter={state.filters.name}
-							onNameFilterChange={(value) => state.setFilters((prev) => ({ ...prev, name: value }))}
-							activeFilterCount={state.activeFilterCount}
-							onOpenFilterModal={() => state.setIsFilterModalOpen(true)}
-							isFiltered={state.isFiltered}
-							filteredCount={state.filteredCount}
-							totalCardCount={state.totalCardCount}
-						/>
-						{state.filteredCards.length === 0 &&
-							state.filteredRows.length > 0 &&
-							!isLoadingPreview && <ImportFallbackTable rows={state.filteredRows} />}
-						{(state.filteredCards.length > 0 || isLoadingPreview) && (
-							<div className={styles.gridContainer}>
-								<CardList
-									cards={state.filteredCards}
-									isLoading={isLoadingPreview && state.filteredCards.length === 0}
-									isLoadingMore={isLoadingPreview && state.filteredCards.length > 0}
-									skeletonCount={skeletonCount}
-									cardsPerLine={4}
-									onCardClick={(card) => state.setSelectedCardId(card.id)}
-									renderOverlay={renderOverlay}
-									tableColumns={tableColumns}
-								/>
-							</div>
-						)}
-						<div className={styles.actions}>
-							<Button variant="ghost" onClick={onCancel}>
-								Annuler
-							</Button>
-							<Button
-								variant="primary"
-								onClick={onConfirm}
-								disabled={preview.parsed.rows.length === 0}
-							>
-								Confirmer l&apos;import
-							</Button>
-						</div>
-					</>
-				);
-			}
-		}
-
-		if (status === 'fetching') {
-			return <LoadingScreen label={fetchProgressLabel} />;
-		}
-
-		if (status === 'merging') {
-			return <LoadingScreen label="Ajout à la collection…" />;
-		}
-
+		if (status === 'parsing') return <LoadingScreen label="Analyse du fichier…" />;
+		if (status === 'previewing') return renderPreviewBody();
+		if (status === 'fetching') return <LoadingScreen label={fetchProgressLabel} />;
+		if (status === 'merging') return <LoadingScreen label="Ajout à la collection…" />;
 		return null;
 	}
 

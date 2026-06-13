@@ -1,6 +1,7 @@
 import type { SqlValue } from 'sql.js';
-import type { ParsedImportRow, BinaryFormatParser } from '@/lib/import/types';
-import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
+import type { PendingCard, BinaryFormatParser } from '@/lib/import/types';
+import type { MtgLanguage } from '@/lib/mtg/languages';
+import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
 import { openDatabase } from './sql-loader';
 import {
 	normalizeDelverLanguage,
@@ -34,6 +35,58 @@ function str(value: SqlValue): string {
 	return String(value);
 }
 
+type DedupEntry = { card: PendingCard; quantity: number };
+
+function processSqlRow(sqlRow: SqlValue[]): { key: string; entry: DedupEntry } {
+	const amount = str(sqlRow[0]);
+	const cardName = str(sqlRow[1]);
+	const isFoilStr = str(sqlRow[2]);
+	const setCode = str(sqlRow[3]);
+	const collectorNumber = str(sqlRow[4]);
+	const language = str(sqlRow[5]);
+	const condition = str(sqlRow[6]);
+	// sqlRow[7] = dateAdded (not used currently, preserved in SQL for future use)
+	const collection = str(sqlRow[8]);
+
+	const quantity = parseInt(amount, 10) || 1;
+	const foilType: 'foil' | undefined = isFoilStr === '1' ? 'foil' : undefined;
+	const langCode = normalizeDelverLanguage(language || undefined);
+	const normalizedLang: MtgLanguage | undefined = langCode
+		? (SCRYFALL_CODE_TO_LANGUAGE[langCode] ?? undefined)
+		: undefined;
+	const normalizedCondition = normalizeDelverCondition(condition || undefined);
+	const setLower = setCode.toLowerCase();
+	const cleanedCollectorNumber = isIncompatibleSet(setLower)
+		? ''
+		: cleanCollectorNumber(collectorNumber);
+
+	const key = buildDedupKey(
+		cardName,
+		setLower,
+		cleanedCollectorNumber,
+		normalizedLang ?? '',
+		foilType ?? 'nonfoil',
+		normalizedCondition ?? ''
+	);
+
+	return {
+		key,
+		entry: {
+			quantity,
+			card: {
+				name: cardName,
+				set: setLower,
+				collectorNumber: cleanedCollectorNumber,
+				isFoil: !!foilType,
+				foilType,
+				condition: normalizedCondition,
+				language: normalizedLang,
+				tags: collection ? [collection] : undefined,
+			},
+		},
+	};
+}
+
 function buildDedupKey(
 	name: string,
 	set: string,
@@ -53,9 +106,8 @@ export const parseDelverLens: BinaryFormatParser = async (buffer) => {
 		db = await openDatabase(buffer);
 	} catch {
 		return {
-			rows: [],
-			parseErrors: ['Impossible d\u2019ouvrir le fichier comme base SQLite'],
-			identifiers: [],
+			cards: [],
+			parseErrors: ['Impossible d’ouvrir le fichier comme base SQLite'],
 		};
 	}
 
@@ -67,86 +119,44 @@ export const parseDelverLens: BinaryFormatParser = async (buffer) => {
 		for (const table of REQUIRED_TABLES) {
 			if (!existingTables.has(table)) {
 				db.close();
-				return { rows: [], parseErrors: [`Table requise manquante : ${table}`], identifiers: [] };
+				return { cards: [], parseErrors: [`Table requise manquante : ${table}`] };
 			}
 		}
 
 		const result = db.exec(QUERY);
 		if (result.length === 0 || !result[0]) {
 			db.close();
-			return { rows: [], parseErrors: ['Aucune carte trouv\u00e9e dans la base'], identifiers: [] };
+			return { cards: [], parseErrors: ['Aucune carte trouvée dans la base'] };
 		}
 
-		const dedupMap = new Map<string, ParsedImportRow>();
+		// Dedup by physical attributes — same card with same foil/lang/condition aggregates quantity
+		const dedupMap = new Map<string, DedupEntry>();
 
 		for (const sqlRow of result[0].values) {
-			const amount = str(sqlRow[0]);
-			const cardName = str(sqlRow[1]);
-			const isFoilStr = str(sqlRow[2]);
-			const setCode = str(sqlRow[3]);
-			const collectorNumber = str(sqlRow[4]);
-			const language = str(sqlRow[5]);
-			const condition = str(sqlRow[6]);
-			// sqlRow[7] = dateAdded (not used currently, preserved in SQL for future use)
-			const collection = str(sqlRow[8]);
-
-			const quantity = parseInt(amount, 10) || 1;
-			const foil: '' | 'foil' = isFoilStr === '1' ? 'foil' : '';
-			const normalizedLang = normalizeDelverLanguage(language || undefined);
-			const normalizedCondition = normalizeDelverCondition(condition || undefined);
-			const cleanedCollectorNumber = cleanCollectorNumber(collectorNumber);
-			const setLower = setCode.toLowerCase();
-
-			const key = buildDedupKey(
-				cardName,
-				setLower,
-				cleanedCollectorNumber,
-				normalizedLang ?? '',
-				foil || 'nonfoil',
-				normalizedCondition ?? ''
-			);
-
+			const { key, entry } = processSqlRow(sqlRow);
 			const existing = dedupMap.get(key);
 			if (existing) {
-				existing.quantity += quantity;
+				existing.quantity += entry.quantity;
 			} else {
-				dedupMap.set(key, {
-					name: cardName,
-					set: setLower,
-					collectorNumber: cleanedCollectorNumber,
-					quantity,
-					foil,
-					condition: normalizedCondition,
-					language: normalizedLang,
-					tags: collection ? [collection] : undefined,
-				});
+				dedupMap.set(key, entry);
 			}
 		}
 
-		const rows = Array.from(dedupMap.values());
-
-		const identifiers: ScryfallCardIdentifier[] = rows.map((row) => {
-			if (row.set && row.collectorNumber && !isIncompatibleSet(row.set)) {
-				return {
-					set: row.set,
-					collector_number: row.collectorNumber,
-					...(row.language && row.language !== 'en' ? { lang: row.language } : {}),
-				};
+		// Expand quantity: N copies = N PendingCard entries
+		const cards: PendingCard[] = [];
+		for (const { card, quantity } of dedupMap.values()) {
+			for (let i = 0; i < quantity; i++) {
+				cards.push(card);
 			}
-			return {
-				name: row.name,
-				set: row.set || undefined,
-			};
-		});
+		}
 
 		db.close();
-		return { rows, parseErrors, identifiers };
+		return { cards, parseErrors };
 	} catch (e) {
 		db.close();
 		return {
-			rows: [],
+			cards: [],
 			parseErrors: [`Erreur SQL : ${e instanceof Error ? e.message : String(e)}`],
-			identifiers: [],
 		};
 	}
 };

@@ -1,6 +1,13 @@
 import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
-import type { ParsedImportRow } from '../types';
 import type { DeckFormat, DeckZone } from '@/types/decks';
+
+// Minimal deck card row (separate from collection PendingCard)
+interface ParsedImportRow {
+	name: string;
+	set: string;
+	collectorNumber: string;
+	quantity: number;
+}
 
 // Card line patterns (applied after normalizeLine preprocessing)
 // eslint-disable-next-line sonarjs/slow-regex -- inputs are short card-name lines, no ReDoS risk

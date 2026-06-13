@@ -2,18 +2,22 @@
 
 import { useCallback, useEffect } from 'react';
 import { useScryfallStore } from '@/lib/scryfall/store/scryfall-store';
-import { normalizeImportResult } from '@/lib/import/utils/normalize-set-code';
+import {
+	normalizeImportResult,
+	normalizePendingCards,
+} from '@/lib/import/utils/normalize-set-code';
 import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
-import type { ParsedImportRow } from '@/lib/import/types';
+import type { PendingCard } from '@/lib/import/types';
 
 type Normalizable = {
-	rows: ParsedImportRow[];
+	rows: Array<{ set: string }>;
 	identifiers: ScryfallCardIdentifier[];
 };
 
 /**
- * Hook that exposes a function to normalize MTGA/MTGO set codes to Scryfall
- * canonical codes using the cached set list from the Scryfall store.
+ * Hook that exposes set code normalization functions using the cached set list.
+ * - normalize: for DeckImportResult (rows + identifiers) — used by ImportDeckModal
+ * - normalizePending: for PendingCard[] — used by collection import pipeline
  */
 export function useSetCodeNormalizer() {
 	const sets = useScryfallStore((s) => s.sets);
@@ -33,5 +37,13 @@ export function useSetCodeNormalizer() {
 		[sets]
 	);
 
-	return normalize;
+	const normalizePending = useCallback(
+		(cards: PendingCard[]): PendingCard[] => {
+			if (sets.length === 0) return cards;
+			return normalizePendingCards(cards, sets);
+		},
+		[sets]
+	);
+
+	return { normalize, normalizePending };
 }

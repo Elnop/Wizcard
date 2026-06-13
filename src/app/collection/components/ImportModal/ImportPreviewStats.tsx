@@ -52,10 +52,8 @@ export function ImportPreviewStats({
 
 			<div className={styles.previewStats}>
 				<span className={styles.previewStat}>
-					<span className={styles.previewStatValue}>
-						{preview.parsed.rows.reduce((sum, r) => sum + r.quantity, 0)}
-					</span>{' '}
-					cartes détectées
+					<span className={styles.previewStatValue}>{preview.parsed.cards.length}</span> cartes
+					détectées
 				</span>
 				{errorCount > 0 && (
 					<span className={styles.previewStat}>

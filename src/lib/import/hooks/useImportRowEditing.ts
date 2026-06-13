@@ -1,36 +1,41 @@
 'use client';
 
 import { useCallback } from 'react';
-import type { ParsedImportRow } from '@/lib/import/types';
-import type { ImportPreview } from '@/lib/import/hooks/useImport';
+import type { ResolvedImportResult } from '@/lib/import/types';
+import type { CardEntry } from '@/types/cards';
 
 export function useImportRowEditing(deps: {
-	setPreview: (updater: (prev: ImportPreview | null) => ImportPreview | null) => void;
+	setResolved: (
+		updater: (prev: ResolvedImportResult | null) => ResolvedImportResult | null
+	) => void;
 }) {
-	const { setPreview } = deps;
+	const { setResolved } = deps;
 
-	const updateRow = useCallback(
-		(rowIndex: number, updates: Partial<ParsedImportRow>) => {
-			setPreview((prev) => {
+	const updateCard = useCallback(
+		(cardIndex: number, updates: Partial<CardEntry>) => {
+			setResolved((prev) => {
 				if (!prev) return prev;
-				const newRows = [...prev.parsed.rows];
-				newRows[rowIndex] = { ...newRows[rowIndex], ...updates };
-				return { ...prev, parsed: { ...prev.parsed, rows: newRows } };
+				const newResolved = [...prev.resolved];
+				newResolved[cardIndex] = {
+					...newResolved[cardIndex],
+					entry: { ...newResolved[cardIndex].entry, ...updates },
+				};
+				return { ...prev, resolved: newResolved };
 			});
 		},
-		[setPreview]
+		[setResolved]
 	);
 
-	const removeRow = useCallback(
-		(rowIndex: number) => {
-			setPreview((prev) => {
+	const removeCard = useCallback(
+		(cardIndex: number) => {
+			setResolved((prev) => {
 				if (!prev) return prev;
-				const newRows = prev.parsed.rows.filter((_, i) => i !== rowIndex);
-				return { ...prev, parsed: { ...prev.parsed, rows: newRows } };
+				const newResolved = prev.resolved.filter((_, i) => i !== cardIndex);
+				return { ...prev, resolved: newResolved };
 			});
 		},
-		[setPreview]
+		[setResolved]
 	);
 
-	return { updateRow, removeRow };
+	return { updateCard, removeCard };
 }

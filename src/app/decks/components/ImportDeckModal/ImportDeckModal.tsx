@@ -126,7 +126,7 @@ function buildMoxfieldSummary(data: MoxfieldImportData): string {
 export function ImportDeckModal({ onClose }: Props) {
 	const { createDeck, bulkAddCardsToDeck } = useDeckContext();
 	const router = useRouter();
-	const normalizeSetCodes = useSetCodeNormalizer();
+	const { normalize: normalizeSetCodes } = useSetCodeNormalizer();
 
 	const [mode, setMode] = useState<ImportMode>('paste');
 
