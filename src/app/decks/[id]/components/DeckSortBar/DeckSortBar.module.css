@@ -6,6 +6,20 @@
 	margin-bottom: 16px;
 }
 
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.label {
+	font-size: var(--text-xs);
+	font-weight: 500;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.4px;
+}
+
 .select {
 	padding: 6px 32px 6px 10px;
 	font-size: var(--text-sm);

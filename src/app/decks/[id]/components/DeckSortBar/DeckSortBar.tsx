@@ -36,29 +36,35 @@ export function DeckSortBar({
 
 	return (
 		<div className={styles.bar}>
-			<select
-				className={styles.select}
-				value={groupBy}
-				onChange={(e) => onGroupByChange(e.target.value as DeckGroupBy)}
-			>
-				{GROUP_OPTIONS.map((opt) => (
-					<option key={opt.value} value={opt.value}>
-						{opt.label}
-					</option>
-				))}
-			</select>
+			<label className={styles.field}>
+				<span className={styles.label}>Grouper</span>
+				<select
+					className={styles.select}
+					value={groupBy}
+					onChange={(e) => onGroupByChange(e.target.value as DeckGroupBy)}
+				>
+					{GROUP_OPTIONS.map((opt) => (
+						<option key={opt.value} value={opt.value}>
+							{opt.label}
+						</option>
+					))}
+				</select>
+			</label>
 
-			<select
-				className={styles.select}
-				value={order}
-				onChange={(e) => onOrderChange(e.target.value as DeckSortOrder)}
-			>
-				{SORT_OPTIONS.map((opt) => (
-					<option key={opt.value} value={opt.value}>
-						{opt.label}
-					</option>
-				))}
-			</select>
+			<label className={styles.field}>
+				<span className={styles.label}>Trier</span>
+				<select
+					className={styles.select}
+					value={order}
+					onChange={(e) => onOrderChange(e.target.value as DeckSortOrder)}
+				>
+					{SORT_OPTIONS.map((opt) => (
+						<option key={opt.value} value={opt.value}>
+							{opt.label}
+						</option>
+					))}
+				</select>
+			</label>
 
 			<button
 				type="button"
