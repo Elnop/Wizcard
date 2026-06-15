@@ -37,6 +37,8 @@ import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal
 import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
 import { filterCardsForPdf } from '@/lib/pdf/filterCardsForPdf';
 import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
+import { useDeckSort } from './useDeckSort';
+import { DeckSortBar } from './components/DeckSortBar/DeckSortBar';
 import styles from './page.module.css';
 
 function resolveAssignedDeckName(
@@ -86,6 +88,8 @@ export default function DeckDetailPage() {
 
 	const showCommander = deck?.format === 'commander' || deck?.format === 'brawl';
 
+	const { order, dir, setOrder, setDir, sortCards } = useDeckSort();
+
 	const zones: DeckZone[] = useMemo(
 		() =>
 			showCommander
@@ -94,7 +98,7 @@ export default function DeckDetailPage() {
 		[showCommander]
 	);
 
-	const { sections, groupByCardId } = useDeckCardSections(cardsByZone, showCommander);
+	const { sections, groupByCardId } = useDeckCardSections(cardsByZone, showCommander, sortCards);
 	const symbolMap = useScryfallSymbols();
 
 	const {
@@ -438,6 +442,8 @@ export default function DeckDetailPage() {
 						onAddAllToCollection={() => setAddToCollectionModalOpen(true)}
 						onGeneratePdf={() => setPdfExportModalOpen(true)}
 					/>
+
+					<DeckSortBar order={order} dir={dir} onOrderChange={setOrder} onDirChange={setDir} />
 
 					{isResolving && Object.keys(activeDeckCards).length > 0 && (
 						<div className={styles.resolving}>
