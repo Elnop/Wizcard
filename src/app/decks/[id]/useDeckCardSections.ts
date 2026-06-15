@@ -13,7 +13,8 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 
 export function useDeckCardSections(
 	cardsByZone: Record<DeckZone, ResolvedDeckCard[]>,
-	showCommander: boolean
+	showCommander: boolean,
+	sortCards: (cards: ResolvedDeckCard[]) => ResolvedDeckCard[] = (c) => c
 ) {
 	return useMemo(() => {
 		const zones: DeckZone[] = showCommander
@@ -65,20 +66,23 @@ export function useDeckCardSections(
 				countById.set(sectionRep.id, group.byZone.get(zone)?.length ?? 0);
 			}
 
+			const sortedCards = sortCards(sectionCards);
+
 			const children =
-				zone !== 'commander' && sectionCards.length > 0
-					? groupByCardType(sectionCards, countById)
+				zone !== 'commander' && sortedCards.length > 0
+					? groupByCardType(sortedCards, countById)
 					: undefined;
 
 			sections.push({
 				label: `${ZONE_LABELS[zone]} (${cards.length})`,
-				cards: sectionCards,
+				cards: sortedCards,
 				children,
 				border: false,
 				background: true,
+				defaultCollapsed: zone === 'sideboard' || zone === 'maybeboard',
 			});
 		}
 
 		return { sections, groupByCardId };
-	}, [cardsByZone, showCommander]);
+	}, [cardsByZone, showCommander, sortCards]);
 }
