@@ -4,7 +4,6 @@ import type { DeckSortDir, DeckSortOrder } from '../../useDeckSort';
 import styles from './DeckSortBar.module.css';
 
 const SORT_OPTIONS: { value: DeckSortOrder; label: string }[] = [
-	{ value: 'dateAdded', label: "Date d'ajout" },
 	{ value: 'cmc', label: 'Coût de mana' },
 	{ value: 'name', label: 'Nom' },
 	{ value: 'rarity', label: 'Rareté' },

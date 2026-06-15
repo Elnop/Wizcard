@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { ResolvedDeckCard } from './useDeckDetail';
 
-export type DeckSortOrder = 'dateAdded' | 'cmc' | 'name' | 'rarity';
+export type DeckSortOrder = 'cmc' | 'name' | 'rarity';
 export type DeckSortDir = 'asc' | 'desc';
 
 const RARITY_RANK: Record<string, number> = {
@@ -19,12 +19,7 @@ function compareCards(
 ): number {
 	let primary = 0;
 
-	if (order === 'dateAdded') {
-		const da = a.entry.dateAdded ?? '';
-		const db = b.entry.dateAdded ?? '';
-		if (da < db) primary = -1;
-		else if (da > db) primary = 1;
-	} else if (order === 'cmc') {
+	if (order === 'cmc') {
 		primary = (a.cmc ?? 0) - (b.cmc ?? 0);
 	} else if (order === 'name') {
 		primary = a.name.localeCompare(b.name);
@@ -40,7 +35,7 @@ function compareCards(
 }
 
 export function useDeckSort() {
-	const [order, setOrder] = useState<DeckSortOrder>('dateAdded');
+	const [order, setOrder] = useState<DeckSortOrder>('cmc');
 	const [dir, setDir] = useState<DeckSortDir>('asc');
 
 	const sortCards = useCallback(
