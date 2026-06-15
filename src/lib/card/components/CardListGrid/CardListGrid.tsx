@@ -217,8 +217,8 @@ export function CardListGrid({
 			<Heading className={headingClass}>
 				{isCollapsible ? (
 					<button type="button" className={headerClass} onClick={() => onSectionToggle(sectionKey)}>
-						{labelText}
 						<span className={chevronClass}>▾</span>
+						{labelText}
 					</button>
 				) : (
 					<span className={headerClass}>{labelText}</span>

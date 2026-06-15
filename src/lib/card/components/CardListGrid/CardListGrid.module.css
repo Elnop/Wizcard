@@ -169,11 +169,11 @@
 }
 
 .chevron {
-	margin-left: auto;
 	font-size: var(--text-lg);
 	color: var(--text-muted);
 	transition: transform 0.2s;
 	display: inline-block;
+	flex-shrink: 0;
 }
 
 .chevronCollapsed {
