@@ -38,7 +38,9 @@ import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
 import { filterCardsForPdf } from '@/lib/pdf/filterCardsForPdf';
 import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
 import { useDeckSort } from './useDeckSort';
+import { useDeckTokens } from './useDeckTokens';
 import { DeckSortBar } from './components/DeckSortBar/DeckSortBar';
+import { DeckTokens } from './components/DeckTokens/DeckTokens';
 import type { DeckGroupBy } from './useDeckCardSections';
 import styles from './page.module.css';
 
@@ -105,6 +107,11 @@ export default function DeckDetailPage() {
 		showCommander,
 		sortCards,
 		groupBy
+	);
+	const { addTokens, isAdding: isAddingTokens } = useDeckTokens(
+		deckId,
+		cardsByZone,
+		cardsByZone.tokens
 	);
 	const symbolMap = useScryfallSymbols();
 
@@ -259,7 +266,10 @@ export default function DeckDetailPage() {
 
 	const warnings = useMemo(() => {
 		if (!deck) return [];
-		const allCards = resolvedCards.filter((rc) => getDeckZone(rc.entry.tags) !== 'commander');
+		const allCards = resolvedCards.filter((rc) => {
+			const zone = getDeckZone(rc.entry.tags);
+			return zone !== 'commander' && zone !== 'tokens';
+		});
 		const commanderCards = resolvedCards.filter((rc) => getDeckZone(rc.entry.tags) === 'commander');
 		return validateDeck(
 			deck.format,
@@ -475,6 +485,15 @@ export default function DeckDetailPage() {
 						viewModes={['fluid-grid', 'grid', 'table']}
 						cardGap="compact"
 						showCardNames={false}
+					/>
+
+					<DeckTokens
+						tokens={cardsByZone.tokens}
+						scanZones={zones}
+						onAddTokens={addTokens}
+						isAdding={isAddingTokens}
+						renderOverlay={renderOverlay}
+						onCardClick={handleCardClick}
 					/>
 
 					<DeckStats stats={stats} warnings={warnings} />

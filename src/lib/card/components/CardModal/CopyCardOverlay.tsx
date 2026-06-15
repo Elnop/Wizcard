@@ -9,6 +9,7 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 	sideboard: 'Side',
 	maybeboard: 'Maybe',
 	commander: 'Cmd',
+	tokens: 'Tok',
 };
 
 type Props = {

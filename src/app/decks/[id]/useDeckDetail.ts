@@ -98,6 +98,7 @@ export function useDeckDetail(deckId: string) {
 			sideboard: [],
 			maybeboard: [],
 			commander: [],
+			tokens: [],
 		};
 		for (const rc of resolvedCards) {
 			grouped[getDeckZone(rc.entry.tags)].push(rc);
@@ -108,7 +109,9 @@ export function useDeckDetail(deckId: string) {
 	// Compute stats
 	const stats: DeckStats = useMemo(() => {
 		return computeDeckStats(
-			resolvedCards.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) }))
+			resolvedCards
+				.filter((rc) => getDeckZone(rc.entry.tags) !== 'tokens')
+				.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) }))
 		);
 	}, [resolvedCards]);
 

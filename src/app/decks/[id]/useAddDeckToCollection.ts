@@ -61,6 +61,7 @@ export function useAddDeckToCollection(
 			mainboard: { total: 0, owned: 0 },
 			sideboard: { total: 0, owned: 0 },
 			maybeboard: { total: 0, owned: 0 },
+			tokens: { total: 0, owned: 0 },
 		};
 		for (const rc of resolvedCards) {
 			const zone = getDeckZone(rc.entry.tags);

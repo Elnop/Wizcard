@@ -13,7 +13,7 @@ export type DeckFormat =
 	| 'oathbreaker'
 	| 'brawl';
 
-export type DeckZone = 'mainboard' | 'sideboard' | 'maybeboard' | 'commander';
+export type DeckZone = 'mainboard' | 'sideboard' | 'maybeboard' | 'commander' | 'tokens';
 
 const DECK_ZONE_PREFIX = 'deck:';
 const VALID_ZONES: Set<string> = new Set<string>([
@@ -21,6 +21,7 @@ const VALID_ZONES: Set<string> = new Set<string>([
 	'sideboard',
 	'maybeboard',
 	'commander',
+	'tokens',
 ]);
 
 /** Extract the deck zone from a tags array. Returns 'mainboard' if none found. */

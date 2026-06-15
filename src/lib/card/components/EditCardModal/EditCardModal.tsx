@@ -48,6 +48,7 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 	sideboard: 'Sideboard',
 	maybeboard: 'Maybeboard',
 	commander: 'Commander',
+	tokens: 'Tokens',
 };
 
 export function EditCardModal(props: Props) {

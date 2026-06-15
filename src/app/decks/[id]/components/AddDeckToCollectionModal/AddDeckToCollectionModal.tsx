@@ -12,6 +12,7 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 	mainboard: 'Mainboard',
 	sideboard: 'Sideboard',
 	maybeboard: 'Maybeboard',
+	tokens: 'Tokens',
 };
 
 const DEFAULT_SELECTED: Set<DeckZone> = new Set(['commander', 'mainboard', 'sideboard']);

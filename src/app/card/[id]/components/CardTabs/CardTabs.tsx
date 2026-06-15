@@ -8,9 +8,10 @@ import { OverviewTab } from '../tabs/OverviewTab/OverviewTab';
 import { PrintsTab } from '../tabs/PrintsTab/PrintsTab';
 import { RulingsTab } from '../tabs/RulingsTab/RulingsTab';
 import { SimilarTab } from '../tabs/SimilarTab/SimilarTab';
+import { TokensTab } from '../tabs/TokensTab/TokensTab';
 import styles from './CardTabs.module.css';
 
-type TabId = 'overview' | 'prints' | 'rulings' | 'similar';
+type TabId = 'overview' | 'prints' | 'rulings' | 'similar' | 'tokens';
 
 interface Props {
 	card: ScryfallCard | CustomCard;
@@ -24,12 +25,16 @@ export function CardTabs({ card }: Props) {
 
 	const isEnriched = Boolean(card.oracle_text || card.type_line || card.colors);
 	const hasOracleId = Boolean(card.oracle_id);
+	const hasTokenParts = (card.all_parts ?? []).some(
+		(p) => p.component === 'token' && p.id !== card.id
+	);
 
 	const tabs: { id: TabId; label: string }[] = [
 		...(isEnriched ? [{ id: 'overview' as const, label: 'Overview' }] : []),
 		...(hasOracleId || !custom ? [{ id: 'prints' as const, label: 'Prints' }] : []),
 		...(hasOracleId || !custom ? [{ id: 'rulings' as const, label: 'Rulings' }] : []),
 		...(hasOracleId || !custom ? [{ id: 'similar' as const, label: 'Similaires' }] : []),
+		...(hasTokenParts ? [{ id: 'tokens' as const, label: 'Tokens' }] : []),
 	];
 
 	const validTabIds = new Set(tabs.map((t) => t.id));
@@ -72,6 +77,7 @@ export function CardTabs({ card }: Props) {
 				<RulingsTab cardId={card.id} oracleId={card.oracle_id ?? undefined} />
 			)}
 			{activeTab === 'similar' && <SimilarTab card={card} />}
+			{activeTab === 'tokens' && <TokensTab card={card} />}
 		</div>
 	);
 }

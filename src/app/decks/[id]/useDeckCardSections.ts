@@ -9,6 +9,7 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 	sideboard: 'Sideboard',
 	maybeboard: 'Maybeboard',
 	commander: 'Commander',
+	tokens: 'Tokens',
 };
 
 export type DeckGroupBy = 'type' | 'none';
@@ -24,10 +25,14 @@ export function useDeckCardSections(
 			? ['commander', 'mainboard', 'sideboard', 'maybeboard']
 			: ['mainboard', 'sideboard', 'maybeboard'];
 
+		// The tokens zone is rendered in its own panel (not as a main-list section),
+		// but it must be in the group map so the shared CardModal flow resolves token cards.
+		const groupZones: DeckZone[] = [...zones, 'tokens'];
+
 		// Build groupByCardId keyed by oracle_id, accumulating copies per zone
 		const groupByCardId = new Map<string, DeckCardGroup>();
 
-		for (const zone of zones) {
+		for (const zone of groupZones) {
 			for (const rc of cardsByZone[zone] ?? []) {
 				const key = rc.oracle_id ?? rc.id;
 				if (!groupByCardId.has(key)) {

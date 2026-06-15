@@ -22,6 +22,8 @@ import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { WishlistIcon } from '@/components/WishlistIcon';
+import { CardTokensSection } from '@/lib/card/components/CardTokensSection/CardTokensSection';
+import { useCardTokens } from '@/lib/card/hooks/useCardTokens';
 import { CopyCardOverlay } from './CopyCardOverlay';
 import { CustomCardSection } from './CustomCardSection';
 import styles from './CardModal.module.css';
@@ -31,6 +33,7 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 	sideboard: 'Sideboard',
 	maybeboard: 'Maybeboard',
 	commander: 'Commander',
+	tokens: 'Tokens',
 };
 
 const ZONE_ABBR: Record<DeckZone, string> = {
@@ -38,6 +41,7 @@ const ZONE_ABBR: Record<DeckZone, string> = {
 	sideboard: 'Side',
 	maybeboard: 'Maybe',
 	commander: 'Cmd',
+	tokens: 'Tok',
 };
 
 function isCollectionCard(card: Card | ScryfallCard): card is Card {
@@ -100,6 +104,9 @@ function CardDetailSection({
 	language?: string;
 	isCustom?: boolean;
 }) {
+	const { tokens, loading: tokensLoading, hasTokens } = useCardTokens(card);
+	const [tokenModalCard, setTokenModalCard] = useState<ScryfallCard | null>(null);
+
 	return (
 		<>
 			<div className={styles.cardMeta}>
@@ -184,10 +191,25 @@ function CardDetailSection({
 				)}
 			</div>
 
+			{hasTokens && (
+				<div className={styles.tokensSection}>
+					<span className={styles.tokensTitle}>Tokens</span>
+					<CardTokensSection
+						tokens={tokens}
+						loading={tokensLoading}
+						onTokenClick={setTokenModalCard}
+					/>
+				</div>
+			)}
+
 			{!isCustom && (
 				<Link href={`/card/${card.id}`} className={styles.moreInfoLink}>
 					Plus d&apos;informations
 				</Link>
+			)}
+
+			{tokenModalCard && (
+				<CardModal cards={tokenModalCard} onClose={() => setTokenModalCard(null)} />
 			)}
 		</>
 	);

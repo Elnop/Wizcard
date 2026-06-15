@@ -104,6 +104,7 @@ function buildMoxfieldSummary(data: MoxfieldImportData): string {
 		sideboard: 0,
 		commander: 0,
 		maybeboard: 0,
+		tokens: 0,
 	};
 	for (const card of data.cards) {
 		counts[card.zone] += card.quantity;

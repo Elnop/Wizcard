@@ -11,6 +11,7 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 	sideboard: 'Sideboard',
 	maybeboard: 'Maybeboard',
 	commander: 'Commander',
+	tokens: 'Tokens',
 };
 
 const BADGE_CLASS_MAP: Record<string, string> = {
