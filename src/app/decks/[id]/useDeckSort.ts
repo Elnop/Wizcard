@@ -29,7 +29,7 @@ function compareCards(
 	} else if (order === 'name') {
 		primary = a.name.localeCompare(b.name);
 	} else if (order === 'rarity') {
-		primary = (RARITY_RANK[a.rarity as string] ?? 4) - (RARITY_RANK[b.rarity as string] ?? 4);
+		primary = (RARITY_RANK[a.rarity ?? ''] ?? 4) - (RARITY_RANK[b.rarity ?? ''] ?? 4);
 	}
 
 	if (dir === 'desc') primary = -primary;
