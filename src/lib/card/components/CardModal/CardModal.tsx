@@ -70,6 +70,8 @@ interface Props {
 	onMoveToCollection?: (rowId: string) => void;
 	onAddToWishlistFromEntry?: (scryfallId: string) => void;
 	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
+	producerSections?: CardListSection[];
+	onProducerClick?: (card: AnyCard) => void;
 }
 
 interface InnerProps {
@@ -91,6 +93,8 @@ interface InnerProps {
 	onAssignCollectionCopy?: (rowId: string) => void;
 	onMoveToCollection?: (rowId: string) => void;
 	onAddToWishlistFromEntry?: (scryfallId: string) => void;
+	producerSections?: CardListSection[];
+	onProducerClick?: (card: AnyCard) => void;
 }
 
 function CardDetailSection({
@@ -233,6 +237,8 @@ function CardModalInner({
 	onAssignCollectionCopy,
 	onMoveToCollection,
 	onAddToWishlistFromEntry,
+	producerSections,
+	onProducerClick,
 }: InnerProps) {
 	const [lightbox, setLightbox] = useState(false);
 	const [selectedRowId, setSelectedRowId] = useState<string>(initialRowId ?? cards[0].entry.rowId);
@@ -502,6 +508,20 @@ function CardModalInner({
 							)}
 						</div>
 
+						{producerSections && producerSections.length > 0 && (
+							<div className={styles.tokensSection}>
+								<span className={styles.tokensTitle}>Cartes générant ce token</span>
+								<CardList
+									cards={producerSections}
+									onCardClick={onProducerClick}
+									pageSize={false}
+									viewModes={['fluid-grid', 'grid', 'table']}
+									cardGap="compact"
+									showCardNames={false}
+								/>
+							</div>
+						)}
+
 						{(onMoveToCollection || onAddToWishlistFromEntry) && (
 							<div className={styles.addSection}>
 								{onMoveToCollection && (
@@ -760,6 +780,8 @@ export function CardModal({
 	onMoveToCollection,
 	onAddToWishlistFromEntry,
 	onAddToWishlist,
+	producerSections,
+	onProducerClick,
 }: Props) {
 	if (cards === null) return null;
 
@@ -808,6 +830,8 @@ export function CardModal({
 			onAssignCollectionCopy={onAssignCollectionCopy}
 			onMoveToCollection={onMoveToCollection}
 			onAddToWishlistFromEntry={onAddToWishlistFromEntry}
+			producerSections={producerSections}
+			onProducerClick={onProducerClick}
 		/>
 	);
 }

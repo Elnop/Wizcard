@@ -24,3 +24,14 @@ export function collectDeckTokenIds(cards: CardWithParts[]): string[] {
 	}
 	return [...tokenIds];
 }
+
+/**
+ * True when `card` produces the given token. Matched by token name because
+ * `all_parts` entries expose only `id`/`name`/`type_line` (no `oracle_id`), and a
+ * token name is stable across prints.
+ */
+export function cardProducesToken(card: CardWithParts, token: { name: string }): boolean {
+	return (card.all_parts ?? []).some(
+		(part) => part.component === 'token' && part.id !== card.id && part.name === token.name
+	);
+}

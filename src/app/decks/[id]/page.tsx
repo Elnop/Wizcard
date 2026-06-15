@@ -8,7 +8,7 @@ import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { validateDeck } from '@/lib/deck/utils/format-rules';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { CardList } from '@/lib/card/components/CardList/CardList';
-import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { getDeckZone } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
@@ -39,6 +39,7 @@ import { filterCardsForPdf } from '@/lib/pdf/filterCardsForPdf';
 import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
 import { useDeckSort } from './useDeckSort';
 import { useDeckTokens } from './useDeckTokens';
+import { cardProducesToken } from '@/lib/deck/utils/collectDeckTokens';
 import { DeckSortBar } from './components/DeckSortBar/DeckSortBar';
 import { DeckTokens } from './components/DeckTokens/DeckTokens';
 import type { DeckGroupBy } from './useDeckCardSections';
@@ -139,6 +140,35 @@ export default function DeckDetailPage() {
 		() => new Set(selectedCards?.map((c) => c.id) ?? []),
 		[selectedCards]
 	);
+
+	// When the open modal shows a token, list the deck cards that generate it,
+	// split into sections by zone.
+	const tokenProducerSections = useMemo((): CardListSection[] | undefined => {
+		const selected = selectedCards?.[0];
+		if (!selected || getDeckZone(selected.entry.tags) !== 'tokens') return undefined;
+
+		const PRODUCER_ZONES: { zone: DeckZone; label: string }[] = [
+			{ zone: 'commander', label: 'Commander' },
+			{ zone: 'mainboard', label: 'Mainboard' },
+			{ zone: 'sideboard', label: 'Sideboard' },
+			{ zone: 'maybeboard', label: 'Maybeboard' },
+		];
+
+		const sections: CardListSection[] = [];
+		for (const { zone, label } of PRODUCER_ZONES) {
+			const seen = new Set<string>();
+			const cards: AnyCard[] = [];
+			for (const card of cardsByZone[zone]) {
+				if (!cardProducesToken(card as ScryfallCard, selected)) continue;
+				const key = card.oracle_id ?? card.id;
+				if (seen.has(key)) continue;
+				seen.add(key);
+				cards.push(card);
+			}
+			if (cards.length > 0) sections.push({ label: `${label} (${cards.length})`, cards });
+		}
+		return sections.length > 0 ? sections : undefined;
+	}, [selectedCards, cardsByZone]);
 
 	const deckNameById = useMemo(() => new Map(allDecks.map((d) => [d.id, d.name])), [allDecks]);
 
@@ -631,6 +661,8 @@ export default function DeckDetailPage() {
 				onAddToWishlistFromEntry={(scryfallId) => {
 					addToWishlist({ id: scryfallId } as ScryfallCard);
 				}}
+				producerSections={tokenProducerSections}
+				onProducerClick={handleCardClick}
 			/>
 
 			<CardModal
