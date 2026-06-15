@@ -110,18 +110,16 @@
 	display: flex;
 	align-items: center;
 	gap: 6px;
-	background: none;
+	background: var(--glass-bg);
+	backdrop-filter: blur(var(--glass-blur));
 	border: 1px solid var(--border);
 	padding: 4px 10px;
 	border-radius: 4px;
 	cursor: pointer;
-	transition:
-		background 0.15s ease,
-		border-color 0.15s ease;
+	transition: border-color 0.15s ease;
 }
 
 .addCardsBtn:hover {
-	background: var(--surface-alt);
 	border-color: var(--primary);
 }
 
