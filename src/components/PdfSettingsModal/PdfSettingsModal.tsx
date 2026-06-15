@@ -17,8 +17,8 @@ export type PdfSettings = {
 };
 
 const DEFAULTS: PdfSettings = {
-	margin: 10,
-	cardGap: 2,
+	margin: 8.5,
+	cardGap: 1,
 	cutLines: true,
 	cardScale: 1.0,
 };

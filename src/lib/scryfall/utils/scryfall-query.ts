@@ -11,29 +11,46 @@ export interface ScryfallQueryParams {
 	cmc?: string;
 	legal?: string;
 	colorIdentity?: ScryfallColor[];
+	isToken?: boolean;
+}
+
+function buildColorQuery(
+	colors: ScryfallColor[],
+	colorMatch?: 'exact' | 'include' | 'atMost'
+): string {
+	const colorString = colors.join('');
+	switch (colorMatch) {
+		case 'exact':
+			return `c=${colorString}`;
+		case 'atMost':
+			return `c<=${colorString}`;
+		case 'include':
+		default:
+			return `c:${colorString}`;
+	}
+}
+
+function buildRarityQuery(rarities: string[]): string {
+	if (rarities.length === 1) {
+		return `r:${rarities[0]}`;
+	}
+	const rarityParts = rarities.map((r) => `r:${r}`).join(' OR ');
+	return `(${rarityParts})`;
 }
 
 export function buildScryfallQuery(params: ScryfallQueryParams): string {
 	const parts: string[] = [];
+
+	if (params.isToken) {
+		parts.push('t:token');
+	}
 
 	if (params.name) {
 		parts.push(`name:${params.name}`);
 	}
 
 	if (params.colors && params.colors.length > 0) {
-		const colorString = params.colors.join('');
-		switch (params.colorMatch) {
-			case 'exact':
-				parts.push(`c=${colorString}`);
-				break;
-			case 'atMost':
-				parts.push(`c<=${colorString}`);
-				break;
-			case 'include':
-			default:
-				parts.push(`c:${colorString}`);
-				break;
-		}
+		parts.push(buildColorQuery(params.colors, params.colorMatch));
 	}
 
 	if (params.type) {
@@ -45,12 +62,7 @@ export function buildScryfallQuery(params: ScryfallQueryParams): string {
 	}
 
 	if (params.rarities && params.rarities.length > 0) {
-		if (params.rarities.length === 1) {
-			parts.push(`r:${params.rarities[0]}`);
-		} else {
-			const rarityParts = params.rarities.map((r) => `r:${r}`).join(' OR ');
-			parts.push(`(${rarityParts})`);
-		}
+		parts.push(buildRarityQuery(params.rarities));
 	}
 
 	if (params.text) {

@@ -21,6 +21,7 @@ export interface SearchFilters {
 	cmc: string;
 	legal?: string;
 	colorIdentity?: ScryfallColor[];
+	isToken?: boolean;
 	order?: ScryfallSortOrder;
 	dir?: ScryfallSortDir;
 }
@@ -91,6 +92,7 @@ export function useScryfallCardSearch(
 				cmc: filters.cmc || undefined,
 				legal: filters.legal || undefined,
 				colorIdentity,
+				isToken: filters.isToken,
 			});
 		},
 		[
@@ -103,6 +105,7 @@ export function useScryfallCardSearch(
 			filters.cmc,
 			filters.legal,
 			colorIdentityKey,
+			filters.isToken,
 		]
 	);
 

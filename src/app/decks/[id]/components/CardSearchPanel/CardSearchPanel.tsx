@@ -5,7 +5,9 @@ import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
 import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
+import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { SearchCardContextMenu } from './SearchCardContextMenu';
+import { CardModeSwitcher } from './CardModeSwitcher';
 import {
 	useScryfallCardSearch,
 	type SearchFilters,
@@ -50,6 +52,7 @@ export function CardSearchPanel({
 	onToggleExpand,
 }: Props) {
 	const [searchName, setSearchName] = useState('');
+	const [cardMode, setCardMode] = useState<'cards' | 'token'>('cards');
 	const [legalOnly, setLegalOnly] = useState(true);
 	const [filterModalOpen, setFilterModalOpen] = useState(false);
 	const [colors, setColors] = useState<ScryfallColor[]>([]);
@@ -65,6 +68,7 @@ export function CardSearchPanel({
 
 	const emptyEntries = useMemo(() => [], []);
 
+	const { addCardToDeck } = useDeckContext();
 	const { sets, isLoading: setsLoading } = useScryfallSets();
 
 	const activeFilterCount =
@@ -173,7 +177,9 @@ export function CardSearchPanel({
 		close: closeContextMenu,
 	} = useContextMenu<ScryfallCard>();
 
-	const legalFilter = showLegalToggle && legalOnly ? deckFormat : undefined;
+	const isTokenMode = cardMode === 'token';
+	// Tokens have no format legality, so never constrain the token search by legal/color identity.
+	const legalFilter = !isTokenMode && showLegalToggle && legalOnly ? deckFormat : undefined;
 	const colorIdentityFilter = legalFilter && isCommanderFormat ? commanderColorIdentity : undefined;
 
 	const scryfallFilters: SearchFilters = {
@@ -187,6 +193,7 @@ export function CardSearchPanel({
 		cmc: inCollectionOnly ? '' : cmc,
 		legal: inCollectionOnly ? undefined : legalFilter,
 		colorIdentity: inCollectionOnly ? undefined : colorIdentityFilter,
+		isToken: isTokenMode,
 		order: inCollectionOnly ? 'name' : order,
 		dir: inCollectionOnly ? 'auto' : dir,
 	};
@@ -273,6 +280,7 @@ export function CardSearchPanel({
 						onChange={setSearchName}
 						placeholder="Search for a card..."
 					/>
+					<CardModeSwitcher value={cardMode} onChange={setCardMode} />
 					<button
 						type="button"
 						aria-label="More filters"
@@ -343,12 +351,18 @@ export function CardSearchPanel({
 					hasMore={inCollectionOnly ? false : hasMore}
 					onLoadMore={inCollectionOnly ? undefined : loadMore}
 					onCardClick={(card: AnyCard) => {
+						let scryfallCard: ScryfallCard;
 						if ('entry' in card) {
 							// eslint-disable-next-line @typescript-eslint/no-unused-vars
-							const { entry: _, ...scryfallCard } = card as import('@/types/cards').Card;
-							onCardClick(scryfallCard as ScryfallCard);
+							const { entry: _, ...rest } = card as import('@/types/cards').Card;
+							scryfallCard = rest as ScryfallCard;
 						} else {
-							onCardClick(card as ScryfallCard);
+							scryfallCard = card as ScryfallCard;
+						}
+						if (isTokenMode) {
+							addCardToDeck(deckId, scryfallCard, 'tokens');
+						} else {
+							onCardClick(scryfallCard);
 						}
 					}}
 					renderOverlay={renderSearchOverlay}

@@ -18,7 +18,7 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 	tokens: 'Tokens',
 };
 
-const DEFAULT_SELECTED: Set<DeckZone> = new Set(['commander', 'mainboard', 'sideboard']);
+const DEFAULT_SELECTED: Set<DeckZone> = new Set(['commander', 'mainboard', 'sideboard', 'tokens']);
 
 type Props = {
 	availableZones: DeckZone[];

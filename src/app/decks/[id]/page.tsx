@@ -103,6 +103,11 @@ export default function DeckDetailPage() {
 		[showCommander]
 	);
 
+	const pdfZones: DeckZone[] = useMemo(
+		() => (cardsByZone.tokens.length > 0 ? [...zones, 'tokens'] : zones),
+		[zones, cardsByZone.tokens]
+	);
+
 	const { sections, groupByCardId } = useDeckCardSections(
 		cardsByZone,
 		showCommander,
@@ -606,7 +611,7 @@ export default function DeckDetailPage() {
 
 			{pdfExportModalOpen && (
 				<DeckPdfExportModal
-					availableZones={zones}
+					availableZones={pdfZones}
 					cards={resolvedCards}
 					onConfirm={(options) => {
 						setPdfExportOptions(options);
