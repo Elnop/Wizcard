@@ -11,10 +11,13 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 	commander: 'Commander',
 };
 
+export type DeckGroupBy = 'type' | 'none';
+
 export function useDeckCardSections(
 	cardsByZone: Record<DeckZone, ResolvedDeckCard[]>,
 	showCommander: boolean,
-	sortCards: (cards: ResolvedDeckCard[]) => ResolvedDeckCard[] = (c) => c
+	sortCards: (cards: ResolvedDeckCard[]) => ResolvedDeckCard[] = (c) => c,
+	groupBy: DeckGroupBy = 'type'
 ) {
 	return useMemo(() => {
 		const zones: DeckZone[] = showCommander
@@ -69,7 +72,7 @@ export function useDeckCardSections(
 			const sortedCards = sortCards(sectionCards);
 
 			const children =
-				zone !== 'commander' && sortedCards.length > 0
+				groupBy === 'type' && zone !== 'commander' && sortedCards.length > 0
 					? groupByCardType(sortedCards, countById)
 					: undefined;
 
@@ -84,5 +87,5 @@ export function useDeckCardSections(
 		}
 
 		return { sections, groupByCardId };
-	}, [cardsByZone, showCommander, sortCards]);
+	}, [cardsByZone, showCommander, sortCards, groupBy]);
 }

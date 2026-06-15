@@ -1,6 +1,7 @@
 'use client';
 
 import type { DeckSortDir, DeckSortOrder } from '../../useDeckSort';
+import type { DeckGroupBy } from '../../useDeckCardSections';
 import styles from './DeckSortBar.module.css';
 
 const SORT_OPTIONS: { value: DeckSortOrder; label: string }[] = [
@@ -9,18 +10,44 @@ const SORT_OPTIONS: { value: DeckSortOrder; label: string }[] = [
 	{ value: 'rarity', label: 'Rareté' },
 ];
 
+const GROUP_OPTIONS: { value: DeckGroupBy; label: string }[] = [
+	{ value: 'type', label: 'Par type' },
+	{ value: 'none', label: 'Sans groupe' },
+];
+
 interface DeckSortBarProps {
 	order: DeckSortOrder;
 	dir: DeckSortDir;
 	onOrderChange: (order: DeckSortOrder) => void;
 	onDirChange: (dir: DeckSortDir) => void;
+	groupBy: DeckGroupBy;
+	onGroupByChange: (groupBy: DeckGroupBy) => void;
 }
 
-export function DeckSortBar({ order, dir, onOrderChange, onDirChange }: DeckSortBarProps) {
+export function DeckSortBar({
+	order,
+	dir,
+	onOrderChange,
+	onDirChange,
+	groupBy,
+	onGroupByChange,
+}: DeckSortBarProps) {
 	const nextDir = dir === 'asc' ? 'desc' : 'asc';
 
 	return (
 		<div className={styles.bar}>
+			<select
+				className={styles.select}
+				value={groupBy}
+				onChange={(e) => onGroupByChange(e.target.value as DeckGroupBy)}
+			>
+				{GROUP_OPTIONS.map((opt) => (
+					<option key={opt.value} value={opt.value}>
+						{opt.label}
+					</option>
+				))}
+			</select>
+
 			<select
 				className={styles.select}
 				value={order}
