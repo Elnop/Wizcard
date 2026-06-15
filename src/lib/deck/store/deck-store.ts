@@ -531,9 +531,12 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 
 		const newRowId = crypto.randomUUID();
 		const newEntry: CardEntry = { ...copy.entry, rowId: newRowId, ownerId: undefined, deckId };
-		const next = { ...current };
-		delete next[rowId];
-		next[newRowId] = { scryfallId: newCard.id, entry: newEntry };
+		// Rebuild preserving insertion order so the card stays at the same index in the list
+		const next: Record<string, StoredCopy> = {};
+		for (const [k, v] of Object.entries(current)) {
+			next[k === rowId ? newRowId : k] =
+				k === rowId ? { scryfallId: newCard.id, entry: newEntry } : v;
+		}
 		set({ activeDeckCards: next });
 
 		// If the replaced card was a physical collection copy, free it (don't delete it)

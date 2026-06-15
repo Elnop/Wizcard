@@ -14,6 +14,7 @@ export interface CardListSection {
 	color?: string;
 	border?: boolean;
 	background?: boolean;
+	defaultCollapsed?: boolean;
 }
 
 export type CardListCards = AnyCard[] | CardListSection[];

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import type { CardListProps, CardListSection, CardListViewMode } from './CardList.types';
 import { isSections, VIEW_MODE_LABELS } from './CardList.types';
 import { CardListGrid } from '@/lib/card/components/CardListGrid/CardListGrid';
@@ -9,6 +9,35 @@ import { useInfiniteScroll } from './useInfiniteScroll';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { PAGE_SIZE } from '@/lib/collection/constants';
 import styles from './CardList.module.css';
+
+function useCollapsedSections(sections: CardListSection[] | undefined) {
+	const [state, setState] = useState<Set<string>>(new Set());
+
+	const effective = new Set(state);
+	if (sections) {
+		for (const sec of sections) {
+			if (sec.defaultCollapsed && !state.has(`opened:${sec.label}`)) {
+				effective.add(sec.label);
+			}
+		}
+	}
+
+	function toggle(label: string) {
+		setState((prev) => {
+			const next = new Set(prev);
+			if (effective.has(label)) {
+				next.delete(label);
+				next.add(`opened:${label}`);
+			} else {
+				next.add(label);
+				next.delete(`opened:${label}`);
+			}
+			return next;
+		});
+	}
+
+	return { effectiveCollapsed: effective, toggleSection: toggle };
+}
 
 export function CardList({
 	cards: cardsOrSections,
@@ -35,51 +64,9 @@ export function CardList({
 	cardGap = 'default',
 }: CardListProps) {
 	const [viewMode, setViewMode] = useState<CardListViewMode>(viewModes[0]);
-	// Labels the user has explicitly opened (overrides defaultCollapsed)
-	const [explicitlyOpened, setExplicitlyOpened] = useState<Set<string>>(new Set());
-	// Labels the user has explicitly closed (overrides defaultCollapsed=false)
-	const [explicitlyClosed, setExplicitlyClosed] = useState<Set<string>>(new Set());
-
-	const collapsedSections = useMemo(() => {
-		const incoming = isSections(cardsOrSections) ? (cardsOrSections as CardListSection[]) : [];
-		const result = new Set<string>();
-		for (const sec of incoming) {
-			let collapsed = !!sec.defaultCollapsed;
-			if (explicitlyOpened.has(sec.label)) collapsed = false;
-			if (explicitlyClosed.has(sec.label)) collapsed = true;
-			if (collapsed) result.add(sec.label);
-		}
-		return result;
-	}, [cardsOrSections, explicitlyOpened, explicitlyClosed]);
-
-	function toggleSection(label: string) {
-		if (collapsedSections.has(label)) {
-			setExplicitlyOpened((prev) => {
-				const n = new Set(prev);
-				n.add(label);
-				return n;
-			});
-			setExplicitlyClosed((prev) => {
-				const n = new Set(prev);
-				n.delete(label);
-				return n;
-			});
-		} else {
-			setExplicitlyClosed((prev) => {
-				const n = new Set(prev);
-				n.add(label);
-				return n;
-			});
-			setExplicitlyOpened((prev) => {
-				const n = new Set(prev);
-				n.delete(label);
-				return n;
-			});
-		}
-	}
-
+	const sections = isSections(cardsOrSections) ? (cardsOrSections as CardListSection[]) : undefined;
+	const { effectiveCollapsed, toggleSection } = useCollapsedSections(sections);
 	const cards = isSections(cardsOrSections) ? [] : cardsOrSections;
-	const sections = isSections(cardsOrSections) ? cardsOrSections : undefined;
 
 	const localPageSize = typeof pageSize === 'number' ? pageSize : null;
 
@@ -153,7 +140,7 @@ export function CardList({
 						sortOrder={sortOrder}
 						sortDir={sortDir}
 						onSortChange={onSortChange}
-						collapsedSections={collapsedSections}
+						collapsedSections={effectiveCollapsed}
 						onSectionToggle={toggleSection}
 					/>
 				) : (
@@ -165,7 +152,7 @@ export function CardList({
 						renderOverlay={renderOverlay}
 						renderItem={renderItem}
 						cardsPerLine={cardsPerLine}
-						collapsedSections={collapsedSections}
+						collapsedSections={effectiveCollapsed}
 						onSectionToggle={toggleSection}
 						sectionClassName={sectionClassName}
 						fluidSections={isFluid}

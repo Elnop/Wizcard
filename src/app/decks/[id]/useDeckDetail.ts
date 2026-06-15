@@ -76,6 +76,13 @@ export function useDeckDetail(deckId: string) {
 	const resolvedCards: ResolvedDeckCard[] = useMemo(() => {
 		if (activeDeckId !== deckId) return [];
 		return Object.values(activeDeckCards)
+			.sort((a, b) => {
+				const da = a.entry.dateAdded ?? '';
+				const db = b.entry.dateAdded ?? '';
+				if (da < db) return -1;
+				if (da > db) return 1;
+				return 0;
+			})
 			.map((copy): ResolvedDeckCard | null => {
 				const card = scryfallCards[copy.scryfallId];
 				if (!card) return null;
