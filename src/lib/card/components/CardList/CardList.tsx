@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import type { CardListProps, CardListViewMode } from './CardList.types';
+import { useState, useMemo } from 'react';
+import type { CardListProps, CardListSection, CardListViewMode } from './CardList.types';
 import { isSections, VIEW_MODE_LABELS } from './CardList.types';
 import { CardListGrid } from '@/lib/card/components/CardListGrid/CardListGrid';
 import { CardListTable } from '@/lib/card/components/CardListTable/CardListTable';
@@ -35,15 +35,47 @@ export function CardList({
 	cardGap = 'default',
 }: CardListProps) {
 	const [viewMode, setViewMode] = useState<CardListViewMode>(viewModes[0]);
-	const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+	// Labels the user has explicitly opened (overrides defaultCollapsed)
+	const [explicitlyOpened, setExplicitlyOpened] = useState<Set<string>>(new Set());
+	// Labels the user has explicitly closed (overrides defaultCollapsed=false)
+	const [explicitlyClosed, setExplicitlyClosed] = useState<Set<string>>(new Set());
+
+	const collapsedSections = useMemo(() => {
+		const incoming = isSections(cardsOrSections) ? (cardsOrSections as CardListSection[]) : [];
+		const result = new Set<string>();
+		for (const sec of incoming) {
+			let collapsed = !!sec.defaultCollapsed;
+			if (explicitlyOpened.has(sec.label)) collapsed = false;
+			if (explicitlyClosed.has(sec.label)) collapsed = true;
+			if (collapsed) result.add(sec.label);
+		}
+		return result;
+	}, [cardsOrSections, explicitlyOpened, explicitlyClosed]);
 
 	function toggleSection(label: string) {
-		setCollapsedSections((prev) => {
-			const next = new Set(prev);
-			if (next.has(label)) next.delete(label);
-			else next.add(label);
-			return next;
-		});
+		if (collapsedSections.has(label)) {
+			setExplicitlyOpened((prev) => {
+				const n = new Set(prev);
+				n.add(label);
+				return n;
+			});
+			setExplicitlyClosed((prev) => {
+				const n = new Set(prev);
+				n.delete(label);
+				return n;
+			});
+		} else {
+			setExplicitlyClosed((prev) => {
+				const n = new Set(prev);
+				n.add(label);
+				return n;
+			});
+			setExplicitlyOpened((prev) => {
+				const n = new Set(prev);
+				n.delete(label);
+				return n;
+			});
+		}
 	}
 
 	const cards = isSections(cardsOrSections) ? [] : cardsOrSections;
