@@ -11,6 +11,7 @@ type Props = {
 	onAssignAllFromCollection?: () => void;
 	onAddAllToCollection?: () => void;
 	onGeneratePdf?: () => void;
+	onExportText?: () => void;
 };
 
 export function DeckHeader({
@@ -19,6 +20,7 @@ export function DeckHeader({
 	onAssignAllFromCollection,
 	onAddAllToCollection,
 	onGeneratePdf,
+	onExportText,
 }: Props) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [name, setName] = useState(deck.name);
@@ -137,6 +139,18 @@ export function DeckHeader({
 									}}
 								>
 									⬇ Générer un PDF
+								</button>
+							)}
+							{onExportText && (
+								<button
+									type="button"
+									className={styles.dropdownItem}
+									onClick={() => {
+										setMenuOpen(false);
+										onExportText();
+									}}
+								>
+									⬇ Exporter la decklist
 								</button>
 							)}
 						</div>

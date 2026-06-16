@@ -32,6 +32,8 @@ import { WishlistIcon } from '@/components/WishlistIcon';
 import { useAddDeckToCollection } from './useAddDeckToCollection';
 import { AddDeckToCollectionModal } from './components/AddDeckToCollectionModal/AddDeckToCollectionModal';
 import { DeckPdfExportModal } from './components/DeckPdfExportModal/DeckPdfExportModal';
+import { DeckTextExportModal } from './components/DeckTextExportModal/DeckTextExportModal';
+import { serializeDecklist } from '@/lib/deck/utils/serialize-decklist';
 import type { DeckPdfExportOptions } from '@/lib/pdf/types';
 import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
 import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
@@ -85,10 +87,12 @@ export default function DeckDetailPage() {
 	const [pdfExportModalOpen, setPdfExportModalOpen] = useState(false);
 	const [pdfSettingsModalOpen, setPdfSettingsModalOpen] = useState(false);
 	const [pdfExportOptions, setPdfExportOptions] = useState<DeckPdfExportOptions | null>(null);
+	const [textExportModalOpen, setTextExportModalOpen] = useState(false);
 	const pdfFilteredCards = useMemo(
 		() => (pdfExportOptions ? filterCardsForPdf(resolvedCards, pdfExportOptions) : []),
 		[resolvedCards, pdfExportOptions]
 	);
+	const decklistText = useMemo(() => serializeDecklist(cardsByZone), [cardsByZone]);
 
 	const showCommander = deck?.format === 'commander' || deck?.format === 'brawl';
 
@@ -493,6 +497,7 @@ export default function DeckDetailPage() {
 						onAssignAllFromCollection={handleAssignAllFromCollection}
 						onAddAllToCollection={() => setAddToCollectionModalOpen(true)}
 						onGeneratePdf={() => setPdfExportModalOpen(true)}
+						onExportText={() => setTextExportModalOpen(true)}
 					/>
 
 					<DeckSortBar
@@ -619,6 +624,14 @@ export default function DeckDetailPage() {
 						setPdfSettingsModalOpen(true);
 					}}
 					onClose={() => setPdfExportModalOpen(false)}
+				/>
+			)}
+
+			{textExportModalOpen && (
+				<DeckTextExportModal
+					text={decklistText}
+					deckName={deck.name}
+					onClose={() => setTextExportModalOpen(false)}
 				/>
 			)}
 
