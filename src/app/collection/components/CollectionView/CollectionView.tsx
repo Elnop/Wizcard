@@ -40,8 +40,8 @@ type Props = {
  * Shared, owner-agnostic presentation of a collection: filters aside + stats +
  * card grid. Hydration (Scryfall) and filtering are driven entirely by the
  * `entries` prop, so this renders identically for the owner page and the public
- * `/u/[userId]/collection` page. Editing affordances live in the parent via the
- * `actions`/`children` slots.
+ * `/users/[userId]/collection` page. Editing affordances live in the parent via
+ * the `actions`/`children` slots.
  */
 export function CollectionView({
 	stacks,
