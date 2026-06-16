@@ -33,6 +33,36 @@ export async function fetchCollectionPage(
 	return { rows, hasMore: data.length === DB_FETCH_PAGE_SIZE };
 }
 
+/**
+ * Public, read-only variant of {@link fetchCollectionPage}: reads the
+ * `public_collection_cards` view (which omits `purchase_price`) so a visitor
+ * can view any user's collection without their financial data. Mirrors the
+ * owner collection page semantics (excludes wishlist rows).
+ */
+export async function fetchPublicCollectionPage(
+	ownerId: string,
+	from: number
+): Promise<{ rows: Array<{ scryfallId: string; entry: CardEntry }>; hasMore: boolean }> {
+	const supabase = createClient();
+	const { data, error } = await supabase
+		.from('public_collection_cards')
+		.select('*')
+		.eq('owner_id', ownerId)
+		.eq('wishlist', false)
+		.range(from, from + DB_FETCH_PAGE_SIZE - 1);
+
+	if (error) {
+		console.error('[collection] fetchPublicCollectionPage error:', error);
+		return { rows: [], hasMore: false };
+	}
+
+	const rows = (data as CardDbRow[]).map((row) => ({
+		scryfallId: row.scryfall_id,
+		entry: rowToCardEntry(row),
+	}));
+	return { rows, hasMore: data.length === DB_FETCH_PAGE_SIZE };
+}
+
 export async function insertEntry(
 	userId: string,
 	scryfallId: string,

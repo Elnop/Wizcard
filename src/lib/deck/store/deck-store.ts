@@ -249,6 +249,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		const now = new Date().toISOString();
 		const deck: DeckMeta = {
 			id,
+			ownerId: userId,
 			name,
 			format,
 			description,

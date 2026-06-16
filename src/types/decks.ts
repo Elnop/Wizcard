@@ -50,6 +50,7 @@ export function removeDeckZoneTags(tags: string[] | undefined): string[] {
 
 export interface DeckMeta {
 	id: string;
+	ownerId: string;
 	name: string;
 	format: DeckFormat | null;
 	description: string | null;

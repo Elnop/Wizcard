@@ -17,6 +17,7 @@ type DeckDbRow = {
 function rowToDeckMeta(row: DeckDbRow): DeckMeta {
 	return {
 		id: row.id,
+		ownerId: row.owner_id,
 		name: row.name,
 		format: (row.format as DeckMeta['format']) ?? null,
 		description: row.description,
@@ -57,6 +58,22 @@ export async function fetchDeckMeta(userId: string, deckId: string): Promise<Dec
 	}
 
 	return rowToDeckMeta(data as DeckDbRow);
+}
+
+/**
+ * Fetch a deck by id WITHOUT an owner filter — used by the public read-only
+ * view, which doesn't know (and isn't restricted to) the owner. Relies on the
+ * public SELECT policy. Returns null if the deck doesn't exist.
+ */
+export async function fetchDeckMetaById(deckId: string): Promise<DeckMeta | null> {
+	const supabase = createClient();
+	const { data, error } = await supabase.from('decks').select('*').eq('id', deckId).maybeSingle();
+
+	if (error) {
+		throw new Error(`[decks] fetchDeckMetaById error: ${error.message}`);
+	}
+
+	return data ? rowToDeckMeta(data as DeckDbRow) : null;
 }
 
 export async function insertDeck(userId: string, deck: DeckMeta): Promise<void> {
