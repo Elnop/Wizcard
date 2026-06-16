@@ -52,7 +52,7 @@ export function Navbar() {
 					</Link>
 					<Link
 						href="/decks"
-						className={`${styles.navLink} ${pathname.startsWith('/decks') ? styles.navLinkActive : ''}`}
+						className={`${styles.navLink} ${pathname.startsWith('/decks') || pathname.endsWith('/decks') ? styles.navLinkActive : ''}`}
 					>
 						Decks
 					</Link>
@@ -65,7 +65,7 @@ export function Navbar() {
 					</Link>
 					<Link
 						href="/collection"
-						className={`${styles.navLink} ${pathname === '/collection' ? styles.navLinkActive : ''}`}
+						className={`${styles.navLink} ${pathname === '/collection' || pathname.endsWith('/collection') ? styles.navLinkActive : ''}`}
 					>
 						Collection
 						{isImporting && <span className={styles.spinner} />}
