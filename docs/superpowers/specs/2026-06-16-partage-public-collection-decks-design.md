@@ -17,6 +17,13 @@ deck individuel via une simple URL, sans aucun système de token ni opt-in :
 ou connectés) ont un accès **lecture seule** ; un visiteur **connecté** peut en
 plus **copier un deck dans son propre compte**.
 
+**Décision structurante** : il n'existe **qu'une seule URL canonique** par
+surface, et elle contient toujours l'`userId` — donc elle est partageable telle
+quelle, sans manipulation. La **vue** s'adapte au visiteur (propriétaire →
+éditable ; autre → lecture seule), pas l'URL. `/collection` et `/decks` ne sont
+plus des pages d'affichage : ce sont des raccourcis qui **redirigent** vers
+l'URL canonique de l'utilisateur connecté.
+
 Résultat attendu : trois surfaces publiques consultables par n'importe qui
 connaissant l'URL, sans exposer les données financières privées.
 
@@ -24,20 +31,36 @@ connaissant l'URL, sans exposer les données financières privées.
 
 - **Modèle d'accès** : tout public, pas de token, pas d'opt-in. RLS autorise le
   `SELECT` anonyme. Réversible (drop policies).
-- **URLs** :
-  - `/u/[userId]/collection` — collection publique d'un utilisateur
-  - `/u/[userId]/decks` — liste de decks publique d'un utilisateur
-  - `/decks/[id]` — devient consultable par les non-propriétaires
-- **Permissions visiteur** : lecture seule + export texte existant. Visiteur
+- **URLs canoniques** (toujours partageables, contiennent l'`userId`) :
+  - `/users/[userId]/collection` — collection, vue adaptée à `isOwner`
+  - `/users/[userId]/decks` — liste de decks, vue adaptée à `isOwner`
+  - `/decks/[id]` — un deck individuel (`id` = `deckId`), consultable par tous
+- **Raccourcis (redirect 308 côté serveur)** :
+  - `/collection` → `/users/[userId]/collection`
+  - `/decks` → `/users/[userId]/decks`
+  - Ces pages ne contiennent plus aucune logique d'affichage : `getUser()` →
+    connecté ⇒ `redirect('/users/<id>/...')`, anonyme ⇒ `redirect('/login')`.
+  - Choix de `/users/[id]/...` (et **pas** `/decks/[userId]`) : `/decks/[id]`
+    existe déjà pour un deck individuel ; `/decks/[userId]` créerait une
+    collision de segment dynamique (deux UUID indistinguables au même niveau).
+    Le préfixe `/users/` isole proprement l'espace « ressources d'un user ».
+- **Vue fusionnée owner/visiteur** : une seule page par surface calcule
+  `isOwner = !!user && user.id === params.userId` et propage `readOnly = !isOwner`.
+  Pas de pages parallèles owner vs public (réduit la duplication).
+- **Permissions visiteur** : lecture seule + exports (CSV/texte/PDF). Visiteur
   **connecté** : bouton « Copier ce deck dans mon compte ».
-- **Données sensibles** : seul `purchase_price` est masqué (via une vue publique).
-  La **wishlist reste publique** et apparaît dans la vue publique de collection.
-- **UI** : flag `isOwner`/`readOnly` sur les pages simples (collection, liste de
-  decks) ; pour la page deck (très couplée aux contextes propriétaire), **split**
-  en vue propriétaire / vue lecture seule.
+- **Données sensibles** : seul `purchase_price` est masqué. La page collection
+  choisit sa **source** selon `isOwner` : `cards` (owner, prix inclus) vs la vue
+  `public_collection_cards` (visiteur, prix absent). La **wishlist reste
+  publique**.
+- **Découverte de l'URL de partage** : l'URL **est déjà** `/users/<id>/...` quand
+  le propriétaire navigue (donc partageable depuis la barre d'adresse). Un bouton
+  **« Partager »** (visible owner) dans l'en-tête de la collection et de la liste
+  de decks copie l'URL courante au presse-papier + toast, pour rendre explicite
+  que l'URL est publique.
 - **Prérequis (chantier séparé)** : refactor de la page collection extrayant la
   logique d'affichage dans des hooks/contexts découplés du propriétaire, pour que
-  `/u/[userId]/collection` réutilise l'affichage sans le contexte owner. Cette
+  `/users/[userId]/collection` réutilise l'affichage sans le contexte owner. Cette
   spec **dépend** de ce refactor mais ne le couvre pas.
 
 ## Architecture
@@ -84,8 +107,20 @@ grant select on public.public_collection_cards to anon, authenticated;
 ```
 
 Avec `security_invoker = true`, la vue applique le RLS de `cards` ; l'absence de
-`purchase_price` dans la projection le rend non-récupérable via la vue. Les pages
-publiques de collection lisent **cette vue**, jamais `cards`.
+`purchase_price` dans la projection le rend non-récupérable via la vue.
+
+**Frontière de sécurité** : la défense est le **RLS Postgres**, pas le flag
+`isOwner` du client (manipulable). `isOwner` ne fait que choisir _quelle requête
+tenter_ :
+
+- mode owner → lecture de `cards` (le RLS owner-only `auth.uid() = owner_id`
+  autorise le `purchase_price` de ses propres cartes ; pour les cartes d'un autre
+  owner il renverrait zéro ligne) ;
+- mode visiteur → lecture de `public_collection_cards` (prix absent de la
+  projection).
+
+Un visiteur qui forcerait `fetchCollectionPage` sur les cartes d'autrui ne
+récupère rien (RLS). La vue est une commodité d'UI, pas la défense.
 
 ### 2. Couche données
 
@@ -98,46 +133,55 @@ Ajouts :
 - `src/lib/deck/db/decks.ts` :
   - `fetchDeckMetaById(deckId: string): Promise<DeckMeta | null>` — comme
     `fetchDeckMeta` mais **sans** le filtre `.eq('owner_id', ...)`, pour résoudre
-    un deck + son owner sans le connaître d'avance.
-  - Exposer `ownerId` dans `DeckMeta` (`rowToDeckMeta` le supprime actuellement) ;
-    ajouter le champ dans `src/types/decks.ts`. Nécessaire pour calculer `isOwner`.
+    un deck + son owner sans le connaître d'avance. (`DeckMeta` expose déjà
+    `ownerId` dans `src/types/decks.ts` — rien à ajouter côté type ; vérifier
+    que `rowToDeckMeta` le conserve.)
 - `src/lib/collection/db/collection.ts` :
   - `fetchPublicCollectionPage(ownerId: string, from: number)` — identique à
     `fetchCollectionPage` mais lit `public_collection_cards`.
 - Inchangés (déjà paramétrés par id) : `fetchDecks(userId)`, `fetchFolders(userId)`,
   `fetchDeckCards(deckId)`, `fetchDeckScryfallIds`, `fetchDeckCardEntries`.
 
-Nouveaux hooks lecture seule (les pages publiques ne peuvent pas utiliser les
-contextes owner qui hydratent depuis `auth.uid()`) :
+Nouveaux hooks (les pages canoniques ne peuvent pas utiliser les contextes owner
+qui hydratent depuis `auth.uid()`) :
 
-- `src/app/u/[userId]/decks/usePublicDecks.ts` — `fetchDecks(ownerId)` +
-  `fetchFolders(ownerId)` dans un état local ; réutilise la logique de présentation
-  `useDeckSummaries` (rendue owner-agnostique par le refactor prérequis).
-- `src/app/u/[userId]/collection/usePublicCollection.ts` — pagine
-  `fetchPublicCollectionPage(ownerId, from)` en état local, puis alimente les hooks
-  de présentation existants (`useCollectionCards`, filtrage) qui prennent déjà
-  `entries` en argument.
+- `src/app/users/[userId]/decks/useUserDecks.ts` — `fetchDecks(userId)` +
+  `fetchFolders(userId)` dans un état local ; réutilise la logique de présentation
+  `useDeckSummaries` (rendue owner-agnostique par le refactor prérequis). Sert les
+  deux modes à l'identique (aucune donnée deck n'est sensible).
+- `src/app/users/[userId]/collection/useUserCollection.ts` — prend
+  `(userId, isOwner)` ; pagine `fetchCollectionPage(userId, from)` si `isOwner`,
+  sinon `fetchPublicCollectionPage(userId, from)`, en état local ; alimente
+  ensuite les hooks de présentation existants (`useCollectionCards`, filtrage) qui
+  prennent déjà `entries` en argument.
 - `src/app/decks/[id]/usePublicDeckDetail.ts` — `fetchDeckMetaById(deckId)` +
   `fetchDeckCards(deckId)` en état local, puis réutilise `resolveCardsByScryfallIds`
   - `useDeckCardSections` pour produire la même forme que `useDeckDetail`.
 
 ### 3. Routes et gating d'auth
 
-Les redirects d'auth vivent uniquement dans `src/app/collection/layout.tsx` et
+Les redirects d'auth vivent aujourd'hui dans `src/app/collection/layout.tsx` et
 `src/app/decks/layout.tsx`.
 
-- **Nouveau** `src/app/u/layout.tsx` — layout passe-plat, **sans** `getUser()` ni
-  redirect : c'est le mécanisme qui rend `/u/...` public.
-- **Nouveau** `src/app/u/[userId]/collection/page.tsx` — `'use client'`, lit
-  `usePublicCollection(userId)`, réutilise la structure JSX de
-  `src/app/collection/page.tsx` avec `readOnly` (masque Import/Clear ; garde Export
-  CSV).
-- **Nouveau** `src/app/u/[userId]/decks/page.tsx` — `'use client'`, lit
-  `usePublicDecks(userId)` en lecture seule (pas de création de deck/dossier).
+- **Nouveau** `src/app/users/layout.tsx` — layout passe-plat, **sans** `getUser()`
+  ni redirect : c'est le mécanisme qui rend `/users/...` public.
+- **Nouveau** `src/app/users/[userId]/collection/page.tsx` — `'use client'`,
+  calcule `isOwner = !!user && user.id === params.userId` (via `useAuth()`), lit
+  `useUserCollection(userId, isOwner)`, réutilise la structure JSX de l'ancienne
+  page collection avec `readOnly = !isOwner` (masque Import/Clear et l'édition
+  inline ; garde Export CSV ; affiche le bouton « Partager » si `isOwner`).
+- **Nouveau** `src/app/users/[userId]/decks/page.tsx` — `'use client'`, même
+  calcul `isOwner`, lit `useUserDecks(userId)` ; `readOnly = !isOwner` masque la
+  création/import/renommage/drag et les menus edit/delete ; affiche « Partager »
+  si `isOwner`.
+- **`/collection` et `/decks` deviennent des redirects serveur** : remplacer le
+  corps de `src/app/collection/page.tsx` et `src/app/decks/page.tsx` (et
+  simplifier leurs `layout.tsx`) par `getUser()` → connecté ⇒
+  `redirect('/users/<id>/collection')` (resp. `.../decks`) ; anonyme ⇒
+  `redirect('/login')`. Plus aucune logique d'affichage dedans.
 - **`/decks/[id]` consultable par les non-propriétaires** :
-  - Retirer le redirect de `src/app/decks/layout.tsx` ; déplacer le gating owner
-    sur la page **liste** `src/app/decks/page.tsx` (redirige l'anonyme vers login).
-    Ainsi `/decks/[id]` est public, `/decks` reste protégé.
+  - Retirer le redirect owner du layout `decks` (le gating owner vit désormais
+    dans le redirect de `/decks`). `/decks/[id]` reste donc public.
   - Dans `src/app/decks/[id]/page.tsx`, calculer
     `isOwner = !!user && deck?.ownerId === user.id` (via `useAuth()` +
     `fetchDeckMetaById`). Brancher :
@@ -154,7 +198,9 @@ exports (texte/PDF/CSV) et le bouton « copier » restent accessibles aux visite
 - **Liste decks** (`DeckCard`, sidebar dossiers, triggers création/import) :
   ajouter `readOnly?: boolean` pour masquer création/renommage/drag/import et le
   menu contextuel edit/delete.
-- **Collection** : masquer Import + Clear, garder Export CSV.
+- **Collection** : masquer Import + Clear + édition inline (foil/condition/tags/
+  prix), garder Export CSV et filtres. `purchase_price` n'apparaît que pour
+  l'owner (déjà assuré par la source de données § 2).
 - **Vue deck lecture seule** : composants feuilles en mode affichage —
   - `DeckHeader` : `readOnly` masque `onUpdate`, `onAssignAllFromCollection`,
     `onAddAllToCollection` ; garde `onExportText`/`onGeneratePdf`.
@@ -164,7 +210,18 @@ exports (texte/PDF/CSV) et le bouton « copier » restent accessibles aux visite
   - Ne pas monter `CardSearchPanel`, barre bulk-select, ni
     `AddDeckToCollectionModal`.
 
-### 5. « Copier ce deck dans mon compte » (visiteur connecté)
+### 5. Bouton « Partager » (propriétaire)
+
+Petit composant réutilisable (en-tête collection + liste de decks), visible
+seulement si `isOwner` :
+
+- copie `window.location.href` (déjà `/users/<id>/...`) au presse-papier via
+  `navigator.clipboard.writeText` ;
+- affiche un toast « Lien de partage copié » ;
+- libellé explicite (« Partager » + icône lien) pour signaler que l'URL est
+  publique.
+
+### 6. « Copier ce deck dans mon compte » (visiteur connecté)
 
 > Important : **ne pas réutiliser `useAddDeckToCollection.execute()`**. Ce hook
 > revendique des lignes existantes via `toggleOwned` (mutation owner-only) — faux
@@ -186,10 +243,11 @@ exports (texte/PDF/CSV) et le bouton « copier » restent accessibles aux visite
 
 1. **RLS** — migration + miroir `PROD_REBUILD.sql`. Vérifier en isolation.
 2. **Couche données** — `fetchDeckMetaById`, `fetchPublicCollectionPage`,
-   `ownerId` dans `DeckMeta`, hooks publics.
-3. **Routes & layout** — `u/layout.tsx`, pages `/u/[userId]/...`, assouplir
-   `decks/layout.tsx` + gater `/decks`, split de la page deck.
-4. **UI lecture seule** — props `readOnly` sur les composants.
+   `useUserCollection`/`useUserDecks`/`usePublicDeckDetail`.
+3. **Routes & layout** — `users/layout.tsx`, pages `/users/[userId]/...`,
+   conversion de `/collection` et `/decks` en redirects, assouplir le layout
+   `decks`, split de la page deck.
+4. **UI lecture seule** — props `readOnly` sur les composants ; bouton « Partager ».
 5. **Bouton copier** — `useCopyDeckToMyCollection` + bouton.
 
 ## Vérification (bout-en-bout)
@@ -199,15 +257,19 @@ exports (texte/PDF/CSV) et le bouton « copier » restent accessibles aux visite
   `select id, purchase_price from public_collection_cards` échoue (colonne
   absente) ; `insert into decks` rejeté. Propriétaire authentifié : son dashboard
   charge toujours ses decks/collection/wishlist.
-- **Anonyme** : `/u/<id>/collection`, `/u/<id>/decks`, `/decks/<autreId>`
-  s'affichent sans redirection vers login ; aucun contrôle d'édition ; export
-  texte/CSV fonctionne ; `purchasePrice` absent côté collection publique.
-- **Propriétaire** : `/decks/<sonId>` rend la vue éditable complète ; `/decks`
-  reste protégé (anonyme redirigé).
+- **Redirects** : connecté, `/collection` → `/users/<monId>/collection` (308),
+  `/decks` → `/users/<monId>/decks` ; anonyme, les deux → `/login`.
+- **Anonyme** : `/users/<id>/collection`, `/users/<id>/decks`, `/decks/<autreId>`
+  s'affichent sans redirection vers login ; aucun contrôle d'édition ; pas de
+  bouton « Partager » ; export texte/CSV fonctionne ; `purchasePrice` absent côté
+  collection publique.
+- **Propriétaire** : `/users/<monId>/collection` montre `purchasePrice` + le
+  bouton « Partager » (copie l'URL courante) ; `/users/<monId>/decks` rend la vue
+  éditable ; `/decks/<sonId>` rend la vue éditable complète.
 - **Visiteur connecté** : sur `/decks/<autreId>`, clic « Copier » → nouveau deck
-  dans son `/decks` avec toutes les cartes ; le deck source inchangé (comparer le
-  nombre de `cards` avant/après) ; bouton absent pour anonyme et pour le
-  propriétaire.
+  dans son `/users/<sonId>/decks` avec toutes les cartes ; le deck source inchangé
+  (comparer le nombre de `cards` avant/après) ; bouton absent pour anonyme et pour
+  le propriétaire.
 
 ## Risques
 
@@ -216,5 +278,12 @@ exports (texte/PDF/CSV) et le bouton « copier » restent accessibles aux visite
   policies publiques.
 - **Couplage de la page deck** : le split owner/read-only doit réutiliser les
   composants feuilles sans réintroduire les contextes owner dans la vue publique.
-- **Dépendance** : la vue publique de collection suppose le refactor préalable des
-  hooks/contexts collection découplés du propriétaire.
+- **Source collection selon `isOwner`** : le choix `cards` vs
+  `public_collection_cards` est une commodité d'UI ; la garantie reste le RLS. Ne
+  jamais lire `cards` pour afficher la collection d'un autre owner.
+- **Dépendance** : la vue canonique de collection suppose le refactor préalable
+  des hooks/contexts collection découplés du propriétaire.
+
+```
+
+```
