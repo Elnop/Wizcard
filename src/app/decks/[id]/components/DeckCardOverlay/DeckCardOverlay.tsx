@@ -125,7 +125,7 @@ export function DeckCardOverlay({
 	contextMenuPos,
 	onContextMenuClose,
 }: Props) {
-	const otherZones = zones.filter((z) => z !== currentZone);
+	const otherZones = currentZone === 'tokens' ? [] : zones.filter((z) => z !== currentZone);
 	const zoneCopies = group.byZone.get(currentZone) ?? [];
 	const lastCopy = zoneCopies[zoneCopies.length - 1];
 	const count = zoneCopies.length;

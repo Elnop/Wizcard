@@ -109,11 +109,116 @@ export type ValidationWarning = {
 	message: string;
 };
 
-function hasPartnerKeyword(card: ScryfallCard): boolean {
-	return (
-		!!card.keywords?.some((k) => k === 'Partner' || k.startsWith('Partner with')) ||
-		/\bPartner\b/.test(card.oracle_text ?? '')
-	);
+const PARTNER_WITH_PREFIX = 'Partner with';
+const FRIENDS_FOREVER = 'Friends forever';
+const DOCTORS_COMPANION = "Doctor's companion";
+
+const Ability = {
+	partner: 'partner',
+	partnerWith: 'partner-with',
+	friendsForever: 'friends-forever',
+	doctorsCompanion: 'doctors-companion',
+	background: 'background',
+} as const;
+
+type PartnerAbility = (typeof Ability)[keyof typeof Ability];
+
+// Returns the generic partner keyword name for a card, or null if none.
+// "Partner" = generic (pairs with any other Partner card)
+// "Partner with X" = named partner (only pairs with the specific card X)
+// "Friends forever" = Un-set mechanic, pairs with any other Friends forever card
+// "Doctor's companion" = pairs with a Doctor commander
+function getPartnerAbility(card: ScryfallCard): PartnerAbility | null {
+	const keywords = card.keywords ?? [];
+	const oracleText = card.oracle_text ?? '';
+	const typeLine = card.type_line ?? '';
+
+	if (keywords.some((k) => k === 'Partner') || /\bPartner\b(?! with)/.test(oracleText)) {
+		return Ability.partner;
+	}
+	if (
+		keywords.some((k) => k.startsWith(PARTNER_WITH_PREFIX)) ||
+		/\bPartner with\b/.test(oracleText)
+	) {
+		return Ability.partnerWith;
+	}
+	if (keywords.some((k) => k === FRIENDS_FOREVER) || /\bFriends forever\b/i.test(oracleText)) {
+		return Ability.friendsForever;
+	}
+	if (keywords.some((k) => k === DOCTORS_COMPANION) || /\bDoctor's companion\b/i.test(oracleText)) {
+		return Ability.doctorsCompanion;
+	}
+	// Background enchantments can be paired with a legendary commander
+	if (/\bBackground\b/.test(typeLine) && /\bEnchantment\b/.test(typeLine)) {
+		return Ability.background;
+	}
+	return null;
+}
+
+// Returns the name this card partners with (for "Partner with X"), or null.
+function getNamedPartner(card: ScryfallCard): string | null {
+	const match =
+		(card.oracle_text ?? '').match(/Partner with ([^\n(]+)/) ??
+		(card.keywords ?? [])
+			.find((k) => k.startsWith(PARTNER_WITH_PREFIX))
+			?.replace(`${PARTNER_WITH_PREFIX} `, '')
+			.trim();
+	if (Array.isArray(match)) return match[1]?.trim() ?? null;
+	return typeof match === 'string' ? match : null;
+}
+
+function isDoctor(card: ScryfallCard): boolean {
+	return /\bDoctor\b/.test(card.type_line ?? '');
+}
+
+// Returns true if the two named-partner cards reference each other by name.
+function isMatchedNamedPartner(a: ScryfallCard, b: ScryfallCard): boolean {
+	const namedByA = getNamedPartner(a);
+	const namedByB = getNamedPartner(b);
+	return Boolean(namedByA && namedByB && namedByA === b.name && namedByB === a.name);
+}
+
+// Returns true if two commander-zone cards form a legal pair.
+function isLegalCommanderPair(a: ScryfallCard, b: ScryfallCard): boolean {
+	const abilityA = getPartnerAbility(a);
+	const abilityB = getPartnerAbility(b);
+
+	// Generic Partner + Generic Partner
+	if (abilityA === Ability.partner && abilityB === Ability.partner) return true;
+
+	// Partner with X + the correct named partner
+	if (abilityA === Ability.partnerWith && abilityB === Ability.partnerWith) {
+		return isMatchedNamedPartner(a, b);
+	}
+
+	// Friends forever + Friends forever
+	if (abilityA === Ability.friendsForever && abilityB === Ability.friendsForever) return true;
+
+	// Doctor's companion: one must be a Doctor, the other must have "Doctor's companion"
+	if (abilityA === Ability.doctorsCompanion && isDoctor(b)) return true;
+	if (abilityB === Ability.doctorsCompanion && isDoctor(a)) return true;
+
+	// Background: one is a legendary non-Background commander, the other is a Background enchantment
+	if (abilityA === Ability.background && abilityB !== Ability.background) return true;
+	if (abilityB === Ability.background && abilityA !== Ability.background) return true;
+
+	return false;
+}
+
+// Returns the maximum allowed commanders for this combination of commander-zone cards.
+// Handles all multi-commander exceptions.
+function getEffectiveCommanderMax(
+	rules: FormatRules,
+	commanderCards: Array<{ card: ScryfallCard }>
+): number {
+	if (rules.commanderCount !== 1 || commanderCards.length <= 1) return rules.commanderCount;
+
+	if (commanderCards.length === 2) {
+		const [a, b] = commanderCards.map((c) => c.card);
+		if (isLegalCommanderPair(a, b)) return 2;
+	}
+
+	return rules.commanderCount;
 }
 
 function checkDeckSize(
@@ -167,7 +272,7 @@ function checkSideboardSize(
 
 function checkCommanderCount(
 	rules: FormatRules,
-	commanderCards: unknown[],
+	commanderCards: Array<{ card: ScryfallCard }>,
 	effectiveCommanderMax: number
 ): ValidationWarning[] {
 	const warnings: ValidationWarning[] = [];
@@ -176,10 +281,18 @@ function checkCommanderCount(
 		warnings.push({ type: 'commander', message: 'A commander is required for this format' });
 	}
 	if (commanderCards.length > effectiveCommanderMax) {
-		warnings.push({
-			type: 'commander',
-			message: `Too many commanders: ${commanderCards.length} (max ${effectiveCommanderMax})`,
-		});
+		if (commanderCards.length === 2 && rules.commanderCount === 1) {
+			warnings.push({
+				type: 'commander',
+				message:
+					'Two commanders are only allowed when both have Partner, Friends forever, a named Partner with each other, or one is a Background enchantment / Doctor’s companion paired with a compatible commander',
+			});
+		} else {
+			warnings.push({
+				type: 'commander',
+				message: `Too many commanders: ${commanderCards.length} (max ${effectiveCommanderMax})`,
+			});
+		}
 	}
 	return warnings;
 }
@@ -273,10 +386,7 @@ export function validateDeck(
 	const mainboardCards = cards.filter((c) => c.zone === 'mainboard');
 	const sideboardCards = cards.filter((c) => c.zone === 'sideboard');
 
-	const allCommandersHavePartner =
-		commanderCards.length > 0 && commanderCards.every(({ card }) => hasPartnerKeyword(card));
-	const effectiveCommanderMax =
-		rules.commanderCount === 1 && allCommandersHavePartner ? 2 : rules.commanderCount;
+	const effectiveCommanderMax = getEffectiveCommanderMax(rules, commanderCards);
 
 	return [
 		...checkDeckSize(rules, mainboardCards, commanderCards, effectiveCommanderMax),

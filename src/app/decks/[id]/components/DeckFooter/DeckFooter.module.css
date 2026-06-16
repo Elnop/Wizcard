@@ -136,7 +136,7 @@
 	bottom: 100%;
 	left: 0;
 	right: 0;
-	background: var(--glass-bg);
+	background: rgba(20, 20, 38, 0.97);
 	backdrop-filter: blur(var(--glass-blur));
 	-webkit-backdrop-filter: blur(var(--glass-blur));
 	border-top: 1px solid var(--glass-border);

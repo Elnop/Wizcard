@@ -117,17 +117,18 @@ function findCommanderName(
 	entries: Array<{ scryfallId: string; tags: string[] | null }>,
 	cardMap: Map<string, ScryfallCard>
 ): string | undefined {
+	const names: string[] = [];
 	for (const e of entries) {
 		if (hasCommanderTag(e.tags)) {
 			const card = cardMap.get(e.scryfallId);
 			if (card) {
 				const name = card.name;
 				const slashIdx = name.indexOf(' // ');
-				return slashIdx !== -1 ? name.slice(0, slashIdx) : name;
+				names.push(slashIdx !== -1 ? name.slice(0, slashIdx) : name);
 			}
 		}
 	}
-	return undefined;
+	return names.length > 0 ? names.join(' & ') : undefined;
 }
 
 function computeManaCurve(

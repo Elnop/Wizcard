@@ -8,6 +8,8 @@ import { Spinner } from '@/components/Spinner/Spinner';
 import type { ResolvedDeckCard } from '../../useDeckDetail';
 import styles from './DeckTokens.module.css';
 
+const CARD_ROW_HEIGHT = 180;
+
 const ZONE_LABELS: Record<DeckZone, string> = {
 	mainboard: 'Mainboard',
 	commander: 'Commander',
@@ -26,6 +28,7 @@ interface DeckTokensProps {
 	isAdding: boolean;
 	renderOverlay?: (card: AnyCard) => ReactNode;
 	onCardClick?: (card: AnyCard) => void;
+	onCardContextMenu?: (card: AnyCard, e: React.MouseEvent) => void;
 }
 
 export function DeckTokens({
@@ -35,6 +38,7 @@ export function DeckTokens({
 	isAdding,
 	renderOverlay,
 	onCardClick,
+	onCardContextMenu,
 }: DeckTokensProps) {
 	const availableZones = ZONE_ORDER.filter((z) => scanZones.includes(z));
 
@@ -42,6 +46,7 @@ export function DeckTokens({
 		() => new Set(DEFAULT_SCAN_ZONES.filter((z) => scanZones.includes(z)))
 	);
 	const [menuOpen, setMenuOpen] = useState(false);
+	const [hasScanned, setHasScanned] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -67,6 +72,7 @@ export function DeckTokens({
 	const handleAdd = () => {
 		const zones = availableZones.filter((z) => selectedZones.has(z));
 		if (zones.length === 0 || isAdding) return;
+		setHasScanned(true);
 		onAddTokens(zones);
 	};
 
@@ -81,7 +87,7 @@ export function DeckTokens({
 						onClick={handleAdd}
 						disabled={isAdding || selectedZones.size === 0}
 					>
-						{isAdding ? <Spinner /> : '+'} Ajouter les tokens
+						{isAdding ? <Spinner /> : '+'} Autodétecter les tokens
 					</button>
 					<button
 						type="button"
@@ -112,14 +118,19 @@ export function DeckTokens({
 			</div>
 
 			{tokens.length === 0 ? (
-				<p className={styles.empty}>
-					Aucun token. Clique sur « Ajouter les tokens » pour générer les tokens requis par le deck.
-				</p>
+				<div className={styles.emptyRow} style={{ height: CARD_ROW_HEIGHT }}>
+					<span className={styles.emptyText}>
+						{hasScanned || isAdding
+							? 'Aucun token nécessaire dans ce deck'
+							: 'Autodétecter les tokens du deck'}
+					</span>
+				</div>
 			) : (
 				<CardList
 					cards={tokens}
 					renderOverlay={renderOverlay}
 					onCardClick={onCardClick}
+					onCardContextMenu={onCardContextMenu}
 					viewModes={['fluid-grid', 'grid', 'table']}
 					cardGap="compact"
 					showCardNames={false}

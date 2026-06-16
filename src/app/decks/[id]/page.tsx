@@ -534,6 +534,7 @@ export default function DeckDetailPage() {
 						isAdding={isAddingTokens}
 						renderOverlay={renderOverlay}
 						onCardClick={handleCardClick}
+						onCardContextMenu={handleCardContextMenu}
 					/>
 
 					<DeckStats stats={stats} warnings={warnings} />

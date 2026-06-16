@@ -7,7 +7,6 @@
 .header {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
 	gap: 12px;
 	margin-bottom: 12px;
 }
@@ -111,9 +110,15 @@
 	background: var(--surface-hover, rgba(127, 127, 127, 0.1));
 }
 
-.empty {
+.emptyRow {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 1px dashed var(--border);
+	border-radius: 8px;
+}
+
+.emptyText {
 	font-size: var(--text-sm);
 	color: var(--text-muted);
-	margin: 0;
-	padding: 12px 0;
 }
