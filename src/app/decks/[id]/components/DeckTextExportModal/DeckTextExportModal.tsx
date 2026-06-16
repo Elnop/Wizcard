@@ -32,6 +32,7 @@ export function DeckTextExportModal({ text, deckName, onClose }: Props) {
 	}
 
 	function handleDownload() {
+		if (!text) return;
 		const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -47,7 +48,7 @@ export function DeckTextExportModal({ text, deckName, onClose }: Props) {
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
 			<h2 className={styles.title}>Exporter la decklist</h2>
 
-			<textarea className={styles.textarea} value={text} readOnly />
+			<textarea className={styles.textarea} value={text} readOnly aria-label="Decklist" />
 
 			{error && <p className={styles.error}>{error}</p>}
 
