@@ -177,15 +177,6 @@ export function ImportModal({
 							onApplyToAll={onApplyToAll}
 						/>
 					)}
-					<ImportPreviewFilters
-						nameFilter={state.filters.name}
-						onNameFilterChange={(value) => state.setFilters((prev) => ({ ...prev, name: value }))}
-						activeFilterCount={state.activeFilterCount}
-						onOpenFilterModal={() => state.setIsFilterModalOpen(true)}
-						isFiltered={state.isFiltered}
-						filteredCount={state.filteredCount}
-						totalCardCount={state.totalCardCount}
-					/>
 					{state.notFound.length > 0 && (
 						<div className={styles.scrollArea}>
 							<div className={styles.notFoundSection}>
@@ -212,23 +203,36 @@ export function ImportModal({
 						</Button>
 					</div>
 				</div>
-				{/* Right column: card grid */}
+				{/* Right column: search/filters + card grid */}
 				<div className={styles.previewRight}>
-					{state.filteredCards.length === 0 &&
-						state.filteredRows.length > 0 &&
-						!isLoadingPreview && <ImportFallbackTable rows={state.filteredRows} />}
-					{(state.filteredCards.length > 0 || isLoadingPreview) && (
-						<CardList
-							cards={state.filteredCards}
-							isLoading={isLoadingPreview && state.filteredCards.length === 0}
-							isLoadingMore={isLoadingPreview && state.filteredCards.length > 0}
-							skeletonCount={skeletonCount}
-							cardsPerLine={4}
-							onCardClick={(card) => state.setSelectedCardId(card.id)}
-							renderOverlay={renderOverlay}
-							tableColumns={tableColumns}
+					<div className={styles.previewRightHeader}>
+						<ImportPreviewFilters
+							nameFilter={state.filters.name}
+							onNameFilterChange={(value) => state.setFilters((prev) => ({ ...prev, name: value }))}
+							activeFilterCount={state.activeFilterCount}
+							onOpenFilterModal={() => state.setIsFilterModalOpen(true)}
+							isFiltered={state.isFiltered}
+							filteredCount={state.filteredCount}
+							totalCardCount={state.totalCardCount}
 						/>
-					)}
+					</div>
+					<div className={styles.previewRightBody}>
+						{state.filteredCards.length === 0 &&
+							state.filteredRows.length > 0 &&
+							!isLoadingPreview && <ImportFallbackTable rows={state.filteredRows} />}
+						{(state.filteredCards.length > 0 || isLoadingPreview) && (
+							<CardList
+								cards={state.filteredCards}
+								isLoading={isLoadingPreview && state.filteredCards.length === 0}
+								isLoadingMore={isLoadingPreview && state.filteredCards.length > 0}
+								skeletonCount={skeletonCount}
+								cardsPerLine={4}
+								onCardClick={(card) => state.setSelectedCardId(card.id)}
+								renderOverlay={renderOverlay}
+								tableColumns={tableColumns}
+							/>
+						)}
+					</div>
 				</div>
 			</div>
 		);

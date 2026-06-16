@@ -409,10 +409,23 @@
 .previewRight {
 	flex: 1;
 	min-width: 0;
-	overflow-y: auto;
-	overflow-x: hidden;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	overflow: hidden;
 	border-left: 1px solid var(--border);
 	padding-left: 24px;
+}
+
+.previewRightHeader {
+	flex-shrink: 0;
+}
+
+.previewRightBody {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
 }
 
 /* Scrollable not-found list inside left column */
