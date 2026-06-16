@@ -523,6 +523,49 @@ alter table public.custom_cards
 -- ============== 20260612000000_drop_custom_cards_variants.sql ==============
 ALTER TABLE custom_cards DROP COLUMN IF EXISTS variants;
 
+-- ============== 20260616000000_public_read_sharing.sql ==============
+create policy "Public can view all decks"
+  on public.decks for select
+  to anon, authenticated
+  using (true);
+
+create policy "Public can view all deck folders"
+  on public.deck_folders for select
+  to anon, authenticated
+  using (true);
+
+create policy "Public can view deck cards"
+  on public.cards for select
+  to anon, authenticated
+  using (deck_id is not null);
+
+create policy "Public can view collection cards"
+  on public.cards for select
+  to anon, authenticated
+  using (owner_id is not null);
+
+create view public.public_collection_cards
+  with (security_invoker = true) as
+  select
+    id,
+    owner_id,
+    scryfall_id,
+    date_added,
+    is_foil,
+    foil_type,
+    condition,
+    language,
+    for_trade,
+    alter,
+    proxy,
+    tags,
+    deck_id,
+    wishlist
+  from public.cards
+  where owner_id is not null;
+
+grant select on public.public_collection_cards to anon, authenticated;
+
 
 -- ---- Enregistrement de l'historique des migrations ----
 insert into supabase_migrations.schema_migrations (version, name) values
@@ -550,7 +593,8 @@ insert into supabase_migrations.schema_migrations (version, name) values
   ('20260606000001', 'add_custom_cards_search_indexes'),
   ('20260606000002', 'add_oracle_text_search_index'),
   ('20260606000003', 'add_drive_folder_path'),
-  ('20260612000000', 'drop_custom_cards_variants')
+  ('20260612000000', 'drop_custom_cards_variants'),
+  ('20260616000000', 'public_read_sharing')
 on conflict (version) do nothing;
 
 
