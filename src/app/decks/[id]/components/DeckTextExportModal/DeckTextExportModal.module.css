@@ -1,0 +1,40 @@
+.dialog {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	max-width: 560px;
+	width: 100%;
+}
+
+.title {
+	margin: 0;
+	font-size: var(--text-lg);
+}
+
+.textarea {
+	width: 100%;
+	min-height: 320px;
+	resize: vertical;
+	font-family: var(--font-mono, monospace);
+	font-size: var(--text-sm);
+	line-height: 1.5;
+	padding: 12px;
+	border: 1px solid var(--border, #444);
+	border-radius: 6px;
+	background: var(--surface-2, #1b1b1b);
+	color: var(--text, #eee);
+	white-space: pre;
+	overflow: auto;
+}
+
+.error {
+	margin: 0;
+	color: var(--danger, #e06c6c);
+	font-size: var(--text-sm);
+}
+
+.actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
