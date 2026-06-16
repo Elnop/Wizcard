@@ -3,6 +3,12 @@ import { parseMtgaCardLine, isMtgaCardLine } from './mtgaCardLine';
 
 const IGNORED_LINES = new Set(['deck', 'sideboard', 'commander', 'companion']);
 
+// Header row emitted by full MTGA/Moxfield/Deckbox CSV-style exports, e.g.
+// "Quantity Name Edition (code) Collector's number Foil". Not a card.
+function isHeaderLine(line: string): boolean {
+	return /^quantity\b/i.test(line) && /\bname\b/i.test(line);
+}
+
 export function parseMTGA(text: string): ParsedImportResult {
 	const lines = text.split(/\r?\n/);
 	const cards: PendingCard[] = [];
@@ -12,6 +18,7 @@ export function parseMTGA(text: string): ParsedImportResult {
 		const line = lines[i].trim();
 		if (!line) continue;
 		if (IGNORED_LINES.has(line.toLowerCase())) continue;
+		if (isHeaderLine(line)) continue;
 
 		const parsed = parseMtgaCardLine(line);
 		if (parsed) {
@@ -19,6 +26,7 @@ export function parseMTGA(text: string): ParsedImportResult {
 				name: parsed.name,
 				set: parsed.set,
 				collectorNumber: parsed.collectorNumber,
+				...(parsed.foil ? { isFoil: true } : {}),
 			};
 			for (let q = 0; q < parsed.quantity; q++) cards.push(card);
 			continue;
@@ -38,7 +46,7 @@ export const mtgaDescriptor: ImportFormatDescriptor = {
 		const lines = text
 			.split(/\r?\n/)
 			.map((l) => l.trim())
-			.filter((l) => l && !IGNORED_LINES.has(l.toLowerCase()));
+			.filter((l) => l && !IGNORED_LINES.has(l.toLowerCase()) && !isHeaderLine(l));
 		if (lines.length === 0) return 0;
 
 		let matchCount = 0;
