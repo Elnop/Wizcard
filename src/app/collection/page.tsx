@@ -13,9 +13,11 @@ import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { Button } from '@/components/Button/Button';
 import { serializeToMoxfieldCSV, downloadCSV } from '@/lib/moxfield/serialize';
 import { ShareButton } from '@/components/ShareButton/ShareButton';
+import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import styles from './page.module.css';
 
 export default function CollectionPage() {
+	const { user } = useAuth();
 	const { entries, isLoaded, isFullyLoaded, clearCollection } = useCollectionContext();
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
 	const importCtx = useImportContext();
@@ -89,7 +91,7 @@ export default function CollectionPage() {
 
 	const actions = (
 		<>
-			<ShareButton />
+			{user && <ShareButton path={`/users/${user.id}/collection`} />}
 			{entries.length > 0 && (
 				<>
 					<Button
