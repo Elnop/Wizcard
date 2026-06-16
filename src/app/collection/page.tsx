@@ -12,6 +12,7 @@ import { ImportModal } from './components/ImportModal/ImportModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { Button } from '@/components/Button/Button';
 import { serializeToMoxfieldCSV, downloadCSV } from '@/lib/moxfield/serialize';
+import { ShareButton } from '@/components/ShareButton/ShareButton';
 import styles from './page.module.css';
 
 export default function CollectionPage() {
@@ -88,6 +89,7 @@ export default function CollectionPage() {
 
 	const actions = (
 		<>
+			<ShareButton />
 			{entries.length > 0 && (
 				<>
 					<Button
