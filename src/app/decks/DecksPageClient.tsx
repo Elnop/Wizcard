@@ -29,7 +29,7 @@ import { FolderBreadcrumb } from './components/FolderBreadcrumb/FolderBreadcrumb
 import { useDeckSummaries } from './useDeckSummaries';
 import styles from './page.module.css';
 
-export default function DecksPage() {
+export default function DecksPageClient() {
 	const {
 		decks,
 		folders,

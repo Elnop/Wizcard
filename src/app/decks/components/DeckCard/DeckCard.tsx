@@ -15,8 +15,10 @@ type Props = {
 	symbolMap: Record<string, ScryfallCardSymbol>;
 	folders?: FolderMeta[];
 	onClick: () => void;
-	onDelete: () => void;
+	onDelete?: () => void;
 	onMove?: (folderId: string | null) => void;
+	/** Read-only (public) view: hides delete, disables drag and the move menu. */
+	readOnly?: boolean;
 };
 
 function formatRelativeDate(iso: string): string {
@@ -115,7 +117,16 @@ function MoveMenu({
 	);
 }
 
-export function DeckCard({ deck, summary, symbolMap, folders, onClick, onDelete, onMove }: Props) {
+export function DeckCard({
+	deck,
+	summary,
+	symbolMap,
+	folders,
+	onClick,
+	onDelete,
+	onMove,
+	readOnly = false,
+}: Props) {
 	const colors = summary?.colors;
 	const hasManaCurve = summary?.manaCurve && Object.keys(summary.manaCurve).length > 0;
 	const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
@@ -126,7 +137,7 @@ export function DeckCard({ deck, summary, symbolMap, folders, onClick, onDelete,
 	});
 
 	const handleContextMenu = (e: React.MouseEvent) => {
-		if (!onMove || !folders) return;
+		if (readOnly || !onMove || !folders) return;
 		e.preventDefault();
 		const MENU_WIDTH = 200;
 		const MENU_HEIGHT = 300;
@@ -138,9 +149,9 @@ export function DeckCard({ deck, summary, symbolMap, folders, onClick, onDelete,
 	return (
 		<>
 			<div
-				ref={setNodeRef}
-				{...attributes}
-				{...listeners}
+				ref={readOnly ? undefined : setNodeRef}
+				{...(readOnly ? {} : attributes)}
+				{...(readOnly ? {} : listeners)}
 				role="button"
 				tabIndex={0}
 				className={`${styles.card} ${isDragging ? styles.dragging : ''}`}
@@ -161,17 +172,19 @@ export function DeckCard({ deck, summary, symbolMap, folders, onClick, onDelete,
 								))}
 							</div>
 						)}
-						<button
-							type="button"
-							className={styles.deleteBtn}
-							onClick={(e) => {
-								e.stopPropagation();
-								onDelete();
-							}}
-							aria-label="Delete deck"
-						>
-							&times;
-						</button>
+						{!readOnly && onDelete && (
+							<button
+								type="button"
+								className={styles.deleteBtn}
+								onClick={(e) => {
+									e.stopPropagation();
+									onDelete();
+								}}
+								aria-label="Delete deck"
+							>
+								&times;
+							</button>
+						)}
 					</div>
 				</div>
 

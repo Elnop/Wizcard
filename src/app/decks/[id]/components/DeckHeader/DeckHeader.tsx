@@ -7,11 +7,13 @@ import styles from './DeckHeader.module.css';
 
 type Props = {
 	deck: DeckMeta;
-	onUpdate: (updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description'>>) => void;
+	onUpdate?: (updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description'>>) => void;
 	onAssignAllFromCollection?: () => void;
 	onAddAllToCollection?: () => void;
 	onGeneratePdf?: () => void;
 	onExportText?: () => void;
+	/** Read-only (public) view: hides editing, keeps export/copy actions. */
+	readOnly?: boolean;
 };
 
 export function DeckHeader({
@@ -21,6 +23,7 @@ export function DeckHeader({
 	onAddAllToCollection,
 	onGeneratePdf,
 	onExportText,
+	readOnly = false,
 }: Props) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [name, setName] = useState(deck.name);
@@ -37,7 +40,7 @@ export function DeckHeader({
 
 	function handleSave() {
 		if (!name.trim()) return;
-		onUpdate({
+		onUpdate?.({
 			name: name.trim(),
 			description: description.trim() || null,
 		});
@@ -95,16 +98,18 @@ export function DeckHeader({
 					</button>
 					{menuOpen && (
 						<div className={styles.dropdown}>
-							<button
-								type="button"
-								className={styles.dropdownItem}
-								onClick={() => {
-									setMenuOpen(false);
-									setIsEditing(true);
-								}}
-							>
-								✎ Edit
-							</button>
+							{!readOnly && (
+								<button
+									type="button"
+									className={styles.dropdownItem}
+									onClick={() => {
+										setMenuOpen(false);
+										setIsEditing(true);
+									}}
+								>
+									✎ Edit
+								</button>
+							)}
 							{onAssignAllFromCollection && (
 								<button
 									type="button"

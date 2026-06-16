@@ -1,0 +1,188 @@
+'use client';
+
+import { useState, useCallback, useMemo } from 'react';
+import { useAuth } from '@/lib/supabase/contexts/AuthContext';
+import { validateDeck } from '@/lib/deck/utils/format-rules';
+import { Spinner } from '@/components/Spinner/Spinner';
+import { Button } from '@/components/Button/Button';
+import { CardList } from '@/lib/card/components/CardList/CardList';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import { getDeckZone } from '@/types/decks';
+import type { DeckZone } from '@/types/decks';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import { CardModal } from '@/lib/card/components/CardModal/CardModal';
+import { serializeDecklist } from '@/lib/deck/utils/serialize-decklist';
+import { usePublicDeckDetail } from './usePublicDeckDetail';
+import type { ResolvedDeckCard } from './useDeckDetail';
+import { useDeckCardSections, type DeckGroupBy } from './useDeckCardSections';
+import { useDeckSort } from './useDeckSort';
+import { useCopyDeckToMyCollection } from './useCopyDeckToMyCollection';
+import { DeckHeader } from './components/DeckHeader/DeckHeader';
+import { DeckStats } from './components/DeckStats/DeckStats';
+import { DeckFooter } from './components/DeckFooter/DeckFooter';
+import { DeckSortBar } from './components/DeckSortBar/DeckSortBar';
+import { DeckTextExportModal } from './components/DeckTextExportModal/DeckTextExportModal';
+import styles from './page.module.css';
+
+/**
+ * Public, read-only deck view (anonymous or non-owner visitors). Reuses the
+ * display components from the owner view but mounts none of the editing
+ * affordances (search panel, edit modals, overlays). A logged-in visitor also
+ * gets a "copy this deck into my account" action.
+ */
+export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
+	const { user } = useAuth();
+	const { deck, cardsByZone, resolvedCards, stats, isLoading, isResolving } =
+		usePublicDeckDetail(deckId);
+
+	const [selectedCards, setSelectedCards] = useState<ResolvedDeckCard[] | null>(null);
+	const [textExportModalOpen, setTextExportModalOpen] = useState(false);
+
+	const { order, dir, setOrder, setDir, sortCards } = useDeckSort();
+	const [groupBy, setGroupBy] = useState<DeckGroupBy>('type');
+
+	const showCommander = deck?.format === 'commander' || deck?.format === 'brawl';
+
+	const { sections, groupByCardId } = useDeckCardSections(
+		cardsByZone,
+		showCommander,
+		sortCards,
+		groupBy
+	);
+
+	const decklistText = useMemo(() => serializeDecklist(cardsByZone), [cardsByZone]);
+
+	const zones: DeckZone[] = useMemo(
+		() =>
+			showCommander
+				? ['commander', 'mainboard', 'sideboard', 'maybeboard']
+				: ['mainboard', 'sideboard', 'maybeboard'],
+		[showCommander]
+	);
+
+	const warnings = useMemo(() => {
+		if (!deck) return [];
+		const allCards = resolvedCards.filter((rc) => {
+			const zone = getDeckZone(rc.entry.tags);
+			return zone !== 'commander' && zone !== 'tokens';
+		});
+		const commanderCards = resolvedCards.filter((rc) => getDeckZone(rc.entry.tags) === 'commander');
+		return validateDeck(
+			deck.format,
+			allCards.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) })),
+			commanderCards.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) }))
+		);
+	}, [deck, resolvedCards]);
+
+	const { copyDeck, isCopying } = useCopyDeckToMyCollection();
+
+	const handleCardClick = useCallback(
+		(card: AnyCard) => {
+			const c = card as ResolvedDeckCard;
+			const group = groupByCardId.get(c.oracle_id ?? c.id);
+			if (group) {
+				setSelectedCards(Array.from(group.byZone.values()).flat());
+			}
+		},
+		[groupByCardId]
+	);
+
+	const tokenSections = useMemo(
+		() => (cardsByZone.tokens.length > 0 ? [{ label: 'Tokens', cards: cardsByZone.tokens }] : []),
+		[cardsByZone.tokens]
+	);
+
+	if (isLoading) {
+		return (
+			<div className={styles.page}>
+				<div className={styles.loading}>
+					<Spinner />
+				</div>
+			</div>
+		);
+	}
+
+	if (!deck) {
+		return (
+			<div className={styles.page}>
+				<div className={styles.notFound}>
+					<h2>Deck not found</h2>
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div className={styles.page}>
+			<div className={styles.layout}>
+				<div className={styles.content}>
+					<DeckHeader deck={deck} readOnly onExportText={() => setTextExportModalOpen(true)} />
+
+					{user && (
+						<div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+							<Button
+								onClick={() => void copyDeck(deck, resolvedCards)}
+								disabled={isCopying || isResolving}
+							>
+								{isCopying ? 'Copie…' : 'Copier dans mes decks'}
+							</Button>
+						</div>
+					)}
+
+					<DeckSortBar
+						order={order}
+						dir={dir}
+						onOrderChange={setOrder}
+						onDirChange={setDir}
+						groupBy={groupBy}
+						onGroupByChange={setGroupBy}
+					/>
+
+					{isResolving && (
+						<div className={styles.resolving}>
+							<Spinner /> Loading card data...
+						</div>
+					)}
+
+					<CardList
+						cards={sections}
+						onCardClick={handleCardClick}
+						pageSize={false}
+						viewModes={['fluid-grid', 'grid', 'table']}
+						cardGap="compact"
+						showCardNames={false}
+					/>
+
+					{tokenSections.length > 0 && (
+						<CardList
+							cards={tokenSections}
+							onCardClick={handleCardClick}
+							pageSize={false}
+							viewModes={['fluid-grid', 'grid']}
+							cardGap="compact"
+							showCardNames={false}
+						/>
+					)}
+
+					<DeckStats stats={stats} warnings={warnings} />
+				</div>
+			</div>
+
+			{textExportModalOpen && (
+				<DeckTextExportModal
+					text={decklistText}
+					deckName={deck.name}
+					onClose={() => setTextExportModalOpen(false)}
+				/>
+			)}
+
+			<DeckFooter stats={stats} format={deck.format} warnings={warnings} />
+
+			<CardModal
+				cards={selectedCards}
+				availableZones={zones}
+				onClose={() => setSelectedCards(null)}
+			/>
+		</div>
+	);
+}

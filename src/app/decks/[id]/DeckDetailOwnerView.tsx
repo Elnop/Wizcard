@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { useParams } from 'next/navigation';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
@@ -57,10 +56,7 @@ function resolveAssignedDeckName(
 	return assignedToCurrentDeck ? currentDeckName : deckNameById.get(deckId);
 }
 
-export default function DeckDetailPage() {
-	const params = useParams();
-	const deckId = params.id as string;
-
+export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const {
 		decks: allDecks,
 		updateDeck,
