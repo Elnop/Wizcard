@@ -65,10 +65,13 @@ export default function DecksPageClient() {
 
 	const handleFolderSelect = (id: string | null | 'none') => {
 		setSidebarOpen(false);
+		// Navigate within the canonical /users/[id]/decks URL: a bare /decks would
+		// server-redirect here and drop the ?folder= query string.
+		const base = user ? `/users/${user.id}/decks` : '/decks';
 		if (id === null) {
-			router.replace('/decks');
+			router.replace(base);
 		} else {
-			router.replace(`/decks?folder=${id}`);
+			router.replace(`${base}?folder=${id}`);
 		}
 	};
 
