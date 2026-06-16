@@ -16,8 +16,10 @@ import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import type { DeckMeta } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
+import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { FolderIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/Button/Button';
+import { ShareButton } from '@/components/ShareButton/ShareButton';
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { CreateDeckModal } from './components/CreateDeckModal/CreateDeckModal';
@@ -42,6 +44,7 @@ export default function DecksPageClient() {
 		moveDeckToFolder,
 		moveFolderToFolder,
 	} = useDeckContext();
+	const { user } = useAuth();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const symbolMap = useScryfallSymbols();
@@ -245,6 +248,7 @@ export default function DecksPageClient() {
 							</span>
 						</div>
 						<div className={styles.actions}>
+							{user && <ShareButton path={`/users/${user.id}/decks`} />}
 							<Button variant="secondary" onClick={() => setShowImport(true)}>
 								Import
 							</Button>
