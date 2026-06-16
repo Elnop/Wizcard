@@ -7,10 +7,12 @@ import type { ImportPreview, ImportStatus, ImportProgress } from '@/lib/import/h
 import type { ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { CardEntry } from '@/types/cards';
+import type { BulkApplyPatch } from '@/lib/import/hooks/useImportBulkApply';
 import { PAGE_SIZE } from '@/lib/collection/constants';
 import { useImportPreviewState } from './useImportPreviewState';
 import { ImportFileInput } from './ImportFileInput';
 import { ImportPreviewStats } from './ImportPreviewStats';
+import { ImportBulkApplyPanel } from './ImportBulkApplyPanel';
 import { ImportPreviewFilters } from './ImportPreviewFilters';
 import { ImportFallbackTable } from './ImportFallbackTable';
 import { ImportSupportModals } from './ImportSupportModals';
@@ -42,6 +44,7 @@ interface Props {
 	onClose: () => void;
 	onUpdateCard: (cardIndex: number, updates: Partial<CardEntry>) => void;
 	onRemoveCard: (cardIndex: number) => void;
+	onApplyToAll: (patch: BulkApplyPatch) => void;
 }
 
 const TITLE_IMPORT_FILE = 'Importer un fichier';
@@ -94,6 +97,7 @@ export function ImportModal({
 	onClose,
 	onUpdateCard,
 	onRemoveCard,
+	onApplyToAll,
 }: Props) {
 	const state = useImportPreviewState({
 		preview,
@@ -167,6 +171,12 @@ export function ImportModal({
 						onChangeFile={onChangeFile}
 						onChangeFormat={onChangeFormat}
 					/>
+					{(resolved?.resolved.length ?? 0) > 0 && (
+						<ImportBulkApplyPanel
+							cardCount={resolved?.resolved.length ?? 0}
+							onApplyToAll={onApplyToAll}
+						/>
+					)}
 					<ImportPreviewFilters
 						nameFilter={state.filters.name}
 						onNameFilterChange={(value) => state.setFilters((prev) => ({ ...prev, name: value }))}

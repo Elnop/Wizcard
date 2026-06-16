@@ -8,6 +8,7 @@ import { useImportPreviewFetch } from '@/lib/import/hooks/useImportPreviewFetch'
 import { useImportFileHandling } from '@/lib/import/hooks/useImportFileHandling';
 import { useImportConfirmation } from '@/lib/import/hooks/useImportConfirmation';
 import { useImportRowEditing } from '@/lib/import/hooks/useImportRowEditing';
+import { useImportBulkApply } from '@/lib/import/hooks/useImportBulkApply';
 import { useSetCodeNormalizer } from '@/lib/import/hooks/useSetCodeNormalizer';
 
 export type ImportStatus =
@@ -77,6 +78,8 @@ export function useImport(
 
 	const { updateCard, removeCard } = useImportRowEditing({ setResolved });
 
+	const { applyToAll } = useImportBulkApply({ setResolved });
+
 	const changeFormat = useCallback(
 		(formatId: ImportFormatId) => {
 			fileHandling.changeFormat(formatId, fileText, preview);
@@ -133,6 +136,7 @@ export function useImport(
 		reset,
 		updateCard,
 		removeCard,
+		applyToAll,
 		formatRegistry: ALL_FORMATS,
 	};
 }

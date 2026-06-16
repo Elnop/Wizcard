@@ -69,6 +69,7 @@ export default function CollectionPage() {
 		reset,
 		updateCard,
 		removeCard,
+		applyToAll,
 		formatRegistry,
 	} = importCtx;
 	const isBusy =
@@ -145,6 +146,7 @@ export default function CollectionPage() {
 				onClose={reset}
 				onUpdateCard={updateCard}
 				onRemoveCard={removeCard}
+				onApplyToAll={applyToAll}
 			/>
 			<CardModal
 				cards={resolvedStack?.cards ?? null}
