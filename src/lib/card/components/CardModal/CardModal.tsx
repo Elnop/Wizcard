@@ -69,6 +69,7 @@ interface Props {
 	onAssignCollectionCopy?: (rowId: string) => void;
 	onMoveToCollection?: (rowId: string) => void;
 	onAddToWishlistFromEntry?: (scryfallId: string) => void;
+	onAddToCollectionFromEntry?: (rowIds: string[]) => void;
 	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
@@ -93,6 +94,7 @@ interface InnerProps {
 	onAssignCollectionCopy?: (rowId: string) => void;
 	onMoveToCollection?: (rowId: string) => void;
 	onAddToWishlistFromEntry?: (scryfallId: string) => void;
+	onAddToCollectionFromEntry?: (rowIds: string[]) => void;
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
 }
@@ -237,6 +239,7 @@ function CardModalInner({
 	onAssignCollectionCopy,
 	onMoveToCollection,
 	onAddToWishlistFromEntry,
+	onAddToCollectionFromEntry,
 	producerSections,
 	onProducerClick,
 }: InnerProps) {
@@ -257,6 +260,21 @@ function CardModalInner({
 	const count = cards.length;
 
 	const selectedCard: Card = cards.find((c) => c.entry.rowId === selectedRowId) ?? cards[0];
+
+	// Copies of this card in the selected card's zone that are not yet owned.
+	// Used to offer an "Ajouter à la collection" action (sets ownerId via toggleOwned).
+	const selectedZone = availableZones ? getDeckZone(selectedCard.entry.tags) : undefined;
+	const unownedRowIds = useMemo(
+		() =>
+			cards
+				.filter(
+					(c) =>
+						!c.entry.ownerId &&
+						(selectedZone === undefined || getDeckZone(c.entry.tags) === selectedZone)
+				)
+				.map((c) => c.entry.rowId),
+		[cards, selectedZone]
+	);
 
 	const editingCard = editingRowId
 		? (cards.find((c) => c.entry.rowId === editingRowId) ?? null)
@@ -522,8 +540,18 @@ function CardModalInner({
 							</div>
 						)}
 
-						{(onMoveToCollection || onAddToWishlistFromEntry) && (
+						{(onMoveToCollection ||
+							onAddToWishlistFromEntry ||
+							(onAddToCollectionFromEntry && unownedRowIds.length > 0)) && (
 							<div className={styles.addSection}>
+								{onAddToCollectionFromEntry && unownedRowIds.length > 0 && (
+									<Button
+										variant="primary"
+										onClick={() => onAddToCollectionFromEntry(unownedRowIds)}
+									>
+										Ajouter à la collection
+									</Button>
+								)}
 								{onMoveToCollection && (
 									<Button
 										variant="primary"
@@ -779,6 +807,7 @@ export function CardModal({
 	onAssignCollectionCopy,
 	onMoveToCollection,
 	onAddToWishlistFromEntry,
+	onAddToCollectionFromEntry,
 	onAddToWishlist,
 	producerSections,
 	onProducerClick,
@@ -830,6 +859,7 @@ export function CardModal({
 			onAssignCollectionCopy={onAssignCollectionCopy}
 			onMoveToCollection={onMoveToCollection}
 			onAddToWishlistFromEntry={onAddToWishlistFromEntry}
+			onAddToCollectionFromEntry={onAddToCollectionFromEntry}
 			producerSections={producerSections}
 			onProducerClick={onProducerClick}
 		/>

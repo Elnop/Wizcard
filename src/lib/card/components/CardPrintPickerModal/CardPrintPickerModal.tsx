@@ -17,6 +17,7 @@ interface Props {
 	onSelect: (print: ScryfallCard) => void;
 	onClose: () => void;
 	collectionCopies?: CollectionCopyEntry[];
+	currentCollectionRowId?: string;
 	onSelectCollectionCopy?: (rowId: string) => void;
 }
 
@@ -29,6 +30,7 @@ export function CardPrintPickerModal({
 	onSelect,
 	onClose,
 	collectionCopies,
+	currentCollectionRowId,
 	onSelectCollectionCopy,
 }: Props) {
 	return (
@@ -58,6 +60,7 @@ export function CardPrintPickerModal({
 						onClose();
 					}}
 					collectionCopies={collectionCopies}
+					currentCollectionRowId={currentCollectionRowId}
 					onSelectCollectionCopy={(rowId) => {
 						onSelectCollectionCopy?.(rowId);
 						onClose();

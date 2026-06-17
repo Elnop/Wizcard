@@ -12,15 +12,26 @@ import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { Button } from '@/components/Button/Button';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
+import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
+import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
+import { buildWishlistMenuItems } from './wishlistCardMenu';
 import styles from './page.module.css';
 
 export default function WishlistPage() {
-	const { entries, isLoaded, removeFromWishlist, clearWishlist, moveToCollection, changePrint } =
-		useWishlistContext();
+	const {
+		entries,
+		isLoaded,
+		duplicateEntry,
+		removeFromWishlist,
+		clearWishlist,
+		moveToCollection,
+		changePrint,
+	} = useWishlistContext();
 
 	const { stacks, isLoading: isHydrating } = useCollectionCards(entries);
 
 	const { resolvedStack, handleCardClick, handleCloseModal } = useCardModal(stacks);
+	const cardMenu = useContextMenu<CardStack>();
 
 	const handleRemoveEntry = useCallback(
 		(rowId: string) => {
@@ -106,6 +117,10 @@ export default function WishlistPage() {
 							const stack = stackByCardId.get(card.id);
 							if (stack) handleCardClick(stack);
 						}}
+						onCardContextMenu={(card, e) => {
+							const stack = stackByCardId.get(card.id);
+							if (stack) cardMenu.open(stack, e);
+						}}
 						renderOverlay={withCustomBadge}
 						tableColumns={[
 							{ key: 'name', label: 'Nom' },
@@ -153,6 +168,24 @@ export default function WishlistPage() {
 					handleCloseModal();
 				}}
 			/>
+			{cardMenu.menu && (
+				<ContextMenu
+					items={buildWishlistMenuItems(
+						cardMenu.menu.data,
+						{
+							onViewDetails: handleCardClick,
+							onAddCopy: duplicateEntry,
+							onRemoveCopy: removeFromWishlist,
+							onMoveToCollection: moveToCollection,
+							onChangePrint: handleCardClick,
+							onRemoveFromWishlist: removeFromWishlist,
+						},
+						cardMenu.close
+					)}
+					position={cardMenu.menu.position}
+					onClose={cardMenu.close}
+				/>
+			)}
 		</div>
 	);
 }

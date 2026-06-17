@@ -191,6 +191,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 						scryfallId: e.scryfallId,
 						condition: e.entry.condition,
 						isFoil: e.entry.isFoil,
+						foilType: e.entry.foilType,
+						proxy: e.entry.proxy,
 						language: e.entry.language,
 						assignedToDeckName: resolveAssignedDeckName(
 							e.entry.deckId,

@@ -14,6 +14,7 @@ type WishlistContextValue = {
 	entries: Array<{ scryfallId: string; entry: CardEntry }>;
 	isLoaded: boolean;
 	addToWishlist: (card: ScryfallCard, entryPatch?: Partial<CardEntry>) => void;
+	duplicateEntry: (scryfallId: string, sourceEntry: CardEntry) => void;
 	removeFromWishlist: (rowId: string) => void;
 	clearWishlist: () => void;
 	moveToCollection: (rowId: string) => void;
@@ -56,6 +57,19 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		[store, userId, triggerSync]
 	);
 
+	const duplicateEntry = useCallback(
+		(scryfallId: string, sourceEntry: CardEntry) => {
+			// On copie les métadonnées de l'entry source mais pas son rowId ni sa date :
+			// addToWishlist génère un nouveau rowId et une nouvelle dateAdded pour la copie.
+			const patch: Partial<CardEntry> = { ...sourceEntry };
+			delete patch.rowId;
+			delete patch.dateAdded;
+			const stubCard = { id: scryfallId } as ScryfallCard;
+			store.addToWishlist(stubCard, userId, triggerSync, patch);
+		},
+		[store, userId, triggerSync]
+	);
+
 	const removeFromWishlist = useCallback(
 		(rowId: string) => store.removeFromWishlist(rowId, userId, triggerSync),
 		[store, userId, triggerSync]
@@ -90,6 +104,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		entries,
 		isLoaded: store.isLoaded,
 		addToWishlist,
+		duplicateEntry,
 		removeFromWishlist,
 		clearWishlist,
 		moveToCollection,

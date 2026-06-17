@@ -339,6 +339,7 @@ export function EditCardModal(props: Props) {
 					}}
 					onClose={() => setShowPrintPicker(false)}
 					collectionCopies={collectionCopies}
+					currentCollectionRowId={addMode ? undefined : props.card.entry.rowId}
 					onSelectCollectionCopy={onSelectCollectionCopy}
 				/>
 			)}

@@ -39,6 +39,8 @@ function buildContextMenuItems(
 	onRemove: (rowId: string) => void,
 	onChangeZone: (rowId: string, zone: DeckZone) => void,
 	onAddToWishlist: ((id: string) => void) | undefined,
+	onAddToCollection: (() => void) | undefined,
+	hasUnowned: boolean,
 	closeMenu: () => void
 ): ContextMenuAction[] {
 	return [
@@ -51,6 +53,19 @@ function buildContextMenuItems(
 				closeMenu();
 			},
 		},
+		...(onAddToCollection && hasUnowned
+			? [
+					{
+						type: 'action' as const,
+						label: 'Ajouter à la collection',
+						icon: '＋',
+						onClick: () => {
+							onAddToCollection();
+							closeMenu();
+						},
+					},
+				]
+			: []),
 		...(lastCopy
 			? [
 					{
@@ -103,6 +118,7 @@ type Props = {
 	onRemove: (rowId: string) => void;
 	onChangeZone: (rowId: string, zone: DeckZone) => void;
 	onBadgeClick?: () => void;
+	onAddToCollectionClick?: () => void;
 	onAddToWishlist?: (scryfallId: string) => void;
 	wishlistEntries?: Array<{ scryfallId: string; entry: CardEntry }>;
 	contextMenuPos?: { x: number; y: number } | null;
@@ -120,6 +136,7 @@ export function DeckCardOverlay({
 	onRemove,
 	onChangeZone,
 	onBadgeClick,
+	onAddToCollectionClick,
 	onAddToWishlist,
 	wishlistEntries,
 	contextMenuPos,
@@ -147,6 +164,8 @@ export function DeckCardOverlay({
 
 	const representativeScryfallId = (zoneCopies[0]?.id ?? (group.representative as Card).id) || '';
 
+	const hasUnowned = zoneCopies.some((c) => !c.entry.ownerId);
+
 	const items = buildContextMenuItems(
 		zoneCopies,
 		otherZones,
@@ -157,8 +176,15 @@ export function DeckCardOverlay({
 		onRemove,
 		onChangeZone,
 		onAddToWishlist,
+		onAddToCollectionClick,
+		hasUnowned,
 		closeMenu
 	);
+
+	// The grey badge ("none") opens the add-to-collection modal; other badge
+	// states keep their existing behaviour (print picker via onBadgeClick).
+	const handleBadgeClick =
+		badgeState === 'none' && onAddToCollectionClick ? onAddToCollectionClick : onBadgeClick;
 
 	return (
 		<div className={styles.overlay}>
@@ -166,9 +192,9 @@ export function DeckCardOverlay({
 				className={`${styles.ownershipBadge} ${badgeClass}`}
 				onClick={(e) => {
 					e.stopPropagation();
-					onBadgeClick?.();
+					handleBadgeClick?.();
 				}}
-				style={onBadgeClick ? { cursor: 'pointer' } : undefined}
+				style={handleBadgeClick ? { cursor: 'pointer' } : undefined}
 			>
 				{badgeText}
 				<span className={styles.ownershipTooltip}>

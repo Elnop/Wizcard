@@ -7,8 +7,12 @@ export interface CollectionCopyEntry {
 	scryfallId: string;
 	condition?: string;
 	isFoil?: boolean;
+	foilType?: 'foil' | 'etched';
+	proxy?: boolean;
 	language?: string;
+	/** Name of the deck this copy is assigned to (any deck), for the "Utilisé" badge. */
 	assignedToDeckName?: string;
+	/** True when this copy is assigned to the deck currently being edited. */
 	isCurrentDeck?: boolean;
 }
 
@@ -20,6 +24,8 @@ export interface PrintListProps {
 	currentLang?: string;
 	onSelect: (print: ScryfallCard) => void;
 	collectionCopies?: CollectionCopyEntry[];
+	/** rowId of the collection copy currently linked to the row being edited. */
+	currentCollectionRowId?: string;
 	onSelectCollectionCopy?: (rowId: string) => void;
 }
 
@@ -68,13 +74,24 @@ export function groupCollectionByPrint(
 		}
 	}
 
+	// Stable ordering: by set name, then collector number, then rowId.
+	const orderedPrints = [...byPrint.entries()].sort(([aId], [bId]) => {
+		const a = printMap.get(aId)!;
+		const b = printMap.get(bId)!;
+		return (
+			a.set_name.localeCompare(b.set_name, 'fr') ||
+			a.collector_number.localeCompare(b.collector_number, 'en', { numeric: true })
+		);
+	});
+
 	const sections: CardListSection[] = [];
 
-	for (const [scryfallId, group] of byPrint.entries()) {
+	for (const [scryfallId, group] of orderedPrints) {
 		const scryfallCard = printMap.get(scryfallId)!;
+		const orderedGroup = [...group].sort((a, b) => a.rowId.localeCompare(b.rowId));
 		sections.push({
 			label: `${scryfallCard.set_name} #${scryfallCard.collector_number} (${group.length})`,
-			cards: group.map((copy) => {
+			cards: orderedGroup.map((copy) => {
 				const card: Card = {
 					...scryfallCard,
 					entry: {
@@ -82,6 +99,8 @@ export function groupCollectionByPrint(
 						dateAdded: '',
 						condition: (copy.condition as Card['entry']['condition']) ?? 'NM',
 						isFoil: copy.isFoil,
+						foilType: copy.foilType,
+						proxy: copy.proxy,
 						language: copy.language as Card['entry']['language'],
 					},
 				};
