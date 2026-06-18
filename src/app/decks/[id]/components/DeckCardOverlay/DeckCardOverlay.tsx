@@ -53,19 +53,6 @@ function buildContextMenuItems(
 				closeMenu();
 			},
 		},
-		...(onAddToCollection && hasUnowned
-			? [
-					{
-						type: 'action' as const,
-						label: 'Ajouter à la collection',
-						icon: '＋',
-						onClick: () => {
-							onAddToCollection();
-							closeMenu();
-						},
-					},
-				]
-			: []),
 		...(lastCopy
 			? [
 					{
@@ -80,9 +67,22 @@ function buildContextMenuItems(
 					},
 				]
 			: []),
+		...(onAddToWishlist || (onAddToCollection && hasUnowned) ? [{ type: 'divider' as const }] : []),
+		...(onAddToCollection && hasUnowned
+			? [
+					{
+						type: 'action' as const,
+						label: 'Add to Collection',
+						icon: '＋',
+						onClick: () => {
+							onAddToCollection();
+							closeMenu();
+						},
+					},
+				]
+			: []),
 		...(onAddToWishlist
 			? [
-					{ type: 'divider' as const },
 					{
 						type: 'action' as const,
 						label: 'Add to Wishlist',

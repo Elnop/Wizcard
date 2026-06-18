@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, type MouseEvent } from 'react';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { validateDeck } from '@/lib/deck/utils/format-rules';
 import { Spinner } from '@/components/Spinner/Spinner';
@@ -9,7 +9,12 @@ import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { getDeckZone } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
+import type { CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
+import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
+import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { serializeDecklist } from '@/lib/deck/utils/serialize-decklist';
 import { usePublicDeckDetail } from './usePublicDeckDetail';
@@ -34,9 +39,13 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 	const { user } = useAuth();
 	const { deck, cardsByZone, resolvedCards, stats, isLoading, isResolving } =
 		usePublicDeckDetail(deckId);
+	const { addCard } = useCollectionContext();
 
 	const [selectedCards, setSelectedCards] = useState<ResolvedDeckCard[] | null>(null);
+	const [addToCollectionCard, setAddToCollectionCard] = useState<ResolvedDeckCard | null>(null);
 	const [textExportModalOpen, setTextExportModalOpen] = useState(false);
+
+	const cardMenu = useContextMenu<ResolvedDeckCard>();
 
 	const { order, dir, setOrder, setDir, sortCards } = useDeckSort();
 	const [groupBy, setGroupBy] = useState<DeckGroupBy>('type');
@@ -85,6 +94,21 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 			}
 		},
 		[groupByCardId]
+	);
+
+	const handleCardContextMenu = useCallback(
+		(card: AnyCard, e: MouseEvent) => {
+			cardMenu.open(card as ResolvedDeckCard, e);
+		},
+		[cardMenu]
+	);
+
+	const handleAddToCollection = useCallback(
+		(selectedCard: ScryfallCard, entry: Partial<CardEntry>) => {
+			addCard(selectedCard, entry);
+			setAddToCollectionCard(null);
+		},
+		[addCard]
 	);
 
 	const tokenSections = useMemo(
@@ -147,6 +171,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 					<CardList
 						cards={sections}
 						onCardClick={handleCardClick}
+						onCardContextMenu={user ? handleCardContextMenu : undefined}
 						pageSize={false}
 						viewModes={['fluid-grid', 'grid', 'table']}
 						cardGap="compact"
@@ -157,6 +182,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 						<CardList
 							cards={tokenSections}
 							onCardClick={handleCardClick}
+							onCardContextMenu={user ? handleCardContextMenu : undefined}
 							pageSize={false}
 							viewModes={['fluid-grid', 'grid']}
 							cardGap="compact"
@@ -183,6 +209,33 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 				availableZones={zones}
 				onClose={() => setSelectedCards(null)}
 			/>
+
+			{cardMenu.menu && (
+				<ContextMenu
+					items={[
+						{
+							type: 'action',
+							label: 'Add to Collection',
+							icon: '+',
+							onClick: () => {
+								setAddToCollectionCard(cardMenu.menu!.data);
+								cardMenu.close();
+							},
+						},
+					]}
+					position={cardMenu.menu.position}
+					onClose={cardMenu.close}
+				/>
+			)}
+
+			{addToCollectionCard && (
+				<EditCardModal
+					mode="add"
+					scryfallCard={addToCollectionCard as ScryfallCard}
+					onAdd={handleAddToCollection}
+					onClose={() => setAddToCollectionCard(null)}
+				/>
+			)}
 		</div>
 	);
 }

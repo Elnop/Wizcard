@@ -64,6 +64,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		addCollectionCardToDeck,
 		removeCardFromDeck,
 		changeZone,
+		toggleOwned,
 		activeDeckCards,
 		replaceDeckCardWithCollectionCopy,
 	} = useDeckContext();
@@ -429,6 +430,11 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					onBadgeClick={() =>
 						handleCardGroupClickWithPrintPicker(group, firstCopy?.entry.rowId ?? c.entry.rowId)
 					}
+					onAddToCollectionClick={() => {
+						for (const copy of group.byZone.get(currentZone) ?? []) {
+							if (!copy.entry.ownerId) toggleOwned(copy.entry.rowId);
+						}
+					}}
 					onAddToWishlist={(scryfallId) => {
 						addToWishlist({ id: scryfallId } as ScryfallCard);
 					}}
@@ -449,6 +455,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			handleDuplicateCard,
 			removeCardFromDeck,
 			changeZone,
+			toggleOwned,
 			handleCardGroupClickWithPrintPicker,
 			addToWishlist,
 			wishlistEntries,
@@ -675,6 +682,9 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				onChangePrint={handleChangePrint}
 				collectionCopies={allCollectionCopies}
 				onAssignCollectionCopy={handleAssignCollectionCopy}
+				onAddToCollectionFromEntry={(rowIds) => {
+					for (const rowId of rowIds) toggleOwned(rowId);
+				}}
 				onAddToWishlistFromEntry={(scryfallId) => {
 					addToWishlist({ id: scryfallId } as ScryfallCard);
 				}}
