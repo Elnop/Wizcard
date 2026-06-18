@@ -7,7 +7,7 @@ import type { ScryfallCard, ScryfallCardSymbol } from '@/lib/scryfall/types/scry
 import type { CustomCard } from '@/lib/mpc/types';
 import { isCustomCard } from '@/lib/mpc/types';
 import type { DeckZone } from '@/types/decks';
-import { getDeckZone } from '@/types/decks';
+import { getDeckZone, removeDeckZoneTags } from '@/types/decks';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import { CardLightbox } from '@/lib/card/components/CardLightbox/CardLightbox';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
@@ -99,16 +99,87 @@ interface InnerProps {
 	onProducerClick?: (card: AnyCard) => void;
 }
 
+function CopyMetaSection({ entry }: { entry: CardEntry }) {
+	let finish = 'Normal';
+	if (entry.isFoil) finish = entry.foilType === 'etched' ? '✨ Etched' : '✨ Foil';
+	const userTags = removeDeckZoneTags(entry.tags);
+	const addedDate = entry.dateAdded
+		? new Date(entry.dateAdded).toLocaleDateString('fr-FR', {
+				year: 'numeric',
+				month: 'long',
+				day: 'numeric',
+			})
+		: null;
+
+	return (
+		<>
+			<hr className={styles.divider} />
+			<div className={styles.details}>
+				<span className={styles.tokensTitle}>Cette copie</span>
+				<div className={styles.detailRow}>
+					<span className={styles.detailLabel}>Finition</span>
+					<span className={styles.copyBadges}>
+						<span className={entry.isFoil ? styles.copyBadgeFoil : styles.detailValue}>
+							{finish}
+						</span>
+						{entry.proxy && <span className={styles.copyBadge}>Proxy</span>}
+						{entry.alter && <span className={styles.copyBadge}>Alter</span>}
+						{entry.forTrade && <span className={styles.copyBadge}>Trade</span>}
+					</span>
+				</div>
+				{entry.condition && (
+					<div className={styles.detailRow}>
+						<span className={styles.detailLabel}>État</span>
+						<span className={styles.detailValue}>{entry.condition}</span>
+					</div>
+				)}
+				{entry.language && (
+					<div className={styles.detailRow}>
+						<span className={styles.detailLabel}>Langue</span>
+						<span className={styles.detailValue}>{entry.language}</span>
+					</div>
+				)}
+				{entry.purchasePrice && (
+					<div className={styles.detailRow}>
+						<span className={styles.detailLabel}>Prix</span>
+						<span className={styles.detailValue}>{entry.purchasePrice}</span>
+					</div>
+				)}
+				{userTags.length > 0 && (
+					<div className={styles.detailRow}>
+						<span className={styles.detailLabel}>Tags</span>
+						<span className={styles.keywords}>
+							{userTags.map((t) => (
+								<span key={t} className={styles.keyword}>
+									{t}
+								</span>
+							))}
+						</span>
+					</div>
+				)}
+				{addedDate && (
+					<div className={styles.detailRow}>
+						<span className={styles.detailLabel}>Ajoutée</span>
+						<span className={styles.detailValue}>{addedDate}</span>
+					</div>
+				)}
+			</div>
+		</>
+	);
+}
+
 function CardDetailSection({
 	card,
 	symbolMap,
 	language,
 	isCustom,
+	entry,
 }: {
 	card: ScryfallCard;
 	symbolMap: Record<string, ScryfallCardSymbol>;
 	language?: string;
 	isCustom?: boolean;
+	entry?: CardEntry;
 }) {
 	const { tokens, loading: tokensLoading, hasTokens } = useCardTokens(card);
 	const [tokenModalCard, setTokenModalCard] = useState<ScryfallCard | null>(null);
@@ -196,6 +267,8 @@ function CardDetailSection({
 					</div>
 				)}
 			</div>
+
+			{entry && <CopyMetaSection entry={entry} />}
 
 			{hasTokens && (
 				<div className={styles.tokensSection}>
@@ -477,6 +550,7 @@ function CardModalInner({
 							card={selectedCard as ScryfallCard}
 							symbolMap={symbolMap}
 							language={selectedCard.entry.language}
+							entry={selectedCard.entry}
 						/>
 
 						{/* Copies list */}
