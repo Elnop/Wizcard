@@ -13,10 +13,10 @@
 .badges {
 	position: absolute;
 	bottom: 6px;
-	left: 6px;
 	right: 6px;
 	display: flex;
 	flex-wrap: wrap;
+	justify-content: flex-end;
 	gap: 3px;
 	pointer-events: none;
 }
@@ -45,16 +45,6 @@
 	font-weight: 600;
 	color: var(--primary-text);
 	background: rgba(124, 58, 237, 0.75);
-	border-radius: 3px;
-	padding: 1px 5px;
-	backdrop-filter: blur(4px);
-}
-
-.badgeProxy {
-	font-size: 10px;
-	font-weight: 600;
-	color: #fff;
-	background: rgba(234, 88, 12, 0.85);
 	border-radius: 3px;
 	padding: 1px 5px;
 	backdrop-filter: blur(4px);

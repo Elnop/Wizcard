@@ -161,23 +161,17 @@
 	opacity: 0.25;
 }
 
-.imageProxy {
-	opacity: 0.75;
-	filter: brightness(0.85);
-}
-
-.proxyOverlay {
+.proxyBadge {
 	position: absolute;
-	inset: 0;
-	border-radius: 4.75% / 3.4%;
+	bottom: 6px;
+	left: 6px;
+	z-index: 2;
+	font-size: 10px;
+	font-weight: 600;
+	color: #fff;
+	background: rgba(234, 88, 12, 0.85);
+	border-radius: 3px;
+	padding: 1px 5px;
+	backdrop-filter: blur(4px);
 	pointer-events: none;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	color: white;
-	font-size: clamp(1.2rem, 4cqw, 2rem);
-	font-weight: 900;
-	letter-spacing: 0.15em;
-	opacity: 0.45;
-	transform: rotate(-30deg);
 }

@@ -160,13 +160,7 @@ export function CardImage({
 					width={width}
 					height={height}
 					priority={priority}
-					className={[
-						styles.image,
-						isLoading ? styles.loading : '',
-						isProxy ? styles.imageProxy : '',
-					]
-						.filter(Boolean)
-						.join(' ')}
+					className={[styles.image, isLoading ? styles.loading : ''].filter(Boolean).join(' ')}
 					onLoad={() => setIsLoading(false)}
 					onError={() => setError(true)}
 				/>
@@ -198,11 +192,7 @@ export function CardImage({
 						aria-hidden="true"
 					/>
 				)}
-				{isProxy && (
-					<div className={styles.proxyOverlay} aria-hidden="true">
-						PROXY
-					</div>
-				)}
+				{isProxy && <span className={styles.proxyBadge}>proxy</span>}
 			</div>
 			{isDoubleFaced && (
 				<button
