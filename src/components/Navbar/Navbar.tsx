@@ -51,6 +51,12 @@ export function Navbar() {
 						Search
 					</Link>
 					<Link
+						href="/sets"
+						className={`${styles.navLink} ${pathname === '/sets' ? styles.navLinkActive : ''}`}
+					>
+						Extensions
+					</Link>
+					<Link
 						href="/decks"
 						className={`${styles.navLink} ${pathname.startsWith('/decks') || pathname.endsWith('/decks') ? styles.navLinkActive : ''}`}
 					>

@@ -1,0 +1,36 @@
+.tabList {
+	display: flex;
+	gap: 4px;
+	border-bottom: 1px solid var(--border);
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.tabList::-webkit-scrollbar {
+	display: none;
+}
+
+.tab {
+	padding: 10px 20px;
+	font-size: var(--text-base);
+	font-weight: 500;
+	color: var(--text-muted);
+	background: none;
+	border: none;
+	cursor: pointer;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -1px;
+	white-space: nowrap;
+	transition:
+		color 0.15s,
+		border-color 0.15s;
+}
+
+.tab:hover {
+	color: var(--foreground);
+}
+
+.tab[data-active='true'] {
+	color: var(--foreground);
+	border-bottom-color: var(--primary);
+}

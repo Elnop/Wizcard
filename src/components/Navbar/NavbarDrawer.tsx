@@ -68,6 +68,13 @@ export function NavbarDrawer() {
 					Search
 				</Link>
 				<Link
+					href="/sets"
+					className={`${styles.drawerLink} ${pathname === '/sets' ? styles.drawerLinkActive : ''}`}
+					onClick={closeDrawer}
+				>
+					Extensions
+				</Link>
+				<Link
 					href="/decks"
 					className={`${styles.drawerLink} ${pathname.startsWith('/decks') || pathname.endsWith('/decks') ? styles.drawerLinkActive : ''}`}
 					onClick={closeDrawer}

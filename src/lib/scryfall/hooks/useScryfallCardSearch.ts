@@ -64,6 +64,8 @@ export function useScryfallCardSearch(
 	const debouncedName = useDebounce(filters.name, 300);
 	const lastSearchKeyRef = useRef<string>('');
 	const abortControllerRef = useRef<AbortController | null>(null);
+	// Synchronous lock preventing overlapping loadMore() calls (see loadMore below).
+	const loadingMoreRef = useRef(false);
 
 	const order = filters.order ?? 'name';
 	const dir = filters.dir ?? 'auto';
@@ -114,6 +116,11 @@ export function useScryfallCardSearch(
 		async (query: string, pageNum: number, isNewSearch: boolean) => {
 			if (isNewSearch) {
 				abortControllerRef.current?.abort();
+				abortControllerRef.current = new AbortController();
+			} else if (!abortControllerRef.current || abortControllerRef.current.signal.aborted) {
+				// Pagination must run on a live controller. After a StrictMode remount
+				// (or any unmount-driven abort) the existing controller can be aborted,
+				// which would make the next page request fail before it starts.
 				abortControllerRef.current = new AbortController();
 			}
 			const signal = abortControllerRef.current?.signal;
@@ -196,6 +203,7 @@ export function useScryfallCardSearch(
 
 		if (searchKey !== lastSearchKeyRef.current) {
 			lastSearchKeyRef.current = searchKey;
+			loadingMoreRef.current = false;
 			setPage(1);
 			fetchCards(query, 1, true);
 		}
@@ -211,14 +219,20 @@ export function useScryfallCardSearch(
 
 	const loadMore = useCallback(() => {
 		if (!enabled) return;
-		if (!isLoading && !isLoadingMore && hasMore) {
-			const nextPage = page + 1;
-			setPage(nextPage);
-			// Extract only the query part from the search key for loadMore
-			const query = lastSearchKeyRef.current.split('|')[0];
-			lastQueryRef.current = query;
-			fetchCards(query, nextPage, false);
-		}
+		// Guard against concurrent invocations with a ref: the IntersectionObserver
+		// can fire loadMore several times in the same tick (before React commits
+		// `isLoadingMore`), which would otherwise skip pages and abort the in-flight
+		// request. The ref blocks synchronously; it's cleared when the fetch settles.
+		if (loadingMoreRef.current || isLoading || isLoadingMore || !hasMore) return;
+		loadingMoreRef.current = true;
+		const nextPage = page + 1;
+		setPage(nextPage);
+		// Extract only the query part from the search key for loadMore
+		const query = lastSearchKeyRef.current.split('|')[0];
+		lastQueryRef.current = query;
+		void fetchCards(query, nextPage, false).finally(() => {
+			loadingMoreRef.current = false;
+		});
 	}, [enabled, isLoading, isLoadingMore, hasMore, page, fetchCards]);
 
 	const reset = useCallback(() => {

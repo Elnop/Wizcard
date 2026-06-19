@@ -1,0 +1,144 @@
+.card {
+	display: flex;
+	flex-direction: column;
+	height: 240px;
+	padding: 14px 16px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	overflow: hidden;
+	text-decoration: none;
+	color: inherit;
+	cursor: pointer;
+	transition:
+		border-color 0.15s,
+		background 0.15s;
+}
+
+.card:hover {
+	background: var(--surface-hover);
+	border-color: var(--brass);
+}
+
+.card:focus-visible {
+	outline: none;
+	border-color: var(--primary);
+	box-shadow: 0 0 0 2px var(--primary);
+}
+
+.main {
+	display: flex;
+	gap: 14px;
+	align-items: flex-start;
+	flex-shrink: 0;
+}
+
+.icon {
+	width: 36px;
+	height: 36px;
+	flex-shrink: 0;
+	object-fit: contain;
+	filter: invert(1) opacity(0.8);
+}
+
+.body {
+	flex: 1;
+	min-width: 0;
+}
+
+.header {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.name {
+	font-size: var(--text-base);
+	font-weight: 600;
+	color: var(--foreground);
+	margin: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.code {
+	font-size: var(--text-xs);
+	font-weight: 600;
+	color: var(--text-muted);
+	letter-spacing: 0.04em;
+	flex-shrink: 0;
+}
+
+.meta {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--text-sm);
+	color: var(--text-muted);
+	margin-top: 2px;
+}
+
+.badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 10px;
+}
+
+.badge {
+	font-size: var(--text-xs);
+	font-weight: 500;
+	color: var(--text-muted);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	padding: 2px 8px;
+}
+
+.derivatives {
+	list-style: none;
+	margin: 12px 0 0;
+	padding: 12px 0 0;
+	border-top: 1px solid var(--border);
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	scrollbar-width: thin;
+}
+
+.derivative {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	font-size: var(--text-sm);
+}
+
+.derivativeIcon {
+	width: 18px;
+	height: 18px;
+	flex-shrink: 0;
+	object-fit: contain;
+	filter: invert(1) opacity(0.65);
+}
+
+.derivativeCode {
+	font-size: var(--text-xs);
+	font-weight: 600;
+	color: var(--text-muted);
+	letter-spacing: 0.04em;
+	flex-shrink: 0;
+	min-width: 44px;
+}
+
+.derivativeName {
+	color: var(--text-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
