@@ -59,7 +59,10 @@ export function useDeckCardIndex(deckId: string): {
 		return buildDeckCardIndex(forIndex);
 	}, [copies, oracleByScryfallId]);
 
-	return {
-		getDeckZones: (oracleId) => (oracleId ? index.get(oracleId) : undefined),
-	};
+	return useMemo(
+		() => ({
+			getDeckZones: (oracleId: string | undefined) => (oracleId ? index.get(oracleId) : undefined),
+		}),
+		[index]
+	);
 }
