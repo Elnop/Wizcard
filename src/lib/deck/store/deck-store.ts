@@ -514,12 +514,19 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			},
 		});
 
-		// Keep collection store in sync if this row exists there
+		// Keep collection store in sync. A card is "in the collection" iff it has
+		// an ownerId, so owning a deck card inserts it into the collection store
+		// (under the same rowId, mirroring the DB's single `cards` table) and
+		// un-owning removes it.
 		const colEntries = useCollectionStore.getState().entries;
-		if (colEntries[rowId]) {
+		if (newOwnerId) {
 			useCollectionStore.setState({
-				entries: { ...colEntries, [rowId]: { ...colEntries[rowId], entry: newEntry } },
+				entries: { ...colEntries, [rowId]: { scryfallId: copy.scryfallId, entry: newEntry } },
 			});
+		} else if (colEntries[rowId]) {
+			const rest = { ...colEntries };
+			delete rest[rowId];
+			useCollectionStore.setState({ entries: rest });
 		}
 		enqueue({ type: SYNC_DECK_CARD_UPDATE, payload: { rowId, updates } });
 		triggerSync();
