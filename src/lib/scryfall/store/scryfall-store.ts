@@ -5,26 +5,33 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import type { ScryfallSet, ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
 import { getAllSets } from '@/lib/scryfall/endpoints/sets';
 import { createSymbolDictionary } from '@/lib/scryfall/endpoints/symbols';
+import { getAllCardTypes } from '@/lib/scryfall/endpoints/catalog';
 
 const SETS_TTL = 3_600_000; // 1 hour
 const SYMBOLS_TTL = 86_400_000; // 24 hours
+const CARD_TYPES_TTL = 86_400_000; // 24 hours
 
 const STORAGE_KEY = 'scryfall-store';
 
 type ScryfallStoreState = {
 	sets: ScryfallSet[];
 	symbols: Record<string, ScryfallCardSymbol>;
+	cardTypes: string[];
 	setsLoadedAt: number | null;
 	symbolsLoadedAt: number | null;
+	cardTypesLoadedAt: number | null;
 	isLoadingSets: boolean;
 	isLoadingSymbols: boolean;
+	isLoadingCardTypes: boolean;
 	setsError: string | null;
 	symbolsError: string | null;
+	cardTypesError: string | null;
 };
 
 type ScryfallStoreActions = {
 	fetchSets: () => Promise<void>;
 	fetchSymbols: () => Promise<void>;
+	fetchCardTypes: () => Promise<void>;
 };
 
 export const useScryfallStore = create<ScryfallStoreState & ScryfallStoreActions>()(
@@ -32,12 +39,16 @@ export const useScryfallStore = create<ScryfallStoreState & ScryfallStoreActions
 		(set, get) => ({
 			sets: [],
 			symbols: {},
+			cardTypes: [],
 			setsLoadedAt: null,
 			symbolsLoadedAt: null,
+			cardTypesLoadedAt: null,
 			isLoadingSets: false,
 			isLoadingSymbols: false,
+			isLoadingCardTypes: false,
 			setsError: null,
 			symbolsError: null,
+			cardTypesError: null,
 
 			fetchSets: async () => {
 				const { sets, setsLoadedAt } = get();
@@ -87,6 +98,29 @@ export const useScryfallStore = create<ScryfallStoreState & ScryfallStoreActions
 					});
 				}
 			},
+
+			fetchCardTypes: async () => {
+				const { cardTypes, cardTypesLoadedAt } = get();
+				if (
+					cardTypes.length > 0 &&
+					cardTypesLoadedAt !== null &&
+					Date.now() - cardTypesLoadedAt < CARD_TYPES_TTL
+				) {
+					return;
+				}
+
+				set({ isLoadingCardTypes: true, cardTypesError: null });
+
+				try {
+					const result = await getAllCardTypes();
+					set({ cardTypes: result, cardTypesLoadedAt: Date.now(), isLoadingCardTypes: false });
+				} catch (err) {
+					set({
+						cardTypesError: err instanceof Error ? err.message : 'Failed to fetch card types',
+						isLoadingCardTypes: false,
+					});
+				}
+			},
 		}),
 		{
 			name: STORAGE_KEY,
@@ -94,8 +128,10 @@ export const useScryfallStore = create<ScryfallStoreState & ScryfallStoreActions
 			partialize: (state) => ({
 				sets: state.sets,
 				symbols: state.symbols,
+				cardTypes: state.cardTypes,
 				setsLoadedAt: state.setsLoadedAt,
 				symbolsLoadedAt: state.symbolsLoadedAt,
+				cardTypesLoadedAt: state.cardTypesLoadedAt,
 			}),
 		}
 	)

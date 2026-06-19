@@ -32,7 +32,7 @@ export function useCustomCards(
 		name: '',
 		colors: [],
 		colorMatch: 'include',
-		type: '',
+		type: [],
 		set: '',
 		rarities: [],
 		oracleText: '',
@@ -56,7 +56,8 @@ export function useCustomCards(
 	const sourcesRef = useRef<Awaited<ReturnType<typeof getCustomCardSources>> | null>(null);
 
 	const debouncedName = useDebounce(filters.name, 300);
-	const debouncedType = useDebounce(filters.type, 300);
+	// Debounce the joined key (stable string) rather than the array reference.
+	const debouncedType = useDebounce(filters.type.join(','), 300);
 	const debouncedOracleText = useDebounce(filters.oracleText, 300);
 	const debouncedCmc = useDebounce(filters.cmc, 300);
 
@@ -107,7 +108,7 @@ export function useCustomCards(
 							name: debouncedName || undefined,
 							colors: colorsKey ? colorsKey.split(',') : undefined,
 							colorMatch: filters.colorMatch,
-							type: debouncedType || undefined,
+							type: debouncedType ? debouncedType.split(',') : undefined,
 							set: filters.set || undefined,
 							cmc: debouncedCmc || undefined,
 							rarities: raritiesKey ? raritiesKey.split(',') : undefined,

@@ -31,7 +31,7 @@ interface FilterModalProps {
 	isOpen: boolean;
 	colors: ScryfallColor[];
 	colorMatch?: ColorMatch;
-	type: string;
+	type: string[];
 	set: string;
 	rarities: string[];
 	oracleText: string;
@@ -49,7 +49,7 @@ interface FilterModalProps {
 	onApply: (filters: {
 		colors: ScryfallColor[];
 		colorMatch: ColorMatch;
-		type: string;
+		type: string[];
 		set: string;
 		rarities: string[];
 		oracleText: string;
@@ -69,7 +69,7 @@ interface FilterModalContentProps {
 	setsLoading?: boolean;
 	initialColors: ScryfallColor[];
 	initialColorMatch: 'exact' | 'include' | 'atMost';
-	initialType: string;
+	initialType: string[];
 	initialSet: string;
 	initialRarities: string[];
 	initialOracleText: string;
@@ -112,7 +112,7 @@ function FilterModalContent({
 	const [draftColorMatch, setDraftColorMatch] = useState<'exact' | 'include' | 'atMost'>(
 		initialColorMatch
 	);
-	const [draftType, setDraftType] = useState(initialType);
+	const [draftType, setDraftType] = useState<string[]>(initialType);
 	const [draftSet, setDraftSet] = useState(initialSet);
 	const [draftRarities, setDraftRarities] = useState<string[]>(initialRarities);
 	const [draftOracleText, setDraftOracleText] = useState(initialOracleText);
@@ -154,7 +154,7 @@ function FilterModalContent({
 		if (variant !== 'backs') {
 			setDraftColors([]);
 			setDraftColorMatch('include');
-			setDraftType('');
+			setDraftType([]);
 			setDraftSet('');
 			setDraftRarities([]);
 			setDraftOracleText('');

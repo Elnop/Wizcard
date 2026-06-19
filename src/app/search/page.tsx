@@ -122,7 +122,7 @@ function SearchPageContent() {
 		name,
 		colors: isBacks ? [] : colors,
 		colorMatch,
-		type: isBacks ? '' : type,
+		type: isBacks ? [] : type,
 		set: isBacks ? '' : set,
 		rarities: isBacks ? [] : rarities,
 		oracleText: isBacks ? '' : oracleText,
@@ -149,7 +149,7 @@ function SearchPageContent() {
 	const handleCardClick = useCallback((card: AnyCard) => setSelectedCard(card), []);
 
 	const hasFilters =
-		name || colors.length > 0 || type || set || rarities.length > 0 || oracleText || cmc;
+		name || colors.length > 0 || type.length > 0 || set || rarities.length > 0 || oracleText || cmc;
 	const isDefaultQuery = !hasFilters && mode === 'official';
 
 	const customFilterCount = computeCustomFilterCount(customSourceId, mpcTags);

@@ -27,7 +27,7 @@ export function AddCardModal({ onAdd, onClose, activeZone, getQuantityInDeck }: 
 	const filters: SearchFilters = {
 		name: searchName,
 		colors: [],
-		type: '',
+		type: [],
 		set: '',
 		rarities: [],
 		oracleText: '',

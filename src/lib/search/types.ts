@@ -9,7 +9,7 @@ export interface CardFilters {
 	name: string;
 	colors: ScryfallColor[];
 	colorMatch: ColorMatch;
-	type: string;
+	type: string[];
 	set: string;
 	rarities: string[];
 	oracleText: string;
@@ -22,7 +22,7 @@ export const DEFAULT_CARD_FILTERS: CardFilters = {
 	name: '',
 	colors: [],
 	colorMatch: 'include',
-	type: '',
+	type: [],
 	set: '',
 	rarities: [],
 	oracleText: '',
@@ -45,7 +45,7 @@ export function countActiveFilters(
 ): number {
 	return (
 		filters.colors.length +
-		(filters.type ? 1 : 0) +
+		(filters.type.length > 0 ? 1 : 0) +
 		(filters.set ? 1 : 0) +
 		(filters.order !== 'name' || (filters.dir !== 'auto' && filters.dir !== 'asc') ? 1 : 0) +
 		filters.rarities.length +

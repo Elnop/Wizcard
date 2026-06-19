@@ -138,7 +138,7 @@ export interface CustomCardQueryFilters {
 	name?: string;
 	colors?: string[];
 	colorMatch?: 'exact' | 'include' | 'atMost';
-	type?: string;
+	type?: string[];
 	set?: string;
 	cmc?: string;
 	rarities?: string[];
@@ -197,7 +197,10 @@ export async function queryCustomCards(query: CustomCardQuery): Promise<CustomCa
 
 	if (sourceId) q = q.eq('source_id', sourceId);
 	if (filters.name) q = q.ilike('name', `%${filters.name}%`);
-	if (filters.type) q = q.ilike('type_line', `%${filters.type}%`);
+	if (filters.type?.length) {
+		// Each token must match the type line (AND), e.g. Cat + Legendary.
+		q = filters.type.reduce((acc, t) => acc.ilike('type_line', `%${t}%`), q);
+	}
 	if (filters.oracleText) q = q.ilike('oracle_text', `%${filters.oracleText}%`);
 	if (filters.set) q = q.eq('set_code', filters.set);
 	if (filters.rarities?.length) q = q.in('rarity', filters.rarities);

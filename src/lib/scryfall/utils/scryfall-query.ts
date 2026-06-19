@@ -4,7 +4,7 @@ export interface ScryfallQueryParams {
 	name?: string;
 	colors?: ScryfallColor[];
 	colorMatch?: 'exact' | 'include' | 'atMost';
-	type?: string;
+	type?: string[];
 	set?: string;
 	rarities?: string[];
 	text?: string;
@@ -30,6 +30,16 @@ function buildColorQuery(
 	}
 }
 
+function buildTypeQuery(types: string[]): string {
+	// Multiple `t:` parts are conjunctive in Scryfall (AND), e.g. `t:cat t:legendary`.
+	return types
+		.map((t) => {
+			const quoted = t.includes(' ') ? `"${t}"` : t;
+			return `t:${quoted}`;
+		})
+		.join(' ');
+}
+
 function buildRarityQuery(rarities: string[]): string {
 	if (rarities.length === 1) {
 		return `r:${rarities[0]}`;
@@ -53,8 +63,8 @@ export function buildScryfallQuery(params: ScryfallQueryParams): string {
 		parts.push(buildColorQuery(params.colors, params.colorMatch));
 	}
 
-	if (params.type) {
-		parts.push(`t:${params.type}`);
+	if (params.type && params.type.length > 0) {
+		parts.push(buildTypeQuery(params.type));
 	}
 
 	if (params.set) {

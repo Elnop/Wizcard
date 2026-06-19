@@ -14,7 +14,7 @@ export interface SearchFilters {
 	name: string;
 	colors: ScryfallColor[];
 	colorMatch?: 'exact' | 'include' | 'atMost';
-	type: string;
+	type: string[];
 	set: string;
 	rarities: string[];
 	oracleText: string;
@@ -74,6 +74,7 @@ export function useScryfallCardSearch(
 	// when the parent passes a new array reference with the same content.
 	const colorsKey = filters.colors.join(',');
 	const raritiesKey = filters.rarities.join(',');
+	const typeKey = filters.type.join(',');
 	const colorIdentityKey = (filters.colorIdentity ?? []).join(',');
 
 	const buildQuery = useCallback(
@@ -87,7 +88,7 @@ export function useScryfallCardSearch(
 				name: name || undefined,
 				colors,
 				colorMatch: filters.colorMatch,
-				type: filters.type || undefined,
+				type: typeKey ? typeKey.split(',') : undefined,
 				set: filters.set || undefined,
 				rarities,
 				text: filters.oracleText || undefined,
@@ -100,7 +101,7 @@ export function useScryfallCardSearch(
 		[
 			colorsKey,
 			filters.colorMatch,
-			filters.type,
+			typeKey,
 			filters.set,
 			raritiesKey,
 			filters.oracleText,

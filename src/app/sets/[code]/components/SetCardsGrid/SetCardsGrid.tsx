@@ -21,7 +21,7 @@ export function SetCardsGrid({ setCode }: SetCardsGridProps) {
 	const { cards, isLoading, isLoadingMore, error, hasMore, loadMore } = useScryfallCardSearch({
 		name: '',
 		colors: [],
-		type: '',
+		type: [],
 		set: setCode,
 		rarities: [],
 		oracleText: '',

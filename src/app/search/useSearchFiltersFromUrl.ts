@@ -80,7 +80,7 @@ function parseRarities(param: string | null): string[] {
 export type SearchFilters = {
 	colors: ScryfallColor[];
 	colorMatch: 'exact' | 'include' | 'atMost';
-	type: string;
+	type: string[];
 	set: string;
 	rarities: string[];
 	oracleText: string;
@@ -103,7 +103,9 @@ export function useSearchFiltersFromUrl() {
 	const [colorMatch, setColorMatch] = useState<'exact' | 'include' | 'atMost'>(() =>
 		parseColorMatch(searchParams.get('colorMatch'))
 	);
-	const [type, setType] = useState(() => searchParams.get('type') ?? '');
+	const [type, setType] = useState<string[]>(
+		() => searchParams.get('type')?.split(',').filter(Boolean) ?? []
+	);
 	const [set, setSet] = useState(() => searchParams.get('set') ?? '');
 	const [rarities, setRarities] = useState<string[]>(() =>
 		parseRarities(searchParams.get('rarities'))
@@ -138,7 +140,7 @@ export function useSearchFiltersFromUrl() {
 		if (name) params.set('name', name);
 		if (colors.length > 0) params.set('colors', colors.join(','));
 		if (colorMatch !== 'include') params.set('colorMatch', colorMatch);
-		if (type) params.set('type', type);
+		if (type.length > 0) params.set('type', type.join(','));
 		if (set) params.set('set', set);
 		if (rarities.length > 0) params.set('rarities', rarities.join(','));
 		if (oracleText) params.set('oracle', oracleText);

@@ -182,6 +182,12 @@ function matchesOracleText(card: ScryfallCard, oracleText: string): boolean {
 	return tokens.every((t) => text.includes(t));
 }
 
+function matchesType(typeLine: string | undefined, types: string[]): boolean {
+	if (types.length === 0) return true;
+	const tl = (typeLine ?? '').toLowerCase();
+	return types.every((t) => tl.includes(t.toLowerCase()));
+}
+
 function cardMatchesFilters(
 	card: AnyCard,
 	filters: CollectionFilters,
@@ -189,8 +195,7 @@ function cardMatchesFilters(
 ): boolean {
 	if (filters.name && !card.name.toLowerCase().includes(filters.name.toLowerCase())) return false;
 	if (!matchColors(card.colors, filters.colors, filters.colorMatch)) return false;
-	if (filters.type && !(card.type_line ?? '').toLowerCase().includes(filters.type.toLowerCase()))
-		return false;
+	if (!matchesType(card.type_line, filters.type)) return false;
 	if (filters.set && card.set !== filters.set) return false;
 	if (
 		filters.rarities.length > 0 &&
