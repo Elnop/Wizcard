@@ -8,6 +8,8 @@ import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { SearchCardContextMenu } from './SearchCardContextMenu';
 import { CardModeSwitcher } from './CardModeSwitcher';
+import { DeckZoneBadges } from './DeckZoneBadges';
+import { useDeckCardIndex } from './useDeckCardIndex';
 import {
 	useScryfallCardSearch,
 	type SearchFilters,
@@ -57,7 +59,7 @@ export function CardSearchPanel({
 	const [filterModalOpen, setFilterModalOpen] = useState(false);
 	const [colors, setColors] = useState<ScryfallColor[]>([]);
 	const [colorMatch, setColorMatch] = useState<'exact' | 'include' | 'atMost'>('include');
-	const [filterType, setFilterType] = useState('');
+	const [filterType, setFilterType] = useState<string[]>([]);
 	const [filterSet, setFilterSet] = useState('');
 	const [rarities, setRarities] = useState<string[]>([]);
 	const [oracleText, setOracleText] = useState('');
@@ -69,11 +71,12 @@ export function CardSearchPanel({
 	const emptyEntries = useMemo(() => [], []);
 
 	const { addCardToDeck } = useDeckContext();
+	const { getDeckZones } = useDeckCardIndex(deckId);
 	const { sets, isLoading: setsLoading } = useScryfallSets();
 
 	const activeFilterCount =
 		colors.length +
-		(filterType ? 1 : 0) +
+		(filterType.length > 0 ? 1 : 0) +
 		(filterSet ? 1 : 0) +
 		rarities.length +
 		(oracleText ? 1 : 0) +
@@ -83,7 +86,7 @@ export function CardSearchPanel({
 		(f: {
 			colors: ScryfallColor[];
 			colorMatch: 'exact' | 'include' | 'atMost';
-			type: string;
+			type: string[];
 			set: string;
 			rarities: string[];
 			oracleText: string;
@@ -186,7 +189,7 @@ export function CardSearchPanel({
 		name: inCollectionOnly ? '' : searchName,
 		colors: inCollectionOnly ? [] : colors,
 		colorMatch: inCollectionOnly ? 'include' : colorMatch,
-		type: inCollectionOnly ? '' : filterType,
+		type: inCollectionOnly ? [] : filterType,
 		set: inCollectionOnly ? '' : filterSet,
 		rarities: inCollectionOnly ? [] : rarities,
 		oracleText: inCollectionOnly ? '' : oracleText,
@@ -211,13 +214,16 @@ export function CardSearchPanel({
 
 	const renderSearchOverlay = useCallback(
 		(card: AnyCard) => (
-			<div
-				className={styles.searchCardOverlay}
-				onClick={(e) => e.stopPropagation()}
-				onContextMenu={(e) => openContextMenu(card as ScryfallCard, e)}
-			/>
+			<>
+				<div
+					className={styles.searchCardOverlay}
+					onClick={(e) => e.stopPropagation()}
+					onContextMenu={(e) => openContextMenu(card as ScryfallCard, e)}
+				/>
+				<DeckZoneBadges zones={getDeckZones(card.oracle_id)} />
+			</>
 		),
-		[openContextMenu]
+		[openContextMenu, getDeckZones]
 	);
 
 	return (
