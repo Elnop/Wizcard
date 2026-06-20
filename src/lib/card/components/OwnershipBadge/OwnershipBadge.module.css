@@ -1,0 +1,45 @@
+.ownershipBadge {
+	position: absolute;
+	top: -9px;
+	left: 50%;
+	transform: translateX(-50%);
+	min-width: 18px;
+	height: 18px;
+	padding: 0 4px;
+	border-radius: 9px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 10px;
+	font-weight: 700;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+	pointer-events: auto;
+	z-index: 2;
+	white-space: nowrap;
+	cursor: default;
+}
+
+.ownershipBadgeGreen {
+	background: rgba(74, 140, 111, 0.92);
+	color: #fff;
+}
+
+.ownershipBadgeOrange {
+	background: rgba(201, 168, 76, 0.92);
+	color: #0b0c10;
+}
+
+.ownershipBadgeGrey {
+	background: rgba(120, 120, 120, 0.55);
+	color: transparent;
+}
+
+.ownershipBadgeLocked {
+	background: rgba(201, 120, 50, 0.92);
+	color: #fff;
+}
+
+.ownershipBadgeWishlist {
+	background: rgba(100, 120, 220, 0.92);
+	color: #fff;
+}

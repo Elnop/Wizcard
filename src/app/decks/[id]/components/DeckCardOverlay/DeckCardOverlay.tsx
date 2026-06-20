@@ -6,6 +6,7 @@ import type { Card, CardEntry } from '@/types/cards';
 import { useCollectionBadge } from './useCollectionBadge';
 import { buildCollectionAddRequest } from '../../collectionAddRequest';
 import type { CollectionAddRequest } from '../../collectionAddRequest';
+import { OwnershipBadge } from '@/lib/card/components/OwnershipBadge/OwnershipBadge';
 import styles from './DeckCardOverlay.module.css';
 
 const ZONE_LABELS: Record<DeckZone, string> = {
@@ -15,21 +16,6 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 	commander: 'Commander',
 	tokens: 'Tokens',
 };
-
-const BADGE_CLASS_MAP: Record<string, string> = {
-	owned: styles.ownershipBadgeGreen,
-	partial: styles.ownershipBadgeOrange,
-	locked: styles.ownershipBadgeLocked,
-	wishlist: styles.ownershipBadgeWishlist,
-};
-
-const BADGE_TEXT_STATIC: Record<string, string> = { owned: '✓', wishlist: '🛒' };
-
-function getBadgeText(badgeState: string, ownedCount: number, neededCount: number): string {
-	if (badgeState === 'partial') return `${ownedCount}/${neededCount}`;
-	if (badgeState === 'locked') return `0/${neededCount}`;
-	return BADGE_TEXT_STATIC[badgeState] ?? '';
-}
 
 function buildContextMenuItems(
 	zoneCopies: Card[],
@@ -160,9 +146,6 @@ export function DeckCardOverlay({
 			wishlistEntries
 		);
 
-	const badgeClass = BADGE_CLASS_MAP[badgeState] ?? styles.ownershipBadgeGrey;
-	const badgeText = getBadgeText(badgeState, ownedCount, neededCount);
-
 	const closeMenu = useCallback(() => onContextMenuClose?.(), [onContextMenuClose]);
 
 	const representativeScryfallId = (zoneCopies[0]?.id ?? (group.representative as Card).id) || '';
@@ -202,15 +185,13 @@ export function DeckCardOverlay({
 
 	return (
 		<div className={styles.overlay}>
-			<span
-				className={`${styles.ownershipBadge} ${badgeClass}`}
-				onClick={(e) => {
-					e.stopPropagation();
-					handleBadgeClick?.();
-				}}
-				style={handleBadgeClick ? { cursor: 'pointer' } : undefined}
+			<OwnershipBadge
+				badgeState={badgeState}
+				ownedCount={ownedCount}
+				neededCount={neededCount}
+				onClick={handleBadgeClick}
+				className={styles.deckBadgeHover}
 			>
-				{badgeText}
 				<span className={styles.ownershipTooltip}>
 					{tooltipCopies.length > 0 && (
 						<>
@@ -256,7 +237,7 @@ export function DeckCardOverlay({
 						<span className={styles.ownershipTooltipItem}>Pas dans ma collection</span>
 					)}
 				</span>
-			</span>
+			</OwnershipBadge>
 			{count > 1 && <span className={styles.countBadge}>x{count}</span>}
 			{contextMenuPos && (
 				<ContextMenu items={items} position={contextMenuPos} onClose={closeMenu} />
