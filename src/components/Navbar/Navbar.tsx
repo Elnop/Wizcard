@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useImportContext } from '@/lib/import/context/ImportContext';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
@@ -20,10 +21,12 @@ export function Navbar() {
 	const pathname = usePathname();
 	const { user, signOut } = useAuth();
 	const { entries } = useCollectionContext();
+	const { entries: wishlistEntries } = useWishlistContext();
 	const { status } = useImportContext();
 	const { triggerSync } = useSyncQueueContext();
 
 	const totalCollectionCards = entries.length;
+	const totalWishlistCards = wishlistEntries.length;
 	const isImporting = status === 'parsing' || status === 'fetching' || status === 'merging';
 
 	async function handleSignOut() {
@@ -68,6 +71,7 @@ export function Navbar() {
 					>
 						<WishlistIcon />
 						Wishlist
+						{totalWishlistCards > 0 && <span className={styles.badge}>{totalWishlistCards}</span>}
 					</Link>
 					<Link
 						href="/collection"
