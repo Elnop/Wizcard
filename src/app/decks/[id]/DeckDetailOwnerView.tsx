@@ -32,6 +32,8 @@ import { useAddDeckToCollection } from './useAddDeckToCollection';
 import { AddDeckToCollectionModal } from './components/AddDeckToCollectionModal/AddDeckToCollectionModal';
 import { AddCardToCollectionModal } from './components/AddCardToCollectionModal/AddCardToCollectionModal';
 import { buildCollectionAddRequest, type CollectionAddRequest } from './collectionAddRequest';
+import { OwnershipBadge } from '@/lib/card/components/OwnershipBadge/OwnershipBadge';
+import { getCopyBadgeState } from '@/lib/card/components/OwnershipBadge/copyBadgeState';
 import { DeckPdfExportModal } from './components/DeckPdfExportModal/DeckPdfExportModal';
 import { DeckTextExportModal } from './components/DeckTextExportModal/DeckTextExportModal';
 import { serializeDecklist } from '@/lib/deck/utils/serialize-decklist';
@@ -248,6 +250,11 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		}
 		return map;
 	}, [collectionScryfallIdToOracleId, entries]);
+
+	const wishlistScryfallIds = useMemo(
+		() => new Set(wishlistEntries.map((e) => e.scryfallId)),
+		[wishlistEntries]
+	);
 
 	const panelScryfallIdToOracleId = collectionScryfallIdToOracleId;
 
@@ -702,6 +709,33 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				}}
 				producerSections={tokenProducerSections}
 				onProducerClick={handleCardClick}
+				renderCopyBadge={(copy) => {
+					const state = getCopyBadgeState(copy, wishlistScryfallIds);
+					return (
+						<OwnershipBadge
+							badgeState={state}
+							onClick={
+								state === 'none'
+									? () => {
+											const card = selectedCards?.[0];
+											if (!card) return;
+											const oracleScryfallIds = Array.from(
+												oracleIdToAllScryfallIds.get(card.oracle_id ?? card.id) ??
+													new Set<string>([card.id])
+											);
+											const req = buildCollectionAddRequest(
+												card.name,
+												[copy],
+												oracleScryfallIds,
+												wishlistEntries
+											);
+											if (req.unownedRowIds.length > 0) setPendingCollectionAdd(req);
+										}
+									: undefined
+							}
+						/>
+					);
+				}}
 			/>
 
 			{pendingCollectionAdd && (
