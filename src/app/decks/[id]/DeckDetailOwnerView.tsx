@@ -126,9 +126,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		selectedCards,
 		selectedZone,
 		clickedRowId,
-		openPrintPicker,
 		handleCardGroupClick,
-		handleCardGroupClickWithPrintPicker,
 		handleClose,
 		handleSave,
 		handleRemoveEntry,
@@ -427,9 +425,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					onDuplicate={handleDuplicateCard}
 					onRemove={removeCardFromDeck}
 					onChangeZone={changeZone}
-					onBadgeClick={() =>
-						handleCardGroupClickWithPrintPicker(group, firstCopy?.entry.rowId ?? c.entry.rowId)
-					}
+					onBadgeClick={() => handleCardGroupClick(group, firstCopy?.entry.rowId ?? c.entry.rowId)}
 					onAddToCollectionClick={() => {
 						for (const copy of group.byZone.get(currentZone) ?? []) {
 							if (!copy.entry.ownerId) toggleOwned(copy.entry.rowId);
@@ -456,7 +452,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			removeCardFromDeck,
 			changeZone,
 			toggleOwned,
-			handleCardGroupClickWithPrintPicker,
+			handleCardGroupClick,
 			addToWishlist,
 			wishlistEntries,
 			contextMenuCard,
@@ -671,7 +667,6 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			<CardModal
 				cards={selectedCards}
 				initialRowId={clickedRowId ?? undefined}
-				initialChangingPrintRowId={openPrintPicker ? (clickedRowId ?? undefined) : undefined}
 				zone={selectedZone ?? undefined}
 				availableZones={zones}
 				onClose={handleClose}

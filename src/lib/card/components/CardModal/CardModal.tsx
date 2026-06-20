@@ -14,6 +14,7 @@ import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { ColorIdentityIcons } from '@/lib/scryfall/components/ColorIdentityIcons';
 import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
+import { UseCollectionCopyModal } from '@/lib/card/components/UseCollectionCopyModal/UseCollectionCopyModal';
 import type { CollectionCopyEntry } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
 import { Modal } from '@/components/Modal/Modal';
@@ -51,7 +52,6 @@ function isCollectionCard(card: Card | ScryfallCard): card is Card {
 interface Props {
 	cards: Card | Card[] | ScryfallCard | CustomCard | null;
 	initialRowId?: string;
-	initialChangingPrintRowId?: string;
 	onClose: () => void;
 	onSave?: (rowId: string, updates: Partial<CardEntry>) => void;
 	onRemove?: (scryfallId: string) => void;
@@ -78,7 +78,6 @@ interface Props {
 interface InnerProps {
 	cards: Card[];
 	initialRowId?: string;
-	initialChangingPrintRowId?: string;
 	onClose: () => void;
 	onSave?: (rowId: string, updates: Partial<CardEntry>) => void;
 	onRemove?: (scryfallId: string) => void;
@@ -297,7 +296,6 @@ function CardDetailSection({
 function CardModalInner({
 	cards,
 	initialRowId,
-	initialChangingPrintRowId,
 	onClose,
 	onSave,
 	onRemove,
@@ -319,9 +317,7 @@ function CardModalInner({
 	const [lightbox, setLightbox] = useState(false);
 	const [selectedRowId, setSelectedRowId] = useState<string>(initialRowId ?? cards[0].entry.rowId);
 	const [editingRowId, setEditingRowId] = useState<string | null>(null);
-	const [changingPrintRowId, setChangingPrintRowId] = useState<string | null>(
-		initialChangingPrintRowId ?? null
-	);
+	const [usingCollectionCopy, setUsingCollectionCopy] = useState(false);
 	const [addingCopy, setAddingCopy] = useState(false);
 	const [copyContextMenuCard, setCopyContextMenuCard] = useState<Card | null>(null);
 	const [copyContextMenuPos, setCopyContextMenuPos] = useState<{ x: number; y: number } | null>(
@@ -534,13 +530,32 @@ function CardModalInner({
 							foilType={selectedCard.entry.foilType}
 							isProxy={selectedCard.entry.proxy}
 						/>
-						{onChangePrint && (
+						<button
+							type="button"
+							className={styles.changePrintBtn}
+							onClick={() => setEditingRowId(selectedCard.entry.rowId)}
+						>
+							Modifier
+						</button>
+						{onAssignCollectionCopy && (
 							<button
 								type="button"
 								className={styles.changePrintBtn}
-								onClick={() => setChangingPrintRowId(selectedCard.entry.rowId)}
+								disabled={(collectionCopies?.length ?? 0) === 0}
+								onClick={() => setUsingCollectionCopy(true)}
 							>
-								Changer de print
+								Utiliser une carte de la collection
+							</button>
+						)}
+						{onAddToCollectionFromEntry && (
+							<button
+								type="button"
+								className={styles.changePrintBtn}
+								onClick={() => onAddToCollectionFromEntry([selectedCard.entry.rowId])}
+							>
+								{selectedCard.entry.ownerId
+									? 'Retirer de la collection'
+									: 'Ajouter à la collection'}
 							</button>
 						)}
 					</div>
@@ -683,33 +698,21 @@ function CardModalInner({
 						onChangePrint?.(editingCard.entry.rowId, newCard);
 					}}
 					onClose={() => setEditingRowId(null)}
-					collectionCopies={collectionCopies}
-					onSelectCollectionCopy={onAssignCollectionCopy}
 				/>
 			)}
 
-			{changingPrintRowId &&
-				(() => {
-					const card = cards.find((c) => c.entry.rowId === changingPrintRowId);
-					return card ? (
-						<EditCardModal
-							key={`print-${changingPrintRowId}`}
-							card={card}
-							onSave={(patch) => onSave?.(changingPrintRowId, patch)}
-							onChangePrint={(newCard) => {
-								onChangePrint?.(changingPrintRowId, newCard);
-								setChangingPrintRowId(null);
-							}}
-							onClose={() => setChangingPrintRowId(null)}
-							collectionCopies={collectionCopies}
-							onSelectCollectionCopy={(rowId) => {
-								onAssignCollectionCopy?.(rowId);
-								setChangingPrintRowId(null);
-							}}
-							autoOpenPrintPicker
-						/>
-					) : null;
-				})()}
+			{usingCollectionCopy && (selectedCard as ScryfallCard).prints_search_uri && (
+				<UseCollectionCopyModal
+					prints_search_uri={(selectedCard as ScryfallCard).prints_search_uri}
+					collectionCopies={collectionCopies ?? []}
+					currentCollectionRowId={selectedCard.entry.rowId}
+					onSelectCollectionCopy={(rowId) => {
+						onAssignCollectionCopy?.(rowId);
+						setUsingCollectionCopy(false);
+					}}
+					onClose={() => setUsingCollectionCopy(false)}
+				/>
+			)}
 
 			{addingCopy && (
 				<EditCardModal
@@ -863,7 +866,6 @@ function CustomCardModalInner({ card, onClose }: { card: CustomCard; onClose: ()
 export function CardModal({
 	cards,
 	initialRowId,
-	initialChangingPrintRowId,
 	onClose,
 	onSave,
 	onRemove,
@@ -917,7 +919,6 @@ export function CardModal({
 			key={first.oracle_id}
 			cards={normalizedCards as Card[]}
 			initialRowId={initialRowId}
-			initialChangingPrintRowId={initialChangingPrintRowId}
 			onClose={onClose}
 			onSave={onSave}
 			onRemove={onRemove}

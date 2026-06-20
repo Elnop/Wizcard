@@ -23,10 +23,6 @@ export interface PrintListProps {
 	currentCollectorNumber?: string;
 	currentLang?: string;
 	onSelect: (print: ScryfallCard) => void;
-	collectionCopies?: CollectionCopyEntry[];
-	/** rowId of the collection copy currently linked to the row being edited. */
-	currentCollectionRowId?: string;
-	onSelectCollectionCopy?: (rowId: string) => void;
 }
 
 const LANG_DISPLAY_FR = new Intl.DisplayNames('fr', { type: 'language' });

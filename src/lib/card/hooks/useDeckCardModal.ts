@@ -7,7 +7,7 @@ import type { DeckZone, DeckCardGroup } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 
-type Selection = { oracleId: string; clickedRowId: string; openPrintPicker?: boolean };
+type Selection = { oracleId: string; clickedRowId: string };
 
 export function useDeckCardModal(deckId: string, groupByCardId: Map<string, DeckCardGroup>) {
 	const {
@@ -52,17 +52,6 @@ export function useDeckCardModal(deckId: string, groupByCardId: Map<string, Deck
 			clickedRowId,
 		});
 	}, []);
-
-	const handleCardGroupClickWithPrintPicker = useCallback(
-		(group: DeckCardGroup, clickedRowId: string) => {
-			setSelection({
-				oracleId: group.representative.oracle_id ?? group.representative.id,
-				clickedRowId,
-				openPrintPicker: true,
-			});
-		},
-		[]
-	);
 
 	const handleClose = useCallback(() => setSelection(null), []);
 
@@ -115,9 +104,7 @@ export function useDeckCardModal(deckId: string, groupByCardId: Map<string, Deck
 		selectedCards,
 		selectedZone,
 		clickedRowId: selection?.clickedRowId ?? null,
-		openPrintPicker: selection?.openPrintPicker ?? false,
 		handleCardGroupClick,
-		handleCardGroupClickWithPrintPicker,
 		handleClose,
 		handleSave,
 		handleRemoveEntry,

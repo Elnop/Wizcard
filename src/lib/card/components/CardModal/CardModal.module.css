@@ -61,6 +61,17 @@
 	border-color: var(--primary);
 }
 
+.changePrintBtn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.changePrintBtn:disabled:hover {
+	background: var(--glass-bg);
+	color: var(--foreground);
+	border-color: var(--glass-border);
+}
+
 .infoCol {
 	flex: 1;
 	display: flex;

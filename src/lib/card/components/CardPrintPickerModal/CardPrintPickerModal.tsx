@@ -16,9 +16,6 @@ interface Props {
 	currentLang?: string;
 	onSelect: (print: ScryfallCard) => void;
 	onClose: () => void;
-	collectionCopies?: CollectionCopyEntry[];
-	currentCollectionRowId?: string;
-	onSelectCollectionCopy?: (rowId: string) => void;
 }
 
 export function CardPrintPickerModal({
@@ -29,9 +26,6 @@ export function CardPrintPickerModal({
 	currentLang,
 	onSelect,
 	onClose,
-	collectionCopies,
-	currentCollectionRowId,
-	onSelectCollectionCopy,
 }: Props) {
 	return (
 		<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
@@ -57,12 +51,6 @@ export function CardPrintPickerModal({
 					currentLang={currentLang}
 					onSelect={(print) => {
 						onSelect(print);
-						onClose();
-					}}
-					collectionCopies={collectionCopies}
-					currentCollectionRowId={currentCollectionRowId}
-					onSelectCollectionCopy={(rowId) => {
-						onSelectCollectionCopy?.(rowId);
 						onClose();
 					}}
 				/>
