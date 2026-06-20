@@ -70,6 +70,7 @@ interface Props {
 	onMoveToCollection?: (rowId: string) => void;
 	onAddToWishlistFromEntry?: (scryfallId: string) => void;
 	onAddToCollectionFromEntry?: (rowIds: string[]) => void;
+	onRemoveFromCollectionEntry?: (rowId: string) => void;
 	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
@@ -94,6 +95,7 @@ interface InnerProps {
 	onMoveToCollection?: (rowId: string) => void;
 	onAddToWishlistFromEntry?: (scryfallId: string) => void;
 	onAddToCollectionFromEntry?: (rowIds: string[]) => void;
+	onRemoveFromCollectionEntry?: (rowId: string) => void;
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
 }
@@ -311,6 +313,7 @@ function CardModalInner({
 	onMoveToCollection,
 	onAddToWishlistFromEntry,
 	onAddToCollectionFromEntry,
+	onRemoveFromCollectionEntry,
 	producerSections,
 	onProducerClick,
 }: InnerProps) {
@@ -547,11 +550,15 @@ function CardModalInner({
 								Utiliser une carte de la collection
 							</button>
 						)}
-						{onAddToCollectionFromEntry && (
+						{(onAddToCollectionFromEntry || onRemoveFromCollectionEntry) && (
 							<button
 								type="button"
 								className={styles.changePrintBtn}
-								onClick={() => onAddToCollectionFromEntry([selectedCard.entry.rowId])}
+								onClick={() =>
+									selectedCard.entry.ownerId
+										? onRemoveFromCollectionEntry?.(selectedCard.entry.rowId)
+										: onAddToCollectionFromEntry?.([selectedCard.entry.rowId])
+								}
 							>
 								{selectedCard.entry.ownerId
 									? 'Retirer de la collection'
@@ -884,6 +891,7 @@ export function CardModal({
 	onMoveToCollection,
 	onAddToWishlistFromEntry,
 	onAddToCollectionFromEntry,
+	onRemoveFromCollectionEntry,
 	onAddToWishlist,
 	producerSections,
 	onProducerClick,
@@ -935,6 +943,7 @@ export function CardModal({
 			onMoveToCollection={onMoveToCollection}
 			onAddToWishlistFromEntry={onAddToWishlistFromEntry}
 			onAddToCollectionFromEntry={onAddToCollectionFromEntry}
+			onRemoveFromCollectionEntry={onRemoveFromCollectionEntry}
 			producerSections={producerSections}
 			onProducerClick={onProducerClick}
 		/>
