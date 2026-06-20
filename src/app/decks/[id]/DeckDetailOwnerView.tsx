@@ -30,6 +30,8 @@ import { CardSearchPanel } from './components/CardSearchPanel/CardSearchPanel';
 import { WishlistIcon } from '@/components/WishlistIcon';
 import { useAddDeckToCollection } from './useAddDeckToCollection';
 import { AddDeckToCollectionModal } from './components/AddDeckToCollectionModal/AddDeckToCollectionModal';
+import { AddCardToCollectionModal } from './components/AddCardToCollectionModal/AddCardToCollectionModal';
+import { buildCollectionAddRequest, type CollectionAddRequest } from './collectionAddRequest';
 import { DeckPdfExportModal } from './components/DeckPdfExportModal/DeckPdfExportModal';
 import { DeckTextExportModal } from './components/DeckTextExportModal/DeckTextExportModal';
 import { serializeDecklist } from '@/lib/deck/utils/serialize-decklist';
@@ -74,6 +76,9 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const [searchPanelExpanded, setSearchPanelExpanded] = useState(false);
 	const [panelSelectedCard, setPanelSelectedCard] = useState<ScryfallCard | null>(null);
 	const [panelInCollectionOnly, setPanelInCollectionOnly] = useState(false);
+	const [pendingCollectionAdd, setPendingCollectionAdd] = useState<CollectionAddRequest | null>(
+		null
+	);
 
 	const [contextMenuCard, setContextMenuCard] = useState<AnyCard | null>(null);
 	const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
@@ -137,7 +142,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	} = useDeckCardModal(deckId, groupByCardId);
 
 	const { entries } = useCollectionContext();
-	const { addToWishlist, entries: wishlistEntries } = useWishlistContext();
+	const { addToWishlist, removeFromWishlist, entries: wishlistEntries } = useWishlistContext();
 
 	// scryfallIds of all prints in the currently selected card group
 	const selectedScryfallIds = useMemo(
@@ -426,10 +431,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					onRemove={removeCardFromDeck}
 					onChangeZone={changeZone}
 					onBadgeClick={() => handleCardGroupClick(group, firstCopy?.entry.rowId ?? c.entry.rowId)}
-					onAddToCollectionClick={() => {
-						for (const copy of group.byZone.get(currentZone) ?? []) {
-							if (!copy.entry.ownerId) toggleOwned(copy.entry.rowId);
-						}
+					onAddToCollectionClick={(req) => {
+						if (req.unownedRowIds.length > 0) setPendingCollectionAdd(req);
 					}}
 					onAddToWishlist={(scryfallId) => {
 						addToWishlist({ id: scryfallId } as ScryfallCard);
@@ -451,7 +454,6 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			handleDuplicateCard,
 			removeCardFromDeck,
 			changeZone,
-			toggleOwned,
 			handleCardGroupClick,
 			addToWishlist,
 			wishlistEntries,
@@ -678,14 +680,47 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				collectionCopies={allCollectionCopies}
 				onAssignCollectionCopy={handleAssignCollectionCopy}
 				onAddToCollectionFromEntry={(rowIds) => {
-					for (const rowId of rowIds) toggleOwned(rowId);
+					const card = selectedCards?.[0];
+					if (!card || rowIds.length === 0) return;
+					const oracleScryfallIds = Array.from(
+						oracleIdToAllScryfallIds.get(card.oracle_id ?? card.id) ?? new Set<string>([card.id])
+					);
+					const copies = rowIds
+						.map((id) => selectedCards?.find((c) => c.entry.rowId === id))
+						.filter((c): c is NonNullable<typeof c> => c != null);
+					const req = buildCollectionAddRequest(
+						card.name,
+						copies,
+						oracleScryfallIds,
+						wishlistEntries
+					);
+					if (req.unownedRowIds.length > 0) setPendingCollectionAdd(req);
 				}}
+				onRemoveFromCollectionEntry={(rowId) => toggleOwned(rowId)}
 				onAddToWishlistFromEntry={(scryfallId) => {
 					addToWishlist({ id: scryfallId } as ScryfallCard);
 				}}
 				producerSections={tokenProducerSections}
 				onProducerClick={handleCardClick}
 			/>
+
+			{pendingCollectionAdd && (
+				<AddCardToCollectionModal
+					cardName={pendingCollectionAdd.cardName}
+					unownedRowIds={pendingCollectionAdd.unownedRowIds}
+					wishlistMatchCount={pendingCollectionAdd.wishlistRowIds.length}
+					onConfirm={({ rowIds, asProxy, removeWishlist }) => {
+						for (const rowId of rowIds) toggleOwned(rowId, asProxy);
+						if (removeWishlist) {
+							for (const rowId of pendingCollectionAdd.wishlistRowIds) {
+								removeFromWishlist(rowId);
+							}
+						}
+						setPendingCollectionAdd(null);
+					}}
+					onClose={() => setPendingCollectionAdd(null)}
+				/>
+			)}
 
 			<CardModal
 				cards={panelSelectedCard}
