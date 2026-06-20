@@ -8,9 +8,11 @@ type Normalizable = {
 };
 
 /**
- * Builds a map from alternative set codes (arena_code, mtgo_code) to
- * Scryfall's canonical set code.  Only entries where the alt code differs
- * from the canonical code are included (e.g. arena "dar" → scryfall "dom").
+ * Builds a map from alternative set identifiers to Scryfall's canonical set
+ * code.  Covers alternative codes (arena_code, mtgo_code; e.g. arena "dar" →
+ * scryfall "dom") and full set names (e.g. "alpha" → "lea") so importers that
+ * provide a set NAME instead of a code (CardNexus) still resolve.  Only entries
+ * whose key differs from the canonical code are included.
  */
 export function buildSetCodeMap(sets: ScryfallSet[]): Map<string, string> {
 	const map = new Map<string, string>();
@@ -23,6 +25,10 @@ export function buildSetCodeMap(sets: ScryfallSet[]): Map<string, string> {
 		if (s.mtgo_code) {
 			const mtgo = s.mtgo_code.toLowerCase();
 			if (mtgo !== code) map.set(mtgo, code);
+		}
+		if (s.name) {
+			const name = s.name.toLowerCase();
+			if (name !== code && !map.has(name)) map.set(name, code);
 		}
 	}
 	return map;

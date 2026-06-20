@@ -11,7 +11,7 @@ import { CollectionView } from './components/CollectionView/CollectionView';
 import { ImportModal } from './components/ImportModal/ImportModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { Button } from '@/components/Button/Button';
-import { serializeToMoxfieldCSV, downloadCSV } from '@/lib/moxfield/serialize';
+import { ExportMenu } from './components/ExportMenu/ExportMenu';
 import { ShareButton } from '@/components/ShareButton/ShareButton';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import styles from './page.module.css';
@@ -35,10 +35,6 @@ export default function CollectionPage() {
 		handleRemoveEntry,
 		handleChangePrint,
 	} = useCardModal(stacks);
-
-	const handleExport = useCallback(() => {
-		downloadCSV(serializeToMoxfieldCSV(stacks.flatMap((s) => s.cards)), 'my-collection.csv');
-	}, [stacks]);
 
 	const handleClearCollection = useCallback(() => {
 		if (confirm('Effacer toute la collection ? Cette action est irréversible.')) {
@@ -95,13 +91,11 @@ export default function CollectionPage() {
 			{user && <ShareButton path={`/users/${user.id}/collection`} />}
 			{entries.length > 0 && (
 				<>
-					<Button
-						variant="secondary"
-						onClick={handleExport}
+					<ExportMenu
+						cards={stacks.flatMap((s) => s.cards)}
+						filenameBase="my-collection"
 						disabled={isBusy || isLoadingCollection}
-					>
-						Export CSV
-					</Button>
+					/>
 					<Button variant="danger" onClick={handleClearCollection} disabled={isBusy}>
 						Clear
 					</Button>

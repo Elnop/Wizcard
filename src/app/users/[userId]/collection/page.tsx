@@ -1,13 +1,12 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import type { CardStack } from '@/types/cards';
 import { useCollectionCards } from '@/app/collection/useCollectionCards';
 import { CollectionView } from '@/app/collection/components/CollectionView/CollectionView';
+import { ExportMenu } from '@/app/collection/components/ExportMenu/ExportMenu';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
-import { Button } from '@/components/Button/Button';
-import { serializeToMoxfieldCSV, downloadCSV } from '@/lib/moxfield/serialize';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { Spinner } from '@/components/Spinner/Spinner';
 import CollectionPage from '@/app/collection/page';
@@ -19,10 +18,6 @@ function PublicCollectionView({ userId }: { userId: string }) {
 
 	const [selectedStack, setSelectedStack] = useState<CardStack | null>(null);
 
-	const handleExport = useCallback(() => {
-		downloadCSV(serializeToMoxfieldCSV(stacks.flatMap((s) => s.cards)), 'collection.csv');
-	}, [stacks]);
-
 	const isLoadingCollection = !isFullyLoaded || isHydrating;
 
 	const emptyState = (
@@ -33,9 +28,11 @@ function PublicCollectionView({ userId }: { userId: string }) {
 	);
 
 	const actions = entries.length > 0 && (
-		<Button variant="secondary" onClick={handleExport} disabled={isLoadingCollection}>
-			Export CSV
-		</Button>
+		<ExportMenu
+			cards={stacks.flatMap((s) => s.cards)}
+			filenameBase="collection"
+			disabled={isLoadingCollection}
+		/>
 	);
 
 	return (

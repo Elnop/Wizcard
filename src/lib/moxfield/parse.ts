@@ -1,4 +1,5 @@
 import type { MoxfieldRow, MoxfieldFoilType } from './types';
+import { parseCSVRows, buildHeaderIndex, get } from '@/lib/csv/rfc4180';
 
 function parseFoilType(
 	fields: string[],
@@ -56,84 +57,6 @@ function parseRowFields(
 		proxy: get(fields, idx, 'Proxy').toLowerCase() === 'true',
 		purchasePrice: get(fields, idx, 'Purchase Price'),
 	};
-}
-
-/** RFC 4180 character-by-character CSV parser. Returns all fields for every row. */
-// eslint-disable-next-line sonarjs/cognitive-complexity -- character-level state machine, complexity is inherent to RFC 4180 parsing
-function parseCSVRows(text: string): string[][] {
-	const rows: string[][] = [];
-	const row: string[] = [];
-	let field = '';
-	let inQuotes = false;
-	let i = 0;
-
-	while (i < text.length) {
-		const ch = text[i];
-
-		if (inQuotes) {
-			if (ch === '"') {
-				// Peek ahead: doubled quote is an escaped quote
-				if (text[i + 1] === '"') {
-					field += '"';
-					i += 2;
-				} else {
-					// Closing quote
-					inQuotes = false;
-					i++;
-				}
-			} else {
-				field += ch;
-				i++;
-			}
-		} else {
-			if (ch === '"') {
-				inQuotes = true;
-				i++;
-			} else if (ch === ',') {
-				row.push(field);
-				field = '';
-				i++;
-			} else if (ch === '\r') {
-				// CRLF or bare CR
-				row.push(field);
-				field = '';
-				rows.push(row.slice());
-				row.length = 0;
-				if (text[i + 1] === '\n') i++;
-				i++;
-			} else if (ch === '\n') {
-				row.push(field);
-				field = '';
-				rows.push(row.slice());
-				row.length = 0;
-				i++;
-			} else {
-				field += ch;
-				i++;
-			}
-		}
-	}
-
-	// Last field / row (no trailing newline)
-	if (field !== '' || row.length > 0) {
-		row.push(field);
-		rows.push(row);
-	}
-
-	return rows;
-}
-
-function buildHeaderIndex(headerRow: string[]): Record<string, number> {
-	const idx: Record<string, number> = {};
-	for (let i = 0; i < headerRow.length; i++) {
-		idx[headerRow[i].trim()] = i;
-	}
-	return idx;
-}
-
-function get(fields: string[], idx: Record<string, number>, key: string): string {
-	const i = idx[key];
-	return i !== undefined && i < fields.length ? fields[i].trim() : '';
 }
 
 /** Detect whether the CSV uses the "Haves" format (has "Etched" column) vs "Collection" format */

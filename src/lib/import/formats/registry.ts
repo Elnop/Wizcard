@@ -1,4 +1,5 @@
 import { moxfieldDescriptor, parseMoxfield } from '@/lib/moxfield/import-adapter';
+import { cardNexusDescriptor, parseCardNexus } from '@/lib/cardnexus/import-adapter';
 import { mtgaDescriptor, parseMTGA } from '@/lib/import/formats/mtga';
 import { delverLensDescriptor, parseDelverLens } from '@/lib/delver-lens/import-adapter';
 import type {
@@ -9,10 +10,15 @@ import type {
 	BinaryFormatParser,
 } from '@/lib/import/types';
 
-export const FORMAT_REGISTRY: ImportFormatDescriptor[] = [moxfieldDescriptor, mtgaDescriptor];
+export const FORMAT_REGISTRY: ImportFormatDescriptor[] = [
+	moxfieldDescriptor,
+	cardNexusDescriptor,
+	mtgaDescriptor,
+];
 
 const PARSERS: Partial<Record<ImportFormatId, FormatParser>> = {
 	moxfield: parseMoxfield,
+	cardnexus: parseCardNexus,
 	mtga: parseMTGA,
 };
 

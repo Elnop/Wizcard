@@ -1,7 +1,7 @@
 import type { CardCondition, Card } from '@/types/cards';
 import type { MtgLanguage } from '@/lib/mtg/languages';
 
-export type ImportFormatId = 'moxfield' | 'mtga' | 'delverlens';
+export type ImportFormatId = 'moxfield' | 'cardnexus' | 'mtga' | 'delverlens';
 
 export interface ImportFormatDescriptor {
 	id: ImportFormatId;
