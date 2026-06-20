@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Card } from '@/types/cards';
 import type { DeckZone } from '@/types/decks';
@@ -14,6 +14,7 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 
 type Props = {
 	card: Card;
+	collectionBadge?: ReactNode;
 	isSelected: boolean;
 	onEdit: () => void;
 	onRemove: () => void;
@@ -27,6 +28,7 @@ type Props = {
 
 export function CopyCardOverlay({
 	card,
+	collectionBadge,
 	isSelected,
 	onEdit,
 	onRemove,
@@ -64,6 +66,7 @@ export function CopyCardOverlay({
 
 	return (
 		<div className={`${styles.overlay} ${isSelected ? styles.selected : ''}`}>
+			{collectionBadge}
 			{/* Metadata badges always visible */}
 			<div className={styles.badges}>
 				{card.entry.condition && <span className={styles.badge}>{card.entry.condition}</span>}

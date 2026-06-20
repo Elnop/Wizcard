@@ -74,6 +74,7 @@ interface Props {
 	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
+	renderCopyBadge?: (copy: Card) => React.ReactNode;
 }
 
 interface InnerProps {
@@ -98,6 +99,7 @@ interface InnerProps {
 	onRemoveFromCollectionEntry?: (rowId: string) => void;
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
+	renderCopyBadge?: (copy: Card) => React.ReactNode;
 }
 
 function CopyMetaSection({ entry }: { entry: CardEntry }) {
@@ -316,6 +318,7 @@ function CardModalInner({
 	onRemoveFromCollectionEntry,
 	producerSections,
 	onProducerClick,
+	renderCopyBadge,
 }: InnerProps) {
 	const [lightbox, setLightbox] = useState(false);
 	const [selectedRowId, setSelectedRowId] = useState<string>(initialRowId ?? cards[0].entry.rowId);
@@ -484,6 +487,7 @@ function CardModalInner({
 			return (
 				<CopyCardOverlay
 					card={card}
+					collectionBadge={renderCopyBadge?.(card)}
 					isSelected={card.entry.rowId === selectedRowId}
 					onEdit={() => setEditingRowId(card.entry.rowId)}
 					onRemove={() => handleRemoveCopy(card)}
@@ -505,6 +509,7 @@ function CardModalInner({
 			onChangeZone,
 			copyContextMenuCard,
 			copyContextMenuPos,
+			renderCopyBadge,
 		]
 	);
 
@@ -895,6 +900,7 @@ export function CardModal({
 	onAddToWishlist,
 	producerSections,
 	onProducerClick,
+	renderCopyBadge,
 }: Props) {
 	if (cards === null) return null;
 
@@ -946,6 +952,7 @@ export function CardModal({
 			onRemoveFromCollectionEntry={onRemoveFromCollectionEntry}
 			producerSections={producerSections}
 			onProducerClick={onProducerClick}
+			renderCopyBadge={renderCopyBadge}
 		/>
 	);
 }
