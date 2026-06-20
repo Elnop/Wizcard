@@ -1,21 +1,28 @@
-# Modale de confirmation au clic sur le badge gris d'une carte de deck
+# Modale de confirmation pour l'ajout d'une carte de deck à la collection
 
 ## Contexte
 
-Sur la page d'un deck (`DeckDetailOwnerView`), chaque carte affiche un badge
-d'appartenance à la collection (`DeckCardOverlay` + `useCollectionBadge`).
+Sur la page d'un deck (`DeckDetailOwnerView`), une carte peut être ajoutée à la
+collection depuis **trois points d'entrée**, tous sans confirmation aujourd'hui :
 
-Le badge **gris** correspond à l'état `badgeState === 'none'` : aucune copie de
-la zone n'est possédée **et** aucune copie disponible n'existe en collection
-pour ce print (il peut néanmoins exister une wishlist).
+1. **Badge gris** d'appartenance (`DeckCardOverlay` + `useCollectionBadge`),
+   état `badgeState === 'none'` : aucune copie de la zone possédée **et** aucune
+   copie disponible en collection pour ce print (il peut néanmoins exister une
+   wishlist).
+2. **Menu clic droit** sur la carte → item « Add to Collection »
+   (`DeckCardOverlay`, même prop `onAddToCollectionClick` que le badge).
+3. **Modale de détail** (`CardModal`) → bouton « Ajouter à la collection »
+   (par copie et en masse), via `onAddToCollectionFromEntry`.
 
-**Comportement actuel** : cliquer sur le badge gris appelle directement
-`onAddToCollectionClick`, qui boucle sur les copies non possédées de la zone et
-appelle `toggleOwned(rowId)` immédiatement — l'ajout à la collection se fait
-sans confirmation.
+**Comportement actuel** : ces trois entrées appellent directement
+`toggleOwned(rowId)` — l'ajout se fait sans confirmation.
 
-**Comportement voulu** : le clic ouvre d'abord une modale de confirmation.
-L'ajout ne s'exécute qu'après validation par l'utilisateur.
+**Comportement voulu** : chaque entrée ouvre d'abord la **même** modale de
+confirmation. L'ajout ne s'exécute qu'après validation par l'utilisateur.
+
+**Exception** : dans `CardModal`, le bouton par copie est une bascule
+(« Ajouter » / « Retirer de la collection »). Seuls les **ajouts** passent par la
+modale ; le **retrait** (un-own) reste direct, sans confirmation.
 
 ## Décision
 
@@ -35,9 +42,13 @@ dans le code mais **jamais importé ni rendu**. Il fournit déjà :
 
 ### Inclus
 
-- Le clic sur le badge **gris** (`badgeState === 'none'`) ouvre la modale au
-  lieu d'ajouter directement.
-- Branchement de `AddCardToCollectionModal` dans `DeckDetailOwnerView`.
+- Les **trois** points d'entrée d'ajout à la collection ouvrent la modale au
+  lieu d'ajouter directement :
+  1. badge gris (`badgeState === 'none'`),
+  2. menu clic droit « Add to Collection »,
+  3. boutons « Ajouter à la collection » de `CardModal` (par copie + en masse).
+- Branchement unique de `AddCardToCollectionModal` dans `DeckDetailOwnerView`,
+  piloté par un état partagé.
 - À la confirmation : ajout à la collection des `rowIds` retenus (avec flag
   proxy), et retrait de la wishlist des copies correspondantes si l'option est
   cochée.
@@ -48,8 +59,12 @@ dans le code mais **jamais importé ni rendu**. Il fournit déjà :
   `partial`, `locked`, `wishlist`) — ils conservent leur comportement actuel
   (`onBadgeClick` → print picker).
 - Aucune modification du composant `AddCardToCollectionModal` lui-même.
-- Aucun changement au menu contextuel « Add to Collection » (clic droit), qui
-  reste tel quel.
+- Le **retrait** de la collection (un-own) dans `CardModal` reste direct, sans
+  modale.
+- `CardModal` reste un composant générique découplé : il **n'importe pas**
+  `AddCardToCollectionModal`. C'est `DeckDetailOwnerView` qui décide d'ouvrir la
+  modale dans les callbacks qu'il passe à `CardModal`. (Vérifié :
+  `onAddToCollectionFromEntry` n'est consommé que par `DeckDetailOwnerView`.)
 
 ## Architecture
 
@@ -87,6 +102,13 @@ Dans `DeckCardOverlay` :
 
 Le badge gris appelle `onAddToCollectionClick({ cardName, unownedRowIds, wishlistRowIds })`.
 Les autres états continuent d'appeler `onBadgeClick`.
+
+**Menu clic droit** : l'item « Add to Collection » du menu contextuel
+(`buildContextMenuItems`) utilise déjà le **même** prop `onAddToCollectionClick`
+que le badge. Il faut lui transmettre le même contexte
+(`{ cardName, unownedRowIds, wishlistRowIds }`), calculé au même endroit que pour
+le badge dans `DeckCardOverlay` puis passé à `buildContextMenuItems`. Aucun
+nouveau prop n'est nécessaire — la nouvelle signature couvre les deux entrées.
 
 ### 2. `DeckDetailOwnerView`
 
@@ -134,6 +156,55 @@ const [pendingCollectionAdd, setPendingCollectionAdd] = useState<{
   `const { addToWishlist, entries: wishlistEntries } = useWishlistContext();`) —
   il suffit d'ajouter `removeFromWishlist` à la déstructuration.
 
+#### Ouverture de la modale depuis `CardModal`
+
+Le prop `onAddToCollectionFromEntry={(rowIds) => { for (const rowId of rowIds) toggleOwned(rowId); }}`
+(lignes ~680-682) est remplacé par une ouverture de la modale. La vue connaît la
+carte ouverte (`selectedCards`) ; elle construit `pendingCollectionAdd` à partir
+des `rowIds` reçus :
+
+- `cardName` : nom de la carte de la modale ouverte.
+- `unownedRowIds` : les `rowIds` reçus (ce sont déjà les copies non possédées,
+  cf. ci-dessous le découpage côté `CardModal`).
+- `wishlistRowIds` : entrées wishlist (`wishlistEntries`) dont le print
+  correspond à la carte — même filtrage que le badge, sur l'ensemble des
+  scryfallIds de l'oracle de la carte.
+
+### 3. `CardModal` (composant générique partagé)
+
+`CardModal` reste **découplé** : il n'importe pas `AddCardToCollectionModal`. On
+ne change que le câblage des callbacks pour distinguer ajout et retrait.
+
+Aujourd'hui le bouton par copie (lignes ~550-560) appelle
+`onAddToCollectionFromEntry([rowId])` aussi bien pour ajouter que pour retirer
+(le libellé bascule selon `selectedCard.entry.ownerId`). Comme l'ajout doit
+désormais passer par la modale et le retrait rester direct, il faut séparer les
+deux chemins. Ajouter un prop optionnel :
+
+```ts
+onRemoveFromCollectionEntry?: (rowId: string) => void;
+```
+
+Le bouton bascule devient :
+
+```tsx
+onClick={() =>
+  selectedCard.entry.ownerId
+    ? onRemoveFromCollectionEntry?.(selectedCard.entry.rowId)
+    : onAddToCollectionFromEntry?.([selectedCard.entry.rowId])
+}
+```
+
+(Le bouton « Ajouter à la collection » en masse, lignes ~636-642, n'agit que sur
+`unownedRowIds` — il reste sur `onAddToCollectionFromEntry` sans changement.)
+
+Côté `DeckDetailOwnerView` :
+
+- `onAddToCollectionFromEntry={(rowIds) => setPendingCollectionAdd(...)}` (ouvre
+  la modale, cf. ci-dessus).
+- `onRemoveFromCollectionEntry={(rowId) => toggleOwned(rowId)}` (retrait direct,
+  inchangé fonctionnellement).
+
 ## Mapping des options de la modale
 
 | Option modale          | Action à la confirmation                                |
@@ -145,27 +216,38 @@ const [pendingCollectionAdd, setPendingCollectionAdd] = useState<{
 ## Flux
 
 ```
-Clic badge gris
-  └─> DeckCardOverlay calcule { cardName, unownedRowIds, wishlistRowIds }
-       └─> onAddToCollectionClick(req)
-            └─> DeckDetailOwnerView: setPendingCollectionAdd(req)
-                 └─> rendu <AddCardToCollectionModal>
-                      ├─ Annuler  -> setPendingCollectionAdd(null)
-                      └─ Ajouter  -> toggleOwned(rowId, asProxy) × rowIds
-                                     [+ removeFromWishlist × wishlistRowIds si coché]
-                                     -> setPendingCollectionAdd(null)
+[Badge gris]  ─┐
+[Clic droit]  ─┤─> DeckCardOverlay calcule { cardName, unownedRowIds, wishlistRowIds }
+               │     └─> onAddToCollectionClick(req)
+               │
+[CardModal     │
+ "Ajouter"]   ─┴─> DeckDetailOwnerView calcule req depuis les rowIds + carte ouverte
+                     └─> setPendingCollectionAdd(req)
+                          └─> rendu <AddCardToCollectionModal>
+                               ├─ Annuler  -> setPendingCollectionAdd(null)
+                               └─ Ajouter  -> toggleOwned(rowId, asProxy) × rowIds
+                                              [+ removeFromWishlist × wishlistRowIds si coché]
+                                              -> setPendingCollectionAdd(null)
+
+[CardModal "Retirer"] -> onRemoveFromCollectionEntry(rowId) -> toggleOwned(rowId)  (direct, pas de modale)
 ```
 
 ## Tests
 
-- Test unitaire / composant sur `DeckCardOverlay` : un clic sur le badge gris
-  appelle `onAddToCollectionClick` avec le bon `cardName`, les `unownedRowIds`
-  attendus et les `wishlistRowIds` filtrés — et n'appelle **pas** `onBadgeClick`.
-- Vérifier qu'un badge non-gris (ex. `partial`) continue d'appeler `onBadgeClick`
-  et non `onAddToCollectionClick`.
+- `DeckCardOverlay` : un clic sur le badge gris appelle `onAddToCollectionClick`
+  avec le bon `cardName`, les `unownedRowIds` attendus et les `wishlistRowIds`
+  filtrés — et n'appelle **pas** `onBadgeClick`.
+- `DeckCardOverlay` : un badge non-gris (ex. `partial`) continue d'appeler
+  `onBadgeClick` et non `onAddToCollectionClick`.
+- `DeckCardOverlay` : l'item « Add to Collection » du menu clic droit appelle
+  `onAddToCollectionClick` avec le même contexte que le badge.
+- `CardModal` : le bouton par copie d'une carte **non possédée** appelle
+  `onAddToCollectionFromEntry` ; d'une carte **possédée**, appelle
+  `onRemoveFromCollectionEntry` (et non l'ajout).
 - (Si la suite couvre la vue) confirmation modale → `toggleOwned` appelé pour
   chaque rowId retenu ; option proxy propagée ; `removeFromWishlist` appelé
-  uniquement si l'option est cochée.
+  uniquement si l'option est cochée. Le retrait via `onRemoveFromCollectionEntry`
+  n'ouvre **pas** la modale.
 
 ## Gestion des erreurs / cas limites
 
