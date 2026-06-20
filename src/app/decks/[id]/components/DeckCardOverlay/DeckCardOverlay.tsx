@@ -4,6 +4,8 @@ import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import type { DeckZone, DeckCardGroup } from '@/types/decks';
 import type { Card, CardEntry } from '@/types/cards';
 import { useCollectionBadge } from './useCollectionBadge';
+import { buildCollectionAddRequest } from '../../collectionAddRequest';
+import type { CollectionAddRequest } from '../../collectionAddRequest';
 import styles from './DeckCardOverlay.module.css';
 
 const ZONE_LABELS: Record<DeckZone, string> = {
@@ -39,7 +41,8 @@ function buildContextMenuItems(
 	onRemove: (rowId: string) => void,
 	onChangeZone: (rowId: string, zone: DeckZone) => void,
 	onAddToWishlist: ((id: string) => void) | undefined,
-	onAddToCollection: (() => void) | undefined,
+	onAddToCollection: ((req: CollectionAddRequest) => void) | undefined,
+	buildRequest: () => CollectionAddRequest,
 	hasUnowned: boolean,
 	closeMenu: () => void
 ): ContextMenuAction[] {
@@ -75,7 +78,7 @@ function buildContextMenuItems(
 						label: 'Add to Collection',
 						icon: '＋',
 						onClick: () => {
-							onAddToCollection();
+							onAddToCollection(buildRequest());
 							closeMenu();
 						},
 					},
@@ -118,7 +121,7 @@ type Props = {
 	onRemove: (rowId: string) => void;
 	onChangeZone: (rowId: string, zone: DeckZone) => void;
 	onBadgeClick?: () => void;
-	onAddToCollectionClick?: () => void;
+	onAddToCollectionClick?: (req: CollectionAddRequest) => void;
 	onAddToWishlist?: (scryfallId: string) => void;
 	wishlistEntries?: Array<{ scryfallId: string; entry: CardEntry }>;
 	contextMenuPos?: { x: number; y: number } | null;
@@ -166,6 +169,14 @@ export function DeckCardOverlay({
 
 	const hasUnowned = zoneCopies.some((c) => !c.entry.ownerId);
 
+	const buildAddRequest = (): CollectionAddRequest =>
+		buildCollectionAddRequest(
+			group.representative.name,
+			zoneCopies,
+			oracleScryfallIds,
+			wishlistEntries ?? []
+		);
+
 	const items = buildContextMenuItems(
 		zoneCopies,
 		otherZones,
@@ -177,14 +188,17 @@ export function DeckCardOverlay({
 		onChangeZone,
 		onAddToWishlist,
 		onAddToCollectionClick,
+		buildAddRequest,
 		hasUnowned,
 		closeMenu
 	);
 
-	// The grey badge ("none") opens the add-to-collection modal; other badge
-	// states keep their existing behaviour (print picker via onBadgeClick).
+	// The grey badge ("none") opens the add-to-collection confirmation modal via
+	// the parent; other badge states keep their existing behaviour (print picker).
 	const handleBadgeClick =
-		badgeState === 'none' && onAddToCollectionClick ? onAddToCollectionClick : onBadgeClick;
+		badgeState === 'none' && onAddToCollectionClick
+			? () => onAddToCollectionClick(buildAddRequest())
+			: onBadgeClick;
 
 	return (
 		<div className={styles.overlay}>
