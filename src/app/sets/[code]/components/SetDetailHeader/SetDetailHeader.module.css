@@ -9,17 +9,37 @@
 
 .iconSection {
 	flex-shrink: 0;
-	width: 96px;
+	width: 132px;
 	display: flex;
-	align-items: flex-start;
-	justify-content: center;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
 }
 
 .icon {
-	width: 96px;
-	height: 96px;
+	width: 64px;
+	height: 64px;
 	object-fit: contain;
 	filter: invert(1) opacity(0.85);
+}
+
+.completionCaption {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1px;
+	font-size: var(--text-lg);
+	font-weight: 700;
+	color: var(--primary);
+	line-height: 1.1;
+}
+
+.completionCaptionLabel {
+	font-size: var(--text-2xs);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--text-muted);
 }
 
 .infoSection {
@@ -85,6 +105,57 @@
 	padding: 2px 8px;
 }
 
+.statRings {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 28px;
+	padding: 4px 0;
+}
+
+.statRing {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.statRingPercent {
+	font-size: var(--text-xs);
+	font-weight: 700;
+	color: var(--foreground);
+}
+
+.statRingMeta {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.statRingLabel {
+	font-size: var(--text-2xs);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--text-muted);
+}
+
+.statRingValue {
+	font-size: var(--text-base);
+	font-weight: 700;
+	color: var(--foreground);
+	font-variant-numeric: tabular-nums;
+}
+
+.statRingValueMuted {
+	font-weight: 600;
+	color: var(--text-muted);
+}
+
+.partialNote {
+	margin: 0;
+	font-size: var(--text-xs);
+	color: var(--text-muted);
+}
+
 .externalLinks {
 	display: flex;
 	gap: 12px;
@@ -116,12 +187,10 @@
 	}
 
 	.iconSection {
-		width: 72px;
-	}
-
-	.icon {
-		width: 72px;
-		height: 72px;
+		width: auto;
+		flex-direction: row;
+		align-items: center;
+		gap: 16px;
 	}
 
 	.name {

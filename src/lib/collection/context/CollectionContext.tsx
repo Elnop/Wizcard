@@ -8,6 +8,11 @@ import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { useCollectionStore } from '../store/collection-store';
 import type { CollectionData } from '../db/collection-migrations';
 
+// Owned-copy counts for a single print (scryfall_id), split by finish.
+export type CardOwnership = { total: number; foil: number; nonFoil: number };
+
+const EMPTY_OWNERSHIP: CardOwnership = { total: 0, foil: 0, nonFoil: 0 };
+
 // Bound collection API — userId and triggerSync are already captured
 type CollectionContextValue = {
 	collection: CollectionData;
@@ -26,6 +31,7 @@ type CollectionContextValue = {
 	assignToDeck: (rowId: string, deckId: string) => void;
 	unassignFromDeck: (rowId: string) => void;
 	getQuantity: (scryfallId: string) => number;
+	getOwnership: (scryfallId: string) => CardOwnership;
 };
 
 const CollectionContext = createContext<CollectionContextValue | null>(null);
@@ -117,6 +123,24 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 
 	const entries = useMemo(() => Object.values(store.entries), [store.entries]);
 
+	// O(1) ownership lookup by print (scryfall_id), split by finish, for set-completion views.
+	const ownershipByScryfallId = useMemo(() => {
+		const map = new Map<string, CardOwnership>();
+		for (const { scryfallId, entry } of entries) {
+			const cur = map.get(scryfallId) ?? { total: 0, foil: 0, nonFoil: 0 };
+			cur.total += 1;
+			if (entry.isFoil) cur.foil += 1;
+			else cur.nonFoil += 1;
+			map.set(scryfallId, cur);
+		}
+		return map;
+	}, [entries]);
+
+	const getOwnership = useCallback(
+		(scryfallId: string) => ownershipByScryfallId.get(scryfallId) ?? EMPTY_OWNERSHIP,
+		[ownershipByScryfallId]
+	);
+
 	const value: CollectionContextValue = {
 		collection: store.entries,
 		entries,
@@ -134,6 +158,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 		assignToDeck,
 		unassignFromDeck,
 		getQuantity,
+		getOwnership,
 	};
 
 	return <CollectionContext value={value}>{children}</CollectionContext>;
