@@ -7,6 +7,8 @@ import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { groupSets, type SetGroup } from '@/lib/scryfall/utils/set-classification';
 import { SetDetailHeader } from './components/SetDetailHeader/SetDetailHeader';
 import { SetTabs } from './components/SetTabs/SetTabs';
+import { useActiveSetTab } from './components/SetTabs/useActiveSetTab';
+import { useSetCompletion } from './components/SetCollectionView/useSetCompletion';
 import styles from './page.module.css';
 
 export interface SetDetailClientProps {
@@ -55,8 +57,42 @@ export function SetDetailClient({ code }: SetDetailClientProps) {
 
 	return (
 		<main className={styles.main}>
-			<SetDetailHeader group={group} />
-			<SetTabs group={group} />
+			<SetDetailContent group={group} />
 		</main>
+	);
+}
+
+/**
+ * Rendered only once the set group is resolved, so the completion/active-tab hooks
+ * run unconditionally. Completion is fetched for the active tab and shared between
+ * the header rings and the grid.
+ */
+function SetDetailContent({ group }: { group: SetGroup }) {
+	const { activeId, setTab } = useActiveSetTab(group);
+	const {
+		cards: allCards,
+		completion,
+		isLoading: isCompletionLoading,
+		isPartialCollection,
+	} = useSetCompletion(activeId);
+
+	return (
+		<>
+			<SetDetailHeader
+				group={group}
+				activeCode={activeId}
+				completion={completion}
+				isCompletionLoading={isCompletionLoading}
+				isPartialCollection={isPartialCollection}
+			/>
+			<SetTabs
+				group={group}
+				activeId={activeId}
+				onTabChange={setTab}
+				completion={completion}
+				allCards={allCards}
+				isCompletionLoading={isCompletionLoading}
+			/>
+		</>
 	);
 }

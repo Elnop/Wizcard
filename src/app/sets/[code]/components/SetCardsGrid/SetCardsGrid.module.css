@@ -3,3 +3,93 @@
 	text-align: center;
 	padding: 24px;
 }
+
+/* ── Simple / Collection view toggle ─────────────────────────────────────── */
+.viewToggle {
+	display: inline-flex;
+	gap: 0;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	overflow: hidden;
+	width: fit-content;
+	margin-bottom: 16px;
+}
+
+.toggleBtn {
+	padding: 6px 18px;
+	background: none;
+	border: none;
+	color: var(--text-muted);
+	font-size: var(--text-sm);
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		background 0.15s,
+		color 0.15s;
+}
+
+.toggleBtn:hover {
+	color: var(--foreground);
+}
+
+.toggleBtnActive {
+	background: var(--primary);
+	color: var(--primary-text);
+}
+
+/* ── Collection grid overlays (rendered inside .imageWrapper) ─────────────── */
+
+/* Ghosted veil over unowned cards: dim + desaturate, lifts on hover. */
+.ghostVeil {
+	position: absolute;
+	inset: 0;
+	border-radius: 4.75% / 3.5%;
+	background: rgba(11, 12, 16, 0.62);
+	backdrop-filter: grayscale(0.85) brightness(0.85);
+	-webkit-backdrop-filter: grayscale(0.85) brightness(0.85);
+	transition: opacity 0.2s ease;
+	pointer-events: none;
+}
+
+.ghostVeil:hover {
+	opacity: 0.15;
+}
+
+/* Foil badge on owned-in-foil prints. */
+.foilBadge {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	padding: 2px 8px;
+	font-size: var(--text-xs);
+	font-weight: 700;
+	color: #0b0c10;
+	border-radius: 999px;
+	background: linear-gradient(
+		100deg,
+		var(--brass) 0%,
+		var(--primary) 35%,
+		#f3e6b0 50%,
+		var(--primary) 65%,
+		var(--brass) 100%
+	);
+	background-size: 200% 100%;
+	animation: foilBadgeShimmer 3s linear infinite;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+	pointer-events: none;
+}
+
+@keyframes foilBadgeShimmer {
+	from {
+		background-position: 200% 0;
+	}
+	to {
+		background-position: 0 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.foilBadge {
+		animation: none;
+	}
+}
