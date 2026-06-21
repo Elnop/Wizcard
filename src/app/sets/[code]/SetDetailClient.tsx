@@ -2,13 +2,17 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
+import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { groupSets, type SetGroup } from '@/lib/scryfall/utils/set-classification';
 import { SetDetailHeader } from './components/SetDetailHeader/SetDetailHeader';
 import { SetTabs } from './components/SetTabs/SetTabs';
 import { useActiveSetTab } from './components/SetTabs/useActiveSetTab';
-import { useSetCompletion } from './components/SetCollectionView/useSetCompletion';
+import { useGroupCompletion } from './components/SetCollectionView/useGroupCompletion';
+import { SetFiltersAside } from './components/SetFiltersAside/SetFiltersAside';
+import { useSetFiltersStore } from './components/SetFiltersAside/useSetFiltersStore';
+import { filterSetCards, countActiveSetFilters } from './components/SetFiltersAside/setFilters';
 import styles from './page.module.css';
 
 export interface SetDetailClientProps {
@@ -21,17 +25,22 @@ export function SetDetailClient({ code }: SetDetailClientProps) {
 
 	const group = useMemo<SetGroup | null>(() => {
 		if (sets.length === 0) return null;
-		// Famille reconstruite par parent_set_code : on retrouve le groupe dont la
-		// racine correspond au code demandé.
-		const byRoot = groupSets(sets).find((g) => g.key === target);
-		if (byRoot) return byRoot;
-		// Fallback : code d'un set dérivé (ou orphelin) saisi directement → groupe à un set.
+		const groups = groupSets(sets);
+		// Le code de l'URL peut être la racine OU n'importe quel set dérivé de la
+		// famille (ex. /sets/pspm ouvre le groupe SPM avec PSPM comme onglet actif).
+		// On retrouve le groupe dont un des sets porte ce code.
+		const byMember = groups.find((g) => g.sets.some((s) => s.code === target));
+		if (byMember) return byMember;
+		// Fallback : code inconnu de la liste groupée mais set existant (orphelin).
 		const single = sets.find((s) => s.code === target);
 		if (single) return { key: single.code, title: single.name, sets: [single], latest: 0 };
 		return null;
 	}, [sets, target]);
 
-	if (isLoading) {
+	// `sets` starts empty before the fetch effect runs (and isLoading is still
+	// false at that point), so treat "no sets yet, no error" as loading too —
+	// otherwise the "introuvable" screen flashes on a cold load.
+	if (isLoading || (sets.length === 0 && !error)) {
 		return (
 			<main className={styles.main}>
 				<div className={styles.loading}>
@@ -57,7 +66,7 @@ export function SetDetailClient({ code }: SetDetailClientProps) {
 
 	return (
 		<main className={styles.main}>
-			<SetDetailContent group={group} />
+			<SetDetailContent group={group} urlCode={target} />
 		</main>
 	);
 }
@@ -67,32 +76,57 @@ export function SetDetailClient({ code }: SetDetailClientProps) {
  * run unconditionally. Completion is fetched for the active tab and shared between
  * the header rings and the grid.
  */
-function SetDetailContent({ group }: { group: SetGroup }) {
-	const { activeId, setTab } = useActiveSetTab(group);
+function SetDetailContent({ group, urlCode }: { group: SetGroup; urlCode: string }) {
+	const { activeId, setTab } = useActiveSetTab(group, urlCode);
 	const {
-		cards: allCards,
-		completion,
+		activeCards,
+		groupCompletion,
+		activeCompletion,
 		isLoading: isCompletionLoading,
 		isPartialCollection,
-	} = useSetCompletion(activeId);
+	} = useGroupCompletion(group, activeId);
+
+	// Filters live in a store (not useState) so switching tab — which navigates to
+	// /sets/<code> and remounts this page — doesn't reset them.
+	const filters = useSetFiltersStore((s) => s.filters);
+	const setFilters = useSetFiltersStore((s) => s.setFilters);
+	const filteredCards = useMemo(
+		() => filterSetCards(activeCards, filters, activeCompletion),
+		[activeCards, filters, activeCompletion]
+	);
+	const activeFilterCount = useMemo(() => countActiveSetFilters(filters), [filters]);
+
+	const handleSortChange = (order: ScryfallSortOrder, dir: ScryfallSortDir) =>
+		setFilters({ ...filters, order, dir });
 
 	return (
-		<>
-			<SetDetailHeader
-				group={group}
-				activeCode={activeId}
-				completion={completion}
-				isCompletionLoading={isCompletionLoading}
-				isPartialCollection={isPartialCollection}
+		<div className={styles.layout}>
+			<SetFiltersAside
+				filters={filters}
+				onChange={setFilters}
+				activeFilterCount={activeFilterCount}
 			/>
-			<SetTabs
-				group={group}
-				activeId={activeId}
-				onTabChange={setTab}
-				completion={completion}
-				allCards={allCards}
-				isCompletionLoading={isCompletionLoading}
-			/>
-		</>
+
+			<div className={styles.content}>
+				<SetDetailHeader
+					group={group}
+					activeCode={activeId}
+					groupCompletion={groupCompletion}
+					activeCompletion={activeCompletion}
+					isPartialCollection={isPartialCollection}
+				/>
+				<SetTabs
+					group={group}
+					activeId={activeId}
+					onTabChange={setTab}
+					completion={activeCompletion}
+					cards={filteredCards}
+					isCompletionLoading={isCompletionLoading}
+					sortOrder={filters.order as ScryfallSortOrder}
+					sortDir={filters.dir}
+					onSortChange={handleSortChange}
+				/>
+			</div>
+		</div>
 	);
 }

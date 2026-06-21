@@ -4,6 +4,21 @@
 	padding: 0 0 80px;
 }
 
+/* Fixed filter aside (280px) + offset content, matching the collection page. */
+.layout {
+	padding-left: 280px;
+}
+
+.content {
+	min-width: 0;
+}
+
+@media (max-width: 768px) {
+	.layout {
+		padding-left: 0;
+	}
+}
+
 .loading {
 	display: flex;
 	align-items: center;

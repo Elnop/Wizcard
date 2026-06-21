@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import type { SetGroup } from '@/lib/scryfall/utils/set-classification';
 
 export interface UseActiveSetTabResult {
@@ -10,32 +10,23 @@ export interface UseActiveSetTabResult {
 }
 
 /**
- * Resolves the currently active set tab from the `?tab=` URL param, falling back
- * to the group's root set. Lifted out of SetTabs so the header rings and the grid
- * stay in sync with the viewed tab.
+ * Resolves the active set tab directly from the URL set code (`/sets/<code>`):
+ * each tab is its own route, so switching tabs navigates to `/sets/<tabCode>`.
+ * Falls back to the group's root set when the URL code isn't a member of the
+ * group (shouldn't happen, but keeps the header in sync).
  */
-export function useActiveSetTab(group: SetGroup): UseActiveSetTabResult {
-	const searchParams = useSearchParams();
+export function useActiveSetTab(group: SetGroup, urlCode: string): UseActiveSetTabResult {
 	const router = useRouter();
-	const pathname = usePathname();
 
-	const tabs = group.sets;
-	const validIds = new Set(tabs.map((s) => s.code));
-	const rawTab = searchParams.get('tab');
-	const activeId = rawTab && validIds.has(rawTab) ? rawTab : tabs[0].code;
+	const target = urlCode.toLowerCase();
+	const match = group.sets.find((s) => s.code === target);
+	const activeId = match ? match.code : group.sets[0].code;
 
 	const setTab = useCallback(
 		(code: string) => {
-			const params = new URLSearchParams(searchParams.toString());
-			if (code === tabs[0].code) {
-				params.delete('tab');
-			} else {
-				params.set('tab', code);
-			}
-			const qs = params.toString();
-			router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+			router.push(`/sets/${code}`, { scroll: false });
 		},
-		[searchParams, router, pathname, tabs]
+		[router]
 	);
 
 	return { activeId, setTab };

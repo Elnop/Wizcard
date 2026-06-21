@@ -2,6 +2,7 @@
 
 import type { SetGroup } from '@/lib/scryfall/utils/set-classification';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import type { SetCompletion } from '../../utils/setCompletion';
 import { SetCardsGrid } from '../SetCardsGrid/SetCardsGrid';
 import styles from './SetTabs.module.css';
@@ -11,8 +12,12 @@ export interface SetTabsProps {
 	activeId: string;
 	onTabChange: (code: string) => void;
 	completion: SetCompletion;
-	allCards: ScryfallCard[];
+	/** Cards to render (already filtered/sorted at the page level). */
+	cards: ScryfallCard[];
 	isCompletionLoading: boolean;
+	sortOrder: ScryfallSortOrder;
+	sortDir: ScryfallSortDir;
+	onSortChange: (order: ScryfallSortOrder, dir: ScryfallSortDir) => void;
 }
 
 export function SetTabs({
@@ -20,8 +25,11 @@ export function SetTabs({
 	activeId,
 	onTabChange,
 	completion,
-	allCards,
+	cards,
 	isCompletionLoading,
+	sortOrder,
+	sortDir,
+	onSortChange,
 }: SetTabsProps) {
 	const tabs = group.sets;
 
@@ -46,10 +54,12 @@ export function SetTabs({
 
 			<SetCardsGrid
 				key={activeId}
-				setCode={activeId}
 				completion={completion}
-				allCards={allCards}
-				isCompletionLoading={isCompletionLoading}
+				cards={cards}
+				isLoading={isCompletionLoading}
+				sortOrder={sortOrder}
+				sortDir={sortDir}
+				onSortChange={onSortChange}
 			/>
 		</div>
 	);

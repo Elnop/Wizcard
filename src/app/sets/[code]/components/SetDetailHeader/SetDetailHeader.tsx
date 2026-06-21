@@ -1,15 +1,18 @@
 import Link from 'next/link';
 import { classifySet, type SetGroup } from '@/lib/scryfall/utils/set-classification';
+import type { ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import { CompletionRing } from '@/components/CompletionRing/CompletionRing';
 import type { SetCompletion } from '../../utils/setCompletion';
 import styles from './SetDetailHeader.module.css';
 
 export interface SetDetailHeaderProps {
 	group: SetGroup;
-	/** Code of the currently viewed set tab (drives which icon + completion to show). */
+	/** Code of the currently viewed set tab (drives the "set actuel" section). */
 	activeCode: string;
-	completion: SetCompletion;
-	isCompletionLoading?: boolean;
+	/** Completion aggregated over the whole group (all sub-sets). */
+	groupCompletion: SetCompletion;
+	/** Completion of the active set tab only. */
+	activeCompletion: SetCompletion;
 	isPartialCollection?: boolean;
 }
 
@@ -18,131 +21,163 @@ function pct(part: number, total: number): number {
 	return Math.round((part / total) * 100);
 }
 
-export function SetDetailHeader({
-	group,
-	activeCode,
-	completion,
-	isCompletionLoading,
-	isPartialCollection,
-}: SetDetailHeaderProps) {
-	const root = group.sets[0];
-	const active = group.sets.find((s) => s.code === activeCode) ?? root;
-	const c = classifySet(root);
-	const year = root.released_at?.slice(0, 4) ?? '—';
-	const setCount = group.sets.length;
+/** Paper / Arena / Numérique badges for a single set. */
+function SetBadges({ set }: { set: ScryfallSet }) {
+	const c = classifySet(set);
+	return (
+		<div className={styles.badges}>
+			{c.hasPaper && <span className={styles.badge}>Papier</span>}
+			{c.hasArena && <span className={styles.badge}>Arena</span>}
+			{c.isAlchemy ? (
+				<span className={styles.badge}>Alchemy</span>
+			) : (
+				c.isDigital && <span className={styles.badge}>Numérique</span>
+			)}
+		</div>
+	);
+}
 
+/**
+ * One 50%-width completion section: a big gold ring (overall completion) with
+ * either the set icon or the percentage at its centre, the section's own meta
+ * line, and a single Foil mini-ring (the owned% lives in the gold ring).
+ */
+function CompletionSection({
+	scope,
+	label,
+	iconSrc,
+	completion,
+	titleNode,
+	children,
+}: {
+	scope: 'group' | 'active';
+	label: string;
+	iconSrc?: string;
+	completion: SetCompletion;
+	/** Custom heading node (e.g. the page <h1>); falls back to the plain label. */
+	titleNode?: React.ReactNode;
+	/** Section-specific meta (badges, date…). */
+	children?: React.ReactNode;
+}) {
 	const { totalPrints, ownedPrints, ownedFoilPrints } = completion;
 	const completionPercent = pct(ownedPrints, totalPrints);
 	const foilPercent = pct(ownedFoilPrints, totalPrints);
 	const statsReady = totalPrints > 0;
 
 	return (
-		<div className={styles.container}>
-			<div className={styles.iconSection}>
-				<CompletionRing
-					percent={completionPercent}
-					size={132}
-					stroke={6}
-					variant="gold"
-					aria-label={`Complétion de l’extension : ${completionPercent}%`}
-				>
-					{/* eslint-disable-next-line @next/next/no-img-element */}
-					<img src={active.icon_svg_uri} alt="" className={styles.icon} />
-				</CompletionRing>
-				<span className={styles.completionCaption}>
-					{isCompletionLoading && !statsReady ? '…' : `${completionPercent}%`}
-					<span className={styles.completionCaptionLabel}>complété</span>
+		<section className={styles.section} data-scope={scope}>
+			<span className={styles.sectionScope}>{scope === 'group' ? 'Groupe' : 'Set actuel'}</span>
+			{titleNode ?? (
+				<span className={styles.sectionLabel} title={label}>
+					{label}
 				</span>
-			</div>
+			)}
 
-			<div className={styles.infoSection}>
+			<div className={styles.sectionBody}>
+				<div className={styles.gaugeMain}>
+					<CompletionRing
+						percent={completionPercent}
+						size={92}
+						stroke={6}
+						variant="gold"
+						aria-label={`${label} — complétion : ${completionPercent}%`}
+					>
+						{iconSrc ? (
+							// eslint-disable-next-line @next/next/no-img-element
+							<img src={iconSrc} alt="" className={styles.gaugeIcon} />
+						) : (
+							<span className={styles.gaugePercent}>{`${completionPercent}%`}</span>
+						)}
+					</CompletionRing>
+					<span className={styles.gaugeValue}>
+						{statsReady ? `${completionPercent}%` : '—'}{' '}
+						<span className={styles.muted}>
+							· {ownedPrints}/{totalPrints}
+						</span>
+					</span>
+				</div>
+
+				<div className={styles.sectionInfo}>
+					<span className={styles.sectionCount}>
+						{totalPrints} <span className={styles.muted}>cartes</span>
+					</span>
+					{children}
+					<div className={styles.foilStat}>
+						<CompletionRing
+							percent={foilPercent}
+							size={46}
+							stroke={4}
+							variant="foil"
+							aria-label={`${label} — cartes en foil : ${foilPercent}%`}
+						>
+							<span className={styles.foilStatPercent}>{statsReady ? `${foilPercent}%` : '—'}</span>
+						</CompletionRing>
+						<div className={styles.foilStatMeta}>
+							<span className={styles.foilStatLabel}>Foil</span>
+							<span className={styles.foilStatValue}>{ownedFoilPrints} ✦</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+	);
+}
+
+export function SetDetailHeader({
+	group,
+	activeCode,
+	groupCompletion,
+	activeCompletion,
+	isPartialCollection,
+}: SetDetailHeaderProps) {
+	const root = group.sets[0];
+	const active = group.sets.find((s) => s.code === activeCode) ?? root;
+	const activeYear = active.released_at?.slice(0, 4) ?? '—';
+	const statsReady = groupCompletion.totalPrints > 0;
+
+	return (
+		<div className={styles.container}>
+			<div className={styles.topBar}>
 				<Link href="/sets" className={styles.back}>
 					← Extensions
 				</Link>
+			</div>
 
-				<header className={styles.header}>
-					<h1 className={styles.name}>{root.name}</h1>
-					<span className={styles.code}>{root.code.toUpperCase()}</span>
-				</header>
+			<div className={styles.sections}>
+				<CompletionSection
+					scope="active"
+					label={active.name}
+					iconSrc={active.icon_svg_uri}
+					completion={activeCompletion}
+					titleNode={
+						<header className={styles.header}>
+							<h1 className={styles.name}>{active.name}</h1>
+							<span className={styles.code}>{active.code.toUpperCase()}</span>
+						</header>
+					}
+				>
+					<span className={styles.sectionDate}>{activeYear}</span>
+					<SetBadges set={active} />
+				</CompletionSection>
 
-				<div className={styles.meta}>
-					<span>{year}</span>
-					<span aria-hidden="true">·</span>
-					<span>{root.card_count} cartes</span>
-					{setCount > 1 && (
-						<>
-							<span aria-hidden="true">·</span>
-							<span>
-								{setCount} set{setCount > 1 ? 's' : ''}
-							</span>
-						</>
-					)}
-				</div>
+				<CompletionSection scope="group" label={root.name} completion={groupCompletion} />
+			</div>
 
-				<div className={styles.badges}>
-					{c.hasPaper && <span className={styles.badge}>Papier</span>}
-					{c.hasArena && <span className={styles.badge}>Arena</span>}
-					{c.isAlchemy ? (
-						<span className={styles.badge}>Alchemy</span>
-					) : (
-						c.isDigital && <span className={styles.badge}>Numérique</span>
-					)}
-				</div>
+			{isPartialCollection && statsReady && (
+				<p className={styles.partialNote}>
+					Collection partiellement chargée — la complétion peut être sous-estimée.
+				</p>
+			)}
 
-				<div className={styles.statRings}>
-					<div className={styles.statRing}>
-						<CompletionRing
-							percent={completionPercent}
-							size={52}
-							stroke={4}
-							variant="jade"
-							aria-label={`Cartes possédées : ${completionPercent}%`}
-						>
-							<span className={styles.statRingPercent}>
-								{statsReady ? `${completionPercent}%` : '—'}
-							</span>
-						</CompletionRing>
-						<div className={styles.statRingMeta}>
-							<span className={styles.statRingLabel}>Possédées</span>
-							<span className={styles.statRingValue}>
-								{ownedPrints} <span className={styles.statRingValueMuted}>/ {totalPrints}</span>
-							</span>
-						</div>
-					</div>
-
-					<div className={styles.statRing}>
-						<CompletionRing
-							percent={foilPercent}
-							size={52}
-							stroke={4}
-							variant="foil"
-							aria-label={`Cartes en foil : ${foilPercent}%`}
-						>
-							<span className={styles.statRingPercent}>{statsReady ? `${foilPercent}%` : '—'}</span>
-						</CompletionRing>
-						<div className={styles.statRingMeta}>
-							<span className={styles.statRingLabel}>Foil</span>
-							<span className={styles.statRingValue}>{ownedFoilPrints} ✦</span>
-						</div>
-					</div>
-				</div>
-
-				{isPartialCollection && statsReady && (
-					<p className={styles.partialNote}>
-						Collection partiellement chargée — la complétion peut être sous-estimée.
-					</p>
-				)}
-
-				<div className={styles.externalLinks}>
-					<a
-						href={root.scryfall_uri}
-						target="_blank"
-						rel="noopener noreferrer"
-						className={styles.externalLink}
-					>
-						Scryfall
-					</a>
-				</div>
+			<div className={styles.externalLinks}>
+				<a
+					href={root.scryfall_uri}
+					target="_blank"
+					rel="noopener noreferrer"
+					className={styles.externalLink}
+				>
+					Scryfall
+				</a>
 			</div>
 		</div>
 	);
