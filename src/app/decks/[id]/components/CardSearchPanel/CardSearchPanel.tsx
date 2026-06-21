@@ -394,6 +394,7 @@ export function CardSearchPanel({
 							onLoadMore={inCollectionOnly ? undefined : loadMore}
 							onCardClick={handleAddCardClick}
 							renderOverlay={renderSearchOverlay}
+							viewModes={['grid']}
 							pageSize={inCollectionOnly ? undefined : false}
 							fluidSections
 						/>

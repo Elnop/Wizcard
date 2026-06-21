@@ -63,6 +63,7 @@ export function EdhrecRecommendations({ commanderName, onCardClick, renderOverla
 				cards={listSections}
 				onCardClick={onCardClick}
 				renderOverlay={renderOverlay}
+				viewModes={['grid']}
 				pageSize={false}
 				fluidSections
 			/>
