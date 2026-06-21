@@ -8,6 +8,8 @@ import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { SearchCardContextMenu } from './SearchCardContextMenu';
 import { CardModeSwitcher } from './CardModeSwitcher';
+import { PanelTabs, type PanelTab } from './PanelTabs';
+import { EdhrecRecommendations } from './EdhrecRecommendations';
 import { DeckZoneBadges } from './DeckZoneBadges';
 import { useDeckCardIndex } from './useDeckCardIndex';
 import {
@@ -37,6 +39,7 @@ type Props = {
 	onClose: () => void;
 	deckFormat?: DeckFormat | null;
 	commanderColorIdentity?: ScryfallColor[];
+	commanderName?: string | null;
 	onCollectionModeChange?: (inCollectionOnly: boolean) => void;
 	expanded?: boolean;
 	onToggleExpand?: () => void;
@@ -49,11 +52,13 @@ export function CardSearchPanel({
 	onClose,
 	deckFormat,
 	commanderColorIdentity,
+	commanderName,
 	onCollectionModeChange,
 	expanded = false,
 	onToggleExpand,
 }: Props) {
 	const [searchName, setSearchName] = useState('');
+	const [tab, setTab] = useState<PanelTab>('search');
 	const [cardMode, setCardMode] = useState<'cards' | 'token'>('cards');
 	const [legalOnly, setLegalOnly] = useState(true);
 	const [filterModalOpen, setFilterModalOpen] = useState(false);
@@ -212,6 +217,28 @@ export function CardSearchPanel({
 	const cards = inCollectionOnly ? filteredCollectionCards : scryfallCards;
 	const isLoading = inCollectionOnly ? collectionLoading : scryfallLoading;
 
+	const showEdhrecTab = isCommanderFormat && !!commanderName;
+	const activeTab = showEdhrecTab ? tab : 'search';
+
+	const handleAddCardClick = useCallback(
+		(card: AnyCard) => {
+			let scryfallCard: ScryfallCard;
+			if ('entry' in card) {
+				// eslint-disable-next-line @typescript-eslint/no-unused-vars
+				const { entry: _, ...rest } = card as import('@/types/cards').Card;
+				scryfallCard = rest as ScryfallCard;
+			} else {
+				scryfallCard = card as ScryfallCard;
+			}
+			if (isTokenMode) {
+				addCardToDeck(deckId, scryfallCard, 'tokens');
+			} else {
+				onCardClick(scryfallCard);
+			}
+		},
+		[isTokenMode, addCardToDeck, deckId, onCardClick]
+	);
+
 	const renderSearchOverlay = useCallback(
 		(card: AnyCard) => (
 			<>
@@ -279,113 +306,111 @@ export function CardSearchPanel({
 				</div>
 			</div>
 
-			<div className={styles.search}>
-				<div className={styles.searchRow}>
-					<SearchBar
-						value={searchName}
-						onChange={setSearchName}
-						placeholder="Search for a card..."
-					/>
-					<CardModeSwitcher value={cardMode} onChange={setCardMode} />
-					<button
-						type="button"
-						aria-label="More filters"
-						className={styles.filtersButton}
-						onClick={() => setFilterModalOpen(true)}
-					>
-						<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-							<path
-								d="M2 4h12M4 8h8M6 12h4"
-								stroke="currentColor"
-								strokeWidth="1.5"
-								strokeLinecap="round"
-							/>
-						</svg>
-						{activeFilterCount > 0 && (
-							<span className={styles.filterBadge}>{activeFilterCount}</span>
-						)}
-					</button>
-				</div>
-				{showLegalToggle && (
-					<label className={styles.toggleLabel}>
-						<input
-							type="checkbox"
-							checked={legalOnly}
-							onChange={(e) => setLegalOnly(e.target.checked)}
-							className={styles.toggleInput}
-						/>
-						<span className={styles.toggleText}>Legal in {deckFormat} only</span>
-					</label>
-				)}
-				<label className={styles.toggleLabel}>
-					<input
-						type="checkbox"
-						checked={inCollectionOnly}
-						onChange={(e) => {
-							const next = e.target.checked;
-							setInCollectionOnly(next);
-							onCollectionModeChange?.(next);
-						}}
-						className={styles.toggleInput}
-					/>
-					<span className={styles.toggleText}>In collection only</span>
-				</label>
-			</div>
+			{showEdhrecTab && <PanelTabs value={activeTab} onChange={setTab} />}
 
-			<FilterModal
-				isOpen={filterModalOpen}
-				colors={colors}
-				colorMatch={colorMatch}
-				type={filterType}
-				set={filterSet}
-				rarities={rarities}
-				oracleText={oracleText}
-				cmc={cmc}
-				sets={sets}
-				setsLoading={setsLoading}
-				order={order}
-				dir={dir}
-				onApply={handleApplyFilters}
-				onClose={() => setFilterModalOpen(false)}
-			/>
-
-			<div className={styles.results}>
-				<CardList
-					cards={cards}
-					isLoading={isLoading}
-					isLoadingMore={inCollectionOnly ? false : isLoadingMore}
-					hasMore={inCollectionOnly ? false : hasMore}
-					onLoadMore={inCollectionOnly ? undefined : loadMore}
-					onCardClick={(card: AnyCard) => {
-						let scryfallCard: ScryfallCard;
-						if ('entry' in card) {
-							// eslint-disable-next-line @typescript-eslint/no-unused-vars
-							const { entry: _, ...rest } = card as import('@/types/cards').Card;
-							scryfallCard = rest as ScryfallCard;
-						} else {
-							scryfallCard = card as ScryfallCard;
-						}
-						if (isTokenMode) {
-							addCardToDeck(deckId, scryfallCard, 'tokens');
-						} else {
-							onCardClick(scryfallCard);
-						}
-					}}
+			{activeTab === 'edhrec' ? (
+				<EdhrecRecommendations
+					commanderName={commanderName ?? null}
+					onCardClick={handleAddCardClick}
 					renderOverlay={renderSearchOverlay}
-					pageSize={inCollectionOnly ? undefined : false}
-					fluidSections
 				/>
+			) : (
+				<>
+					<div className={styles.search}>
+						<div className={styles.searchRow}>
+							<SearchBar
+								value={searchName}
+								onChange={setSearchName}
+								placeholder="Search for a card..."
+							/>
+							<CardModeSwitcher value={cardMode} onChange={setCardMode} />
+							<button
+								type="button"
+								aria-label="More filters"
+								className={styles.filtersButton}
+								onClick={() => setFilterModalOpen(true)}
+							>
+								<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+									<path
+										d="M2 4h12M4 8h8M6 12h4"
+										stroke="currentColor"
+										strokeWidth="1.5"
+										strokeLinecap="round"
+									/>
+								</svg>
+								{activeFilterCount > 0 && (
+									<span className={styles.filterBadge}>{activeFilterCount}</span>
+								)}
+							</button>
+						</div>
+						{showLegalToggle && (
+							<label className={styles.toggleLabel}>
+								<input
+									type="checkbox"
+									checked={legalOnly}
+									onChange={(e) => setLegalOnly(e.target.checked)}
+									className={styles.toggleInput}
+								/>
+								<span className={styles.toggleText}>Legal in {deckFormat} only</span>
+							</label>
+						)}
+						<label className={styles.toggleLabel}>
+							<input
+								type="checkbox"
+								checked={inCollectionOnly}
+								onChange={(e) => {
+									const next = e.target.checked;
+									setInCollectionOnly(next);
+									onCollectionModeChange?.(next);
+								}}
+								className={styles.toggleInput}
+							/>
+							<span className={styles.toggleText}>In collection only</span>
+						</label>
+					</div>
 
-				{!isLoading &&
-					cards.length === 0 &&
-					(searchName.trim() || (inCollectionOnly && activeFilterCount > 0)) && (
-						<p className={styles.noResults}>
-							{inCollectionOnly
-								? 'No cards in your collection match these filters'
-								: 'No cards found'}
-						</p>
-					)}
-			</div>
+					<FilterModal
+						isOpen={filterModalOpen}
+						colors={colors}
+						colorMatch={colorMatch}
+						type={filterType}
+						set={filterSet}
+						rarities={rarities}
+						oracleText={oracleText}
+						cmc={cmc}
+						sets={sets}
+						setsLoading={setsLoading}
+						order={order}
+						dir={dir}
+						onApply={handleApplyFilters}
+						onClose={() => setFilterModalOpen(false)}
+					/>
+
+					<div className={styles.results}>
+						<CardList
+							cards={cards}
+							isLoading={isLoading}
+							isLoadingMore={inCollectionOnly ? false : isLoadingMore}
+							hasMore={inCollectionOnly ? false : hasMore}
+							onLoadMore={inCollectionOnly ? undefined : loadMore}
+							onCardClick={handleAddCardClick}
+							renderOverlay={renderSearchOverlay}
+							pageSize={inCollectionOnly ? undefined : false}
+							fluidSections
+						/>
+
+						{!isLoading &&
+							cards.length === 0 &&
+							(searchName.trim() || (inCollectionOnly && activeFilterCount > 0)) && (
+								<p className={styles.noResults}>
+									{inCollectionOnly
+										? 'No cards in your collection match these filters'
+										: 'No cards found'}
+								</p>
+							)}
+					</div>
+				</>
+			)}
 
 			{contextMenu && (
 				<SearchCardContextMenu

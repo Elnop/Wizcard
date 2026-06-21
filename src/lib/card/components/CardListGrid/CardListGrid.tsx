@@ -1,5 +1,6 @@
 // src/components/ui/CardListGrid/CardListGrid.tsx
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
+import { Spinner } from '@/components/Spinner/Spinner';
 import type { CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListGridProps } from './CardListGrid.types';
 import styles from './CardListGrid.module.css';
@@ -227,6 +228,29 @@ export function CardListGrid({
 		);
 	}
 
+	function renderSectionContent(
+		section: CardListSection,
+		depth: number,
+		sectionKey: string,
+		priorityOffset: number,
+		isFluid: boolean,
+		hasChildren: boolean
+	) {
+		if (section.loading) {
+			return (
+				<div className={styles.sectionLoader}>
+					<Spinner size="sm" />
+				</div>
+			);
+		}
+		if (hasChildren) {
+			return section.children!.map((child, i) =>
+				renderSection(child, i, depth + 1, `${sectionKey}::${child.label}`, false, fluidSections)
+			);
+		}
+		return renderItems(section.cards, false, priorityOffset, isFluid);
+	}
+
 	function renderSection(
 		section: CardListSection,
 		idx: number,
@@ -274,18 +298,7 @@ export function CardListGrid({
 				{renderSectionHeading(sectionKey, headerClass, headingClass, depth, collapsed, labelText)}
 				{!collapsed && (
 					<div className={sectionBodyClass}>
-						{hasChildren
-							? section.children!.map((child, i) =>
-									renderSection(
-										child,
-										i,
-										depth + 1,
-										`${sectionKey}::${child.label}`,
-										false,
-										fluidSections
-									)
-								)
-							: renderItems(section.cards, false, priorityOffset, isFluid)}
+						{renderSectionContent(section, depth, sectionKey, priorityOffset, isFluid, hasChildren)}
 					</div>
 				)}
 			</div>

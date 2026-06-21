@@ -339,6 +339,12 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		return identity.size > 0 ? [...identity] : undefined;
 	}, [showCommander, resolvedCards]);
 
+	const commanderName = useMemo((): string | null => {
+		if (!showCommander) return null;
+		const commander = resolvedCards.find((rc) => getDeckZone(rc.entry.tags) === 'commander');
+		return commander?.name ?? null;
+	}, [showCommander, resolvedCards]);
+
 	const handleDuplicateCard = useCallback(
 		(rc: ResolvedDeckCard) => {
 			addCardToDeck(deckId, rc as ScryfallCard, getDeckZone(rc.entry.tags));
@@ -573,6 +579,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 						}}
 						deckFormat={deck.format}
 						commanderColorIdentity={commanderColorIdentity}
+						commanderName={commanderName}
 						onCollectionModeChange={setPanelInCollectionOnly}
 						expanded={searchPanelExpanded}
 						onToggleExpand={() => setSearchPanelExpanded((v) => !v)}

@@ -93,6 +93,12 @@
 	font-size: var(--text-sm);
 }
 
+.edhrecCenter {
+	display: flex;
+	justify-content: center;
+	padding: 32px;
+}
+
 .toggleLabel {
 	display: inline-flex;
 	align-items: center;

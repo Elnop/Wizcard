@@ -15,6 +15,8 @@ export interface CardListSection {
 	border?: boolean;
 	background?: boolean;
 	defaultCollapsed?: boolean;
+	/** When true, the section body shows a loading spinner instead of its cards. */
+	loading?: boolean;
 }
 
 export type CardListCards = AnyCard[] | CardListSection[];
