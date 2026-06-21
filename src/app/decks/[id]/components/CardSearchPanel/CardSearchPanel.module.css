@@ -124,7 +124,7 @@
 .searchCardOverlay {
 	position: absolute;
 	inset: 0;
-	cursor: context-menu;
+	cursor: pointer;
 }
 
 .searchRow {

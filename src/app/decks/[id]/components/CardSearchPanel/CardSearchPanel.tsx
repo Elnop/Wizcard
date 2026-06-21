@@ -244,7 +244,6 @@ export function CardSearchPanel({
 			<>
 				<div
 					className={styles.searchCardOverlay}
-					onClick={(e) => e.stopPropagation()}
 					onContextMenu={(e) => openContextMenu(card as ScryfallCard, e)}
 				/>
 				<DeckZoneBadges zones={getDeckZones(card.oracle_id)} />
