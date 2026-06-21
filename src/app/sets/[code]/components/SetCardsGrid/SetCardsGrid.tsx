@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { memo, useState, useCallback } from 'react';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
@@ -23,7 +23,7 @@ export interface SetCardsGridProps {
 
 type ViewMode = 'simple' | 'collection';
 
-export function SetCardsGrid({
+function SetCardsGridInner({
 	completion,
 	cards,
 	isLoading,
@@ -109,3 +109,7 @@ export function SetCardsGrid({
 		</>
 	);
 }
+
+// Memoized: the tab strip above re-renders on scroll/drag, but the grid only
+// needs to re-render when its own props change — otherwise cards flicker.
+export const SetCardsGrid = memo(SetCardsGridInner);

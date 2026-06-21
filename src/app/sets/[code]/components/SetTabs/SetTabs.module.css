@@ -4,13 +4,56 @@
 	padding: 32px;
 }
 
+/* Holds the scrollable strip plus the chevron buttons and edge fades. */
+.tabBar {
+	position: relative;
+	border-bottom: 1px solid var(--border);
+	margin-bottom: 24px;
+}
+
+/* Edge fades hint at hidden tabs; toggled via data-overflow-* on the bar. */
+.tabBar::before,
+.tabBar::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	bottom: 1px;
+	width: 32px;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.15s;
+	z-index: 1;
+}
+
+.tabBar::before {
+	left: 0;
+	background: linear-gradient(to right, var(--background), transparent);
+}
+
+.tabBar::after {
+	right: 0;
+	background: linear-gradient(to left, var(--background), transparent);
+}
+
+.tabBar[data-overflow-left='true']::before {
+	opacity: 1;
+}
+
+.tabBar[data-overflow-right='true']::after {
+	opacity: 1;
+}
+
 .tabList {
 	display: flex;
 	gap: 4px;
-	border-bottom: 1px solid var(--border);
-	margin-bottom: 24px;
 	overflow-x: auto;
 	scrollbar-width: none;
+	cursor: grab;
+	touch-action: pan-x;
+}
+
+.tabList:active {
+	cursor: grabbing;
 }
 
 .tabList::-webkit-scrollbar {
@@ -19,7 +62,7 @@
 
 .tab {
 	display: flex;
-	align-items: baseline;
+	align-items: center;
 	gap: 8px;
 	flex-shrink: 0;
 	padding: 10px 20px;
@@ -44,6 +87,22 @@
 .tab[data-active='true'] {
 	color: var(--foreground);
 	border-bottom-color: var(--primary);
+}
+
+.tabIcon {
+	width: 18px;
+	height: 18px;
+	object-fit: contain;
+	flex-shrink: 0;
+	filter: invert(1) opacity(0.6);
+	transition: filter 0.15s;
+	user-select: none;
+	-webkit-user-drag: none;
+}
+
+.tab:hover .tabIcon,
+.tab[data-active='true'] .tabIcon {
+	filter: invert(1) opacity(0.9);
 }
 
 .tabName {
