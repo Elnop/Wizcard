@@ -1,18 +1,18 @@
 'use client';
 
-import { memo, useState, useCallback } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
+import { OwnershipBadge } from '@/lib/card/components/OwnershipBadge/OwnershipBadge';
+import type { BadgeState } from '@/app/decks/[id]/components/DeckCardOverlay/useCollectionBadge';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
-import type { SetCompletion } from '../../utils/setCompletion';
 import styles from './SetCardsGrid.module.css';
 
 export interface SetCardsGridProps {
-	completion: SetCompletion;
 	/** Cards to render (already filtered/sorted by the parent). */
 	cards: ScryfallCard[];
 	isLoading: boolean;
@@ -21,69 +21,44 @@ export interface SetCardsGridProps {
 	onSortChange: (order: ScryfallSortOrder, dir: ScryfallSortDir) => void;
 }
 
-type ViewMode = 'simple' | 'collection';
-
 function SetCardsGridInner({
-	completion,
 	cards,
 	isLoading,
 	sortOrder,
 	sortDir,
 	onSortChange,
 }: SetCardsGridProps) {
-	const { addCard } = useCollectionContext();
-	const { addToWishlist } = useWishlistContext();
+	const { addCard, getOwnership } = useCollectionContext();
+	const { addToWishlist, entries: wishlistEntries } = useWishlistContext();
 	const [selectedCard, setSelectedCard] = useState<AnyCard | null>(null);
-	const [view, setView] = useState<ViewMode>('simple');
 
 	const handleCardClick = useCallback((card: AnyCard) => setSelectedCard(card), []);
 
-	// Collection mode ghosts unowned prints and badges owned-foil prints.
-	const renderOverlay = useCallback(
-		(card: AnyCard) => {
-			const status = completion.status.get(card.id);
-			if (!status || !status.owned) {
-				return <div className={styles.ghostVeil} aria-hidden="true" />;
-			}
-			return status.foil ? (
-				<span className={styles.foilBadge} title="Possédée en foil">
-					✦ Foil
-				</span>
-			) : null;
-		},
-		[completion]
+	// Prints present in the wishlist, for the 🛒 badge state.
+	const wishlistPrintIds = useMemo(
+		() => new Set(wishlistEntries.map((e) => e.scryfallId)),
+		[wishlistEntries]
 	);
 
-	const isCollection = view === 'collection';
+	// Same ownership badge as deck cards / the card modal: ✓ owned, 🛒 wishlist,
+	// grey otherwise. No foil badge here — unified with the rest of the app.
+	const renderOverlay = useCallback(
+		(card: AnyCard) => {
+			let badgeState: BadgeState = 'none';
+			if (getOwnership(card.id).total > 0) badgeState = 'owned';
+			else if (wishlistPrintIds.has(card.id)) badgeState = 'wishlist';
+			return <OwnershipBadge badgeState={badgeState} />;
+		},
+		[getOwnership, wishlistPrintIds]
+	);
 
 	return (
 		<>
-			<div className={styles.viewToggle} role="tablist" aria-label="Mode d’affichage">
-				<button
-					type="button"
-					role="tab"
-					aria-selected={!isCollection}
-					className={`${styles.toggleBtn} ${!isCollection ? styles.toggleBtnActive : ''}`}
-					onClick={() => setView('simple')}
-				>
-					Simple
-				</button>
-				<button
-					type="button"
-					role="tab"
-					aria-selected={isCollection}
-					className={`${styles.toggleBtn} ${isCollection ? styles.toggleBtnActive : ''}`}
-					onClick={() => setView('collection')}
-				>
-					Collection
-				</button>
-			</div>
-
 			<CardList
 				cards={cards}
 				isLoading={isLoading && cards.length === 0}
 				onCardClick={handleCardClick}
-				renderOverlay={isCollection ? renderOverlay : undefined}
+				renderOverlay={renderOverlay}
 				viewModes={['grid']}
 				pageSize={false}
 				sortOrder={sortOrder}

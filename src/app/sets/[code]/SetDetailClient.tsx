@@ -119,7 +119,6 @@ function SetDetailContent({ group, urlCode }: { group: SetGroup; urlCode: string
 					group={group}
 					activeId={activeId}
 					onTabChange={setTab}
-					completion={activeCompletion}
 					cards={filteredCards}
 					isCompletionLoading={isCompletionLoading}
 					sortOrder={filters.order as ScryfallSortOrder}
