@@ -288,6 +288,7 @@ export async function deleteDeckCard(rowId: string): Promise<void> {
 export async function updateDeckCard(
 	rowId: string,
 	updates: {
+		scryfall_id?: string;
 		tags?: string[];
 		owner_id?: string | null;
 		proxy?: boolean | null;

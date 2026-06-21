@@ -14,6 +14,26 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 
 export type DeckGroupBy = 'type' | 'none';
 
+/**
+ * Deduplicate a flat list of card copies down to one representative per logical
+ * card (keyed by oracle_id, falling back to the print id). The first copy seen
+ * for each key is kept so its `entry.tags` reflect the correct zone. Used to
+ * render the Tokens panel as one card per token instead of one card per copy —
+ * the per-stack count is shown by the card overlay, which reads the real total
+ * from the shared group map.
+ */
+export function dedupeByOracle<T extends ResolvedDeckCard>(cards: T[]): T[] {
+	const seen = new Set<string>();
+	const result: T[] = [];
+	for (const card of cards) {
+		const key = card.oracle_id ?? card.id;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		result.push(card);
+	}
+	return result;
+}
+
 export function useDeckCardSections(
 	cardsByZone: Record<DeckZone, ResolvedDeckCard[]>,
 	showCommander: boolean,

@@ -537,6 +537,30 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		const copy = current[rowId];
 		if (!copy) return;
 
+		// Owned deck cards are real collection copies: changing the print must
+		// modify that same physical card in place (keep rowId + ownerId, just
+		// swap the print) rather than spawning a new un-owned deck card and
+		// leaving the owned copy behind.
+		if (copy.entry.ownerId) {
+			const updatedCopy: StoredCopy = { scryfallId: newCard.id, entry: copy.entry };
+			set({ activeDeckCards: { ...current, [rowId]: updatedCopy } });
+
+			// Mirror the change in the collection store if the copy lives there.
+			const colEntries = useCollectionStore.getState().entries;
+			if (colEntries[rowId]) {
+				useCollectionStore.setState({
+					entries: { ...colEntries, [rowId]: updatedCopy },
+				});
+			}
+
+			enqueue({
+				type: SYNC_DECK_CARD_UPDATE,
+				payload: { rowId, updates: { scryfall_id: newCard.id } },
+			});
+			triggerSync();
+			return;
+		}
+
 		const newRowId = crypto.randomUUID();
 		const newEntry: CardEntry = { ...copy.entry, rowId: newRowId, ownerId: undefined, deckId };
 		// Rebuild preserving insertion order so the card stays at the same index in the list

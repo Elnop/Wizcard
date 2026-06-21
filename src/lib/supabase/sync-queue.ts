@@ -103,6 +103,7 @@ export type SyncOp =
 			payload: {
 				rowId: string;
 				updates: {
+					scryfall_id?: string;
 					tags?: string[];
 					owner_id?: string | null;
 					proxy?: boolean | null;

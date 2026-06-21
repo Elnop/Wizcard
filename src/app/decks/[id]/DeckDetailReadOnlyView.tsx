@@ -19,7 +19,7 @@ import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { serializeDecklist } from '@/lib/deck/utils/serialize-decklist';
 import { usePublicDeckDetail } from './usePublicDeckDetail';
 import type { ResolvedDeckCard } from './useDeckDetail';
-import { useDeckCardSections, type DeckGroupBy } from './useDeckCardSections';
+import { useDeckCardSections, dedupeByOracle, type DeckGroupBy } from './useDeckCardSections';
 import { useDeckSort } from './useDeckSort';
 import { useCopyDeckToMyCollection } from './useCopyDeckToMyCollection';
 import { DeckHeader } from './components/DeckHeader/DeckHeader';
@@ -111,10 +111,12 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 		[addCard]
 	);
 
-	const tokenSections = useMemo(
-		() => (cardsByZone.tokens.length > 0 ? [{ label: 'Tokens', cards: cardsByZone.tokens }] : []),
-		[cardsByZone.tokens]
-	);
+	// One card per logical token — the overlay shows the per-stack count, so
+	// duplicate copies must not render as separate stacks.
+	const tokenSections = useMemo(() => {
+		const tokens = dedupeByOracle(cardsByZone.tokens);
+		return tokens.length > 0 ? [{ label: 'Tokens', cards: tokens }] : [];
+	}, [cardsByZone.tokens]);
 
 	if (isLoading) {
 		return (

@@ -20,7 +20,7 @@ import { useCollectionCards } from '@/app/collection/useCollectionCards';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
 import { findFreeCollectionCopy } from '@/lib/deck/utils/collectionCopyResolver';
 import { useDeckDetail, type ResolvedDeckCard } from './useDeckDetail';
-import { useDeckCardSections } from './useDeckCardSections';
+import { useDeckCardSections, dedupeByOracle } from './useDeckCardSections';
 import { DeckHeader } from './components/DeckHeader/DeckHeader';
 import { DeckStats } from './components/DeckStats/DeckStats';
 import { DeckCardOverlay } from './components/DeckCardOverlay/DeckCardOverlay';
@@ -122,11 +122,11 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		sortCards,
 		groupBy
 	);
-	const { addTokens, isAdding: isAddingTokens } = useDeckTokens(
-		deckId,
-		cardsByZone,
-		cardsByZone.tokens
-	);
+	// The tokens panel shows one card per logical token (the per-stack count is
+	// rendered by the card overlay). Render deduped representatives so two copies
+	// of the same token don't appear as two separate stacks.
+	const tokenCards = useMemo(() => dedupeByOracle(cardsByZone.tokens), [cardsByZone.tokens]);
+	const { addTokens, isAdding: isAddingTokens } = useDeckTokens(deckId, cardsByZone, tokenCards);
 	const symbolMap = useScryfallSymbols();
 
 	const {
@@ -544,7 +544,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					/>
 
 					<DeckTokens
-						tokens={cardsByZone.tokens}
+						tokens={tokenCards}
 						scanZones={zones}
 						onAddTokens={addTokens}
 						isAdding={isAddingTokens}
