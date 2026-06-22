@@ -69,6 +69,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		removeCardFromDeck,
 		changeZone,
 		toggleOwned,
+		toggleDeckCardWishlist,
 		activeDeckCards,
 		replaceDeckCardWithCollectionCopy,
 	} = useDeckContext();
@@ -447,8 +448,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					onAddToCollectionClick={(req) => {
 						if (req.unownedRowIds.length > 0) setPendingCollectionAdd(req);
 					}}
-					onAddToWishlist={(scryfallId) => {
-						addToWishlist({ id: scryfallId } as ScryfallCard);
+					onAddToWishlist={(deckCardRowId) => {
+						toggleDeckCardWishlist(deckCardRowId);
 					}}
 					wishlistEntries={wishlistEntries}
 					contextMenuPos={isContextCard ? contextMenuPos : null}
@@ -468,7 +469,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			removeCardFromDeck,
 			changeZone,
 			handleCardGroupClick,
-			addToWishlist,
+			toggleDeckCardWishlist,
 			wishlistEntries,
 			contextMenuCard,
 			contextMenuPos,
@@ -711,8 +712,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					if (req.unownedRowIds.length > 0) setPendingCollectionAdd(req);
 				}}
 				onRemoveFromCollectionEntry={(rowId) => toggleOwned(rowId)}
-				onAddToWishlistFromEntry={(scryfallId) => {
-					addToWishlist({ id: scryfallId } as ScryfallCard);
+				onAddToWishlistFromEntry={(deckCardRowId) => {
+					toggleDeckCardWishlist(deckCardRowId);
 				}}
 				producerSections={tokenProducerSections}
 				onProducerClick={handleCardClick}

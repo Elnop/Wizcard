@@ -101,31 +101,16 @@ export const useWishlistStore = create<WishlistState & WishlistActions>()((set, 
 		const current = get().entries;
 		const copy = current[rowId];
 		if (!copy) return;
-		const newRowId = crypto.randomUUID();
-		const newCopy: StoredCopy = {
-			scryfallId: newScryfallId,
-			entry: { ...copy.entry, rowId: newRowId },
-		};
-		const next: WishlistData = {};
-		for (const key of Object.keys(current)) {
-			if (key === rowId) {
-				next[newRowId] = newCopy;
-			} else {
-				next[key] = current[key];
-			}
-		}
-		set({ entries: next });
+		// Patch the existing row in place (same rowId) so the card keeps its
+		// identity. The cards row is shared with the deck/collection views, so
+		// minting a new rowId would orphan those links (the deck card would no
+		// longer be recognised as wishlisted).
+		const updatedCopy: StoredCopy = { scryfallId: newScryfallId, entry: copy.entry };
+		set({ entries: { ...current, [rowId]: updatedCopy } });
 		if (userId) {
-			enqueue({ type: 'delete', payload: { userId, rowId } });
 			enqueue({
-				type: 'insert',
-				payload: {
-					userId,
-					rowId: newRowId,
-					scryfallId: newScryfallId,
-					entry: newCopy.entry,
-					wishlist: true,
-				},
+				type: 'update',
+				payload: { userId, rowId, entry: copy.entry, scryfallId: newScryfallId },
 			});
 			triggerSync();
 		}

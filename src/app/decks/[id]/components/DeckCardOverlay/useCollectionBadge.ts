@@ -153,8 +153,14 @@ export function useCollectionBadge(
 			})
 		);
 
+		// A deck card may itself be flagged wishlist (same shared `cards` row), which
+		// is independent of which prints are in the collection/deck print set.
+		const hasWishlistedDeckCopy = zoneCopies.some((c) => c.entry.wishlist);
+
 		const effectiveBadgeState: BadgeState =
-			badgeState === 'none' && relevantWishlist.length > 0 ? 'wishlist' : badgeState;
+			badgeState === 'none' && (relevantWishlist.length > 0 || hasWishlistedDeckCopy)
+				? 'wishlist'
+				: badgeState;
 
 		return {
 			badgeState: effectiveBadgeState,

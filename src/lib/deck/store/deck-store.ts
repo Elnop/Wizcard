@@ -9,6 +9,7 @@ import { fetchDecks, fetchDeckCards } from '../db/decks';
 import { fetchFolders } from '../db/folders';
 import { enqueue } from '@/lib/supabase/sync-queue';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
+import { useWishlistStore } from '@/lib/wishlist/store/wishlist-store';
 
 const SYNC_DECK_CARD_INSERT = 'deck-card-insert' as const;
 const SYNC_DECK_CARD_UPDATE = 'deck-card-update' as const;
@@ -105,6 +106,7 @@ type DeckActions = {
 		proxy: boolean | undefined,
 		triggerSync: () => void
 	) => void;
+	toggleDeckCardWishlist: (rowId: string, triggerSync: () => void) => void;
 	changeDeckCardPrint: (
 		rowId: string,
 		newCard: ScryfallCard,
@@ -532,16 +534,50 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		triggerSync();
 	},
 
+	toggleDeckCardWishlist: (rowId, triggerSync) => {
+		const current = get().activeDeckCards;
+		const copy = current[rowId];
+		if (!copy) return;
+		const nextWishlist = !copy.entry.wishlist;
+		const newEntry: CardEntry = { ...copy.entry, wishlist: nextWishlist || undefined };
+		set({
+			activeDeckCards: {
+				...current,
+				[rowId]: { ...copy, entry: newEntry },
+			},
+		});
+
+		// Mirror into the wishlist store under the same rowId (single shared `cards`
+		// row): wishlisting a deck card makes it appear on the wishlist page, and
+		// un-wishlisting removes it there. The deck card itself is preserved.
+		const wishEntries = useWishlistStore.getState().entries;
+		if (nextWishlist) {
+			useWishlistStore.setState({
+				entries: { ...wishEntries, [rowId]: { scryfallId: copy.scryfallId, entry: newEntry } },
+			});
+		} else if (wishEntries[rowId]) {
+			const rest = { ...wishEntries };
+			delete rest[rowId];
+			useWishlistStore.setState({ entries: rest });
+		}
+
+		enqueue({
+			type: SYNC_DECK_CARD_UPDATE,
+			payload: { rowId, updates: { wishlist: nextWishlist } },
+		});
+		triggerSync();
+	},
+
 	changeDeckCardPrint: (rowId, newCard, deckId, triggerSync) => {
 		const current = get().activeDeckCards;
 		const copy = current[rowId];
 		if (!copy) return;
 
-		// Owned deck cards are real collection copies: changing the print must
-		// modify that same physical card in place (keep rowId + ownerId, just
-		// swap the print) rather than spawning a new un-owned deck card and
-		// leaving the owned copy behind.
-		if (copy.entry.ownerId) {
+		// Owned or wishlisted deck cards are real shared `cards` rows: changing the
+		// print must modify that same physical row in place (keep rowId, just swap
+		// the print) rather than spawning a new row and orphaning the collection /
+		// wishlist link.
+		if (copy.entry.ownerId || copy.entry.wishlist) {
 			const updatedCopy: StoredCopy = { scryfallId: newCard.id, entry: copy.entry };
 			set({ activeDeckCards: { ...current, [rowId]: updatedCopy } });
 
@@ -550,6 +586,14 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			if (colEntries[rowId]) {
 				useCollectionStore.setState({
 					entries: { ...colEntries, [rowId]: updatedCopy },
+				});
+			}
+
+			// Mirror the change in the wishlist store if the copy lives there.
+			const wishEntries = useWishlistStore.getState().entries;
+			if (wishEntries[rowId]) {
+				useWishlistStore.setState({
+					entries: { ...wishEntries, [rowId]: updatedCopy },
 				});
 			}
 

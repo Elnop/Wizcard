@@ -72,7 +72,7 @@ async function executeOp(op: SyncOp): Promise<void> {
 	} else if (op.type === 'deck-move') {
 		await moveDeckToFolder(op.payload.userId, op.payload.deckId, op.payload.folderId);
 	} else {
-		await updateEntry(op.payload.userId, op.payload.rowId, op.payload.entry);
+		await updateEntry(op.payload.userId, op.payload.rowId, op.payload.entry, op.payload.scryfallId);
 	}
 }
 

@@ -68,7 +68,7 @@ interface Props {
 	collectionCopies?: CollectionCopyEntry[];
 	onAssignCollectionCopy?: (rowId: string) => void;
 	onMoveToCollection?: (rowId: string) => void;
-	onAddToWishlistFromEntry?: (scryfallId: string) => void;
+	onAddToWishlistFromEntry?: (deckCardRowId: string) => void;
 	onAddToCollectionFromEntry?: (rowIds: string[]) => void;
 	onRemoveFromCollectionEntry?: (rowId: string) => void;
 	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
@@ -94,7 +94,7 @@ interface InnerProps {
 	collectionCopies?: CollectionCopyEntry[];
 	onAssignCollectionCopy?: (rowId: string) => void;
 	onMoveToCollection?: (rowId: string) => void;
-	onAddToWishlistFromEntry?: (scryfallId: string) => void;
+	onAddToWishlistFromEntry?: (deckCardRowId: string) => void;
 	onAddToCollectionFromEntry?: (rowIds: string[]) => void;
 	onRemoveFromCollectionEntry?: (rowId: string) => void;
 	producerSections?: CardListSection[];
@@ -664,7 +664,7 @@ function CardModalInner({
 								{onAddToWishlistFromEntry && (
 									<Button
 										variant="secondary"
-										onClick={() => onAddToWishlistFromEntry(selectedCard.id)}
+										onClick={() => onAddToWishlistFromEntry(selectedCard.entry.rowId)}
 									>
 										<WishlistIcon size={13} /> Add to Wishlist
 									</Button>

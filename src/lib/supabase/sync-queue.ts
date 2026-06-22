@@ -27,7 +27,7 @@ export type SyncOp =
 	| {
 			id: string;
 			type: 'update';
-			payload: { rowId: string; userId: string; entry: CardEntry };
+			payload: { rowId: string; userId: string; entry: CardEntry; scryfallId?: string };
 			retries: number;
 			createdAt: string;
 	  }
@@ -112,6 +112,7 @@ export type SyncOp =
 					condition?: string | null;
 					language?: string | null;
 					purchase_price?: string | null;
+					wishlist?: boolean;
 				};
 			};
 			retries: number;

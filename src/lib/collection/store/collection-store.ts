@@ -217,34 +217,19 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 		const current = get().entries;
 		const copy = current[rowId];
 		if (!copy) return;
-		const newRowId = crypto.randomUUID();
-		const newCopy: StoredCopy = {
-			scryfallId: newScryfallId,
-			entry: { ...copy.entry, rowId: newRowId, ...entryPatch },
-		};
-		// Rebuild preserving insertion order so the card stays at the same position
-		const next: typeof current = {};
-		for (const key of Object.keys(current)) {
-			if (key === rowId) {
-				next[newRowId] = newCopy;
-			} else {
-				next[key] = current[key];
-			}
-		}
+		// Patch the existing row in place (same rowId) so the card keeps its
+		// identity. The cards row is shared with deck/wishlist views, so minting a
+		// new rowId would orphan a deck card that was assigned this physical copy.
+		const updatedEntry: CardEntry = { ...copy.entry, ...entryPatch };
+		const updatedCopy: StoredCopy = { scryfallId: newScryfallId, entry: updatedEntry };
+		set({ entries: { ...current, [rowId]: updatedCopy } });
 		if (userId) {
-			enqueue({ type: 'delete', payload: { userId, rowId } });
 			enqueue({
-				type: 'insert',
-				payload: {
-					userId,
-					rowId: newRowId,
-					scryfallId: newScryfallId,
-					entry: newCopy.entry,
-				},
+				type: 'update',
+				payload: { userId, rowId, entry: updatedEntry, scryfallId: newScryfallId },
 			});
+			triggerSync();
 		}
-		set({ entries: next });
-		if (userId) triggerSync();
 	},
 
 	removeEntry: (rowId, userId, triggerSync) => {

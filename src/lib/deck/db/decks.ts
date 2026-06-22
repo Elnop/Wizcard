@@ -297,6 +297,7 @@ export async function updateDeckCard(
 		condition?: string | null;
 		language?: string | null;
 		purchase_price?: string | null;
+		wishlist?: boolean;
 	}
 ): Promise<void> {
 	const supabase = createClient();

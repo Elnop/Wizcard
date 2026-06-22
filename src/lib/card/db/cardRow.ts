@@ -70,6 +70,9 @@ export function rowToCardEntry(row: CardDbRow, opts?: { includeOwnerId?: boolean
 		proxy: row.proxy ?? undefined,
 		tags: row.tags ?? undefined,
 		deckId: row.deck_id ?? undefined,
+		// `wishlist` is optional on the row (deck-card queries select it via `*`).
+		// Propagating it lets a deck card know it is also wishlisted (same row).
+		wishlist: row.wishlist ?? undefined,
 	};
 	if (opts?.includeOwnerId) {
 		entry.ownerId = row.owner_id ?? undefined;

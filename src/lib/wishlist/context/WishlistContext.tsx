@@ -8,6 +8,8 @@ import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { useWishlistStore } from '../store/wishlist-store';
 import type { WishlistData } from '../store/wishlist-store';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
+import { useDeckStore } from '@/lib/deck/store/deck-store';
+import { enqueue } from '@/lib/supabase/sync-queue';
 
 type WishlistContextValue = {
 	wishlist: WishlistData;
@@ -71,7 +73,36 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const removeFromWishlist = useCallback(
-		(rowId: string) => store.removeFromWishlist(rowId, userId, triggerSync),
+		(rowId: string) => {
+			// If this wishlist row is also a deck card (shared `cards` row), removing
+			// it from the wishlist must NOT delete the row — only clear its wishlist
+			// flag, so the deck card survives. Pure wishlist rows are deleted.
+			const copy = store.entries[rowId];
+			const deckCards = useDeckStore.getState().activeDeckCards;
+			const isDeckCard = copy?.entry.deckId != null || deckCards[rowId] != null;
+
+			if (isDeckCard) {
+				// Drop it from the wishlist view.
+				store.removeFromWishlist(rowId, null, triggerSync);
+				// Clear the wishlist flag on the deck-store copy if the deck is loaded.
+				const deckCopy = deckCards[rowId];
+				if (deckCopy) {
+					useDeckStore.setState({
+						activeDeckCards: {
+							...deckCards,
+							[rowId]: { ...deckCopy, entry: { ...deckCopy.entry, wishlist: undefined } },
+						},
+					});
+				}
+				// Persist wishlist=false on the shared row.
+				if (userId) {
+					enqueue({ type: 'deck-card-update', payload: { rowId, updates: { wishlist: false } } });
+					triggerSync();
+				}
+				return;
+			}
+			store.removeFromWishlist(rowId, userId, triggerSync);
+		},
 		[store, userId, triggerSync]
 	);
 
@@ -92,8 +123,30 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const changePrint = useCallback(
-		(rowId: string, newScryfallId: string) =>
-			store.changePrint(rowId, newScryfallId, userId, triggerSync),
+		(rowId: string, newScryfallId: string) => {
+			store.changePrint(rowId, newScryfallId, userId, triggerSync);
+
+			// The `cards` row is shared: if this wishlist row is also a deck card or a
+			// collection copy, keep their in-memory print in sync (the DB row was
+			// already patched in place by the wishlist update op above).
+			const deckCards = useDeckStore.getState().activeDeckCards;
+			const deckCopy = deckCards[rowId];
+			if (deckCopy) {
+				useDeckStore.setState({
+					activeDeckCards: {
+						...deckCards,
+						[rowId]: { ...deckCopy, scryfallId: newScryfallId },
+					},
+				});
+			}
+			const colEntries = useCollectionStore.getState().entries;
+			const colCopy = colEntries[rowId];
+			if (colCopy) {
+				useCollectionStore.setState({
+					entries: { ...colEntries, [rowId]: { ...colCopy, scryfallId: newScryfallId } },
+				});
+			}
+		},
 		[store, userId, triggerSync]
 	);
 

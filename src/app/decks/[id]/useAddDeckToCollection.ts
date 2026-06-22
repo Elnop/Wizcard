@@ -25,7 +25,7 @@ type UseAddDeckToCollectionResult = {
 	execute: (options: AddDeckToCollectionOptions) => void;
 };
 
-const ZONE_ORDER: DeckZone[] = ['commander', 'mainboard', 'sideboard', 'maybeboard'];
+const ZONE_ORDER: DeckZone[] = ['commander', 'mainboard', 'sideboard', 'maybeboard', 'tokens'];
 
 export function useAddDeckToCollection(
 	resolvedCards: ResolvedDeckCard[]

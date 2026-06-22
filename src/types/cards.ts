@@ -19,6 +19,7 @@ export interface CardEntry {
 	tags?: string[];
 	deckId?: string;
 	ownerId?: string;
+	wishlist?: boolean;
 }
 
 // One copy in the collection = Scryfall print data + per-copy metadata

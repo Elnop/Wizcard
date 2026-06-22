@@ -26,7 +26,8 @@ function buildContextMenuItems(
 	onDuplicate: (card: Card) => void,
 	onRemove: (rowId: string) => void,
 	onChangeZone: (rowId: string, zone: DeckZone) => void,
-	onAddToWishlist: ((id: string) => void) | undefined,
+	onAddToWishlist: ((deckCardRowId: string) => void) | undefined,
+	wishlistTargetRowId: string | undefined,
 	onAddToCollection: ((req: CollectionAddRequest) => void) | undefined,
 	buildRequest: () => CollectionAddRequest,
 	hasUnowned: boolean,
@@ -70,14 +71,14 @@ function buildContextMenuItems(
 					},
 				]
 			: []),
-		...(onAddToWishlist
+		...(onAddToWishlist && wishlistTargetRowId
 			? [
 					{
 						type: 'action' as const,
 						label: 'Add to Wishlist',
 						icon: '🛒',
 						onClick: () => {
-							onAddToWishlist(representativeScryfallId);
+							onAddToWishlist(wishlistTargetRowId);
 							closeMenu();
 						},
 					},
@@ -108,7 +109,7 @@ type Props = {
 	onChangeZone: (rowId: string, zone: DeckZone) => void;
 	onBadgeClick?: () => void;
 	onAddToCollectionClick?: (req: CollectionAddRequest) => void;
-	onAddToWishlist?: (scryfallId: string) => void;
+	onAddToWishlist?: (deckCardRowId: string) => void;
 	wishlistEntries?: Array<{ scryfallId: string; entry: CardEntry }>;
 	contextMenuPos?: { x: number; y: number } | null;
 	onContextMenuClose?: () => void;
@@ -149,6 +150,9 @@ export function DeckCardOverlay({
 	const closeMenu = useCallback(() => onContextMenuClose?.(), [onContextMenuClose]);
 
 	const representativeScryfallId = (zoneCopies[0]?.id ?? (group.representative as Card).id) || '';
+	// Wishlisting toggles the flag on an actual deck-card row (the first copy in
+	// this zone), so the wishlist entry IS this deck card, not a separate copy.
+	const wishlistTargetRowId = zoneCopies[0]?.entry.rowId;
 
 	const hasUnowned = zoneCopies.some((c) => !c.entry.ownerId);
 
@@ -170,6 +174,7 @@ export function DeckCardOverlay({
 		onRemove,
 		onChangeZone,
 		onAddToWishlist,
+		wishlistTargetRowId,
 		onAddToCollectionClick,
 		buildAddRequest,
 		hasUnowned,

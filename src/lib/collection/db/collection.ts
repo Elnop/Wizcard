@@ -126,7 +126,12 @@ export async function deleteEntries(userId: string, rowIds: string[]): Promise<v
 	}
 }
 
-export async function updateEntry(userId: string, rowId: string, entry: CardEntry): Promise<void> {
+export async function updateEntry(
+	userId: string,
+	rowId: string,
+	entry: CardEntry,
+	scryfallId?: string
+): Promise<void> {
 	const supabase = createClient();
 	const { error } = await supabase
 		.from('cards')
@@ -142,6 +147,9 @@ export async function updateEntry(userId: string, rowId: string, entry: CardEntr
 			proxy: entry.proxy ?? null,
 			tags: entry.tags ?? null,
 			deck_id: entry.deckId ?? null,
+			// Changing the print (edition) must patch the existing row in place so the
+			// card keeps its identity (rowId) across collection/deck/wishlist views.
+			...(scryfallId !== undefined ? { scryfall_id: scryfallId } : {}),
 		})
 		.eq('owner_id', userId)
 		.eq('id', rowId);
