@@ -90,11 +90,11 @@ export function EditCardModal(props: Props) {
 				controller.signal
 			);
 			if (controller.signal.aborted) return;
+			// Update the local preview only. The print and language are committed to
+			// the collection on Save (handleSave), like every other field — committing
+			// mid-edit churns the global store and destabilizes the open modal.
 			setSelectedPrint(localized);
 			setLangInfoMessage(null);
-			// Print/language changes propagate to the parent immediately (like the
-			// print picker), unlike other fields which only persist on Save.
-			if (!addMode) props.onChangePrint(localized);
 		} catch (err: unknown) {
 			if (err instanceof DOMException && err.name === 'AbortError') return;
 			if (controller.signal.aborted) return;
@@ -108,6 +108,11 @@ export function EditCardModal(props: Props) {
 
 	function handleSave() {
 		if (!addMode) {
+			// Commit a print change (incl. localized language) before the metadata
+			// patch. Both target the same rowId, so order is consistent.
+			if (selectedPrint.id !== props.card.id) {
+				props.onChangePrint(selectedPrint);
+			}
 			props.onSave(draftEntry);
 			props.onClose();
 		}
@@ -360,11 +365,11 @@ export function EditCardModal(props: Props) {
 					currentCollectorNumber={cardForPrint.collector_number}
 					currentLang={entryLangCode}
 					onSelect={(print) => {
+						// Local preview + draft only; committed to the collection on Save.
 						setSelectedPrint(print);
 						const lang = print.lang ? SCRYFALL_CODE_TO_LANGUAGE[print.lang] : undefined;
 						save({ language: lang });
 						setLangInfoMessage(null);
-						if (!addMode) props.onChangePrint(print);
 						setShowPrintPicker(false);
 					}}
 					onClose={() => setShowPrintPicker(false)}
