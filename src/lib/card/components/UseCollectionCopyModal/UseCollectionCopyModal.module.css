@@ -145,3 +145,28 @@
 	line-height: 1.4;
 	white-space: nowrap;
 }
+
+.noneRow {
+	margin-bottom: 16px;
+}
+
+.noneBtn {
+	width: 100%;
+	padding: 10px 12px;
+	font-size: var(--text-sm);
+	font-weight: 600;
+	border-radius: 8px;
+	border: 1px solid var(--border);
+	background: var(--surface, rgba(255, 255, 255, 0.04));
+	color: var(--text-muted);
+	cursor: pointer;
+	transition:
+		background 0.15s,
+		border-color 0.15s,
+		color 0.15s;
+}
+
+.noneBtn:hover {
+	border-color: #ef4444;
+	color: #ef4444;
+}

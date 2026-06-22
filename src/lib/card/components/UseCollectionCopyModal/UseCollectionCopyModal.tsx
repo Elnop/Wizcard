@@ -25,6 +25,8 @@ interface Props {
 	/** rowId of the collection copy currently linked to the row being edited. */
 	currentCollectionRowId?: string;
 	onSelectCollectionCopy: (rowId: string) => void;
+	/** When provided and a copy is currently linked, shows an "Aucune" option to unassign. */
+	onSelectNone?: () => void;
 	onClose: () => void;
 }
 
@@ -33,6 +35,7 @@ export function UseCollectionCopyModal({
 	collectionCopies,
 	currentCollectionRowId,
 	onSelectCollectionCopy,
+	onSelectNone,
 	onClose,
 }: Props) {
 	const { prints, loading, error } = useCardPrints(prints_search_uri);
@@ -166,7 +169,23 @@ export function UseCollectionCopyModal({
 					</svg>
 				</button>
 			</div>
-			<div className={styles.body}>{content}</div>
+			<div className={styles.body}>
+				{onSelectNone && currentCollectionRowId !== undefined && (
+					<div className={styles.noneRow}>
+						<button
+							type="button"
+							className={styles.noneBtn}
+							onClick={() => {
+								onSelectNone();
+								onClose();
+							}}
+						>
+							Aucune — désassigner cette carte du deck (redevient non possédée)
+						</button>
+					</div>
+				)}
+				{content}
+			</div>
 			{lightboxCard && (
 				<CardLightbox card={lightboxCard as ScryfallCard} onClose={() => setLightboxCard(null)} />
 			)}
