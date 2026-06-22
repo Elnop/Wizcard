@@ -195,33 +195,6 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 
 	const deckNameResolver = useCallback((id: string) => deckNameById.get(id), [deckNameById]);
 
-	// All collection copies (assigned + free) filtered to the selected card's prints only
-	const allCollectionCopies = useMemo(
-		() =>
-			entries
-				.filter((e) => selectedScryfallIds.has(e.scryfallId))
-				.map((e) => {
-					const assignedToCurrentDeck = !!e.entry.deckId && e.entry.deckId === deck?.id;
-					return {
-						rowId: e.entry.rowId,
-						scryfallId: e.scryfallId,
-						condition: e.entry.condition,
-						isFoil: e.entry.isFoil,
-						foilType: e.entry.foilType,
-						proxy: e.entry.proxy,
-						language: e.entry.language,
-						assignedToDeckName: resolveAssignedDeckName(
-							e.entry.deckId,
-							assignedToCurrentDeck,
-							deck?.name,
-							deckNameById
-						),
-						isCurrentDeck: assignedToCurrentDeck,
-					};
-				}),
-		[entries, selectedScryfallIds, deck, deckNameById]
-	);
-
 	// Always resolve collection stacks so oracle_id lookups work for assign-all
 	const { stacks: collectionStacks } = useCollectionCards(entries);
 
@@ -260,6 +233,46 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		}
 		return map;
 	}, [collectionScryfallIdToOracleId, entries]);
+
+	// All collection copies (assigned + free) for the selected card.
+	// Matched by oracle_id (all editions), like the ownership badge — not just the
+	// exact prints present in the deck — so copies of a different edition are offered too.
+	const allCollectionCopies = useMemo(() => {
+		const selected = selectedCards?.[0];
+		const oracleId = selected ? collectionScryfallIdToOracleId.get(selected.id) : undefined;
+		const matchingScryfallIds = oracleId
+			? (oracleIdToAllScryfallIds.get(oracleId) ?? selectedScryfallIds)
+			: selectedScryfallIds;
+		return entries
+			.filter((e) => matchingScryfallIds.has(e.scryfallId))
+			.map((e) => {
+				const assignedToCurrentDeck = !!e.entry.deckId && e.entry.deckId === deck?.id;
+				return {
+					rowId: e.entry.rowId,
+					scryfallId: e.scryfallId,
+					condition: e.entry.condition,
+					isFoil: e.entry.isFoil,
+					foilType: e.entry.foilType,
+					proxy: e.entry.proxy,
+					language: e.entry.language,
+					assignedToDeckName: resolveAssignedDeckName(
+						e.entry.deckId,
+						assignedToCurrentDeck,
+						deck?.name,
+						deckNameById
+					),
+					isCurrentDeck: assignedToCurrentDeck,
+				};
+			});
+	}, [
+		entries,
+		selectedCards,
+		selectedScryfallIds,
+		collectionScryfallIdToOracleId,
+		oracleIdToAllScryfallIds,
+		deck,
+		deckNameById,
+	]);
 
 	const wishlistScryfallIds = useMemo(
 		() => new Set(wishlistEntries.map((e) => e.scryfallId)),
