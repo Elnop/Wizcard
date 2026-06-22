@@ -4,6 +4,7 @@ build
 tmp
 node_modules
 .claude
+.superpowers
 *.tsbuildinfo
 next-env.d.ts
 cosmos-export

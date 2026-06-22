@@ -4,11 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { type DeckZone, setDeckZone } from '@/types/decks';
-import {
-	MTG_LANGUAGES,
-	LANGUAGE_TO_SCRYFALL_CODE,
-	SCRYFALL_CODE_TO_LANGUAGE,
-} from '@/lib/mtg/languages';
+import { MTG_LANGUAGES, SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import { CardPrintPickerModal } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
 import { Modal } from '@/components/Modal/Modal';
@@ -96,6 +92,8 @@ export function EditCardModal(props: Props) {
 			if (controller.signal.aborted) return;
 			setSelectedPrint(localized);
 			setLangInfoMessage(null);
+			// Print/language changes propagate to the parent immediately (like the
+			// print picker), unlike other fields which only persist on Save.
 			if (!addMode) props.onChangePrint(localized);
 		} catch (err: unknown) {
 			if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -145,10 +143,10 @@ export function EditCardModal(props: Props) {
 
 	const cardForPrint: ScryfallCard = selectedPrint;
 
-	const entryLangCode =
-		entry.language && LANGUAGE_TO_SCRYFALL_CODE[entry.language]
-			? LANGUAGE_TO_SCRYFALL_CODE[entry.language]
-			: (cardForPrint.lang ?? 'en');
+	// Highlight the print actually shown in the preview. Using the displayed
+	// print's lang keeps the picker's "current" marker correct even when a
+	// chosen language has no localized print (404 → preview stays unchanged).
+	const entryLangCode = cardForPrint.lang ?? 'en';
 
 	const title = addMode
 		? `Ajouter — ${selectedPrint.set_name} #${selectedPrint.collector_number}`
