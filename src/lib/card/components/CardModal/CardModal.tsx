@@ -720,7 +720,7 @@ function CardModalInner({
 				<UseCollectionCopyModal
 					prints_search_uri={(selectedCard as ScryfallCard).prints_search_uri}
 					collectionCopies={collectionCopies ?? []}
-					currentCollectionRowId={selectedCard.entry.rowId}
+					currentCollectionRowId={selectedCard.entry.ownerId ? selectedCard.entry.rowId : undefined}
 					onSelectCollectionCopy={(rowId) => {
 						onAssignCollectionCopy?.(rowId);
 						setUsingCollectionCopy(false);
