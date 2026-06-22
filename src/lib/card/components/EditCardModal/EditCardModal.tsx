@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { type DeckZone, setDeckZone } from '@/types/decks';
@@ -12,6 +12,8 @@ import {
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import { CardPrintPickerModal } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
 import { Modal } from '@/components/Modal/Modal';
+import { getCardBySetNumberAndLang } from '@/lib/scryfall/endpoints/cards';
+import { resolveLanguageChange } from './resolveLanguageChange';
 import styles from './EditCardModal.module.css';
 
 const CONDITIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
@@ -62,10 +64,49 @@ export function EditCardModal(props: Props) {
 	const [showPrintPicker, setShowPrintPicker] = useState(false);
 	const [tagInput, setTagInput] = useState('');
 	const isFoil = entry.isFoil ?? false;
+	const [langInfoMessage, setLangInfoMessage] = useState<string | null>(null);
+	const langFetchAbort = useRef<AbortController | null>(null);
 
 	function save(patch: Partial<CardEntry>) {
 		setDraftEntry((prev) => ({ ...prev, ...patch }));
 	}
+
+	async function handleLanguageChange(value: string) {
+		const language = (value as CardEntry['language']) || undefined;
+		save({ language });
+
+		const action = resolveLanguageChange(language, selectedPrint);
+		if (action.kind === 'skip') {
+			setLangInfoMessage(null);
+			langFetchAbort.current?.abort();
+			return;
+		}
+
+		langFetchAbort.current?.abort();
+		const controller = new AbortController();
+		langFetchAbort.current = controller;
+
+		try {
+			const localized = await getCardBySetNumberAndLang(
+				action.set,
+				action.collectorNumber,
+				action.langCode,
+				controller.signal
+			);
+			if (controller.signal.aborted) return;
+			setSelectedPrint(localized);
+			setLangInfoMessage(null);
+			if (!addMode) props.onChangePrint(localized);
+		} catch (err: unknown) {
+			if (err instanceof DOMException && err.name === 'AbortError') return;
+			if (controller.signal.aborted) return;
+			setLangInfoMessage('Image localisée indisponible pour cette édition.');
+		}
+	}
+
+	useEffect(() => {
+		return () => langFetchAbort.current?.abort();
+	}, []);
 
 	function handleSave() {
 		if (!addMode) {
@@ -102,7 +143,7 @@ export function EditCardModal(props: Props) {
 		}
 	}
 
-	const cardForPrint: ScryfallCard = addMode ? selectedPrint : (props.card as ScryfallCard);
+	const cardForPrint: ScryfallCard = selectedPrint;
 
 	const entryLangCode =
 		entry.language && LANGUAGE_TO_SCRYFALL_CODE[entry.language]
@@ -240,9 +281,7 @@ export function EditCardModal(props: Props) {
 								id="copy-edit-language"
 								className={styles.select}
 								value={entry.language ?? ''}
-								onChange={(e) =>
-									save({ language: (e.target.value as CardEntry['language']) || undefined })
-								}
+								onChange={(e) => handleLanguageChange(e.target.value)}
 							>
 								<option value="">— select —</option>
 								{MTG_LANGUAGES.map((lang) => (
@@ -251,6 +290,7 @@ export function EditCardModal(props: Props) {
 									</option>
 								))}
 							</select>
+							{langInfoMessage && <p className={styles.langInfo}>{langInfoMessage}</p>}
 						</div>
 
 						{/* Tags */}
@@ -322,13 +362,11 @@ export function EditCardModal(props: Props) {
 					currentCollectorNumber={cardForPrint.collector_number}
 					currentLang={entryLangCode}
 					onSelect={(print) => {
-						if (addMode) {
-							setSelectedPrint(print);
-							const lang = print.lang ? SCRYFALL_CODE_TO_LANGUAGE[print.lang] : undefined;
-							save({ language: lang });
-						} else {
-							props.onChangePrint(print);
-						}
+						setSelectedPrint(print);
+						const lang = print.lang ? SCRYFALL_CODE_TO_LANGUAGE[print.lang] : undefined;
+						save({ language: lang });
+						setLangInfoMessage(null);
+						if (!addMode) props.onChangePrint(print);
 						setShowPrintPicker(false);
 					}}
 					onClose={() => setShowPrintPicker(false)}
