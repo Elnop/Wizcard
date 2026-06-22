@@ -17,6 +17,7 @@ export function useDeckCardModal(deckId: string, groupByCardId: Map<string, Deck
 		updateDeckCard,
 		changeDeckCardPrint,
 		replaceDeckCardWithCollectionCopy,
+		unassignCollectionCopyFromDeckCard,
 	} = useDeckContext();
 	const [selection, setSelection] = useState<Selection | null>(null);
 
@@ -100,6 +101,16 @@ export function useDeckCardModal(deckId: string, groupByCardId: Map<string, Deck
 		[selection, selectedCards, deckId, replaceDeckCardWithCollectionCopy]
 	);
 
+	// Called when the user selects "Aucune" to unassign the deck card from its
+	// collection copy. Replaces the owned copy with a non-owned placeholder.
+	const handleUnassignCollectionCopy = useCallback(() => {
+		if (!selection || !selectedCards) return;
+		const clickedCard = selectedCards.find((c) => c.entry.rowId === selection.clickedRowId);
+		if (!clickedCard) return;
+		const zone = getDeckZone(clickedCard.entry.tags);
+		unassignCollectionCopyFromDeckCard(clickedCard.entry.rowId, deckId, zone);
+	}, [selection, selectedCards, deckId, unassignCollectionCopyFromDeckCard]);
+
 	return {
 		selectedCards,
 		selectedZone,
@@ -112,5 +123,6 @@ export function useDeckCardModal(deckId: string, groupByCardId: Map<string, Deck
 		handleChangeZone,
 		handleChangePrint,
 		handleAssignCollectionCopy,
+		handleUnassignCollectionCopy,
 	};
 }
