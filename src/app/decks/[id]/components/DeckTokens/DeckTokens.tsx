@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { DeckZone } from '@/types/decks';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { Spinner } from '@/components/Spinner/Spinner';
 import type { ResolvedDeckCard } from '../../useDeckDetail';
 import styles from './DeckTokens.module.css';
@@ -29,6 +30,7 @@ interface DeckTokensProps {
 	renderOverlay?: (card: AnyCard) => ReactNode;
 	onCardClick?: (card: AnyCard) => void;
 	onCardContextMenu?: (card: AnyCard, e: React.MouseEvent) => void;
+	tableColumns?: CardListColumn[];
 }
 
 export function DeckTokens({
@@ -39,6 +41,7 @@ export function DeckTokens({
 	renderOverlay,
 	onCardClick,
 	onCardContextMenu,
+	tableColumns,
 }: DeckTokensProps) {
 	const availableZones = ZONE_ORDER.filter((z) => scanZones.includes(z));
 
@@ -131,6 +134,7 @@ export function DeckTokens({
 					renderOverlay={renderOverlay}
 					onCardClick={onCardClick}
 					onCardContextMenu={onCardContextMenu}
+					tableColumns={tableColumns}
 					viewModes={['fluid-grid', 'grid', 'table']}
 					cardGap="compact"
 					showCardNames={false}

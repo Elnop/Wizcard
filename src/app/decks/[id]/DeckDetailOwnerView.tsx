@@ -335,6 +335,26 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		[groupByCardId, symbolMap]
 	);
 
+	// Tokens have no deck quantity or relevant mana cost; show identity-focused
+	// columns instead of reusing the main deck columns.
+	const tokenTableColumns: CardListColumn[] = useMemo(
+		() => [
+			{ key: 'name', label: 'Nom' },
+			{ key: 'type_line', label: 'Type' },
+			{
+				key: 'pt',
+				label: 'P/F',
+				render: (card) => {
+					const power = 'power' in card ? (card.power as string | undefined) : undefined;
+					const toughness =
+						'toughness' in card ? (card.toughness as string | undefined) : undefined;
+					return power != null && toughness != null ? `${power}/${toughness}` : '—';
+				},
+			},
+		],
+		[]
+	);
+
 	const warnings = useMemo(() => {
 		if (!deck) return [];
 		const allCards = resolvedCards.filter((rc) => {
@@ -596,6 +616,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 						renderOverlay={renderOverlay}
 						onCardClick={handleCardClick}
 						onCardContextMenu={handleCardContextMenu}
+						tableColumns={tokenTableColumns}
 					/>
 
 					<DeckStats stats={stats} warnings={warnings} />
