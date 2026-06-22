@@ -558,6 +558,16 @@ function CardModalInner({
 								Utiliser une carte de la collection
 							</button>
 						)}
+						{onUnassignCollectionCopy && selectedCard.entry.ownerId && (
+							<button
+								type="button"
+								className={styles.changePrintBtn}
+								title="Désassigner cette carte du deck (redevient non possédée)"
+								onClick={() => onUnassignCollectionCopy()}
+							>
+								Désassigner de la collection
+							</button>
+						)}
 						{(onAddToCollectionFromEntry || onRemoveFromCollectionEntry) && (
 							<button
 								type="button"
