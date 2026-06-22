@@ -150,6 +150,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		handleChangeZone,
 		handleChangePrint,
 		handleAssignCollectionCopy,
+		handleUnassignCollectionCopy,
 	} = useDeckCardModal(deckId, groupByCardId);
 
 	const { entries } = useCollectionContext();
@@ -727,6 +728,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				onChangePrint={handleChangePrint}
 				collectionCopies={allCollectionCopies}
 				onAssignCollectionCopy={handleAssignCollectionCopy}
+				onUnassignCollectionCopy={handleUnassignCollectionCopy}
 				onAddToCollectionFromEntry={(rowIds) => {
 					const card = selectedCards?.[0];
 					if (!card || rowIds.length === 0) return;
