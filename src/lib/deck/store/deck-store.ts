@@ -123,6 +123,14 @@ type DeckActions = {
 		triggerSync: () => void
 	) => void;
 
+	unassignCollectionCopyFromDeckCard: (
+		deckCardRowId: string,
+		deckId: string,
+		zone: DeckZone,
+		userId: string,
+		triggerSync: () => void
+	) => void;
+
 	getDeckCardCount: (deckId: string) => number;
 };
 
@@ -754,6 +762,67 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 
 		enqueue({ type: SYNC_DECK_CARD_DELETE, payload: { rowId: deckCardRowId } });
 		enqueue({ type: 'update', payload: { userId, rowId: collectionRowId, entry: updatedEntry } });
+		triggerSync();
+	},
+
+	unassignCollectionCopyFromDeckCard: (deckCardRowId, deckId, zone, userId, triggerSync) => {
+		const current = get().activeDeckCards;
+		const deckCard = current[deckCardRowId];
+		if (!deckCard) return;
+
+		// Only owned copies can be unassigned.
+		if (!deckCard.entry.ownerId) return;
+
+		if (!userId) {
+			console.error('[deck-store] unassignCollectionCopyFromDeckCard: userId absent, aborting');
+			return;
+		}
+
+		// 1. Free the collection copy: remove from the deck, clear its deckId,
+		//    keep it owned in the collection store.
+		const freedEntry: CardEntry = { ...deckCard.entry, deckId: undefined };
+		const next = { ...current };
+		delete next[deckCardRowId];
+
+		// 2. Create a fresh non-owned placeholder keeping the same scryfallId.
+		const placeholderRowId = crypto.randomUUID();
+		const placeholderEntry: CardEntry = {
+			rowId: placeholderRowId,
+			dateAdded: new Date().toISOString(),
+			deckId,
+			tags: setDeckZone(undefined, zone),
+		};
+		next[placeholderRowId] = { scryfallId: deckCard.scryfallId, entry: placeholderEntry };
+		set({ activeDeckCards: next });
+
+		// Bump deck updatedAt
+		const deck = get().decks[deckId];
+		if (deck) {
+			set((state) => ({
+				decks: {
+					...state.decks,
+					[deckId]: { ...deck, updatedAt: new Date().toISOString() },
+				},
+			}));
+		}
+
+		// Update collection store so the freed copy reappears as available.
+		const colEntries = useCollectionStore.getState().entries;
+		if (colEntries[deckCardRowId]) {
+			useCollectionStore.setState({
+				entries: {
+					...colEntries,
+					[deckCardRowId]: { scryfallId: deckCard.scryfallId, entry: freedEntry },
+				},
+			});
+		}
+
+		// Sync: free the owned copy (deck_id null) + insert the placeholder.
+		enqueue({ type: 'update', payload: { userId, rowId: deckCardRowId, entry: freedEntry } });
+		enqueue({
+			type: SYNC_DECK_CARD_INSERT,
+			payload: { deckId, scryfallId: deckCard.scryfallId, entry: placeholderEntry },
+		});
 		triggerSync();
 	},
 
