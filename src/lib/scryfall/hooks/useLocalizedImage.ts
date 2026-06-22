@@ -23,6 +23,18 @@ interface UseLocalizedImageResult {
 	loading: boolean;
 }
 
+// A localized result is only valid for the card whose cacheKey it was fetched
+// for. Selecting it by tag prevents a stale image from a previous print/edition
+// being merged onto a new card. Exported for unit testing.
+export function selectLocalized<T>(
+	needsFetch: boolean,
+	currentKey: string,
+	result: { key: string; data: T } | null
+): T | null {
+	if (!needsFetch || result?.key !== currentKey) return null;
+	return result.data;
+}
+
 export function useLocalizedImage(
 	card: {
 		set?: string;
@@ -32,8 +44,12 @@ export function useLocalizedImage(
 	},
 	enabled: boolean
 ): UseLocalizedImageResult {
-	const [result, setResult] = useState<LocalizedImageResult | null>(null);
-	const [loading, setLoading] = useState(false);
+	// `result` is tagged with the cacheKey it belongs to. Exposing it only when
+	// the tag matches the current card means a stale localized image from a
+	// previous print/edition is never merged onto a new card (which would freeze
+	// the preview) — without resetting state from inside the effect.
+	const [result, setResult] = useState<{ key: string; data: LocalizedImageResult } | null>(null);
+	const [loadingKey, setLoadingKey] = useState<string | null>(null);
 
 	const language = card.entry?.language ?? card.language;
 	const lang = language ? LANGUAGE_TO_SCRYFALL_CODE[language as MtgLanguage] : undefined;
@@ -51,23 +67,26 @@ export function useLocalizedImage(
 		const controller = new AbortController();
 
 		(async () => {
-			setLoading(true);
+			setLoadingKey(cacheKey);
 			// 1. Check IndexedDB cache
 			const cached = await getLocalizedImageFromCache(cacheKey);
 			if (controller.signal.aborted) return;
 			if (cached) {
 				setResult({
-					image_uris: cached.image_uris,
-					card_faces: cached.face_image_uris
-						? cached.face_image_uris.map((uris) => ({
-								object: 'card_face' as const,
-								mana_cost: '',
-								name: '',
-								image_uris: uris,
-							}))
-						: undefined,
+					key: cacheKey,
+					data: {
+						image_uris: cached.image_uris,
+						card_faces: cached.face_image_uris
+							? cached.face_image_uris.map((uris) => ({
+									object: 'card_face' as const,
+									mana_cost: '',
+									name: '',
+									image_uris: uris,
+								}))
+							: undefined,
+					},
 				});
-				setLoading(false);
+				setLoadingKey(null);
 				return;
 			}
 
@@ -81,12 +100,11 @@ export function useLocalizedImage(
 				);
 				if (controller.signal.aborted) return;
 
-				const imageResult: LocalizedImageResult = {
-					image_uris: localized.image_uris,
-					card_faces: localized.card_faces,
-				};
-				setResult(imageResult);
-				setLoading(false);
+				setResult({
+					key: cacheKey,
+					data: { image_uris: localized.image_uris, card_faces: localized.card_faces },
+				});
+				setLoadingKey(null);
 
 				// 3. Persist to IndexedDB
 				void putLocalizedImageInCache({
@@ -100,7 +118,7 @@ export function useLocalizedImage(
 				// don't blacklist the cache key so the image can be retried next time.
 				if (e instanceof DOMException && e.name === 'AbortError') return;
 				notFound.add(cacheKey);
-				setLoading(false);
+				setLoadingKey(null);
 			}
 		})();
 
@@ -109,5 +127,10 @@ export function useLocalizedImage(
 		};
 	}, [card.set, card.collector_number, lang, needsFetch, cacheKey]);
 
-	return { localized: result, loading };
+	// Only surface a localized image / loading state that belongs to the current
+	// card. A result tagged with a previous cacheKey is treated as absent.
+	return {
+		localized: selectLocalized(needsFetch, cacheKey, result),
+		loading: needsFetch && loadingKey === cacheKey,
+	};
 }
