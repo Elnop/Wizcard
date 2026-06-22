@@ -57,6 +57,11 @@ type DeckContextValue = {
 		deckId: string,
 		zone: DeckZone
 	) => void;
+	unassignCollectionCopyFromDeckCard: (
+		deckCardRowId: string,
+		deckId: string,
+		zone: DeckZone
+	) => void;
 };
 
 const DeckContext = createContext<DeckContextValue | null>(null);
@@ -241,6 +246,14 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 		[store, userId, triggerSync]
 	);
 
+	const unassignCollectionCopyFromDeckCard = useCallback(
+		(deckCardRowId: string, deckId: string, zone: DeckZone) => {
+			if (!userId) return;
+			store.unassignCollectionCopyFromDeckCard(deckCardRowId, deckId, zone, userId, triggerSync);
+		},
+		[store, userId, triggerSync]
+	);
+
 	const decks = useMemo(() => Object.values(store.decks), [store.decks]);
 	const folders = useMemo(() => Object.values(store.folders), [store.folders]);
 
@@ -269,6 +282,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 		toggleDeckCardWishlist,
 		changeDeckCardPrint,
 		replaceDeckCardWithCollectionCopy,
+		unassignCollectionCopyFromDeckCard,
 	};
 
 	return <DeckContext value={value}>{children}</DeckContext>;
