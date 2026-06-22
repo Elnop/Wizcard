@@ -175,12 +175,13 @@ export function UseCollectionCopyModal({
 						<button
 							type="button"
 							className={styles.noneBtn}
+							title="Désassigner cette carte du deck (redevient non possédée)"
 							onClick={() => {
 								onSelectNone();
 								onClose();
 							}}
 						>
-							Aucune — désassigner cette carte du deck (redevient non possédée)
+							Aucune ✕
 						</button>
 					</div>
 				)}
