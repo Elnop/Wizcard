@@ -31,7 +31,9 @@ export function groupByCardType(
 		const total = countById
 			? group.reduce((sum, c) => sum + (countById.get(c.id) ?? 1), 0)
 			: group.length;
-		return { label: `${label} (${total})`, cards: group, border: false, background: false };
+		// Stable key (the type slug) so the open/collapsed state survives the count
+		// in the label changing when cards move in or out of the subsection.
+		return { key, label: `${label} (${total})`, cards: group, border: false, background: false };
 	}
 
 	return [

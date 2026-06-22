@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { CardListProps, CardListSection, CardListViewMode } from './CardList.types';
 import { isSections, VIEW_MODE_LABELS } from './CardList.types';
+import { sectionKey } from './section-key';
 import { CardListGrid } from '@/lib/card/components/CardListGrid/CardListGrid';
 import { CardListTable } from '@/lib/card/components/CardListTable/CardListTable';
 import { useInfiniteScroll } from './useInfiniteScroll';
@@ -16,8 +17,9 @@ function useCollapsedSections(sections: CardListSection[] | undefined) {
 	const effective = new Set(state);
 	if (sections) {
 		for (const sec of sections) {
-			if (sec.defaultCollapsed && !state.has(`opened:${sec.label}`)) {
-				effective.add(sec.label);
+			const key = sectionKey(sec);
+			if (sec.defaultCollapsed && !state.has(`opened:${key}`)) {
+				effective.add(key);
 			}
 		}
 	}

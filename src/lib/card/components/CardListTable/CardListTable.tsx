@@ -1,5 +1,6 @@
 import type { ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import type { CardListSection } from '@/lib/card/components/CardList/CardList.types';
+import { sectionKey } from '@/lib/card/components/CardList/section-key';
 import type { CardListTableProps } from './CardListTable.types';
 import { Spinner } from '@/components/Spinner/Spinner';
 import styles from './CardListTable.module.css';
@@ -81,8 +82,8 @@ export function CardListTable({
 	}
 
 	function renderSectionRows(section: CardListSection, depth: number, parentKey: string) {
-		const sectionKey = parentKey ? `${parentKey}::${section.label}` : section.label;
-		const collapsed = collapsedSections?.has(sectionKey) ?? false;
+		const key = parentKey ? `${parentKey}::${sectionKey(section)}` : sectionKey(section);
+		const collapsed = collapsedSections?.has(key) ?? false;
 
 		// eslint-disable-next-line sonarjs/slow-regex -- short section label strings, no ReDoS risk
 		const labelMatch = section.label.match(/^(.+?)\s*(\(\d+\))$/);
@@ -92,14 +93,14 @@ export function CardListTable({
 		const rows: React.ReactNode[] = [];
 
 		rows.push(
-			<tr key={`section-${sectionKey}`} className={styles.sectionRow} data-depth={depth}>
+			<tr key={`section-${key}`} className={styles.sectionRow} data-depth={depth}>
 				<td colSpan={columns.length} className={styles.sectionCell}>
 					{isCollapsible ? (
 						<button
 							type="button"
 							className={styles.sectionButton}
 							style={{ paddingLeft: `${depth * 16 + 12}px` }}
-							onClick={() => onSectionToggle(sectionKey)}
+							onClick={() => onSectionToggle(key)}
 						>
 							<span className={`${styles.chevron} ${collapsed ? styles.chevronCollapsed : ''}`}>
 								▾
@@ -120,7 +121,7 @@ export function CardListTable({
 		if (!collapsed) {
 			if (section.children && section.children.length > 0) {
 				for (const child of section.children) {
-					rows.push(...renderSectionRows(child, depth + 1, sectionKey));
+					rows.push(...renderSectionRows(child, depth + 1, key));
 				}
 			} else {
 				rows.push(...renderCardRows(section.cards));

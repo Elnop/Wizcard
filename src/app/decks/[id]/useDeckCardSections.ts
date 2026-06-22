@@ -102,6 +102,9 @@ export function useDeckCardSections(
 					: undefined;
 
 			sections.push({
+				// Stable key so the open/collapsed state survives the count changing
+				// in the label when cards move between zones.
+				key: zone,
 				label: `${ZONE_LABELS[zone]} (${cards.length})`,
 				cards: sortedCards,
 				children,

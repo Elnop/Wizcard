@@ -9,6 +9,12 @@ export type AnyCard = ScryfallCard | Card | CustomCard;
 
 export interface CardListSection {
 	label: string;
+	/**
+	 * Stable identity for the section's open/collapsed state. Defaults to `label`.
+	 * Provide this when the label embeds volatile data (e.g. a card count) so the
+	 * open/collapsed state survives content changes. See `sectionKey`.
+	 */
+	key?: string;
 	cards: AnyCard[];
 	children?: CardListSection[];
 	color?: string;

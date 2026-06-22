@@ -2,6 +2,7 @@
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import { Spinner } from '@/components/Spinner/Spinner';
 import type { CardListSection } from '@/lib/card/components/CardList/CardList.types';
+import { sectionKey } from '@/lib/card/components/CardList/section-key';
 import type { CardListGridProps } from './CardListGrid.types';
 import styles from './CardListGrid.module.css';
 
@@ -231,7 +232,7 @@ export function CardListGrid({
 	function renderSectionContent(
 		section: CardListSection,
 		depth: number,
-		sectionKey: string,
+		parentKey: string,
 		priorityOffset: number,
 		isFluid: boolean,
 		hasChildren: boolean
@@ -245,7 +246,14 @@ export function CardListGrid({
 		}
 		if (hasChildren) {
 			return section.children!.map((child, i) =>
-				renderSection(child, i, depth + 1, `${sectionKey}::${child.label}`, false, fluidSections)
+				renderSection(
+					child,
+					i,
+					depth + 1,
+					`${parentKey}::${sectionKey(child)}`,
+					false,
+					fluidSections
+				)
 			);
 		}
 		return renderItems(section.cards, false, priorityOffset, isFluid);
@@ -255,11 +263,11 @@ export function CardListGrid({
 		section: CardListSection,
 		idx: number,
 		depth: number,
-		sectionKey: string,
+		keyForSection: string,
 		isFirstTopLevel: boolean,
 		parentIsFluid: boolean
 	) {
-		const collapsed = collapsedSections?.has(sectionKey) ?? false;
+		const collapsed = collapsedSections?.has(keyForSection) ?? false;
 		// eslint-disable-next-line sonarjs/slow-regex -- short section label strings, no ReDoS risk
 		const labelMatch = section.label.match(/^(.+?)\s*(\(\d+\))$/);
 		const labelName = labelMatch?.[1] ?? section.label;
@@ -294,11 +302,25 @@ export function CardListGrid({
 		const priorityOffset = isFirstTopLevel && depth === 0 ? 0 : Infinity;
 
 		return (
-			<div key={sectionKey} className={wrapperClass} style={wrapperStyle}>
-				{renderSectionHeading(sectionKey, headerClass, headingClass, depth, collapsed, labelText)}
+			<div key={keyForSection} className={wrapperClass} style={wrapperStyle}>
+				{renderSectionHeading(
+					keyForSection,
+					headerClass,
+					headingClass,
+					depth,
+					collapsed,
+					labelText
+				)}
 				{!collapsed && (
 					<div className={sectionBodyClass}>
-						{renderSectionContent(section, depth, sectionKey, priorityOffset, isFluid, hasChildren)}
+						{renderSectionContent(
+							section,
+							depth,
+							keyForSection,
+							priorityOffset,
+							isFluid,
+							hasChildren
+						)}
 					</div>
 				)}
 			</div>
@@ -311,7 +333,7 @@ export function CardListGrid({
 			return (
 				<div className={[styles.fluidSectionsContainer, className].filter(Boolean).join(' ')}>
 					{sections.map((section, idx) =>
-						renderSection(section, idx, 0, section.label, idx === 0, false)
+						renderSection(section, idx, 0, sectionKey(section), idx === 0, false)
 					)}
 				</div>
 			);
