@@ -41,6 +41,7 @@ export function countActiveFilters(
 				proxyFilter?: 'all' | 'official' | 'proxy';
 				foilTypeFilter?: 'none' | 'all' | 'foil' | 'etched';
 				languageFilter?: string;
+				deckAssignment?: 'all' | 'assigned' | 'unassigned';
 		  })
 ): number {
 	return (
@@ -54,6 +55,7 @@ export function countActiveFilters(
 		(filters.name ? 1 : 0) +
 		('proxyFilter' in filters && filters.proxyFilter !== 'all' ? 1 : 0) +
 		('foilTypeFilter' in filters && filters.foilTypeFilter !== 'all' ? 1 : 0) +
-		('languageFilter' in filters && filters.languageFilter !== 'all' ? 1 : 0)
+		('languageFilter' in filters && filters.languageFilter !== 'all' ? 1 : 0) +
+		('deckAssignment' in filters && filters.deckAssignment !== 'all' ? 1 : 0)
 	);
 }

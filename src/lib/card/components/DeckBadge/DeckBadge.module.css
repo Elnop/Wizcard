@@ -1,0 +1,62 @@
+.badge {
+	position: absolute;
+	top: -10px;
+	left: 8px;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 28px;
+	height: 28px;
+	padding: 0 8px;
+	font-size: var(--text-xs);
+	font-weight: 700;
+	color: #fff;
+	background: var(--success);
+	border-radius: 14px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	z-index: 1;
+	cursor: default;
+}
+
+.tooltip {
+	display: none;
+	position: absolute;
+	top: calc(100% + 8px);
+	left: 0;
+	z-index: 10;
+	min-width: 140px;
+	max-width: 220px;
+	padding: 6px 8px;
+	flex-direction: column;
+	gap: 3px;
+	background: var(--glass-bg);
+	backdrop-filter: blur(var(--glass-blur));
+	border: 1px solid var(--glass-border);
+	border-radius: 4px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+	pointer-events: none;
+	white-space: nowrap;
+}
+
+.badge:hover .tooltip {
+	display: flex;
+}
+
+.tooltipHeader {
+	font-size: var(--text-xs);
+	font-weight: 600;
+	color: var(--foreground);
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	opacity: 0.7;
+	padding-bottom: 3px;
+	border-bottom: 1px solid var(--glass-border);
+	margin-bottom: 2px;
+}
+
+.tooltipItem {
+	font-size: var(--text-xs);
+	font-weight: 400;
+	color: var(--foreground);
+	line-height: 1.4;
+}

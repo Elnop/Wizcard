@@ -119,6 +119,7 @@ export default function CollectionPage() {
 			actions={actions}
 			emptyState={emptyState}
 			onCardClick={handleCardClick}
+			showDeckBadges
 		>
 			<ImportModal
 				isOpen={status !== 'idle'}

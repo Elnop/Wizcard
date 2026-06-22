@@ -45,17 +45,45 @@ export function groupByOracleId(cards: Card[]): CardStack[] {
 	});
 }
 
+/** Keeps only the copies matching the deck-assignment filter (acts per-copy, before stacking). */
+function matchesDeckAssignment(
+	card: Card,
+	deckAssignment: CollectionFilters['deckAssignment']
+): boolean {
+	if (deckAssignment === 'all') return true;
+	const isAssigned = card.entry.deckId != null;
+	return deckAssignment === 'assigned' ? isAssigned : !isAssigned;
+}
+
 /**
  * Filters stacks by running the collection filters against each stack's
  * representative card (cards[0]), then sorts the surviving copies inside each
  * matched stack. Shared by the collection view and the import preview so both
  * apply identical filter/sort semantics.
+ *
+ * The deck-assignment filter is special: it acts on individual copies *before*
+ * the stack count is derived, so a 3-copy stack with one assigned copy shows a
+ * single card under "assigned" and two cards under "unassigned".
  */
 export function filterStacks(stacks: CardStack[], filters: CollectionFilters): CardStack[] {
-	const representatives = stacks.map((s) => s.cards[0]).filter(Boolean);
+	// Drop copies that don't match the per-copy assignment filter, then discard
+	// stacks left empty (and re-promote a representative for the survivors).
+	const assignmentFiltered =
+		filters.deckAssignment === 'all'
+			? stacks
+			: stacks
+					.map((stack) => {
+						const cards = stack.cards.filter((c) =>
+							matchesDeckAssignment(c, filters.deckAssignment)
+						);
+						return cards.length === stack.cards.length ? stack : { ...stack, cards };
+					})
+					.filter((stack) => stack.cards.length > 0);
+
+	const representatives = assignmentFiltered.map((s) => s.cards[0]).filter(Boolean);
 	const filtered = filterCollectionCards(representatives, filters);
 
-	const stackByOracle = new Map(stacks.map((s) => [s.oracleId, s]));
+	const stackByOracle = new Map(assignmentFiltered.map((s) => [s.oracleId, s]));
 	const { order, dir } = filters;
 
 	return filtered

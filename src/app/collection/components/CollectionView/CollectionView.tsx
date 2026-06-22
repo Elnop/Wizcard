@@ -7,6 +7,7 @@ import { useCollectionFiltering } from '@/app/collection/useCollectionFiltering'
 import { PAGE_SIZE } from '@/lib/collection/constants';
 import { CollectionFiltersAside } from '@/app/collection/components/CollectionFiltersAside/CollectionFiltersAside';
 import { CardList } from '@/lib/card/components/CardList/CardList';
+import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import styles from '@/app/collection/page.module.css';
@@ -32,6 +33,8 @@ type Props = {
 	emptyState?: ReactNode;
 	/** Opens when a card is clicked. */
 	onCardClick?: (stack: CardStack) => void;
+	/** Show a "in a deck" badge on cards whose copies are assigned to a deck (owner view only). */
+	showDeckBadges?: boolean;
 	/** Modal(s) rendered as a sibling of the layout (owner edit / read-only view). */
 	children?: ReactNode;
 };
@@ -54,6 +57,7 @@ export function CollectionView({
 	actions,
 	emptyState,
 	onCardClick,
+	showDeckBadges = false,
 	children,
 }: Props) {
 	// The collection loads in two stages: entries arrive page by page from
@@ -117,7 +121,14 @@ export function CollectionView({
 					const count = stack?.cards.length ?? 1;
 					const countBadge =
 						count > 1 ? <span className={styles.cardBadge}>x{count}</span> : undefined;
-					return withCustomBadge(card, countBadge);
+					const deckBadge = showDeckBadges && stack ? <DeckBadge cards={stack.cards} /> : undefined;
+					return withCustomBadge(
+						card,
+						<>
+							{deckBadge}
+							{countBadge}
+						</>
+					);
 				}}
 				sortOrder={filters.order}
 				sortDir={filters.dir}

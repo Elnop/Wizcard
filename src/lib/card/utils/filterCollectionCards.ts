@@ -17,6 +17,7 @@ export interface CollectionFilters extends Omit<CardFilters, 'order'> {
 	languageFilter: MtgLanguage | 'all';
 	cardTypeFilter: CardType | 'all';
 	mpcTagsFilter: string[];
+	deckAssignment: 'all' | 'assigned' | 'unassigned';
 }
 
 export const defaultCollectionFilters: CollectionFilters = {
@@ -27,6 +28,7 @@ export const defaultCollectionFilters: CollectionFilters = {
 	languageFilter: 'all',
 	cardTypeFilter: 'all',
 	mpcTagsFilter: [],
+	deckAssignment: 'all',
 };
 
 function parseCmc(raw: string): ((cmc: number) => boolean) | null {

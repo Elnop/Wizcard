@@ -172,6 +172,24 @@ export function CollectionFiltersAside({
 					</select>
 				</div>
 
+				<div>
+					<label htmlFor="collection-deck-filter" className={styles.filterLabel}>
+						Deck
+					</label>
+					<select
+						id="collection-deck-filter"
+						className={styles.filterSelect}
+						value={filters.deckAssignment}
+						onChange={(e) =>
+							patch('deckAssignment', e.target.value as CollectionFilters['deckAssignment'])
+						}
+					>
+						<option value="all">Toutes</option>
+						<option value="assigned">Assignées à un deck</option>
+						<option value="unassigned">Non-assignées</option>
+					</select>
+				</div>
+
 				<SortFilter
 					order={filters.order}
 					onOrderChange={(v) => patch('order', v as CollectionFilters['order'])}
