@@ -67,6 +67,7 @@ interface Props {
 	onChangeZone?: (rowId: string, zone: DeckZone) => void;
 	collectionCopies?: CollectionCopyEntry[];
 	onAssignCollectionCopy?: (rowId: string) => void;
+	onUnassignCollectionCopy?: () => void;
 	onMoveToCollection?: (rowId: string) => void;
 	onAddToWishlistFromEntry?: (deckCardRowId: string) => void;
 	onAddToCollectionFromEntry?: (rowIds: string[]) => void;
@@ -93,6 +94,7 @@ interface InnerProps {
 	onChangeZone?: (rowId: string, zone: DeckZone) => void;
 	collectionCopies?: CollectionCopyEntry[];
 	onAssignCollectionCopy?: (rowId: string) => void;
+	onUnassignCollectionCopy?: () => void;
 	onMoveToCollection?: (rowId: string) => void;
 	onAddToWishlistFromEntry?: (deckCardRowId: string) => void;
 	onAddToCollectionFromEntry?: (rowIds: string[]) => void;
@@ -312,6 +314,7 @@ function CardModalInner({
 	onChangeZone,
 	collectionCopies,
 	onAssignCollectionCopy,
+	onUnassignCollectionCopy,
 	onMoveToCollection,
 	onAddToWishlistFromEntry,
 	onAddToCollectionFromEntry,
@@ -722,6 +725,14 @@ function CardModalInner({
 						onAssignCollectionCopy?.(rowId);
 						setUsingCollectionCopy(false);
 					}}
+					onSelectNone={
+						onUnassignCollectionCopy
+							? () => {
+									onUnassignCollectionCopy();
+									setUsingCollectionCopy(false);
+								}
+							: undefined
+					}
 					onClose={() => setUsingCollectionCopy(false)}
 				/>
 			)}
@@ -893,6 +904,7 @@ export function CardModal({
 	onChangeZone,
 	collectionCopies,
 	onAssignCollectionCopy,
+	onUnassignCollectionCopy,
 	onMoveToCollection,
 	onAddToWishlistFromEntry,
 	onAddToCollectionFromEntry,
@@ -946,6 +958,7 @@ export function CardModal({
 			onChangeZone={onChangeZone}
 			collectionCopies={collectionCopies}
 			onAssignCollectionCopy={onAssignCollectionCopy}
+			onUnassignCollectionCopy={onUnassignCollectionCopy}
 			onMoveToCollection={onMoveToCollection}
 			onAddToWishlistFromEntry={onAddToWishlistFromEntry}
 			onAddToCollectionFromEntry={onAddToCollectionFromEntry}
