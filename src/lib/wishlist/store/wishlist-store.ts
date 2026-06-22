@@ -33,7 +33,8 @@ type WishlistActions = {
 		rowId: string,
 		newScryfallId: string,
 		userId: string | null,
-		triggerSync: () => void
+		triggerSync: () => void,
+		isDeckCard?: boolean
 	) => void;
 };
 
@@ -97,7 +98,7 @@ export const useWishlistStore = create<WishlistState & WishlistActions>()((set, 
 		}
 	},
 
-	changePrint: (rowId, newScryfallId, userId, triggerSync) => {
+	changePrint: (rowId, newScryfallId, userId, triggerSync, isDeckCard) => {
 		const current = get().entries;
 		const copy = current[rowId];
 		if (!copy) return;
@@ -107,12 +108,21 @@ export const useWishlistStore = create<WishlistState & WishlistActions>()((set, 
 		// longer be recognised as wishlisted).
 		const updatedCopy: StoredCopy = { scryfallId: newScryfallId, entry: copy.entry };
 		set({ entries: { ...current, [rowId]: updatedCopy } });
-		if (userId) {
+		if (!userId) return;
+		// A wishlisted deck card has no owner_id, so the owner-filtered collection
+		// `update` op would not match it. Persist via `deck-card-update` (matches on
+		// id only) instead. Standalone wishlist cards keep the owner-scoped update.
+		if (isDeckCard) {
+			enqueue({
+				type: 'deck-card-update',
+				payload: { rowId, updates: { scryfall_id: newScryfallId } },
+			});
+		} else {
 			enqueue({
 				type: 'update',
 				payload: { userId, rowId, entry: copy.entry, scryfallId: newScryfallId },
 			});
-			triggerSync();
 		}
+		triggerSync();
 	},
 }));

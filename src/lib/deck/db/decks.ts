@@ -298,6 +298,7 @@ export async function updateDeckCard(
 		language?: string | null;
 		purchase_price?: string | null;
 		wishlist?: boolean;
+		deck_id?: string | null;
 	}
 ): Promise<void> {
 	const supabase = createClient();

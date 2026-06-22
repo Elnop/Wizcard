@@ -31,6 +31,10 @@ import { WishlistIcon } from '@/components/WishlistIcon';
 import { useAddDeckToCollection } from './useAddDeckToCollection';
 import { AddDeckToCollectionModal } from './components/AddDeckToCollectionModal/AddDeckToCollectionModal';
 import { AddCardToCollectionModal } from './components/AddCardToCollectionModal/AddCardToCollectionModal';
+import {
+	RemoveDeckCardModal,
+	type RemoveDeckCardMembership,
+} from './components/RemoveDeckCardModal/RemoveDeckCardModal';
 import { buildCollectionAddRequest, type CollectionAddRequest } from './collectionAddRequest';
 import { OwnershipBadge } from '@/lib/card/components/OwnershipBadge/OwnershipBadge';
 import { getCopyBadgeState } from '@/lib/card/components/OwnershipBadge/copyBadgeState';
@@ -82,6 +86,11 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const [pendingCollectionAdd, setPendingCollectionAdd] = useState<CollectionAddRequest | null>(
 		null
 	);
+	const [pendingRemove, setPendingRemove] = useState<{
+		rowId: string;
+		cardName: string;
+		membership: RemoveDeckCardMembership;
+	} | null>(null);
 
 	const [contextMenuCard, setContextMenuCard] = useState<AnyCard | null>(null);
 	const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
@@ -137,7 +146,6 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		handleCardGroupClick,
 		handleClose,
 		handleSave,
-		handleRemoveEntry,
 		handleAddCopy,
 		handleChangeZone,
 		handleChangePrint,
@@ -353,16 +361,38 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		[deckId, addCardToDeck]
 	);
 
+	// Removing a deck card that is also in the collection (owned) or wishlist must
+	// ask whether to remove it there too. owned and wishlist are mutually exclusive.
+	const handleRemoveRequest = useCallback(
+		(rowId: string) => {
+			const copy = activeDeckCards[rowId];
+			let membership: RemoveDeckCardMembership | null = null;
+			if (copy?.entry.ownerId) membership = 'collection';
+			else if (copy?.entry.wishlist) membership = 'wishlist';
+			if (!copy || membership === null) {
+				removeCardFromDeck(rowId);
+				return;
+			}
+			const name = resolvedCards.find((rc) => rc.entry.rowId === rowId)?.name ?? '';
+			setPendingRemove({ rowId, cardName: name, membership });
+		},
+		[activeDeckCards, removeCardFromDeck, resolvedCards]
+	);
+
 	const handleBulkAddToWishlist = useCallback(() => {
 		for (const oracleId of bulkSelected) {
 			const group = groupByCardId.get(oracleId);
 			if (!group) continue;
-			const representativeCard = group.representative as ResolvedDeckCard;
-			addToWishlist({ id: representativeCard.id } as ScryfallCard);
+			// Flag the wishlist on an actual deck-card row (first copy), in place —
+			// same behaviour as the single "Add to Wishlist". Skip copies already
+			// wishlisted so bulk add never toggles one off.
+			const firstCopy = Array.from(group.byZone.values()).flat()[0];
+			if (!firstCopy || firstCopy.entry.wishlist) continue;
+			toggleDeckCardWishlist(firstCopy.entry.rowId);
 		}
 		setBulkSelected(new Set());
 		setBulkSelectMode(false);
-	}, [bulkSelected, groupByCardId, addToWishlist]);
+	}, [bulkSelected, groupByCardId, toggleDeckCardWishlist]);
 
 	const handleAssignAllFromCollection = useCallback(() => {
 		for (const rc of resolvedCards) {
@@ -442,7 +472,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					oracleScryfallIds={oracleScryfallIds}
 					deckNameResolver={deckNameResolver}
 					onDuplicate={handleDuplicateCard}
-					onRemove={removeCardFromDeck}
+					onRemove={handleRemoveRequest}
 					onChangeZone={changeZone}
 					onBadgeClick={() => handleCardGroupClick(group, firstCopy?.entry.rowId ?? c.entry.rowId)}
 					onAddToCollectionClick={(req) => {
@@ -466,7 +496,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			deckNameResolver,
 			oracleIdToAllScryfallIds,
 			handleDuplicateCard,
-			removeCardFromDeck,
+			handleRemoveRequest,
 			changeZone,
 			handleCardGroupClick,
 			toggleDeckCardWishlist,
@@ -688,7 +718,10 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				availableZones={zones}
 				onClose={handleClose}
 				onSave={handleSave}
-				onRemoveEntry={handleRemoveEntry}
+				onRemoveEntry={(rowId) => {
+					handleRemoveRequest(rowId);
+					handleClose();
+				}}
 				onIncrement={handleAddCopy}
 				onChangeZone={handleChangeZone}
 				onChangePrint={handleChangePrint}
@@ -761,6 +794,18 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 						setPendingCollectionAdd(null);
 					}}
 					onClose={() => setPendingCollectionAdd(null)}
+				/>
+			)}
+
+			{pendingRemove && (
+				<RemoveDeckCardModal
+					cardName={pendingRemove.cardName}
+					membership={pendingRemove.membership}
+					onConfirm={({ alsoRemove }) => {
+						removeCardFromDeck(pendingRemove.rowId, alsoRemove ? 'delete' : 'detach');
+						setPendingRemove(null);
+					}}
+					onClose={() => setPendingRemove(null)}
 				/>
 			)}
 

@@ -124,12 +124,16 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
 	const changePrint = useCallback(
 		(rowId: string, newScryfallId: string) => {
-			store.changePrint(rowId, newScryfallId, userId, triggerSync);
+			// A wishlisted deck card has no owner_id, so it must persist via the
+			// deck-card update path (matches on id), not the owner-scoped one.
+			const copy = store.entries[rowId];
+			const deckCards = useDeckStore.getState().activeDeckCards;
+			const isDeckCard = copy?.entry.deckId != null || deckCards[rowId] != null;
+			store.changePrint(rowId, newScryfallId, userId, triggerSync, isDeckCard);
 
 			// The `cards` row is shared: if this wishlist row is also a deck card or a
 			// collection copy, keep their in-memory print in sync (the DB row was
-			// already patched in place by the wishlist update op above).
-			const deckCards = useDeckStore.getState().activeDeckCards;
+			// already patched in place by the update op above).
 			const deckCopy = deckCards[rowId];
 			if (deckCopy) {
 				useDeckStore.setState({

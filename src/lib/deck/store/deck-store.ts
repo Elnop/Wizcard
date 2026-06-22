@@ -97,7 +97,7 @@ type DeckActions = {
 		userId: string,
 		triggerSync: () => void
 	) => void;
-	removeCardFromDeck: (rowId: string, triggerSync: () => void) => void;
+	removeCardFromDeck: (rowId: string, triggerSync: () => void, mode?: 'delete' | 'detach') => void;
 	changeZone: (rowId: string, zone: DeckZone, triggerSync: () => void) => void;
 	updateDeckCard: (rowId: string, updates: Partial<CardEntry>, triggerSync: () => void) => void;
 	toggleOwned: (
@@ -427,20 +427,60 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		triggerSync();
 	},
 
-	removeCardFromDeck: (rowId, triggerSync) => {
+	removeCardFromDeck: (rowId, triggerSync, mode = 'delete') => {
 		const current = get().activeDeckCards;
-		if (!current[rowId]) return;
+		const copy = current[rowId];
+		if (!copy) return;
 		const next = { ...current };
 		delete next[rowId];
 		set({ activeDeckCards: next });
 
-		// If the removed card was a collection copy, remove it from the collection store too
+		// Detach: keep the shared `cards` row but free it from the deck (deck_id =
+		// null). The row stays in the collection/wishlist store under the same rowId
+		// with its deckId cleared, so the card remains owned/wishlisted.
+		if (mode === 'detach') {
+			const freedEntry: CardEntry = { ...copy.entry, deckId: undefined };
+
+			const colEntries = useCollectionStore.getState().entries;
+			if (colEntries[rowId]) {
+				useCollectionStore.setState({
+					entries: { ...colEntries, [rowId]: { scryfallId: copy.scryfallId, entry: freedEntry } },
+				});
+			}
+			const wishEntries = useWishlistStore.getState().entries;
+			if (wishEntries[rowId]) {
+				useWishlistStore.setState({
+					entries: { ...wishEntries, [rowId]: { scryfallId: copy.scryfallId, entry: freedEntry } },
+				});
+			}
+
+			if (copy.entry.ownerId) {
+				// Owned copy: owner-scoped update writes deck_id = null.
+				enqueue({
+					type: 'update',
+					payload: { userId: copy.entry.ownerId, rowId, entry: freedEntry },
+				});
+			} else {
+				// Wishlist copy has no owner_id, so use the id-filtered deck-card update.
+				enqueue({ type: SYNC_DECK_CARD_UPDATE, payload: { rowId, updates: { deck_id: null } } });
+			}
+			triggerSync();
+			return;
+		}
+
+		// Delete: remove the row entirely (and from the collection/wishlist stores).
 		const colEntries = useCollectionStore.getState().entries;
 		if (colEntries[rowId]) {
 			const remainingEntries = Object.fromEntries(
 				Object.entries(colEntries).filter(([k]) => k !== rowId)
 			) as typeof colEntries;
 			useCollectionStore.setState({ entries: remainingEntries });
+		}
+		const wishEntries = useWishlistStore.getState().entries;
+		if (wishEntries[rowId]) {
+			const remaining = { ...wishEntries };
+			delete remaining[rowId];
+			useWishlistStore.setState({ entries: remaining });
 		}
 
 		enqueue({ type: SYNC_DECK_CARD_DELETE, payload: { rowId } });

@@ -45,7 +45,7 @@ type DeckContextValue = {
 		deckId: string,
 		cards: Array<{ card: ScryfallCard; zone: DeckZone; quantity: number }>
 	) => void;
-	removeCardFromDeck: (rowId: string) => void;
+	removeCardFromDeck: (rowId: string, mode?: 'delete' | 'detach') => void;
 	changeZone: (rowId: string, zone: DeckZone) => void;
 	updateDeckCard: (rowId: string, updates: Partial<CardEntry>) => void;
 	toggleOwned: (rowId: string, proxy?: boolean) => void;
@@ -191,7 +191,8 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const removeCardFromDeck = useCallback(
-		(rowId: string) => store.removeCardFromDeck(rowId, triggerSync),
+		(rowId: string, mode?: 'delete' | 'detach') =>
+			store.removeCardFromDeck(rowId, triggerSync, mode),
 		[store, triggerSync]
 	);
 

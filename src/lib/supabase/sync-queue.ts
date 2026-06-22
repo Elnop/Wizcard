@@ -113,6 +113,7 @@ export type SyncOp =
 					language?: string | null;
 					purchase_price?: string | null;
 					wishlist?: boolean;
+					deck_id?: string | null;
 				};
 			};
 			retries: number;
