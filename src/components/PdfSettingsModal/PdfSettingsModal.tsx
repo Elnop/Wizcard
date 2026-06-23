@@ -33,6 +33,7 @@ const PAGE_H_MM = 297;
 type Props = {
 	cards: Card[];
 	initial?: Partial<PdfSettings>;
+	generating?: boolean;
 	onConfirm: (settings: PdfSettings) => void;
 	onClose: () => void;
 };
@@ -89,7 +90,13 @@ function computeLayout(settings: PdfSettings) {
 	return { cols, rows, cardsPerPage: cols * rows, cardW, cardH };
 }
 
-export function PdfSettingsModal({ cards, initial, onConfirm, onClose }: Props) {
+export function PdfSettingsModal({
+	cards,
+	initial,
+	generating = false,
+	onConfirm,
+	onClose,
+}: Props) {
 	const [settings, setSettings] = useState<PdfSettings>({ ...DEFAULTS, ...initial });
 
 	const set = <K extends keyof PdfSettings>(key: K, value: PdfSettings[K]) =>
@@ -115,7 +122,7 @@ export function PdfSettingsModal({ cards, initial, onConfirm, onClose }: Props) 
 	);
 
 	return (
-		<Modal onClose={onClose} className={styles.dialog} zIndex={1200}>
+		<Modal onClose={generating ? () => {} : onClose} className={styles.dialog} zIndex={1200}>
 			<h2 className={styles.title}>Paramètres PDF</h2>
 
 			<div className={styles.body}>
@@ -235,11 +242,16 @@ export function PdfSettingsModal({ cards, initial, onConfirm, onClose }: Props) 
 			</div>
 
 			<div className={styles.actions}>
-				<Button variant="secondary" size="sm" onClick={onClose}>
+				<Button variant="secondary" size="sm" onClick={onClose} disabled={generating}>
 					Annuler
 				</Button>
-				<Button variant="primary" size="sm" onClick={() => onConfirm(settings)}>
-					Générer
+				<Button
+					variant="primary"
+					size="sm"
+					onClick={() => onConfirm(settings)}
+					disabled={generating}
+				>
+					{generating ? 'Génération…' : 'Générer'}
 				</Button>
 			</div>
 		</Modal>

@@ -45,7 +45,7 @@ import type { DeckPdfExportOptions } from '@/lib/pdf/types';
 import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
 import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
 import { filterCardsForPdf } from '@/lib/pdf/filterCardsForPdf';
-import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
+import { resolveLocalizedImageUri } from '@/lib/scryfall/utils/resolveLocalizedImageUri';
 import { useDeckSort } from './useDeckSort';
 import { useDeckTokens } from './useDeckTokens';
 import { cardProducesToken } from '@/lib/deck/utils/collectDeckTokens';
@@ -101,6 +101,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const [pdfExportModalOpen, setPdfExportModalOpen] = useState(false);
 	const [pdfSettingsModalOpen, setPdfSettingsModalOpen] = useState(false);
 	const [pdfExportOptions, setPdfExportOptions] = useState<DeckPdfExportOptions | null>(null);
+	const [pdfGenerating, setPdfGenerating] = useState(false);
 	const [textExportModalOpen, setTextExportModalOpen] = useState(false);
 	const pdfFilteredCards = useMemo(
 		() => (pdfExportOptions ? filterCardsForPdf(resolvedCards, pdfExportOptions) : []),
@@ -722,13 +723,23 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			{pdfSettingsModalOpen && pdfExportOptions && (
 				<PdfSettingsModal
 					cards={pdfFilteredCards}
+					generating={pdfGenerating}
 					onConfirm={(settings) => {
-						setPdfSettingsModalOpen(false);
-						const imageUrls = pdfFilteredCards.flatMap((c) => {
-							const url = getScryfallCardImageUriBySize(c, 'normal');
-							return url ? [url] : [];
-						});
-						void generateCardsPdf(imageUrls, settings, `${deck.name}.pdf`);
+						void (async () => {
+							setPdfGenerating(true);
+							try {
+								// Resolve localized images (cache hit → instant; miss → fetched
+								// via the shared Scryfall throttle, serialized and 429-safe).
+								const resolved = await Promise.all(
+									pdfFilteredCards.map((c) => resolveLocalizedImageUri(c, 'normal'))
+								);
+								const imageUrls = resolved.filter((url): url is string => !!url);
+								await generateCardsPdf(imageUrls, settings, `${deck.name}.pdf`);
+								setPdfSettingsModalOpen(false);
+							} finally {
+								setPdfGenerating(false);
+							}
+						})();
 					}}
 					onClose={() => setPdfSettingsModalOpen(false)}
 				/>
