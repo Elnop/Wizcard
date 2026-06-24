@@ -54,12 +54,31 @@ export function AddDeckToCollectionModal({
 
 	const unownedInSelectedZones = totalInSelectedZones - ownedInSelectedZones;
 
+	const basicsInSelectedZones = useMemo(
+		() =>
+			availableZones
+				.filter((z) => selectedZones.has(z))
+				.reduce((sum, z) => sum + zoneStats[z].basics, 0),
+		[availableZones, selectedZones, zoneStats]
+	);
+
+	const unownedBasicsInSelectedZones = useMemo(
+		() =>
+			availableZones
+				.filter((z) => selectedZones.has(z))
+				.reduce((sum, z) => sum + zoneStats[z].unownedBasics, 0),
+		[availableZones, selectedZones, zoneStats]
+	);
+
 	const hasAnyOwned = ownedInSelectedZones > 0;
 	const [onlyMissing, setOnlyMissing] = useState(hasAnyOwned);
 	const [asProxy, setAsProxy] = useState(false);
 	const [removeWishlist, setRemoveWishlist] = useState(wishlistMatchCount > 0);
+	const [ignoreBasicLands, setIgnoreBasicLands] = useState(false);
 
-	const addCount = onlyMissing ? unownedInSelectedZones : totalInSelectedZones;
+	const base = onlyMissing ? unownedInSelectedZones : totalInSelectedZones;
+	const basicsToExclude = onlyMissing ? unownedBasicsInSelectedZones : basicsInSelectedZones;
+	const addCount = ignoreBasicLands ? Math.max(0, base - basicsToExclude) : base;
 
 	const toggleZone = (zone: DeckZone) => {
 		setSelectedZones((prev) => {
@@ -116,6 +135,17 @@ export function AddDeckToCollectionModal({
 							{unownedInSelectedZones !== 1 ? 's' : ''})
 						</label>
 					)}
+					{basicsInSelectedZones > 0 && (
+						<label className={styles.option}>
+							<input
+								type="checkbox"
+								checked={ignoreBasicLands}
+								onChange={(e) => setIgnoreBasicLands(e.target.checked)}
+							/>
+							Ignorer les terrains de base ({basicsInSelectedZones} carte
+							{basicsInSelectedZones !== 1 ? 's' : ''})
+						</label>
+					)}
 					<label className={styles.option}>
 						<input
 							type="checkbox"
@@ -150,6 +180,7 @@ export function AddDeckToCollectionModal({
 							onlyMissing: onlyMissing && hasAnyOwned,
 							asProxy,
 							removeWishlist,
+							ignoreBasicLands,
 							zones: Array.from(selectedZones),
 						})
 					}
