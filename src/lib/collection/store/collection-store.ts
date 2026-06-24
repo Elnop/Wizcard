@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
+import { buildEntriesBatch, newEntry } from '@/lib/card/entry/buildEntriesBatch';
 import { fetchCollectionPage } from '../db/collection';
 import { enqueue, clearQueue } from '@/lib/supabase/sync-queue';
 import type { CollectionData } from '../db/collection-migrations';
@@ -13,10 +14,6 @@ import {
 } from '@/lib/scryfall/utils/card-cache';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
-
-function newEntry(rowId: string, overrides?: Partial<CardEntry>): CardEntry {
-	return { rowId, dateAdded: new Date().toISOString(), ...overrides };
-}
 
 type CollectionState = {
 	entries: CollectionData;
@@ -35,6 +32,13 @@ type CollectionActions = {
 	// Mutations — all take triggerSync so the sync queue can be triggered
 	addCard: (
 		card: ScryfallCard,
+		userId: string | null,
+		triggerSync: () => void,
+		entryPatch?: Partial<CardEntry>
+	) => void;
+	addCards: (
+		card: ScryfallCard,
+		count: number,
 		userId: string | null,
 		triggerSync: () => void,
 		entryPatch?: Partial<CardEntry>
@@ -148,6 +152,21 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 				type: 'insert',
 				payload: { userId, rowId: newRowId, scryfallId: card.id, entry },
 			});
+			triggerSync();
+		}
+	},
+
+	addCards: (card, count, userId, triggerSync, entryPatch) => {
+		const rows = buildEntriesBatch(card.id, count, entryPatch);
+		set((state) => {
+			const next = { ...state.entries };
+			for (const { rowId, scryfallId, entry } of rows) {
+				next[rowId] = { scryfallId, entry };
+			}
+			return { entries: next };
+		});
+		if (userId) {
+			enqueue({ type: 'bulk-insert', payload: { userId, rows } });
 			triggerSync();
 		}
 	},
