@@ -18,6 +18,12 @@ import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
 import { getCustomCardSourcesWithCount } from '@/lib/supabase/custom-cards';
 import type { MpcSourceWithCount } from '@/lib/supabase/custom-cards';
 import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
+import { useRouter } from 'next/navigation';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
+import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
+import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
+import { buildSearchMenuItems } from './searchCardMenu';
 import styles from './page.module.css';
 
 function computeCustomFilterCount(
@@ -53,6 +59,12 @@ function SearchPageContent() {
 	const { addCard } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();
 	const [selectedCard, setSelectedCard] = useState<AnyCard | null>(null);
+	const router = useRouter();
+	const cardMenu = useContextMenu<AnyCard>();
+	const [addModal, setAddModal] = useState<{
+		card: ScryfallCard;
+		target: 'collection' | 'wishlist';
+	} | null>(null);
 	const [customSources, setCustomSources] = useState<MpcSourceWithCount[]>([]);
 
 	const {
@@ -277,6 +289,7 @@ function SearchPageContent() {
 					hasMore={displayedHasMore}
 					onLoadMore={displayedLoadMore}
 					onCardClick={handleCardClick}
+					onCardContextMenu={(card, e) => cardMenu.open(card, e)}
 					renderOverlay={withCustomBadge}
 					sortOrder={order}
 					sortDir={dir}
@@ -335,6 +348,40 @@ function SearchPageContent() {
 						onAddToWishlist={(card, entry) => {
 							addToWishlist(card, entry);
 						}}
+					/>
+				)}
+
+				{cardMenu.menu && (
+					<ContextMenu
+						items={buildSearchMenuItems(
+							cardMenu.menu.data,
+							{
+								onViewDetails: (card) => setSelectedCard(card),
+								onOpenCardPage: (card) => router.push(`/card/${card.id}`),
+								onAddToCollection: (card) =>
+									setAddModal({ card: card as ScryfallCard, target: 'collection' }),
+								onAddToWishlist: (card) =>
+									setAddModal({ card: card as ScryfallCard, target: 'wishlist' }),
+							},
+							cardMenu.close
+						)}
+						position={cardMenu.menu.position}
+						onClose={cardMenu.close}
+					/>
+				)}
+
+				{addModal && (
+					<EditCardModal
+						mode="add"
+						scryfallCard={addModal.card}
+						onAdd={(card, entry) => {
+							if (addModal.target === 'collection') {
+								addCard(card, entry);
+							} else {
+								addToWishlist(card, entry);
+							}
+						}}
+						onClose={() => setAddModal(null)}
 					/>
 				)}
 			</main>
