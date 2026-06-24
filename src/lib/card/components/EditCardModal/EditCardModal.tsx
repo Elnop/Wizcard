@@ -59,6 +59,7 @@ export function EditCardModal(props: Props) {
 	const entry: Partial<CardEntry> = draftEntry;
 	const [showPrintPicker, setShowPrintPicker] = useState(false);
 	const [tagInput, setTagInput] = useState('');
+	const [quantity, setQuantity] = useState(1);
 	const isFoil = entry.isFoil ?? false;
 	const [langInfoMessage, setLangInfoMessage] = useState<string | null>(null);
 	const langFetchAbort = useRef<AbortController | null>(null);
@@ -141,7 +142,10 @@ export function EditCardModal(props: Props) {
 
 	function handleConfirmAdd() {
 		if (addMode) {
-			props.onAdd(selectedPrint, draftEntry);
+			const count = Math.max(1, Math.floor(quantity) || 1);
+			for (let i = 0; i < count; i++) {
+				props.onAdd(selectedPrint, draftEntry);
+			}
 			props.onClose();
 		}
 	}
@@ -184,6 +188,27 @@ export function EditCardModal(props: Props) {
 						<CardImage card={selectedPrint} size="normal" />
 					</div>
 					<div className={styles.form}>
+						{/* Quantité (add mode only) */}
+						{addMode && (
+							<div className={styles.field}>
+								<label className={styles.label} htmlFor="copy-add-quantity">
+									Quantité
+								</label>
+								<input
+									id="copy-add-quantity"
+									type="number"
+									min={1}
+									step={1}
+									className={styles.select}
+									value={quantity}
+									onChange={(e) => {
+										const n = parseInt(e.target.value, 10);
+										setQuantity(Number.isNaN(n) ? 1 : Math.max(1, n));
+									}}
+								/>
+							</div>
+						)}
+
 						{/* Zone (add mode only, when multiple zones available) */}
 						{addMode && props.availableZones && props.availableZones.length > 1 && (
 							<div className={styles.field}>
