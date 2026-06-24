@@ -28,7 +28,7 @@ function SetCardsGridInner({
 	sortDir,
 	onSortChange,
 }: SetCardsGridProps) {
-	const { addCard, getOwnership } = useCollectionContext();
+	const { addCards, getOwnership } = useCollectionContext();
 	const { addToWishlist, entries: wishlistEntries } = useWishlistContext();
 	const [selectedCard, setSelectedCard] = useState<AnyCard | null>(null);
 
@@ -73,11 +73,11 @@ function SetCardsGridInner({
 				<CardModal
 					cards={selectedCard}
 					onClose={() => setSelectedCard(null)}
-					onAddToCollection={(card, entry) => {
-						addCard(card, entry);
+					onAddToCollection={(card, entry, count) => {
+						addCards(card, count, entry);
 					}}
-					onAddToWishlist={(card, entry) => {
-						addToWishlist(card, entry);
+					onAddToWishlist={(card, entry, count) => {
+						addToWishlist(card, entry, count);
 					}}
 				/>
 			)}

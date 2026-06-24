@@ -60,7 +60,7 @@ interface Props {
 	onChangePrint?: (rowId: string, newCard: ScryfallCard) => void;
 	onIncrement?: (entry: Partial<CardEntry>) => void;
 	onDecrement?: () => void;
-	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
+	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
 	addLabel?: string;
 	zone?: DeckZone;
 	availableZones?: DeckZone[];
@@ -72,7 +72,7 @@ interface Props {
 	onAddToWishlistFromEntry?: (deckCardRowId: string) => void;
 	onAddToCollectionFromEntry?: (rowIds: string[]) => void;
 	onRemoveFromCollectionEntry?: (rowId: string) => void;
-	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
+	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
 	renderCopyBadge?: (copy: Card) => React.ReactNode;
@@ -751,6 +751,7 @@ function CardModalInner({
 				<EditCardModal
 					mode="add"
 					scryfallCard={selectedCard as ScryfallCard}
+					hideQuantity
 					onAdd={(_print, entry) => {
 						onIncrement?.(entry);
 						setAddingCopy(false);
@@ -772,10 +773,10 @@ function ScryfallCardModalInner({
 }: {
 	card: ScryfallCard;
 	onClose: () => void;
-	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
+	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
 	addLabel?: string;
 	availableZones?: DeckZone[];
-	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
+	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
 }) {
 	const [lightbox, setLightbox] = useState(false);
 	const [addingCard, setAddingCard] = useState(false);
@@ -829,8 +830,8 @@ function ScryfallCardModalInner({
 					mode="add"
 					scryfallCard={card}
 					availableZones={availableZones}
-					onAdd={(selectedPrint, entry) => {
-						onAddToCollection(selectedPrint, entry);
+					onAdd={(selectedPrint, entry, count) => {
+						onAddToCollection(selectedPrint, entry, count);
 						setAddingCard(false);
 					}}
 					onClose={() => setAddingCard(false)}
@@ -841,8 +842,8 @@ function ScryfallCardModalInner({
 				<EditCardModal
 					mode="add"
 					scryfallCard={card}
-					onAdd={(selectedPrint, entry) => {
-						onAddToWishlist(selectedPrint, entry);
+					onAdd={(selectedPrint, entry, count) => {
+						onAddToWishlist(selectedPrint, entry, count);
 						setAddingToWishlist(false);
 					}}
 					onClose={() => setAddingToWishlist(false)}

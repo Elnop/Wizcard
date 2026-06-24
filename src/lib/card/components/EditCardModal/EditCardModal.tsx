@@ -29,6 +29,7 @@ interface AddProps {
 	onClose: () => void;
 	availableZones?: DeckZone[];
 	defaultZone?: DeckZone;
+	hideQuantity?: boolean;
 }
 
 type Props = EditProps | AddProps;
@@ -185,8 +186,8 @@ export function EditCardModal(props: Props) {
 						<CardImage card={selectedPrint} size="normal" />
 					</div>
 					<div className={styles.form}>
-						{/* Quantité (add mode only) */}
-						{addMode && (
+						{/* Quantité (add mode only, unless hideQuantity) */}
+						{addMode && !props.hideQuantity && (
 							<div className={styles.field}>
 								<label className={styles.label} htmlFor="copy-add-quantity">
 									Quantité
