@@ -48,7 +48,7 @@ export function PrintsTab({ card }: Props) {
 		card.id
 	);
 
-	const { addCard } = useCollectionContext();
+	const { addCard, addCards } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();
 
 	const [viewingCard, setViewingCard] = useState<ScryfallCard | null>(null);
@@ -176,8 +176,8 @@ export function PrintsTab({ card }: Props) {
 				<EditCardModal
 					mode="add"
 					scryfallCard={addingCard}
-					onAdd={(selectedPrint, entry) => {
-						addCard(selectedPrint, entry);
+					onAdd={(selectedPrint, entry, count) => {
+						addCards(selectedPrint, count, entry);
 						setAddingCard(null);
 					}}
 					onClose={() => setAddingCard(null)}
@@ -188,8 +188,8 @@ export function PrintsTab({ card }: Props) {
 				<EditCardModal
 					mode="add"
 					scryfallCard={addingToWishlist}
-					onAdd={(selectedPrint, entry) => {
-						addToWishlist(selectedPrint, entry);
+					onAdd={(selectedPrint, entry, count) => {
+						addToWishlist(selectedPrint, entry, count);
 						setAddingToWishlist(null);
 					}}
 					onClose={() => setAddingToWishlist(null)}

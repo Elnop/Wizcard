@@ -39,7 +39,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 	const { user } = useAuth();
 	const { deck, cardsByZone, resolvedCards, stats, isLoading, isResolving } =
 		usePublicDeckDetail(deckId);
-	const { addCard } = useCollectionContext();
+	const { addCards } = useCollectionContext();
 
 	const [selectedCards, setSelectedCards] = useState<ResolvedDeckCard[] | null>(null);
 	const [addToCollectionCard, setAddToCollectionCard] = useState<ResolvedDeckCard | null>(null);
@@ -104,11 +104,11 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 	);
 
 	const handleAddToCollection = useCallback(
-		(selectedCard: ScryfallCard, entry: Partial<CardEntry>) => {
-			addCard(selectedCard, entry);
+		(selectedCard: ScryfallCard, entry: Partial<CardEntry>, count: number) => {
+			addCards(selectedCard, count, entry);
 			setAddToCollectionCard(null);
 		},
-		[addCard]
+		[addCards]
 	);
 
 	// One card per logical token — the overlay shows the per-stack count, so

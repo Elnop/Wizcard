@@ -56,7 +56,7 @@ export default function SearchPage() {
 }
 
 function SearchPageContent() {
-	const { addCard } = useCollectionContext();
+	const { addCard, addCards } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();
 	const [selectedCard, setSelectedCard] = useState<AnyCard | null>(null);
 	const router = useRouter();
@@ -374,11 +374,11 @@ function SearchPageContent() {
 					<EditCardModal
 						mode="add"
 						scryfallCard={addModal.card}
-						onAdd={(card, entry) => {
+						onAdd={(card, entry, count) => {
 							if (addModal.target === 'collection') {
-								addCard(card, entry);
+								addCards(card, count, entry);
 							} else {
-								addToWishlist(card, entry);
+								addToWishlist(card, entry, count);
 							}
 						}}
 						onClose={() => setAddModal(null)}

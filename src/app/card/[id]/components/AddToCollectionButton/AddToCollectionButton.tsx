@@ -13,7 +13,7 @@ export interface AddToCollectionButtonProps {
 }
 
 export function AddToCollectionButton({ card }: AddToCollectionButtonProps) {
-	const { addCard, decrementCard, getQuantity } = useCollectionContext();
+	const { addCards, decrementCard, getQuantity } = useCollectionContext();
 	const [showModal, setShowModal] = useState(false);
 	const [showFeedback, setShowFeedback] = useState(false);
 	const quantity = getQuantity(card.id);
@@ -24,8 +24,8 @@ export function AddToCollectionButton({ card }: AddToCollectionButtonProps) {
 		return () => clearTimeout(timer);
 	}, [showFeedback]);
 
-	function handleAdd(selectedCard: ScryfallCard, entry: Partial<CardEntry>) {
-		addCard(selectedCard, entry);
+	function handleAdd(selectedCard: ScryfallCard, entry: Partial<CardEntry>, count: number) {
+		addCards(selectedCard, count, entry);
 		setShowFeedback(true);
 	}
 
