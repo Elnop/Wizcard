@@ -5,13 +5,10 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
 import { fetchWishlistPage } from '../db/wishlist';
 import { enqueue } from '@/lib/supabase/sync-queue';
+import { buildEntriesBatch } from '@/lib/card/entry/buildEntriesBatch';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 export type WishlistData = Record<string, StoredCopy>; // key = rowId
-
-function newEntry(rowId: string, overrides?: Partial<CardEntry>): CardEntry {
-	return { rowId, dateAdded: new Date().toISOString(), ...overrides };
-}
 
 type WishlistState = {
 	entries: WishlistData;
@@ -25,7 +22,8 @@ type WishlistActions = {
 		card: ScryfallCard,
 		userId: string | null,
 		triggerSync: () => void,
-		entryPatch?: Partial<CardEntry>
+		entryPatch?: Partial<CardEntry>,
+		count?: number
 	) => void;
 	removeFromWishlist: (rowId: string, userId: string | null, triggerSync: () => void) => void;
 	clearWishlist: (userId: string | null, triggerSync: () => void) => void;
@@ -59,17 +57,17 @@ export const useWishlistStore = create<WishlistState & WishlistActions>()((set, 
 		set({ entries: {}, isLoaded: true });
 	},
 
-	addToWishlist: (card, userId, triggerSync, entryPatch) => {
-		const newRowId = crypto.randomUUID();
-		const entry = newEntry(newRowId, entryPatch);
-		set((state) => ({
-			entries: { [newRowId]: { scryfallId: card.id, entry }, ...state.entries },
-		}));
+	addToWishlist: (card, userId, triggerSync, entryPatch, count = 1) => {
+		const rows = buildEntriesBatch(card.id, count, entryPatch);
+		set((state) => {
+			const next = { ...state.entries };
+			for (const { rowId, scryfallId, entry } of rows) {
+				next[rowId] = { scryfallId, entry };
+			}
+			return { entries: next };
+		});
 		if (userId) {
-			enqueue({
-				type: 'insert',
-				payload: { userId, rowId: newRowId, scryfallId: card.id, entry, wishlist: true },
-			});
+			enqueue({ type: 'bulk-insert', payload: { userId, rows, wishlist: true } });
 			triggerSync();
 		}
 	},
