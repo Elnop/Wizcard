@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import Link from 'next/link';
 import type { CardStack } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
@@ -11,6 +11,9 @@ import { useCardModal } from '@/lib/card/hooks/useCardModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { Button } from '@/components/Button/Button';
+import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
+import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
+import { resolveLocalizedImageUri } from '@/lib/scryfall/utils/resolveLocalizedImageUri';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
 import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
@@ -32,6 +35,12 @@ export default function WishlistPage() {
 
 	const { resolvedStack, handleCardClick, handleCloseModal } = useCardModal(stacks);
 	const cardMenu = useContextMenu<CardStack>();
+
+	const [pdfSettingsModalOpen, setPdfSettingsModalOpen] = useState(false);
+	const [pdfGenerating, setPdfGenerating] = useState(false);
+
+	// One card per wishlist copy (e.g. 3x Sol Ring → 3 cards in the PDF).
+	const pdfCards = useMemo(() => stacks.flatMap((stack) => stack.cards), [stacks]);
 
 	const handleRemoveEntry = useCallback(
 		(rowId: string) => {
@@ -94,6 +103,13 @@ export default function WishlistPage() {
 					</div>
 					{entries.length > 0 && (
 						<div className={styles.actions}>
+							<Button
+								variant="secondary"
+								onClick={() => setPdfSettingsModalOpen(true)}
+								disabled={isHydrating}
+							>
+								Generate PDF
+							</Button>
 							<Button variant="danger" onClick={handleClearWishlist}>
 								Clear
 							</Button>
@@ -168,6 +184,31 @@ export default function WishlistPage() {
 					handleCloseModal();
 				}}
 			/>
+			{pdfSettingsModalOpen && (
+				<PdfSettingsModal
+					cards={pdfCards}
+					generating={pdfGenerating}
+					onConfirm={(settings) => {
+						void (async () => {
+							setPdfGenerating(true);
+							try {
+								// Resolve localized images (cache hit → instant; miss → fetched
+								// via the shared Scryfall throttle, serialized and 429-safe).
+								const resolved = await Promise.all(
+									pdfCards.map((c) => resolveLocalizedImageUri(c, 'normal'))
+								);
+								const imageUrls = resolved.filter((url): url is string => !!url);
+								await generateCardsPdf(imageUrls, settings, 'wishlist.pdf');
+								setPdfSettingsModalOpen(false);
+							} finally {
+								setPdfGenerating(false);
+							}
+						})();
+					}}
+					onClose={() => setPdfSettingsModalOpen(false)}
+				/>
+			)}
+
 			{cardMenu.menu && (
 				<ContextMenu
 					items={buildWishlistMenuItems(
