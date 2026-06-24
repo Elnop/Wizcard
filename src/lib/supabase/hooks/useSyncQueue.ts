@@ -46,7 +46,7 @@ async function executeOp(op: SyncOp): Promise<void> {
 	} else if (op.type === 'delete') {
 		await deleteEntryById(op.payload.userId, op.payload.rowId);
 	} else if (op.type === 'bulk-insert') {
-		await insertEntries(op.payload.userId, op.payload.rows);
+		await insertEntries(op.payload.userId, op.payload.rows, op.payload.wishlist ?? false);
 	} else if (op.type === 'bulk-delete') {
 		await deleteEntries(op.payload.userId, op.payload.rowIds);
 	} else if (op.type === 'deck-insert') {

@@ -37,6 +37,7 @@ export type SyncOp =
 			payload: {
 				userId: string;
 				rows: Array<{ rowId: string; scryfallId: string; entry: CardEntry }>;
+				wishlist?: boolean;
 			};
 			retries: number;
 			createdAt: string;

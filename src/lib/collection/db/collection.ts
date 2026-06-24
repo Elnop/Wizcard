@@ -85,7 +85,8 @@ const INSERT_BATCH_SIZE = 500;
 
 export async function insertEntries(
 	userId: string,
-	rows: Array<{ scryfallId: string; entry: CardEntry }>
+	rows: Array<{ scryfallId: string; entry: CardEntry }>,
+	wishlist = false
 ): Promise<void> {
 	if (rows.length === 0) return;
 	const supabase = createClient();
@@ -95,6 +96,7 @@ export async function insertEntries(
 			batch.map((r) => ({
 				...cardEntryToRow(r.scryfallId, r.entry),
 				owner_id: userId,
+				wishlist,
 			}))
 		);
 		if (error) {
