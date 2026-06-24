@@ -25,7 +25,7 @@ interface EditProps {
 interface AddProps {
 	mode: 'add';
 	scryfallCard: ScryfallCard;
-	onAdd: (card: ScryfallCard, entry: Partial<CardEntry>) => void;
+	onAdd: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
 	onClose: () => void;
 	availableZones?: DeckZone[];
 	defaultZone?: DeckZone;
@@ -142,10 +142,7 @@ export function EditCardModal(props: Props) {
 
 	function handleConfirmAdd() {
 		if (addMode) {
-			const count = Math.max(1, Math.floor(quantity) || 1);
-			for (let i = 0; i < count; i++) {
-				props.onAdd(selectedPrint, draftEntry);
-			}
+			props.onAdd(selectedPrint, draftEntry, quantity);
 			props.onClose();
 		}
 	}
