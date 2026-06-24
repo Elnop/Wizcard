@@ -21,13 +21,62 @@ seule signature de callback partagée par tous les callers.
 
 ## Principe DRY
 
-- Le **store** détient toute la logique « créer N entries + enqueue 1 bulk-insert ».
+- La **fabrication des N entries** vit dans **une seule unité pure et partagée**
+  (`buildEntriesBatch`), pas réimplémentée dans chaque store.
+- Le **store** ne fait que : insérer ces entries dans son état + enqueuer **une** op
+  `bulk-insert`. Collection et wishlist deviennent symétriques (seul le flag `wishlist` diffère).
 - `EditCardModal` n'a **qu'un** mécanisme d'ajout : il transmet `(print, entry, count)` une seule
   fois (plus de boucle).
 - Chaque call-site mappe ce callback vers `addCards` (collection) / `addToWishlist`-bulk
   (wishlist), suivi de son effet de bord UI propre (feedback, fermeture de modale, …).
 
+## Frontières des unités
+
+| Unité                                       | Responsabilité unique                                    | Dépend de                | Test isolé |
+| ------------------------------------------- | -------------------------------------------------------- | ------------------------ | ---------- |
+| `buildEntriesBatch` + `newEntry` (partagés) | fabriquer N `{rowId, scryfallId, entry}` ; clamp `count` | `CardEntry`, `crypto`    | ✅ pur     |
+| `insertEntries(userId, rows, wishlist)`     | 1 INSERT batch Supabase                                  | `cardEntryToRow`, client | ✅ mapping |
+| op `bulk-insert` + `executeOp`              | transporter `wishlist` jusqu'à la db                     | types                    | ✅ type    |
+| collection store `addCards`                 | état + enqueue (collection)                              | `buildEntriesBatch`      | ✅         |
+| wishlist store `addToWishlist`              | état + enqueue (wishlist)                                | `buildEntriesBatch`      | ✅         |
+| `EditCardModal` (add)                       | UI : `onAdd(print, entry, count)` ×1                     | —                        | check      |
+| call-sites (×5)                             | mapper onAdd → store + effet UI local                    | contexts                 | check      |
+
 ## Architecture
+
+### 0. Unité partagée : `buildEntriesBatch` (+ mutualisation de `newEntry`)
+
+`newEntry` est **actuellement dupliqué à l'identique** dans `collection-store.ts` (l.17) et
+`wishlist-store.ts` (l.12). On le déplace dans un module de domaine partagé et on ajoute la
+fabrication en lot par-dessus.
+
+**`src/lib/card/entry/buildEntriesBatch.ts`** _(nouveau)_ :
+
+```ts
+import type { CardEntry } from '@/types/cards';
+
+export function newEntry(rowId: string, overrides?: Partial<CardEntry>): CardEntry {
+	return { rowId, dateAdded: new Date().toISOString(), ...overrides };
+}
+
+/** Fabrique N entries distinctes (rowId unique chacune) pour une même carte. Pur. */
+export function buildEntriesBatch(
+	scryfallId: string,
+	count: number,
+	entryPatch?: Partial<CardEntry>
+): Array<{ rowId: string; scryfallId: string; entry: CardEntry }> {
+	const n = Math.max(1, Math.floor(count) || 1);
+	const rows: Array<{ rowId: string; scryfallId: string; entry: CardEntry }> = [];
+	for (let i = 0; i < n; i++) {
+		const rowId = crypto.randomUUID();
+		rows.push({ rowId, scryfallId, entry: newEntry(rowId, entryPatch) });
+	}
+	return rows;
+}
+```
+
+Les deux stores **importent** `newEntry` depuis ce module (suppression des deux copies locales).
+Le clamp de quantité vit ici, en un seul endroit (ni le modal ni les stores ne le redéfinissent).
 
 ### 1. Bulk-insert porte le flag `wishlist`
 
@@ -78,15 +127,16 @@ addCards: (
 ) => void;
 ```
 
-Implémentation (pattern `importCards`) : pour `n = Math.max(1, Math.floor(count))`, génère `n`
-entries (un `crypto.randomUUID()` + `newEntry(rowId, entryPatch)` chacun), set optimiste de toutes
-en une fois, puis **un seul** `enqueue({ type: 'bulk-insert', payload: { userId, rows } })` +
-`triggerSync()`.
+Implémentation : `const rows = buildEntriesBatch(card.id, count, entryPatch)` ; set optimiste de
+toutes les entries en une fois (étaler `rows` dans `state.entries`) ; puis **un seul**
+`enqueue({ type: 'bulk-insert', payload: { userId, rows } })` + `triggerSync()`. Le store ne
+contient **aucune** génération de rowId ni clamp — tout vient de `buildEntriesBatch`.
 
 **`src/lib/wishlist/store/wishlist-store.ts`** — `addToWishlist` gagne un paramètre `count`
-(défaut 1, pour rétrocompat des appels existants) et bascule sur le même chemin bulk avec
-`wishlist: true` dans l'op. Si `count === 1` le comportement observable est identique à
-aujourd'hui (1 ligne via bulk-insert).
+(défaut 1, pour rétrocompat des appels existants) et utilise le **même** `buildEntriesBatch`, puis
+enqueue `bulk-insert` avec `wishlist: true`. Le corps est symétrique à `addCards` au flag près.
+Si `count === 1`, le comportement observable est identique à aujourd'hui (1 ligne via bulk-insert).
+Les deux stores importent `newEntry` depuis `buildEntriesBatch.ts` (copies locales supprimées).
 
 > Décision : on **n'ajoute pas** une seconde méthode wishlist ; on étend `addToWishlist` avec
 > `count` pour rester DRY (un seul point d'entrée d'ajout wishlist). Le single-insert wishlist
@@ -108,7 +158,9 @@ onAdd: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
 ```
 
 `handleConfirmAdd` appelle `props.onAdd(selectedPrint, draftEntry, count)` **une seule fois** (la
-boucle disparaît). Le champ Quantité et le clamp `≥1` restent.
+boucle disparaît). Le champ Quantité reste avec son clamp d'input UI (`min=1`, on ne tape pas 0) ;
+mais la sûreté du clamp est désormais garantie en amont par `buildEntriesBatch` — le modal n'a
+plus à dédupliquer cette responsabilité.
 
 ### 5. Call-sites migrés (5)
 
@@ -143,13 +195,15 @@ flux quantité utilise `addCards`.
 ## Tests / vérification
 
 - **Unitaire (`tsx`)** :
-  - `insertEntries` : le mapping inclut `wishlist` (true/false) — testable via un faux client ou
-    en vérifiant la forme des lignes mappées si extractible ; sinon test au niveau store.
-  - collection store `addCards(card, 3, …)` : crée 3 entries distinctes (3 rowId), enqueue
-    exactement **une** op `bulk-insert` de 3 lignes.
+  - `buildEntriesBatch` (unité pure — le test le plus important) : `count = 3` ⇒ 3 entries, 3
+    rowId **distincts**, `scryfallId` correct, `entryPatch` appliqué sur chaque entry ; clamp
+    `count = 0` / négatif / NaN / `2.7` ⇒ 1 / 1 / 1 / 2 entrées.
+  - collection store `addCards(card, 3, …)` : 3 entries dans l'état, enqueue exactement **une** op
+    `bulk-insert` de 3 lignes, sans `wishlist`.
   - wishlist store `addToWishlist(card, patch, 3)` : 3 entries, **une** op `bulk-insert` avec
     `wishlist: true`.
-  - clamp : `count = 0` / négatif / NaN ⇒ 1 entrée.
+  - `insertEntries` : le mapping de ligne inclut `wishlist` (true/false). Si non testable sans
+    client Supabase, couvert au niveau store + vérif manuelle réseau.
 - **`npm run check`** (tsc + ESLint + Prettier).
 - **Manuel** : ajout quantité 3 depuis la recherche (collection ET wishlist) ⇒ 3 copies, et
   vérifier dans l'onglet réseau qu'**un seul** INSERT part. Vérifier que les autres flux d'ajout
