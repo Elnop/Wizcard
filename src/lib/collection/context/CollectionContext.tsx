@@ -20,6 +20,7 @@ type CollectionContextValue = {
 	isLoaded: boolean;
 	isFullyLoaded: boolean;
 	addCard: (card: ScryfallCard, entryPatch?: Partial<CardEntry>) => void;
+	addCards: (card: ScryfallCard, count: number, entryPatch?: Partial<CardEntry>) => void;
 	duplicateEntry: (scryfallId: string, sourceEntry: CardEntry) => void;
 	removeCard: (scryfallId: string) => void;
 	decrementCard: (scryfallId: string) => void;
@@ -73,6 +74,11 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 	const addCard = useCallback(
 		(card: ScryfallCard, entryPatch?: Partial<CardEntry>) =>
 			store.addCard(card, userId, triggerSync, entryPatch),
+		[store, userId, triggerSync]
+	);
+	const addCards = useCallback(
+		(card: ScryfallCard, count: number, entryPatch?: Partial<CardEntry>) =>
+			store.addCards(card, count, userId, triggerSync, entryPatch),
 		[store, userId, triggerSync]
 	);
 	const duplicateEntry = useCallback(
@@ -147,6 +153,7 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 		isLoaded: store.isLoaded,
 		isFullyLoaded: store.isFullyLoaded,
 		addCard,
+		addCards,
 		duplicateEntry,
 		removeCard,
 		decrementCard,

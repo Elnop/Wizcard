@@ -15,7 +15,7 @@ type WishlistContextValue = {
 	wishlist: WishlistData;
 	entries: Array<{ scryfallId: string; entry: CardEntry }>;
 	isLoaded: boolean;
-	addToWishlist: (card: ScryfallCard, entryPatch?: Partial<CardEntry>) => void;
+	addToWishlist: (card: ScryfallCard, entryPatch?: Partial<CardEntry>, count?: number) => void;
 	duplicateEntry: (scryfallId: string, sourceEntry: CardEntry) => void;
 	removeFromWishlist: (rowId: string) => void;
 	clearWishlist: () => void;
@@ -54,8 +54,8 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 	}, [userId, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const addToWishlist = useCallback(
-		(card: ScryfallCard, entryPatch?: Partial<CardEntry>) =>
-			store.addToWishlist(card, userId, triggerSync, entryPatch),
+		(card: ScryfallCard, entryPatch?: Partial<CardEntry>, count?: number) =>
+			store.addToWishlist(card, userId, triggerSync, entryPatch, count),
 		[store, userId, triggerSync]
 	);
 
