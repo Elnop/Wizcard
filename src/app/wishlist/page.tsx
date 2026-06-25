@@ -10,6 +10,7 @@ import { useCollectionCards } from '@/app/collection/useCollectionCards';
 import { useCardModal } from '@/lib/card/hooks/useCardModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { CardList } from '@/lib/card/components/CardList/CardList';
+import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
 import { Button } from '@/components/Button/Button';
 import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
 import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
@@ -137,7 +138,20 @@ export default function WishlistPage() {
 							const stack = stackByCardId.get(card.id);
 							if (stack) cardMenu.open(stack, e);
 						}}
-						renderOverlay={withCustomBadge}
+						renderOverlay={(card) => {
+							const stack = stackByCardId.get(card.id);
+							const count = stack?.cards.length ?? 1;
+							const countBadge =
+								count > 1 ? <span className={styles.cardBadge}>x{count}</span> : undefined;
+							const deckBadge = stack ? <DeckBadge cards={stack.cards} /> : undefined;
+							return withCustomBadge(
+								card,
+								<>
+									{deckBadge}
+									{countBadge}
+								</>
+							);
+						}}
 						tableColumns={[
 							{ key: 'name', label: 'Nom' },
 							{
