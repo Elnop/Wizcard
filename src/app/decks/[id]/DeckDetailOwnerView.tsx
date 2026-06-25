@@ -28,6 +28,8 @@ import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import { DeckFooter } from './components/DeckFooter/DeckFooter';
 import { CardSearchPanel } from './components/CardSearchPanel/CardSearchPanel';
 import { WishlistIcon } from '@/components/WishlistIcon';
+import { Button } from '@/components/Button/Button';
+import { PlusIcon } from '@phosphor-icons/react';
 import { useAddDeckToCollection } from './useAddDeckToCollection';
 import { AddDeckToCollectionModal } from './components/AddDeckToCollectionModal/AddDeckToCollectionModal';
 import { AddCardToCollectionModal } from './components/AddCardToCollectionModal/AddCardToCollectionModal';
@@ -746,13 +748,14 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			)}
 
 			{!searchPanelOpen && (
-				<button
-					type="button"
+				<Button
+					variant="primary"
 					className={styles.addCardsBtn}
 					onClick={() => setSearchPanelOpen(true)}
 				>
-					<span className={styles.addCardsBtnLabel}>+ Cards</span>
-				</button>
+					<PlusIcon weight="bold" />
+					Cards
+				</Button>
 			)}
 
 			<DeckFooter stats={stats} format={deck.format} warnings={warnings} />
