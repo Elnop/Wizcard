@@ -1080,10 +1080,24 @@ Rationale: `queryCustomCards`'s filter builder uses Supabase operators (`.ilike`
   - `fetchCustomCardSourceRows(): Promise<CustomCardSourceRow[]>`
   - `fetchCustomCardSourceRowsWithCounts(): Promise<{ sources: CustomCardSourceRow[]; countBySource: Map<string, number> }>`
   - `queryCustomCardRows(query: CustomCardRowQuery): Promise<{ rows: CustomCardRow[]; count: number }>`
-  - `fetchCustomCardRowById(id: string): Promise<CustomCardRow | null>` (server client)
-  - `fetchCustomCardSourceRowById(sourceId: string): Promise<CustomCardSourceRow | null>` (server client)
+  - `fetchCustomCardRowById(id: string): Promise<CustomCardRow | null>` (server client — **must live in a separate `custom-cards.server.ts`**, see note)
+  - `fetchCustomCardSourceRowById(sourceId: string): Promise<CustomCardSourceRow | null>` (server client — separate file)
 
-- [ ] **Step 1: Write `src/lib/supabase/queries/custom-cards.ts`**
+> **Server/client bundling note (learned during execution):** the two `…ById`
+> functions use the SERVER client (`@/lib/supabase/server`, which imports
+> `next/headers`). They MUST NOT live in the same file as the browser-client
+> query functions: `mpc/db/custom-cards.ts` (consumed by the client component
+> `search/page.tsx`) transitively imports the browser query file, so any
+> `next/headers` import there breaks the client bundle (`tsc` passes but
+> `npm run build` fails). Put the two `…ById` functions in
+> `src/lib/supabase/queries/custom-cards.server.ts`, importing the shared row
+> types + `CUSTOM_CARD_SELECT`/`CUSTOM_CARD_SOURCE_SELECT` from the sibling
+> browser file. `mpc/db/custom-cards.server.ts` then imports them from
+> `@/lib/supabase/queries/custom-cards.server`. The browser
+> `queries/custom-cards.ts` contains ONLY the browser-client functions and never
+> imports `@/lib/supabase/server`.
+
+- [ ] **Step 1: Write `src/lib/supabase/queries/custom-cards.ts`** (browser-client functions only — do NOT include the `createServerClient` import or the two `…ById` functions here; those go in `custom-cards.server.ts` per the note above)
 
 ```ts
 import { createClient } from '@/lib/supabase/client';
