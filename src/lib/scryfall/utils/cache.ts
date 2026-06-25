@@ -30,7 +30,3 @@ export function setCached<T>(key: string, data: T): void {
 
 	cache.set(key, { data, timestamp: Date.now() });
 }
-
-export function clearCache(): void {
-	cache.clear();
-}

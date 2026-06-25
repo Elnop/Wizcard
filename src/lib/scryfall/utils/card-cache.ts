@@ -223,27 +223,6 @@ export async function putCollectionEntriesInCache(
 	}
 }
 
-/** Delete a batch of collection entries from IndexedDB cache. */
-export async function deleteCollectionEntriesFromCache(rowIds: string[]): Promise<void> {
-	if (rowIds.length === 0) return;
-	try {
-		const db = await openDB();
-		return new Promise<void>((resolve) => {
-			try {
-				const tx = db.transaction(COLLECTION_STORE, 'readwrite');
-				const store = tx.objectStore(COLLECTION_STORE);
-				for (const rowId of rowIds) store.delete(rowId);
-				tx.oncomplete = () => resolve();
-				tx.onerror = () => resolve();
-			} catch {
-				resolve();
-			}
-		});
-	} catch {
-		// IndexedDB unavailable — silently skip
-	}
-}
-
 /** Read a localized image entry from the cache. Returns null on miss or expiry. */
 export async function getLocalizedImageFromCache(
 	key: string

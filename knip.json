@@ -1,0 +1,12 @@
+{
+	"$schema": "https://unpkg.com/knip@5/schema.json",
+	"entry": [
+		"scripts/ingest-mpc-cards.ts",
+		"scripts/analyze-filenames.ts",
+		"scripts/reparse-filenames.ts"
+	],
+	"project": ["src/**/*.{ts,tsx}", "scripts/**/*.{ts,tsx}"],
+	"ignoreBinaries": ["xdg-open", "systemd-inhibit"],
+	"ignoreExportsUsedInFile": true,
+	"ignore": ["src/lib/scryfall/endpoints/**"]
+}

@@ -79,7 +79,3 @@ export function startHud(logger: Logger, logPath = 'ingest.log'): void {
 export function stopHud(): void {
 	runner?.stop();
 }
-
-export function getLogStream(): WriteStream | undefined {
-	return runner?.logStream;
-}

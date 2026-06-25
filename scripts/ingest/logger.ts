@@ -18,7 +18,6 @@ const CYCLE_EVENTS = new Set(['run.start', 'run.done', 'listing.done', 'source.d
 // Events only emitted at level=debug.
 const DEBUG_ONLY_EVENTS = new Set(['card.resolved']);
 
-const MAX_TASK_BARS = 8;
 const ETA_WINDOW_MS = 30_000;
 const ETA_SAMPLE_INTERVAL_MS = 1_000;
 
@@ -577,6 +576,3 @@ export function createLogger(level: LogLevel, logStream?: NodeJS.WritableStream)
 		},
 	};
 }
-
-// Keep MAX_TASK_BARS exported in case external modules reference it.
-export { MAX_TASK_BARS };

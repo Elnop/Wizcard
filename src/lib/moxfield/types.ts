@@ -1,5 +1,5 @@
-// Format "Collection" export (full)
-export const MOXFIELD_COLLECTION_HEADERS = [
+// Export header used when serializing (Format "Collection", full export)
+export const MOXFIELD_CSV_HEADERS = [
 	'Count',
 	'Tradelist Count',
 	'Name',
@@ -14,9 +14,6 @@ export const MOXFIELD_COLLECTION_HEADERS = [
 	'Proxy',
 	'Purchase Price',
 ] as const;
-
-// Export header used when serializing (Collection format)
-export const MOXFIELD_CSV_HEADERS = MOXFIELD_COLLECTION_HEADERS;
 
 export type MoxfieldFoilType = '' | 'foil' | 'etched';
 

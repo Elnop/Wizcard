@@ -29,10 +29,6 @@ function isSlowUrl(url: string): boolean {
 	return SLOW_PATHS.test(path);
 }
 
-export function gapForUrl(url: string): number {
-	return isSlowUrl(url) ? SLOW_GAP_MS : FAST_GAP_MS;
-}
-
 // After a 429 we multiply the gap by this factor and let it decay back to the
 // baseline over the following requests — prevents an immediate re-saturation.
 const PENALTY_FACTOR = 2;

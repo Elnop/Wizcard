@@ -44,22 +44,6 @@ export async function fetchDecks(userId: string): Promise<DeckMeta[]> {
 	return (data as DeckDbRow[]).map(rowToDeckMeta);
 }
 
-export async function fetchDeckMeta(userId: string, deckId: string): Promise<DeckMeta> {
-	const supabase = createClient();
-	const { data, error } = await supabase
-		.from('decks')
-		.select('*')
-		.eq('owner_id', userId)
-		.eq('id', deckId)
-		.single();
-
-	if (error) {
-		throw new Error(`[decks] fetchDeckMeta error: ${error.message}`);
-	}
-
-	return rowToDeckMeta(data as DeckDbRow);
-}
-
 /**
  * Fetch a deck by id WITHOUT an owner filter — used by the public read-only
  * view, which doesn't know (and isn't restricted to) the owner. Relies on the
@@ -165,32 +149,6 @@ export async function unassignCollectionCopiesFromDeck(
 	if (error) {
 		throw new Error(`[decks] unassignCollectionCopiesFromDeck error: ${error.message}`);
 	}
-}
-
-/** Fetch distinct scryfall_ids for each of the given deck IDs in a single query. */
-export async function fetchDeckScryfallIds(deckIds: string[]): Promise<Record<string, string[]>> {
-	if (deckIds.length === 0) return {};
-	const supabase = createClient();
-	const { data, error } = await supabase
-		.from('cards')
-		.select('deck_id, scryfall_id')
-		.in('deck_id', deckIds);
-
-	if (error) {
-		throw new Error(`[decks] fetchDeckScryfallIds error: ${error.message}`);
-	}
-
-	const result: Record<string, Set<string>> = {};
-	for (const row of data as Array<{ deck_id: string; scryfall_id: string }>) {
-		if (!result[row.deck_id]) result[row.deck_id] = new Set();
-		result[row.deck_id].add(row.scryfall_id);
-	}
-
-	const out: Record<string, string[]> = {};
-	for (const [deckId, ids] of Object.entries(result)) {
-		out[deckId] = [...ids];
-	}
-	return out;
 }
 
 /** Fetch scryfall_id + tags for each card in the given decks (single query). */

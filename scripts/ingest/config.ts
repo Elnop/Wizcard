@@ -30,7 +30,6 @@ if (usingIngestEnv) {
 export const MPCFILL_URL = 'https://mpcfill.com/2/sources/';
 export const DRIVE_FILES_URL = 'https://www.googleapis.com/drive/v3/files';
 export const SCRYFALL_SETS_URL = 'https://api.scryfall.com/sets';
-export const SCRYFALL_USER_AGENT = 'Wizcard/1.0';
 
 // ─── Env resolution + validation ─────────────────────────────────────────────
 
