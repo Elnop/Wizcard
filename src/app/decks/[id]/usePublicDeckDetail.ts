@@ -8,6 +8,7 @@ import { getDeckZone } from '@/types/decks';
 import { fetchDeckMetaById, fetchDeckCards } from '@/lib/deck/db/decks';
 import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
 import { computeDeckStats, type DeckStats } from '@/lib/deck/utils/deck-stats';
+import { pickCoverArt } from '@/lib/deck/utils/pick-cover-art';
 import type { ResolvedDeckCard } from './useDeckDetail';
 
 type DeckCard = { scryfallId: string; entry: CardEntry };
@@ -126,6 +127,12 @@ export function usePublicDeckDetail(deckId: string) {
 		);
 	}, [resolvedCards]);
 
+	const coverArtUrl = useMemo(
+		() =>
+			pickCoverArt(resolvedCards.map((rc) => ({ card: rc as ScryfallCard, tags: rc.entry.tags }))),
+		[resolvedCards]
+	);
+
 	const isResolving = resolveGeneration > 0;
 
 	return {
@@ -133,6 +140,7 @@ export function usePublicDeckDetail(deckId: string) {
 		cardsByZone,
 		resolvedCards,
 		stats,
+		coverArtUrl,
 		isLoading,
 		isResolving,
 	};

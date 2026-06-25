@@ -82,87 +82,138 @@ export function DeckHeader({
 		);
 	}
 
+	const hasMoreActions = Boolean(onAssignAllFromCollection || onAddAllToCollection);
+
 	return (
 		<div className={styles.header}>
+			{deck.format && <span className={styles.kicker}>{deck.format}</span>}
 			<div className={styles.titleRow}>
+				<span className={styles.diamond} aria-hidden="true">
+					◆
+				</span>
 				<h1 className={styles.name}>{deck.name}</h1>
-				{deck.format && <span className={styles.format}>{deck.format}</span>}
-				<div className={styles.menuWrapper} ref={menuRef} onClick={(e) => e.stopPropagation()}>
-					<button
-						type="button"
-						className={styles.kebabBtn}
-						onClick={() => setMenuOpen((v) => !v)}
-						aria-label="Deck actions"
-					>
-						⋮
-					</button>
-					{menuOpen && (
-						<div className={styles.dropdown}>
-							{!readOnly && (
-								<button
-									type="button"
-									className={styles.dropdownItem}
-									onClick={() => {
-										setMenuOpen(false);
-										setIsEditing(true);
-									}}
-								>
-									✎ Edit
-								</button>
-							)}
-							{onAssignAllFromCollection && (
-								<button
-									type="button"
-									className={styles.dropdownItem}
-									onClick={() => {
-										setMenuOpen(false);
-										onAssignAllFromCollection();
-									}}
-								>
-									⊕ Assign all from collection
-								</button>
-							)}
-							{onAddAllToCollection && (
-								<button
-									type="button"
-									className={styles.dropdownItem}
-									onClick={() => {
-										setMenuOpen(false);
-										onAddAllToCollection();
-									}}
-								>
-									⊕ Ajouter tout à la collection
-								</button>
-							)}
-							{onGeneratePdf && (
-								<button
-									type="button"
-									className={styles.dropdownItem}
-									onClick={() => {
-										setMenuOpen(false);
-										onGeneratePdf();
-									}}
-								>
-									⬇ Générer un PDF
-								</button>
-							)}
-							{onExportText && (
-								<button
-									type="button"
-									className={styles.dropdownItem}
-									onClick={() => {
-										setMenuOpen(false);
-										onExportText();
-									}}
-								>
-									⬇ Exporter la decklist
-								</button>
-							)}
-						</div>
-					)}
-				</div>
+			</div>
+			<div className={styles.rule} aria-hidden="true">
+				<span className={styles.ruleDiamond}>◆</span>
 			</div>
 			{deck.description && <p className={styles.description}>{deck.description}</p>}
+
+			<div className={styles.actions}>
+				{!readOnly && (
+					<button type="button" className={styles.actionBtn} onClick={() => setIsEditing(true)}>
+						<EditIcon />
+						<span>Edit</span>
+					</button>
+				)}
+				{onExportText && (
+					<button type="button" className={styles.actionBtn} onClick={() => onExportText()}>
+						<ExportIcon />
+						<span>Export</span>
+					</button>
+				)}
+				{onGeneratePdf && (
+					<button type="button" className={styles.actionBtn} onClick={() => onGeneratePdf()}>
+						<PdfIcon />
+						<span>Generate PDF</span>
+					</button>
+				)}
+				{hasMoreActions && (
+					<div className={styles.menuWrapper} ref={menuRef} onClick={(e) => e.stopPropagation()}>
+						<button
+							type="button"
+							className={styles.actionBtn}
+							onClick={() => setMenuOpen((v) => !v)}
+							aria-haspopup="menu"
+							aria-expanded={menuOpen}
+						>
+							<MoreIcon />
+							<span>More</span>
+						</button>
+						{menuOpen && (
+							<div className={styles.dropdown} role="menu">
+								{onAssignAllFromCollection && (
+									<button
+										type="button"
+										className={styles.dropdownItem}
+										role="menuitem"
+										onClick={() => {
+											setMenuOpen(false);
+											onAssignAllFromCollection();
+										}}
+									>
+										⊕ Assign all from collection
+									</button>
+								)}
+								{onAddAllToCollection && (
+									<button
+										type="button"
+										className={styles.dropdownItem}
+										role="menuitem"
+										onClick={() => {
+											setMenuOpen(false);
+											onAddAllToCollection();
+										}}
+									>
+										⊕ Ajouter tout à la collection
+									</button>
+								)}
+							</div>
+						)}
+					</div>
+				)}
+			</div>
 		</div>
+	);
+}
+
+function EditIcon() {
+	return (
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+			<path
+				d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"
+				stroke="currentColor"
+				strokeWidth="1.8"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
+function ExportIcon() {
+	return (
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+			<path
+				d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"
+				stroke="currentColor"
+				strokeWidth="1.8"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
+
+function PdfIcon() {
+	return (
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+			<path
+				d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z"
+				stroke="currentColor"
+				strokeWidth="1.8"
+				strokeLinejoin="round"
+			/>
+			<path d="M14 3v6h6" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+		</svg>
+	);
+}
+
+function MoreIcon() {
+	return (
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+			<circle cx="12" cy="5" r="1.6" />
+			<circle cx="12" cy="12" r="1.6" />
+			<circle cx="12" cy="19" r="1.6" />
+		</svg>
 	);
 }

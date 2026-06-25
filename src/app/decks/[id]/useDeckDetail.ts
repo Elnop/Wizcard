@@ -8,6 +8,7 @@ import { getDeckZone } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
 import { computeDeckStats, type DeckStats } from '@/lib/deck/utils/deck-stats';
+import { pickCoverArt } from '@/lib/deck/utils/pick-cover-art';
 
 export type ResolvedDeckCard = Card;
 
@@ -115,6 +116,13 @@ export function useDeckDetail(deckId: string) {
 		);
 	}, [resolvedCards]);
 
+	// Cover art for the page background (commander > non-land > any)
+	const coverArtUrl = useMemo(
+		() =>
+			pickCoverArt(resolvedCards.map((rc) => ({ card: rc as ScryfallCard, tags: rc.entry.tags }))),
+		[resolvedCards]
+	);
+
 	const isResolving = resolveGeneration > 0;
 
 	return {
@@ -122,6 +130,7 @@ export function useDeckDetail(deckId: string) {
 		cardsByZone,
 		resolvedCards,
 		stats,
+		coverArtUrl,
 		isLoading,
 		isResolving,
 	};

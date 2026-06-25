@@ -79,7 +79,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		activeDeckCards,
 		replaceDeckCardWithCollectionCopy,
 	} = useDeckContext();
-	const { deck, cardsByZone, resolvedCards, stats, isLoading, isResolving } = useDeckDetail(deckId);
+	const { deck, cardsByZone, resolvedCards, stats, coverArtUrl, isLoading, isResolving } =
+		useDeckDetail(deckId);
 
 	const [searchPanelOpen, setSearchPanelOpen] = useState(false);
 	const [searchPanelExpanded, setSearchPanelExpanded] = useState(false);
@@ -570,7 +571,15 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	}
 
 	return (
-		<div className={styles.page}>
+		<div
+			className={styles.page}
+			style={coverArtUrl ? { ['--cover-art' as string]: `url("${coverArtUrl}")` } : undefined}
+		>
+			<div className={styles.bg} aria-hidden="true">
+				<div className={styles.bgArt} />
+				<div className={styles.bgGrain} />
+				<div className={styles.bgVignette} />
+			</div>
 			<div
 				className={`${styles.layout} ${searchPanelOpen && !searchPanelExpanded ? styles.layoutWithPanel : ''}`}
 			>

@@ -37,7 +37,7 @@ import styles from './page.module.css';
  */
 export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 	const { user } = useAuth();
-	const { deck, cardsByZone, resolvedCards, stats, isLoading, isResolving } =
+	const { deck, cardsByZone, resolvedCards, stats, coverArtUrl, isLoading, isResolving } =
 		usePublicDeckDetail(deckId);
 	const { addCards } = useCollectionContext();
 
@@ -139,7 +139,15 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 	}
 
 	return (
-		<div className={styles.page}>
+		<div
+			className={styles.page}
+			style={coverArtUrl ? { ['--cover-art' as string]: `url("${coverArtUrl}")` } : undefined}
+		>
+			<div className={styles.bg} aria-hidden="true">
+				<div className={styles.bgArt} />
+				<div className={styles.bgGrain} />
+				<div className={styles.bgVignette} />
+			</div>
 			<div className={styles.layout}>
 				<div className={styles.content}>
 					<DeckHeader deck={deck} readOnly onExportText={() => setTextExportModalOpen(true)} />

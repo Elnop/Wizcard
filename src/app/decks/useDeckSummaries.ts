@@ -8,6 +8,7 @@ import { fetchDeckCardEntries } from '@/lib/deck/db/decks';
 import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
 import { computeDeckStats } from '@/lib/deck/utils/deck-stats';
 import { validateDeck, getFormatRules } from '@/lib/deck/utils/format-rules';
+import { pickCoverArt } from '@/lib/deck/utils/pick-cover-art';
 
 const WUBRG_ORDER: ScryfallColor[] = ['W', 'U', 'B', 'R', 'G'];
 
@@ -30,7 +31,11 @@ function buildDeckSummary(
 	const rules = format ? getFormatRules(format) : null;
 
 	return {
-		artCropUrl: pickArtCrop(entries, cached),
+		artCropUrl: pickCoverArt(
+			entries
+				.map((e) => ({ card: cached.get(e.scryfallId), tags: e.tags }))
+				.filter((c): c is { card: ScryfallCard; tags: string[] | null } => c.card != null)
+		),
 		colors: computeColors(entries, cached),
 		commanderName: findCommanderName(entries, cached),
 		manaCurve: computeManaCurve(entries, cached),
@@ -58,10 +63,6 @@ export type DeckSummary = {
 
 const EMPTY: Record<string, DeckSummary> = {};
 
-function getArtCropUrl(card: ScryfallCard): string | null {
-	return card.image_uris?.art_crop ?? card.card_faces?.[0]?.image_uris?.art_crop ?? null;
-}
-
 function isLand(card: ScryfallCard): boolean {
 	return (card.type_line ?? '').toLowerCase().includes('land');
 }
@@ -72,29 +73,6 @@ function hasCommanderTag(tags: string[] | null): boolean {
 
 function sortWubrg(colors: Set<ScryfallColor>): ScryfallColor[] {
 	return WUBRG_ORDER.filter((c) => colors.has(c));
-}
-
-function pickArtCrop(
-	entries: Array<{ scryfallId: string; tags: string[] | null }>,
-	cardMap: Map<string, ScryfallCard>
-): string | undefined {
-	const candidates = entries
-		.map((e) => ({ e, card: cardMap.get(e.scryfallId) }))
-		.filter(({ card }) => card);
-	// Priority: commander > non-land > any
-	const priorities: Array<(c: (typeof candidates)[0]) => boolean> = [
-		({ e }) => hasCommanderTag(e.tags),
-		({ card }) => !isLand(card!),
-		() => true,
-	];
-	for (const predicate of priorities) {
-		const match = candidates.find(predicate);
-		if (match) {
-			const url = getArtCropUrl(match.card!);
-			if (url) return url;
-		}
-	}
-	return undefined;
 }
 
 function computeColors(
