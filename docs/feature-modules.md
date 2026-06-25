@@ -58,6 +58,59 @@ A component shared between ≥2 pages stays in `src/lib/<feature>/components/` w
 
 **Example:** `FilterModal` imports Scryfall types (`ScryfallSortOrder`, `ScryfallColor`, `ScryfallSet`) and orchestrates Scryfall search filters → it belongs in `src/lib/search/components/`, not `src/components/`. By contrast, `Button` and `Modal` have no domain coupling → `src/components/`.
 
+## Functional Domains vs. External-Integration Modules
+
+`src/lib/` holds two kinds of modules:
+
+- **Functional (domain) modules** — `card`, `collection`, `deck`, `wishlist`,
+  `import`, `mpc`, `edhrec`, `pdf`, `mtg`, `search`. They own business logic and
+  domain types. Each has its own `db/` that maps `row ↔ domain type`.
+- **External-integration modules** — `supabase`, `scryfall`. They own ALL
+  communication with one external service and expose it to the rest of the app.
+  They contain **no business logic and no domain types** in their query layer.
+
+### The Supabase boundary rule
+
+`src/lib/supabase/` is the **single place** that may touch the Supabase client
+(`createClient`, `.from()`, `.auth.*`, `.storage.*`, `.rpc()`). The goal is a
+migration-friendly seam: swapping backends should rewrite only this folder.
+
+```
+src/lib/supabase/
+  client.ts / server.ts # client factories
+  queries/ # ONLY place issuing client.from(...) — returns/accepts ROWS
+    cards.ts # cards + public_collection_cards
+    decks.ts # decks + deck_folders + deck-scoped cards
+    custom-cards.ts # custom_cards + custom_card_sources
+    custom-cards.server.ts  # server-only (…ById fetchers); kept separate so the
+                            # browser query file never imports next/headers
+  auth/ # ONLY place issuing client.auth.\* — returns plain results
+    auth-server.ts # getCurrentUser, exchangeCodeForSession, verifyEmailOtp
+    auth-client.ts # signInWithEmailOtp, verifyEmailOtpClient
+  sync-queue.ts / ... # generic offline infra
+```
+
+A domain `db/` (e.g. `collection/db/collection.ts`) imports from
+`supabase/queries/*` and does `row → CardEntry` mapping. It must NOT call
+`createClient` or `.from()` directly.
+
+**Row types** (`CardDbRow`, `DeckDbRow`, …) are the shared contract between the
+two layers. `CardDbRow` lives in `card/db/cardRow.ts`; table-specific row types
+live alongside their queries in `supabase/queries/*`.
+
+**Type-only exception:** the queries layer may import a domain _type_ (e.g.
+`CardType`) when it is part of a filter/query contract — type-only imports carry
+no runtime coupling. It must never import domain _values_ or _logic_.
+
+The only allowed Supabase-client caller outside this folder is `src/proxy.ts`
+(Next.js middleware entry, framework-imposed), which delegates to
+`supabase/middleware.ts`.
+
+> `scryfall` follows the same spirit but is broader: it also owns React hooks and
+> presentational components (mana symbols) coupled to Scryfall data. The "no
+> domain logic" constraint applies to its fetch/query layer; reuse beyond that is
+> by design.
+
 ## Decision Guide
 
 When adding a new file, ask:
