@@ -2,6 +2,7 @@
 
 import type { DeckSortDir, DeckSortOrder } from '../../useDeckSort';
 import type { DeckGroupBy } from '../../useDeckCardSections';
+import { Select } from '@/components/Select/Select';
 import styles from './DeckSortBar.module.css';
 
 const SORT_OPTIONS: { value: DeckSortOrder; label: string }[] = [
@@ -36,35 +37,25 @@ export function DeckSortBar({
 
 	return (
 		<div className={styles.bar}>
-			<label className={styles.field}>
+			<div className={styles.field}>
 				<span className={styles.label}>Grouper</span>
-				<select
-					className={styles.select}
+				<Select
 					value={groupBy}
-					onChange={(e) => onGroupByChange(e.target.value as DeckGroupBy)}
-				>
-					{GROUP_OPTIONS.map((opt) => (
-						<option key={opt.value} value={opt.value}>
-							{opt.label}
-						</option>
-					))}
-				</select>
-			</label>
+					options={GROUP_OPTIONS}
+					onChange={onGroupByChange}
+					ariaLabel="Grouper par"
+				/>
+			</div>
 
-			<label className={styles.field}>
+			<div className={styles.field}>
 				<span className={styles.label}>Trier</span>
-				<select
-					className={styles.select}
+				<Select
 					value={order}
-					onChange={(e) => onOrderChange(e.target.value as DeckSortOrder)}
-				>
-					{SORT_OPTIONS.map((opt) => (
-						<option key={opt.value} value={opt.value}>
-							{opt.label}
-						</option>
-					))}
-				</select>
-			</label>
+					options={SORT_OPTIONS}
+					onChange={onOrderChange}
+					ariaLabel="Trier par"
+				/>
+			</div>
 
 			<button
 				type="button"

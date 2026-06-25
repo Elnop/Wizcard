@@ -1,0 +1,82 @@
+.trigger {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	min-width: 130px;
+	padding: 6px 8px 6px 10px;
+	font-size: var(--text-sm);
+	font-family: inherit;
+	color: var(--foreground);
+	background: var(--glass-bg);
+	border: 1px solid var(--glass-border);
+	border-radius: 6px;
+	cursor: pointer;
+	outline: none;
+	backdrop-filter: blur(var(--glass-blur));
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+	transition:
+		border-color 0.15s,
+		box-shadow 0.15s;
+}
+
+.trigger:hover {
+	border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+}
+
+.trigger:focus-visible,
+.trigger[aria-expanded='true'] {
+	border-color: var(--primary);
+	box-shadow:
+		0 2px 12px rgba(0, 0, 0, 0.3),
+		0 0 0 3px rgba(201, 168, 76, 0.18);
+}
+
+.triggerLabel {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.chevron {
+	flex-shrink: 0;
+	color: var(--text-muted);
+	transition: transform 0.15s;
+}
+
+.chevronOpen {
+	transform: rotate(180deg);
+}
+
+/* Portal panel — mirrors ContextMenu's glass sheet for consistency. */
+.list {
+	position: fixed;
+	z-index: 1000;
+	padding: 4px;
+	background: var(--glass-bg, rgba(20, 20, 30, 0.92));
+	backdrop-filter: blur(var(--glass-blur, 12px));
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.4),
+		0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.option {
+	padding: 7px 10px;
+	border-radius: 5px;
+	color: var(--foreground);
+	font-size: var(--text-sm);
+	white-space: nowrap;
+	cursor: pointer;
+	transition: background 0.1s;
+}
+
+.optionFocused {
+	background: rgba(255, 255, 255, 0.07);
+}
+
+.optionSelected {
+	color: var(--primary);
+	font-weight: 600;
+}

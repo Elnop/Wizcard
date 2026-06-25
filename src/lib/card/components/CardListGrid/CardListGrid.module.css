@@ -156,6 +156,7 @@
 	text-transform: uppercase;
 	letter-spacing: 0.08em;
 	text-align: left;
+	text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .sectionHeaderCollapsible {
@@ -164,13 +165,14 @@
 
 .sectionCount {
 	font-size: var(--text-lg);
-	color: var(--text-muted);
+	color: color-mix(in srgb, var(--foreground) 65%, transparent);
 	font-weight: 400;
+	text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
 
 .chevron {
 	font-size: var(--text-lg);
-	color: var(--text-muted);
+	color: color-mix(in srgb, var(--foreground) 65%, transparent);
 	transition: transform 0.2s;
 	display: inline-block;
 	flex-shrink: 0;

@@ -145,6 +145,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 		>
 			<div className={styles.bg} aria-hidden="true">
 				<div className={styles.bgArt} />
+				<div className={styles.bgScrim} />
 				<div className={styles.bgGrain} />
 				<div className={styles.bgVignette} />
 			</div>
