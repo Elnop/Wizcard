@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { queryCustomCards, getCustomCardSources } from '@/lib/supabase/custom-cards';
+import { queryCustomCards, getCustomCardSources } from '@/lib/mpc/db/custom-cards';
 import { toCustomCard } from '../adapter';
 import { useDebounce } from '@/lib/search/hooks/useDebounce';
 import type { CustomCard, CardType } from '../types';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { queryCustomCards } from '@/lib/supabase/custom-cards';
+import { queryCustomCards } from '@/lib/mpc/db/custom-cards';
 import { toCustomCard } from '@/lib/mpc/adapter';
 import type { CustomCard, MpcSource } from '@/lib/mpc/types';
 

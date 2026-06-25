@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import type { MpcSourceWithCount } from '@/lib/supabase/custom-cards';
+import type { MpcSourceWithCount } from '@/lib/mpc/db/custom-cards';
 import styles from './CustomSourceFilter.module.css';
 
 interface CustomSourceFilterProps {

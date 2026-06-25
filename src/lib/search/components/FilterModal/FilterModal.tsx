@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { ScryfallColor, ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import type { ColorMatch } from '@/lib/search/types';
-import type { MpcSourceWithCount } from '@/lib/supabase/custom-cards';
+import type { MpcSourceWithCount } from '@/lib/mpc/db/custom-cards';
 import type { CardType } from '@/lib/mpc/types';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { Modal } from '@/components/Modal/Modal';
