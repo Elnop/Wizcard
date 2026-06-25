@@ -200,8 +200,8 @@ Extract every `client.from('cards' | 'public_collection_cards')` call used by co
 
 - Consumes: `CardDbRow` from `@/lib/card/db/cardRow`.
 - Produces (exact signatures the domain db layers will call in Tasks 4–5):
-  - `fetchCardRowsPage(table: 'cards' | 'public_collection_cards', filter: { ownerId: string; from: number; pageSize: number }): Promise<{ rows: CardDbRow[]; count: number }>`
-  - `fetchWishlistCardRowsPage(userId: string, from: number, pageSize: number): Promise<{ rows: CardDbRow[]; count: number }>`
+  - `fetchCardRowsPage(table: 'cards' | 'public_collection_cards', filter: { ownerId: string; from: number; pageSize: number }): Promise<{ rows: CardDbRow[]; hasMore: boolean }>` (preserves original `hasMore: data.length === pageSize` semantics; no total-count query)
+  - `fetchWishlistCardRowsPage(userId: string, from: number, pageSize: number): Promise<{ rows: CardDbRow[]; hasMore: boolean }>`
   - `insertCardRows(rows: Record<string, unknown>[]): Promise<void>`
   - `deleteCardRowsByIds(ownerId: string, ids: string[]): Promise<void>`
   - `updateCardRow(ownerId: string, rowId: string, payload: Record<string, unknown>): Promise<void>`
