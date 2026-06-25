@@ -1,6 +1,6 @@
 import { type EmailOtpType } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { exchangeCodeForSession, verifyEmailOtp } from '@/lib/supabase/auth/auth-server';
 
 export async function GET(request: NextRequest) {
 	const { searchParams } = new URL(request.url);
@@ -8,11 +8,9 @@ export async function GET(request: NextRequest) {
 	const type = searchParams.get('type') as EmailOtpType | null;
 	const code = searchParams.get('code');
 
-	const supabase = await createClient();
-
 	// PKCE flow (Supabase local / newer versions)
 	if (code) {
-		const { error } = await supabase.auth.exchangeCodeForSession(code);
+		const { error } = await exchangeCodeForSession(code);
 		if (!error) {
 			return NextResponse.redirect(new URL('/collection', request.url));
 		}
@@ -20,7 +18,7 @@ export async function GET(request: NextRequest) {
 
 	// OTP flow (token_hash)
 	if (token_hash && type) {
-		const { error } = await supabase.auth.verifyOtp({ type, token_hash });
+		const { error } = await verifyEmailOtp({ type, token_hash });
 		if (!error) {
 			return NextResponse.redirect(new URL('/collection', request.url));
 		}
