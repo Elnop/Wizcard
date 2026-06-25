@@ -63,9 +63,14 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		(scryfallId: string, sourceEntry: CardEntry) => {
 			// On copie les métadonnées de l'entry source mais pas son rowId ni sa date :
 			// addToWishlist génère un nouveau rowId et une nouvelle dateAdded pour la copie.
+			// On retire aussi deckId et ownerId : la copie est une nouvelle entrée
+			// wishlist pure et ne doit pas hériter de l'appartenance à un deck ni de
+			// l'owner de la source (owner_id est forcé à userId à l'insertion).
 			const patch: Partial<CardEntry> = { ...sourceEntry };
 			delete patch.rowId;
 			delete patch.dateAdded;
+			delete patch.deckId;
+			delete patch.ownerId;
 			const stubCard = { id: scryfallId } as ScryfallCard;
 			store.addToWishlist(stubCard, userId, triggerSync, patch);
 		},
