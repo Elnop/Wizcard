@@ -10,6 +10,7 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 - **`npm run sb:reset` is destructive** — drops and recreates the local DB.
 - **Write the current localStorage format**: `{ scryfallId: string, entry: CardEntry }`. Legacy migration exists in `src/lib/collection/db/collection-migrations.ts` but new code must write the current format.
 - **Don't add a context provider between `SyncQueueRunner` and `CollectionProvider`** without auditing whether it needs either.
+- **Never call the Supabase client outside `src/lib/supabase/`.** All `createClient` / `.from()` / `.auth.*` calls live in `supabase/queries/*` (data) or `supabase/auth/*` (auth) and return/accept ROWS only; domain `db/` modules map rows ↔ domain types. See `docs/feature-modules.md` § "Functional Domains vs. External-Integration Modules". (`src/proxy.ts` is the sole framework-imposed exception.)
 
 ## Development Commands
 

@@ -1,19 +1,20 @@
 import type { CardEntry } from '@/types/cards';
 import type { DeckMeta } from '@/types/decks';
-import { createClient } from '@/lib/supabase/client';
 import { type CardDbRow, rowToCardEntry, cardEntryToRow } from '@/lib/card/db/cardRow';
-
-type DeckDbRow = {
-	id: string;
-	owner_id: string;
-	name: string;
-	format: string | null;
-	description: string | null;
-	folder_id: string | null;
-	cover_art_url: string | null;
-	created_at: string;
-	updated_at: string;
-};
+import {
+	type DeckDbRow,
+	fetchDeckRows,
+	fetchDeckRowById,
+	insertDeckRow,
+	updateDeckRow,
+	deleteDeckRow,
+	unassignDeckCardRows,
+	fetchDeckCardTagRows,
+	fetchDeckCardRows,
+	insertDeckCardRows,
+	deleteDeckCardRowById,
+	updateDeckCardRowById,
+} from '@/lib/supabase/queries/decks';
 
 function rowToDeckMeta(row: DeckDbRow): DeckMeta {
 	return {
@@ -32,39 +33,20 @@ function rowToDeckMeta(row: DeckDbRow): DeckMeta {
 // --- Deck CRUD ---
 
 export async function fetchDecks(userId: string): Promise<DeckMeta[]> {
-	const supabase = createClient();
-	const { data, error } = await supabase
-		.from('decks')
-		.select('*')
-		.eq('owner_id', userId)
-		.order('updated_at', { ascending: false });
-
-	if (error) {
-		throw new Error(`[decks] fetchDecks error: ${error.message}`);
-	}
-
-	return (data as DeckDbRow[]).map(rowToDeckMeta);
+	return (await fetchDeckRows(userId)).map(rowToDeckMeta);
 }
 
 /**
  * Fetch a deck by id WITHOUT an owner filter — used by the public read-only
- * view, which doesn't know (and isn't restricted to) the owner. Relies on the
- * public SELECT policy. Returns null if the deck doesn't exist.
+ * view. Relies on the public SELECT policy. Returns null if absent.
  */
 export async function fetchDeckMetaById(deckId: string): Promise<DeckMeta | null> {
-	const supabase = createClient();
-	const { data, error } = await supabase.from('decks').select('*').eq('id', deckId).maybeSingle();
-
-	if (error) {
-		throw new Error(`[decks] fetchDeckMetaById error: ${error.message}`);
-	}
-
-	return data ? rowToDeckMeta(data as DeckDbRow) : null;
+	const row = await fetchDeckRowById(deckId);
+	return row ? rowToDeckMeta(row) : null;
 }
 
 export async function insertDeck(userId: string, deck: DeckMeta): Promise<void> {
-	const supabase = createClient();
-	const { error } = await supabase.from('decks').insert({
+	await insertDeckRow({
 		id: deck.id,
 		owner_id: userId,
 		name: deck.name,
@@ -75,10 +57,6 @@ export async function insertDeck(userId: string, deck: DeckMeta): Promise<void> 
 		created_at: deck.createdAt,
 		updated_at: deck.updatedAt,
 	});
-
-	if (error) {
-		throw new Error(`[decks] insertDeck error: ${error.message}`);
-	}
 }
 
 export async function updateDeckMeta(
@@ -86,22 +64,12 @@ export async function updateDeckMeta(
 	deckId: string,
 	updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description' | 'coverArtUrl'>>
 ): Promise<void> {
-	const supabase = createClient();
 	const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
 	if (updates.name !== undefined) payload.name = updates.name;
 	if (updates.format !== undefined) payload.format = updates.format;
 	if (updates.description !== undefined) payload.description = updates.description;
 	if (updates.coverArtUrl !== undefined) payload.cover_art_url = updates.coverArtUrl;
-
-	const { error } = await supabase
-		.from('decks')
-		.update(payload)
-		.eq('owner_id', userId)
-		.eq('id', deckId);
-
-	if (error) {
-		throw new Error(`[decks] updateDeckMeta error: ${error.message}`);
-	}
+	await updateDeckRow(userId, deckId, payload);
 }
 
 export async function moveDeckToFolder(
@@ -109,16 +77,10 @@ export async function moveDeckToFolder(
 	deckId: string,
 	folderId: string | null
 ): Promise<void> {
-	const supabase = createClient();
-	const { error } = await supabase
-		.from('decks')
-		.update({ folder_id: folderId, updated_at: new Date().toISOString() })
-		.eq('owner_id', userId)
-		.eq('id', deckId);
-
-	if (error) {
-		throw new Error(`[decks] moveDeckToFolder error: ${error.message}`);
-	}
+	await updateDeckRow(userId, deckId, {
+		folder_id: folderId,
+		updated_at: new Date().toISOString(),
+	});
 }
 
 export async function deleteDeck(
@@ -126,56 +88,24 @@ export async function deleteDeck(
 	deckId: string,
 	deleteCollectionCopies = false
 ): Promise<void> {
-	const supabase = createClient();
-
 	if (!deleteCollectionCopies) {
-		await unassignCollectionCopiesFromDeck(userId, deckId);
+		await unassignCollectionCopiesFromDeck(deckId);
 	}
-
-	const { error } = await supabase.from('decks').delete().eq('owner_id', userId).eq('id', deckId);
-
-	if (error) {
-		throw new Error(`[decks] deleteDeck error: ${error.message}`);
-	}
+	await deleteDeckRow(userId, deckId);
 }
 
-export async function unassignCollectionCopiesFromDeck(
-	userId: string,
-	deckId: string
-): Promise<void> {
-	const supabase = createClient();
-	const { error } = await supabase
-		.from('cards')
-		.update({ deck_id: null })
-		.eq('deck_id', deckId)
-		.not('owner_id', 'is', null);
-
-	if (error) {
-		throw new Error(`[decks] unassignCollectionCopiesFromDeck error: ${error.message}`);
-	}
+export async function unassignCollectionCopiesFromDeck(deckId: string): Promise<void> {
+	// RLS scopes the underlying update to the owner, so no userId is needed here.
+	await unassignDeckCardRows(deckId);
 }
 
 /** Fetch scryfall_id + tags for each card in the given decks (single query). */
 export async function fetchDeckCardEntries(
 	deckIds: string[]
 ): Promise<Record<string, Array<{ scryfallId: string; tags: string[] | null }>>> {
-	if (deckIds.length === 0) return {};
-	const supabase = createClient();
-	const { data, error } = await supabase
-		.from('cards')
-		.select('deck_id, scryfall_id, tags')
-		.in('deck_id', deckIds);
-
-	if (error) {
-		throw new Error(`[decks] fetchDeckCardEntries error: ${error.message}`);
-	}
-
+	const rows = await fetchDeckCardTagRows(deckIds);
 	const result: Record<string, Array<{ scryfallId: string; tags: string[] | null }>> = {};
-	for (const row of data as Array<{
-		deck_id: string;
-		scryfall_id: string;
-		tags: string[] | null;
-	}>) {
+	for (const row of rows) {
 		if (!result[row.deck_id]) result[row.deck_id] = [];
 		result[row.deck_id].push({ scryfallId: row.scryfall_id, tags: row.tags });
 	}
@@ -187,18 +117,8 @@ export async function fetchDeckCardEntries(
 export async function fetchDeckCards(
 	deckId: string
 ): Promise<Array<{ scryfallId: string; entry: CardEntry }>> {
-	const supabase = createClient();
-	const { data, error } = await supabase
-		.from('cards')
-		.select('*')
-		.eq('deck_id', deckId)
-		.order('date_added', { ascending: true });
-
-	if (error) {
-		throw new Error(`[decks] fetchDeckCards error: ${error.message}`);
-	}
-
-	return (data as CardDbRow[]).map((row) => ({
+	const rows = await fetchDeckCardRows(deckId);
+	return rows.map((row: CardDbRow) => ({
 		scryfallId: row.scryfall_id,
 		entry: rowToCardEntry(row, { includeOwnerId: true }),
 	}));
@@ -209,15 +129,7 @@ export async function insertDeckCard(
 	scryfallId: string,
 	entry: CardEntry
 ): Promise<void> {
-	const supabase = createClient();
-	const { error } = await supabase.from('cards').insert({
-		...cardEntryToRow(scryfallId, entry),
-		deck_id: deckId,
-	});
-
-	if (error) {
-		throw new Error(`[decks] insertDeckCard error: ${error.message}`);
-	}
+	await insertDeckCardRows([{ ...cardEntryToRow(scryfallId, entry), deck_id: deckId }]);
 }
 
 export async function insertDeckCards(
@@ -225,26 +137,16 @@ export async function insertDeckCards(
 	cards: Array<{ scryfallId: string; entry: CardEntry }>
 ): Promise<void> {
 	if (cards.length === 0) return;
-	const supabase = createClient();
-	const rows = cards.map(({ scryfallId, entry }) => ({
-		...cardEntryToRow(scryfallId, entry),
-		deck_id: deckId,
-	}));
-
-	const { error } = await supabase.from('cards').insert(rows);
-
-	if (error) {
-		throw new Error(`[decks] insertDeckCards error: ${error.message}`);
-	}
+	await insertDeckCardRows(
+		cards.map(({ scryfallId, entry }) => ({
+			...cardEntryToRow(scryfallId, entry),
+			deck_id: deckId,
+		}))
+	);
 }
 
 export async function deleteDeckCard(rowId: string): Promise<void> {
-	const supabase = createClient();
-	const { error } = await supabase.from('cards').delete().eq('id', rowId);
-
-	if (error) {
-		throw new Error(`[decks] deleteDeckCard error: ${error.message}`);
-	}
+	await deleteDeckCardRowById(rowId);
 }
 
 export async function updateDeckCard(
@@ -263,10 +165,5 @@ export async function updateDeckCard(
 		deck_id?: string | null;
 	}
 ): Promise<void> {
-	const supabase = createClient();
-	const { error } = await supabase.from('cards').update(updates).eq('id', rowId);
-
-	if (error) {
-		throw new Error(`[decks] updateDeckCard error: ${error.message}`);
-	}
+	await updateDeckCardRowById(rowId, updates);
 }

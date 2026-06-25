@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { signInWithEmailOtp, verifyEmailOtpClient } from '@/lib/supabase/auth/auth-client';
 import styles from './page.module.css';
 
 export function LoginForm() {
@@ -18,13 +18,10 @@ export function LoginForm() {
 		setError(null);
 		setIsLoading(true);
 
-		const supabase = createClient();
-		const { error } = await supabase.auth.signInWithOtp({
+		const { error } = await signInWithEmailOtp(
 			email,
-			options: {
-				emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
-			},
-		});
+			`${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`
+		);
 
 		if (error) {
 			setError(error.message);
@@ -41,12 +38,7 @@ export function LoginForm() {
 		setError(null);
 		setIsLoading(true);
 
-		const supabase = createClient();
-		const { error } = await supabase.auth.verifyOtp({
-			email,
-			token: otp,
-			type: 'email',
-		});
+		const { error } = await verifyEmailOtpClient(email, otp);
 
 		if (error) {
 			setError(error.message);

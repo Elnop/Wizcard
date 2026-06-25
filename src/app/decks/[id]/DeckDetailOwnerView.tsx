@@ -27,7 +27,7 @@ import { DeckCardOverlay } from './components/DeckCardOverlay/DeckCardOverlay';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import { DeckFooter } from './components/DeckFooter/DeckFooter';
 import { CardSearchPanel } from './components/CardSearchPanel/CardSearchPanel';
-import { WishlistIcon } from '@/components/WishlistIcon';
+import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { Button } from '@/components/Button/Button';
 import { PlusIcon } from '@phosphor-icons/react';
 import { useAddDeckToCollection } from './useAddDeckToCollection';
