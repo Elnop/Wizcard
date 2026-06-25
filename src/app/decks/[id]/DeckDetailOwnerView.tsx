@@ -520,6 +520,9 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 						toggleDeckCardWishlist(deckCardRowId);
 					}}
 					wishlistEntries={wishlistEntries}
+					deckCoverArtUrl={deck?.coverArtUrl ?? null}
+					onSetCover={(url) => updateDeck(deckId, { coverArtUrl: url })}
+					onResetCover={() => updateDeck(deckId, { coverArtUrl: null })}
 					contextMenuPos={isContextCard ? contextMenuPos : null}
 					onContextMenuClose={() => setContextMenuPos(null)}
 				/>
@@ -539,6 +542,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			handleCardGroupClick,
 			toggleDeckCardWishlist,
 			wishlistEntries,
+			deck?.coverArtUrl,
+			updateDeck,
 			contextMenuCard,
 			contextMenuPos,
 		]

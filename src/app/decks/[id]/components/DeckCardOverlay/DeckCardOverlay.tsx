@@ -7,6 +7,8 @@ import { useCollectionBadge } from './useCollectionBadge';
 import { buildCollectionAddRequest } from '../../collectionAddRequest';
 import type { CollectionAddRequest } from '../../collectionAddRequest';
 import { OwnershipBadge } from '@/lib/card/components/OwnershipBadge/OwnershipBadge';
+import { getArtCropUrl } from '@/lib/deck/utils/pick-cover-art';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import styles from './DeckCardOverlay.module.css';
 
 const ZONE_LABELS: Record<DeckZone, string> = {
@@ -31,8 +33,38 @@ function buildContextMenuItems(
 	onAddToCollection: ((req: CollectionAddRequest) => void) | undefined,
 	buildRequest: () => CollectionAddRequest,
 	hasUnowned: boolean,
+	coverArtUrl: string | null,
+	isCurrentCover: boolean,
+	onSetCover: ((artCropUrl: string) => void) | undefined,
+	onResetCover: (() => void) | undefined,
 	closeMenu: () => void
 ): ContextMenuAction[] {
+	const coverItems: ContextMenuAction[] = [];
+	if (onSetCover && coverArtUrl) {
+		coverItems.push({ type: 'divider' });
+		if (isCurrentCover && onResetCover) {
+			coverItems.push({
+				type: 'action',
+				label: 'Retirer la cover',
+				icon: '★',
+				onClick: () => {
+					onResetCover();
+					closeMenu();
+				},
+			});
+		} else {
+			coverItems.push({
+				type: 'action',
+				label: 'Définir comme cover',
+				icon: '★',
+				onClick: () => {
+					onSetCover(coverArtUrl);
+					closeMenu();
+				},
+			});
+		}
+	}
+
 	return [
 		{
 			type: 'action',
@@ -94,6 +126,7 @@ function buildContextMenuItems(
 				closeMenu();
 			},
 		})),
+		...coverItems,
 	];
 }
 
@@ -111,6 +144,9 @@ type Props = {
 	onAddToCollectionClick?: (req: CollectionAddRequest) => void;
 	onAddToWishlist?: (deckCardRowId: string) => void;
 	wishlistEntries?: Array<{ scryfallId: string; entry: CardEntry }>;
+	deckCoverArtUrl?: string | null;
+	onSetCover?: (artCropUrl: string) => void;
+	onResetCover?: () => void;
 	contextMenuPos?: { x: number; y: number } | null;
 	onContextMenuClose?: () => void;
 };
@@ -129,6 +165,9 @@ export function DeckCardOverlay({
 	onAddToCollectionClick,
 	onAddToWishlist,
 	wishlistEntries,
+	deckCoverArtUrl,
+	onSetCover,
+	onResetCover,
 	contextMenuPos,
 	onContextMenuClose,
 }: Props) {
@@ -156,6 +195,10 @@ export function DeckCardOverlay({
 
 	const hasUnowned = zoneCopies.some((c) => !c.entry.ownerId);
 
+	// art_crop URL of this card group, used as the deck cover when chosen.
+	const cardCoverArtUrl = getArtCropUrl(group.representative as ScryfallCard);
+	const isCurrentCover = deckCoverArtUrl != null && deckCoverArtUrl === cardCoverArtUrl;
+
 	const buildAddRequest = (): CollectionAddRequest =>
 		buildCollectionAddRequest(
 			group.representative.name,
@@ -178,6 +221,10 @@ export function DeckCardOverlay({
 		onAddToCollectionClick,
 		buildAddRequest,
 		hasUnowned,
+		cardCoverArtUrl,
+		isCurrentCover,
+		onSetCover,
+		onResetCover,
 		closeMenu
 	);
 

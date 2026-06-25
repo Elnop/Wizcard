@@ -12,6 +12,7 @@ create table public.decks (
     'commander', 'pauper', 'draft', 'limited', 'oathbreaker', 'brawl'
   )),
   description text,
+  cover_art_url text,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );

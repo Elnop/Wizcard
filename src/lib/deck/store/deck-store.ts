@@ -66,7 +66,7 @@ type DeckActions = {
 	) => string;
 	updateDeck: (
 		deckId: string,
-		updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description'>>,
+		updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description' | 'coverArtUrl'>>,
 		userId: string,
 		triggerSync: () => void
 	) => void;
@@ -264,6 +264,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			format,
 			description,
 			folderId: folderId ?? null,
+			coverArtUrl: null,
 			createdAt: now,
 			updatedAt: now,
 		};

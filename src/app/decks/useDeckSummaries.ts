@@ -18,7 +18,8 @@ function buildDeckSummary(
 	deckId: string,
 	entries: DeckCardEntry[],
 	cached: Map<string, ScryfallCard>,
-	format: DeckMeta['format']
+	format: DeckMeta['format'],
+	coverArtUrl: string | null
 ): DeckSummary {
 	const resolvedCards = entries
 		.filter((e) => cached.has(e.scryfallId))
@@ -31,11 +32,13 @@ function buildDeckSummary(
 	const rules = format ? getFormatRules(format) : null;
 
 	return {
-		artCropUrl: pickCoverArt(
-			entries
-				.map((e) => ({ card: cached.get(e.scryfallId), tags: e.tags }))
-				.filter((c): c is { card: ScryfallCard; tags: string[] | null } => c.card != null)
-		),
+		artCropUrl:
+			coverArtUrl ??
+			pickCoverArt(
+				entries
+					.map((e) => ({ card: cached.get(e.scryfallId), tags: e.tags }))
+					.filter((c): c is { card: ScryfallCard; tags: string[] | null } => c.card != null)
+			),
 		colors: computeColors(entries, cached),
 		commanderName: findCommanderName(entries, cached),
 		manaCurve: computeManaCurve(entries, cached),
@@ -150,13 +153,15 @@ export function useDeckSummaries(decks: DeckMeta[]): Record<string, DeckSummary>
 			if (runIdRef.current !== currentRunId) return;
 
 			const deckFormatMap = new Map(decks.map((d) => [d.id, d.format]));
+			const deckCoverMap = new Map(decks.map((d) => [d.id, d.coverArtUrl]));
 			const result: Record<string, DeckSummary> = {};
 			for (const [deckId, entries] of Object.entries(deckEntries)) {
 				result[deckId] = buildDeckSummary(
 					deckId,
 					entries,
 					cached,
-					deckFormatMap.get(deckId) ?? null
+					deckFormatMap.get(deckId) ?? null,
+					deckCoverMap.get(deckId) ?? null
 				);
 			}
 

@@ -129,8 +129,9 @@ export function usePublicDeckDetail(deckId: string) {
 
 	const coverArtUrl = useMemo(
 		() =>
+			deck?.coverArtUrl ??
 			pickCoverArt(resolvedCards.map((rc) => ({ card: rc as ScryfallCard, tags: rc.entry.tags }))),
-		[resolvedCards]
+		[deck?.coverArtUrl, resolvedCards]
 	);
 
 	const isResolving = resolveGeneration > 0;

@@ -3,6 +3,7 @@ import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { findFreeCollectionCopy } from '@/lib/deck/utils/collectionCopyResolver';
+import { getArtCropUrl } from '@/lib/deck/utils/pick-cover-art';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckFormat, DeckZone } from '@/types/decks';
 import type { CardEntry } from '@/types/cards';
@@ -32,7 +33,7 @@ export function SearchCardContextMenu({
 	collectionEntries,
 	scryfallIdToOracleId,
 }: Props) {
-	const { addCardToDeck, addCollectionCardToDeck } = useDeckContext();
+	const { addCardToDeck, addCollectionCardToDeck, updateDeck } = useDeckContext();
 	const isCommanderFormat = format != null && COMMANDER_FORMATS.includes(format);
 
 	const addWithCollectionAssign = useCallback(
@@ -108,8 +109,23 @@ export function SearchCardContextMenu({
 			},
 			{ type: 'divider' },
 			...zoneItems,
+			...(getArtCropUrl(card)
+				? [
+						{ type: 'divider' as const },
+						{
+							type: 'action' as const,
+							label: 'Définir comme cover du deck',
+							icon: '★',
+							onClick: () => {
+								const url = getArtCropUrl(card);
+								if (url) updateDeck(deckId, { coverArtUrl: url });
+								onClose();
+							},
+						},
+					]
+				: []),
 		];
-	}, [card, isCommanderFormat, addWithCollectionAssign, onCardClick, onClose]);
+	}, [card, isCommanderFormat, addWithCollectionAssign, onCardClick, onClose, updateDeck, deckId]);
 
 	return <ContextMenu items={items} position={position} onClose={onClose} />;
 }

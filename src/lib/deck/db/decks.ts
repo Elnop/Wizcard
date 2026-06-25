@@ -10,6 +10,7 @@ type DeckDbRow = {
 	format: string | null;
 	description: string | null;
 	folder_id: string | null;
+	cover_art_url: string | null;
 	created_at: string;
 	updated_at: string;
 };
@@ -22,6 +23,7 @@ function rowToDeckMeta(row: DeckDbRow): DeckMeta {
 		format: (row.format as DeckMeta['format']) ?? null,
 		description: row.description,
 		folderId: row.folder_id ?? null,
+		coverArtUrl: row.cover_art_url ?? null,
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,
 	};
@@ -69,6 +71,7 @@ export async function insertDeck(userId: string, deck: DeckMeta): Promise<void> 
 		format: deck.format,
 		description: deck.description,
 		folder_id: deck.folderId ?? null,
+		cover_art_url: deck.coverArtUrl ?? null,
 		created_at: deck.createdAt,
 		updated_at: deck.updatedAt,
 	});
@@ -81,13 +84,14 @@ export async function insertDeck(userId: string, deck: DeckMeta): Promise<void> 
 export async function updateDeckMeta(
 	userId: string,
 	deckId: string,
-	updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description'>>
+	updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description' | 'coverArtUrl'>>
 ): Promise<void> {
 	const supabase = createClient();
 	const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
 	if (updates.name !== undefined) payload.name = updates.name;
 	if (updates.format !== undefined) payload.format = updates.format;
 	if (updates.description !== undefined) payload.description = updates.description;
+	if (updates.coverArtUrl !== undefined) payload.cover_art_url = updates.coverArtUrl;
 
 	const { error } = await supabase
 		.from('decks')

@@ -55,6 +55,7 @@ export interface DeckMeta {
 	format: DeckFormat | null;
 	description: string | null;
 	folderId: string | null;
+	coverArtUrl: string | null;
 	createdAt: string;
 	updatedAt: string;
 }

@@ -116,11 +116,13 @@ export function useDeckDetail(deckId: string) {
 		);
 	}, [resolvedCards]);
 
-	// Cover art for the page background (commander > non-land > any)
+	// Cover art for the page background: user-chosen cover wins, else auto
+	// (commander > non-land > any).
 	const coverArtUrl = useMemo(
 		() =>
+			deck?.coverArtUrl ??
 			pickCoverArt(resolvedCards.map((rc) => ({ card: rc as ScryfallCard, tags: rc.entry.tags }))),
-		[resolvedCards]
+		[deck?.coverArtUrl, resolvedCards]
 	);
 
 	const isResolving = resolveGeneration > 0;
