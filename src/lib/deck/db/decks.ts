@@ -89,17 +89,13 @@ export async function deleteDeck(
 	deleteCollectionCopies = false
 ): Promise<void> {
 	if (!deleteCollectionCopies) {
-		await unassignCollectionCopiesFromDeck(userId, deckId);
+		await unassignCollectionCopiesFromDeck(deckId);
 	}
 	await deleteDeckRow(userId, deckId);
 }
 
-export async function unassignCollectionCopiesFromDeck(
-	userId: string,
-	deckId: string
-): Promise<void> {
-	// userId is unused by the query (RLS scopes to owner); kept for call-site clarity.
-	void userId;
+export async function unassignCollectionCopiesFromDeck(deckId: string): Promise<void> {
+	// RLS scopes the underlying update to the owner, so no userId is needed here.
 	await unassignDeckCardRows(deckId);
 }
 
