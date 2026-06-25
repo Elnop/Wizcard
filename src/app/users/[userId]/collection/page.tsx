@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import type { CardStack } from '@/types/cards';
-import { useCollectionCards } from '@/app/collection/useCollectionCards';
-import { CollectionView } from '@/app/collection/components/CollectionView/CollectionView';
-import { ExportMenu } from '@/app/collection/components/ExportMenu/ExportMenu';
+import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
+import { CollectionView } from '@/lib/collection/components/CollectionView';
+import { ExportMenu } from '@/lib/collection/components/ExportMenu/ExportMenu';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { Spinner } from '@/components/Spinner/Spinner';

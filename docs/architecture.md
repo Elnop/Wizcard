@@ -23,10 +23,7 @@ src/
 │   │   └── useSearchFiltersFromUrl.ts  # Page-specific hook
 │   ├── collection/
 │   │   ├── page.tsx            # User collection
-│   │   ├── useCollectionCards.ts       # Page-specific hook
-│   │   ├── useCollectionFiltering.ts   # Page-specific hook
-│   │   ├── utils/              # filterCollectionCards, stats
-│   │   └── components/         # CollectionFiltersAside, ImportModal
+│   │   └── components/         # ImportModal (page-specific)
 │   ├── card/[id]/
 │   │   ├── page.tsx            # Card detail (server-rendered)
 │   │   └── components/         # CardPageHeader, CardTabs, tabs/
@@ -39,13 +36,18 @@ src/
 ├── lib/
 │   ├── card/                   # Card display components + hooks
 │   │   ├── components/         # CardImage, CardLightbox, CardList, CardListGrid,
-│   │   │                       # CardListTable, CardModal, EditCardModal, CardPrintPickerModal
-│   │   └── hooks/              # useCardModal
+│   │   │                       # CardListTable, CardModal, EditCardModal, CardPrintPickerModal,
+│   │   │                       # OwnershipBadge, DeckBadge, PrintList, …
+│   │   ├── hooks/              # useCardModal, useCardTokens, useDeckCardModal
+│   │   └── utils/              # filterCollectionCards, group-cards, prefer-print, …
 │   │
 │   ├── collection/             # Collection feature — shared code only
 │   │   ├── context/            # CollectionContext + useCollectionContext()
 │   │   ├── store/              # Zustand store (localStorage + Supabase hydration)
 │   │   ├── db/                 # Supabase CRUD + data migrations
+│   │   ├── components/         # CollectionView, CollectionFiltersAside, ExportMenu
+│   │   ├── hooks/              # useCollectionCards, useCollectionFiltering
+│   │   ├── utils/              # stats (computeCollectionStats)
 │   │   └── constants.ts
 │   │
 │   ├── scryfall/               # Scryfall API integration
@@ -59,7 +61,7 @@ src/
 │   │
 │   ├── supabase/               # Auth + sync infrastructure
 │   │   ├── contexts/           # AuthContext, SyncQueueContext
-│   │   ├── hooks/              # useSyncQueue
+│   │   ├── useSyncQueue.ts     # Drives the sync loop (single hook → flat)
 │   │   ├── components/         # SyncQueueRunner, SyncIndicator
 │   │   ├── custom-cards.ts     # getCustomCardSources(), getCustomCards() — MPC queries
 │   │   ├── sync-queue.ts       # Offline queue (localStorage)
@@ -85,14 +87,22 @@ src/
 │   │       └── CustomProxiesSection/ # Source tabs + card grid for custom proxies
 │   │
 │   ├── moxfield/               # Moxfield format (parse, serialize, import-adapter)
-│   ├── mtg/                    # MTG-specific utilities (language mappings)
-│   └── card-cache.ts           # IndexedDB cache for ScryfallCard objects (24h)
+│   ├── cardnexus/              # CardNexus format (parse, serialize, import-adapter)
+│   ├── delver-lens/            # Delver Lens SQLite format (parse, sql-loader, import-adapter)
+│   ├── deck/                   # Deck + folder store, DB, stats/tokens/cover-art utils
+│   ├── wishlist/               # Wishlist context + store + DB
+│   ├── edhrec/                 # EDHREC recommendations (fetch/convert + useEdhrecRecommendations)
+│   ├── pdf/                    # PDF card-sheet generation
+│   ├── csv/                    # RFC 4180 CSV helpers
+│   ├── mtg/                    # MTG-specific utilities (colors, language mappings)
+│   └── scryfall/utils/card-cache.ts  # IndexedDB cache for ScryfallCard objects (24h)
 │
 ├── contexts/
 │   └── Providers.tsx           # App-wide provider tree
 │
 └── types/
-    └── cards.ts                # CardEntry, Card, CardStack, CollectionStats
+    ├── cards.ts                # CardEntry, Card, CardStack, CollectionStats
+    └── decks.ts                # Deck, DeckCard, Folder types
 ```
 
 Feature modules follow the **feature > sub-feature > resource** pattern — see `docs/feature-modules.md`.
@@ -116,36 +126,43 @@ Code stays in `src/lib/<feature>/` only when it is shared between ≥2 pages or 
 src/app/collection/
   page.tsx
   layout.tsx
-  page.module.css
-  useCollectionCards.ts            # entries → Card[] + CardStack[]
-  useCollectionFiltering.ts        # filter + sort state
-  utils/
-    filterCollectionCards.ts       # pure filter function
-    stats.ts                       # collection statistics
+  page.module.css                  # page-only styles (loading placeholder, empty state)
   components/
-    CollectionFiltersAside/        # filter sidebar
-    ImportModal/                   # import flow
+    ImportModal/                   # import flow (only this page)
 ```
 
-Shared collection code (used by card detail page, providers, or sync) stays in `src/lib/collection/`:
+Shared collection code (used by ≥2 pages, providers, or sync) stays in `src/lib/collection/`:
 
-| Stays in `src/lib/collection/`  | Why                                                          |
-| ------------------------------- | ------------------------------------------------------------ |
-| `context/CollectionContext.tsx` | Used by collection page, card detail page, and Providers.tsx |
-| `store/collection-store.ts`     | Backing store for CollectionContext (global)                 |
-| `db/`                           | Used by sync queue (global infrastructure)                   |
+| Stays in `src/lib/collection/`       | Why                                                             |
+| ------------------------------------ | --------------------------------------------------------------- |
+| `context/CollectionContext.tsx`      | Used by collection page, card detail page, and Providers.tsx    |
+| `store/collection-store.ts`          | Backing store for CollectionContext (global)                    |
+| `db/`                                | Used by sync queue (global infrastructure)                      |
+| `components/CollectionView.tsx`      | Rendered by `/collection` + `/users/[userId]/collection`        |
+| `components/CollectionFiltersAside/` | Used by CollectionView; its CSS is also reused by the sets page |
+| `components/ExportMenu/`             | Used by both collection pages                                   |
+| `hooks/useCollectionCards.ts`        | Consumed by collection, wishlist, decks, and public-collection  |
+| `hooks/useCollectionFiltering.ts`    | Used by CollectionView                                          |
+| `utils/stats.ts`                     | Used by useCollectionFiltering                                  |
 
 ## App Routes
 
-| Route           | Rendering | Description                       |
-| --------------- | --------- | --------------------------------- |
-| `/`             | Server    | Landing page (Hero)               |
-| `/search`       | Client    | Card search with advanced filters |
-| `/collection`   | Client    | User collection management        |
-| `/card/[id]`    | Server    | Card detail page (SEO-friendly)   |
-| `/auth/login`   | Client    | Login / registration form         |
-| `/auth/confirm` | Server    | Email confirmation callback       |
-| `/auth/error`   | Server    | Auth error display                |
+| Route                        | Rendering | Description                       |
+| ---------------------------- | --------- | --------------------------------- |
+| `/`                          | Server    | Landing page (Hero)               |
+| `/search`                    | Client    | Card search with advanced filters |
+| `/collection`                | Client    | User collection management        |
+| `/decks`                     | Client    | Deck list + folders               |
+| `/decks/[id]`                | Client    | Deck detail (owner + read-only)   |
+| `/sets`                      | Client    | Set catalog                       |
+| `/sets/[code]`               | Client    | Set detail + collection progress  |
+| `/wishlist`                  | Client    | Wishlist management               |
+| `/card/[id]`                 | Server    | Card detail page (SEO-friendly)   |
+| `/users/[userId]/collection` | Client    | Public collection view            |
+| `/users/[userId]/decks`      | Client    | Public deck list                  |
+| `/auth/login`                | Client    | Login / registration form         |
+| `/auth/confirm`              | Server    | Email confirmation callback       |
+| `/auth/error`                | Server    | Auth error display                |
 
 ## Data Flow
 

@@ -16,7 +16,7 @@ import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useDeckCardModal } from '@/lib/card/hooks/useDeckCardModal';
-import { useCollectionCards } from '@/app/collection/useCollectionCards';
+import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
 import { findFreeCollectionCopy } from '@/lib/deck/utils/collectionCopyResolver';
 import { useDeckDetail, type ResolvedDeckCard } from './useDeckDetail';

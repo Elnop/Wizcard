@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncQueue } from '@/lib/supabase/hooks/useSyncQueue';
+import { useSyncQueue } from '@/lib/supabase/useSyncQueue';
 import { SyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 

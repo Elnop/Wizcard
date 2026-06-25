@@ -3,15 +3,15 @@
 import { useCallback } from 'react';
 import Link from 'next/link';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
-import { useCollectionCards } from './useCollectionCards';
+import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { useImportContext } from '@/lib/import/context/ImportContext';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { useCardModal } from '@/lib/card/hooks/useCardModal';
-import { CollectionView } from './components/CollectionView/CollectionView';
+import { CollectionView } from '@/lib/collection/components/CollectionView';
 import { ImportModal } from './components/ImportModal/ImportModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { Button } from '@/components/Button/Button';
-import { ExportMenu } from './components/ExportMenu/ExportMenu';
+import { ExportMenu } from '@/lib/collection/components/ExportMenu/ExportMenu';
 import { ShareButton } from '@/components/ShareButton/ShareButton';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import styles from './page.module.css';

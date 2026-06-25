@@ -6,7 +6,7 @@ import type { CardStack } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { WishlistIcon } from '@/components/WishlistIcon';
-import { useCollectionCards } from '@/app/collection/useCollectionCards';
+import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { useCardModal } from '@/lib/card/hooks/useCardModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { CardList } from '@/lib/card/components/CardList/CardList';

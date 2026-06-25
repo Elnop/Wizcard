@@ -42,6 +42,27 @@ Key constraints:
 - No barrel exports (`index.ts`) — import files directly
 - A component gets its own folder (`ComponentName/ComponentName.tsx` + `.module.css`) only when it has ≥2 files. A single `.tsx` with no CSS stays as a flat file.
 
+### Feature Modules (`src/lib/`)
+
+- `card/` — card display + per-copy hooks (see Card Display)
+- `collection/` — collection state, shared collection view/filters/export, hydration hooks
+- `deck/` — deck + folder store, DB layer, deck-stats / tokens / cover-art utils
+- `wishlist/` — wishlist context + store + DB
+- `search/` — search bar + Scryfall filter panel
+- `scryfall/` — Scryfall API client, caches, endpoints, mana-symbol components
+- `import/` — format detection + `FORMAT_REGISTRY` + import hooks/context
+- `moxfield/`, `cardnexus/`, `delver-lens/` — per-format import adapters (parse/serialize/types)
+- `mpc/` — custom (MakePlayingCards) card parsing, tags, Scryfall resolver
+- `edhrec/` — EDHREC recommendation fetch/convert + `useEdhrecRecommendations`
+- `pdf/` — PDF card-sheet generation
+- `csv/` — RFC 4180 CSV read/write helpers
+- `mtg/` — MTG domain constants (colors, languages)
+- `supabase/` — generic infra: client, auth, sync queue (not owned by any feature)
+
+### Routes (`src/app/`)
+
+`/` (landing), `/collection`, `/search`, `/decks`, `/decks/[id]`, `/sets`, `/sets/[code]`, `/wishlist`, `/card/[id]`, `/users/[userId]/collection`, `/users/[userId]/decks`, `/auth/*`.
+
 ## Provider Nesting Order
 
 The order is load-bearing. Do not reorder without auditing dependencies.
@@ -58,6 +79,7 @@ AuthProvider
 ### Core Types
 
 - `src/types/cards.ts` — `CardEntry`, `Card`, `CardStack`, `CollectionStats`, `CardCondition`
+- `src/types/decks.ts` — deck + folder types (`Deck`, `DeckCard`, `Folder`, …)
 
 ### Collection State
 
@@ -65,10 +87,15 @@ AuthProvider
 - `src/lib/collection/context/CollectionContext.tsx` — wraps the store, exposes via `useCollectionContext()`
 - `src/lib/collection/db/collection.ts` — Supabase CRUD: `fetchCollection`, `insertEntry`, `insertEntries`, `deleteEntryById`, `updateEntry`
 - `src/lib/collection/db/collection-migrations.ts` — migrates legacy localStorage formats to current schema
-- `src/app/collection/utils/filterCollectionCards.ts` — pure filter function (no state)
-- `src/app/collection/utils/stats.ts` — collection statistics calculation
+- `src/lib/collection/components/CollectionView.tsx` — shared owner-agnostic collection view (filters aside + grid); used by `/collection` + `/users/[userId]/collection`
+- `src/lib/collection/components/CollectionFiltersAside/` — filter sidebar (its CSS is also reused by the sets page)
+- `src/lib/collection/components/ExportMenu/` — collection export menu (shared between `/collection` + `/users/[userId]/collection`)
+- `src/lib/collection/hooks/useCollectionCards.ts` — hydrates entries into `Card[]` + `CardStack[]`; two-phase: IndexedDB cache first, then Scryfall `/cards/collection` in 75-card batches
+- `src/lib/collection/hooks/useCollectionFiltering.ts` — filter + sort state over `CardStack[]`
+- `src/lib/collection/utils/stats.ts` — collection statistics calculation (`computeCollectionStats`)
+- `src/lib/card/utils/filterCollectionCards.ts` — pure filter function (no state)
 - `src/lib/supabase/sync-queue.ts` — localStorage-backed offline queue (`enqueue` / `peek` / `dequeue` / `incrementRetry` / `skipFailed` / `clearQueue`)
-- `src/lib/supabase/hooks/useSyncQueue.ts` — drives the sync loop; processes one op at a time
+- `src/lib/supabase/useSyncQueue.ts` — drives the sync loop; processes one op at a time
 
 ### Scryfall Integration
 
@@ -83,10 +110,9 @@ AuthProvider
 
 ### Card Display
 
-- `src/lib/card/components/` — CardImage, CardLightbox, CardList, CardListGrid, CardListTable, CardModal, EditCardModal, CardPrintPickerModal
-- `src/lib/card/hooks/useCardModal.ts` — card modal state management
-- `src/app/collection/useCollectionCards.ts` — hydrates entries into `Card[]` + `CardStack[]`; two-phase: IndexedDB cache first, then Scryfall `/cards/collection` in 75-card batches
-- `src/app/collection/useCollectionFiltering.ts` — filter + sort state over `CardStack[]`
+- `src/lib/card/components/` — CardImage, CardLightbox, CardList, CardListGrid, CardListTable, CardModal, EditCardModal, CardPrintPickerModal, CardTokensSection, CustomCardBadge, DeckBadge, OwnershipBadge, PrintList, UseCollectionCopyModal, LocalizedCardThumb
+- `src/lib/card/hooks/` — useCardModal, useCardTokens, useDeckCardModal
+- Collection hydration/filtering hooks now live in `src/lib/collection/hooks/` (see Collection State above)
 
 ### Search
 
@@ -98,9 +124,9 @@ AuthProvider
 ### Import System
 
 - `src/lib/import/utils/detect.ts` — format auto-detection by content scoring + file extension bonus
-- `src/lib/moxfield/import-adapter.ts` — Moxfield CSV import adapter (wraps `src/lib/moxfield/parse.ts`)
+- `src/lib/import/formats/registry.ts` — `FORMAT_REGISTRY` + `getParser()` (registers moxfield, cardnexus, mtga, delverlens)
 - `src/lib/import/formats/mtga.ts` — MTGA text format parser
-- `src/lib/import/formats/registry.ts` — `FORMAT_REGISTRY` + `getParser()`
+- Per-format adapters live in their own modules: `src/lib/moxfield/import-adapter.ts` (Moxfield CSV), `src/lib/cardnexus/import-adapter.ts` (CardNexus), `src/lib/delver-lens/import-adapter.ts` (Delver Lens SQLite). Each wraps its module's `parse.ts`.
 
 ### Auth + Routing
 

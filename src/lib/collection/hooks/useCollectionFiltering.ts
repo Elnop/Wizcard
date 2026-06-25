@@ -5,7 +5,7 @@ import { defaultCollectionFilters } from '@/lib/card/utils/filterCollectionCards
 import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 import { filterStacks } from '@/lib/card/utils/group-cards';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
-import { computeCollectionStats } from '@/app/collection/utils/stats';
+import { computeCollectionStats } from '@/lib/collection/utils/stats';
 import { countActiveFilters } from '@/lib/search/types';
 import type { CardStack } from '@/types/cards';
 

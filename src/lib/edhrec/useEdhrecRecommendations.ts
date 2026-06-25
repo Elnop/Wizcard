@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { BATCH_SIZE } from '@/lib/scryfall/constants';
-import { fetchEdhrecRecommendations } from '../fetch-recommendations';
-import { toEdhrecSlug } from '../slug';
-import type { EdhrecSection } from '../types';
+import { fetchEdhrecRecommendations } from './fetch-recommendations';
+import { toEdhrecSlug } from './slug';
+import type { EdhrecSection } from './types';
 
 export interface EdhrecResolvedSection {
 	header: string;

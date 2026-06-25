@@ -3,14 +3,14 @@
 import { useMemo, type ReactNode } from 'react';
 import type { CardStack } from '@/types/cards';
 import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
-import { useCollectionFiltering } from '@/app/collection/useCollectionFiltering';
+import { useCollectionFiltering } from '@/lib/collection/hooks/useCollectionFiltering';
 import { PAGE_SIZE } from '@/lib/collection/constants';
-import { CollectionFiltersAside } from '@/app/collection/components/CollectionFiltersAside/CollectionFiltersAside';
+import { CollectionFiltersAside } from '@/lib/collection/components/CollectionFiltersAside/CollectionFiltersAside';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
-import styles from '@/app/collection/page.module.css';
+import styles from '@/lib/collection/components/CollectionView.module.css';
 
 type Props = {
 	/** Hydrated, grouped stacks (from useCollectionCards in the parent). */

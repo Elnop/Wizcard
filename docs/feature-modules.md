@@ -94,8 +94,21 @@ src/lib/collection/
   db/
     collection.ts                   # Supabase CRUD: fetchCollection, insertEntry, deleteEntryById…
     collection-migrations.ts        # Migrates legacy localStorage formats to current schema
+  components/
+    CollectionView.tsx              # Owner-agnostic view (no own CSS → flat); used by 2 pages
+    CollectionView.module.css       # Layout styles for CollectionView
+    CollectionFiltersAside/         # Filter sidebar (its CSS is also reused by the sets page)
+    ExportMenu/                     # Export menu (collection + public collection pages)
+  hooks/
+    useCollectionCards.ts           # entries → Card[] + CardStack[] (IndexedDB then Scryfall)
+    useCollectionFiltering.ts       # filter + sort state over CardStack[]
+  utils/
+    stats.ts                        # computeCollectionStats()
   constants.ts
 ```
+
+> `filterCollectionCards.ts` is a pure, card-level filter shared beyond the
+> collection feature, so it lives in `src/lib/card/utils/filterCollectionCards.ts`.
 
 Card display components (used across collection + card detail + search) live in `src/lib/card/`:
 
@@ -110,6 +123,7 @@ src/lib/card/
     CardModal/                      # Card detail modal
     EditCardModal/                  # Edit per-copy metadata
     CardPrintPickerModal/           # Pick a different printing
+    …                               # OwnershipBadge, DeckBadge, PrintList, etc.
   hooks/
     useCardModal.ts                 # Card modal state management
 ```
@@ -120,18 +134,12 @@ Page-specific code lives with the page in `src/app/collection/`:
 src/app/collection/
   page.tsx                          # Next.js route
   layout.tsx
-  page.module.css
-  useCollectionCards.ts             # Page-specific hook (entries → Card[] + CardStack[])
-  useCollectionFiltering.ts         # Page-specific hook (filter + sort state)
-  utils/
-    filterCollectionCards.ts        # Pure filter function (no state) over Card[]
-    stats.ts                        # computeCollectionStats()
+  page.module.css                   # Page-only styles (loading placeholder, empty state)
   components/
-    CollectionFiltersAside/         # Filter sidebar — only used on this page
     ImportModal/                    # Import flow — only used on this page
 ```
 
-Per rule 3, any hook, util, or context used exclusively by this page belongs here — not in `src/lib/collection/`.
+Per rule 3, any hook, util, or context used exclusively by this page belongs here — not in `src/lib/collection/`. Conversely, once a second page imports something (as the public `/users/[userId]/collection` page does for `CollectionView`, `ExportMenu`, and `useCollectionCards`), it moves up into `src/lib/collection/`.
 
 Infrastructure stays in `src/lib/supabase/`:
 

@@ -7,7 +7,9 @@ The import system supports loading an existing card collection from external sou
 | Format       | File Extension | Description                                                                |
 | ------------ | -------------- | -------------------------------------------------------------------------- |
 | Moxfield CSV | `.csv`         | Export from moxfield.com — includes condition, foil, language, price, tags |
+| CardNexus    | `.csv`         | Export from CardNexus — condition, foil, language, price                   |
 | MTGA         | `.txt`         | Arena deck/collection export — minimal metadata (name + quantity only)     |
+| Delver Lens  | `.db` / SQLite | Delver Lens app export — binary SQLite (handled by the binary registry)    |
 
 ## Auto-Detection (`src/lib/import/utils/detect.ts`)
 
@@ -19,7 +21,7 @@ The format with the highest score wins.
 import { detectFormat } from '@/lib/import/utils/detect';
 
 const result = detectFormat(text, 'collection.csv');
-// { formatId: 'moxfield', scores: { moxfield: 0.95, mtga: 0.1 } }
+// { formatId: 'moxfield', scores: { moxfield: 0.95, cardnexus: 0.2, mtga: 0.1 } }
 ```
 
 ## Import Flow
@@ -67,6 +69,11 @@ interface ParsedImportRow {
 - Conditions are normalized via `CONDITION_MAP` in `collection.ts` (e.g. `"Near Mint"` → `"NM"`)
 - Parser: `src/lib/moxfield/import-adapter.ts` (wraps `src/lib/moxfield/parse.ts`)
 
+### CardNexus
+
+- Metadata: condition, foil, language, price
+- Parser: `src/lib/cardnexus/import-adapter.ts` (wraps `src/lib/cardnexus/parse.ts`)
+
 ### MTGA
 
 - Minimal metadata: only card name and quantity
@@ -74,12 +81,23 @@ interface ParsedImportRow {
 - Deck list format: `4 Lightning Bolt`
 - Parser: `src/lib/import/formats/mtga.ts`
 
+### Delver Lens
+
+- Binary SQLite export — registered in the separate **binary** registry, not the text registry
+- Parser: `src/lib/delver-lens/import-adapter.ts` (wraps `src/lib/delver-lens/parse.ts` + `sql-loader.ts`)
+
 ## Format Registry
 
-Formats are registered in `src/lib/import/formats/registry.ts`:
+Text formats are registered in `FORMAT_REGISTRY`, binary (SQLite) formats in `BINARY_FORMAT_REGISTRY` — both in `src/lib/import/formats/registry.ts`:
 
 ```typescript
-export const FORMAT_REGISTRY: ImportFormatDescriptor[] = [moxfieldDescriptor, mtgaDescriptor];
+export const FORMAT_REGISTRY: ImportFormatDescriptor[] = [
+	moxfieldDescriptor,
+	cardNexusDescriptor,
+	mtgaDescriptor,
+];
+
+export const BINARY_FORMAT_REGISTRY: BinaryFormatDescriptor[] = [delverLensDescriptor];
 ```
 
 See [Adding a new import format](guides/adding-import-format.md) to extend this list.

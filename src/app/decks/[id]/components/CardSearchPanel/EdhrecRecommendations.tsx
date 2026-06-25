@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { Spinner } from '@/components/Spinner/Spinner';
-import { useEdhrecRecommendations } from '@/lib/edhrec/hooks/useEdhrecRecommendations';
+import { useEdhrecRecommendations } from '@/lib/edhrec/useEdhrecRecommendations';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { ReactNode } from 'react';
 import styles from './CardSearchPanel.module.css';

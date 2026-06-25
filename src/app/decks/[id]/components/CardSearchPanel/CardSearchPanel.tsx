@@ -18,7 +18,7 @@ import {
 } from '@/lib/scryfall/hooks/useScryfallCardSearch';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
-import { useCollectionCards } from '@/app/collection/useCollectionCards';
+import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import {
 	filterCollectionCards,
 	defaultCollectionFilters,
