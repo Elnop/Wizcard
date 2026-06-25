@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/client';
-import { createClient as createServerClient } from '@/lib/supabase/server';
 import type { CardSourceType, CardType } from '@/lib/mpc/types';
 
 /**
@@ -167,27 +166,4 @@ export async function queryCustomCardRows(
 	const { data, error, count } = await q;
 	if (error) throw new Error(`Failed to load custom cards: ${error.message}`);
 	return { rows: data as CustomCardRow[], count: count ?? 0, offset };
-}
-
-export async function fetchCustomCardRowById(id: string): Promise<CustomCardRow | null> {
-	const client = await createServerClient();
-	const { data, error } = await client
-		.from('custom_cards')
-		.select(CUSTOM_CARD_SELECT)
-		.eq('id', id)
-		.single();
-	if (error || !data) return null;
-	return data as CustomCardRow;
-}
-
-export async function fetchCustomCardSourceRowById(
-	sourceId: string
-): Promise<CustomCardSourceRow | null> {
-	const client = await createServerClient();
-	const { data } = await client
-		.from('custom_card_sources')
-		.select(CUSTOM_CARD_SOURCE_SELECT)
-		.eq('id', sourceId)
-		.single();
-	return (data as CustomCardSourceRow | null) ?? null;
 }

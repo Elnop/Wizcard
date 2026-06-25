@@ -3,7 +3,7 @@ import type { CustomCard, MpcSource } from '@/lib/mpc/types';
 import {
 	fetchCustomCardRowById,
 	fetchCustomCardSourceRowById,
-} from '@/lib/supabase/queries/custom-cards';
+} from '@/lib/supabase/queries/custom-cards.server';
 import { rowToMpcCard, rowToMpcSource } from './custom-cards';
 
 export async function getCustomCardWithSource(id: string): Promise<CustomCard | null> {
