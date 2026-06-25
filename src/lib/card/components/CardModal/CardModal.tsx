@@ -22,7 +22,7 @@ import { Button } from '@/components/Button/Button';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
-import { WishlistIcon } from '@/components/WishlistIcon';
+import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { CardTokensSection } from '@/lib/card/components/CardTokensSection/CardTokensSection';
 import { useCardTokens } from '@/lib/card/hooks/useCardTokens';
 import { CopyCardOverlay } from './CopyCardOverlay';

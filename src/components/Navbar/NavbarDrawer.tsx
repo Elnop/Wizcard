@@ -9,7 +9,7 @@ import { useImportContext } from '@/lib/import/context/ImportContext';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { getQueueLength } from '@/lib/supabase/sync-queue';
-import { WishlistIcon } from '@/components/WishlistIcon';
+import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import styles from './Navbar.module.css';
 
 export function NavbarDrawer() {
