@@ -8,7 +8,7 @@ import { defaultCollectionFilters } from '@/lib/card/utils/filterCollectionCards
 import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 import { groupByOracleId, filterStacks, cardGroupKey } from '@/lib/card/utils/group-cards';
 import { countActiveFilters } from '@/lib/search/types';
-import type { InputMode } from './types';
+import type { InputMode } from '../inputMode';
 
 interface UseImportPreviewStateProps {
 	preview: ImportPreview | null;

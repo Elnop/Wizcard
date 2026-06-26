@@ -11,7 +11,7 @@ import { OracleTextFilter } from '@/lib/search/components/filters/OracleTextFilt
 import { CmcFilter } from '@/lib/search/components/filters/CmcFilter/CmcFilter';
 import { SortFilter } from '@/lib/search/components/filters/SortFilter/SortFilter';
 import { type SetFilters, defaultSetFilters } from './setFilters';
-import styles from '@/lib/collection/components/CollectionFiltersAside/CollectionFiltersAside.module.css';
+import styles from '@/app/collection/lib/CollectionView/CollectionFiltersAside/CollectionFiltersAside.module.css';
 
 export interface SetFiltersAsideProps {
 	filters: SetFilters;

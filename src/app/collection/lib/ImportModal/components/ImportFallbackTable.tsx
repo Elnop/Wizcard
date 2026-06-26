@@ -1,7 +1,7 @@
 'use client';
 
 import type { PendingCard } from '@/lib/import/types';
-import styles from './ImportModal.module.css';
+import styles from '../ImportModal.module.css';
 
 interface ImportFallbackTableProps {
 	rows: PendingCard[];

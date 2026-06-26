@@ -1,7 +1,7 @@
 'use client';
 
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
-import styles from './ImportModal.module.css';
+import styles from '../ImportModal.module.css';
 
 interface ImportPreviewFiltersProps {
 	nameFilter: string;

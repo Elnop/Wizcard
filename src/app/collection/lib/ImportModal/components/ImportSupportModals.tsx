@@ -5,7 +5,7 @@ import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 import type { ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
-import type { useImportPreviewState } from './useImportPreviewState';
+import type { useImportPreviewState } from '../hooks/useImportPreviewState';
 
 type ImportPreviewState = ReturnType<typeof useImportPreviewState>;
 

@@ -3,38 +3,30 @@
 import { useCallback } from 'react';
 import Link from 'next/link';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
-import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { useImportContext } from '@/lib/import/context/ImportContext';
-import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
-import { useCardModal } from '@/lib/card/hooks/useCardModal';
-import { CollectionView } from '@/lib/collection/components/CollectionView';
-import { ImportModal } from './components/ImportModal/ImportModal';
-import { CardModal } from '@/lib/card/components/CardModal/CardModal';
+import {
+	CollectionCardsProvider,
+	useCollectionCardsContext,
+} from './context/CollectionCardsContext';
+import {
+	ActiveCardProvider,
+	useActiveCardContext,
+} from './lib/CollectionCardModal/ActiveCardContext';
+import { CollectionView } from './lib/CollectionView/CollectionView';
+import { ImportModal } from './lib/ImportModal/ImportModal';
+import { CollectionCardModal } from './lib/CollectionCardModal/CollectionCardModal';
 import { Button } from '@/components/Button/Button';
-import { ExportMenu } from '@/lib/collection/components/ExportMenu/ExportMenu';
+import { ExportMenu } from './components/ExportMenu/ExportMenu';
 import { ShareButton } from '@/components/ShareButton/ShareButton';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import styles from './page.module.css';
 
-export default function CollectionPage() {
+function CollectionPageInner() {
 	const { user } = useAuth();
 	const { entries, isLoaded, isFullyLoaded, clearCollection } = useCollectionContext();
-	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
-	const importCtx = useImportContext();
-	const { sets, isLoading: setsLoading } = useScryfallSets();
-
-	const {
-		resolvedStack,
-		handleCardClick,
-		handleCloseModal,
-		handleSaveModal,
-		handleRemoveModal,
-		handleIncrementModal,
-		handleDecrementModal,
-		handleDuplicateEntry,
-		handleRemoveEntry,
-		handleChangePrint,
-	} = useCardModal(stacks);
+	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCardsContext();
+	const { openCard } = useActiveCardContext();
+	const { status, openModal } = useImportContext();
 
 	const handleClearCollection = useCallback(() => {
 		if (confirm('Effacer toute la collection ? Cette action est irréversible.')) {
@@ -42,32 +34,10 @@ export default function CollectionPage() {
 		}
 	}, [clearCollection]);
 
-	const handleConfirmImport = useCallback(async () => {
-		await importCtx.confirm();
-	}, [importCtx]);
-
 	if (!isLoaded) {
 		return <div className={styles.page} />;
 	}
 
-	const {
-		status,
-		progress,
-		preview,
-		resolved,
-		isLoadingPreview,
-		previewProgress,
-		openModal,
-		selectFile,
-		submitText,
-		changeFormat,
-		cancel,
-		reset,
-		updateCard,
-		removeCard,
-		applyToAll,
-		formatRegistry,
-	} = importCtx;
 	const isBusy =
 		status === 'parsing' ||
 		status === 'previewing' ||
@@ -118,42 +88,21 @@ export default function CollectionPage() {
 			title="My Collection"
 			actions={actions}
 			emptyState={emptyState}
-			onCardClick={handleCardClick}
+			onCardClick={openCard}
 			showDeckBadges
 		>
-			<ImportModal
-				isOpen={status !== 'idle'}
-				status={status}
-				preview={preview}
-				resolved={resolved}
-				formatRegistry={formatRegistry}
-				isLoadingPreview={isLoadingPreview}
-				previewProgress={previewProgress}
-				progress={progress}
-				sets={sets}
-				setsLoading={setsLoading}
-				onFileSelect={selectFile}
-				onTextSubmit={submitText}
-				onChangeFormat={changeFormat}
-				onChangeFile={openModal}
-				onConfirm={handleConfirmImport}
-				onCancel={cancel}
-				onClose={reset}
-				onUpdateCard={updateCard}
-				onRemoveCard={removeCard}
-				onApplyToAll={applyToAll}
-			/>
-			<CardModal
-				cards={resolvedStack?.cards ?? null}
-				onClose={handleCloseModal}
-				onSave={handleSaveModal}
-				onRemove={handleRemoveModal}
-				onRemoveEntry={handleRemoveEntry}
-				onDuplicate={handleDuplicateEntry}
-				onIncrement={handleIncrementModal}
-				onDecrement={handleDecrementModal}
-				onChangePrint={handleChangePrint}
-			/>
+			<ImportModal />
+			<CollectionCardModal />
 		</CollectionView>
+	);
+}
+
+export default function CollectionPage() {
+	return (
+		<CollectionCardsProvider>
+			<ActiveCardProvider>
+				<CollectionPageInner />
+			</ActiveCardProvider>
+		</CollectionCardsProvider>
 	);
 }

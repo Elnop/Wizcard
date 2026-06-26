@@ -7,6 +7,7 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
+import { ActiveCardProvider } from '@/app/collection/lib/CollectionCardModal/ActiveCardContext';
 import { useCardModal } from '@/lib/card/hooks/useCardModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { CardList } from '@/lib/card/components/CardList/CardList';
@@ -21,7 +22,7 @@ import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import { buildWishlistMenuItems } from './wishlistCardMenu';
 import styles from './page.module.css';
 
-export default function WishlistPage() {
+function WishlistPageInner() {
 	const {
 		entries,
 		isLoaded,
@@ -242,5 +243,13 @@ export default function WishlistPage() {
 				/>
 			)}
 		</div>
+	);
+}
+
+export default function WishlistPage() {
+	return (
+		<ActiveCardProvider>
+			<WishlistPageInner />
+		</ActiveCardProvider>
 	);
 }

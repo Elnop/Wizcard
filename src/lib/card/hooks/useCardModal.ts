@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { useActiveCardContext } from '@/app/collection/lib/CollectionCardModal/ActiveCardContext';
 import { putCardsInCache } from '@/lib/scryfall/utils/card-cache';
 import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
 import type { CardStack, CardEntry } from '@/types/cards';
@@ -18,7 +19,10 @@ export function useCardModal(stacks: CardStack[]) {
 		changePrint,
 	} = useCollectionContext();
 
-	const [selectedStack, setSelectedStack] = useState<CardStack | null>(null);
+	// The open-modal state lives in ActiveCardContext so a card click (grid) and
+	// the modal render (a sibling) share the same source. `pendingScryfallCard`
+	// stays local — it's an internal detail of the change-print flow.
+	const { activeStack: selectedStack, openCard, closeCard } = useActiveCardContext();
 	const [pendingScryfallCard, setPendingScryfallCard] = useState<ScryfallCard | null>(null);
 
 	const resolvedStack = useMemo<CardStack | null>(() => {
@@ -32,12 +36,12 @@ export function useCardModal(stacks: CardStack[]) {
 		return null;
 	}, [selectedStack, stacks, pendingScryfallCard]);
 
-	const handleCardClick = useCallback((stack: CardStack) => setSelectedStack(stack), []);
+	const handleCardClick = useCallback((stack: CardStack) => openCard(stack), [openCard]);
 
 	const handleCloseModal = useCallback(() => {
-		setSelectedStack(null);
+		closeCard();
 		setPendingScryfallCard(null);
-	}, []);
+	}, [closeCard]);
 
 	const handleSaveModal = useCallback(
 		(rowId: string, updates: Partial<CardEntry>) => updateEntry(rowId, updates),
@@ -47,10 +51,10 @@ export function useCardModal(stacks: CardStack[]) {
 	const handleRemoveModal = useCallback(
 		(scryfallId: string) => {
 			removeCard(scryfallId);
-			setSelectedStack(null);
+			closeCard();
 			setPendingScryfallCard(null);
 		},
-		[removeCard]
+		[removeCard, closeCard]
 	);
 
 	const handleIncrementModal = useCallback(
@@ -81,9 +85,9 @@ export function useCardModal(stacks: CardStack[]) {
 			setPendingScryfallCard(newCard);
 			const language = newCard.lang ? SCRYFALL_CODE_TO_LANGUAGE[newCard.lang] : undefined;
 			changePrint(rowId, newCard.id, language ? { language } : undefined);
-			setSelectedStack({ oracleId: newCard.oracle_id, name: newCard.name, cards: [] });
+			openCard({ oracleId: newCard.oracle_id, name: newCard.name, cards: [] });
 		},
-		[changePrint]
+		[changePrint, openCard]
 	);
 
 	return {

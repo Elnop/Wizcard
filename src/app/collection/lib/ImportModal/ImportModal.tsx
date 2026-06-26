@@ -1,21 +1,18 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import type { ImportFormatId } from '@/lib/import/types';
-import type { ResolvedImportResult } from '@/lib/import/types';
-import type { ImportPreview, ImportStatus, ImportProgress } from '@/lib/import/hooks/useImport';
-import type { ScryfallSet } from '@/lib/scryfall/types/scryfall';
+import type { ImportStatus } from '@/lib/import/hooks/useImport';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
-import type { CardEntry } from '@/types/cards';
-import type { BulkApplyPatch } from '@/lib/import/hooks/useImportBulkApply';
+import { useImportContext } from '@/lib/import/context/ImportContext';
+import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { PAGE_SIZE } from '@/lib/collection/constants';
-import { useImportPreviewState } from './useImportPreviewState';
-import { ImportFileInput } from './ImportFileInput';
-import { ImportPreviewStats } from './ImportPreviewStats';
-import { ImportBulkApplyPanel } from './ImportBulkApplyPanel';
-import { ImportPreviewFilters } from './ImportPreviewFilters';
-import { ImportFallbackTable } from './ImportFallbackTable';
-import { ImportSupportModals } from './ImportSupportModals';
+import { useImportPreviewState } from './hooks/useImportPreviewState';
+import { ImportFileInput } from './components/ImportFileInput';
+import { ImportPreviewStats } from './components/ImportPreviewStats';
+import { ImportBulkApplyPanel } from './components/ImportBulkApplyPanel/ImportBulkApplyPanel';
+import { ImportPreviewFilters } from './components/ImportPreviewFilters';
+import { ImportFallbackTable } from './components/ImportFallbackTable';
+import { ImportSupportModals } from './components/ImportSupportModals';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { Button } from '@/components/Button/Button';
@@ -23,29 +20,6 @@ import { Modal } from '@/components/Modal/Modal';
 import { Spinner } from '@/components/Spinner/Spinner';
 import styles from './ImportModal.module.css';
 import { STATIC_IMPORT_COLUMNS } from './tableColumns';
-
-interface Props {
-	isOpen: boolean;
-	status: ImportStatus;
-	preview: ImportPreview | null;
-	resolved: ResolvedImportResult | null;
-	formatRegistry: Array<{ id: ImportFormatId; label: string }>;
-	isLoadingPreview: boolean;
-	previewProgress: ImportProgress;
-	progress: ImportProgress;
-	sets: ScryfallSet[];
-	setsLoading: boolean;
-	onFileSelect: (file: File, forcedFormat?: ImportFormatId) => void;
-	onTextSubmit: (text: string, forcedFormat?: ImportFormatId) => void;
-	onChangeFormat: (formatId: ImportFormatId) => void;
-	onChangeFile: () => void;
-	onConfirm: () => void;
-	onCancel: () => void;
-	onClose: () => void;
-	onUpdateCard: (cardIndex: number, updates: Partial<CardEntry>) => void;
-	onRemoveCard: (cardIndex: number) => void;
-	onApplyToAll: (patch: BulkApplyPatch) => void;
-}
 
 const TITLE_IMPORT_FILE = 'Importer un fichier';
 const LABEL_FETCHING_CARDS = 'Récupération des cartes…';
@@ -77,28 +51,35 @@ function LoadingScreen({ label, children }: { label: string; children?: ReactNod
 	);
 }
 
-export function ImportModal({
-	isOpen,
-	status,
-	preview,
-	resolved,
-	formatRegistry,
-	isLoadingPreview,
-	previewProgress,
-	progress,
-	sets,
-	setsLoading,
-	onFileSelect,
-	onTextSubmit,
-	onChangeFormat,
-	onChangeFile,
-	onConfirm,
-	onCancel,
-	onClose,
-	onUpdateCard,
-	onRemoveCard,
-	onApplyToAll,
-}: Props) {
+/**
+ * Smart component: owns its wiring to the import + Scryfall-sets state instead
+ * of receiving ~20 props. `useScryfallSets` is deduped by the Scryfall store
+ * (TTL guard), so consuming it here doesn't trigger an extra network fetch.
+ */
+export function ImportModal() {
+	const {
+		status,
+		preview,
+		resolved,
+		formatRegistry,
+		isLoadingPreview,
+		previewProgress,
+		progress,
+		selectFile: onFileSelect,
+		submitText: onTextSubmit,
+		changeFormat: onChangeFormat,
+		openModal: onChangeFile,
+		confirm: onConfirm,
+		cancel: onCancel,
+		reset: onClose,
+		updateCard: onUpdateCard,
+		removeCard: onRemoveCard,
+		applyToAll: onApplyToAll,
+	} = useImportContext();
+	const { sets, isLoading: setsLoading } = useScryfallSets();
+
+	const isOpen = status !== 'idle';
+
 	const state = useImportPreviewState({
 		preview,
 		resolved,
