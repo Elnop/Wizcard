@@ -2,7 +2,7 @@
 
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useCardModal } from '@/lib/card/hooks/useCardModal';
-import { useCollectionCardsContext } from '@/app/collection/context/CollectionCardsContext';
+import { useCollectionCardsContext } from '@/app/collection/CollectionCardsContext';
 
 /**
  * Smart wrapper: drives the generic CardModal from the collection's hydrated

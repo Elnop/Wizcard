@@ -4,22 +4,19 @@ import { useCallback } from 'react';
 import Link from 'next/link';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useImportContext } from '@/lib/import/context/ImportContext';
-import {
-	CollectionCardsProvider,
-	useCollectionCardsContext,
-} from './context/CollectionCardsContext';
+import { CollectionCardsProvider, useCollectionCardsContext } from './CollectionCardsContext';
 import {
 	ActiveCardProvider,
 	useActiveCardContext,
 } from './lib/CollectionCardModal/ActiveCardContext';
-import { CollectionView } from './lib/CollectionView/CollectionView';
 import { ImportModal } from './lib/ImportModal/ImportModal';
 import { CollectionCardModal } from './lib/CollectionCardModal/CollectionCardModal';
 import { Button } from '@/components/Button/Button';
-import { ExportMenu } from './components/ExportMenu/ExportMenu';
+import { ExportMenu } from './ExportMenu/ExportMenu';
 import { ShareButton } from '@/components/ShareButton/ShareButton';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import styles from './page.module.css';
+import { CollectionView } from './lib/CollectionView/CollectionView';
 
 function CollectionPageInner() {
 	const { user } = useAuth();

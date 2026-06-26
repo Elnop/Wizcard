@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import type { CardStack } from '@/types/cards';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { CollectionView } from '@/app/collection/lib/CollectionView/CollectionView';
-import { ExportMenu } from '@/app/collection/components/ExportMenu/ExportMenu';
+import { ExportMenu } from '@/app/collection/ExportMenu/ExportMenu';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { Spinner } from '@/components/Spinner/Spinner';

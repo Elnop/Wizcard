@@ -38,7 +38,7 @@ src/lib/<feature>/
 4. **Generic infrastructure stays in its own module.** `src/lib/supabase/` owns auth, the sync queue, and the Supabase client. A feature module imports from it but does not own it.
 5. **`shared/` only for things used by ≥2 sub-features.** Don't preemptively create `shared/` for a single consumer — move to `shared/` when the second consumer appears.
 6. **Sub-features follow the same rules recursively.** A sub-feature folder can have its own `hooks/`, `components/`, `shared/`, etc.
-7. **Folders only when there are ≥2 files.** A single hook doesn't need a `hooks/` folder. Create the folder when a second file of the same type appears.
+7. **Folders only when there are ≥2 files.** This applies to every grouping folder — `context/`, `hooks/`, `components/`, `utils/`, `shared/`. A single hook doesn't need a `hooks/` folder; a lone context doesn't need a `context/` folder; a single component doesn't need a `components/` folder. The resource sits one level up instead (e.g. `collection/CollectionCardsContext.tsx`, not `collection/context/CollectionCardsContext.tsx`). Create the grouping folder only when a second file of the same kind appears, and move the existing one into it at that point.
 
 ## Where Things Do NOT Go
 

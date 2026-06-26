@@ -42,6 +42,7 @@ Key constraints:
 - Generic infrastructure (`src/lib/supabase/`, `src/components/`) is not owned by any feature
 - No barrel exports (`index.ts`) — import files directly
 - A component gets its own folder (`ComponentName/ComponentName.tsx` + `.module.css`) only when it has ≥2 files. A single `.tsx` with no CSS stays as a flat file.
+- Same rule for grouping folders (`context/`, `hooks/`, `components/`, `utils/`): create one only for ≥2 files of that kind. A lone context/hook/component sits one level up (e.g. `collection/CollectionCardsContext.tsx`, not `collection/context/CollectionCardsContext.tsx`); introduce the folder when the second file appears. See `docs/feature-modules.md` rule 7.
 
 ### Feature Modules (`src/lib/`)
 
