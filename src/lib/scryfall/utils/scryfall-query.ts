@@ -108,3 +108,27 @@ export function getScryfallCardImageUriBySize(
 ): string {
 	return card.image_uris?.[size] ?? card.card_faces?.[0]?.image_uris?.[size] ?? '';
 }
+
+/**
+ * Returns the image URI(s) for a card's faces at the given size.
+ *
+ * Double-faced cards (transform, modal_dfc, double_faced_token, reversible)
+ * carry a distinct `image_uris` on each entry of `card_faces`. When the first
+ * two faces both have an image for `size`, this returns `[front, back]` so the
+ * PDF export can render both. Single-image cards — including split/flip/
+ * adventure, which share the root `image_uris` and have no per-face image —
+ * return a single-element array (the same value as getScryfallCardImageUriBySize).
+ */
+export function getScryfallCardFaceImageUris(
+	card: {
+		image_uris?: { normal?: string; small?: string; large?: string };
+		card_faces?: Array<{ image_uris?: { normal?: string; small?: string; large?: string } }>;
+	},
+	size: 'small' | 'normal' | 'large' = 'normal'
+): string[] {
+	const faces = card.card_faces;
+	const front = faces?.[0]?.image_uris?.[size];
+	const back = faces?.[1]?.image_uris?.[size];
+	if (front && back) return [front, back];
+	return [getScryfallCardImageUriBySize(card, size)];
+}
