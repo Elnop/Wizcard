@@ -1,5 +1,5 @@
 import { fetchLocalizedImage } from '@/lib/scryfall/hooks/useLocalizedImage';
-import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
+import { getScryfallCardFaceImageUris } from '@/lib/scryfall/utils/scryfall-query';
 import type { LocalizedImageCard } from '@/lib/scryfall/hooks/useLocalizedImage';
 
 type ImageCard = LocalizedImageCard & {
@@ -8,21 +8,37 @@ type ImageCard = LocalizedImageCard & {
 };
 
 /**
- * Non-hook equivalent of useCardImageUri: resolves the localized image URI for
- * a card (the same image the site cards display), falling back to the card's
- * default (English) image when no localization applies or the localized print
- * can't be fetched.
+ * Non-hook equivalent of useCardImageUri, returning every face image the card
+ * should contribute to the PDF: a single URL for normal cards, or two URLs
+ * ([front, back]) for double-faced cards (transform, modal_dfc, double-faced
+ * tokens, reversible). Each URL is localized to the card's language when a
+ * localized print is available, falling back per-URL to the card's default
+ * (English) image.
  *
  * Delegates the cache/fetch/404 logic to fetchLocalizedImage, which goes
  * through the shared Scryfall throttle — so PDF export never duplicates that
  * logic nor bypasses rate limiting.
  */
+export async function resolveLocalizedImageUris(
+	card: ImageCard,
+	size: 'small' | 'normal' | 'large' = 'normal'
+): Promise<string[]> {
+	const fallback = getScryfallCardFaceImageUris(card, size);
+	const localized = await fetchLocalizedImage(card);
+	if (!localized) return fallback;
+	const localizedUris = getScryfallCardFaceImageUris(localized, size);
+	// Align with the fallback: keep the same number of faces as the source card,
+	// substituting the localized URL per face when present.
+	return fallback.map((fallbackUri, i) => localizedUris[i] || fallbackUri);
+}
+
+/**
+ * Single-URL resolver kept for callers that only need the front face.
+ * Returns the first face URL from resolveLocalizedImageUris.
+ */
 export async function resolveLocalizedImageUri(
 	card: ImageCard,
 	size: 'small' | 'normal' | 'large' = 'normal'
 ): Promise<string> {
-	const fallback = getScryfallCardImageUriBySize(card, size);
-	const localized = await fetchLocalizedImage(card);
-	if (!localized) return fallback;
-	return getScryfallCardImageUriBySize(localized, size) || fallback;
+	return (await resolveLocalizedImageUris(card, size))[0] ?? '';
 }
