@@ -3,8 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
-import { collectDeckTokenIds } from '@/lib/deck/utils/collectDeckTokens';
+import {
+	collectDeckTokenIds,
+	collectDeckTokensWithSourceLang,
+} from '@/lib/deck/utils/collectDeckTokens';
 import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
+import { localizeTokens } from '@/lib/scryfall/localizeTokens';
 
 /**
  * Resolve the tokens produced by a single card from its Scryfall `all_parts`.
@@ -21,6 +25,11 @@ export function useCardTokens(card: ScryfallCard | CustomCard | null): {
 	const tokenIds = useMemo(() => (card ? collectDeckTokenIds([card]) : []), [card]);
 	const tokenKey = tokenIds.join(',');
 
+	const langByTokenId = useMemo(
+		() => (card ? collectDeckTokensWithSourceLang([card]) : new Map<string, string>()),
+		[card]
+	);
+
 	// Keep resolved tokens tagged with the key they belong to. When `tokenKey`
 	// changes, the previous result no longer matches and we render an empty/loading
 	// state without a synchronous setState in the effect.
@@ -31,14 +40,14 @@ export function useCardTokens(card: ScryfallCard | CustomCard | null): {
 
 		let cancelled = false;
 		resolveCardsByScryfallIds(tokenIds)
-			.then((resolvedMap) => {
+			.then(async (resolvedMap) => {
 				if (cancelled) return;
-				setResolved({
-					key: tokenKey,
-					tokens: tokenIds
-						.map((id) => resolvedMap.get(id))
-						.filter((c): c is ScryfallCard => Boolean(c)),
-				});
+				const enTokens = tokenIds
+					.map((id) => resolvedMap.get(id))
+					.filter((c): c is ScryfallCard => Boolean(c));
+				const localized = await localizeTokens(enTokens, langByTokenId);
+				if (cancelled) return;
+				setResolved({ key: tokenKey, tokens: localized });
 			})
 			.catch(() => {
 				if (!cancelled) setResolved({ key: tokenKey, tokens: [] });
@@ -47,7 +56,7 @@ export function useCardTokens(card: ScryfallCard | CustomCard | null): {
 		return () => {
 			cancelled = true;
 		};
-	}, [tokenIds, tokenKey]);
+	}, [tokenIds, tokenKey, langByTokenId]);
 
 	const isResolved = resolved?.key === tokenKey;
 	const tokens = isResolved ? resolved.tokens : [];
