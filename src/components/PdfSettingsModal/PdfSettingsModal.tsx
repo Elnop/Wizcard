@@ -6,7 +6,7 @@ import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { useCardImageUri } from '@/lib/scryfall/hooks/useCardImageUri';
-import { scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
+import { isScryfallImageUrl, scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
 import type { Card } from '@/types/cards';
 import styles from './PdfSettingsModal.module.css';
 
@@ -72,6 +72,7 @@ function PreviewCardImage({
 				<Image
 					src={url}
 					loader={scryfallImageLoader}
+					unoptimized={isScryfallImageUrl(url)}
 					alt={card.name}
 					fill
 					sizes={`${Math.round(cardWPx)}px`}

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useCardImageUri } from '@/lib/scryfall/hooks/useCardImageUri';
-import { scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
+import { isScryfallImageUrl, scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
 
 type ThumbCard = {
 	name: string;
@@ -56,6 +56,7 @@ export function LocalizedCardThumb({
 			width={w}
 			height={h}
 			loader={scryfallImageLoader}
+			unoptimized={isScryfallImageUrl(src)}
 			className={className}
 			priority={priority}
 			onError={() => setError(true)}

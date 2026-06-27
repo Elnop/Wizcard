@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
-import { scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
+import { isScryfallImageUrl, scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
 import { useLocalizedImage } from '@/lib/scryfall/hooks/useLocalizedImage';
 import { isCustomCard } from '@/lib/mpc/types';
 import type { CustomCard } from '@/lib/mpc/types';
@@ -161,6 +161,7 @@ export function CardImage({
 					width={width}
 					height={height}
 					loader={scryfallImageLoader}
+					unoptimized={isScryfallImageUrl(imageUri)}
 					priority={priority}
 					className={[styles.image, isLoading ? styles.loading : ''].filter(Boolean).join(' ')}
 					onLoad={() => setIsLoading(false)}
