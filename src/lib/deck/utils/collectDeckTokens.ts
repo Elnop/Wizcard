@@ -41,6 +41,27 @@ export function collectDeckTokenIds(cards: CardWithParts[]): string[] {
 }
 
 /**
+ * Like {@link collectDeckTokenIds}, but maps each produced token/emblem print id
+ * to the Scryfall lang code of the card that produces it (default `'en'`). Used
+ * to re-resolve tokens in their source card's language. First producer wins when
+ * the same token is shared.
+ */
+export function collectDeckTokensWithSourceLang(
+	cards: Array<CardWithParts & { lang?: string }>
+): Map<string, string> {
+	const byLang = new Map<string, string>();
+	for (const card of cards) {
+		const lang = card.lang ?? 'en';
+		for (const part of card.all_parts ?? []) {
+			if (isProducedToken(part, card.id) && !byLang.has(part.id)) {
+				byLang.set(part.id, lang);
+			}
+		}
+	}
+	return byLang;
+}
+
+/**
  * True when `card` produces the given token or emblem. Matched by name because
  * `all_parts` entries expose only `id`/`name`/`type_line` (no `oracle_id`), and a
  * token/emblem name is stable across prints.
