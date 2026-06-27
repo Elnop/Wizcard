@@ -10,6 +10,7 @@ type Props = {
 	onUpdate?: (updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description'>>) => void;
 	onAssignAllFromCollection?: () => void;
 	onAddAllToCollection?: () => void;
+	onImportList?: () => void;
 	onGeneratePdf?: () => void;
 	onExportText?: () => void;
 	/** Read-only (public) view: hides editing, keeps export/copy actions. */
@@ -21,6 +22,7 @@ export function DeckHeader({
 	onUpdate,
 	onAssignAllFromCollection,
 	onAddAllToCollection,
+	onImportList,
 	onGeneratePdf,
 	onExportText,
 	readOnly = false,
@@ -82,7 +84,7 @@ export function DeckHeader({
 		);
 	}
 
-	const hasMoreActions = Boolean(onAssignAllFromCollection || onAddAllToCollection);
+	const hasMoreActions = Boolean(onAssignAllFromCollection || onAddAllToCollection || onImportList);
 
 	return (
 		<div className={styles.header}>
@@ -155,6 +157,19 @@ export function DeckHeader({
 										}}
 									>
 										⊕ Ajouter tout à la collection
+									</button>
+								)}
+								{onImportList && (
+									<button
+										type="button"
+										className={styles.dropdownItem}
+										role="menuitem"
+										onClick={() => {
+											setMenuOpen(false);
+											onImportList();
+										}}
+									>
+										⊕ Import list
 									</button>
 								)}
 							</div>

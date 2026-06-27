@@ -8,13 +8,11 @@ import type { DeckFormat } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { parseMTGADeck, type DeckImportResult } from '@/lib/import/formats/mtga-deck';
-import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
-import { BATCH_SIZE } from '@/lib/scryfall/constants';
-import { deduplicateIdentifiers } from '@/lib/import/utils/identifier-dedup';
 import { useSetCodeNormalizer } from '@/lib/import/hooks/useSetCodeNormalizer';
+import { resolveDeckList } from '@/lib/import/hooks/useResolveDeckList';
 import { extractMoxfieldId, fetchMoxfieldDeck } from '@/lib/moxfield/fetch-deck';
 import { convertMoxfieldDeck, type MoxfieldImportData } from '@/lib/moxfield/convert-deck';
-import type { ScryfallCard, ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import styles from './ImportDeckModal.module.css';
 
 const FORMATS: { value: DeckFormat | ''; label: string }[] = [
@@ -49,20 +47,6 @@ type ImportMode = 'paste' | 'url';
 type Props = {
 	onClose: () => void;
 };
-
-async function resolveCards(identifiers: ScryfallCardIdentifier[]) {
-	const deduped = deduplicateIdentifiers(identifiers);
-
-	const results: ScryfallCard[] = [];
-
-	for (let i = 0; i < deduped.length; i += BATCH_SIZE) {
-		const batch = deduped.slice(i, i + BATCH_SIZE);
-		const response = await getCardCollection(batch);
-		results.push(...response.data);
-	}
-
-	return results;
-}
 
 function buildDetectionHint(parsed: DeckImportResult): string | null {
 	if (parsed.rows.length === 0) return null;
@@ -204,7 +188,6 @@ export function ImportDeckModal({ onClose }: Props) {
 
 	// --- Import handlers ---
 
-	// eslint-disable-next-line sonarjs/cognitive-complexity -- paste import pipeline: resolve identifiers, match cards, add to deck
 	const handleImportPaste = useCallback(async () => {
 		setErrors([]);
 
@@ -222,51 +205,7 @@ export function ImportDeckModal({ onClose }: Props) {
 		setIsImporting(true);
 
 		try {
-			const normalized = normalizeSetCodes(parsed);
-			const resolved = await resolveCards(normalized.identifiers);
-
-			const cardMap = new Map<string, ScryfallCard>();
-			for (const card of resolved) {
-				cardMap.set(`${card.set}:${card.collector_number}`, card);
-				cardMap.set(`name:${card.name.toLowerCase()}`, card);
-				const slashIdx = card.name.indexOf(' // ');
-				if (slashIdx !== -1) {
-					cardMap.set(`name:${card.name.slice(0, slashIdx).toLowerCase()}`, card);
-				}
-			}
-
-			const deckId = createDeck(name.trim() || 'Imported Deck', format || null, null);
-
-			const cardsToAdd: Array<{
-				card: ScryfallCard;
-				zone: (typeof normalized.rows)[0]['zone'];
-				quantity: number;
-			}> = [];
-			const notFound: string[] = [];
-
-			for (const row of normalized.rows) {
-				let card =
-					row.set && row.collectorNumber
-						? cardMap.get(`${row.set}:${row.collectorNumber}`)
-						: undefined;
-				if (!card && row.set) {
-					card = resolved.find(
-						(c) =>
-							c.set === row.set &&
-							(c.name.toLowerCase() === row.name.toLowerCase() ||
-								c.name.toLowerCase().startsWith(row.name.toLowerCase() + ' // '))
-					);
-				}
-				if (!card) {
-					card = cardMap.get(`name:${row.name.toLowerCase()}`);
-				}
-
-				if (card) {
-					cardsToAdd.push({ card, zone: row.zone, quantity: row.quantity });
-				} else {
-					notFound.push(`${row.quantity} ${row.name}`);
-				}
-			}
+			const { cardsToAdd, notFound } = await resolveDeckList(parsed, normalizeSetCodes);
 
 			if (cardsToAdd.length === 0) {
 				setErrors([`No cards could be resolved. Check card names and try again.`]);
@@ -274,6 +213,7 @@ export function ImportDeckModal({ onClose }: Props) {
 				return;
 			}
 
+			const deckId = createDeck(name.trim() || 'Imported Deck', format || null, null);
 			bulkAddCardsToDeck(deckId, cardsToAdd);
 
 			if (notFound.length > 0) {

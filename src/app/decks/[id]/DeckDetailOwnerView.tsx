@@ -42,6 +42,7 @@ import { OwnershipBadge } from '@/lib/card/components/OwnershipBadge/OwnershipBa
 import { getCopyBadgeState } from '@/lib/card/components/OwnershipBadge/copyBadgeState';
 import { DeckPdfExportModal } from './components/DeckPdfExportModal/DeckPdfExportModal';
 import { DeckTextExportModal } from './components/DeckTextExportModal/DeckTextExportModal';
+import { ImportListIntoDeckModal } from './components/ImportListIntoDeckModal/ImportListIntoDeckModal';
 import { serializeDecklist } from '@/lib/deck/utils/serialize-decklist';
 import type { DeckPdfExportOptions } from '@/lib/pdf/types';
 import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
@@ -106,6 +107,11 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const [pdfExportOptions, setPdfExportOptions] = useState<DeckPdfExportOptions | null>(null);
 	const [pdfGenerating, setPdfGenerating] = useState(false);
 	const [textExportModalOpen, setTextExportModalOpen] = useState(false);
+	const [importListOpen, setImportListOpen] = useState(false);
+	const existingOracleIds = useMemo(
+		() => new Set(resolvedCards.map((c) => c.oracle_id ?? c.id)),
+		[resolvedCards]
+	);
 	const pdfFilteredCards = useMemo(
 		() => (pdfExportOptions ? filterCardsForPdf(resolvedCards, pdfExportOptions) : []),
 		[resolvedCards, pdfExportOptions]
@@ -595,6 +601,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 						onUpdate={(updates) => updateDeck(deckId, updates)}
 						onAssignAllFromCollection={handleAssignAllFromCollection}
 						onAddAllToCollection={() => setAddToCollectionModalOpen(true)}
+						onImportList={() => setImportListOpen(true)}
 						onGeneratePdf={() => setPdfExportModalOpen(true)}
 						onExportText={() => setTextExportModalOpen(true)}
 					/>
@@ -734,6 +741,14 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					text={decklistText}
 					deckName={deck.name}
 					onClose={() => setTextExportModalOpen(false)}
+				/>
+			)}
+
+			{importListOpen && (
+				<ImportListIntoDeckModal
+					deckId={deckId}
+					existingOracleIds={existingOracleIds}
+					onClose={() => setImportListOpen(false)}
 				/>
 			)}
 

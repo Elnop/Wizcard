@@ -8,7 +8,9 @@ const EXPORT_SECTIONS: { zone: DeckZone; header: string }[] = [
 	{ zone: 'commander', header: 'Commander' },
 	{ zone: 'mainboard', header: 'Deck' },
 	{ zone: 'sideboard', header: 'Sideboard' },
-	{ zone: 'maybeboard', header: 'Maybeboard' },
+	// Moxfield calls the maybeboard "Considering"; this header round-trips into
+	// Moxfield (and our own parser maps "considering" back to maybeboard).
+	{ zone: 'maybeboard', header: 'Considering' },
 ];
 
 function cardKey(card: ResolvedDeckCard): string {

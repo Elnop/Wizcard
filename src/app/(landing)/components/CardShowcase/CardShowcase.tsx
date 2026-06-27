@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
 import { useInView } from '@/app/(landing)/hooks/useInView';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
@@ -23,6 +24,7 @@ function renderShowcaseItem(card: AnyCard, index: number) {
 					alt={showcase.name}
 					width={488}
 					height={680}
+					loader={scryfallImageLoader}
 					className={styles.cardImage}
 					sizes="(max-width: 768px) 45vw, 220px"
 				/>

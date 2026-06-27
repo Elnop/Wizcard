@@ -172,14 +172,18 @@ function detectFormat(rows: DeckImportRow[]): DeckFormat | null {
 
 /**
  * Check if a line (after trimming/lowercasing) is a section header.
- * Supports both "Sideboard" and "Sideboard:" variants.
+ * Supports plain ("Sideboard"), trailing-colon ("Sideboard:") and decorated
+ * ("== Considering ==") variants — the latter is emitted by some exporters.
  */
 function matchSectionHeader(line: string): DeckZone | undefined {
 	let key = line.toLowerCase();
+	// Strip surrounding "=" decorations: "== considering ==" → "considering"
+	// eslint-disable-next-line sonarjs/slow-regex -- short header strings, no ReDoS risk
+	key = key.replace(/^=+\s*/, '').replace(/\s*=+$/, '');
 	// Strip trailing colon: "Sideboard:" → "sideboard"
 	if (key.endsWith(':')) key = key.slice(0, -1).trimEnd();
 
-	return SECTION_HEADERS[key];
+	return SECTION_HEADERS[key.trim()];
 }
 
 /**
