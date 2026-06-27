@@ -218,6 +218,139 @@ select.input {
 
 .previewRightHeader {
 	flex-shrink: 0;
+	display: flex;
+	gap: 8px;
+	align-items: stretch;
+}
+
+.previewRightHeader .input {
+	flex: 1;
+	min-width: 0;
+}
+
+.selectToggle {
+	flex-shrink: 0;
+	padding: 0 14px;
+	font-size: var(--text-sm);
+	font-weight: 600;
+	color: var(--text-muted);
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition:
+		color 0.15s,
+		background 0.15s,
+		border-color 0.15s;
+}
+
+.selectToggle:hover {
+	color: var(--foreground);
+	border-color: var(--primary);
+}
+
+.selectToggleActive {
+	color: #0b0c10;
+	background: var(--primary);
+	border-color: var(--primary);
+}
+
+/* Selection overlay on a grid card */
+
+.selectOverlay {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: flex-start;
+	justify-content: flex-start;
+	padding: 8px;
+	border: 2px solid transparent;
+	border-radius: 4px;
+	box-sizing: border-box;
+	pointer-events: none;
+}
+
+.selectOverlayChecked {
+	background: rgba(124, 106, 245, 0.18);
+	border-color: rgba(124, 106, 245, 0.7);
+}
+
+.selectOverlay input {
+	width: 18px;
+	height: 18px;
+	pointer-events: none;
+}
+
+/* Bulk action bar */
+
+.bulkBar {
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 10px 12px;
+	background: rgba(124, 106, 245, 0.08);
+	border: 1px solid rgba(124, 106, 245, 0.3);
+	border-radius: 8px;
+}
+
+.bulkBarRow {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.bulkBarCount {
+	font-size: var(--text-sm);
+	font-weight: 600;
+	color: var(--foreground);
+}
+
+.bulkMove {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.bulkMoveLabel {
+	font-size: var(--text-xs);
+	color: var(--text-muted);
+}
+
+.bulkMoveBtn {
+	padding: 4px 10px;
+	font-size: var(--text-xs);
+	font-weight: 600;
+	color: var(--text-muted);
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition:
+		color 0.15s,
+		background 0.15s,
+		border-color 0.15s;
+}
+
+.bulkMoveBtn:hover {
+	color: var(--foreground);
+	border-color: var(--primary);
+}
+
+.bulkRemoveBtn {
+	margin-left: auto;
+	color: var(--error, #dc3545);
+	border-color: rgba(220, 53, 69, 0.4);
+}
+
+.bulkRemoveBtn:hover {
+	color: #fff;
+	background: rgba(220, 53, 69, 0.7);
+	border-color: rgba(220, 53, 69, 0.7);
 }
 
 .previewRightBody {

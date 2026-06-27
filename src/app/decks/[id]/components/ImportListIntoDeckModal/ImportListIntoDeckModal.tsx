@@ -8,7 +8,10 @@ import { Spinner } from '@/components/Spinner/Spinner';
 import { ContextMenu, type ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
+import { CardPrintPickerModal } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
 import { groupByCardType } from '@/lib/card/utils/group-by-card-type';
+import { ImportBulkApplyPanel } from '@/app/collection/lib/ImportModal/components/ImportBulkApplyPanel/ImportBulkApplyPanel';
+import type { BulkApplyPatch } from '@/lib/import/hooks/useImportBulkApply';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { Card } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
@@ -95,6 +98,10 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 		y: number;
 	} | null>(null);
 
+	// Bulk selection: keys are `oracleId|zone` (one selectable unit per zone-card).
+	const [selectionMode, setSelectionMode] = useState(false);
+	const [selected, setSelected] = useState<Set<string>>(new Set());
+
 	const parsed = useMemo(() => (text.trim() ? parseMTGADeck(text) : null), [text]);
 
 	// A list has explicit zone sections if any parsed row lands outside mainboard.
@@ -111,6 +118,10 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 		removeCardInZone,
 		changePrint,
 		updateEntry,
+		setZoneForRows,
+		removeRows,
+		changePrintForRows,
+		applyPatchToRows,
 	} = useImportPreviewEdit({
 		resolvedRows,
 		existingOracleIds,
@@ -232,9 +243,62 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 		onClose();
 	}, [editableCards, bulkAddCardsToDeck, deckId, onClose]);
 
+	// Selection key for a preview card: one selectable unit per (oracle, zone).
+	const selKeyFor = useCallback((card: Card): string => {
+		return `${oracleKey(card as ScryfallCard)}|${getDeckZone(card.entry.tags)}`;
+	}, []);
+
+	// Resolve currently-selected keys to the underlying synthetic rowIds.
+	const selectedRowIds = useMemo(() => {
+		const ids = new Set<string>();
+		for (const key of selected) {
+			const [oracle, z] = key.split('|');
+			const rowIds = cardsByZone.get(z as DeckZone)?.get(oracle)?.rowIds;
+			rowIds?.forEach((id) => ids.add(id));
+		}
+		return ids;
+	}, [selected, cardsByZone]);
+
+	// Drop selection keys that no longer exist (e.g. after a bulk move/remove).
+	const pruneSelection = useCallback(() => {
+		setSelected((prev) => {
+			const next = new Set<string>();
+			for (const key of prev) {
+				const [oracle, z] = key.split('|');
+				if (cardsByZone.get(z as DeckZone)?.has(oracle)) next.add(key);
+			}
+			return next;
+		});
+	}, [cardsByZone]);
+
+	const toggleSelected = useCallback((card: Card) => {
+		const key = `${oracleKey(card as ScryfallCard)}|${getDeckZone(card.entry.tags)}`;
+		setSelected((prev) => {
+			const next = new Set(prev);
+			if (next.has(key)) next.delete(key);
+			else next.add(key);
+			return next;
+		});
+	}, []);
+
+	const exitSelection = useCallback(() => {
+		setSelectionMode(false);
+		setSelected(new Set());
+	}, []);
+
 	const renderOverlay = (card: AnyCard): ReactNode => {
 		const qty = qtyByCardId.get(card.id) ?? 0;
-		return qty > 1 ? <span className={styles.gridBadge}>×{qty}</span> : null;
+		const qtyBadge = qty > 1 ? <span className={styles.gridBadge}>×{qty}</span> : null;
+		if (!selectionMode) return qtyBadge;
+		const checked = selected.has(selKeyFor(card as Card));
+		return (
+			<>
+				{qtyBadge}
+				<span className={`${styles.selectOverlay} ${checked ? styles.selectOverlayChecked : ''}`}>
+					<input type="checkbox" checked={checked} readOnly tabIndex={-1} />
+				</span>
+			</>
+		);
 	};
 
 	// --- Selected card (detail modal): all copies of the clicked card across zones ---
@@ -249,6 +313,48 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 	const openDetail = useCallback((card: AnyCard) => {
 		setSelectedRowId((card as Card).entry?.rowId ?? null);
 	}, []);
+
+	// --- Bulk actions on the current selection ---
+
+	const [bulkPrintOpen, setBulkPrintOpen] = useState(false);
+
+	// The single logical card represented by the selection (same oracle across all
+	// selected keys) — enables bulk "change print", which is per-card by nature.
+	const selectionSingleCard = useMemo<Card | null>(() => {
+		const oracles = new Set([...selected].map((k) => k.split('|')[0]));
+		if (oracles.size !== 1) return null;
+		const oracle = [...oracles][0];
+		return editableCards.find((c) => oracleKey(c as ScryfallCard) === oracle) ?? null;
+	}, [selected, editableCards]);
+
+	const bulkMoveTo = useCallback(
+		(z: DeckZone) => {
+			setZoneForRows(selectedRowIds, z);
+			pruneSelection();
+		},
+		[setZoneForRows, selectedRowIds, pruneSelection]
+	);
+
+	const bulkRemove = useCallback(() => {
+		removeRows(selectedRowIds);
+		setSelected(new Set());
+	}, [removeRows, selectedRowIds]);
+
+	const bulkApplyAttributes = useCallback(
+		(patch: BulkApplyPatch) => {
+			applyPatchToRows(selectedRowIds, patch);
+		},
+		[applyPatchToRows, selectedRowIds]
+	);
+
+	const bulkChangePrint = useCallback(
+		(print: ScryfallCard) => {
+			changePrintForRows(selectedRowIds, print);
+			setBulkPrintOpen(false);
+			pruneSelection();
+		},
+		[changePrintForRows, selectedRowIds, pruneSelection]
+	);
 
 	// --- Context menu actions ---
 
@@ -470,7 +576,17 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 							onChange={(e) => setNameFilter(e.target.value)}
 							placeholder="Filtrer par nom…"
 						/>
+						<button
+							type="button"
+							className={`${styles.selectToggle} ${selectionMode ? styles.selectToggleActive : ''}`}
+							onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
+						>
+							{selectionMode ? 'Annuler' : 'Sélectionner'}
+						</button>
 					</div>
+
+					{selectionMode && selected.size > 0 && renderBulkBar()}
+
 					<div className={styles.previewRightBody}>
 						{sections.length === 0 ? (
 							<p className={styles.previewEmpty}>Aucune carte à importer.</p>
@@ -478,22 +594,66 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 							<CardList
 								cards={sections}
 								cardsPerLine={4}
-								onCardClick={openDetail}
-								onCardContextMenu={(card, e) => {
-									e.preventDefault();
-									const c = card as Card;
-									setContextMenu({
-										card: c,
-										zone: getDeckZone(c.entry.tags),
-										x: e.clientX,
-										y: e.clientY,
-									});
-								}}
+								onCardClick={selectionMode ? (card) => toggleSelected(card as Card) : openDetail}
+								onCardContextMenu={
+									selectionMode
+										? undefined
+										: (card, e) => {
+												e.preventDefault();
+												const c = card as Card;
+												setContextMenu({
+													card: c,
+													zone: getDeckZone(c.entry.tags),
+													x: e.clientX,
+													y: e.clientY,
+												});
+											}
+								}
 								renderOverlay={renderOverlay}
 							/>
 						)}
 					</div>
 				</div>
+			</div>
+		);
+	}
+
+	function renderBulkBar() {
+		return (
+			<div className={styles.bulkBar}>
+				<div className={styles.bulkBarRow}>
+					<span className={styles.bulkBarCount}>{selected.size} sélectionnée(s)</span>
+					<div className={styles.bulkMove}>
+						<span className={styles.bulkMoveLabel}>Déplacer&nbsp;:</span>
+						{MOVABLE_ZONES.map((z) => (
+							<button
+								key={z}
+								type="button"
+								className={styles.bulkMoveBtn}
+								onClick={() => bulkMoveTo(z)}
+							>
+								{ZONE_LABELS[z]}
+							</button>
+						))}
+					</div>
+					{selectionSingleCard && (
+						<button
+							type="button"
+							className={styles.bulkMoveBtn}
+							onClick={() => setBulkPrintOpen(true)}
+						>
+							Changer l’édition
+						</button>
+					)}
+					<button
+						type="button"
+						className={`${styles.bulkMoveBtn} ${styles.bulkRemoveBtn}`}
+						onClick={bulkRemove}
+					>
+						Retirer
+					</button>
+				</div>
+				<ImportBulkApplyPanel cardCount={selectedRowIds.size} onApplyToAll={bulkApplyAttributes} />
 			</div>
 		);
 	}
@@ -541,6 +701,21 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 					onClose={() => setContextMenu(null)}
 				/>
 			)}
+
+			{bulkPrintOpen &&
+				selectionSingleCard &&
+				createPortal(
+					<CardPrintPickerModal
+						prints_search_uri={(selectionSingleCard as ScryfallCard).prints_search_uri ?? ''}
+						currentCardId={selectionSingleCard.id}
+						currentSet={(selectionSingleCard as ScryfallCard).set}
+						currentCollectorNumber={(selectionSingleCard as ScryfallCard).collector_number}
+						currentLang={selectionSingleCard.entry.language}
+						onSelect={bulkChangePrint}
+						onClose={() => setBulkPrintOpen(false)}
+					/>,
+					document.body
+				)}
 		</Modal>
 	);
 }

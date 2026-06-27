@@ -4,7 +4,12 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckZone } from '@/types/decks';
 import { setDeckZone } from '@/types/decks';
 import { isBasicLand } from '@/lib/deck/utils/format-rules';
+import type { BulkApplyPatch } from '@/lib/import/hooks/useImportBulkApply';
 import type { ResolvedDeckRow } from '@/lib/import/hooks/useResolveDeckList';
+
+function mergeTags(existing: string[] | undefined, toAdd: string[]): string[] {
+	return Array.from(new Set([...(existing ?? []), ...toAdd]));
+}
 
 /** Same dedup key as dedupeByOracle in useDeckCardSections. */
 export function oracleKey(card: ScryfallCard): string {
@@ -122,6 +127,43 @@ export function useImportPreviewEdit(init: PreviewInit) {
 		);
 	}, []);
 
+	// --- Bulk mutators (operate on a set of synthetic rowIds) ---
+
+	const setZoneForRows = useCallback((rowIds: Set<string>, zone: DeckZone) => {
+		setCards((prev) =>
+			prev.map((c) =>
+				rowIds.has(c.entry.rowId)
+					? { ...c, entry: { ...c.entry, tags: setDeckZone(c.entry.tags, zone) } }
+					: c
+			)
+		);
+	}, []);
+
+	const removeRows = useCallback((rowIds: Set<string>) => {
+		setCards((prev) => prev.filter((c) => !rowIds.has(c.entry.rowId)));
+	}, []);
+
+	const changePrintForRows = useCallback((rowIds: Set<string>, newCard: ScryfallCard) => {
+		setCards((prev) =>
+			prev.map((c) => (rowIds.has(c.entry.rowId) ? { ...newCard, entry: c.entry } : c))
+		);
+	}, []);
+
+	/** Apply a BulkApplyPatch (tags additive, other fields override) to selected rows. */
+	const applyPatchToRows = useCallback((rowIds: Set<string>, patch: BulkApplyPatch) => {
+		const { tags: tagsToAdd, ...overrides } = patch;
+		setCards((prev) =>
+			prev.map((c) => {
+				if (!rowIds.has(c.entry.rowId)) return c;
+				const entry: CardEntry = { ...c.entry, ...overrides };
+				if (tagsToAdd && tagsToAdd.length > 0) {
+					entry.tags = mergeTags(c.entry.tags, tagsToAdd);
+				}
+				return { ...c, entry };
+			})
+		);
+	}, []);
+
 	return {
 		cards,
 		setCardZone,
@@ -130,5 +172,9 @@ export function useImportPreviewEdit(init: PreviewInit) {
 		removeCardInZone,
 		changePrint,
 		updateEntry,
+		setZoneForRows,
+		removeRows,
+		changePrintForRows,
+		applyPatchToRows,
 	};
 }
