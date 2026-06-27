@@ -4,16 +4,27 @@ import { useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
+import { Spinner } from '@/components/Spinner/Spinner';
 import type { DeckFormat } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { parseMTGADeck, type DeckImportResult } from '@/lib/import/formats/mtga-deck';
 import { useSetCodeNormalizer } from '@/lib/import/hooks/useSetCodeNormalizer';
-import { resolveDeckList } from '@/lib/import/hooks/useResolveDeckList';
+import { resolveDeckList, type ResolvedDeckRow } from '@/lib/import/hooks/useResolveDeckList';
+import {
+	ImportPreview,
+	type ImportPreviewCopy,
+} from '@/lib/import/components/ImportPreview/ImportPreview';
 import { extractMoxfieldId, fetchMoxfieldDeck } from '@/lib/moxfield/fetch-deck';
 import { convertMoxfieldDeck, type MoxfieldImportData } from '@/lib/moxfield/convert-deck';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import styles from './ImportDeckModal.module.css';
+
+// New decks have no existing cards. A stable module-level reference avoids
+// retriggering useImportPreviewEdit's regeneration effect on every render.
+const EMPTY_ORACLE_IDS = new Set<string>();
+
+type Step = 'input' | 'resolving' | 'preview';
 
 const FORMATS: { value: DeckFormat | ''; label: string }[] = [
 	{ value: '', label: 'No format' },
@@ -107,12 +118,17 @@ function buildMoxfieldSummary(data: MoxfieldImportData): string {
 	return parts.join(' — ');
 }
 
+function importFailedMessage(err: unknown): string {
+	return `Import failed: ${err instanceof Error ? err.message : 'unknown error'}`;
+}
+
 export function ImportDeckModal({ onClose }: Props) {
 	const { createDeck, bulkAddCardsToDeck } = useDeckContext();
 	const router = useRouter();
 	const { normalize: normalizeSetCodes } = useSetCodeNormalizer();
 
 	const [mode, setMode] = useState<ImportMode>('paste');
+	const [step, setStep] = useState<Step>('input');
 
 	// Paste mode state
 	const [name, setName] = useState('');
@@ -120,6 +136,10 @@ export function ImportDeckModal({ onClose }: Props) {
 	const [text, setText] = useState('');
 	const [errors, setErrors] = useState<string[]>([]);
 	const [isImporting, setIsImporting] = useState(false);
+
+	// Resolved cards for the preview step (paste mode only).
+	const [resolvedRows, setResolvedRows] = useState<ResolvedDeckRow[]>([]);
+	const [notFound, setNotFound] = useState<string[]>([]);
 
 	const nameManuallyEdited = useRef(false);
 	const formatManuallyEdited = useRef(false);
@@ -131,6 +151,12 @@ export function ImportDeckModal({ onClose }: Props) {
 
 	const parsed = useMemo(() => (text.trim() ? parseMTGADeck(text) : null), [text]);
 	const detectionHint = useMemo(() => (parsed ? buildDetectionHint(parsed) : null), [parsed]);
+
+	// A list has explicit zone sections if any parsed row lands outside mainboard.
+	const hasSections = useMemo(
+		() => (parsed ? parsed.rows.some((r) => r.zone !== 'mainboard') : false),
+		[parsed]
+	);
 
 	const handleTextChange = useCallback(
 		(value: string) => {
@@ -188,7 +214,8 @@ export function ImportDeckModal({ onClose }: Props) {
 
 	// --- Import handlers ---
 
-	const handleImportPaste = useCallback(async () => {
+	// Paste mode resolves to a preview step (with bulk edit) before deck creation.
+	const handleResolvePaste = useCallback(async () => {
 		setErrors([]);
 
 		if (!parsed || parsed.rows.length === 0) {
@@ -202,30 +229,37 @@ export function ImportDeckModal({ onClose }: Props) {
 			return;
 		}
 
-		setIsImporting(true);
-
+		setStep('resolving');
 		try {
 			const { cardsToAdd, notFound } = await resolveDeckList(parsed, normalizeSetCodes);
-
 			if (cardsToAdd.length === 0) {
 				setErrors([`No cards could be resolved. Check card names and try again.`]);
-				setIsImporting(false);
+				setStep('input');
 				return;
 			}
-
-			const deckId = createDeck(name.trim() || 'Imported Deck', format || null, null);
-			bulkAddCardsToDeck(deckId, cardsToAdd);
-
-			if (notFound.length > 0) {
-				setErrors(notFound.map((n) => `Card not found: ${n}`));
-			}
-
-			router.push(`/decks/${deckId}`);
+			setResolvedRows(cardsToAdd);
+			setNotFound(notFound);
+			setStep('preview');
 		} catch (err) {
-			setErrors([`Import failed: ${err instanceof Error ? err.message : 'unknown error'}`]);
-			setIsImporting(false);
+			setErrors([importFailedMessage(err)]);
+			setStep('input');
 		}
-	}, [parsed, name, format, createDeck, bulkAddCardsToDeck, router, normalizeSetCodes]);
+	}, [parsed, normalizeSetCodes]);
+
+	const handleCreateFromPreview = useCallback(
+		(copies: ImportPreviewCopy[]) => {
+			setIsImporting(true);
+			try {
+				const deckId = createDeck(name.trim() || 'Imported Deck', format || null, null);
+				bulkAddCardsToDeck(deckId, copies);
+				router.push(`/decks/${deckId}`);
+			} catch (err) {
+				setErrors([importFailedMessage(err)]);
+				setIsImporting(false);
+			}
+		},
+		[name, format, createDeck, bulkAddCardsToDeck, router]
+	);
 
 	const handleImportMoxfield = useCallback(() => {
 		if (!moxfieldData || moxfieldData.cards.length === 0) return;
@@ -250,12 +284,14 @@ export function ImportDeckModal({ onClose }: Props) {
 
 			router.push(`/decks/${deckId}`);
 		} catch (err) {
-			setErrors([`Import failed: ${err instanceof Error ? err.message : 'unknown error'}`]);
+			setErrors([importFailedMessage(err)]);
 			setIsImporting(false);
 		}
 	}, [moxfieldData, name, format, createDeck, bulkAddCardsToDeck, router]);
 
-	const handleImport = mode === 'paste' ? handleImportPaste : handleImportMoxfield;
+	// Paste mode steps through a preview ("Aperçu"); URL mode imports directly.
+	const handlePrimary = mode === 'paste' ? handleResolvePaste : handleImportMoxfield;
+	const primaryLabel = mode === 'paste' ? 'Aperçu' : 'Import';
 
 	const canImport =
 		mode === 'paste'
@@ -269,8 +305,34 @@ export function ImportDeckModal({ onClose }: Props) {
 		if (!formatManuallyEdited.current) setFormat('');
 	}, []);
 
-	return (
-		<Modal className={styles.dialog}>
+	const nameFormatFields = (
+		<>
+			<label className={styles.label}>
+				Name
+				<input
+					type="text"
+					className={styles.input}
+					value={name}
+					onChange={handleNameChange}
+					placeholder="My Imported Deck"
+				/>
+			</label>
+
+			<label className={styles.label}>
+				Format
+				<select className={styles.input} value={format} onChange={handleFormatChange}>
+					{FORMATS.map((f) => (
+						<option key={f.value} value={f.value} className={styles.option}>
+							{f.label}
+						</option>
+					))}
+				</select>
+			</label>
+		</>
+	);
+
+	function renderInput() {
+		return (
 			<div className={styles.form}>
 				<h2 className={styles.title}>Import a Deck</h2>
 
@@ -337,27 +399,7 @@ export function ImportDeckModal({ onClose }: Props) {
 					</>
 				)}
 
-				<label className={styles.label}>
-					Name
-					<input
-						type="text"
-						className={styles.input}
-						value={name}
-						onChange={handleNameChange}
-						placeholder="My Imported Deck"
-					/>
-				</label>
-
-				<label className={styles.label}>
-					Format
-					<select className={styles.input} value={format} onChange={handleFormatChange}>
-						{FORMATS.map((f) => (
-							<option key={f.value} value={f.value} className={styles.option}>
-								{f.label}
-							</option>
-						))}
-					</select>
-				</label>
+				{nameFormatFields}
 
 				{errors.length > 0 && (
 					<div className={styles.errors}>
@@ -373,11 +415,43 @@ export function ImportDeckModal({ onClose }: Props) {
 					<Button variant="ghost" type="button" onClick={onClose} disabled={isImporting}>
 						Cancel
 					</Button>
-					<Button onClick={handleImport} disabled={!canImport} isLoading={isImporting}>
-						Import
+					<Button onClick={handlePrimary} disabled={!canImport} isLoading={isImporting}>
+						{primaryLabel}
 					</Button>
 				</div>
 			</div>
+		);
+	}
+
+	return (
+		<Modal className={`${styles.dialog} ${step === 'preview' ? styles.dialogWide : ''}`}>
+			{step === 'input' && renderInput()}
+
+			{step === 'resolving' && (
+				<div className={styles.form}>
+					<div className={styles.loadingScreen}>
+						<Spinner size="md" />
+						<p className={styles.loadingLabel}>Resolving cards…</p>
+					</div>
+				</div>
+			)}
+
+			{step === 'preview' && (
+				<div className={styles.previewWrap}>
+					<h2 className={styles.title}>Import a Deck</h2>
+					<ImportPreview
+						resolvedRows={resolvedRows}
+						existingOracleIds={EMPTY_ORACLE_IDS}
+						notFound={notFound}
+						hasSections={hasSections}
+						primaryLabel={(n) => `Create deck (${n} card${n === 1 ? '' : 's'})`}
+						onImport={handleCreateFromPreview}
+						onBack={() => setStep('input')}
+						isSubmitting={isImporting}
+						headerExtra={nameFormatFields}
+					/>
+				</div>
+			)}
 		</Modal>
 	);
 }

@@ -93,7 +93,12 @@ type DeckActions = {
 	) => void;
 	bulkAddCardsToDeck: (
 		deckId: string,
-		cards: Array<{ card: ScryfallCard; zone: DeckZone; quantity: number }>,
+		cards: Array<{
+			card: ScryfallCard;
+			zone: DeckZone;
+			quantity: number;
+			entry?: Partial<CardEntry>;
+		}>,
 		userId: string,
 		triggerSync: () => void
 	) => void;
@@ -406,14 +411,15 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		const newCards: Record<string, StoredCopy> = {};
 		const syncPayload: Array<{ scryfallId: string; entry: CardEntry }> = [];
 
-		for (const { card, zone, quantity } of cards) {
+		for (const { card, zone, quantity, entry: extra } of cards) {
 			for (let i = 0; i < quantity; i++) {
 				const rowId = crypto.randomUUID();
 				const entry: CardEntry = {
+					...extra,
 					rowId,
 					dateAdded: now,
 					deckId,
-					tags: setDeckZone(undefined, zone),
+					tags: setDeckZone(extra?.tags, zone),
 				};
 				newCards[rowId] = { scryfallId: card.id, entry };
 				syncPayload.push({ scryfallId: card.id, entry });

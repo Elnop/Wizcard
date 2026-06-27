@@ -4,6 +4,22 @@
 	padding: 0;
 }
 
+.dialogWide {
+	max-width: 1280px;
+}
+
+/* Preview step wrapper: gives the shared ImportPreview a padded flex column
+   that fills the dialog height (its two-column layout needs a flex parent). */
+.previewWrap {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	min-width: 360px;
+	max-height: 90vh;
+	padding: 28px 32px;
+	overflow: hidden;
+}
+
 .title {
 	font-size: var(--text-xl);
 	font-weight: 600;
@@ -149,4 +165,18 @@ select.input {
 	justify-content: flex-end;
 	gap: 8px;
 	margin-top: 8px;
+}
+
+.loadingScreen {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 80px 24px;
+	gap: 16px;
+}
+
+.loadingLabel {
+	font-size: var(--text-base);
+	color: var(--text-muted);
 }

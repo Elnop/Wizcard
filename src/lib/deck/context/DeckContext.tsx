@@ -43,7 +43,12 @@ type DeckContextValue = {
 	addCollectionCardToDeck: (deckId: string, collectionRowId: string, zone: DeckZone) => void;
 	bulkAddCardsToDeck: (
 		deckId: string,
-		cards: Array<{ card: ScryfallCard; zone: DeckZone; quantity: number }>
+		cards: Array<{
+			card: ScryfallCard;
+			zone: DeckZone;
+			quantity: number;
+			entry?: Partial<CardEntry>;
+		}>
 	) => void;
 	removeCardFromDeck: (rowId: string, mode?: 'delete' | 'detach') => void;
 	changeZone: (rowId: string, zone: DeckZone) => void;

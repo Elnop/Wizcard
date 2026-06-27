@@ -59,7 +59,7 @@ function buildEditableCards(init: PreviewInit): EditableCard[] {
 }
 
 /**
- * Editable preview state for the import-into-deck modal.
+ * Editable preview state for the import preview.
  *
  * The four global toggles (zone, zoneMode, ignoreExisting, ignoreBasicLands)
  * build the *initial* list; whenever they change the list is regenerated, which
