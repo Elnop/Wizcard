@@ -4,7 +4,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DeckZone } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
-import { collectDeckTokenIds } from '@/lib/deck/utils/collectDeckTokens';
+import {
+	collectDeckTokenIds,
+	collectDeckTokensWithSourceLang,
+} from '@/lib/deck/utils/collectDeckTokens';
+import { localizeTokens } from '@/lib/scryfall/localizeTokens';
 import type { ResolvedDeckCard } from './useDeckDetail';
 
 /**
@@ -35,14 +39,18 @@ export function useDeckTokens(
 				const tokenIds = collectDeckTokenIds(sourceCards);
 				if (tokenIds.length === 0) return;
 
+				const langByTokenId = collectDeckTokensWithSourceLang(sourceCards);
 				const existingKeys = new Set(existingTokens.map((t) => t.oracle_id ?? t.id));
 
 				const resolvedMap = await resolveCardsByScryfallIds(tokenIds);
 				if (cancelledRef.current) return;
 
+				const localizedTokens = await localizeTokens([...resolvedMap.values()], langByTokenId);
+				if (cancelledRef.current) return;
+
 				const seen = new Set(existingKeys);
 				const survivors = [];
-				for (const card of resolvedMap.values()) {
+				for (const card of localizedTokens) {
 					const key = card.oracle_id ?? card.id;
 					if (seen.has(key)) continue;
 					seen.add(key);
