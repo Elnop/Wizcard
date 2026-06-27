@@ -48,7 +48,7 @@ import type { DeckPdfExportOptions } from '@/lib/pdf/types';
 import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
 import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
 import { filterCardsForPdf } from '@/lib/pdf/filterCardsForPdf';
-import { resolveLocalizedImageUri } from '@/lib/scryfall/utils/resolveLocalizedImageUri';
+import { resolveLocalizedImageUris } from '@/lib/scryfall/utils/resolveLocalizedImageUri';
 import { useDeckSort } from './useDeckSort';
 import { useDeckTokens } from './useDeckTokens';
 import { cardProducesToken } from '@/lib/deck/utils/collectDeckTokens';
@@ -763,9 +763,9 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 								// Resolve localized images (cache hit → instant; miss → fetched
 								// via the shared Scryfall throttle, serialized and 429-safe).
 								const resolved = await Promise.all(
-									pdfFilteredCards.map((c) => resolveLocalizedImageUri(c, 'normal'))
+									pdfFilteredCards.map((c) => resolveLocalizedImageUris(c, 'normal'))
 								);
-								const imageUrls = resolved.filter((url): url is string => !!url);
+								const imageUrls = resolved.flat().filter((url): url is string => !!url);
 								await generateCardsPdf(imageUrls, settings, `${deck.name}.pdf`);
 								setPdfSettingsModalOpen(false);
 							} finally {

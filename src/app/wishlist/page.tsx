@@ -15,7 +15,7 @@ import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
 import { Button } from '@/components/Button/Button';
 import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
 import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
-import { resolveLocalizedImageUri } from '@/lib/scryfall/utils/resolveLocalizedImageUri';
+import { resolveLocalizedImageUris } from '@/lib/scryfall/utils/resolveLocalizedImageUri';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
 import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
@@ -210,9 +210,9 @@ function WishlistPageInner() {
 								// Resolve localized images (cache hit → instant; miss → fetched
 								// via the shared Scryfall throttle, serialized and 429-safe).
 								const resolved = await Promise.all(
-									pdfCards.map((c) => resolveLocalizedImageUri(c, 'normal'))
+									pdfCards.map((c) => resolveLocalizedImageUris(c, 'normal'))
 								);
-								const imageUrls = resolved.filter((url): url is string => !!url);
+								const imageUrls = resolved.flat().filter((url): url is string => !!url);
 								await generateCardsPdf(imageUrls, settings, 'wishlist.pdf');
 								setPdfSettingsModalOpen(false);
 							} finally {
