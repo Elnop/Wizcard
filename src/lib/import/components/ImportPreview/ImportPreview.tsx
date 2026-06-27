@@ -152,9 +152,47 @@ export function ImportPreview({
 
 	const filterLower = nameFilter.trim().toLowerCase();
 
+	// Toggle a batch of selection keys at once: deselect them all if every key is
+	// already selected, otherwise select them all. Used by the per-section "select
+	// all" action in the zone headers.
+	const toggleSelectKeys = useCallback((keys: string[]) => {
+		setSelected((prev) => {
+			if (keys.length === 0) return prev;
+			const next = new Set(prev);
+			const allSelected = keys.every((k) => next.has(k));
+			for (const k of keys) {
+				if (allSelected) next.delete(k);
+				else next.add(k);
+			}
+			return next;
+		});
+	}, []);
+
+	// A "select all" header action toggling the given (oracle|zone) keys. Shared by
+	// the zone headers and their card-type subsections.
+	const selectAllAction = useCallback(
+		(keys: string[]): ReactNode => {
+			if (!selectionMode || keys.length === 0) return undefined;
+			const allSelected = keys.every((k) => selected.has(k));
+			return (
+				<button
+					type="button"
+					className={styles.sectionSelectAll}
+					onClick={() => toggleSelectKeys(keys)}
+				>
+					{allSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
+				</button>
+			);
+		},
+		[selectionMode, selected, toggleSelectKeys]
+	);
+
 	// Build CardList sections (one per zone), filtered by name. Each zone (except
 	// commander) is sub-divided by card type, matching the deck page layout.
 	const sections: CardListSection[] = useMemo(() => {
+		const keysForCards = (z: DeckZone, list: AnyCard[]): string[] =>
+			list.map((c) => `${oracleKey(c as ScryfallCard)}|${z}`);
+
 		return ZONE_ORDER.filter((z) => cardsByZone.has(z)).flatMap((z) => {
 			const zoneCards = [...cardsByZone.get(z)!.values()].filter(
 				(zc) => !filterLower || zc.card.name.toLowerCase().includes(filterLower)
@@ -166,7 +204,13 @@ export function ImportPreview({
 			for (const zc of zoneCards) countById.set(zc.card.id, zc.quantity);
 			const count = zoneCards.reduce((s, zc) => s + zc.quantity, 0);
 
-			const children = z !== 'commander' ? groupByCardType(cards, countById) : undefined;
+			const children =
+				z !== 'commander'
+					? groupByCardType(cards, countById).map((child) => ({
+							...child,
+							headerActions: selectAllAction(keysForCards(z, child.cards)),
+						}))
+					: undefined;
 
 			return [
 				{
@@ -176,10 +220,11 @@ export function ImportPreview({
 					children,
 					background: true,
 					defaultCollapsed: z === 'sideboard' || z === 'maybeboard',
+					headerActions: selectAllAction(keysForCards(z, cards)),
 				},
 			];
 		});
-	}, [cardsByZone, filterLower]);
+	}, [cardsByZone, filterLower, selectAllAction]);
 
 	const totalToImport = editableCards.length;
 	const uniqueToImport = qtyByCardId.size;

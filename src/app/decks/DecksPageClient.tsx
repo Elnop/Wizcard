@@ -194,6 +194,12 @@ export default function DecksPageClient() {
 					onClick={() => router.push(`/decks/${deck.id}`)}
 					onDelete={() => setDeckToDelete(deck.id)}
 					onMove={(folderId) => moveDeckToFolder(deck.id, folderId)}
+					onCreateFolderAndMove={(name) => {
+						const parentId =
+							activeFolderId !== null && activeFolderId !== 'none' ? activeFolderId : null;
+						const id = createFolder(name, parentId);
+						moveDeckToFolder(deck.id, id);
+					}}
 				/>
 			))}
 		</div>

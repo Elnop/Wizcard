@@ -6,6 +6,8 @@ import type { ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
 import type { DeckMeta, FolderMeta } from '@/types/decks';
 import type { DeckSummary } from '../../useDeckSummaries';
 import { ManaSymbol } from '@/lib/scryfall/components/ManaSymbol/ManaSymbol';
+import { Modal } from '@/components/Modal/Modal';
+import { Button } from '@/components/Button/Button';
 import { MiniManaCurve } from './MiniManaCurve';
 import styles from './DeckCard.module.css';
 
@@ -17,6 +19,8 @@ type Props = {
 	onClick: () => void;
 	onDelete?: () => void;
 	onMove?: (folderId: string | null) => void;
+	/** Create a new folder (in the active view) and move this deck into it. */
+	onCreateFolderAndMove?: (name: string) => void;
 	/** Read-only (public) view: hides delete, disables drag and the move menu. */
 	readOnly?: boolean;
 };
@@ -48,16 +52,64 @@ function formatRelativeDate(iso: string): string {
 
 type ContextMenuState = { x: number; y: number } | null;
 
+function NewFolderModal({
+	onSubmit,
+	onClose,
+}: {
+	onSubmit: (name: string) => void;
+	onClose: () => void;
+}) {
+	const [name, setName] = useState('');
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		inputRef.current?.focus();
+	}, []);
+
+	const handleSubmit = () => {
+		const trimmed = name.trim();
+		if (trimmed) onSubmit(trimmed);
+		onClose();
+	};
+
+	return (
+		<Modal onClose={onClose} className={styles.newFolderDialog} zIndex={1100}>
+			<p className={styles.newFolderTitle}>Nouveau dossier</p>
+			<input
+				ref={inputRef}
+				className={styles.newFolderInput}
+				placeholder="Nom du dossier"
+				value={name}
+				onChange={(e) => setName(e.target.value)}
+				onKeyDown={(e) => {
+					if (e.key === 'Enter') handleSubmit();
+					if (e.key === 'Escape') onClose();
+				}}
+			/>
+			<div className={styles.newFolderActions}>
+				<Button variant="secondary" size="sm" onClick={onClose}>
+					Annuler
+				</Button>
+				<Button size="sm" onClick={handleSubmit}>
+					Créer
+				</Button>
+			</div>
+		</Modal>
+	);
+}
+
 function MoveMenu({
 	folders,
 	currentFolderId,
 	onMove,
+	onNewFolder,
 	onClose,
 	position,
 }: {
 	folders: FolderMeta[];
 	currentFolderId: string | null;
 	onMove: (folderId: string | null) => void;
+	onNewFolder?: () => void;
 	onClose: () => void;
 	position: { x: number; y: number };
 }) {
@@ -85,6 +137,20 @@ function MoveMenu({
 			style={{ top: position.y, left: position.x }}
 			onClick={(e) => e.stopPropagation()}
 		>
+			{onNewFolder && (
+				<>
+					<button
+						className={styles.contextItem}
+						onClick={() => {
+							onNewFolder();
+							onClose();
+						}}
+					>
+						+ Nouveau dossier
+					</button>
+					<div className={styles.contextDivider} />
+				</>
+			)}
 			{currentFolderId !== null && (
 				<button
 					className={styles.contextItem}
@@ -125,11 +191,13 @@ export function DeckCard({
 	onClick,
 	onDelete,
 	onMove,
+	onCreateFolderAndMove,
 	readOnly = false,
 }: Props) {
 	const colors = summary?.colors;
 	const hasManaCurve = summary?.manaCurve && Object.keys(summary.manaCurve).length > 0;
 	const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
+	const [showNewFolder, setShowNewFolder] = useState(false);
 
 	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
 		id: deck.id,
@@ -252,9 +320,14 @@ export function DeckCard({
 					folders={folders}
 					currentFolderId={deck.folderId}
 					onMove={onMove}
+					onNewFolder={onCreateFolderAndMove ? () => setShowNewFolder(true) : undefined}
 					onClose={() => setContextMenu(null)}
 					position={contextMenu}
 				/>
+			)}
+
+			{showNewFolder && onCreateFolderAndMove && (
+				<NewFolderModal onSubmit={onCreateFolderAndMove} onClose={() => setShowNewFolder(false)} />
 			)}
 		</>
 	);

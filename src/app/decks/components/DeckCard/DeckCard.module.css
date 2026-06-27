@@ -310,6 +310,45 @@
 	color: var(--text-muted);
 }
 
+/* ── New folder modal ── */
+
+.newFolderDialog {
+	max-width: 340px;
+	padding: 24px 28px;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.newFolderTitle {
+	font-size: var(--text-lg);
+	font-weight: 600;
+	color: var(--foreground);
+	margin: 0;
+}
+
+.newFolderInput {
+	width: 100%;
+	padding: 0.5rem 0.75rem;
+	font-size: var(--text-base);
+	color: var(--foreground);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	outline: none;
+	transition: border-color 0.15s;
+}
+
+.newFolderInput:focus {
+	border-color: var(--gold);
+}
+
+.newFolderActions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+}
+
 @media (max-width: 480px) {
 	.card {
 		min-height: 200px;

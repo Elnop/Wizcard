@@ -209,22 +209,28 @@ export function CardListGrid({
 		headingClass: string,
 		depth: number,
 		collapsed: boolean,
-		labelText: React.ReactNode
+		labelText: React.ReactNode,
+		headerActions?: React.ReactNode
 	) {
 		const Heading = `h${Math.min(depth + 2, 6)}` as 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 		const chevronClass = [styles.chevron, collapsed ? styles.chevronCollapsed : '']
 			.filter(Boolean)
 			.join(' ');
+		const heading = isCollapsible ? (
+			<button type="button" className={headerClass} onClick={() => onSectionToggle(sectionKey)}>
+				<span className={chevronClass}>▾</span>
+				{labelText}
+			</button>
+		) : (
+			<span className={headerClass}>{labelText}</span>
+		);
+		if (!headerActions) {
+			return <Heading className={headingClass}>{heading}</Heading>;
+		}
 		return (
-			<Heading className={headingClass}>
-				{isCollapsible ? (
-					<button type="button" className={headerClass} onClick={() => onSectionToggle(sectionKey)}>
-						<span className={chevronClass}>▾</span>
-						{labelText}
-					</button>
-				) : (
-					<span className={headerClass}>{labelText}</span>
-				)}
+			<Heading className={`${headingClass} ${styles.sectionHeadingWithActions}`}>
+				{heading}
+				<span className={styles.sectionHeaderActions}>{headerActions}</span>
 			</Heading>
 		);
 	}
@@ -309,7 +315,8 @@ export function CardListGrid({
 					headingClass,
 					depth,
 					collapsed,
-					labelText
+					labelText,
+					section.headerActions
 				)}
 				{!collapsed && (
 					<div className={sectionBodyClass}>

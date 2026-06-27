@@ -140,6 +140,35 @@
 	font-weight: inherit;
 }
 
+/* Header with actions placed right after the section name (not pushed to the far
+   end). The toggle sizes to its content; the actions follow it; a trailing
+   flex spacer carries the shared bottom border across the rest of the row. */
+.sectionHeadingWithActions {
+	display: flex;
+	align-items: stretch;
+}
+
+.sectionHeadingWithActions > .sectionHeader,
+.sectionHeadingWithActions > .sectionHeaderCollapsible {
+	width: auto;
+	flex: 0 0 auto;
+}
+
+.sectionHeaderActions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0 0 6px 8px;
+	border-bottom: 1px solid var(--glass-border);
+}
+
+/* Spacer extending the header underline to the full width after the actions. */
+.sectionHeadingWithActions::after {
+	content: '';
+	flex: 1;
+	border-bottom: 1px solid var(--glass-border);
+}
+
 .sectionHeader {
 	display: flex;
 	align-items: center;

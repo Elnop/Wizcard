@@ -23,6 +23,10 @@ function normalizeCollectorNumber(cn: string): string {
  * Priority: set+collector_number > name+set > name-only.
  */
 export function buildIdentifierKey(id: ScryfallCardIdentifier): string {
+	// Exact-id identifiers (e.g. a Moxfield import) are unique per print on their
+	// own — keying them by name would collapse the whole deck into one card.
+	if (id.id) return `id:${id.id.toLowerCase()}`;
+	if (id.oracle_id) return `oracle:${id.oracle_id.toLowerCase()}`;
 	if ('set' in id && 'collector_number' in id && id.set && id.collector_number) {
 		const base = `${id.set.toLowerCase()}/${normalizeCollectorNumber(id.collector_number)}`;
 		return id.lang && id.lang !== 'en' ? `${base}/${id.lang}` : base;

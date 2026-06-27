@@ -82,3 +82,29 @@ export async function resolveDeckList(
 
 	return { cardsToAdd, notFound };
 }
+
+/**
+ * Resolve cards that already carry an exact Scryfall id (e.g. a Moxfield import)
+ * into concrete ScryfallCard objects, so they can flow through the same preview
+ * (bulk edit) path as a pasted list. Cards whose id can't be fetched are reported
+ * in `notFound` keyed by their id.
+ */
+export async function resolveCardsByScryfallId(
+	cards: Array<{ scryfallId: string; zone: DeckZone; quantity: number }>
+): Promise<ResolveDeckListResult> {
+	const uniqueIds = [...new Set(cards.map((c) => c.scryfallId))];
+	const resolved = await fetchResolvedCards(uniqueIds.map((id) => ({ id })));
+
+	const byId = new Map<string, ScryfallCard>();
+	for (const card of resolved) byId.set(card.id, card);
+
+	const cardsToAdd: ResolvedDeckRow[] = [];
+	const notFound: string[] = [];
+	for (const { scryfallId, zone, quantity } of cards) {
+		const card = byId.get(scryfallId);
+		if (card) cardsToAdd.push({ card, zone, quantity });
+		else notFound.push(scryfallId);
+	}
+
+	return { cardsToAdd, notFound };
+}

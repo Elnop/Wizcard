@@ -184,6 +184,32 @@ select.input {
 	border-color: var(--primary);
 }
 
+/* Compact "select all" button rendered inside a CardList section header. */
+.sectionSelectAll {
+	flex-shrink: 0;
+	padding: 3px 10px;
+	font-size: var(--text-xs);
+	font-weight: 600;
+	color: var(--text-muted);
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	cursor: pointer;
+	white-space: nowrap;
+	text-transform: none;
+	letter-spacing: normal;
+	font-family: var(--font-sans, inherit);
+	transition:
+		color 0.15s,
+		background 0.15s,
+		border-color 0.15s;
+}
+
+.sectionSelectAll:hover {
+	color: var(--foreground);
+	border-color: var(--primary);
+}
+
 /* Selection overlay on a grid card */
 
 .selectOverlay {

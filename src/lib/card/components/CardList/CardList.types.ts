@@ -23,6 +23,12 @@ export interface CardListSection {
 	defaultCollapsed?: boolean;
 	/** When true, the section body shows a loading spinner instead of its cards. */
 	loading?: boolean;
+	/**
+	 * Optional actions rendered on the right side of the section header, beside the
+	 * label (e.g. a "select all" button). Rendered outside the collapse toggle, so
+	 * interacting with them does not expand/collapse the section.
+	 */
+	headerActions?: ReactNode;
 }
 
 export type CardListCards = AnyCard[] | CardListSection[];

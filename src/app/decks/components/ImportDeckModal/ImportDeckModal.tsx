@@ -10,14 +10,17 @@ import type { DeckZone } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { parseMTGADeck, type DeckImportResult } from '@/lib/import/formats/mtga-deck';
 import { useSetCodeNormalizer } from '@/lib/import/hooks/useSetCodeNormalizer';
-import { resolveDeckList, type ResolvedDeckRow } from '@/lib/import/hooks/useResolveDeckList';
+import {
+	resolveDeckList,
+	resolveCardsByScryfallId,
+	type ResolvedDeckRow,
+} from '@/lib/import/hooks/useResolveDeckList';
 import {
 	ImportPreview,
 	type ImportPreviewCopy,
 } from '@/lib/import/components/ImportPreview/ImportPreview';
 import { extractMoxfieldId, fetchMoxfieldDeck } from '@/lib/moxfield/fetch-deck';
 import { convertMoxfieldDeck, type MoxfieldImportData } from '@/lib/moxfield/convert-deck';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import styles from './ImportDeckModal.module.css';
 
 // New decks have no existing cards. A stable module-level reference avoids
@@ -152,10 +155,12 @@ export function ImportDeckModal({ onClose }: Props) {
 	const parsed = useMemo(() => (text.trim() ? parseMTGADeck(text) : null), [text]);
 	const detectionHint = useMemo(() => (parsed ? buildDetectionHint(parsed) : null), [parsed]);
 
-	// A list has explicit zone sections if any parsed row lands outside mainboard.
+	// The resolved rows already carry per-card zones (pasted sections or Moxfield
+	// boards). Treat the list as sectioned when any row lands outside mainboard, so
+	// those zones are honored in the preview instead of being flattened.
 	const hasSections = useMemo(
-		() => (parsed ? parsed.rows.some((r) => r.zone !== 'mainboard') : false),
-		[parsed]
+		() => resolvedRows.some((r) => r.zone !== 'mainboard'),
+		[resolvedRows]
 	);
 
 	const handleTextChange = useCallback(
@@ -250,7 +255,8 @@ export function ImportDeckModal({ onClose }: Props) {
 		(copies: ImportPreviewCopy[]) => {
 			setIsImporting(true);
 			try {
-				const deckId = createDeck(name.trim() || 'Imported Deck', format || null, null);
+				const description = mode === 'url' ? (moxfieldData?.description ?? null) : null;
+				const deckId = createDeck(name.trim() || 'Imported Deck', format || null, description);
 				bulkAddCardsToDeck(deckId, copies);
 				router.push(`/decks/${deckId}`);
 			} catch (err) {
@@ -258,40 +264,34 @@ export function ImportDeckModal({ onClose }: Props) {
 				setIsImporting(false);
 			}
 		},
-		[name, format, createDeck, bulkAddCardsToDeck, router]
+		[mode, moxfieldData, name, format, createDeck, bulkAddCardsToDeck, router]
 	);
 
-	const handleImportMoxfield = useCallback(() => {
+	// URL mode resolves the Moxfield scryfall ids into concrete cards, then steps
+	// through the same preview (bulk edit) as paste mode.
+	const handleResolveMoxfield = useCallback(async () => {
 		if (!moxfieldData || moxfieldData.cards.length === 0) return;
-
-		setIsImporting(true);
-
+		setErrors([]);
+		setStep('resolving');
 		try {
-			const deckId = createDeck(
-				name.trim() || moxfieldData.name,
-				format || null,
-				moxfieldData.description
-			);
-
-			// bulkAddCardsToDeck expects ScryfallCard objects but only uses card.id
-			const cardsToAdd = moxfieldData.cards.map((c) => ({
-				card: { id: c.scryfallId } as ScryfallCard,
-				zone: c.zone,
-				quantity: c.quantity,
-			}));
-
-			bulkAddCardsToDeck(deckId, cardsToAdd);
-
-			router.push(`/decks/${deckId}`);
+			const { cardsToAdd, notFound } = await resolveCardsByScryfallId(moxfieldData.cards);
+			if (cardsToAdd.length === 0) {
+				setErrors(['No cards could be resolved from this Moxfield deck.']);
+				setStep('input');
+				return;
+			}
+			setResolvedRows(cardsToAdd);
+			setNotFound(notFound);
+			setStep('preview');
 		} catch (err) {
 			setErrors([importFailedMessage(err)]);
-			setIsImporting(false);
+			setStep('input');
 		}
-	}, [moxfieldData, name, format, createDeck, bulkAddCardsToDeck, router]);
+	}, [moxfieldData]);
 
-	// Paste mode steps through a preview ("Aperçu"); URL mode imports directly.
-	const handlePrimary = mode === 'paste' ? handleResolvePaste : handleImportMoxfield;
-	const primaryLabel = mode === 'paste' ? 'Aperçu' : 'Import';
+	// Both paste and URL modes now step through a preview ("Aperçu").
+	const handlePrimary = mode === 'paste' ? handleResolvePaste : handleResolveMoxfield;
+	const primaryLabel = 'Aperçu';
 
 	const canImport =
 		mode === 'paste'
