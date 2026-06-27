@@ -1,5 +1,6 @@
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { BATCH_SIZE } from '@/lib/scryfall/constants';
+import { putCardsInCache } from '@/lib/scryfall/utils/card-cache';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
 /**
@@ -43,6 +44,42 @@ export async function hydrateAllParts(
 		const parts = partsByOracle.get(c.oracle_id);
 		return parts ? { ...c, all_parts: parts } : c;
 	});
+}
+
+/**
+ * On-demand wrapper around {@link hydrateAllParts}: hydrates the given cards and
+ * writes the newly enriched ones back to the IndexedDB cache (so the next read
+ * already has `all_parts`). Returns the hydrated array. Call this from the token
+ * paths only — NOT from the shared resolver — so the oracle fetch fires solely
+ * when token detection actually needs `all_parts`.
+ *
+ * Pure w.r.t. its injected deps for testing without IndexedDB; the cache write is
+ * fire-and-forget (`putCardsInCache` swallows its own errors).
+ */
+export async function hydrateCardsAllParts<
+	T extends {
+		id: string;
+		lang?: string;
+		oracle_id?: string;
+		all_parts?: ScryfallCard['all_parts'];
+	},
+>(
+	cards: T[],
+	deps: {
+		fetchByOracleIds?: (oracleIds: string[]) => Promise<ScryfallCard[]>;
+		writeCache?: (cards: ScryfallCard[]) => Promise<void>;
+	} = {}
+): Promise<T[]> {
+	const writeCache = deps.writeCache ?? putCardsInCache;
+	// hydrateAllParts reads only id/lang/oracle_id/all_parts and skips cards missing
+	// oracle_id, so the wider deck-card union (custom cards included) is safe here.
+	const hydrated = (await hydrateAllParts(cards as unknown as ScryfallCard[], {
+		fetchByOracleIds: deps.fetchByOracleIds,
+	})) as unknown as T[];
+
+	const changed = hydrated.filter((card, i) => card !== cards[i]);
+	if (changed.length > 0) void writeCache(changed as unknown as ScryfallCard[]);
+	return hydrated;
 }
 
 async function defaultFetchByOracleIds(oracleIds: string[]): Promise<ScryfallCard[]> {

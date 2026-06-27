@@ -1,7 +1,6 @@
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { BATCH_SIZE } from '@/lib/scryfall/constants';
 import { getCardsFromCache, putCardsInCache } from '@/lib/scryfall/utils/card-cache';
-import { hydrateAllParts } from '@/lib/scryfall/hydrateAllParts';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
 export interface ResolveProgress {
@@ -79,34 +78,5 @@ export async function resolveCardsByScryfallIds(
 		void putCardsInCache(fetched);
 	}
 
-	if (isCancelled?.()) return resolved;
-	return hydrateResolvedMap(resolved);
-}
-
-/**
- * Hydrate `all_parts` on the localized cards of a resolved map and write the
- * enriched versions back to cache. Pure w.r.t. its injected deps so it can be
- * tested without IndexedDB. Failures inside `hydrateAllParts` are already
- * swallowed there; a cache-write failure is non-critical and ignored.
- */
-export async function hydrateResolvedMap(
-	resolved: Map<string, ScryfallCard>,
-	deps: {
-		fetchByOracleIds?: (oracleIds: string[]) => Promise<ScryfallCard[]>;
-		writeCache?: (cards: ScryfallCard[]) => Promise<void>;
-	} = {}
-): Promise<Map<string, ScryfallCard>> {
-	const writeCache = deps.writeCache ?? putCardsInCache;
-	const cards = [...resolved.values()];
-	const hydrated = await hydrateAllParts(cards, { fetchByOracleIds: deps.fetchByOracleIds });
-
-	const changed: ScryfallCard[] = [];
-	for (let i = 0; i < cards.length; i++) {
-		if (hydrated[i] !== cards[i]) {
-			resolved.set(hydrated[i].id, hydrated[i]);
-			changed.push(hydrated[i]);
-		}
-	}
-	if (changed.length > 0) void writeCache(changed);
 	return resolved;
 }

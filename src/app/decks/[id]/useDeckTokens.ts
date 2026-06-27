@@ -9,6 +9,7 @@ import {
 	collectDeckTokensWithSourceLang,
 } from '@/lib/deck/utils/collectDeckTokens';
 import { localizeTokens } from '@/lib/scryfall/localizeTokens';
+import { hydrateCardsAllParts } from '@/lib/scryfall/hydrateAllParts';
 import type { ResolvedDeckCard } from './useDeckDetail';
 
 /**
@@ -35,7 +36,13 @@ export function useDeckTokens(
 		async (scanZones: DeckZone[]) => {
 			setIsAdding(true);
 			try {
-				const sourceCards = scanZones.flatMap((zone) => cardsByZone[zone] ?? []);
+				const rawSourceCards = scanZones.flatMap((zone) => cardsByZone[zone] ?? []);
+				// Hydrate `all_parts` on demand: localized source cards lack it, so token
+				// detection would otherwise miss their tokens/emblems. Only fires here,
+				// not in the shared resolver.
+				const sourceCards = await hydrateCardsAllParts(rawSourceCards);
+				if (cancelledRef.current) return;
+
 				const tokenIds = collectDeckTokenIds(sourceCards);
 				if (tokenIds.length === 0) return;
 
