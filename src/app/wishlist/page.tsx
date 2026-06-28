@@ -24,6 +24,10 @@ import { buildWishlistMenuItems } from './wishlistCardMenu';
 import styles from './page.module.css';
 
 function buildInitialEntry(entry: CardEntry): Partial<CardEntry> {
+	// Strip identity/ownership fields so the new collection copy is minted fresh.
+	// Other metadata (forTrade, purchasePrice, alter, …) intentionally carries
+	// over from the wishlist copy even though the modal does not expose it for
+	// editing — a "for trade" wishlist card stays "for trade" once collected.
 	const patch: Partial<CardEntry> = { ...entry };
 	delete patch.rowId;
 	delete patch.dateAdded;
