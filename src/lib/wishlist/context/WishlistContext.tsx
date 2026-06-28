@@ -19,12 +19,7 @@ type WishlistContextValue = {
 	duplicateEntry: (scryfallId: string, sourceEntry: CardEntry) => void;
 	removeFromWishlist: (rowId: string) => void;
 	clearWishlist: () => void;
-	moveToCollection: (
-		rowId: string,
-		scryfallId: string,
-		entryPatch: Partial<CardEntry>,
-		count: number
-	) => void;
+	moveToCollection: (rowIds: string[], scryfallId: string, entryPatch: Partial<CardEntry>) => void;
 	changePrint: (rowId: string, newScryfallId: string) => void;
 };
 
@@ -36,7 +31,6 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 	const userId = user?.id ?? null;
 
 	const store = useWishlistStore();
-	const collectionStore = useCollectionStore();
 	const prevUserIdRef = useRef<string | null | undefined>(undefined);
 
 	useEffect(() => {
@@ -122,15 +116,38 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const moveToCollection = useCallback(
-		(rowId: string, scryfallId: string, entryPatch: Partial<CardEntry>, count: number) => {
-			const copy = store.entries[rowId];
-			if (!copy) return;
-			const stubCard = { id: scryfallId } as Parameters<typeof collectionStore.addCards>[0];
-			collectionStore.addCards(stubCard, count, userId, triggerSync, entryPatch);
-			// removeFromWishlist (du contexte) gère déjà le cas deck-card vs wishlist pure.
-			removeFromWishlist(rowId);
+		(rowIds: string[], scryfallId: string, entryPatch: Partial<CardEntry>) => {
+			const wishlistEntries = useWishlistStore.getState().entries;
+			const colEntries = useCollectionStore.getState().entries;
+			const nextWishlist = { ...wishlistEntries };
+			const nextCollection = { ...colEntries };
+
+			for (const rowId of rowIds) {
+				const copy = wishlistEntries[rowId];
+				if (!copy) continue;
+				// Flip in place: same rowId, wishlist=false, edition + metadata patched.
+				const movedEntry: CardEntry = {
+					...copy.entry,
+					...entryPatch,
+					rowId,
+					wishlist: false,
+				};
+				delete nextWishlist[rowId];
+				nextCollection[rowId] = { scryfallId, entry: movedEntry };
+
+				if (userId) {
+					enqueue({
+						type: 'update',
+						payload: { userId, rowId, entry: movedEntry, scryfallId },
+					});
+				}
+			}
+
+			useWishlistStore.setState({ entries: nextWishlist });
+			useCollectionStore.setState({ entries: nextCollection });
+			if (userId) triggerSync();
 		},
-		[store, collectionStore, userId, triggerSync, removeFromWishlist]
+		[userId, triggerSync]
 	);
 
 	const changePrint = useCallback(
