@@ -119,8 +119,10 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		(rowIds: string[], scryfallId: string, entryPatch: Partial<CardEntry>) => {
 			const wishlistEntries = useWishlistStore.getState().entries;
 			const colEntries = useCollectionStore.getState().entries;
+			const deckCards = useDeckStore.getState().activeDeckCards;
 			const nextWishlist = { ...wishlistEntries };
 			const nextCollection = { ...colEntries };
+			let nextDeckCards = { ...deckCards };
 
 			for (const rowId of rowIds) {
 				const copy = wishlistEntries[rowId];
@@ -135,16 +137,47 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 				delete nextWishlist[rowId];
 				nextCollection[rowId] = { scryfallId, entry: movedEntry };
 
-				if (userId) {
-					enqueue({
-						type: 'update',
-						payload: { userId, rowId, entry: movedEntry, scryfallId },
-					});
+				const isDeckCard = copy.entry.deckId != null || deckCards[rowId] != null;
+
+				if (isDeckCard) {
+					// Deck cards have owner_id=NULL in the DB, so plain `update` would
+					// match 0 rows. Use deck-card-update (matches on id only) and also
+					// set owner_id so the row appears on the collection page.
+					if (userId) {
+						enqueue({
+							type: 'deck-card-update',
+							payload: {
+								rowId,
+								updates: { wishlist: false, owner_id: userId, scryfall_id: scryfallId },
+							},
+						});
+					}
+					// Mirror the move in the deck store so its in-memory copy is consistent.
+					const deckCopy = deckCards[rowId];
+					if (deckCopy) {
+						nextDeckCards = {
+							...nextDeckCards,
+							[rowId]: {
+								...deckCopy,
+								scryfallId,
+								entry: { ...deckCopy.entry, wishlist: undefined },
+							},
+						};
+					}
+				} else {
+					// Pure wishlist card: owner_id is already set, plain update works.
+					if (userId) {
+						enqueue({
+							type: 'update',
+							payload: { userId, rowId, entry: movedEntry, scryfallId },
+						});
+					}
 				}
 			}
 
 			useWishlistStore.setState({ entries: nextWishlist });
 			useCollectionStore.setState({ entries: nextCollection });
+			useDeckStore.setState({ activeDeckCards: nextDeckCards });
 			if (userId) triggerSync();
 		},
 		[userId, triggerSync]
