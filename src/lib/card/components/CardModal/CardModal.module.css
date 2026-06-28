@@ -425,13 +425,6 @@
 	text-decoration: underline;
 }
 
-.addSection {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	margin-top: 8px;
-}
-
 .tokensSection {
 	display: flex;
 	flex-direction: column;

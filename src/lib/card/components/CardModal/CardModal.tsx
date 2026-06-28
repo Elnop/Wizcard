@@ -18,7 +18,6 @@ import { UseCollectionCopyModal } from '@/lib/card/components/UseCollectionCopyM
 import type { CollectionCopyEntry } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
 import { Modal } from '@/components/Modal/Modal';
-import { Button } from '@/components/Button/Button';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
@@ -583,6 +582,33 @@ function CardModalInner({
 									: 'Ajouter à la collection'}
 							</button>
 						)}
+						{onAddToCollectionFromEntry && unownedRowIds.length > 0 && (
+							<button
+								type="button"
+								className={styles.changePrintBtn}
+								onClick={() => onAddToCollectionFromEntry(unownedRowIds)}
+							>
+								Ajouter à la collection
+							</button>
+						)}
+						{onMoveToCollection && (
+							<button
+								type="button"
+								className={styles.changePrintBtn}
+								onClick={() => onMoveToCollection(selectedCard.entry.rowId)}
+							>
+								Move to Collection
+							</button>
+						)}
+						{onAddToWishlistFromEntry && (
+							<button
+								type="button"
+								className={styles.changePrintBtn}
+								onClick={() => onAddToWishlistFromEntry(selectedCard.entry.rowId)}
+							>
+								<WishlistIcon size={13} /> Add to Wishlist
+							</button>
+						)}
 					</div>
 
 					<div className={styles.infoCol}>
@@ -651,37 +677,6 @@ function CardModalInner({
 									cardGap="compact"
 									showCardNames={false}
 								/>
-							</div>
-						)}
-
-						{(onMoveToCollection ||
-							onAddToWishlistFromEntry ||
-							(onAddToCollectionFromEntry && unownedRowIds.length > 0)) && (
-							<div className={styles.addSection}>
-								{onAddToCollectionFromEntry && unownedRowIds.length > 0 && (
-									<Button
-										variant="primary"
-										onClick={() => onAddToCollectionFromEntry(unownedRowIds)}
-									>
-										Ajouter à la collection
-									</Button>
-								)}
-								{onMoveToCollection && (
-									<Button
-										variant="primary"
-										onClick={() => onMoveToCollection(selectedCard.entry.rowId)}
-									>
-										Move to Collection
-									</Button>
-								)}
-								{onAddToWishlistFromEntry && (
-									<Button
-										variant="secondary"
-										onClick={() => onAddToWishlistFromEntry(selectedCard.entry.rowId)}
-									>
-										<WishlistIcon size={13} /> Add to Wishlist
-									</Button>
-								)}
 							</div>
 						)}
 					</div>
@@ -800,25 +795,28 @@ function ScryfallCardModalInner({
 				<div className={styles.layout}>
 					<div className={styles.imageCol}>
 						<CardImage card={card} size="large" priority onClick={() => setLightbox(true)} />
+						{onAddToCollection && (
+							<button
+								type="button"
+								className={styles.changePrintBtn}
+								onClick={() => setAddingCard(true)}
+							>
+								{addLabel}
+							</button>
+						)}
+						{onAddToWishlist && (
+							<button
+								type="button"
+								className={styles.changePrintBtn}
+								onClick={() => setAddingToWishlist(true)}
+							>
+								<WishlistIcon size={13} /> Add to Wishlist
+							</button>
+						)}
 					</div>
 
 					<div className={styles.infoCol}>
 						<CardDetailSection card={card} symbolMap={symbolMap} />
-
-						{(onAddToCollection || onAddToWishlist) && (
-							<div className={styles.addSection}>
-								{onAddToCollection && (
-									<Button variant="primary" onClick={() => setAddingCard(true)}>
-										{addLabel}
-									</Button>
-								)}
-								{onAddToWishlist && (
-									<Button variant="secondary" onClick={() => setAddingToWishlist(true)}>
-										<WishlistIcon size={13} /> Add to Wishlist
-									</Button>
-								)}
-							</div>
-						)}
 					</div>
 				</div>
 			</Modal>
