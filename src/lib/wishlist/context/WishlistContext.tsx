@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
+import { type DeckZone, setDeckZone } from '@/types/decks';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { useWishlistStore } from '../store/wishlist-store';
@@ -21,6 +22,12 @@ type WishlistContextValue = {
 	clearWishlist: () => void;
 	moveToCollection: (rowIds: string[], scryfallId: string, entryPatch: Partial<CardEntry>) => void;
 	moveToWishlist: (rowIds: string[]) => void;
+	/**
+	 * Assign wishlisted rows to a deck in place (sets deck_id + zone on the same
+	 * rowId). The cards stay wishlisted (owner_id stays NULL) — they become
+	 * "wanted for this deck", not owned copies.
+	 */
+	assignToDeck: (rowIds: string[], deckId: string, zone: DeckZone) => void;
 	changePrint: (rowId: string, newScryfallId: string) => void;
 };
 
@@ -245,6 +252,51 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		[userId, triggerSync]
 	);
 
+	// Assign wishlisted rows to a deck in place. A wishlist row has owner_id=NULL,
+	// so addCollectionCardToDeck (which only looks in the collection store) can't
+	// find it and silently no-ops — we patch the shared `cards` row directly via
+	// deck-card-update instead, keeping wishlist=true.
+	const assignToDeck = useCallback(
+		(rowIds: string[], deckId: string, zone: DeckZone) => {
+			const wishlistEntries = useWishlistStore.getState().entries;
+			const deckCards = useDeckStore.getState().activeDeckCards;
+			const nextWishlist = { ...wishlistEntries };
+			let nextDeckCards = { ...deckCards };
+			const deckIsActive = useDeckStore.getState().activeDeckId === deckId;
+
+			for (const rowId of rowIds) {
+				const copy = wishlistEntries[rowId];
+				if (!copy) continue;
+				const tags = setDeckZone(copy.entry.tags, zone);
+				const updatedEntry: CardEntry = { ...copy.entry, deckId, tags };
+
+				// Keep the row in the wishlist view (still wanted) but now linked to the
+				// deck so it shows a deck badge.
+				nextWishlist[rowId] = { scryfallId: copy.scryfallId, entry: updatedEntry };
+
+				// Mirror into the deck store only if that deck is the one loaded.
+				if (deckIsActive) {
+					nextDeckCards = {
+						...nextDeckCards,
+						[rowId]: { scryfallId: copy.scryfallId, entry: updatedEntry },
+					};
+				}
+
+				if (userId) {
+					enqueue({
+						type: DECK_CARD_UPDATE,
+						payload: { rowId, updates: { deck_id: deckId, tags } },
+					});
+				}
+			}
+
+			useWishlistStore.setState({ entries: nextWishlist });
+			if (deckIsActive) useDeckStore.setState({ activeDeckCards: nextDeckCards });
+			if (userId) triggerSync();
+		},
+		[userId, triggerSync]
+	);
+
 	const changePrint = useCallback(
 		(rowId: string, newScryfallId: string) => {
 			// A wishlisted deck card has no owner_id, so it must persist via the
@@ -289,6 +341,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		clearWishlist,
 		moveToCollection,
 		moveToWishlist,
+		assignToDeck,
 		changePrint,
 	};
 

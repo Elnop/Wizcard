@@ -46,6 +46,7 @@ function WishlistPageInner() {
 		removeFromWishlist,
 		clearWishlist,
 		moveToCollection,
+		assignToDeck,
 		changePrint,
 	} = useWishlistContext();
 
@@ -255,6 +256,7 @@ function WishlistPageInner() {
 				<AddToDeckModal
 					card={deckModal.card}
 					ownedRowIds={deckModal.ownedRowIds}
+					onAssign={assignToDeck}
 					onClose={() => setDeckModal(null)}
 				/>
 			)}

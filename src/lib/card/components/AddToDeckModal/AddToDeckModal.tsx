@@ -13,16 +13,22 @@ import styles from './AddToDeckModal.module.css';
 interface Props {
 	card: ScryfallCard;
 	/**
-	 * When set, the card is added by ASSIGNING existing owned rows (rowIds of the
-	 * card stack) to the deck — no new copy is created. Quantity is capped to the
+	 * When set, the card is added by ASSIGNING existing rows (rowIds of the card
+	 * stack) to the deck — no new copy is created. Quantity is capped to the
 	 * number of rowIds and the quantity field is hidden when there is only one.
 	 * When omitted (e.g. from search), new deck copies are created instead.
 	 */
 	ownedRowIds?: string[];
+	/**
+	 * Custom assignment for the selected rows. Used by the wishlist, whose rows
+	 * have owner_id=NULL and are invisible to the collection-based assign path.
+	 * When omitted, assignment uses addCollectionCardToDeck (collection rows).
+	 */
+	onAssign?: (rowIds: string[], deckId: string, zone: DeckZone) => void;
 	onClose: () => void;
 }
 
-export function AddToDeckModal({ card, ownedRowIds, onClose }: Props) {
+export function AddToDeckModal({ card, ownedRowIds, onAssign, onClose }: Props) {
 	const { decks, addCardToDeck, addCollectionCardToDeck } = useDeckContext();
 
 	const sortedDecks = useMemo(
@@ -50,8 +56,13 @@ export function AddToDeckModal({ card, ownedRowIds, onClose }: Props) {
 			// Assign existing rows to the deck (sets deck_id on the same rowId — no
 			// new copy). Cap to the available stack size.
 			const count = Math.min(quantity, ownedRowIds.length);
-			for (const rowId of ownedRowIds.slice(0, count)) {
-				addCollectionCardToDeck(deckId, rowId, effectiveZone);
+			const rows = ownedRowIds.slice(0, count);
+			if (onAssign) {
+				onAssign(rows, deckId, effectiveZone);
+			} else {
+				for (const rowId of rows) {
+					addCollectionCardToDeck(deckId, rowId, effectiveZone);
+				}
 			}
 		} else {
 			// addCardToDeck guards on activeDeckId, so it is safe to target a deck
