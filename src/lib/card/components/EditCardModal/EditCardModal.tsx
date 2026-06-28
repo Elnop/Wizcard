@@ -30,6 +30,7 @@ interface AddProps {
 	availableZones?: DeckZone[];
 	defaultZone?: DeckZone;
 	hideQuantity?: boolean;
+	maxQuantity?: number;
 	initialEntry?: Partial<CardEntry>;
 }
 
@@ -199,12 +200,14 @@ export function EditCardModal(props: Props) {
 									id="copy-add-quantity"
 									type="number"
 									min={1}
+									max={props.maxQuantity}
 									step={1}
 									className={styles.select}
 									value={quantity}
 									onChange={(e) => {
 										const n = parseInt(e.target.value, 10);
-										setQuantity(Number.isNaN(n) ? 1 : Math.max(1, n));
+										const clamped = Number.isNaN(n) ? 1 : Math.max(1, n);
+										setQuantity(props.maxQuantity ? Math.min(props.maxQuantity, clamped) : clamped);
 									}}
 								/>
 							</div>
