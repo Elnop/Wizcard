@@ -30,6 +30,7 @@ interface AddProps {
 	availableZones?: DeckZone[];
 	defaultZone?: DeckZone;
 	hideQuantity?: boolean;
+	initialEntry?: Partial<CardEntry>;
 }
 
 type Props = EditProps | AddProps;
@@ -51,7 +52,9 @@ export function EditCardModal(props: Props) {
 	const initialZone: DeckZone = addMode ? (props.defaultZone ?? 'mainboard') : 'mainboard';
 
 	const [draftEntry, setDraftEntry] = useState<Partial<CardEntry>>(
-		addMode ? { tags: setDeckZone(undefined, initialZone) } : { ...props.card.entry }
+		addMode
+			? { tags: setDeckZone(undefined, initialZone), ...props.initialEntry }
+			: { ...props.card.entry }
 	);
 	const [selectedPrint, setSelectedPrint] = useState<ScryfallCard>(
 		addMode ? props.scryfallCard : (props.card as ScryfallCard)
