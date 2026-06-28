@@ -37,16 +37,11 @@ import type { SyncOp } from '@/lib/supabase/sync-queue';
 
 async function executeOp(op: SyncOp): Promise<void> {
 	if (op.type === 'insert') {
-		await insertEntry(
-			op.payload.userId,
-			op.payload.scryfallId,
-			op.payload.entry,
-			op.payload.wishlist ?? false
-		);
+		await insertEntry(op.payload.userId, op.payload.scryfallId, op.payload.entry);
 	} else if (op.type === 'delete') {
 		await deleteEntryById(op.payload.userId, op.payload.rowId);
 	} else if (op.type === 'bulk-insert') {
-		await insertEntries(op.payload.userId, op.payload.rows, op.payload.wishlist ?? false);
+		await insertEntries(op.payload.userId, op.payload.rows);
 	} else if (op.type === 'bulk-delete') {
 		await deleteEntries(op.payload.userId, op.payload.rowIds);
 	} else if (op.type === 'deck-insert') {

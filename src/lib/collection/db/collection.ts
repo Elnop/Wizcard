@@ -50,24 +50,22 @@ export async function fetchPublicCollectionPage(
 export async function insertEntry(
 	userId: string,
 	scryfallId: string,
-	entry: CardEntry,
-	wishlist = false
+	entry: CardEntry
 ): Promise<void> {
-	await insertCardRows([{ ...cardEntryToRow(scryfallId, entry), owner_id: userId, wishlist }]);
+	await insertCardRows([{ ...cardEntryToRow(scryfallId, entry), owner_id: userId }]);
 }
 
 const INSERT_BATCH_SIZE = 500;
 
 export async function insertEntries(
 	userId: string,
-	rows: Array<{ scryfallId: string; entry: CardEntry }>,
-	wishlist = false
+	rows: Array<{ scryfallId: string; entry: CardEntry }>
 ): Promise<void> {
 	if (rows.length === 0) return;
 	for (let i = 0; i < rows.length; i += INSERT_BATCH_SIZE) {
 		const batch = rows.slice(i, i + INSERT_BATCH_SIZE);
 		await insertCardRows(
-			batch.map((r) => ({ ...cardEntryToRow(r.scryfallId, r.entry), owner_id: userId, wishlist }))
+			batch.map((r) => ({ ...cardEntryToRow(r.scryfallId, r.entry), owner_id: userId }))
 		);
 	}
 }
@@ -103,6 +101,7 @@ export async function updateEntry(
 		proxy: entry.proxy ?? null,
 		tags: entry.tags ?? null,
 		deck_id: entry.deckId ?? null,
+		wishlist: entry.wishlist ?? false,
 		// Changing the print (edition) must patch the existing row in place so the
 		// card keeps its identity (rowId) across collection/deck/wishlist views.
 		...(scryfallId !== undefined ? { scryfall_id: scryfallId } : {}),
