@@ -2,7 +2,8 @@
 
 import { useMemo, useCallback, useState } from 'react';
 import Link from 'next/link';
-import type { CardStack } from '@/types/cards';
+import type { CardStack, Card, CardEntry } from '@/types/cards';
+import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
@@ -22,6 +23,16 @@ import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import { buildWishlistMenuItems } from './wishlistCardMenu';
 import styles from './page.module.css';
 
+function buildInitialEntry(entry: CardEntry): Partial<CardEntry> {
+	const patch: Partial<CardEntry> = { ...entry };
+	delete patch.rowId;
+	delete patch.dateAdded;
+	delete patch.deckId;
+	delete patch.ownerId;
+	delete patch.wishlist;
+	return patch;
+}
+
 function WishlistPageInner() {
 	const {
 		entries,
@@ -40,6 +51,7 @@ function WishlistPageInner() {
 
 	const [pdfSettingsModalOpen, setPdfSettingsModalOpen] = useState(false);
 	const [pdfGenerating, setPdfGenerating] = useState(false);
+	const [movingCard, setMovingCard] = useState<Card | null>(null);
 
 	// One card per wishlist copy (e.g. 3x Sol Ring → 3 cards in the PDF).
 	const pdfCards = useMemo(() => stacks.flatMap((stack) => stack.cards), [stacks]);
@@ -81,6 +93,22 @@ function WishlistPageInner() {
 		}
 		return map;
 	}, [stacks]);
+
+	const cardByRowId = useMemo(() => {
+		const map = new Map<string, Card>();
+		for (const stack of stacks) {
+			for (const card of stack.cards) map.set(card.entry.rowId, card);
+		}
+		return map;
+	}, [stacks]);
+
+	const handleRequestMove = useCallback(
+		(rowId: string) => {
+			const card = cardByRowId.get(rowId);
+			if (card) setMovingCard(card);
+		},
+		[cardByRowId]
+	);
 
 	const totalCards = entries.length;
 	const uniqueCards = stacks.length;
@@ -194,10 +222,7 @@ function WishlistPageInner() {
 				onClose={handleCloseModal}
 				onRemoveEntry={handleRemoveEntry}
 				onChangePrint={handleChangePrint}
-				onMoveToCollection={(rowId) => {
-					moveToCollection(rowId);
-					handleCloseModal();
-				}}
+				onMoveToCollection={handleRequestMove}
 			/>
 			{pdfSettingsModalOpen && (
 				<PdfSettingsModal
@@ -224,6 +249,20 @@ function WishlistPageInner() {
 				/>
 			)}
 
+			{movingCard && (
+				<EditCardModal
+					mode="add"
+					scryfallCard={movingCard as ScryfallCard}
+					initialEntry={buildInitialEntry(movingCard.entry)}
+					onAdd={(selectedPrint, entry, count) => {
+						moveToCollection(movingCard.entry.rowId, selectedPrint.id, entry, count);
+						setMovingCard(null);
+						handleCloseModal();
+					}}
+					onClose={() => setMovingCard(null)}
+				/>
+			)}
+
 			{cardMenu.menu && (
 				<ContextMenu
 					items={buildWishlistMenuItems(
@@ -232,7 +271,7 @@ function WishlistPageInner() {
 							onViewDetails: handleCardClick,
 							onAddCopy: duplicateEntry,
 							onRemoveCopy: removeFromWishlist,
-							onMoveToCollection: moveToCollection,
+							onMoveToCollection: handleRequestMove,
 							onChangePrint: handleCardClick,
 							onRemoveFromWishlist: removeFromWishlist,
 						},
