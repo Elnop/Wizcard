@@ -58,7 +58,7 @@ export const useWishlistStore = create<WishlistState & WishlistActions>()((set, 
 	},
 
 	addToWishlist: (card, userId, triggerSync, entryPatch, count = 1) => {
-		const rows = buildEntriesBatch(card.id, count, entryPatch);
+		const rows = buildEntriesBatch(card.id, count, { ...entryPatch, wishlist: true });
 		set((state) => {
 			const next = { ...state.entries };
 			for (const { rowId, scryfallId, entry } of rows) {
@@ -67,7 +67,7 @@ export const useWishlistStore = create<WishlistState & WishlistActions>()((set, 
 			return { entries: next };
 		});
 		if (userId) {
-			enqueue({ type: 'bulk-insert', payload: { userId, rows, wishlist: true } });
+			enqueue({ type: 'bulk-insert', payload: { userId, rows } });
 			triggerSync();
 		}
 	},
