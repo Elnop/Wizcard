@@ -1,19 +1,19 @@
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import type { CardStack, CardEntry } from '@/types/cards';
 
-export type WishlistCardMenuHandlers = {
+export type CollectionCardMenuHandlers = {
 	onViewDetails: (stack: CardStack) => void;
 	onAddCopy: (scryfallId: string, sourceEntry: CardEntry) => void;
-	onRemoveCopy: (rowId: string) => void;
-	onMoveToCollection: (rowId: string) => void;
+	onRemoveCopy: (scryfallId: string) => void;
+	onMoveToWishlist: (rowId: string) => void;
 	onAddToDeck: (stack: CardStack) => void;
 	onChangePrint: (stack: CardStack) => void;
-	onRemoveFromWishlist: (rowId: string) => void;
+	onRemoveFromCollection: (scryfallId: string) => void;
 };
 
-export function buildWishlistMenuItems(
+export function buildCollectionMenuItems(
 	stack: CardStack,
-	handlers: WishlistCardMenuHandlers,
+	handlers: CollectionCardMenuHandlers,
 	close: () => void
 ): ContextMenuAction[] {
 	const rep = stack.cards[0];
@@ -43,17 +43,17 @@ export function buildWishlistMenuItems(
 			label: 'Retirer une copie',
 			icon: '−',
 			onClick: () => {
-				handlers.onRemoveCopy(rep.entry.rowId);
+				handlers.onRemoveCopy(rep.id);
 				close();
 			},
 		},
 		{ type: 'divider' },
 		{
 			type: 'action',
-			label: 'Déplacer vers la collection',
-			icon: '→',
+			label: 'Déplacer vers la wishlist',
+			icon: '♡',
 			onClick: () => {
-				handlers.onMoveToCollection(rep.entry.rowId);
+				handlers.onMoveToWishlist(rep.entry.rowId);
 				close();
 			},
 		},
@@ -77,11 +77,11 @@ export function buildWishlistMenuItems(
 		},
 		{
 			type: 'action',
-			label: 'Retirer de la wishlist',
+			label: 'Retirer de la collection',
 			icon: '🗑',
 			danger: true,
 			onClick: () => {
-				handlers.onRemoveFromWishlist(rep.entry.rowId);
+				handlers.onRemoveFromCollection(rep.id);
 				close();
 			},
 		},

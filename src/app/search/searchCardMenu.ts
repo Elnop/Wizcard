@@ -7,6 +7,7 @@ export type SearchCardMenuHandlers = {
 	onOpenCardPage: (card: AnyCard) => void;
 	onAddToCollection: (card: AnyCard) => void;
 	onAddToWishlist: (card: AnyCard) => void;
+	onAddToDeck: (card: AnyCard) => void;
 };
 
 export function buildSearchMenuItems(
@@ -58,6 +59,15 @@ export function buildSearchMenuItems(
 			icon: '♡',
 			onClick: () => {
 				handlers.onAddToWishlist(card);
+				close();
+			},
+		},
+		{
+			type: 'action',
+			label: 'Ajouter à un deck…',
+			icon: '🗂',
+			onClick: () => {
+				handlers.onAddToDeck(card);
 				close();
 			},
 		}

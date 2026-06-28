@@ -4,6 +4,7 @@ import { useMemo, useCallback, useState } from 'react';
 import Link from 'next/link';
 import type { CardStack, CardEntry } from '@/types/cards';
 import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
+import { AddToDeckModal } from '@/lib/card/components/AddToDeckModal/AddToDeckModal';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
@@ -56,6 +57,7 @@ function WishlistPageInner() {
 	const [pdfSettingsModalOpen, setPdfSettingsModalOpen] = useState(false);
 	const [pdfGenerating, setPdfGenerating] = useState(false);
 	const [movingStack, setMovingStack] = useState<CardStack | null>(null);
+	const [deckModalCard, setDeckModalCard] = useState<ScryfallCard | null>(null);
 
 	// One card per wishlist copy (e.g. 3x Sol Ring → 3 cards in the PDF).
 	const pdfCards = useMemo(() => stacks.flatMap((stack) => stack.cards), [stacks]);
@@ -113,6 +115,11 @@ function WishlistPageInner() {
 		},
 		[stackByRowId]
 	);
+
+	const handleAddToDeck = useCallback((stack: CardStack) => {
+		const rep = stack.cards[0];
+		if (rep) setDeckModalCard(rep as ScryfallCard);
+	}, []);
 
 	const totalCards = entries.length;
 	const uniqueCards = stacks.length;
@@ -227,7 +234,11 @@ function WishlistPageInner() {
 				onRemoveEntry={handleRemoveEntry}
 				onChangePrint={handleChangePrint}
 				onMoveToCollection={handleRequestMove}
+				onAddToDeck={(card) => setDeckModalCard(card)}
 			/>
+			{deckModalCard && (
+				<AddToDeckModal card={deckModalCard} onClose={() => setDeckModalCard(null)} />
+			)}
 			{pdfSettingsModalOpen && (
 				<PdfSettingsModal
 					cards={pdfCards}
@@ -259,6 +270,7 @@ function WishlistPageInner() {
 					scryfallCard={movingStack.cards[0] as ScryfallCard}
 					initialEntry={buildInitialEntry(movingStack.cards[0].entry)}
 					maxQuantity={movingStack.cards.length}
+					hideQuantity={movingStack.cards.length <= 1}
 					onAdd={(selectedPrint, entry, count) => {
 						const rowIds = movingStack.cards.slice(0, count).map((c) => c.entry.rowId);
 						moveToCollection(rowIds, selectedPrint.id, entry);
@@ -278,6 +290,7 @@ function WishlistPageInner() {
 							onAddCopy: duplicateEntry,
 							onRemoveCopy: removeFromWishlist,
 							onMoveToCollection: handleRequestMove,
+							onAddToDeck: handleAddToDeck,
 							onChangePrint: handleCardClick,
 							onRemoveFromWishlist: removeFromWishlist,
 						},

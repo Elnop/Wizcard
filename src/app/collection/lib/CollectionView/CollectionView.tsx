@@ -33,6 +33,8 @@ type Props = {
 	emptyState?: ReactNode;
 	/** Opens when a card is clicked. */
 	onCardClick?: (stack: CardStack) => void;
+	/** Right-click handler on a card (owner view only). */
+	onCardContextMenu?: (stack: CardStack, e: React.MouseEvent) => void;
 	/** Show a "in a deck" badge on cards whose copies are assigned to a deck (owner view only). */
 	showDeckBadges?: boolean;
 	/** Modal(s) rendered as a sibling of the layout (owner edit / read-only view). */
@@ -57,6 +59,7 @@ export function CollectionView({
 	actions,
 	emptyState,
 	onCardClick,
+	onCardContextMenu,
 	showDeckBadges = false,
 	children,
 }: Props) {
@@ -113,6 +116,14 @@ export function CollectionView({
 						? (card: AnyCard) => {
 								const stack = stackByCardId.get(card.id);
 								if (stack) onCardClick(stack);
+							}
+						: undefined
+				}
+				onCardContextMenu={
+					onCardContextMenu
+						? (card: AnyCard, e: React.MouseEvent) => {
+								const stack = stackByCardId.get(card.id);
+								if (stack) onCardContextMenu(stack, e);
 							}
 						: undefined
 				}

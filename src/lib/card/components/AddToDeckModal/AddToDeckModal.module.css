@@ -1,0 +1,161 @@
+.modal {
+	max-width: 560px;
+	padding: 24px;
+	position: relative;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 20px;
+}
+
+.title {
+	font-size: var(--text-md);
+	font-weight: 600;
+	color: var(--foreground);
+}
+
+.closeIcon {
+	background: none;
+	border: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 4px;
+	line-height: 0;
+	border-radius: 4px;
+	transition: color 0.15s;
+}
+
+.closeIcon:hover {
+	color: var(--foreground);
+}
+
+.body {
+	display: flex;
+	gap: 24px;
+	align-items: flex-start;
+}
+
+.preview {
+	flex: 0 0 auto;
+	width: 180px;
+}
+
+.preview > * {
+	width: 100%;
+}
+
+.preview img {
+	width: 100%;
+	height: auto;
+	border-radius: 8px;
+}
+
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	flex: 1;
+	min-width: 0;
+}
+
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.label {
+	font-size: var(--text-xs);
+	font-weight: 600;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+
+.select {
+	background: var(--surface, rgba(255, 255, 255, 0.06));
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	color: var(--foreground);
+	font-size: var(--text-base);
+	padding: 8px 10px;
+	width: 100%;
+	outline: none;
+	transition: border-color 0.15s;
+}
+
+.select:focus {
+	border-color: var(--primary);
+}
+
+.select option {
+	background: var(--card-bg, #1a1a2e);
+}
+
+.confirmBtn {
+	display: block;
+	width: 100%;
+	margin-top: 4px;
+	background: var(--primary, #7c3aed);
+	border: 1px solid transparent;
+	border-radius: 8px;
+	color: var(--primary-text, #fff);
+	font-size: var(--text-sm);
+	font-weight: 600;
+	padding: 8px 12px;
+	cursor: pointer;
+	transition: opacity 0.15s;
+	text-align: center;
+}
+
+.confirmBtn:hover {
+	opacity: 0.88;
+}
+
+.empty {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	align-items: flex-start;
+}
+
+.empty p {
+	margin: 0;
+	color: var(--text-muted);
+	font-size: var(--text-base);
+}
+
+.createLink {
+	display: inline-block;
+	background: var(--primary, #7c3aed);
+	color: var(--primary-text, #fff);
+	border-radius: 8px;
+	padding: 8px 14px;
+	font-size: var(--text-sm);
+	font-weight: 600;
+	text-decoration: none;
+	transition: opacity 0.15s;
+}
+
+.createLink:hover {
+	opacity: 0.88;
+}
+
+@media (max-width: 580px) {
+	.body {
+		flex-direction: column;
+	}
+
+	.preview {
+		width: 100%;
+		display: flex;
+		justify-content: center;
+	}
+
+	.preview img {
+		max-width: 180px;
+	}
+}

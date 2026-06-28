@@ -3,6 +3,11 @@
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useCardModal } from '@/lib/card/hooks/useCardModal';
 import { useCollectionCardsContext } from '@/app/collection/CollectionCardsContext';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+
+type Props = {
+	onAddToDeck?: (card: ScryfallCard) => void;
+};
 
 /**
  * Smart wrapper: drives the generic CardModal from the collection's hydrated
@@ -10,7 +15,7 @@ import { useCollectionCardsContext } from '@/app/collection/CollectionCardsConte
  * open state is shared with the grid via ActiveCardContext (consumed inside
  * useCardModal).
  */
-export function CollectionCardModal() {
+export function CollectionCardModal({ onAddToDeck }: Props) {
 	const { stacks } = useCollectionCardsContext();
 	const {
 		resolvedStack,
@@ -35,6 +40,7 @@ export function CollectionCardModal() {
 			onIncrement={handleIncrementModal}
 			onDecrement={handleDecrementModal}
 			onChangePrint={handleChangePrint}
+			onAddToDeck={onAddToDeck}
 		/>
 	);
 }

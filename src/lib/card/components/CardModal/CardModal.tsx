@@ -72,6 +72,7 @@ interface Props {
 	onAddToCollectionFromEntry?: (rowIds: string[]) => void;
 	onRemoveFromCollectionEntry?: (rowId: string) => void;
 	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
+	onAddToDeck?: (card: ScryfallCard) => void;
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
 	renderCopyBadge?: (copy: Card) => React.ReactNode;
@@ -98,6 +99,7 @@ interface InnerProps {
 	onAddToWishlistFromEntry?: (deckCardRowId: string) => void;
 	onAddToCollectionFromEntry?: (rowIds: string[]) => void;
 	onRemoveFromCollectionEntry?: (rowId: string) => void;
+	onAddToDeck?: (card: ScryfallCard) => void;
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
 	renderCopyBadge?: (copy: Card) => React.ReactNode;
@@ -318,6 +320,7 @@ function CardModalInner({
 	onAddToWishlistFromEntry,
 	onAddToCollectionFromEntry,
 	onRemoveFromCollectionEntry,
+	onAddToDeck,
 	producerSections,
 	onProducerClick,
 	renderCopyBadge,
@@ -609,6 +612,15 @@ function CardModalInner({
 								<WishlistIcon size={13} /> Add to Wishlist
 							</button>
 						)}
+						{onAddToDeck && (
+							<button
+								type="button"
+								className={styles.changePrintBtn}
+								onClick={() => onAddToDeck(selectedCard as ScryfallCard)}
+							>
+								🗂 Ajouter à un deck
+							</button>
+						)}
 					</div>
 
 					<div className={styles.infoCol}>
@@ -765,6 +777,7 @@ function ScryfallCardModalInner({
 	addLabel = 'Add to Collection',
 	availableZones,
 	onAddToWishlist,
+	onAddToDeck,
 }: {
 	card: ScryfallCard;
 	onClose: () => void;
@@ -772,6 +785,7 @@ function ScryfallCardModalInner({
 	addLabel?: string;
 	availableZones?: DeckZone[];
 	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
+	onAddToDeck?: (card: ScryfallCard) => void;
 }) {
 	const [lightbox, setLightbox] = useState(false);
 	const [addingCard, setAddingCard] = useState(false);
@@ -811,6 +825,15 @@ function ScryfallCardModalInner({
 								onClick={() => setAddingToWishlist(true)}
 							>
 								<WishlistIcon size={13} /> Add to Wishlist
+							</button>
+						)}
+						{onAddToDeck && (
+							<button
+								type="button"
+								className={styles.changePrintBtn}
+								onClick={() => onAddToDeck(card)}
+							>
+								🗂 Ajouter à un deck
 							</button>
 						)}
 					</div>
@@ -919,6 +942,7 @@ export function CardModal({
 	onAddToCollectionFromEntry,
 	onRemoveFromCollectionEntry,
 	onAddToWishlist,
+	onAddToDeck,
 	producerSections,
 	onProducerClick,
 	renderCopyBadge,
@@ -945,6 +969,7 @@ export function CardModal({
 				addLabel={addLabel}
 				availableZones={availableZones}
 				onAddToWishlist={onAddToWishlist}
+				onAddToDeck={onAddToDeck}
 			/>
 		);
 	}
@@ -972,6 +997,7 @@ export function CardModal({
 			onAddToWishlistFromEntry={onAddToWishlistFromEntry}
 			onAddToCollectionFromEntry={onAddToCollectionFromEntry}
 			onRemoveFromCollectionEntry={onRemoveFromCollectionEntry}
+			onAddToDeck={onAddToDeck}
 			producerSections={producerSections}
 			onProducerClick={onProducerClick}
 			renderCopyBadge={renderCopyBadge}

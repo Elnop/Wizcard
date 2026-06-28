@@ -1,8 +1,11 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
+import type { CardStack } from '@/types/cards';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useImportContext } from '@/lib/import/context/ImportContext';
 import { CollectionCardsProvider, useCollectionCardsContext } from './CollectionCardsContext';
 import {
@@ -11,6 +14,10 @@ import {
 } from './lib/CollectionCardModal/ActiveCardContext';
 import { ImportModal } from './lib/ImportModal/ImportModal';
 import { CollectionCardModal } from './lib/CollectionCardModal/CollectionCardModal';
+import { AddToDeckModal } from '@/lib/card/components/AddToDeckModal/AddToDeckModal';
+import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
+import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
+import { buildCollectionMenuItems } from './collectionCardMenu';
 import { Button } from '@/components/Button/Button';
 import { ExportMenu } from './ExportMenu/ExportMenu';
 import { ShareButton } from '@/components/ShareButton/ShareButton';
@@ -20,16 +27,33 @@ import { CollectionView } from './lib/CollectionView/CollectionView';
 
 function CollectionPageInner() {
 	const { user } = useAuth();
-	const { entries, isLoaded, isFullyLoaded, clearCollection } = useCollectionContext();
+	const {
+		entries,
+		isLoaded,
+		isFullyLoaded,
+		clearCollection,
+		duplicateEntry,
+		decrementCard,
+		removeCard,
+	} = useCollectionContext();
+	const { moveToWishlist } = useWishlistContext();
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCardsContext();
 	const { openCard } = useActiveCardContext();
 	const { status, openModal } = useImportContext();
+
+	const cardMenu = useContextMenu<CardStack>();
+	const [deckModalCard, setDeckModalCard] = useState<ScryfallCard | null>(null);
 
 	const handleClearCollection = useCallback(() => {
 		if (confirm('Effacer toute la collection ? Cette action est irréversible.')) {
 			clearCollection();
 		}
 	}, [clearCollection]);
+
+	const handleAddToDeck = useCallback((stack: CardStack) => {
+		const rep = stack.cards[0];
+		if (rep) setDeckModalCard(rep as ScryfallCard);
+	}, []);
 
 	if (!isLoaded) {
 		return <div className={styles.page} />;
@@ -86,10 +110,33 @@ function CollectionPageInner() {
 			actions={actions}
 			emptyState={emptyState}
 			onCardClick={openCard}
+			onCardContextMenu={(stack, e) => cardMenu.open(stack, e)}
 			showDeckBadges
 		>
 			<ImportModal />
-			<CollectionCardModal />
+			<CollectionCardModal onAddToDeck={(card) => setDeckModalCard(card)} />
+			{deckModalCard && (
+				<AddToDeckModal card={deckModalCard} onClose={() => setDeckModalCard(null)} />
+			)}
+			{cardMenu.menu && (
+				<ContextMenu
+					items={buildCollectionMenuItems(
+						cardMenu.menu.data,
+						{
+							onViewDetails: openCard,
+							onAddCopy: duplicateEntry,
+							onRemoveCopy: decrementCard,
+							onMoveToWishlist: (rowId) => moveToWishlist([rowId]),
+							onAddToDeck: handleAddToDeck,
+							onChangePrint: openCard,
+							onRemoveFromCollection: removeCard,
+						},
+						cardMenu.close
+					)}
+					position={cardMenu.menu.position}
+					onClose={cardMenu.close}
+				/>
+			)}
 		</CollectionView>
 	);
 }

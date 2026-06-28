@@ -4,11 +4,10 @@ import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { findFreeCollectionCopy } from '@/lib/deck/utils/collectionCopyResolver';
 import { getArtCropUrl } from '@/lib/deck/utils/pick-cover-art';
+import { isCommanderFormat } from '@/lib/deck/utils/zonesForFormat';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckFormat, DeckZone } from '@/types/decks';
 import type { CardEntry } from '@/types/cards';
-
-const COMMANDER_FORMATS: DeckFormat[] = ['commander', 'brawl', 'oathbreaker'];
 
 type Props = {
 	card: ScryfallCard;
@@ -34,7 +33,7 @@ export function SearchCardContextMenu({
 	scryfallIdToOracleId,
 }: Props) {
 	const { addCardToDeck, addCollectionCardToDeck, updateDeck } = useDeckContext();
-	const isCommanderFormat = format != null && COMMANDER_FORMATS.includes(format);
+	const commanderFormat = isCommanderFormat(format);
 
 	const addWithCollectionAssign = useCallback(
 		(zone: DeckZone) => {
@@ -82,7 +81,7 @@ export function SearchCardContextMenu({
 				label: '+ Sideboard',
 				onClick: () => addWithCollectionAssign('sideboard'),
 			},
-			...(isCommanderFormat
+			...(commanderFormat
 				? [
 						{
 							type: 'action' as const,
@@ -125,7 +124,7 @@ export function SearchCardContextMenu({
 					]
 				: []),
 		];
-	}, [card, isCommanderFormat, addWithCollectionAssign, onCardClick, onClose, updateDeck, deckId]);
+	}, [card, commanderFormat, addWithCollectionAssign, onCardClick, onClose, updateDeck, deckId]);
 
 	return <ContextMenu items={items} position={position} onClose={onClose} />;
 }

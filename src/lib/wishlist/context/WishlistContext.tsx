@@ -20,8 +20,13 @@ type WishlistContextValue = {
 	removeFromWishlist: (rowId: string) => void;
 	clearWishlist: () => void;
 	moveToCollection: (rowIds: string[], scryfallId: string, entryPatch: Partial<CardEntry>) => void;
+	moveToWishlist: (rowIds: string[]) => void;
 	changePrint: (rowId: string, newScryfallId: string) => void;
 };
+
+// Sync-queue op type used to patch a shared `cards` row (deck card) in place —
+// it matches on id only, so it works even when owner_id is NULL.
+const DECK_CARD_UPDATE = 'deck-card-update' as const;
 
 const WishlistContext = createContext<WishlistContextValue | null>(null);
 
@@ -100,7 +105,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 				}
 				// Persist wishlist=false on the shared row.
 				if (userId) {
-					enqueue({ type: 'deck-card-update', payload: { rowId, updates: { wishlist: false } } });
+					enqueue({ type: DECK_CARD_UPDATE, payload: { rowId, updates: { wishlist: false } } });
 					triggerSync();
 				}
 				return;
@@ -145,7 +150,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 					// set owner_id so the row appears on the collection page.
 					if (userId) {
 						enqueue({
-							type: 'deck-card-update',
+							type: DECK_CARD_UPDATE,
 							payload: {
 								rowId,
 								updates: { wishlist: false, owner_id: userId, scryfall_id: scryfallId },
@@ -177,6 +182,63 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
 			useWishlistStore.setState({ entries: nextWishlist });
 			useCollectionStore.setState({ entries: nextCollection });
+			useDeckStore.setState({ activeDeckCards: nextDeckCards });
+			if (userId) triggerSync();
+		},
+		[userId, triggerSync]
+	);
+
+	// Symmetric to moveToCollection: flip owned collection copies into wishlist
+	// entries in place (same rowId, no duplicate row), so a given entity is never
+	// in both views at once.
+	const moveToWishlist = useCallback(
+		(rowIds: string[]) => {
+			const colEntries = useCollectionStore.getState().entries;
+			const wishlistEntries = useWishlistStore.getState().entries;
+			const deckCards = useDeckStore.getState().activeDeckCards;
+			const nextCollection = { ...colEntries };
+			const nextWishlist = { ...wishlistEntries };
+			let nextDeckCards = { ...deckCards };
+
+			for (const rowId of rowIds) {
+				const copy = colEntries[rowId];
+				if (!copy) continue;
+				const movedEntry: CardEntry = { ...copy.entry, rowId, wishlist: true };
+				delete nextCollection[rowId];
+				nextWishlist[rowId] = { scryfallId: copy.scryfallId, entry: movedEntry };
+
+				const isDeckCard = copy.entry.deckId != null || deckCards[rowId] != null;
+
+				if (isDeckCard) {
+					// Deck card owned copy → wishlisted deck card: clear owner_id and set
+					// wishlist. Use deck-card-update (matches on id only).
+					if (userId) {
+						enqueue({
+							type: DECK_CARD_UPDATE,
+							payload: { rowId, updates: { wishlist: true, owner_id: null } },
+						});
+					}
+					const deckCopy = deckCards[rowId];
+					if (deckCopy) {
+						nextDeckCards = {
+							...nextDeckCards,
+							[rowId]: { ...deckCopy, entry: { ...deckCopy.entry, wishlist: true } },
+						};
+					}
+				} else {
+					// Pure collection card: keep owner_id, flip wishlist=true so it leaves
+					// the collection view (wishlist=false) and enters the wishlist view.
+					if (userId) {
+						enqueue({
+							type: 'update',
+							payload: { userId, rowId, entry: movedEntry, scryfallId: copy.scryfallId },
+						});
+					}
+				}
+			}
+
+			useCollectionStore.setState({ entries: nextCollection });
+			useWishlistStore.setState({ entries: nextWishlist });
 			useDeckStore.setState({ activeDeckCards: nextDeckCards });
 			if (userId) triggerSync();
 		},
@@ -226,6 +288,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		removeFromWishlist,
 		clearWishlist,
 		moveToCollection,
+		moveToWishlist,
 		changePrint,
 	};
 
