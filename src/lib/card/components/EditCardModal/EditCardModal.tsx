@@ -207,7 +207,11 @@ export function EditCardModal(props: Props) {
 									onChange={(e) => {
 										const n = parseInt(e.target.value, 10);
 										const clamped = Number.isNaN(n) ? 1 : Math.max(1, n);
-										setQuantity(props.maxQuantity ? Math.min(props.maxQuantity, clamped) : clamped);
+										setQuantity(
+											props.maxQuantity !== undefined
+												? Math.min(props.maxQuantity, clamped)
+												: clamped
+										);
 									}}
 								/>
 							</div>
