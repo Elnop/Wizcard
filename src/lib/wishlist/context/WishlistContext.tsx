@@ -19,7 +19,12 @@ type WishlistContextValue = {
 	duplicateEntry: (scryfallId: string, sourceEntry: CardEntry) => void;
 	removeFromWishlist: (rowId: string) => void;
 	clearWishlist: () => void;
-	moveToCollection: (rowId: string) => void;
+	moveToCollection: (
+		rowId: string,
+		scryfallId: string,
+		entryPatch: Partial<CardEntry>,
+		count: number
+	) => void;
 	changePrint: (rowId: string, newScryfallId: string) => void;
 };
 
@@ -117,14 +122,15 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const moveToCollection = useCallback(
-		(rowId: string) => {
+		(rowId: string, scryfallId: string, entryPatch: Partial<CardEntry>, count: number) => {
 			const copy = store.entries[rowId];
 			if (!copy) return;
-			const stubCard = { id: copy.scryfallId } as Parameters<typeof collectionStore.addCard>[0];
-			collectionStore.addCard(stubCard, userId, triggerSync, copy.entry);
-			store.removeFromWishlist(rowId, userId, triggerSync);
+			const stubCard = { id: scryfallId } as Parameters<typeof collectionStore.addCards>[0];
+			collectionStore.addCards(stubCard, count, userId, triggerSync, entryPatch);
+			// removeFromWishlist (du contexte) gère déjà le cas deck-card vs wishlist pure.
+			removeFromWishlist(rowId);
 		},
-		[store, collectionStore, userId, triggerSync]
+		[store, collectionStore, userId, triggerSync, removeFromWishlist]
 	);
 
 	const changePrint = useCallback(
