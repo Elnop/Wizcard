@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import { CardList } from '@/lib/card/components/CardList/CardList';
-import { useCardImageUri } from '@/lib/scryfall/hooks/useCardImageUri';
+import { useCardFaceImageUris } from '@/lib/scryfall/hooks/useCardImageUri';
 import { isScryfallImageUrl, scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
 import type { Card } from '@/types/cards';
 import styles from './PdfSettingsModal.module.css';
@@ -39,8 +39,29 @@ type Props = {
 	onClose: () => void;
 };
 
+// A single printed slot = one card face. Double-faced cards produce two slots
+// (faceIndex 0 = front, 1 = back), matching what generateCardsPdf renders.
+type FaceSlot = { card: Card; faceIndex: number };
+
+// Deploy each card into its printed face slots, mirroring the PDF export:
+// getScryfallCardFaceImageUris yields [front, back] for DFCs and a single entry
+// otherwise. The face count is structural (card.card_faces), so it's known
+// synchronously without waiting for the localized image fetch.
+function toFaceSlots(cards: Card[]): FaceSlot[] {
+	return cards.flatMap((card) => {
+		const faces = card.card_faces;
+		const hasTwoFaces = !!(faces?.[0]?.image_uris?.normal && faces?.[1]?.image_uris?.normal);
+		return hasTwoFaces
+			? [
+					{ card, faceIndex: 0 },
+					{ card, faceIndex: 1 },
+				]
+			: [{ card, faceIndex: 0 }];
+	});
+}
+
 function PreviewCardImage({
-	card,
+	slot,
 	cardWPx,
 	cardHPx,
 	col,
@@ -48,7 +69,7 @@ function PreviewCardImage({
 	gapPx,
 	cutLines,
 }: {
-	card: Card;
+	slot: FaceSlot;
 	cardWPx: number;
 	cardHPx: number;
 	col: number;
@@ -56,10 +77,10 @@ function PreviewCardImage({
 	gapPx: number;
 	cutLines: boolean;
 }) {
-	const { uri: url, loading } = useCardImageUri(card, 'normal', true);
+	const { uris, loading } = useCardFaceImageUris(slot.card, 'normal', true);
+	const url = uris[slot.faceIndex] ?? uris[0];
 	return (
 		<div
-			key={card.entry.rowId}
 			className={`${styles.previewCard} ${cutLines ? styles.previewCardCutLines : ''}`}
 			style={{
 				width: cardWPx,
@@ -73,7 +94,7 @@ function PreviewCardImage({
 					src={url}
 					loader={scryfallImageLoader}
 					unoptimized={isScryfallImageUrl(url)}
-					alt={card.name}
+					alt={slot.card.name}
 					fill
 					sizes={`${Math.round(cardWPx)}px`}
 					style={{ objectFit: 'cover', borderRadius: 2 }}
@@ -112,6 +133,10 @@ export function PdfSettingsModal({
 
 	const layout = useMemo(() => computeLayout(settings), [settings]);
 
+	// Deploy DFCs into per-face slots so the preview pagination/positions match
+	// the generated PDF exactly (each face occupies its own slot).
+	const faceSlots = useMemo(() => toFaceSlots(cards), [cards]);
+
 	const PREVIEW_PX = 220;
 	const scale = PREVIEW_PX / PAGE_W_MM;
 	const cardWPx = layout.cardW * scale;
@@ -119,9 +144,10 @@ export function PdfSettingsModal({
 	const marginPx = settings.margin * scale;
 	const gapPx = settings.cardGap * scale;
 
-	const totalPages = layout.cardsPerPage > 0 ? Math.ceil(cards.length / layout.cardsPerPage) : 1;
+	const totalPages =
+		layout.cardsPerPage > 0 ? Math.ceil(faceSlots.length / layout.cardsPerPage) : 1;
 	const pages = Array.from({ length: totalPages }, (_, p) =>
-		cards.slice(p * layout.cardsPerPage, (p + 1) * layout.cardsPerPage)
+		faceSlots.slice(p * layout.cardsPerPage, (p + 1) * layout.cardsPerPage)
 	);
 
 	return (
@@ -197,7 +223,7 @@ export function PdfSettingsModal({
 							{totalPages} page{totalPages !== 1 ? 's' : ''}
 						</p>
 						<div className={styles.pdfPagesScroll}>
-							{pages.map((pageCards, p) => (
+							{pages.map((pageSlots, p) => (
 								<div key={p} className={styles.pageWrapper}>
 									<span className={styles.pageNumber}>{p + 1}</span>
 									<div
@@ -213,10 +239,10 @@ export function PdfSettingsModal({
 												bottom: marginPx,
 											}}
 										>
-											{pageCards.map((card, i) => (
+											{pageSlots.map((slot, i) => (
 												<PreviewCardImage
-													key={card.entry.rowId}
-													card={card}
+													key={`${slot.card.entry.rowId}-${slot.faceIndex}`}
+													slot={slot}
 													cardWPx={cardWPx}
 													cardHPx={cardHPx}
 													col={i % layout.cols}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocalizedImage } from './useLocalizedImage';
+import { getScryfallCardFaceImageUris } from '@/lib/scryfall/utils/scryfall-query';
 
 type ImageCard = {
 	set?: string;
@@ -25,4 +26,20 @@ export function useCardImageUri(
 	const { localized, loading } = useLocalizedImage(card, enabled);
 	const effectiveCard = localized ? { ...card, ...localized } : card;
 	return { uri: resolveUri(effectiveCard, size), loading };
+}
+
+/**
+ * Hook variant returning every face image a card contributes: a single URL for
+ * normal cards, or [front, back] for double-faced cards. Uses the same
+ * getScryfallCardFaceImageUris logic as the PDF export (resolveLocalizedImageUris),
+ * so the PDF settings preview can deploy DFC faces exactly like the generated PDF.
+ */
+export function useCardFaceImageUris(
+	card: ImageCard,
+	size: 'small' | 'normal' | 'large',
+	enabled: boolean
+): { uris: string[]; loading: boolean } {
+	const { localized, loading } = useLocalizedImage(card, enabled);
+	const effectiveCard = localized ? { ...card, ...localized } : card;
+	return { uris: getScryfallCardFaceImageUris(effectiveCard, size), loading };
 }

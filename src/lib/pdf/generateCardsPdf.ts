@@ -9,7 +9,16 @@ const PAGE_W_MM = 210;
 const PAGE_H_MM = 297;
 
 async function loadImageAsBase64(url: string): Promise<string> {
-	const res = await fetch(url);
+	// Scryfall (via Cloudflare) only attaches the CORS header to a network
+	// response. When the same image was already loaded by the app as a plain
+	// <img>/next/image (no crossOrigin), the browser cached it as an *opaque*
+	// response with no exposed CORS header; a later cors-mode fetch would reuse
+	// that entry and get blocked. `cache: 'reload'` forces a fresh network
+	// request so the CORS header is present and the fetch succeeds.
+	const res = await fetch(url, { mode: 'cors', cache: 'reload' });
+	if (!res.ok) {
+		throw new Error(`HTTP ${res.status} for ${url}`);
+	}
 	const blob = await res.blob();
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
