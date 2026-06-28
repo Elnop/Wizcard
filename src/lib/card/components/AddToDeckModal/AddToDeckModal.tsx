@@ -13,14 +13,16 @@ import styles from './AddToDeckModal.module.css';
 interface Props {
 	card: ScryfallCard;
 	/**
-	 * When set, the card is added by assigning an existing owned collection copy
-	 * to the deck (one copy, quantity is forced to 1 and hidden).
+	 * When set, the card is added by ASSIGNING existing owned rows (rowIds of the
+	 * card stack) to the deck — no new copy is created. Quantity is capped to the
+	 * number of rowIds and the quantity field is hidden when there is only one.
+	 * When omitted (e.g. from search), new deck copies are created instead.
 	 */
-	collectionRowId?: string;
+	ownedRowIds?: string[];
 	onClose: () => void;
 }
 
-export function AddToDeckModal({ card, collectionRowId, onClose }: Props) {
+export function AddToDeckModal({ card, ownedRowIds, onClose }: Props) {
 	const { decks, addCardToDeck, addCollectionCardToDeck } = useDeckContext();
 
 	const sortedDecks = useMemo(
@@ -38,12 +40,19 @@ export function AddToDeckModal({ card, collectionRowId, onClose }: Props) {
 	// Keep the selected zone valid when the deck (and thus available zones) changes.
 	const effectiveZone = zones.includes(zone) ? zone : zones[0];
 
-	const usingCollectionCopy = collectionRowId != null;
+	const assigning = ownedRowIds != null;
+	const maxQuantity = ownedRowIds?.length ?? Infinity;
+	const showQuantity = assigning ? maxQuantity > 1 : true;
 
 	function handleConfirm() {
 		if (!deckId) return;
-		if (usingCollectionCopy) {
-			addCollectionCardToDeck(deckId, collectionRowId, effectiveZone);
+		if (assigning) {
+			// Assign existing rows to the deck (sets deck_id on the same rowId — no
+			// new copy). Cap to the available stack size.
+			const count = Math.min(quantity, ownedRowIds.length);
+			for (const rowId of ownedRowIds.slice(0, count)) {
+				addCollectionCardToDeck(deckId, rowId, effectiveZone);
+			}
 		} else {
 			// addCardToDeck guards on activeDeckId, so it is safe to target a deck
 			// that is not currently open (unlike bulkAddCardsToDeck, which forces the
@@ -124,7 +133,7 @@ export function AddToDeckModal({ card, collectionRowId, onClose }: Props) {
 								</select>
 							</div>
 
-							{!usingCollectionCopy && (
+							{showQuantity && (
 								<div className={styles.field}>
 									<label className={styles.label} htmlFor="add-deck-quantity">
 										Quantité
@@ -133,12 +142,14 @@ export function AddToDeckModal({ card, collectionRowId, onClose }: Props) {
 										id="add-deck-quantity"
 										type="number"
 										min={1}
+										max={assigning ? maxQuantity : undefined}
 										step={1}
 										className={styles.select}
 										value={quantity}
 										onChange={(e) => {
 											const n = parseInt(e.target.value, 10);
-											setQuantity(Number.isNaN(n) ? 1 : Math.max(1, n));
+											const clamped = Number.isNaN(n) ? 1 : Math.max(1, n);
+											setQuantity(assigning ? Math.min(maxQuantity, clamped) : clamped);
 										}}
 									/>
 								</div>

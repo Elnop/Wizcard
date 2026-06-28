@@ -57,7 +57,9 @@ function WishlistPageInner() {
 	const [pdfSettingsModalOpen, setPdfSettingsModalOpen] = useState(false);
 	const [pdfGenerating, setPdfGenerating] = useState(false);
 	const [movingStack, setMovingStack] = useState<CardStack | null>(null);
-	const [deckModalCard, setDeckModalCard] = useState<ScryfallCard | null>(null);
+	const [deckModal, setDeckModal] = useState<{ card: ScryfallCard; ownedRowIds: string[] } | null>(
+		null
+	);
 
 	// One card per wishlist copy (e.g. 3x Sol Ring → 3 cards in the PDF).
 	const pdfCards = useMemo(() => stacks.flatMap((stack) => stack.cards), [stacks]);
@@ -116,10 +118,23 @@ function WishlistPageInner() {
 		[stackByRowId]
 	);
 
-	const handleAddToDeck = useCallback((stack: CardStack) => {
+	const openDeckModalForStack = useCallback((stack: CardStack) => {
 		const rep = stack.cards[0];
-		if (rep) setDeckModalCard(rep as ScryfallCard);
+		if (!rep) return;
+		setDeckModal({
+			card: rep as ScryfallCard,
+			ownedRowIds: stack.cards.map((c) => c.entry.rowId),
+		});
 	}, []);
+
+	const handleModalAddToDeck = useCallback(
+		(card: ScryfallCard) => {
+			const stack = stackByCardId.get(card.id);
+			if (stack) openDeckModalForStack(stack);
+			else setDeckModal({ card, ownedRowIds: [] });
+		},
+		[stackByCardId, openDeckModalForStack]
+	);
 
 	const totalCards = entries.length;
 	const uniqueCards = stacks.length;
@@ -234,10 +249,14 @@ function WishlistPageInner() {
 				onRemoveEntry={handleRemoveEntry}
 				onChangePrint={handleChangePrint}
 				onMoveToCollection={handleRequestMove}
-				onAddToDeck={(card) => setDeckModalCard(card)}
+				onAddToDeck={handleModalAddToDeck}
 			/>
-			{deckModalCard && (
-				<AddToDeckModal card={deckModalCard} onClose={() => setDeckModalCard(null)} />
+			{deckModal && (
+				<AddToDeckModal
+					card={deckModal.card}
+					ownedRowIds={deckModal.ownedRowIds}
+					onClose={() => setDeckModal(null)}
+				/>
 			)}
 			{pdfSettingsModalOpen && (
 				<PdfSettingsModal
@@ -290,7 +309,7 @@ function WishlistPageInner() {
 							onAddCopy: duplicateEntry,
 							onRemoveCopy: removeFromWishlist,
 							onMoveToCollection: handleRequestMove,
-							onAddToDeck: handleAddToDeck,
+							onAddToDeck: openDeckModalForStack,
 							onChangePrint: handleCardClick,
 							onRemoveFromWishlist: removeFromWishlist,
 						},

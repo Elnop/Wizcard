@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { CardStack } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
@@ -42,7 +42,9 @@ function CollectionPageInner() {
 	const { status, openModal } = useImportContext();
 
 	const cardMenu = useContextMenu<CardStack>();
-	const [deckModalCard, setDeckModalCard] = useState<ScryfallCard | null>(null);
+	const [deckModal, setDeckModal] = useState<{ card: ScryfallCard; ownedRowIds: string[] } | null>(
+		null
+	);
 
 	const handleClearCollection = useCallback(() => {
 		if (confirm('Effacer toute la collection ? Cette action est irréversible.')) {
@@ -50,10 +52,32 @@ function CollectionPageInner() {
 		}
 	}, [clearCollection]);
 
-	const handleAddToDeck = useCallback((stack: CardStack) => {
+	const openDeckModalForStack = useCallback((stack: CardStack) => {
 		const rep = stack.cards[0];
-		if (rep) setDeckModalCard(rep as ScryfallCard);
+		if (!rep) return;
+		setDeckModal({
+			card: rep as ScryfallCard,
+			ownedRowIds: stack.cards.map((c) => c.entry.rowId),
+		});
 	}, []);
+
+	const stackByCardId = useMemo(() => {
+		const map = new Map<string, CardStack>();
+		for (const stack of stacks) {
+			const rep = stack.cards[0];
+			if (rep) map.set(rep.id, stack);
+		}
+		return map;
+	}, [stacks]);
+
+	const handleModalAddToDeck = useCallback(
+		(card: ScryfallCard) => {
+			const stack = stackByCardId.get(card.id);
+			if (stack) openDeckModalForStack(stack);
+			else setDeckModal({ card, ownedRowIds: [] });
+		},
+		[stackByCardId, openDeckModalForStack]
+	);
 
 	if (!isLoaded) {
 		return <div className={styles.page} />;
@@ -114,9 +138,13 @@ function CollectionPageInner() {
 			showDeckBadges
 		>
 			<ImportModal />
-			<CollectionCardModal onAddToDeck={(card) => setDeckModalCard(card)} />
-			{deckModalCard && (
-				<AddToDeckModal card={deckModalCard} onClose={() => setDeckModalCard(null)} />
+			<CollectionCardModal onAddToDeck={handleModalAddToDeck} />
+			{deckModal && (
+				<AddToDeckModal
+					card={deckModal.card}
+					ownedRowIds={deckModal.ownedRowIds}
+					onClose={() => setDeckModal(null)}
+				/>
 			)}
 			{cardMenu.menu && (
 				<ContextMenu
@@ -127,7 +155,7 @@ function CollectionPageInner() {
 							onAddCopy: duplicateEntry,
 							onRemoveCopy: decrementCard,
 							onMoveToWishlist: (rowId) => moveToWishlist([rowId]),
-							onAddToDeck: handleAddToDeck,
+							onAddToDeck: openDeckModalForStack,
 							onChangePrint: openCard,
 							onRemoveFromCollection: removeCard,
 						},
