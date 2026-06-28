@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback, useState } from 'react';
 import Link from 'next/link';
-import type { CardStack, Card, CardEntry } from '@/types/cards';
+import type { CardStack, CardEntry } from '@/types/cards';
 import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
@@ -55,7 +55,7 @@ function WishlistPageInner() {
 
 	const [pdfSettingsModalOpen, setPdfSettingsModalOpen] = useState(false);
 	const [pdfGenerating, setPdfGenerating] = useState(false);
-	const [movingCard, setMovingCard] = useState<Card | null>(null);
+	const [movingStack, setMovingStack] = useState<CardStack | null>(null);
 
 	// One card per wishlist copy (e.g. 3x Sol Ring → 3 cards in the PDF).
 	const pdfCards = useMemo(() => stacks.flatMap((stack) => stack.cards), [stacks]);
@@ -98,20 +98,20 @@ function WishlistPageInner() {
 		return map;
 	}, [stacks]);
 
-	const cardByRowId = useMemo(() => {
-		const map = new Map<string, Card>();
+	const stackByRowId = useMemo(() => {
+		const map = new Map<string, CardStack>();
 		for (const stack of stacks) {
-			for (const card of stack.cards) map.set(card.entry.rowId, card);
+			for (const card of stack.cards) map.set(card.entry.rowId, stack);
 		}
 		return map;
 	}, [stacks]);
 
 	const handleRequestMove = useCallback(
 		(rowId: string) => {
-			const card = cardByRowId.get(rowId);
-			if (card) setMovingCard(card);
+			const stack = stackByRowId.get(rowId);
+			if (stack) setMovingStack(stack);
 		},
-		[cardByRowId]
+		[stackByRowId]
 	);
 
 	const totalCards = entries.length;
@@ -253,17 +253,19 @@ function WishlistPageInner() {
 				/>
 			)}
 
-			{movingCard && (
+			{movingStack && movingStack.cards[0] && (
 				<EditCardModal
 					mode="add"
-					scryfallCard={movingCard as ScryfallCard}
-					initialEntry={buildInitialEntry(movingCard.entry)}
+					scryfallCard={movingStack.cards[0] as ScryfallCard}
+					initialEntry={buildInitialEntry(movingStack.cards[0].entry)}
+					maxQuantity={movingStack.cards.length}
 					onAdd={(selectedPrint, entry, count) => {
-						moveToCollection(movingCard.entry.rowId, selectedPrint.id, entry, count);
-						setMovingCard(null);
+						const rowIds = movingStack.cards.slice(0, count).map((c) => c.entry.rowId);
+						moveToCollection(rowIds, selectedPrint.id, entry);
+						setMovingStack(null);
 						handleCloseModal();
 					}}
-					onClose={() => setMovingCard(null)}
+					onClose={() => setMovingStack(null)}
 				/>
 			)}
 
