@@ -53,7 +53,7 @@ export function EditCardModal(props: Props) {
 
 	const [draftEntry, setDraftEntry] = useState<Partial<CardEntry>>(
 		addMode
-			? { tags: setDeckZone(undefined, initialZone), ...props.initialEntry }
+			? { ...props.initialEntry, tags: setDeckZone(props.initialEntry?.tags, initialZone) }
 			: { ...props.card.entry }
 	);
 	const [selectedPrint, setSelectedPrint] = useState<ScryfallCard>(
