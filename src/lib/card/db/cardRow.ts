@@ -81,9 +81,9 @@ export function rowToCardEntry(row: CardDbRow, opts?: { includeOwnerId?: boolean
 }
 
 /**
- * Common insert/update payload for a card. Table-specific columns
- * (`owner_id`, `wishlist`) are added by the caller; `deck_id` is included here
- * and may be overridden by the caller. Condition is normalized.
+ * Common insert/update payload for a card. The table-specific column
+ * `owner_id` is added by the caller; `deck_id` and `wishlist` are included
+ * here (and `deck_id` may be overridden by the caller). Condition is normalized.
  */
 export function cardEntryToRow(scryfallId: string, entry: CardEntry) {
 	return {
@@ -100,5 +100,6 @@ export function cardEntryToRow(scryfallId: string, entry: CardEntry) {
 		proxy: entry.proxy ?? null,
 		tags: entry.tags ?? null,
 		deck_id: entry.deckId ?? null,
+		wishlist: entry.wishlist ?? false,
 	};
 }
