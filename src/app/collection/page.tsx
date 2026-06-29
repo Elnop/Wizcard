@@ -3,7 +3,6 @@
 import { useCallback } from 'react';
 import Link from 'next/link';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
-import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useImportContext } from '@/lib/import/context/ImportContext';
 import { CollectionCardsProvider, useCollectionCardsContext } from './CollectionCardsContext';
 import {
@@ -12,9 +11,9 @@ import {
 } from './lib/CollectionCardModal/ActiveCardContext';
 import { ImportModal } from './lib/ImportModal/ImportModal';
 import { CollectionCardModal } from './lib/CollectionCardModal/CollectionCardModal';
-import { AddToDeckModal } from '@/lib/card/components/AddToDeckModal/AddToDeckModal';
-import { useAddToDeckModal } from '@/lib/card/hooks/useAddToDeckModal';
-import { buildCollectionMenuItems } from './collectionCardMenu';
+import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
+import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
+import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
 import { Button } from '@/components/Button/Button';
 import { ExportMenu } from './ExportMenu/ExportMenu';
 import { ShareButton } from '@/components/ShareButton/ShareButton';
@@ -24,21 +23,13 @@ import { CollectionView } from './lib/CollectionView/CollectionView';
 
 function CollectionPageInner() {
 	const { user } = useAuth();
-	const {
-		entries,
-		isLoaded,
-		isFullyLoaded,
-		clearCollection,
-		duplicateEntry,
-		decrementCard,
-		removeCard,
-	} = useCollectionContext();
-	const { moveToWishlist } = useWishlistContext();
+	const { entries, isLoaded, isFullyLoaded, clearCollection } = useCollectionContext();
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCardsContext();
 	const { openCard } = useActiveCardContext();
 	const { status, openModal } = useImportContext();
 
-	const deck = useAddToDeckModal(stacks);
+	const { openAddToDeck } = useAddToDeckModal();
+	const mutations = useCardMutations();
 
 	const handleClearCollection = useCallback(() => {
 		if (confirm('Effacer toute la collection ? Cette action est irréversible.')) {
@@ -102,16 +93,17 @@ function CollectionPageInner() {
 			emptyState={emptyState}
 			onCardClick={openCard}
 			buildCardMenuItems={(stack, close) =>
-				buildCollectionMenuItems(
+				buildOwnedCardMenu(
 					stack,
+					'collection',
 					{
 						onViewDetails: openCard,
-						onAddCopy: duplicateEntry,
-						onRemoveCopy: decrementCard,
-						onMoveToWishlist: (rowId) => moveToWishlist([rowId]),
-						onAddToDeck: deck.openForStack,
+						onAddCopy: (rep) => mutations.collection.duplicate(rep.id, rep.entry),
+						onRemoveCopy: (rep) => mutations.collection.decrement(rep.id),
+						onMove: (rep) => mutations.moveToWishlist(rep.entry.rowId),
+						onAddToDeck: (s) => openAddToDeck(s.cards[0]),
 						onChangePrint: openCard,
-						onRemoveFromCollection: removeCard,
+						onRemove: (rep) => mutations.collection.remove(rep.id),
 					},
 					close
 				)
@@ -119,14 +111,7 @@ function CollectionPageInner() {
 			showDeckBadges
 		>
 			<ImportModal />
-			<CollectionCardModal onAddToDeck={deck.openForCard} />
-			{deck.deckModal && (
-				<AddToDeckModal
-					card={deck.deckModal.card}
-					ownedRowIds={deck.deckModal.ownedRowIds}
-					onClose={deck.close}
-				/>
-			)}
+			<CollectionCardModal onAddToDeck={openAddToDeck} />
 		</CollectionView>
 	);
 }

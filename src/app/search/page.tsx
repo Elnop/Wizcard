@@ -21,7 +21,7 @@ import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTags
 import { useRouter } from 'next/navigation';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
-import { AddToDeckModal } from '@/lib/card/components/AddToDeckModal/AddToDeckModal';
+import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
 import { buildSearchMenuItems } from './searchCardMenu';
 import styles from './page.module.css';
 
@@ -63,7 +63,7 @@ function SearchPageContent() {
 		card: ScryfallCard;
 		target: 'collection' | 'wishlist';
 	} | null>(null);
-	const [deckModalCard, setDeckModalCard] = useState<ScryfallCard | null>(null);
+	const { openAddToDeck } = useAddToDeckModal();
 	const [customSources, setCustomSources] = useState<MpcSourceWithCount[]>([]);
 
 	const {
@@ -298,7 +298,7 @@ function SearchPageContent() {
 									setAddModal({ card: c as ScryfallCard, target: 'collection' }),
 								onAddToWishlist: (c) =>
 									setAddModal({ card: c as ScryfallCard, target: 'wishlist' }),
-								onAddToDeck: (c) => setDeckModalCard(c as ScryfallCard),
+								onAddToDeck: (c) => openAddToDeck(c),
 							},
 							close
 						)
@@ -361,7 +361,7 @@ function SearchPageContent() {
 						onAddToWishlist={(card, entry, count) => {
 							addToWishlist(card, entry, count);
 						}}
-						onAddToDeck={(card) => setDeckModalCard(card as ScryfallCard)}
+						onAddToDeck={(card) => openAddToDeck(card)}
 					/>
 				)}
 
@@ -378,10 +378,6 @@ function SearchPageContent() {
 						}}
 						onClose={() => setAddModal(null)}
 					/>
-				)}
-
-				{deckModalCard && (
-					<AddToDeckModal card={deckModalCard} onClose={() => setDeckModalCard(null)} />
 				)}
 			</main>
 		</div>

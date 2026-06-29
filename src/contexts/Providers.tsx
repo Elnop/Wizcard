@@ -5,6 +5,7 @@ import { CollectionProvider } from '@/lib/collection/context/CollectionContext';
 import { WishlistProvider } from '@/lib/wishlist/context/WishlistContext';
 import { DeckProvider } from '@/lib/deck/context/DeckContext';
 import { ImportProvider } from '@/lib/import/context/ImportContext';
+import { AddToDeckModalProvider } from '@/contexts/AddToDeckModalProvider';
 import { SyncQueueRunner } from '@/lib/supabase/components/SyncQueueRunner';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -14,7 +15,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 				<CollectionProvider>
 					<WishlistProvider>
 						<DeckProvider>
-							<ImportProvider>{children}</ImportProvider>
+							<ImportProvider>
+								<AddToDeckModalProvider>{children}</AddToDeckModalProvider>
+							</ImportProvider>
 						</DeckProvider>
 					</WishlistProvider>
 				</CollectionProvider>

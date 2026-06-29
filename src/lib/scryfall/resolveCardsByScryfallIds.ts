@@ -1,6 +1,7 @@
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { BATCH_SIZE } from '@/lib/scryfall/constants';
 import { getCardsFromCache, putCardsInCache } from '@/lib/scryfall/utils/card-cache';
+import { putCards } from '@/lib/scryfall/store/cards-store';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
 export interface ResolveProgress {
@@ -49,6 +50,8 @@ export async function resolveCardsByScryfallIds(
 		for (const [id, card] of cached) {
 			resolved.set(id, card);
 		}
+		// Mirror cache hits into the global in-memory store (synchronous reads).
+		putCards([...cached.values()]);
 		missIds = uniqueIds.filter((id) => !cached.has(id));
 	}
 
@@ -77,6 +80,10 @@ export async function resolveCardsByScryfallIds(
 	if (!skipCache && fetched.length > 0) {
 		void putCardsInCache(fetched);
 	}
+
+	// Mirror network-fetched cards into the global in-memory store (cache hits
+	// were already mirrored above). Covers the skipCache path too.
+	putCards(fetched);
 
 	return resolved;
 }

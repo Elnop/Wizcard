@@ -5,8 +5,8 @@ import Link from 'next/link';
 import type { CardStack } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
-import { AddToDeckModal } from '@/lib/card/components/AddToDeckModal/AddToDeckModal';
-import { useAddToDeckModal } from '@/lib/card/hooks/useAddToDeckModal';
+import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
+import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
@@ -18,37 +18,28 @@ import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
 import { Button } from '@/components/Button/Button';
 import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
-import { buildWishlistMenuItems } from './wishlistCardMenu';
+import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
 import { useWishlistPdf } from './useWishlistPdf';
 import { useMoveToCollection } from './useMoveToCollection';
 import styles from './page.module.css';
 
 function WishlistPageInner() {
-	const {
-		entries,
-		isLoaded,
-		duplicateEntry,
-		removeFromWishlist,
-		clearWishlist,
-		moveToCollection,
-		assignToDeck,
-		changePrint,
-	} = useWishlistContext();
+	const { entries, isLoaded, clearWishlist, moveToCollection, changePrint } = useWishlistContext();
 
 	const { stacks, isLoading: isHydrating } = useCollectionCards(entries);
 
 	const { resolvedStack, handleCardClick, handleCloseModal } = useCardModal(stacks);
 
-	const deck = useAddToDeckModal(stacks, assignToDeck);
+	const { openAddToDeck } = useAddToDeckModal();
 	const pdf = useWishlistPdf(stacks);
 	const move = useMoveToCollection(stacks, moveToCollection, handleCloseModal);
+	const mutations = useCardMutations();
 
 	const handleRemoveEntry = useCallback(
-		(rowId: string) => {
-			removeFromWishlist(rowId);
-			handleCloseModal();
-		},
-		[removeFromWishlist, handleCloseModal]
+		// Remove + close the card modal: the post-mutation UI reaction is
+		// co-located with the mutation via `onAfter`.
+		(rowId: string) => mutations.wishlist.remove(rowId, { onAfter: handleCloseModal }),
+		[mutations, handleCloseModal]
 	);
 
 	const handleClearWishlist = useCallback(() => {
@@ -135,16 +126,17 @@ function WishlistPageInner() {
 						buildCardMenuItems={(card, close) => {
 							const stack = stackByCardId.get(card.id);
 							return stack
-								? buildWishlistMenuItems(
+								? buildOwnedCardMenu(
 										stack,
+										'wishlist',
 										{
 											onViewDetails: handleCardClick,
-											onAddCopy: duplicateEntry,
-											onRemoveCopy: removeFromWishlist,
-											onMoveToCollection: move.requestMove,
-											onAddToDeck: deck.openForStack,
+											onAddCopy: (rep) => mutations.wishlist.duplicate(rep.id, rep.entry),
+											onRemoveCopy: (rep) => mutations.wishlist.remove(rep.entry.rowId),
+											onMove: (rep) => move.requestMove(rep.entry.rowId),
+											onAddToDeck: (s) => openAddToDeck(s.cards[0]),
 											onChangePrint: handleCardClick,
-											onRemoveFromWishlist: removeFromWishlist,
+											onRemove: (rep) => mutations.wishlist.remove(rep.entry.rowId),
 										},
 										close
 									)
@@ -206,16 +198,8 @@ function WishlistPageInner() {
 				onRemoveEntry={handleRemoveEntry}
 				onChangePrint={handleChangePrint}
 				onMoveToCollection={move.requestMove}
-				onAddToDeck={deck.openForCard}
+				onAddToDeck={openAddToDeck}
 			/>
-			{deck.deckModal && (
-				<AddToDeckModal
-					card={deck.deckModal.card}
-					ownedRowIds={deck.deckModal.ownedRowIds}
-					onAssign={deck.onAssign}
-					onClose={deck.close}
-				/>
-			)}
 			{pdf.isModalOpen && (
 				<PdfSettingsModal
 					cards={pdf.pdfCards}
