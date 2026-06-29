@@ -1,0 +1,231 @@
+'use client';
+
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import type { Card, CardEntry } from '@/types/cards';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { CustomCard } from '@/lib/mpc/types';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import { CardModal } from '@/lib/card/components/CardModal/CardModal';
+import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
+import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
+import { useAddCardModal } from '@/contexts/AddCardModalProvider';
+import { getCard } from '@/lib/scryfall/store/cards-store';
+import { putCardsInCache } from '@/lib/scryfall/utils/card-cache';
+import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
+import { deriveCardModalProps } from '@/lib/card/deriveCardModalProps';
+
+type StoredCopy = { scryfallId: string; entry: CardEntry };
+
+/** What was opened.
+ *  - 'stack': owned/wishlisted card from THIS user's data — re-resolved from the
+ *    live contexts each render (so it tracks mutations + print changes).
+ *  - 'frozen': read-only cards passed verbatim (e.g. another user's public
+ *    collection) — never re-resolved against the signed-in user's contexts.
+ *  - 'bare': a single Scryfall/custom card (search/sets/prints). */
+type OpenState =
+	| { kind: 'stack'; oracleKey: string }
+	| { kind: 'frozen'; cards: Card[] }
+	| { kind: 'bare'; card: ScryfallCard | CustomCard }
+	| null;
+
+type CardModalContextValue = {
+	/** Open the modal for a bare card (search/sets/prints) or a resolved stack's cards. */
+	openCardModal: (input: ScryfallCard | CustomCard | Card[], opts?: { readOnly?: boolean }) => void;
+	close: () => void;
+};
+
+const CardModalContext = createContext<CardModalContextValue | null>(null);
+
+const oracleKeyOf = (card: { oracle_id?: string; id: string }) => card.oracle_id ?? card.id;
+
+/** Strip identity/ownership fields so a moved wishlist copy is minted fresh in
+ *  the collection (mirrors useMoveToCollection.buildInitialEntry). */
+function buildMoveInitialEntry(entry: CardEntry): Partial<CardEntry> {
+	const patch: Partial<CardEntry> = { ...entry };
+	delete patch.rowId;
+	delete patch.dateAdded;
+	delete patch.deckId;
+	delete patch.ownerId;
+	delete patch.wishlist;
+	return patch;
+}
+
+/** Rebuild a stack's Card[] (all copies, same oracle key) from a context's entries
+ *  + the global hydrated-cards store. Mirrors how the grid derives stacks. */
+function resolveStackCards(oracleKey: string, entries: StoredCopy[]): Card[] {
+	const result: Card[] = [];
+	for (const { scryfallId, entry } of entries) {
+		const scryfall = getCard(scryfallId);
+		if (!scryfall) continue;
+		if (oracleKeyOf(scryfall) !== oracleKey) continue;
+		result.push({ ...scryfall, entry });
+	}
+	return result;
+}
+
+/**
+ * Global provider that owns the card-modal open-state and renders `<CardModal>`
+ * once at the root. Mutation handlers are derived from the card TYPE via
+ * `deriveCardModalProps`; the provider additionally owns the stateful
+ * change-print "dance" (keep the modal open and re-targeted on the new print)
+ * for owned/wishlisted cards — generalising the former `useCardModal` hook.
+ *
+ * Out of scope (still rendered locally): the deck-owner modal, the import
+ * modals, and CardModal's internal recursive token render.
+ */
+export function CardModalProvider({ children }: { children: React.ReactNode }) {
+	const collection = useCollectionContext();
+	const wishlist = useWishlistContext();
+	const { openAddToDeck } = useAddToDeckModal();
+	const { openAddCard } = useAddCardModal();
+
+	const [open, setOpen] = useState<OpenState>(null);
+
+	const openCardModal = useCallback(
+		(input: ScryfallCard | CustomCard | Card[], opts?: { readOnly?: boolean }) => {
+			if (Array.isArray(input)) {
+				const rep = input[0];
+				if (!rep) return;
+				// Read-only stacks (another user's collection) are frozen — never
+				// re-resolved against the signed-in user's contexts.
+				if (opts?.readOnly) setOpen({ kind: 'frozen', cards: input });
+				else setOpen({ kind: 'stack', oracleKey: oracleKeyOf(rep) });
+			} else {
+				setOpen({ kind: 'bare', card: input });
+			}
+		},
+		[]
+	);
+
+	const close = useCallback(() => setOpen(null), []);
+
+	// Re-resolve the displayed cards on every render so they track store mutations
+	// (increment/decrement/change-print) without the modal losing its target.
+	const resolved = useMemo<{
+		cards: Card[] | ScryfallCard | CustomCard | null;
+		rep: AnyCard | null;
+		source: 'collection' | 'wishlist' | null;
+	}>(() => {
+		if (!open) return { cards: null, rep: null, source: null };
+		if (open.kind === 'bare') return { cards: open.card, rep: open.card, source: null };
+		if (open.kind === 'frozen') {
+			// Verbatim, read-only — no mutations derived (source stays null).
+			return { cards: open.cards.length > 0 ? open.cards : null, rep: null, source: null };
+		}
+		// Stack: figure out which context owns it from the first matching entry.
+		const inCollection = resolveStackCards(open.oracleKey, collection.entries);
+		const inWishlist = resolveStackCards(open.oracleKey, wishlist.entries);
+		const isWishlist = inWishlist.length > 0 && inCollection.length === 0;
+		const cards = isWishlist ? inWishlist : inCollection;
+		return {
+			cards: cards.length > 0 ? cards : null,
+			rep: cards[0] ?? null,
+			source: isWishlist ? 'wishlist' : 'collection',
+		};
+	}, [open, collection.entries, wishlist.entries]);
+
+	// Stateful change-print: persist the print change, then re-target the open
+	// stack to the new print's oracle key so the modal keeps showing it.
+	const handleChangePrint = useCallback(
+		(rowId: string, newCard: ScryfallCard, source: 'collection' | 'wishlist') => {
+			void putCardsInCache([newCard]);
+			const language = newCard.lang ? SCRYFALL_CODE_TO_LANGUAGE[newCard.lang] : undefined;
+			if (source === 'wishlist') {
+				wishlist.changePrint(rowId, newCard.id);
+			} else {
+				collection.changePrint(rowId, newCard.id, language ? { language } : undefined);
+			}
+			setOpen({ kind: 'stack', oracleKey: oracleKeyOf(newCard) });
+		},
+		[collection, wishlist]
+	);
+
+	// Wishlist "move to collection": open AddCardModal pre-filled from the
+	// wishlist copy; on confirm commit the move and close the card modal.
+	const requestMoveToCollection = useCallback(
+		(rowId: string) => {
+			const oracleKey = (() => {
+				const sc = wishlist.entries.find((e) => e.entry.rowId === rowId);
+				const card = sc ? getCard(sc.scryfallId) : undefined;
+				return card ? oracleKeyOf(card) : undefined;
+			})();
+			if (!oracleKey) return;
+			const stackCards = resolveStackCards(oracleKey, wishlist.entries);
+			const rep = stackCards[0];
+			if (!rep) return;
+			openAddCard({
+				scryfallCard: rep as ScryfallCard,
+				initialEntry: buildMoveInitialEntry(rep.entry),
+				maxQuantity: stackCards.length,
+				hideQuantity: stackCards.length <= 1,
+				onAdd: (selectedPrint, entry, count) => {
+					const rowIds = stackCards.slice(0, count).map((c) => c.entry.rowId);
+					wishlist.moveToCollection(rowIds, selectedPrint.id, entry);
+					close();
+				},
+			});
+		},
+		[wishlist, openAddCard, close]
+	);
+
+	const derivedProps = useMemo(() => {
+		// No rep ⇒ frozen/read-only ⇒ no mutation handlers derived.
+		if (!open || !resolved.rep) return null;
+		const deps = {
+			collection: {
+				addCard: collection.addCard,
+				addCards: collection.addCards,
+				duplicateEntry: collection.duplicateEntry,
+				decrementCard: collection.decrementCard,
+				removeCard: collection.removeCard,
+				removeEntry: collection.removeEntry,
+				updateEntry: collection.updateEntry,
+				changePrint: collection.changePrint,
+			},
+			wishlist: {
+				addToWishlist: wishlist.addToWishlist,
+				removeFromWishlist: wishlist.removeFromWishlist,
+				moveToCollection: requestMoveToCollection,
+				changePrint: wishlist.changePrint,
+			},
+			openAddToDeck,
+			close,
+		};
+		const base = deriveCardModalProps(resolved.rep, deps);
+		// Override the stateless change-print with the stateful dance.
+		if (resolved.source) {
+			base.onChangePrint = (rowId, newCard) => handleChangePrint(rowId, newCard, resolved.source!);
+		}
+		return base;
+	}, [
+		open,
+		resolved,
+		collection,
+		wishlist,
+		openAddToDeck,
+		close,
+		handleChangePrint,
+		requestMoveToCollection,
+	]);
+
+	const value = useMemo<CardModalContextValue>(
+		() => ({ openCardModal, close }),
+		[openCardModal, close]
+	);
+
+	return (
+		<CardModalContext.Provider value={value}>
+			{children}
+			{open && resolved.cards && (
+				<CardModal cards={resolved.cards} onClose={close} {...(derivedProps ?? {})} />
+			)}
+		</CardModalContext.Provider>
+	);
+}
+
+export function useCardModalContext(): CardModalContextValue {
+	const ctx = useContext(CardModalContext);
+	if (!ctx) throw new Error('useCardModalContext must be used within a CardModalProvider');
+	return ctx;
+}

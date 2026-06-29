@@ -8,7 +8,7 @@ import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
-import { CardModal } from '@/lib/card/components/CardModal/CardModal';
+import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
@@ -57,10 +57,10 @@ export default function SearchPage() {
 function SearchPageContent() {
 	const { addCards } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();
-	const [selectedCard, setSelectedCard] = useState<AnyCard | null>(null);
 	const router = useRouter();
 	const { openAddToDeck } = useAddToDeckModal();
 	const { openAddCard } = useAddCardModal();
+	const { openCardModal } = useCardModalContext();
 	const [customSources, setCustomSources] = useState<MpcSourceWithCount[]>([]);
 
 	const {
@@ -154,7 +154,10 @@ function SearchPageContent() {
 			.catch(() => {});
 	}, []);
 
-	const handleCardClick = useCallback((card: AnyCard) => setSelectedCard(card), []);
+	const handleCardClick = useCallback(
+		(card: AnyCard) => openCardModal(card as ScryfallCard),
+		[openCardModal]
+	);
 
 	const hasFilters =
 		name || colors.length > 0 || type.length > 0 || set || rarities.length > 0 || oracleText || cmc;
@@ -289,7 +292,7 @@ function SearchPageContent() {
 						buildSearchMenuItems(
 							card,
 							{
-								onViewDetails: (c) => setSelectedCard(c),
+								onViewDetails: (c) => openCardModal(c as ScryfallCard),
 								onOpenCardPage: (c) => router.push(`/card/${c.id}`),
 								onAddToCollection: (c) =>
 									openAddCard({
@@ -353,20 +356,6 @@ function SearchPageContent() {
 							)}
 						</div>
 					)}
-
-				{selectedCard && (
-					<CardModal
-						cards={selectedCard}
-						onClose={() => setSelectedCard(null)}
-						onAddToCollection={(card, entry, count) => {
-							addCards(card, count, entry);
-						}}
-						onAddToWishlist={(card, entry, count) => {
-							addToWishlist(card, entry, count);
-						}}
-						onAddToDeck={(card) => openAddToDeck(card)}
-					/>
-				)}
 			</main>
 		</div>
 	);

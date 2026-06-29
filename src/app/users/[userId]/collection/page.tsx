@@ -1,12 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import type { CardStack } from '@/types/cards';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { CollectionView } from '@/app/collection/lib/CollectionView/CollectionView';
 import { ExportMenu } from '@/app/collection/ExportMenu/ExportMenu';
-import { CardModal } from '@/lib/card/components/CardModal/CardModal';
+import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { Spinner } from '@/components/Spinner/Spinner';
 import CollectionPage from '@/app/collection/page';
@@ -15,8 +13,7 @@ import { usePublicCollection } from './usePublicCollection';
 function PublicCollectionView({ userId }: { userId: string }) {
 	const { entries, isLoaded, isFullyLoaded } = usePublicCollection(userId);
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
-
-	const [selectedStack, setSelectedStack] = useState<CardStack | null>(null);
+	const { openCardModal } = useCardModalContext();
 
 	const isLoadingCollection = !isFullyLoaded || isHydrating;
 
@@ -46,10 +43,8 @@ function PublicCollectionView({ userId }: { userId: string }) {
 			title="Collection"
 			actions={actions || undefined}
 			emptyState={emptyState}
-			onCardClick={setSelectedStack}
-		>
-			<CardModal cards={selectedStack?.cards ?? null} onClose={() => setSelectedStack(null)} />
-		</CollectionView>
+			onCardClick={(stack) => openCardModal(stack.cards, { readOnly: true })}
+		/>
 	);
 }
 

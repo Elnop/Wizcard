@@ -11,7 +11,7 @@ import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { groupPrintsByLang } from '@/lib/card/components/PrintList/PrintList.types';
 import { useAddCardModal } from '@/contexts/AddCardModalProvider';
-import { CardModal } from '@/lib/card/components/CardModal/CardModal';
+import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { LocalizedCardThumb } from '../../LocalizedCardThumb';
@@ -51,8 +51,8 @@ export function PrintsTab({ card }: Props) {
 	const { addCards } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();
 	const { openAddCard } = useAddCardModal();
+	const { openCardModal } = useCardModalContext();
 
-	const [viewingCard, setViewingCard] = useState<ScryfallCard | null>(null);
 	const [contextMenuCard, setContextMenuCard] = useState<ScryfallCard | null>(null);
 	const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
 
@@ -86,7 +86,7 @@ export function PrintsTab({ card }: Props) {
 				cards={sections}
 				isLoading={loading || customLoading}
 				pageSize={false}
-				onCardClick={(p) => setViewingCard(p as ScryfallCard)}
+				onCardClick={(p) => openCardModal(p as ScryfallCard)}
 				onCardContextMenu={(p, e) => {
 					e.preventDefault();
 					const x = e.clientX + MENU_WIDTH > window.innerWidth ? e.clientX - MENU_WIDTH : e.clientX;
@@ -163,21 +163,6 @@ export function PrintsTab({ card }: Props) {
 							onAdd: (selectedPrint, entry, count) => addToWishlist(selectedPrint, entry, count),
 						})
 					}
-				/>
-			)}
-
-			{viewingCard && (
-				<CardModal
-					cards={viewingCard}
-					onClose={() => setViewingCard(null)}
-					onAddToCollection={(selectedPrint, entry, count) => {
-						addCards(selectedPrint, count, entry);
-						setViewingCard(null);
-					}}
-					onAddToWishlist={(selectedPrint, entry, count) => {
-						addToWishlist(selectedPrint, entry, count);
-						setViewingCard(null);
-					}}
 				/>
 			)}
 		</>

@@ -1,9 +1,9 @@
 'use client';
 
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
-import { CardModal } from '@/lib/card/components/CardModal/CardModal';
+import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { OwnershipBadge } from '@/lib/card/components/OwnershipBadge/OwnershipBadge';
 import type { BadgeState } from '@/app/decks/[id]/components/DeckCardOverlay/useCollectionBadge';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
@@ -28,11 +28,14 @@ function SetCardsGridInner({
 	sortDir,
 	onSortChange,
 }: SetCardsGridProps) {
-	const { addCards, getOwnership } = useCollectionContext();
-	const { addToWishlist, entries: wishlistEntries } = useWishlistContext();
-	const [selectedCard, setSelectedCard] = useState<AnyCard | null>(null);
+	const { getOwnership } = useCollectionContext();
+	const { entries: wishlistEntries } = useWishlistContext();
+	const { openCardModal } = useCardModalContext();
 
-	const handleCardClick = useCallback((card: AnyCard) => setSelectedCard(card), []);
+	const handleCardClick = useCallback(
+		(card: AnyCard) => openCardModal(card as ScryfallCard),
+		[openCardModal]
+	);
 
 	// Prints present in the wishlist, for the 🛒 badge state.
 	const wishlistPrintIds = useMemo(
@@ -67,19 +70,6 @@ function SetCardsGridInner({
 			/>
 			{!isLoading && cards.length === 0 && (
 				<p className={styles.error}>Aucune carte ne correspond aux filtres.</p>
-			)}
-
-			{selectedCard && (
-				<CardModal
-					cards={selectedCard}
-					onClose={() => setSelectedCard(null)}
-					onAddToCollection={(card, entry, count) => {
-						addCards(card, count, entry);
-					}}
-					onAddToWishlist={(card, entry, count) => {
-						addToWishlist(card, entry, count);
-					}}
-				/>
 			)}
 		</>
 	);

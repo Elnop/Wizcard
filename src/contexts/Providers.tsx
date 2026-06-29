@@ -7,6 +7,7 @@ import { DeckProvider } from '@/lib/deck/context/DeckContext';
 import { ImportProvider } from '@/lib/import/context/ImportContext';
 import { AddToDeckModalProvider } from '@/contexts/AddToDeckModalProvider';
 import { AddCardModalProvider } from '@/contexts/AddCardModalProvider';
+import { CardModalProvider } from '@/contexts/CardModalProvider';
 import { SyncQueueRunner } from '@/lib/supabase/components/SyncQueueRunner';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -18,7 +19,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 						<DeckProvider>
 							<ImportProvider>
 								<AddToDeckModalProvider>
-									<AddCardModalProvider>{children}</AddCardModalProvider>
+									<AddCardModalProvider>
+										<CardModalProvider>{children}</CardModalProvider>
+									</AddCardModalProvider>
 								</AddToDeckModalProvider>
 							</ImportProvider>
 						</DeckProvider>
