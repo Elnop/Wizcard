@@ -9,12 +9,11 @@ import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { getDeckZone } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
-import type { CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
 import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
-import { AddCardModal } from '@/lib/card/components/AddCardModal/AddCardModal';
+import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { serializeDecklist } from '@/lib/deck/utils/serialize-decklist';
 import { usePublicDeckDetail } from './usePublicDeckDetail';
@@ -40,9 +39,9 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 	const { deck, cardsByZone, resolvedCards, stats, coverArtUrl, isLoading, isResolving } =
 		usePublicDeckDetail(deckId);
 	const { addCards } = useCollectionContext();
+	const { openAddCard } = useAddCardModal();
 
 	const [selectedCards, setSelectedCards] = useState<ResolvedDeckCard[] | null>(null);
-	const [addToCollectionCard, setAddToCollectionCard] = useState<ResolvedDeckCard | null>(null);
 	const [textExportModalOpen, setTextExportModalOpen] = useState(false);
 
 	const cardMenu = useContextMenu<ResolvedDeckCard>();
@@ -101,14 +100,6 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 			cardMenu.open(card as ResolvedDeckCard, e);
 		},
 		[cardMenu]
-	);
-
-	const handleAddToCollection = useCallback(
-		(selectedCard: ScryfallCard, entry: Partial<CardEntry>, count: number) => {
-			addCards(selectedCard, count, entry);
-			setAddToCollectionCard(null);
-		},
-		[addCards]
 	);
 
 	// One card per logical token — the overlay shows the per-stack count, so
@@ -229,21 +220,16 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 							label: 'Add to Collection',
 							icon: '+',
 							onClick: () => {
-								setAddToCollectionCard(cardMenu.menu!.data);
+								openAddCard({
+									scryfallCard: cardMenu.menu!.data as ScryfallCard,
+									onAdd: (selectedCard, entry, count) => addCards(selectedCard, count, entry),
+								});
 								cardMenu.close();
 							},
 						},
 					]}
 					position={cardMenu.menu.position}
 					onClose={cardMenu.close}
-				/>
-			)}
-
-			{addToCollectionCard && (
-				<AddCardModal
-					scryfallCard={addToCollectionCard as ScryfallCard}
-					onAdd={handleAddToCollection}
-					onClose={() => setAddToCollectionCard(null)}
 				/>
 			)}
 		</div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
-import { AddCardModal } from '@/lib/card/components/AddCardModal/AddCardModal';
+import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 import { Button } from '@/components/Button/Button';
 import styles from './AddToCollectionButton.module.css';
 
@@ -14,7 +14,7 @@ export interface AddToCollectionButtonProps {
 
 export function AddToCollectionButton({ card }: AddToCollectionButtonProps) {
 	const { addCards, decrementCard, getQuantity } = useCollectionContext();
-	const [showModal, setShowModal] = useState(false);
+	const { openAddCard } = useAddCardModal();
 	const [showFeedback, setShowFeedback] = useState(false);
 	const quantity = getQuantity(card.id);
 
@@ -24,55 +24,50 @@ export function AddToCollectionButton({ card }: AddToCollectionButtonProps) {
 		return () => clearTimeout(timer);
 	}, [showFeedback]);
 
-	function handleAdd(selectedCard: ScryfallCard, entry: Partial<CardEntry>, count: number) {
-		addCards(selectedCard, count, entry);
-		setShowFeedback(true);
+	function openAdd() {
+		openAddCard({
+			scryfallCard: card,
+			onAdd: (selectedCard: ScryfallCard, entry: Partial<CardEntry>, count: number) => {
+				addCards(selectedCard, count, entry);
+				setShowFeedback(true);
+			},
+		});
 	}
 
 	if (quantity === 0) {
 		return (
-			<>
-				<div className={styles.container}>
-					<Button variant="primary" onClick={() => setShowModal(true)}>
-						Add to Collection
-					</Button>
-				</div>
-				{showModal && (
-					<AddCardModal scryfallCard={card} onAdd={handleAdd} onClose={() => setShowModal(false)} />
-				)}
-			</>
+			<div className={styles.container}>
+				<Button variant="primary" onClick={openAdd}>
+					Add to Collection
+				</Button>
+			</div>
 		);
 	}
 
 	return (
-		<>
-			<div className={styles.container}>
-				<div className={styles.controls}>
-					<span className={styles.label}>{showFeedback ? 'Added!' : 'In Collection'}</span>
-					<div className={styles.quantityControls}>
-						<button
-							type="button"
-							className={styles.quantityButton}
-							onClick={() => decrementCard(card.id)}
-							aria-label="Remove one"
-						>
-							-
-						</button>
-						<span className={styles.quantity}>{quantity}</span>
-						<button
-							type="button"
-							className={styles.quantityButton}
-							onClick={() => setShowModal(true)}
-							aria-label="Add one"
-						>
-							+
-						</button>
-					</div>
+		<div className={styles.container}>
+			<div className={styles.controls}>
+				<span className={styles.label}>{showFeedback ? 'Added!' : 'In Collection'}</span>
+				<div className={styles.quantityControls}>
+					<button
+						type="button"
+						className={styles.quantityButton}
+						onClick={() => decrementCard(card.id)}
+						aria-label="Remove one"
+					>
+						-
+					</button>
+					<span className={styles.quantity}>{quantity}</span>
+					<button
+						type="button"
+						className={styles.quantityButton}
+						onClick={openAdd}
+						aria-label="Add one"
+					>
+						+
+					</button>
 				</div>
 			</div>
-			{showModal && (
-				<AddCardModal scryfallCard={card} onAdd={handleAdd} onClose={() => setShowModal(false)} />
-			)}
-		</>
+		</div>
 	);
 }

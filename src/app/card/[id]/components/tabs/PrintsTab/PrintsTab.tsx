@@ -10,7 +10,7 @@ import type { CardListSection } from '@/lib/card/components/CardList/CardList.ty
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { groupPrintsByLang } from '@/lib/card/components/PrintList/PrintList.types';
-import { AddCardModal } from '@/lib/card/components/AddCardModal/AddCardModal';
+import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
@@ -50,12 +50,11 @@ export function PrintsTab({ card }: Props) {
 
 	const { addCards } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();
+	const { openAddCard } = useAddCardModal();
 
 	const [viewingCard, setViewingCard] = useState<ScryfallCard | null>(null);
 	const [contextMenuCard, setContextMenuCard] = useState<ScryfallCard | null>(null);
 	const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
-	const [addingCard, setAddingCard] = useState<ScryfallCard | null>(null);
-	const [addingToWishlist, setAddingToWishlist] = useState<ScryfallCard | null>(null);
 
 	const currentLang = scryfall?.lang ?? custom?.custom.lang ?? 'en';
 	const hasCustomPrints = customPrints.length > 0;
@@ -152,8 +151,18 @@ export function PrintsTab({ card }: Props) {
 						setContextMenuCard(null);
 						setContextMenuPos(null);
 					}}
-					onAddToCollection={(c) => setAddingCard(c)}
-					onAddToWishlist={(c) => setAddingToWishlist(c)}
+					onAddToCollection={(c) =>
+						openAddCard({
+							scryfallCard: c,
+							onAdd: (selectedPrint, entry, count) => addCards(selectedPrint, count, entry),
+						})
+					}
+					onAddToWishlist={(c) =>
+						openAddCard({
+							scryfallCard: c,
+							onAdd: (selectedPrint, entry, count) => addToWishlist(selectedPrint, entry, count),
+						})
+					}
 				/>
 			)}
 
@@ -169,28 +178,6 @@ export function PrintsTab({ card }: Props) {
 						addToWishlist(selectedPrint, entry, count);
 						setViewingCard(null);
 					}}
-				/>
-			)}
-
-			{addingCard && (
-				<AddCardModal
-					scryfallCard={addingCard}
-					onAdd={(selectedPrint, entry, count) => {
-						addCards(selectedPrint, count, entry);
-						setAddingCard(null);
-					}}
-					onClose={() => setAddingCard(null)}
-				/>
-			)}
-
-			{addingToWishlist && (
-				<AddCardModal
-					scryfallCard={addingToWishlist}
-					onAdd={(selectedPrint, entry, count) => {
-						addToWishlist(selectedPrint, entry, count);
-						setAddingToWishlist(null);
-					}}
-					onClose={() => setAddingToWishlist(null)}
 				/>
 			)}
 		</>

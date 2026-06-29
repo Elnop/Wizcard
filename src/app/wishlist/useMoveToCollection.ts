@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { CardStack, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 
 function buildInitialEntry(entry: CardEntry): Partial<CardEntry> {
 	// Strip identity/ownership fields so the new collection copy is minted fresh.
@@ -19,16 +20,16 @@ function buildInitialEntry(entry: CardEntry): Partial<CardEntry> {
 }
 
 /**
- * Owns the wishlist "move to collection" flow: maps a rowId back to its stack,
- * holds the stack currently being moved (drives the `<EditCardModal>`), and
- * commits the move. `onAfterMove` lets the page close the card modal too.
+ * Wishlist "move to collection" flow. `requestMove(rowId)` resolves the row's
+ * stack and opens the (global) add-card modal pre-filled from the wishlist copy;
+ * confirming commits the move and closes the card modal via `onAfterMove`.
  */
 export function useMoveToCollection(
 	stacks: CardStack[],
 	moveToCollection: (rowIds: string[], scryfallId: string, entryPatch: Partial<CardEntry>) => void,
 	onAfterMove: () => void
 ) {
-	const [movingStack, setMovingStack] = useState<CardStack | null>(null);
+	const { openAddCard } = useAddCardModal();
 
 	const stackByRowId = useMemo(() => {
 		const map = new Map<string, CardStack>();
@@ -41,23 +42,22 @@ export function useMoveToCollection(
 	const requestMove = useCallback(
 		(rowId: string) => {
 			const stack = stackByRowId.get(rowId);
-			if (stack) setMovingStack(stack);
+			const rep = stack?.cards[0];
+			if (!stack || !rep) return;
+			openAddCard({
+				scryfallCard: rep as ScryfallCard,
+				initialEntry: buildInitialEntry(rep.entry),
+				maxQuantity: stack.cards.length,
+				hideQuantity: stack.cards.length <= 1,
+				onAdd: (selectedPrint, entry, count) => {
+					const rowIds = stack.cards.slice(0, count).map((c) => c.entry.rowId);
+					moveToCollection(rowIds, selectedPrint.id, entry);
+					onAfterMove();
+				},
+			});
 		},
-		[stackByRowId]
+		[stackByRowId, openAddCard, moveToCollection, onAfterMove]
 	);
 
-	const confirmMove = useCallback(
-		(selectedPrint: ScryfallCard, entry: Partial<CardEntry>, count: number) => {
-			if (!movingStack) return;
-			const rowIds = movingStack.cards.slice(0, count).map((c) => c.entry.rowId);
-			moveToCollection(rowIds, selectedPrint.id, entry);
-			setMovingStack(null);
-			onAfterMove();
-		},
-		[movingStack, moveToCollection, onAfterMove]
-	);
-
-	const cancel = useCallback(() => setMovingStack(null), []);
-
-	return { movingStack, requestMove, confirmMove, cancel, buildInitialEntry };
+	return { requestMove };
 }

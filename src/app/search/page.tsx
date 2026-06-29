@@ -20,7 +20,7 @@ import type { MpcSourceWithCount } from '@/lib/mpc/db/custom-cards';
 import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
 import { useRouter } from 'next/navigation';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import { AddCardModal } from '@/lib/card/components/AddCardModal/AddCardModal';
+import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
 import { buildSearchMenuItems } from './searchCardMenu';
 import styles from './page.module.css';
@@ -59,11 +59,8 @@ function SearchPageContent() {
 	const { addToWishlist } = useWishlistContext();
 	const [selectedCard, setSelectedCard] = useState<AnyCard | null>(null);
 	const router = useRouter();
-	const [addModal, setAddModal] = useState<{
-		card: ScryfallCard;
-		target: 'collection' | 'wishlist';
-	} | null>(null);
 	const { openAddToDeck } = useAddToDeckModal();
+	const { openAddCard } = useAddCardModal();
 	const [customSources, setCustomSources] = useState<MpcSourceWithCount[]>([]);
 
 	const {
@@ -295,9 +292,15 @@ function SearchPageContent() {
 								onViewDetails: (c) => setSelectedCard(c),
 								onOpenCardPage: (c) => router.push(`/card/${c.id}`),
 								onAddToCollection: (c) =>
-									setAddModal({ card: c as ScryfallCard, target: 'collection' }),
+									openAddCard({
+										scryfallCard: c as ScryfallCard,
+										onAdd: (card, entry, count) => addCards(card, count, entry),
+									}),
 								onAddToWishlist: (c) =>
-									setAddModal({ card: c as ScryfallCard, target: 'wishlist' }),
+									openAddCard({
+										scryfallCard: c as ScryfallCard,
+										onAdd: (card, entry, count) => addToWishlist(card, entry, count),
+									}),
 								onAddToDeck: (c) => openAddToDeck(c),
 							},
 							close
@@ -362,20 +365,6 @@ function SearchPageContent() {
 							addToWishlist(card, entry, count);
 						}}
 						onAddToDeck={(card) => openAddToDeck(card)}
-					/>
-				)}
-
-				{addModal && (
-					<AddCardModal
-						scryfallCard={addModal.card}
-						onAdd={(card, entry, count) => {
-							if (addModal.target === 'collection') {
-								addCards(card, count, entry);
-							} else {
-								addToWishlist(card, entry, count);
-							}
-						}}
-						onClose={() => setAddModal(null)}
 					/>
 				)}
 			</main>
