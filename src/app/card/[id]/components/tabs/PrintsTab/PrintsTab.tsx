@@ -10,7 +10,7 @@ import type { CardListSection } from '@/lib/card/components/CardList/CardList.ty
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { groupPrintsByLang } from '@/lib/card/components/PrintList/PrintList.types';
-import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
+import { AddCardModal } from '@/lib/card/components/AddCardModal/AddCardModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
@@ -173,8 +173,7 @@ export function PrintsTab({ card }: Props) {
 			)}
 
 			{addingCard && (
-				<EditCardModal
-					mode="add"
+				<AddCardModal
 					scryfallCard={addingCard}
 					onAdd={(selectedPrint, entry, count) => {
 						addCards(selectedPrint, count, entry);
@@ -185,8 +184,7 @@ export function PrintsTab({ card }: Props) {
 			)}
 
 			{addingToWishlist && (
-				<EditCardModal
-					mode="add"
+				<AddCardModal
 					scryfallCard={addingToWishlist}
 					onAdd={(selectedPrint, entry, count) => {
 						addToWishlist(selectedPrint, entry, count);

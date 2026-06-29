@@ -14,6 +14,7 @@ import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { ColorIdentityIcons } from '@/lib/scryfall/components/ColorIdentityIcons';
 import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
+import { AddCardModal } from '@/lib/card/components/AddCardModal/AddCardModal';
 import { UseCollectionCopyModal } from '@/lib/card/components/UseCollectionCopyModal/UseCollectionCopyModal';
 import type { CollectionCopyEntry } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
@@ -755,8 +756,7 @@ function CardModalInner({
 			)}
 
 			{addingCopy && (
-				<EditCardModal
-					mode="add"
+				<AddCardModal
 					scryfallCard={selectedCard as ScryfallCard}
 					hideQuantity
 					onAdd={(_print, entry) => {
@@ -847,8 +847,7 @@ function ScryfallCardModalInner({
 			{lightbox && <CardLightbox card={card} onClose={() => setLightbox(false)} />}
 
 			{addingCard && onAddToCollection && (
-				<EditCardModal
-					mode="add"
+				<AddCardModal
 					scryfallCard={card}
 					availableZones={availableZones}
 					onAdd={(selectedPrint, entry, count) => {
@@ -860,8 +859,7 @@ function ScryfallCardModalInner({
 			)}
 
 			{addingToWishlist && onAddToWishlist && (
-				<EditCardModal
-					mode="add"
+				<AddCardModal
 					scryfallCard={card}
 					onAdd={(selectedPrint, entry, count) => {
 						onAddToWishlist(selectedPrint, entry, count);

@@ -14,7 +14,7 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
 import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
-import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
+import { AddCardModal } from '@/lib/card/components/AddCardModal/AddCardModal';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { serializeDecklist } from '@/lib/deck/utils/serialize-decklist';
 import { usePublicDeckDetail } from './usePublicDeckDetail';
@@ -240,8 +240,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 			)}
 
 			{addToCollectionCard && (
-				<EditCardModal
-					mode="add"
+				<AddCardModal
 					scryfallCard={addToCollectionCard as ScryfallCard}
 					onAdd={handleAddToCollection}
 					onClose={() => setAddToCollectionCard(null)}

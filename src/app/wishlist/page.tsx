@@ -4,7 +4,7 @@ import { useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import type { CardStack } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
+import { AddCardModal } from '@/lib/card/components/AddCardModal/AddCardModal';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
 import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
@@ -210,8 +210,7 @@ function WishlistPageInner() {
 			)}
 
 			{move.movingStack && move.movingStack.cards[0] && (
-				<EditCardModal
-					mode="add"
+				<AddCardModal
 					scryfallCard={move.movingStack.cards[0] as ScryfallCard}
 					initialEntry={move.buildInitialEntry(move.movingStack.cards[0].entry)}
 					maxQuantity={move.movingStack.cards.length}
