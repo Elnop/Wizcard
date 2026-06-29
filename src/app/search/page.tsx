@@ -20,8 +20,6 @@ import type { MpcSourceWithCount } from '@/lib/mpc/db/custom-cards';
 import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
 import { useRouter } from 'next/navigation';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
-import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
 import { AddToDeckModal } from '@/lib/card/components/AddToDeckModal/AddToDeckModal';
 import { buildSearchMenuItems } from './searchCardMenu';
@@ -61,7 +59,6 @@ function SearchPageContent() {
 	const { addToWishlist } = useWishlistContext();
 	const [selectedCard, setSelectedCard] = useState<AnyCard | null>(null);
 	const router = useRouter();
-	const cardMenu = useContextMenu<AnyCard>();
 	const [addModal, setAddModal] = useState<{
 		card: ScryfallCard;
 		target: 'collection' | 'wishlist';
@@ -291,7 +288,21 @@ function SearchPageContent() {
 					hasMore={displayedHasMore}
 					onLoadMore={displayedLoadMore}
 					onCardClick={handleCardClick}
-					onCardContextMenu={(card, e) => cardMenu.open(card, e)}
+					buildCardMenuItems={(card, close) =>
+						buildSearchMenuItems(
+							card,
+							{
+								onViewDetails: (c) => setSelectedCard(c),
+								onOpenCardPage: (c) => router.push(`/card/${c.id}`),
+								onAddToCollection: (c) =>
+									setAddModal({ card: c as ScryfallCard, target: 'collection' }),
+								onAddToWishlist: (c) =>
+									setAddModal({ card: c as ScryfallCard, target: 'wishlist' }),
+								onAddToDeck: (c) => setDeckModalCard(c as ScryfallCard),
+							},
+							close
+						)
+					}
 					renderOverlay={withCustomBadge}
 					sortOrder={order}
 					sortDir={dir}
@@ -351,26 +362,6 @@ function SearchPageContent() {
 							addToWishlist(card, entry, count);
 						}}
 						onAddToDeck={(card) => setDeckModalCard(card as ScryfallCard)}
-					/>
-				)}
-
-				{cardMenu.menu && (
-					<ContextMenu
-						items={buildSearchMenuItems(
-							cardMenu.menu.data,
-							{
-								onViewDetails: (card) => setSelectedCard(card),
-								onOpenCardPage: (card) => router.push(`/card/${card.id}`),
-								onAddToCollection: (card) =>
-									setAddModal({ card: card as ScryfallCard, target: 'collection' }),
-								onAddToWishlist: (card) =>
-									setAddModal({ card: card as ScryfallCard, target: 'wishlist' }),
-								onAddToDeck: (card) => setDeckModalCard(card as ScryfallCard),
-							},
-							cardMenu.close
-						)}
-						position={cardMenu.menu.position}
-						onClose={cardMenu.close}
 					/>
 				)}
 

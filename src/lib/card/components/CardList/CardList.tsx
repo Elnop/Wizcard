@@ -49,6 +49,7 @@ export function CardList({
 	onLoadMore,
 	skeletonCount,
 	onCardClick,
+	buildCardMenuItems,
 	onCardContextMenu,
 	renderOverlay,
 	tableColumns,
@@ -150,6 +151,7 @@ export function CardList({
 						cards={[]}
 						sections={sections}
 						onCardClick={onCardClick}
+						buildCardMenuItems={buildCardMenuItems}
 						onCardContextMenu={onCardContextMenu}
 						renderOverlay={renderOverlay}
 						renderItem={renderItem}
@@ -195,6 +197,7 @@ export function CardList({
 				isLoadingMore={isLoadingMore}
 				skeletonCount={skeletonCount}
 				onCardClick={onCardClick}
+				buildCardMenuItems={buildCardMenuItems}
 				onCardContextMenu={onCardContextMenu}
 				renderOverlay={renderOverlay}
 				renderItem={renderItem}

@@ -7,6 +7,7 @@ import { useCollectionFiltering } from './useCollectionFiltering';
 import { PAGE_SIZE } from '@/lib/collection/constants';
 import { CollectionFiltersAside } from './CollectionFiltersAside/CollectionFiltersAside';
 import { CardList } from '@/lib/card/components/CardList/CardList';
+import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
@@ -33,8 +34,8 @@ type Props = {
 	emptyState?: ReactNode;
 	/** Opens when a card is clicked. */
 	onCardClick?: (stack: CardStack) => void;
-	/** Right-click handler on a card (owner view only). */
-	onCardContextMenu?: (stack: CardStack, e: React.MouseEvent) => void;
+	/** Builds the right-click menu items for a card's stack (owner view only). */
+	buildCardMenuItems?: (stack: CardStack, close: () => void) => ContextMenuAction[] | null;
 	/** Show a "in a deck" badge on cards whose copies are assigned to a deck (owner view only). */
 	showDeckBadges?: boolean;
 	/** Modal(s) rendered as a sibling of the layout (owner edit / read-only view). */
@@ -59,7 +60,7 @@ export function CollectionView({
 	actions,
 	emptyState,
 	onCardClick,
-	onCardContextMenu,
+	buildCardMenuItems,
 	showDeckBadges = false,
 	children,
 }: Props) {
@@ -119,11 +120,11 @@ export function CollectionView({
 							}
 						: undefined
 				}
-				onCardContextMenu={
-					onCardContextMenu
-						? (card: AnyCard, e: React.MouseEvent) => {
+				buildCardMenuItems={
+					buildCardMenuItems
+						? (card: AnyCard, close: () => void) => {
 								const stack = stackByCardId.get(card.id);
-								if (stack) onCardContextMenu(stack, e);
+								return stack ? buildCardMenuItems(stack, close) : null;
 							}
 						: undefined
 				}

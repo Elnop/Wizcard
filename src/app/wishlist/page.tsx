@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useCallback, useState } from 'react';
+import { useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import type { CardStack, CardEntry } from '@/types/cards';
+import type { CardStack } from '@/types/cards';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { EditCardModal } from '@/lib/card/components/EditCardModal/EditCardModal';
 import { AddToDeckModal } from '@/lib/card/components/AddToDeckModal/AddToDeckModal';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import { useAddToDeckModal } from '@/lib/card/hooks/useAddToDeckModal';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
@@ -16,27 +17,11 @@ import { CardList } from '@/lib/card/components/CardList/CardList';
 import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
 import { Button } from '@/components/Button/Button';
 import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
-import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
-import { resolveLocalizedImageUris } from '@/lib/scryfall/utils/resolveLocalizedImageUri';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
-import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
-import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import { buildWishlistMenuItems } from './wishlistCardMenu';
+import { useWishlistPdf } from './useWishlistPdf';
+import { useMoveToCollection } from './useMoveToCollection';
 import styles from './page.module.css';
-
-function buildInitialEntry(entry: CardEntry): Partial<CardEntry> {
-	// Strip identity/ownership fields so the new collection copy is minted fresh.
-	// Other metadata (forTrade, purchasePrice, alter, …) intentionally carries
-	// over from the wishlist copy even though the modal does not expose it for
-	// editing — a "for trade" wishlist card stays "for trade" once collected.
-	const patch: Partial<CardEntry> = { ...entry };
-	delete patch.rowId;
-	delete patch.dateAdded;
-	delete patch.deckId;
-	delete patch.ownerId;
-	delete patch.wishlist;
-	return patch;
-}
 
 function WishlistPageInner() {
 	const {
@@ -53,17 +38,10 @@ function WishlistPageInner() {
 	const { stacks, isLoading: isHydrating } = useCollectionCards(entries);
 
 	const { resolvedStack, handleCardClick, handleCloseModal } = useCardModal(stacks);
-	const cardMenu = useContextMenu<CardStack>();
 
-	const [pdfSettingsModalOpen, setPdfSettingsModalOpen] = useState(false);
-	const [pdfGenerating, setPdfGenerating] = useState(false);
-	const [movingStack, setMovingStack] = useState<CardStack | null>(null);
-	const [deckModal, setDeckModal] = useState<{ card: ScryfallCard; ownedRowIds: string[] } | null>(
-		null
-	);
-
-	// One card per wishlist copy (e.g. 3x Sol Ring → 3 cards in the PDF).
-	const pdfCards = useMemo(() => stacks.flatMap((stack) => stack.cards), [stacks]);
+	const deck = useAddToDeckModal(stacks, assignToDeck);
+	const pdf = useWishlistPdf(stacks);
+	const move = useMoveToCollection(stacks, moveToCollection, handleCloseModal);
 
 	const handleRemoveEntry = useCallback(
 		(rowId: string) => {
@@ -94,6 +72,8 @@ function WishlistPageInner() {
 		[stacks]
 	);
 
+	// Grid cards are stack representatives; map them back to their stack to wire
+	// click / context-menu / overlay against the full stack.
 	const stackByCardId = useMemo(() => {
 		const map = new Map<string, CardStack>();
 		for (const stack of stacks) {
@@ -102,40 +82,6 @@ function WishlistPageInner() {
 		}
 		return map;
 	}, [stacks]);
-
-	const stackByRowId = useMemo(() => {
-		const map = new Map<string, CardStack>();
-		for (const stack of stacks) {
-			for (const card of stack.cards) map.set(card.entry.rowId, stack);
-		}
-		return map;
-	}, [stacks]);
-
-	const handleRequestMove = useCallback(
-		(rowId: string) => {
-			const stack = stackByRowId.get(rowId);
-			if (stack) setMovingStack(stack);
-		},
-		[stackByRowId]
-	);
-
-	const openDeckModalForStack = useCallback((stack: CardStack) => {
-		const rep = stack.cards[0];
-		if (!rep) return;
-		setDeckModal({
-			card: rep as ScryfallCard,
-			ownedRowIds: stack.cards.map((c) => c.entry.rowId),
-		});
-	}, []);
-
-	const handleModalAddToDeck = useCallback(
-		(card: ScryfallCard) => {
-			const stack = stackByCardId.get(card.id);
-			if (stack) openDeckModalForStack(stack);
-			else setDeckModal({ card, ownedRowIds: [] });
-		},
-		[stackByCardId, openDeckModalForStack]
-	);
 
 	const totalCards = entries.length;
 	const uniqueCards = stacks.length;
@@ -160,11 +106,7 @@ function WishlistPageInner() {
 					</div>
 					{entries.length > 0 && (
 						<div className={styles.actions}>
-							<Button
-								variant="secondary"
-								onClick={() => setPdfSettingsModalOpen(true)}
-								disabled={isHydrating}
-							>
+							<Button variant="secondary" onClick={pdf.openModal} disabled={isHydrating}>
 								Generate PDF
 							</Button>
 							<Button variant="danger" onClick={handleClearWishlist}>
@@ -190,9 +132,23 @@ function WishlistPageInner() {
 							const stack = stackByCardId.get(card.id);
 							if (stack) handleCardClick(stack);
 						}}
-						onCardContextMenu={(card, e) => {
+						buildCardMenuItems={(card, close) => {
 							const stack = stackByCardId.get(card.id);
-							if (stack) cardMenu.open(stack, e);
+							return stack
+								? buildWishlistMenuItems(
+										stack,
+										{
+											onViewDetails: handleCardClick,
+											onAddCopy: duplicateEntry,
+											onRemoveCopy: removeFromWishlist,
+											onMoveToCollection: move.requestMove,
+											onAddToDeck: deck.openForStack,
+											onChangePrint: handleCardClick,
+											onRemoveFromWishlist: removeFromWishlist,
+										},
+										close
+									)
+								: null;
 						}}
 						renderOverlay={(card) => {
 							const stack = stackByCardId.get(card.id);
@@ -249,76 +205,35 @@ function WishlistPageInner() {
 				onClose={handleCloseModal}
 				onRemoveEntry={handleRemoveEntry}
 				onChangePrint={handleChangePrint}
-				onMoveToCollection={handleRequestMove}
-				onAddToDeck={handleModalAddToDeck}
+				onMoveToCollection={move.requestMove}
+				onAddToDeck={deck.openForCard}
 			/>
-			{deckModal && (
+			{deck.deckModal && (
 				<AddToDeckModal
-					card={deckModal.card}
-					ownedRowIds={deckModal.ownedRowIds}
-					onAssign={assignToDeck}
-					onClose={() => setDeckModal(null)}
+					card={deck.deckModal.card}
+					ownedRowIds={deck.deckModal.ownedRowIds}
+					onAssign={deck.onAssign}
+					onClose={deck.close}
 				/>
 			)}
-			{pdfSettingsModalOpen && (
+			{pdf.isModalOpen && (
 				<PdfSettingsModal
-					cards={pdfCards}
-					generating={pdfGenerating}
-					onConfirm={(settings) => {
-						void (async () => {
-							setPdfGenerating(true);
-							try {
-								// Resolve localized images (cache hit → instant; miss → fetched
-								// via the shared Scryfall throttle, serialized and 429-safe).
-								const resolved = await Promise.all(
-									pdfCards.map((c) => resolveLocalizedImageUris(c, 'normal'))
-								);
-								const imageUrls = resolved.flat().filter((url): url is string => !!url);
-								await generateCardsPdf(imageUrls, settings, 'wishlist.pdf');
-								setPdfSettingsModalOpen(false);
-							} finally {
-								setPdfGenerating(false);
-							}
-						})();
-					}}
-					onClose={() => setPdfSettingsModalOpen(false)}
+					cards={pdf.pdfCards}
+					generating={pdf.isGenerating}
+					onConfirm={pdf.generate}
+					onClose={pdf.closeModal}
 				/>
 			)}
 
-			{movingStack && movingStack.cards[0] && (
+			{move.movingStack && move.movingStack.cards[0] && (
 				<EditCardModal
 					mode="add"
-					scryfallCard={movingStack.cards[0] as ScryfallCard}
-					initialEntry={buildInitialEntry(movingStack.cards[0].entry)}
-					maxQuantity={movingStack.cards.length}
-					hideQuantity={movingStack.cards.length <= 1}
-					onAdd={(selectedPrint, entry, count) => {
-						const rowIds = movingStack.cards.slice(0, count).map((c) => c.entry.rowId);
-						moveToCollection(rowIds, selectedPrint.id, entry);
-						setMovingStack(null);
-						handleCloseModal();
-					}}
-					onClose={() => setMovingStack(null)}
-				/>
-			)}
-
-			{cardMenu.menu && (
-				<ContextMenu
-					items={buildWishlistMenuItems(
-						cardMenu.menu.data,
-						{
-							onViewDetails: handleCardClick,
-							onAddCopy: duplicateEntry,
-							onRemoveCopy: removeFromWishlist,
-							onMoveToCollection: handleRequestMove,
-							onAddToDeck: openDeckModalForStack,
-							onChangePrint: handleCardClick,
-							onRemoveFromWishlist: removeFromWishlist,
-						},
-						cardMenu.close
-					)}
-					position={cardMenu.menu.position}
-					onClose={cardMenu.close}
+					scryfallCard={move.movingStack.cards[0] as ScryfallCard}
+					initialEntry={move.buildInitialEntry(move.movingStack.cards[0].entry)}
+					maxQuantity={move.movingStack.cards.length}
+					hideQuantity={move.movingStack.cards.length <= 1}
+					onAdd={move.confirmMove}
+					onClose={move.cancel}
 				/>
 			)}
 		</div>

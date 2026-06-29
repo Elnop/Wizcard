@@ -1,4 +1,5 @@
 import type { ReactNode, MouseEvent } from 'react';
+import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
@@ -53,6 +54,9 @@ export interface CardListProps {
 	onLoadMore?: () => void;
 	skeletonCount?: number;
 	onCardClick?: (card: AnyCard) => void;
+	/** Standard right-click menu — CardListGrid owns + renders the shared `<ContextMenu>`. */
+	buildCardMenuItems?: (card: AnyCard, close: () => void) => ContextMenuAction[] | null;
+	/** Lower-level right-click escape hatch for callers that render their own menu. */
 	onCardContextMenu?: (card: AnyCard, e: MouseEvent) => void;
 	renderOverlay?: (card: AnyCard) => ReactNode;
 	tableColumns?: CardListColumn[];

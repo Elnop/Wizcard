@@ -1,7 +1,11 @@
+'use client';
+
 // src/components/ui/CardListGrid/CardListGrid.tsx
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import { Spinner } from '@/components/Spinner/Spinner';
-import type { CardListSection } from '@/lib/card/components/CardList/CardList.types';
+import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
+import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
+import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import { sectionKey } from '@/lib/card/components/CardList/section-key';
 import type { CardListGridProps } from './CardListGrid.types';
 import styles from './CardListGrid.module.css';
@@ -123,6 +127,7 @@ export function CardListGrid({
 	isLoadingMore = false,
 	skeletonCount = DEFAULT_SKELETON_COUNT,
 	onCardClick,
+	buildCardMenuItems,
 	onCardContextMenu,
 	renderOverlay,
 	renderItem,
@@ -135,6 +140,19 @@ export function CardListGrid({
 	showCardNames = false,
 	cardGap = 'default',
 }: CardListGridProps) {
+	const cardMenu = useContextMenu<AnyCard>();
+
+	function handleCardContextMenu(card: AnyCard, e: React.MouseEvent) {
+		if (buildCardMenuItems) {
+			const items = buildCardMenuItems(card, cardMenu.close);
+			if (items && items.length > 0) cardMenu.open(card, e);
+			return;
+		}
+		onCardContextMenu?.(card, e);
+	}
+
+	const hasCardMenu = !!buildCardMenuItems || !!onCardContextMenu;
+
 	const gridClass = [cardsPerLine ? styles.gridFixed : styles.grid, className]
 		.filter(Boolean)
 		.join(' ');
@@ -172,7 +190,7 @@ export function CardListGrid({
 								.join(' ')}
 							title={c.name}
 							onClick={onCardClick ? () => onCardClick(c) : undefined}
-							onContextMenu={onCardContextMenu ? (e) => onCardContextMenu(c, e) : undefined}
+							onContextMenu={hasCardMenu ? (e) => handleCardContextMenu(c, e) : undefined}
 						>
 							{showCardNames && <p className={styles.cardName}>{c.name}</p>}
 							<div className={styles.imageWrapper}>
@@ -334,43 +352,58 @@ export function CardListGrid({
 		);
 	}
 
-	// Sections mode
-	if (sections && sections.length > 0) {
-		if (fluidSections) {
+	function renderContent() {
+		// Sections mode
+		if (sections && sections.length > 0) {
+			if (fluidSections) {
+				return (
+					<div className={[styles.fluidSectionsContainer, className].filter(Boolean).join(' ')}>
+						{sections.map((section, idx) =>
+							renderSection(section, idx, 0, sectionKey(section), idx === 0, false)
+						)}
+					</div>
+				);
+			}
 			return (
-				<div className={[styles.fluidSectionsContainer, className].filter(Boolean).join(' ')}>
+				<div className={className}>
 					{sections.map((section, idx) =>
-						renderSection(section, idx, 0, sectionKey(section), idx === 0, false)
+						renderSection(section, idx, 0, section.label, idx === 0, false)
 					)}
 				</div>
 			);
 		}
-		return (
-			<div className={className}>
-				{sections.map((section, idx) =>
-					renderSection(section, idx, 0, section.label, idx === 0, false)
-				)}
-			</div>
-		);
+
+		// Initial skeleton
+		if (isLoading && cards.length === 0) {
+			return (
+				<div className={effectiveGridClass} style={gridStyle}>
+					{Array.from({ length: skeletonCount }).map((_, i) => (
+						<div key={`sk-${i}`} className={styles.item}>
+							<div className={styles.skeletonName} />
+							<div className={styles.skeletonImage} />
+						</div>
+					))}
+				</div>
+			);
+		}
+
+		if (!isLoading && cards.length === 0) {
+			return null;
+		}
+
+		return renderItems(cards, true);
 	}
 
-	// Initial skeleton
-	if (isLoading && cards.length === 0) {
-		return (
-			<div className={effectiveGridClass} style={gridStyle}>
-				{Array.from({ length: skeletonCount }).map((_, i) => (
-					<div key={`sk-${i}`} className={styles.item}>
-						<div className={styles.skeletonName} />
-						<div className={styles.skeletonImage} />
-					</div>
-				))}
-			</div>
-		);
-	}
+	const menuItems = cardMenu.menu
+		? (buildCardMenuItems?.(cardMenu.menu.data, cardMenu.close) ?? [])
+		: [];
 
-	if (!isLoading && cards.length === 0) {
-		return null;
-	}
-
-	return renderItems(cards, true);
+	return (
+		<>
+			{renderContent()}
+			{cardMenu.menu && menuItems.length > 0 && (
+				<ContextMenu items={menuItems} position={cardMenu.menu.position} onClose={cardMenu.close} />
+			)}
+		</>
+	);
 }
