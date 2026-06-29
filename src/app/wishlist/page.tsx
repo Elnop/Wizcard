@@ -3,15 +3,12 @@
 import { useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import type { CardStack } from '@/types/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
+import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
-import { ActiveCardProvider } from '@/app/collection/lib/CollectionCardModal/ActiveCardContext';
-import { useCardModal } from '@/lib/card/hooks/useCardModal';
-import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
 import { Button } from '@/components/Button/Button';
@@ -23,22 +20,19 @@ import { useMoveToCollection } from './useMoveToCollection';
 import styles from './page.module.css';
 
 function WishlistPageInner() {
-	const { entries, isLoaded, clearWishlist, moveToCollection, changePrint } = useWishlistContext();
+	const { entries, isLoaded, clearWishlist, moveToCollection } = useWishlistContext();
 
 	const { stacks, isLoading: isHydrating } = useCollectionCards(entries);
 
-	const { resolvedStack, handleCardClick, handleCloseModal } = useCardModal(stacks);
-
 	const { openAddToDeck } = useAddToDeckModal();
+	const { openCardModal, close: closeCardModal } = useCardModalContext();
 	const pdf = useWishlistPdf(stacks);
-	const move = useMoveToCollection(stacks, moveToCollection, handleCloseModal);
+	const move = useMoveToCollection(stacks, moveToCollection, closeCardModal);
 	const mutations = useCardMutations();
 
-	const handleRemoveEntry = useCallback(
-		// Remove + close the card modal: the post-mutation UI reaction is
-		// co-located with the mutation via `onAfter`.
-		(rowId: string) => mutations.wishlist.remove(rowId, { onAfter: handleCloseModal }),
-		[mutations, handleCloseModal]
+	const handleCardClick = useCallback(
+		(stack: CardStack) => openCardModal(stack.cards),
+		[openCardModal]
 	);
 
 	const handleClearWishlist = useCallback(() => {
@@ -46,13 +40,6 @@ function WishlistPageInner() {
 			clearWishlist();
 		}
 	}, [clearWishlist]);
-
-	const handleChangePrint = useCallback(
-		(rowId: string, newCard: ScryfallCard) => {
-			changePrint(rowId, newCard.id);
-		},
-		[changePrint]
-	);
 
 	const representativeCards = useMemo(
 		() =>
@@ -191,14 +178,6 @@ function WishlistPageInner() {
 				)}
 			</main>
 
-			<CardModal
-				cards={resolvedStack?.cards ?? null}
-				onClose={handleCloseModal}
-				onRemoveEntry={handleRemoveEntry}
-				onChangePrint={handleChangePrint}
-				onMoveToCollection={move.requestMove}
-				onAddToDeck={openAddToDeck}
-			/>
 			{pdf.isModalOpen && (
 				<PdfSettingsModal
 					cards={pdf.pdfCards}
@@ -212,9 +191,5 @@ function WishlistPageInner() {
 }
 
 export default function WishlistPage() {
-	return (
-		<ActiveCardProvider>
-			<WishlistPageInner />
-		</ActiveCardProvider>
-	);
+	return <WishlistPageInner />;
 }

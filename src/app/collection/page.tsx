@@ -2,16 +2,13 @@
 
 import { useCallback } from 'react';
 import Link from 'next/link';
+import type { CardStack } from '@/types/cards';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useImportContext } from '@/lib/import/context/ImportContext';
 import { CollectionCardsProvider, useCollectionCardsContext } from './CollectionCardsContext';
-import {
-	ActiveCardProvider,
-	useActiveCardContext,
-} from './lib/CollectionCardModal/ActiveCardContext';
 import { ImportModal } from './lib/ImportModal/ImportModal';
-import { CollectionCardModal } from './lib/CollectionCardModal/CollectionCardModal';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
+import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
 import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
 import { Button } from '@/components/Button/Button';
@@ -25,11 +22,13 @@ function CollectionPageInner() {
 	const { user } = useAuth();
 	const { entries, isLoaded, isFullyLoaded, clearCollection } = useCollectionContext();
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCardsContext();
-	const { openCard } = useActiveCardContext();
 	const { status, openModal } = useImportContext();
 
 	const { openAddToDeck } = useAddToDeckModal();
+	const { openCardModal } = useCardModalContext();
 	const mutations = useCardMutations();
+
+	const openCard = useCallback((stack: CardStack) => openCardModal(stack.cards), [openCardModal]);
 
 	const handleClearCollection = useCallback(() => {
 		if (confirm('Effacer toute la collection ? Cette action est irréversible.')) {
@@ -111,7 +110,6 @@ function CollectionPageInner() {
 			showDeckBadges
 		>
 			<ImportModal />
-			<CollectionCardModal onAddToDeck={openAddToDeck} />
 		</CollectionView>
 	);
 }
@@ -119,9 +117,7 @@ function CollectionPageInner() {
 export default function CollectionPage() {
 	return (
 		<CollectionCardsProvider>
-			<ActiveCardProvider>
-				<CollectionPageInner />
-			</ActiveCardProvider>
+			<CollectionPageInner />
 		</CollectionCardsProvider>
 	);
 }
