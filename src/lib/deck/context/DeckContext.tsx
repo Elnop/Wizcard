@@ -14,7 +14,10 @@ type DeckContextValue = {
 	decks: DeckMeta[];
 	folders: FolderMeta[];
 	activeDeckId: string | null;
-	activeDeckCards: Record<string, StoredCopy>;
+	/** Loaded deck cards keyed by deckId then rowId. */
+	decksCards: Record<string, Record<string, StoredCopy>>;
+	/** Cards of a specific loaded deck (empty record if not loaded). */
+	getDeckCards: (deckId: string) => Record<string, StoredCopy>;
 	isLoaded: boolean;
 
 	createFolder: (name: string, parentId: string | null) => string;
@@ -95,7 +98,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 				decks: {},
 				folders: {},
 				activeDeckId: null,
-				activeDeckCards: {},
+				decksCards: {},
 				isLoaded: false,
 			});
 		}
@@ -265,11 +268,15 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	const decks = useMemo(() => Object.values(store.decks), [store.decks]);
 	const folders = useMemo(() => Object.values(store.folders), [store.folders]);
 
+	const decksCards = store.decksCards;
+	const getDeckCards = useCallback((deckId: string) => decksCards[deckId] ?? {}, [decksCards]);
+
 	const value: DeckContextValue = {
 		decks,
 		folders,
 		activeDeckId: store.activeDeckId,
-		activeDeckCards: store.activeDeckCards,
+		decksCards,
+		getDeckCards,
 		isLoaded: store.isLoaded,
 		createFolder,
 		updateFolder,

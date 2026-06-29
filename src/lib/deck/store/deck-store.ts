@@ -20,10 +20,55 @@ type StoredCopy = { scryfallId: string; entry: CardEntry };
 type DeckState = {
 	decks: Record<string, DeckMeta>;
 	folders: Record<string, FolderMeta>;
+	/** The most recently loaded deck (kept for "currently viewed" semantics). */
 	activeDeckId: string | null;
-	activeDeckCards: Record<string, StoredCopy>;
+	/** Loaded deck cards, keyed by deckId then rowId. Multiple decks can be loaded
+	 * at once (e.g. a card modal recontextualising a card from another deck). */
+	decksCards: Record<string, Record<string, StoredCopy>>;
 	isLoaded: boolean;
 };
+
+/** Locate a loaded deck card by rowId across all loaded decks. */
+function findDeckOfRow(
+	decksCards: Record<string, Record<string, StoredCopy>>,
+	rowId: string
+): { deckId: string; copy: StoredCopy } | null {
+	for (const [deckId, cards] of Object.entries(decksCards)) {
+		const copy = cards[rowId];
+		if (copy) return { deckId, copy };
+	}
+	return null;
+}
+
+/**
+ * Cross-store helper: find a loaded deck card by rowId, regardless of which deck
+ * it belongs to. Used by WishlistContext to mirror shared-`cards`-row changes
+ * into the deck store without knowing the deckId up front.
+ */
+export function getLoadedDeckCard(rowId: string): { deckId: string; copy: StoredCopy } | null {
+	return findDeckOfRow(useDeckStore.getState().decksCards, rowId);
+}
+
+/**
+ * Cross-store helper: apply an in-memory patch to a loaded deck card (by rowId),
+ * or remove it (updater returns null). No-op if the row is not loaded in any
+ * deck. Keeps the deck store consistent after wishlist/collection moves.
+ */
+export function patchLoadedDeckCard(
+	rowId: string,
+	updater: (copy: StoredCopy) => StoredCopy | null
+): void {
+	const found = findDeckOfRow(useDeckStore.getState().decksCards, rowId);
+	if (!found) return;
+	const { deckId, copy } = found;
+	const next = updater(copy);
+	useDeckStore.setState((state) => {
+		const deckCards = { ...(state.decksCards[deckId] ?? {}) };
+		if (next === null) delete deckCards[rowId];
+		else deckCards[rowId] = next;
+		return { decksCards: { ...state.decksCards, [deckId]: deckCards } };
+	});
+}
 
 type DeckActions = {
 	hydrateDecks: (userId: string) => Promise<void>;
@@ -143,7 +188,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 	decks: {},
 	folders: {},
 	activeDeckId: null,
-	activeDeckCards: {},
+	decksCards: {},
 	isLoaded: false,
 
 	hydrateDecks: async (userId) => {
@@ -159,11 +204,14 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		const rows = await fetchDeckCards(deckId);
 		const cards: Record<string, StoredCopy> = {};
 		for (const row of rows) cards[row.entry.rowId] = row;
-		set({ activeDeckId: deckId, activeDeckCards: cards });
+		set((state) => ({
+			activeDeckId: deckId,
+			decksCards: { ...state.decksCards, [deckId]: cards },
+		}));
 	},
 
 	handleLogout: () => {
-		set({ decks: {}, folders: {}, activeDeckId: null, activeDeckCards: {}, isLoaded: false });
+		set({ decks: {}, folders: {}, activeDeckId: null, decksCards: {}, isLoaded: false });
 	},
 
 	createFolder: (name, parentId, userId, triggerSync) => {
@@ -291,10 +339,11 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 	deleteDeck: (deckId, userId, triggerSync, options) => {
 		const next = { ...get().decks };
 		delete next[deckId];
-		const stateUpdate: Partial<DeckState> = { decks: next };
+		const nextDecksCards = { ...get().decksCards };
+		delete nextDecksCards[deckId];
+		const stateUpdate: Partial<DeckState> = { decks: next, decksCards: nextDecksCards };
 		if (get().activeDeckId === deckId) {
 			stateUpdate.activeDeckId = null;
-			stateUpdate.activeDeckCards = {};
 		}
 		set(stateUpdate);
 
@@ -330,14 +379,12 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			deckId,
 			tags: setDeckZone(undefined, zone),
 		};
-		if (get().activeDeckId === deckId) {
-			set((state) => ({
-				activeDeckCards: {
-					...state.activeDeckCards,
-					[rowId]: { scryfallId: card.id, entry },
-				},
-			}));
-		}
+		set((state) => ({
+			decksCards: {
+				...state.decksCards,
+				[deckId]: { ...(state.decksCards[deckId] ?? {}), [rowId]: { scryfallId: card.id, entry } },
+			},
+		}));
 		enqueue({
 			type: SYNC_DECK_CARD_INSERT,
 			payload: { deckId, scryfallId: card.id, entry },
@@ -357,12 +404,8 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 	},
 
 	addCollectionCardToDeck: (deckId, collectionRowId, zone, userId, triggerSync) => {
-		const collectionCopy =
-			get().activeDeckCards[collectionRowId] ??
-			(() => {
-				const ce = useCollectionStore.getState().entries[collectionRowId];
-				return ce ? { scryfallId: ce.scryfallId, entry: ce.entry } : null;
-			})();
+		const ce = useCollectionStore.getState().entries[collectionRowId];
+		const collectionCopy = ce ? { scryfallId: ce.scryfallId, entry: ce.entry } : null;
 
 		if (!collectionCopy) return;
 
@@ -376,9 +419,12 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 
 		// Add to deck store using the collection rowId (not a new UUID)
 		set((state) => ({
-			activeDeckCards: {
-				...state.activeDeckCards,
-				[collectionRowId]: { scryfallId: collectionCopy.scryfallId, entry: updatedEntry },
+			decksCards: {
+				...state.decksCards,
+				[deckId]: {
+					...(state.decksCards[deckId] ?? {}),
+					[collectionRowId]: { scryfallId: collectionCopy.scryfallId, entry: updatedEntry },
+				},
 			},
 			...(state.decks[deckId]
 				? {
@@ -428,7 +474,10 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 
 		set((state) => ({
 			activeDeckId: deckId,
-			activeDeckCards: { ...state.activeDeckCards, ...newCards },
+			decksCards: {
+				...state.decksCards,
+				[deckId]: { ...(state.decksCards[deckId] ?? {}), ...newCards },
+			},
 			decks: {
 				...state.decks,
 				...(state.decks[deckId] ? { [deckId]: { ...state.decks[deckId], updatedAt: now } } : {}),
@@ -443,12 +492,12 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 	},
 
 	removeCardFromDeck: (rowId, triggerSync, mode = 'delete') => {
-		const current = get().activeDeckCards;
-		const copy = current[rowId];
-		if (!copy) return;
-		const next = { ...current };
+		const found = findDeckOfRow(get().decksCards, rowId);
+		if (!found) return;
+		const { deckId: foundDeckId, copy } = found;
+		const next = { ...get().decksCards[foundDeckId] };
 		delete next[rowId];
-		set({ activeDeckCards: next });
+		set((state) => ({ decksCards: { ...state.decksCards, [foundDeckId]: next } }));
 
 		// Detach: keep the shared `cards` row but free it from the deck (deck_id =
 		// null). The row stays in the collection/wishlist store under the same rowId
@@ -503,34 +552,40 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 	},
 
 	changeZone: (rowId, zone, triggerSync) => {
-		const current = get().activeDeckCards;
-		const copy = current[rowId];
-		if (!copy) return;
+		const found = findDeckOfRow(get().decksCards, rowId);
+		if (!found) return;
+		const { deckId: foundDeckId, copy } = found;
 		const newTags = setDeckZone(copy.entry.tags, zone);
 		const updatedEntry: CardEntry = { ...copy.entry, tags: newTags };
-		set({
-			activeDeckCards: {
-				...current,
-				[rowId]: { ...copy, entry: updatedEntry },
+		set((state) => ({
+			decksCards: {
+				...state.decksCards,
+				[foundDeckId]: {
+					...state.decksCards[foundDeckId],
+					[rowId]: { ...copy, entry: updatedEntry },
+				},
 			},
-		});
+		}));
 		enqueue({ type: SYNC_DECK_CARD_UPDATE, payload: { rowId, updates: { tags: newTags } } });
 		triggerSync();
 	},
 
 	updateDeckCard: (rowId, updates, triggerSync) => {
-		const current = get().activeDeckCards;
-		const copy = current[rowId];
-		if (!copy) return;
+		const found = findDeckOfRow(get().decksCards, rowId);
+		if (!found) return;
+		const { deckId: foundDeckId, copy } = found;
 		const updatedEntry: CardEntry = { ...copy.entry, ...updates };
 		// Preserve zone tags when caller doesn't supply tags
 		if (!updates.tags) updatedEntry.tags = copy.entry.tags;
-		set({
-			activeDeckCards: {
-				...current,
-				[rowId]: { ...copy, entry: updatedEntry },
+		set((state) => ({
+			decksCards: {
+				...state.decksCards,
+				[foundDeckId]: {
+					...state.decksCards[foundDeckId],
+					[rowId]: { ...copy, entry: updatedEntry },
+				},
 			},
-		});
+		}));
 		// Translate Partial<CardEntry> to DB column names
 		const dbUpdates: {
 			tags?: string[];
@@ -552,9 +607,9 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 	},
 
 	toggleOwned: (rowId, userId, proxy, triggerSync) => {
-		const current = get().activeDeckCards;
-		const copy = current[rowId];
-		if (!copy) return;
+		const found = findDeckOfRow(get().decksCards, rowId);
+		if (!found) return;
+		const { deckId: foundDeckId, copy } = found;
 		const isCurrentlyOwned = !!copy.entry.ownerId;
 		const newOwnerId = isCurrentlyOwned ? null : userId;
 		const updates: { owner_id: string | null; proxy?: boolean | null } = { owner_id: newOwnerId };
@@ -564,12 +619,12 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			ownerId: newOwnerId ?? undefined,
 			...(proxy !== undefined ? { proxy } : {}),
 		};
-		set({
-			activeDeckCards: {
-				...current,
-				[rowId]: { ...copy, entry: newEntry },
+		set((state) => ({
+			decksCards: {
+				...state.decksCards,
+				[foundDeckId]: { ...state.decksCards[foundDeckId], [rowId]: { ...copy, entry: newEntry } },
 			},
-		});
+		}));
 
 		// Keep collection store in sync. A card is "in the collection" iff it has
 		// an ownerId, so owning a deck card inserts it into the collection store
@@ -590,17 +645,17 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 	},
 
 	toggleDeckCardWishlist: (rowId, triggerSync) => {
-		const current = get().activeDeckCards;
-		const copy = current[rowId];
-		if (!copy) return;
+		const found = findDeckOfRow(get().decksCards, rowId);
+		if (!found) return;
+		const { deckId: foundDeckId, copy } = found;
 		const nextWishlist = !copy.entry.wishlist;
 		const newEntry: CardEntry = { ...copy.entry, wishlist: nextWishlist || undefined };
-		set({
-			activeDeckCards: {
-				...current,
-				[rowId]: { ...copy, entry: newEntry },
+		set((state) => ({
+			decksCards: {
+				...state.decksCards,
+				[foundDeckId]: { ...state.decksCards[foundDeckId], [rowId]: { ...copy, entry: newEntry } },
 			},
-		});
+		}));
 
 		// Mirror into the wishlist store under the same rowId (single shared `cards`
 		// row): wishlisting a deck card makes it appear on the wishlist page, and
@@ -624,7 +679,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 	},
 
 	changeDeckCardPrint: (rowId, newCard, deckId, triggerSync) => {
-		const current = get().activeDeckCards;
+		const current = get().decksCards[deckId] ?? {};
 		const copy = current[rowId];
 		if (!copy) return;
 
@@ -634,7 +689,9 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		// wishlist link.
 		if (copy.entry.ownerId || copy.entry.wishlist) {
 			const updatedCopy: StoredCopy = { scryfallId: newCard.id, entry: copy.entry };
-			set({ activeDeckCards: { ...current, [rowId]: updatedCopy } });
+			set((state) => ({
+				decksCards: { ...state.decksCards, [deckId]: { ...current, [rowId]: updatedCopy } },
+			}));
 
 			// Mirror the change in the collection store if the copy lives there.
 			const colEntries = useCollectionStore.getState().entries;
@@ -668,7 +725,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			next[k === rowId ? newRowId : k] =
 				k === rowId ? { scryfallId: newCard.id, entry: newEntry } : v;
 		}
-		set({ activeDeckCards: next });
+		set((state) => ({ decksCards: { ...state.decksCards, [deckId]: next } }));
 
 		// If the replaced card was a physical collection copy, free it (don't delete it)
 		const isCollectionCopy = !!useCollectionStore.getState().entries[rowId];
@@ -709,19 +766,15 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		userId,
 		triggerSync
 	) => {
-		const current = get().activeDeckCards;
+		const current = get().decksCards[deckId] ?? {};
 
 		// The deck card being replaced must exist
 		const deckCard = current[deckCardRowId];
 		if (!deckCard) return;
 
-		// Get the collection copy — it may not be in activeDeckCards yet
-		const collectionCopy =
-			current[collectionRowId] ??
-			(() => {
-				const ce = useCollectionStore.getState().entries[collectionRowId];
-				return ce ? { scryfallId: ce.scryfallId, entry: ce.entry } : null;
-			})();
+		// Get the collection copy from the collection store
+		const ce = useCollectionStore.getState().entries[collectionRowId];
+		const collectionCopy = ce ? { scryfallId: ce.scryfallId, entry: ce.entry } : null;
 
 		if (!collectionCopy) return;
 
@@ -743,7 +796,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		const next = { ...current };
 		delete next[deckCardRowId];
 		next[collectionRowId] = { scryfallId: collectionCopy.scryfallId, entry: updatedEntry };
-		set({ activeDeckCards: next });
+		set((state) => ({ decksCards: { ...state.decksCards, [deckId]: next } }));
 
 		// Bump deck updatedAt
 		const deck = get().decks[deckId];
@@ -773,7 +826,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 	},
 
 	unassignCollectionCopyFromDeckCard: (deckCardRowId, deckId, zone, userId, triggerSync) => {
-		const current = get().activeDeckCards;
+		const current = get().decksCards[deckId] ?? {};
 		const deckCard = current[deckCardRowId];
 		if (!deckCard) return;
 
@@ -800,7 +853,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			tags: setDeckZone(undefined, zone),
 		};
 		next[placeholderRowId] = { scryfallId: deckCard.scryfallId, entry: placeholderEntry };
-		set({ activeDeckCards: next });
+		set((state) => ({ decksCards: { ...state.decksCards, [deckId]: next } }));
 
 		// Bump deck updatedAt
 		const deck = get().decks[deckId];
@@ -834,9 +887,6 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 	},
 
 	getDeckCardCount: (deckId) => {
-		if (get().activeDeckId === deckId) {
-			return Object.keys(get().activeDeckCards).length;
-		}
-		return 0;
+		return Object.keys(get().decksCards[deckId] ?? {}).length;
 	},
 }));

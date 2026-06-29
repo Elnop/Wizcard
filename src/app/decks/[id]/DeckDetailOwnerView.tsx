@@ -77,9 +77,10 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		changeZone,
 		toggleOwned,
 		toggleDeckCardWishlist,
-		activeDeckCards,
+		getDeckCards,
 		replaceDeckCardWithCollectionCopy,
 	} = useDeckContext();
+	const deckCards = getDeckCards(deckId);
 	const { deck, cardsByZone, resolvedCards, stats, coverArtUrl, isLoading, isResolving } =
 		useDeckDetail(deckId);
 
@@ -409,7 +410,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	// ask whether to remove it there too. owned and wishlist are mutually exclusive.
 	const handleRemoveRequest = useCallback(
 		(rowId: string) => {
-			const copy = activeDeckCards[rowId];
+			const copy = deckCards[rowId];
 			let membership: RemoveDeckCardMembership | null = null;
 			if (copy?.entry.ownerId) membership = 'collection';
 			else if (copy?.entry.wishlist) membership = 'wishlist';
@@ -420,7 +421,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			const name = resolvedCards.find((rc) => rc.entry.rowId === rowId)?.name ?? '';
 			setPendingRemove({ rowId, cardName: name, membership });
 		},
-		[activeDeckCards, removeCardFromDeck, resolvedCards]
+		[deckCards, removeCardFromDeck, resolvedCards]
 	);
 
 	const handleBulkAddToWishlist = useCallback(() => {
@@ -615,7 +616,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 						onGroupByChange={setGroupBy}
 					/>
 
-					{isResolving && Object.keys(activeDeckCards).length > 0 && (
+					{isResolving && Object.keys(deckCards).length > 0 && (
 						<div className={styles.resolving}>
 							<Spinner /> Loading card data...
 						</div>

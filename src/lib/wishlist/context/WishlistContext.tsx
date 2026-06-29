@@ -9,7 +9,7 @@ import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { useWishlistStore } from '../store/wishlist-store';
 import type { WishlistData } from '../store/wishlist-store';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
-import { useDeckStore } from '@/lib/deck/store/deck-store';
+import { useDeckStore, getLoadedDeckCard, patchLoadedDeckCard } from '@/lib/deck/store/deck-store';
 import { enqueue } from '@/lib/supabase/sync-queue';
 
 type WishlistContextValue = {
@@ -94,22 +94,14 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 			// it from the wishlist must NOT delete the row — only clear its wishlist
 			// flag, so the deck card survives. Pure wishlist rows are deleted.
 			const copy = store.entries[rowId];
-			const deckCards = useDeckStore.getState().activeDeckCards;
-			const isDeckCard = copy?.entry.deckId != null || deckCards[rowId] != null;
+			const loadedDeckCard = getLoadedDeckCard(rowId);
+			const isDeckCard = copy?.entry.deckId != null || loadedDeckCard != null;
 
 			if (isDeckCard) {
 				// Drop it from the wishlist view.
 				store.removeFromWishlist(rowId, null, triggerSync);
 				// Clear the wishlist flag on the deck-store copy if the deck is loaded.
-				const deckCopy = deckCards[rowId];
-				if (deckCopy) {
-					useDeckStore.setState({
-						activeDeckCards: {
-							...deckCards,
-							[rowId]: { ...deckCopy, entry: { ...deckCopy.entry, wishlist: undefined } },
-						},
-					});
-				}
+				patchLoadedDeckCard(rowId, (c) => ({ ...c, entry: { ...c.entry, wishlist: undefined } }));
 				// Persist wishlist=false on the shared row.
 				if (userId) {
 					enqueue({ type: DECK_CARD_UPDATE, payload: { rowId, updates: { wishlist: false } } });
@@ -131,10 +123,8 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		(rowIds: string[], scryfallId: string, entryPatch: Partial<CardEntry>) => {
 			const wishlistEntries = useWishlistStore.getState().entries;
 			const colEntries = useCollectionStore.getState().entries;
-			const deckCards = useDeckStore.getState().activeDeckCards;
 			const nextWishlist = { ...wishlistEntries };
 			const nextCollection = { ...colEntries };
-			let nextDeckCards = { ...deckCards };
 
 			for (const rowId of rowIds) {
 				const copy = wishlistEntries[rowId];
@@ -149,7 +139,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 				delete nextWishlist[rowId];
 				nextCollection[rowId] = { scryfallId, entry: movedEntry };
 
-				const isDeckCard = copy.entry.deckId != null || deckCards[rowId] != null;
+				const isDeckCard = copy.entry.deckId != null || getLoadedDeckCard(rowId) != null;
 
 				if (isDeckCard) {
 					// Deck cards have owner_id=NULL in the DB, so plain `update` would
@@ -165,17 +155,11 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 						});
 					}
 					// Mirror the move in the deck store so its in-memory copy is consistent.
-					const deckCopy = deckCards[rowId];
-					if (deckCopy) {
-						nextDeckCards = {
-							...nextDeckCards,
-							[rowId]: {
-								...deckCopy,
-								scryfallId,
-								entry: { ...deckCopy.entry, wishlist: undefined },
-							},
-						};
-					}
+					patchLoadedDeckCard(rowId, (c) => ({
+						...c,
+						scryfallId,
+						entry: { ...c.entry, wishlist: undefined },
+					}));
 				} else {
 					// Pure wishlist card: owner_id is already set, plain update works.
 					if (userId) {
@@ -189,7 +173,6 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
 			useWishlistStore.setState({ entries: nextWishlist });
 			useCollectionStore.setState({ entries: nextCollection });
-			useDeckStore.setState({ activeDeckCards: nextDeckCards });
 			if (userId) triggerSync();
 		},
 		[userId, triggerSync]
@@ -202,10 +185,8 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		(rowIds: string[]) => {
 			const colEntries = useCollectionStore.getState().entries;
 			const wishlistEntries = useWishlistStore.getState().entries;
-			const deckCards = useDeckStore.getState().activeDeckCards;
 			const nextCollection = { ...colEntries };
 			const nextWishlist = { ...wishlistEntries };
-			let nextDeckCards = { ...deckCards };
 
 			for (const rowId of rowIds) {
 				const copy = colEntries[rowId];
@@ -214,7 +195,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 				delete nextCollection[rowId];
 				nextWishlist[rowId] = { scryfallId: copy.scryfallId, entry: movedEntry };
 
-				const isDeckCard = copy.entry.deckId != null || deckCards[rowId] != null;
+				const isDeckCard = copy.entry.deckId != null || getLoadedDeckCard(rowId) != null;
 
 				if (isDeckCard) {
 					// Deck card owned copy → wishlisted deck card: clear owner_id and set
@@ -225,13 +206,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 							payload: { rowId, updates: { wishlist: true, owner_id: null } },
 						});
 					}
-					const deckCopy = deckCards[rowId];
-					if (deckCopy) {
-						nextDeckCards = {
-							...nextDeckCards,
-							[rowId]: { ...deckCopy, entry: { ...deckCopy.entry, wishlist: true } },
-						};
-					}
+					patchLoadedDeckCard(rowId, (c) => ({ ...c, entry: { ...c.entry, wishlist: true } }));
 				} else {
 					// Pure collection card: keep owner_id, flip wishlist=true so it leaves
 					// the collection view (wishlist=false) and enters the wishlist view.
@@ -246,7 +221,6 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
 			useCollectionStore.setState({ entries: nextCollection });
 			useWishlistStore.setState({ entries: nextWishlist });
-			useDeckStore.setState({ activeDeckCards: nextDeckCards });
 			if (userId) triggerSync();
 		},
 		[userId, triggerSync]
@@ -259,10 +233,9 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 	const assignToDeck = useCallback(
 		(rowIds: string[], deckId: string, zone: DeckZone) => {
 			const wishlistEntries = useWishlistStore.getState().entries;
-			const deckCards = useDeckStore.getState().activeDeckCards;
 			const nextWishlist = { ...wishlistEntries };
-			let nextDeckCards = { ...deckCards };
-			const deckIsActive = useDeckStore.getState().activeDeckId === deckId;
+			const deckIsLoaded = useDeckStore.getState().decksCards[deckId] != null;
+			const deckMirror: Record<string, { scryfallId: string; entry: CardEntry }> = {};
 
 			for (const rowId of rowIds) {
 				const copy = wishlistEntries[rowId];
@@ -274,12 +247,9 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 				// deck so it shows a deck badge.
 				nextWishlist[rowId] = { scryfallId: copy.scryfallId, entry: updatedEntry };
 
-				// Mirror into the deck store only if that deck is the one loaded.
-				if (deckIsActive) {
-					nextDeckCards = {
-						...nextDeckCards,
-						[rowId]: { scryfallId: copy.scryfallId, entry: updatedEntry },
-					};
+				// Mirror into the deck store only if that deck is loaded.
+				if (deckIsLoaded) {
+					deckMirror[rowId] = { scryfallId: copy.scryfallId, entry: updatedEntry };
 				}
 
 				if (userId) {
@@ -291,7 +261,14 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 			}
 
 			useWishlistStore.setState({ entries: nextWishlist });
-			if (deckIsActive) useDeckStore.setState({ activeDeckCards: nextDeckCards });
+			if (deckIsLoaded && Object.keys(deckMirror).length > 0) {
+				useDeckStore.setState((state) => ({
+					decksCards: {
+						...state.decksCards,
+						[deckId]: { ...(state.decksCards[deckId] ?? {}), ...deckMirror },
+					},
+				}));
+			}
 			if (userId) triggerSync();
 		},
 		[userId, triggerSync]
@@ -302,22 +279,14 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 			// A wishlisted deck card has no owner_id, so it must persist via the
 			// deck-card update path (matches on id), not the owner-scoped one.
 			const copy = store.entries[rowId];
-			const deckCards = useDeckStore.getState().activeDeckCards;
-			const isDeckCard = copy?.entry.deckId != null || deckCards[rowId] != null;
+			const loadedDeckCard = getLoadedDeckCard(rowId);
+			const isDeckCard = copy?.entry.deckId != null || loadedDeckCard != null;
 			store.changePrint(rowId, newScryfallId, userId, triggerSync, isDeckCard);
 
 			// The `cards` row is shared: if this wishlist row is also a deck card or a
 			// collection copy, keep their in-memory print in sync (the DB row was
 			// already patched in place by the update op above).
-			const deckCopy = deckCards[rowId];
-			if (deckCopy) {
-				useDeckStore.setState({
-					activeDeckCards: {
-						...deckCards,
-						[rowId]: { ...deckCopy, scryfallId: newScryfallId },
-					},
-				});
-			}
+			patchLoadedDeckCard(rowId, (c) => ({ ...c, scryfallId: newScryfallId }));
 			const colEntries = useCollectionStore.getState().entries;
 			const colCopy = colEntries[rowId];
 			if (colCopy) {

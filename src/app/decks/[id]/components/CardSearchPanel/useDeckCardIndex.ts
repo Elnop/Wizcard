@@ -16,17 +16,15 @@ import { buildDeckCardIndex, type DeckCardIndex, type DeckCopyForIndex } from '.
 export function useDeckCardIndex(deckId: string): {
 	getDeckZones: (oracleId: string | undefined) => Map<DeckZone, number> | undefined;
 } {
-	const { activeDeckId, activeDeckCards } = useDeckContext();
+	const { decksCards } = useDeckContext();
 
 	// scryfallId → oracle_id, accumulated as we resolve.
 	const [oracleByScryfallId, setOracleByScryfallId] = useState<Record<string, string>>({});
 	const resolvedIdsRef = useRef<Set<string>>(new Set());
 	const generationRef = useRef(0);
 
-	const copies = useMemo(
-		() => (activeDeckId === deckId ? Object.values(activeDeckCards) : []),
-		[activeDeckId, deckId, activeDeckCards]
-	);
+	const deckCards = decksCards[deckId];
+	const copies = useMemo(() => (deckCards ? Object.values(deckCards) : []), [deckCards]);
 
 	// Resolve oracle_ids for any scryfallIds we haven't resolved yet.
 	useEffect(() => {

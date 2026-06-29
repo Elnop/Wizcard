@@ -12,8 +12,13 @@ import { pickCoverArt } from '@/lib/deck/utils/pick-cover-art';
 
 export type ResolvedDeckCard = Card;
 
+// Stable empty reference so hooks don't re-run when a deck has no loaded cards.
+const EMPTY_DECK_CARDS: Record<string, { scryfallId: string; entry: Card['entry'] }> = {};
+
 export function useDeckDetail(deckId: string) {
-	const { decks, activeDeckId, activeDeckCards, loadDeck } = useDeckContext();
+	const { decks, decksCards, loadDeck } = useDeckContext();
+	// Stable reference: only changes when THIS deck's cards change in the store.
+	const deckCards = decksCards[deckId] ?? EMPTY_DECK_CARDS;
 
 	const [scryfallCards, setScryfallCards] = useState<Record<string, ScryfallCard>>({});
 	const resolvedIdsRef = useRef<Set<string>>(new Set());
@@ -37,9 +42,7 @@ export function useDeckDetail(deckId: string) {
 
 	// Resolve Scryfall data for all unique scryfall IDs
 	useEffect(() => {
-		if (activeDeckId !== deckId) return;
-
-		const entries = Object.values(activeDeckCards);
+		const entries = Object.values(deckCards);
 		const uniqueIds = [...new Set(entries.map((e) => e.scryfallId))];
 
 		// Filter out already resolved IDs
@@ -71,12 +74,11 @@ export function useDeckDetail(deckId: string) {
 				activeResolveRef.current++;
 			}
 		};
-	}, [activeDeckId, deckId, activeDeckCards]);
+	}, [deckCards]);
 
 	// Build resolved cards list
 	const resolvedCards: ResolvedDeckCard[] = useMemo(() => {
-		if (activeDeckId !== deckId) return [];
-		return Object.values(activeDeckCards)
+		return Object.values(deckCards)
 			.sort((a, b) => {
 				const da = a.entry.dateAdded ?? '';
 				const db = b.entry.dateAdded ?? '';
@@ -90,7 +92,7 @@ export function useDeckDetail(deckId: string) {
 				return { ...card, entry: copy.entry };
 			})
 			.filter((c): c is ResolvedDeckCard => c !== null);
-	}, [activeDeckId, deckId, activeDeckCards, scryfallCards]);
+	}, [deckCards, scryfallCards]);
 
 	// Group by zone
 	const cardsByZone = useMemo(() => {
