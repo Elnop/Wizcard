@@ -149,7 +149,9 @@
 }
 
 .sectionHeadingWithActions > .sectionHeader,
-.sectionHeadingWithActions > .sectionHeaderCollapsible {
+.sectionHeadingWithActions > .sectionHeaderCollapsible,
+.sectionHeadingWithActions > .subSectionHeader,
+.sectionHeadingWithActions > .subSectionHeaderCollapsible {
 	width: auto;
 	flex: 0 0 auto;
 }
@@ -338,8 +340,11 @@
 	border-radius: 6px 6px 0 0;
 }
 
-.fluidSection > .sectionHeading > .sectionHeader,
-.fluidSection > .sectionHeading > .sectionHeaderCollapsible {
+/* Sub-section leaf headers (nested in a fluid parent): no underline, fit width.
+   Top-level leaves (e.g. Commander) keep the default first-level header styling
+   so they read identically to sibling parent zones like Mainboard. */
+.fluidSubSection > .sectionHeading > .sectionHeader,
+.fluidSubSection > .sectionHeading > .sectionHeaderCollapsible {
 	width: 100%;
 	padding: 10px 14px 8px;
 	border-bottom: none;
