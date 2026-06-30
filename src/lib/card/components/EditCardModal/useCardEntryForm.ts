@@ -56,7 +56,7 @@ export function useCardEntryForm(initialDraft: Partial<CardEntry>, initialPrint:
 		} catch (err: unknown) {
 			if (err instanceof DOMException && err.name === 'AbortError') return;
 			if (controller.signal.aborted) return;
-			setLangInfoMessage('Image localisée indisponible pour cette édition.');
+			setLangInfoMessage('Localized image unavailable for this print.');
 		}
 	}
 

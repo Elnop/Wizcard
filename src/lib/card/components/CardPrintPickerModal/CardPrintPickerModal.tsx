@@ -30,8 +30,8 @@ export function CardPrintPickerModal({
 	return (
 		<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
 			<div className={styles.header}>
-				<h2 className={styles.title}>Changer d&apos;édition</h2>
-				<button className={styles.closeIcon} onClick={onClose} aria-label="Fermer" type="button">
+				<h2 className={styles.title}>Change print</h2>
+				<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path
 							d="M2 2l12 12M14 2L2 14"

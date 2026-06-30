@@ -50,7 +50,7 @@ export function PrintList({
 					onSelect(print);
 				}}
 			>
-				{isCurrent ? 'Sélectionné' : 'Sélectionner'}
+				{isCurrent ? 'Selected' : 'Select'}
 			</button>
 		);
 	}
@@ -58,7 +58,7 @@ export function PrintList({
 	const tableColumns = [
 		{
 			key: 'set',
-			label: 'Édition',
+			label: 'Print',
 			render: (anyCard: AnyCard) => {
 				const card = anyCard as ScryfallCard;
 				return (
@@ -71,7 +71,7 @@ export function PrintList({
 		},
 		{
 			key: 'rarity',
-			label: 'Rareté',
+			label: 'Rarity',
 			render: (anyCard: AnyCard) => {
 				const rarity = (anyCard as ScryfallCard).rarity ?? '';
 				return rarity.charAt(0).toUpperCase() + rarity.slice(1);
@@ -84,9 +84,9 @@ export function PrintList({
 		},
 	];
 
-	if (loading) return <p className={styles.status}>Chargement des éditions…</p>;
+	if (loading) return <p className={styles.status}>Loading prints…</p>;
 	if (error) return <p className={styles.statusError}>{error}</p>;
-	if (sections.length === 0) return <p className={styles.status}>Aucune édition trouvée.</p>;
+	if (sections.length === 0) return <p className={styles.status}>No print found.</p>;
 
 	return (
 		<>

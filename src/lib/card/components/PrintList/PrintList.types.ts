@@ -10,7 +10,7 @@ export interface CollectionCopyEntry {
 	foilType?: 'foil' | 'etched';
 	proxy?: boolean;
 	language?: string;
-	/** Name of the deck this copy is assigned to (any deck), for the "Utilisé" badge. */
+	/** Name of the deck this copy is assigned to (any deck), for the "Used" badge. */
 	assignedToDeckName?: string;
 	/** True when this copy is assigned to the deck currently being edited. */
 	isCurrentDeck?: boolean;
@@ -106,7 +106,7 @@ export function groupCollectionByPrint(
 	}
 
 	if (orphans.length > 0) {
-		sections.push({ label: `Autres éditions (${orphans.length})`, cards: [] });
+		sections.push({ label: `Other prints (${orphans.length})`, cards: [] });
 	}
 
 	return sections;

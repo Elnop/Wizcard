@@ -136,7 +136,7 @@ function CopyMetaSection({ entry }: { entry: CardEntry }) {
 				</div>
 				{entry.condition && (
 					<div className={styles.detailRow}>
-						<span className={styles.detailLabel}>État</span>
+						<span className={styles.detailLabel}>Condition</span>
 						<span className={styles.detailValue}>{entry.condition}</span>
 					</div>
 				)}
@@ -166,7 +166,7 @@ function CopyMetaSection({ entry }: { entry: CardEntry }) {
 				)}
 				{addedDate && (
 					<div className={styles.detailRow}>
-						<span className={styles.detailLabel}>Ajoutée</span>
+						<span className={styles.detailLabel}>Added</span>
 						<span className={styles.detailValue}>{addedDate}</span>
 					</div>
 				)}
@@ -343,7 +343,7 @@ function CardModalInner({
 	const selectedCard: Card = cards.find((c) => c.entry.rowId === selectedRowId) ?? cards[0];
 
 	// Copies of this card in the selected card's zone that are not yet owned.
-	// Used to offer an "Ajouter à la collection" action (sets ownerId via toggleOwned).
+	// Used to offer an "Add to collection" action (sets ownerId via toggleOwned).
 	const selectedZone = availableZones ? getDeckZone(selectedCard.entry.tags) : undefined;
 	const unownedRowIds = useMemo(
 		() =>
@@ -416,7 +416,7 @@ function CardModalInner({
 			},
 			{
 				key: 'language',
-				label: 'Langue',
+				label: 'Language',
 				render: (c) => (c as Card).entry.language ?? 'English',
 			},
 			{
@@ -565,10 +565,10 @@ function CardModalInner({
 							<button
 								type="button"
 								className={styles.changePrintBtn}
-								title="Désassigner cette carte du deck (redevient non possédée)"
+								title="Unassign this card from the deck (becomes unowned again)"
 								onClick={() => onUnassignCollectionCopy()}
 							>
-								Désassigner de la collection
+								Unassign from collection
 							</button>
 						)}
 						{(onAddToCollectionFromEntry || onRemoveFromCollectionEntry) && (
@@ -581,9 +581,7 @@ function CardModalInner({
 										: onAddToCollectionFromEntry?.([selectedCard.entry.rowId])
 								}
 							>
-								{selectedCard.entry.ownerId
-									? 'Retirer de la collection'
-									: 'Ajouter à la collection'}
+								{selectedCard.entry.ownerId ? 'Remove from collection' : 'Add to collection'}
 							</button>
 						)}
 						{onAddToCollectionFromEntry && unownedRowIds.length > 0 && (
@@ -592,7 +590,7 @@ function CardModalInner({
 								className={styles.changePrintBtn}
 								onClick={() => onAddToCollectionFromEntry(unownedRowIds)}
 							>
-								Ajouter à la collection
+								Add to collection
 							</button>
 						)}
 						{onMoveToCollection && (
@@ -620,7 +618,7 @@ function CardModalInner({
 								className={styles.changePrintBtn}
 								onClick={() => onAddToDeck(selectedCard as ScryfallCard)}
 							>
-								🗂 Ajouter à un deck
+								🗂 Add to deck
 							</button>
 						)}
 					</div>
@@ -682,7 +680,7 @@ function CardModalInner({
 
 						{producerSections && producerSections.length > 0 && (
 							<div className={styles.tokensSection}>
-								<span className={styles.tokensTitle}>Cartes générant ce token</span>
+								<span className={styles.tokensTitle}>Cards that create this token</span>
 								<CardList
 									cards={producerSections}
 									onCardClick={onProducerClick}
@@ -834,7 +832,7 @@ function ScryfallCardModalInner({
 								className={styles.changePrintBtn}
 								onClick={() => onAddToDeck(card)}
 							>
-								🗂 Ajouter à un deck
+								🗂 Add to deck
 							</button>
 						)}
 					</div>

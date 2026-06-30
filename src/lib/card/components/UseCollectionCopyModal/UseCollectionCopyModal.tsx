@@ -63,7 +63,7 @@ export function UseCollectionCopyModal({
 		if (isSelected) {
 			return (
 				<button type="button" className={`${styles.selectBtn} ${styles.selectBtnActive}`} disabled>
-					Sélectionné
+					Selected
 				</button>
 			);
 		}
@@ -71,8 +71,8 @@ export function UseCollectionCopyModal({
 		return (
 			<>
 				{assignedDeckName && (
-					<span className={styles.assignedBadge} title={`Utilisé dans : ${assignedDeckName}`}>
-						Utilisé
+					<span className={styles.assignedBadge} title={`Used in: ${assignedDeckName}`}>
+						Used
 					</span>
 				)}
 				<button
@@ -92,7 +92,7 @@ export function UseCollectionCopyModal({
 	const tableColumns = [
 		{
 			key: 'set',
-			label: 'Édition',
+			label: 'Print',
 			render: (anyCard: AnyCard) => {
 				const card = anyCard as ScryfallCard;
 				return (
@@ -105,7 +105,7 @@ export function UseCollectionCopyModal({
 		},
 		{
 			key: 'meta',
-			label: 'Détails',
+			label: 'Details',
 			render: (anyCard: AnyCard) => {
 				if (!('entry' in anyCard)) return null;
 				const card = anyCard as Card;
@@ -136,11 +136,11 @@ export function UseCollectionCopyModal({
 
 	let content: ReactNode;
 	if (loading) {
-		content = <p className={styles.status}>Chargement des éditions…</p>;
+		content = <p className={styles.status}>Loading prints…</p>;
 	} else if (error) {
 		content = <p className={styles.statusError}>{error}</p>;
 	} else if (sections.length === 0) {
-		content = <p className={styles.status}>Aucune carte de la collection.</p>;
+		content = <p className={styles.status}>No card in the collection.</p>;
 	} else {
 		content = (
 			<CardList
@@ -158,7 +158,7 @@ export function UseCollectionCopyModal({
 		<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
 			<div className={styles.header}>
 				<h2 className={styles.title}>Utiliser une carte de la collection</h2>
-				<button className={styles.closeIcon} onClick={onClose} aria-label="Fermer" type="button">
+				<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path
 							d="M2 2l12 12M14 2L2 14"
@@ -175,13 +175,13 @@ export function UseCollectionCopyModal({
 						<button
 							type="button"
 							className={styles.noneBtn}
-							title="Désassigner cette carte du deck (redevient non possédée)"
+							title="Unassign this card from the deck (becomes unowned again)"
 							onClick={() => {
 								onSelectNone();
 								onClose();
 							}}
 						>
-							Aucune ✕
+							None ✕
 						</button>
 					</div>
 				)}

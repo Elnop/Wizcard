@@ -30,7 +30,7 @@ export function CardLightbox({ card, onClose, isFoil = false, foilType = 'foil' 
 				role="button"
 				tabIndex={0}
 				aria-pressed={effectsEnabled}
-				aria-label={effectsEnabled ? 'Désactiver les effets' : 'Activer les effets'}
+				aria-label={effectsEnabled ? 'Disable effects' : 'Enable effects'}
 				onKeyDown={(e) => {
 					if (e.key === 'Enter' || e.key === ' ') {
 						e.stopPropagation();
@@ -45,7 +45,7 @@ export function CardLightbox({ card, onClose, isFoil = false, foilType = 'foil' 
 			</div>
 
 			{/* Close button — top right */}
-			<button type="button" onClick={onClose} aria-label="Fermer" className={styles.closeBtn}>
+			<button type="button" onClick={onClose} aria-label="Close" className={styles.closeBtn}>
 				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 					<path
 						d="M2 2l12 12M14 2L2 14"

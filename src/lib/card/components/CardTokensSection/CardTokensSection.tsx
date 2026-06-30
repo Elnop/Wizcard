@@ -18,7 +18,7 @@ interface CardTokensSectionProps {
  */
 export function CardTokensSection({ tokens, loading, onTokenClick }: CardTokensSectionProps) {
 	if (loading) {
-		return <p className={styles.loading}>Chargement des tokens…</p>;
+		return <p className={styles.loading}>Loading tokens…</p>;
 	}
 
 	if (tokens.length === 0) return null;

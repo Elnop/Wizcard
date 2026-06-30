@@ -75,7 +75,7 @@ export function AddToDeckModal({ card, ownedRowIds, onAssign, onClose }: Props) 
 		onClose();
 	}
 
-	const title = `Ajouter à un deck — ${card.name}`;
+	const title = `Add to deck — ${card.name}`;
 
 	return (
 		<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
@@ -101,9 +101,9 @@ export function AddToDeckModal({ card, ownedRowIds, onAssign, onClose }: Props) 
 				<div className={styles.form}>
 					{sortedDecks.length === 0 ? (
 						<div className={styles.empty}>
-							<p>Vous n&apos;avez aucun deck.</p>
+							<p>You don&apos;t have any deck.</p>
 							<Link href="/decks" className={styles.createLink} onClick={onClose}>
-								Créer un deck
+								Create a deck
 							</Link>
 						</div>
 					) : (
@@ -147,7 +147,7 @@ export function AddToDeckModal({ card, ownedRowIds, onAssign, onClose }: Props) 
 							{showQuantity && (
 								<div className={styles.field}>
 									<label className={styles.label} htmlFor="add-deck-quantity">
-										Quantité
+										Quantity
 									</label>
 									<input
 										id="add-deck-quantity"
@@ -167,7 +167,7 @@ export function AddToDeckModal({ card, ownedRowIds, onAssign, onClose }: Props) 
 							)}
 
 							<button type="button" className={styles.confirmBtn} onClick={handleConfirm}>
-								Ajouter
+								Add
 							</button>
 						</>
 					)}

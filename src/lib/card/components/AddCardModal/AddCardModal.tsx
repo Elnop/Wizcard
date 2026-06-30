@@ -57,7 +57,7 @@ export function AddCardModal({
 			{!hideQuantity && (
 				<div className={styles.field}>
 					<label className={styles.label} htmlFor="copy-add-quantity">
-						Quantité
+						Quantity
 					</label>
 					<input
 						id="copy-add-quantity"
@@ -105,7 +105,7 @@ export function AddCardModal({
 
 	return (
 		<CardEntryFormBody
-			title={`Ajouter — ${form.selectedPrint.set_name} #${form.selectedPrint.collector_number}`}
+			title={`Add — ${form.selectedPrint.set_name} #${form.selectedPrint.collector_number}`}
 			form={form}
 			onClose={onClose}
 			topExtras={topExtras}

@@ -26,7 +26,7 @@ export function DeckBadge({ cards }: Props) {
 			const deckId = card.entry.deckId;
 			if (deckId == null) continue;
 			total += 1;
-			const name = nameById.get(deckId) ?? 'Deck supprimé';
+			const name = nameById.get(deckId) ?? 'Deleted deck';
 			counts.set(name, (counts.get(name) ?? 0) + 1);
 		}
 		const lines = Array.from(counts.entries())

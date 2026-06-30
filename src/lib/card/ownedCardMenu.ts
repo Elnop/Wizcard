@@ -22,8 +22,8 @@ export type OwnedCardMenuHandlers = {
 };
 
 const LABELS = {
-	collection: { move: 'Déplacer vers la wishlist', remove: 'Retirer de la collection' },
-	wishlist: { move: 'Déplacer vers la collection', remove: 'Retirer de la wishlist' },
+	collection: { move: 'Move to wishlist', remove: 'Remove from collection' },
+	wishlist: { move: 'Move to collection', remove: 'Remove from wishlist' },
 } as const;
 
 const MOVE_ICONS = { collection: '♡', wishlist: '→' } as const;
@@ -50,19 +50,19 @@ export function buildOwnedCardMenu(
 	return [
 		{
 			type: 'action',
-			label: 'Voir les détails',
+			label: 'View details',
 			icon: '👁',
 			onClick: run(() => handlers.onViewDetails(stack)),
 		},
 		{
 			type: 'action',
-			label: 'Ajouter une copie',
+			label: 'Add a copy',
 			icon: '+',
 			onClick: run(() => handlers.onAddCopy(rep)),
 		},
 		{
 			type: 'action',
-			label: 'Retirer une copie',
+			label: 'Remove a copy',
 			icon: '−',
 			onClick: run(() => handlers.onRemoveCopy(rep)),
 		},
@@ -75,13 +75,13 @@ export function buildOwnedCardMenu(
 		},
 		{
 			type: 'action',
-			label: 'Ajouter à un deck…',
+			label: 'Add to deck…',
 			icon: '🗂',
 			onClick: run(() => handlers.onAddToDeck(stack)),
 		},
 		{
 			type: 'action',
-			label: "Changer l'édition",
+			label: 'Change print',
 			icon: '✎',
 			onClick: run(() => handlers.onChangePrint(stack)),
 		},

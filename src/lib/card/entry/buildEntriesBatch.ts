@@ -4,7 +4,7 @@ export function newEntry(rowId: string, overrides?: Partial<CardEntry>): CardEnt
 	return { rowId, dateAdded: new Date().toISOString(), ...overrides };
 }
 
-/** Fabrique N entries distinctes (rowId unique chacune) pour une même carte. Pur. */
+/** Builds N distinct entries (each with a unique rowId) for the same card. Pure. */
 export function buildEntriesBatch(
 	scryfallId: string,
 	count: number,
