@@ -30,6 +30,7 @@ function buildContextMenuItems(
 	onChangeZone: (rowId: string, zone: DeckZone) => void,
 	onAddToWishlist: ((deckCardRowId: string) => void) | undefined,
 	wishlistTargetRowId: string | undefined,
+	isWishlisted: boolean,
 	onAddToCollection: ((req: CollectionAddRequest) => void) | undefined,
 	buildRequest: () => CollectionAddRequest,
 	hasUnowned: boolean,
@@ -107,7 +108,7 @@ function buildContextMenuItems(
 			? [
 					{
 						type: 'action' as const,
-						label: 'Add to Wishlist',
+						label: isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist',
 						icon: '🛒',
 						onClick: () => {
 							onAddToWishlist(wishlistTargetRowId);
@@ -192,6 +193,7 @@ export function DeckCardOverlay({
 	// Wishlisting toggles the flag on an actual deck-card row (the first copy in
 	// this zone), so the wishlist entry IS this deck card, not a separate copy.
 	const wishlistTargetRowId = zoneCopies[0]?.entry.rowId;
+	const isWishlisted = !!zoneCopies[0]?.entry.wishlist;
 
 	const hasUnowned = zoneCopies.some((c) => !c.entry.ownerId);
 
@@ -218,6 +220,7 @@ export function DeckCardOverlay({
 		onChangeZone,
 		onAddToWishlist,
 		wishlistTargetRowId,
+		isWishlisted,
 		onAddToCollectionClick,
 		buildAddRequest,
 		hasUnowned,

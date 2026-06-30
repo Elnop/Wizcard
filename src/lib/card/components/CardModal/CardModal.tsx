@@ -610,7 +610,8 @@ function CardModalInner({
 								className={styles.changePrintBtn}
 								onClick={() => onAddToWishlistFromEntry(selectedCard.entry.rowId)}
 							>
-								<WishlistIcon size={13} /> Add to Wishlist
+								<WishlistIcon size={13} />{' '}
+								{selectedCard.entry.wishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
 							</button>
 						)}
 						{onAddToDeck && (
