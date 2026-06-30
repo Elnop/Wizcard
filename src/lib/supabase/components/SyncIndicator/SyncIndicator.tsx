@@ -7,13 +7,13 @@ import styles from './SyncIndicator.module.css';
 function friendlyErrorMessage(raw: string): string {
 	const lower = raw.toLowerCase();
 	if (lower.includes('relation') && lower.includes('does not exist')) {
-		return "La table n'existe pas sur le serveur. Les migrations n'ont probablement pas été appliquées.";
+		return 'The table does not exist on the server. The migrations have probably not been applied.';
 	}
 	if (lower.includes('permission denied') || lower.includes('row-level security')) {
-		return 'Permission refusée. Vérifiez les politiques RLS de la base de données.';
+		return 'Permission denied. Check the database RLS policies.';
 	}
 	if (lower.includes('network') || lower.includes('failed to fetch')) {
-		return 'Erreur réseau. Vérifiez votre connexion internet.';
+		return 'Network error. Check your internet connection.';
 	}
 	return raw;
 }
@@ -45,11 +45,7 @@ export function SyncIndicator() {
 
 	return (
 		<div className={styles.popoverWrapper} ref={popoverRef}>
-			<button
-				className={styles.errorBadge}
-				onClick={() => setIsOpen((v) => !v)}
-				title="Erreur de synchronisation"
-			>
+			<button className={styles.errorBadge} onClick={() => setIsOpen((v) => !v)} title="Sync error">
 				{failedCount}
 			</button>
 			{isOpen && (
@@ -65,7 +61,7 @@ export function SyncIndicator() {
 								retry();
 							}}
 						>
-							Réessayer
+							Retry
 						</button>
 						<button
 							className={styles.popoverBtnGhost}

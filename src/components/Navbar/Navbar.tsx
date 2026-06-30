@@ -92,7 +92,7 @@ export function Navbar() {
 						<>
 							<span className={styles.userEmail}>{user.email}</span>
 							<button className={styles.signOutBtn} onClick={() => void handleSignOut()}>
-								Déconnexion
+								Log out
 							</button>
 						</>
 					) : (

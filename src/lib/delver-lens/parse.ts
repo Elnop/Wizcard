@@ -107,7 +107,7 @@ export const parseDelverLens: BinaryFormatParser = async (buffer) => {
 	} catch {
 		return {
 			cards: [],
-			parseErrors: ['Impossible d’ouvrir le fichier comme base SQLite'],
+			parseErrors: ['Unable to open the file as a SQLite database'],
 		};
 	}
 
@@ -126,7 +126,7 @@ export const parseDelverLens: BinaryFormatParser = async (buffer) => {
 		const result = db.exec(QUERY);
 		if (result.length === 0 || !result[0]) {
 			db.close();
-			return { cards: [], parseErrors: ['Aucune carte trouvée dans la base'] };
+			return { cards: [], parseErrors: ['No card found in the database'] };
 		}
 
 		// Dedup by physical attributes — same card with same foil/lang/condition aggregates quantity

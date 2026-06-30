@@ -18,9 +18,9 @@ type StoredCopy = { scryfallId: string; entry: CardEntry };
 type CollectionState = {
 	entries: CollectionData;
 	isLoaded: boolean;
-	// true uniquement quand TOUTES les pages Supabase ont été chargées. isLoaded
-	// passe true dès la 1re page (pour afficher vite), mais entries continue de
-	// grandir page par page ; isFullyLoaded sert à geler la grille jusqu'à la fin.
+	// true only when ALL Supabase pages have loaded. isLoaded becomes true on
+	// the first page (to display quickly), but entries keeps growing page by
+	// page; isFullyLoaded is used to freeze the grid until the end.
 	isFullyLoaded: boolean;
 };
 
@@ -96,21 +96,21 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 			localStorage.removeItem('wizcard-collection');
 		}
 
-		// Phase 1 : afficher le cache IndexedDB immédiatement
+		// Phase 1: show the IndexedDB cache immediately
 		const cached = await getCollectionFromCache();
 		if (Object.keys(cached).length > 0) {
 			set({ entries: cached, isLoaded: true });
 		}
 
-		// Phase 2 : fetch progressif depuis Supabase, page par page
-		// On reconstruit depuis zéro pour ne pas merger avec un cache potentiellement périmé
+		// Phase 2: progressive fetch from Supabase, page by page
+		// Rebuild from scratch to avoid merging with a potentially stale cache
 		const fresh: CollectionData = {};
 		let from = 0;
 		while (true) {
 			const { rows, hasMore } = await fetchCollectionPage(userId, from);
 			for (const copy of rows) fresh[copy.entry.rowId] = copy;
-			// isFullyLoaded reste false tant qu'il reste des pages : la grille est
-			// gelée sur des skeletons jusqu'à ce que entries soit complet.
+			// isFullyLoaded stays false while pages remain: the grid is frozen on
+			// skeletons until entries is complete.
 			set({ entries: { ...fresh }, isLoaded: true, isFullyLoaded: !hasMore });
 			if (rows.length > 0) {
 				void putCollectionEntriesInCache(
@@ -120,7 +120,7 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 			if (!hasMore) break;
 			from += 1000;
 		}
-		// Si Supabase retourne une collection vide, s'assurer que le cache est bien vide
+		// If Supabase returns an empty collection, make sure the cache is empty too
 		if (Object.keys(fresh).length === 0) {
 			void clearCollectionCache();
 		}

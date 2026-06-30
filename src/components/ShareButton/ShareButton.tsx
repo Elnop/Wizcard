@@ -30,7 +30,7 @@ export function ShareButton({ path }: { path: string }) {
 
 	return (
 		<Button variant="secondary" onClick={handleShare}>
-			<span className={styles.label}>{copied ? 'Lien copié ✓' : 'Partager'}</span>
+			<span className={styles.label}>{copied ? 'Link copied ✓' : 'Share'}</span>
 		</Button>
 	);
 }

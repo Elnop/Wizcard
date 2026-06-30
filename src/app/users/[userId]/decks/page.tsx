@@ -72,7 +72,7 @@ function PublicDecksView({ userId }: { userId: string }) {
 
 	let activeFolderName: string;
 	if (activeFolderId !== null && activeFolderId !== 'none') {
-		activeFolderName = foldersMap[activeFolderId]?.name ?? 'Dossier';
+		activeFolderName = foldersMap[activeFolderId]?.name ?? 'Folder';
 	} else {
 		activeFolderName = 'Decks';
 	}
@@ -109,8 +109,8 @@ function PublicDecksView({ userId }: { userId: string }) {
 
 				{decks.length === 0 ? (
 					<div className={styles.emptyState}>
-						<h2>Aucun deck public</h2>
-						<p>Cet utilisateur n&apos;a pas encore de decks.</p>
+						<h2>No public deck</h2>
+						<p>This user has no decks yet.</p>
 					</div>
 				) : (
 					<div className={styles.grid}>

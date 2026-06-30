@@ -70,7 +70,7 @@ export function LoginForm() {
 				</div>
 				{error && <p className={styles.error}>{error}</p>}
 				<button type="submit" className={styles.submitBtn} disabled={isLoading}>
-					{isLoading ? 'Envoi…' : 'Envoyer le lien de connexion'}
+					{isLoading ? 'Sending…' : 'Send the sign-in link'}
 				</button>
 			</form>
 		);
@@ -79,15 +79,15 @@ export function LoginForm() {
 	return (
 		<div className={styles.sentWrapper}>
 			<p className={styles.sentText}>
-				Email envoyé à <strong>{email}</strong>.<br />
+				Email sent to <strong>{email}</strong>.<br />
 				<span className={styles.sentSub}>
-					Clique sur le lien dans le mail, ou entre le code ci-dessous.
+					Click the link in the email, or enter the code below.
 				</span>
 			</p>
 			<form className={styles.form} onSubmit={handleSubmitOtp}>
 				<div className={styles.field}>
 					<label className={styles.label} htmlFor="otp">
-						Code à 6 chiffres
+						6-digit code
 					</label>
 					<input
 						id="otp"
@@ -104,7 +104,7 @@ export function LoginForm() {
 				</div>
 				{error && <p className={styles.error}>{error}</p>}
 				<button type="submit" className={styles.submitBtn} disabled={isLoading || otp.length < 6}>
-					{isLoading ? 'Vérification…' : 'Se connecter'}
+					{isLoading ? 'Verifying…' : 'Sign in'}
 				</button>
 				<button
 					type="button"
@@ -115,7 +115,7 @@ export function LoginForm() {
 						setError(null);
 					}}
 				>
-					← Changer d&apos;adresse
+					← Change address
 				</button>
 			</form>
 		</div>

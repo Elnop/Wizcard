@@ -72,11 +72,11 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
 	const duplicateEntry = useCallback(
 		(scryfallId: string, sourceEntry: CardEntry) => {
-			// On copie les métadonnées de l'entry source mais pas son rowId ni sa date :
-			// addToWishlist génère un nouveau rowId et une nouvelle dateAdded pour la copie.
-			// On retire aussi deckId et ownerId : la copie est une nouvelle entrée
-			// wishlist pure et ne doit pas hériter de l'appartenance à un deck ni de
-			// l'owner de la source (owner_id est forcé à userId à l'insertion).
+			// Copy the source entry's metadata but not its rowId or date:
+			// addToWishlist generates a new rowId and dateAdded for the copy.
+			// Also drop deckId and ownerId: the copy is a brand-new pure wishlist
+			// entry and must not inherit deck membership nor the source's owner
+			// (owner_id is forced to userId on insert).
 			const patch: Partial<CardEntry> = { ...sourceEntry };
 			delete patch.rowId;
 			delete patch.dateAdded;

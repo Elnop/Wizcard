@@ -36,7 +36,7 @@ function WishlistPageInner() {
 	);
 
 	const handleClearWishlist = useCallback(() => {
-		if (confirm('Effacer toute la wishlist ? Cette action est irréversible.')) {
+		if (confirm('Clear the entire wishlist? This action is irreversible.')) {
 			clearWishlist();
 		}
 	}, [clearWishlist]);
@@ -143,7 +143,7 @@ function WishlistPageInner() {
 							);
 						}}
 						tableColumns={[
-							{ key: 'name', label: 'Nom' },
+							{ key: 'name', label: 'Name' },
 							{
 								key: 'set',
 								label: 'Set',

@@ -20,7 +20,7 @@ function PublicCollectionView({ userId }: { userId: string }) {
 	const emptyState = (
 		<div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
 			<h2>Collection vide</h2>
-			<p>Cet utilisateur n&apos;a pas encore de cartes publiques.</p>
+			<p>This user has no public cards yet.</p>
 		</div>
 	);
 

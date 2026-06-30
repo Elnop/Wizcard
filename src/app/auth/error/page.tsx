@@ -6,21 +6,21 @@ import errorStyles from './page.module.css';
 const MESSAGES: Record<string, { title: string; description: string }> = {
 	confirmation_failed: {
 		title: 'Lien invalide',
-		description: 'Ce lien de connexion est invalide ou a déjà été utilisé.',
+		description: 'This sign-in link is invalid or has already been used.',
 	},
 	otp_expired: {
-		title: 'Lien expiré',
-		description: 'Ce lien de connexion a expiré. Les liens sont valides 1 heure.',
+		title: 'Link expired',
+		description: 'This sign-in link has expired. Links are valid for 1 hour.',
 	},
 	access_denied: {
-		title: 'Accès refusé',
-		description: 'La connexion a été refusée. Réessaie en demandant un nouveau lien.',
+		title: 'Access denied',
+		description: 'The sign-in was refused. Try again by requesting a new link.',
 	},
 };
 
 const DEFAULT = {
-	title: 'Erreur de connexion',
-	description: 'Une erreur inattendue est survenue. Réessaie en demandant un nouveau lien.',
+	title: 'Sign-in error',
+	description: 'An unexpected error occurred. Try again by requesting a new link.',
 };
 
 export default async function AuthErrorPage({
@@ -34,14 +34,14 @@ export default async function AuthErrorPage({
 
 	return (
 		<div className={styles.page}>
-			{/* Intercepte les erreurs dans le hash (#error_code=otp_expired) */}
+			{/* Intercepts errors in the hash (#error_code=otp_expired) */}
 			<HashErrorHandler messages={MESSAGES} defaultMessage={DEFAULT} />
 			<div className={styles.card}>
 				<div className={errorStyles.icon}>⚠</div>
 				<h1 className={styles.title}>{title}</h1>
 				<p className={errorStyles.description}>{description}</p>
 				<Link href="/auth/login" className={errorStyles.retryBtn}>
-					Demander un nouveau lien
+					Request a new link
 				</Link>
 			</div>
 		</div>

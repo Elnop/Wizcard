@@ -109,7 +109,7 @@ export function NavbarDrawer() {
 					<>
 						<span className={styles.drawerEmail}>{user.email}</span>
 						<button className={styles.drawerSignOutBtn} onClick={() => void handleSignOut()}>
-							Déconnexion
+							Log out
 						</button>
 					</>
 				) : (

@@ -29,7 +29,7 @@ export function useImportFileHandling(deps: {
 				try {
 					const buffer = await file.arrayBuffer();
 					const parser = getBinaryParser(binaryFormatId);
-					if (!parser) throw new Error(`Pas de parser pour ${binaryFormatId}`);
+					if (!parser) throw new Error(`No parser for ${binaryFormatId}`);
 					const parsed = await parser(buffer);
 					setPreview({
 						fileName: file.name,
