@@ -62,7 +62,7 @@ export function CollectionFiltersAside({
 						strokeLinecap="round"
 					/>
 				</svg>
-				Filtres
+				Filters
 				{isFiltered && <span className={styles.badge}>{activeFilterCount}</span>}
 			</button>
 
@@ -73,13 +73,13 @@ export function CollectionFiltersAside({
 			<aside className={`${styles.aside} ${mobileOpen ? styles.mobileVisible : ''}`}>
 				<div className={styles.asideHeader}>
 					<span className={styles.asideTitle}>
-						Filtres{isFiltered && <span className={styles.badge}>{activeFilterCount}</span>}
+						Filters{isFiltered && <span className={styles.badge}>{activeFilterCount}</span>}
 					</span>
 					<button
 						type="button"
 						className={styles.mobileClose}
 						onClick={() => setMobileOpen(false)}
-						aria-label="Fermer les filtres"
+						aria-label="Close filters"
 					>
 						✕
 					</button>
@@ -88,7 +88,7 @@ export function CollectionFiltersAside({
 				<SearchBar
 					value={filters.name}
 					onChange={(v) => patch('name', v)}
-					placeholder="Rechercher par nom..."
+					placeholder="Search by name..."
 				/>
 
 				<ColorFilter
@@ -116,7 +116,7 @@ export function CollectionFiltersAside({
 
 				<div>
 					<label htmlFor="collection-proxy-filter" className={styles.filterLabel}>
-						Impression
+						Finish
 					</label>
 					<select
 						id="collection-proxy-filter"
@@ -126,9 +126,9 @@ export function CollectionFiltersAside({
 							patch('proxyFilter', e.target.value as CollectionFilters['proxyFilter'])
 						}
 					>
-						<option value="all">Toutes</option>
-						<option value="official">Officielles seulement</option>
-						<option value="proxy">Proxy seulement</option>
+						<option value="all">All</option>
+						<option value="official">Official only</option>
+						<option value="proxy">Proxy only</option>
 					</select>
 				</div>
 
@@ -144,7 +144,7 @@ export function CollectionFiltersAside({
 							patch('foilTypeFilter', e.target.value as CollectionFilters['foilTypeFilter'])
 						}
 					>
-						<option value="all">Tous</option>
+						<option value="all">All</option>
 						<option value="none">Non-foil</option>
 						<option value="foil">Foil</option>
 						<option value="etched">Etched</option>
@@ -153,7 +153,7 @@ export function CollectionFiltersAside({
 
 				<div>
 					<label htmlFor="collection-language-filter" className={styles.filterLabel}>
-						Langue
+						Language
 					</label>
 					<select
 						id="collection-language-filter"
@@ -163,7 +163,7 @@ export function CollectionFiltersAside({
 							patch('languageFilter', e.target.value as CollectionFilters['languageFilter'])
 						}
 					>
-						<option value="all">Toutes</option>
+						<option value="all">All</option>
 						{MTG_LANGUAGES.map((lang) => (
 							<option key={lang} value={lang}>
 								{lang}
@@ -184,9 +184,9 @@ export function CollectionFiltersAside({
 							patch('deckAssignment', e.target.value as CollectionFilters['deckAssignment'])
 						}
 					>
-						<option value="all">Toutes</option>
-						<option value="assigned">Assignées à un deck</option>
-						<option value="unassigned">Non-assignées</option>
+						<option value="all">All</option>
+						<option value="assigned">Assigned to a deck</option>
+						<option value="unassigned">Unassigned</option>
 					</select>
 				</div>
 
@@ -201,7 +201,7 @@ export function CollectionFiltersAside({
 
 				{isFiltered && (
 					<button type="button" className={styles.resetButton} onClick={handleReset}>
-						Réinitialiser les filtres
+						Reset filters
 					</button>
 				)}
 			</aside>

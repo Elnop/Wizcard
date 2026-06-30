@@ -28,7 +28,7 @@ export function ImportPreviewFilters({
 				<SearchBar
 					value={nameFilter}
 					onChange={onNameFilterChange}
-					placeholder="Rechercher par nom..."
+					placeholder="Search by name..."
 				/>
 				<button className={styles.filterButton} onClick={onOpenFilterModal}>
 					Filtres
@@ -40,8 +40,8 @@ export function ImportPreviewFilters({
 				<span className={styles.resultCount}>
 					{filteredCount > 0
 						? // eslint-disable-next-line sonarjs/no-nested-conditional -- pluralization embedded in label
-							`${filteredCount} carte${filteredCount !== 1 ? 's' : ''}`
-						: 'Aucun résultat'}
+							`${filteredCount} card${filteredCount !== 1 ? 's' : ''}`
+						: 'No result'}
 					{totalCardCount > 0 && ` / ${totalCardCount}`}
 				</span>
 			)}

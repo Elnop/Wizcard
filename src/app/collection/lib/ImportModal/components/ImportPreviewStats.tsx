@@ -52,12 +52,12 @@ export function ImportPreviewStats({
 
 			<div className={styles.previewStats}>
 				<span className={styles.previewStat}>
-					<span className={styles.previewStatValue}>{preview.parsed.cards.length}</span> cartes
-					détectées
+					<span className={styles.previewStatValue}>{preview.parsed.cards.length}</span> cards
+					detected
 				</span>
 				{errorCount > 0 && (
 					<span className={styles.previewStat}>
-						<span className={styles.previewStatWarn}>{errorCount}</span> erreurs d&apos;analyse
+						<span className={styles.previewStatWarn}>{errorCount}</span> parse errors
 					</span>
 				)}
 			</div>

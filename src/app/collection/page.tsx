@@ -31,7 +31,7 @@ function CollectionPageInner() {
 	const openCard = useCallback((stack: CardStack) => openCardModal(stack.cards), [openCardModal]);
 
 	const handleClearCollection = useCallback(() => {
-		if (confirm('Effacer toute la collection ? Cette action est irréversible.')) {
+		if (confirm('Clear the entire collection? This action is irreversible.')) {
 			clearCollection();
 		}
 	}, [clearCollection]);

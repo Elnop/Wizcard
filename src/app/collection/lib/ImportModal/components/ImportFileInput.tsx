@@ -62,7 +62,7 @@ export function ImportFileInput({
 					value={forcedFormat}
 					onChange={(e) => onForcedFormatChange(e.target.value as ImportFormatId | 'auto')}
 				>
-					<option value="auto">Auto-détection</option>
+					<option value="auto">Auto-detect</option>
 					{formatRegistry.map((f) => (
 						<option key={f.id} value={f.id}>
 							{f.label}
@@ -82,7 +82,7 @@ export function ImportFileInput({
 					className={`${styles.tab} ${inputMode === 'text' ? styles.tabActive : ''}`}
 					onClick={() => onInputModeChange('text')}
 				>
-					Coller du texte
+					Paste text
 				</button>
 			</div>
 
@@ -125,7 +125,7 @@ export function ImportFileInput({
 					</Button>
 				)}
 				<Button variant="ghost" onClick={onCancel}>
-					Annuler
+					Cancel
 				</Button>
 			</div>
 		</>

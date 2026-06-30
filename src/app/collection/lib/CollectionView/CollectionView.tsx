@@ -154,10 +154,10 @@ export function CollectionView({
 				tableColumns={[
 					{
 						key: 'qty',
-						label: 'Qté',
+						label: 'Qty',
 						render: (card) => stackByCardId.get(card.id)?.cards.length ?? 1,
 					},
-					{ key: 'name', label: 'Nom', sortKey: 'name' },
+					{ key: 'name', label: 'Name', sortKey: 'name' },
 					{
 						key: 'set',
 						label: 'Set',
@@ -182,7 +182,7 @@ export function CollectionView({
 					},
 					{
 						key: 'language',
-						label: 'Langue',
+						label: 'Language',
 						sortKey: 'language',
 						render: (card) => ('entry' in card ? (card.entry.language ?? '—') : '—'),
 					},

@@ -25,8 +25,8 @@ export function ImportFallbackTable({ rows }: ImportFallbackTableProps) {
 			<table className={styles.previewTable}>
 				<thead>
 					<tr>
-						<th>Qté</th>
-						<th>Nom</th>
+						<th>Qty</th>
+						<th>Name</th>
 						<th>Set</th>
 						<th>Collector #</th>
 					</tr>

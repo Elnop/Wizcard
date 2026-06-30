@@ -94,7 +94,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 				onClick={() => setIsOpen((v) => !v)}
 				aria-expanded={isOpen}
 			>
-				<span>Appliquer à toutes les cartes</span>
+				<span>Apply to all cards</span>
 				<span className={styles.chevron}>{isOpen ? '▾' : '▸'}</span>
 			</button>
 
@@ -103,7 +103,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 					{/* Tags */}
 					<div className={styles.field}>
 						<label className={styles.label} htmlFor="bulk-tags">
-							Tags (ajoutés aux cartes)
+							Tags (added to cards)
 						</label>
 						<div className={styles.tagsField}>
 							{pendingTags.map((tag) => (
@@ -113,7 +113,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 										type="button"
 										className={styles.tagRemove}
 										onClick={() => removeTag(tag)}
-										aria-label={`Retirer le tag ${tag}`}
+										aria-label={`Remove tag ${tag}`}
 									>
 										×
 									</button>
@@ -127,7 +127,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 								onChange={(e) => setTagInput(e.target.value)}
 								onKeyDown={handleTagKeyDown}
 								onBlur={addTag}
-								placeholder={pendingTags.length === 0 ? 'Ajouter des tags…' : ''}
+								placeholder={pendingTags.length === 0 ? 'Add tags…' : ''}
 							/>
 						</div>
 					</div>
@@ -193,7 +193,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 						{/* For trade */}
 						<div className={styles.field}>
 							<label className={styles.label} htmlFor="bulk-fortrade">
-								À échanger
+								For trade
 							</label>
 							<select
 								id="bulk-fortrade"
@@ -210,7 +210,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 						{/* Alter */}
 						<div className={styles.field}>
 							<label className={styles.label} htmlFor="bulk-alter">
-								Altérée
+								Altered
 							</label>
 							<select
 								id="bulk-alter"
@@ -271,7 +271,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 						</button>
 						{appliedCount !== null && (
 							<span className={styles.appliedLabel}>
-								Appliqué à {appliedCount} carte{appliedCount > 1 ? 's' : ''}
+								Applied to {appliedCount} card{appliedCount > 1 ? 's' : ''}
 							</span>
 						)}
 					</div>

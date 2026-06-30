@@ -21,21 +21,21 @@ import { Spinner } from '@/components/Spinner/Spinner';
 import styles from './ImportModal.module.css';
 import { STATIC_IMPORT_COLUMNS } from './tableColumns';
 
-const TITLE_IMPORT_FILE = 'Importer un fichier';
-const LABEL_FETCHING_CARDS = 'Récupération des cartes…';
+const TITLE_IMPORT_FILE = 'Import a file';
+const LABEL_FETCHING_CARDS = 'Fetching cards…';
 
 function modalTitle(status: ImportStatus): string {
 	switch (status) {
 		case 'selecting':
 			return TITLE_IMPORT_FILE;
 		case 'parsing':
-			return 'Analyse du fichier…';
+			return 'Parsing the file…';
 		case 'previewing':
-			return "Aperçu de l'import";
+			return 'Import preview';
 		case 'fetching':
 			return LABEL_FETCHING_CARDS;
 		case 'merging':
-			return 'Ajout à la collection…';
+			return 'Adding to collection…';
 		default:
 			return TITLE_IMPORT_FILE;
 	}
@@ -106,7 +106,7 @@ export function ImportModal() {
 	const tableColumns: CardListColumn[] = [
 		{
 			key: 'qty',
-			label: 'Qté',
+			label: 'Qty',
 			render: (card) => state.getTotalQty((card as AnyCard & { id: string }).id),
 		},
 		...STATIC_IMPORT_COLUMNS,
@@ -118,12 +118,12 @@ export function ImportModal() {
 
 	const previewProgressLabel =
 		previewProgress.total > 0
-			? `Récupération des cartes… (${previewProgress.current}/${previewProgress.total})`
+			? `Fetching cards… (${previewProgress.current}/${previewProgress.total})`
 			: LABEL_FETCHING_CARDS;
 
 	const fetchProgressLabel =
 		progress.total > 0
-			? `Récupération des cartes… (${progress.current}/${progress.total})`
+			? `Fetching cards… (${progress.current}/${progress.total})`
 			: LABEL_FETCHING_CARDS;
 
 	function renderPreviewBody() {
@@ -131,10 +131,10 @@ export function ImportModal() {
 			return (
 				<LoadingScreen label={previewProgressLabel}>
 					<Button variant="ghost" onClick={onCancel}>
-						Annuler
+						Cancel
 					</Button>
 					<Button variant="secondary" onClick={onChangeFile}>
-						Changer de fichier
+						Change file
 					</Button>
 				</LoadingScreen>
 			);
@@ -163,9 +163,8 @@ export function ImportModal() {
 							<div className={styles.notFoundSection}>
 								<p className={styles.notFoundLabel}>
 									{state.uniqueNotFoundCount} print
-									{state.uniqueNotFoundCount > 1 ? 's' : ''} non trouvé
-									{state.uniqueNotFoundCount > 1 ? 's' : ''} sur Scryfall ({state.notFound.length}{' '}
-									cop{state.notFound.length > 1 ? 'ies' : 'ie'})
+									{state.uniqueNotFoundCount > 1 ? 's' : ''} not found on Scryfall (
+									{state.notFound.length} cop{state.notFound.length > 1 ? 'ies' : 'y'})
 								</p>
 								<ImportFallbackTable rows={state.notFound} />
 							</div>
@@ -173,14 +172,14 @@ export function ImportModal() {
 					)}
 					<div className={styles.actions}>
 						<Button variant="ghost" onClick={onCancel}>
-							Annuler
+							Cancel
 						</Button>
 						<Button
 							variant="primary"
 							onClick={onConfirm}
 							disabled={!resolved || resolved.resolved.length === 0}
 						>
-							Confirmer l&apos;import
+							Confirm import
 						</Button>
 					</div>
 				</div>
@@ -240,10 +239,10 @@ export function ImportModal() {
 				/>
 			);
 		}
-		if (status === 'parsing') return <LoadingScreen label="Analyse du fichier…" />;
+		if (status === 'parsing') return <LoadingScreen label="Parsing the file…" />;
 		if (status === 'previewing') return renderPreviewBody();
 		if (status === 'fetching') return <LoadingScreen label={fetchProgressLabel} />;
-		if (status === 'merging') return <LoadingScreen label="Ajout à la collection…" />;
+		if (status === 'merging') return <LoadingScreen label="Adding to collection…" />;
 		return null;
 	}
 
