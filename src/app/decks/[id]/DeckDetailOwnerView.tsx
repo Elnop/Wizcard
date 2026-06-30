@@ -7,7 +7,7 @@ import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { validateDeck } from '@/lib/deck/utils/format-rules';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { CardList } from '@/lib/card/components/CardList/CardList';
-import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { getDeckZone } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
@@ -27,7 +27,6 @@ import { DeckCardOverlay } from './components/DeckCardOverlay/DeckCardOverlay';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import { DeckFooter } from './components/DeckFooter/DeckFooter';
 import { CardSearchPanel } from './components/CardSearchPanel/CardSearchPanel';
-import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { Button } from '@/components/Button/Button';
 import { PlusIcon } from '@phosphor-icons/react';
 import { useAddDeckToCollection } from './useAddDeckToCollection';
@@ -37,6 +36,14 @@ import {
 	RemoveDeckCardModal,
 	type RemoveDeckCardMembership,
 } from './components/RemoveDeckCardModal/RemoveDeckCardModal';
+import { BulkRemoveDeckCardsModal } from './components/RemoveDeckCardModal/BulkRemoveDeckCardsModal';
+import { DeckBulkActionBar } from './components/DeckBulkActionBar/DeckBulkActionBar';
+import { SectionSelectButton } from './components/DeckBulkActionBar/SectionSelectButton';
+import {
+	DeckBulkEditModal,
+	type DeckBulkEdit,
+} from './components/DeckBulkEditModal/DeckBulkEditModal';
+import { useDeckBulkSelection } from './useDeckBulkSelection';
 import { type CollectionAddRequest } from './collectionAddRequest';
 import { DeckPdfExportModal } from './components/DeckPdfExportModal/DeckPdfExportModal';
 import { DeckTextExportModal } from './components/DeckTextExportModal/DeckTextExportModal';
@@ -62,6 +69,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		addCollectionCardToDeck,
 		removeCardFromDeck,
 		changeZone,
+		updateDeckCard,
 		toggleOwned,
 		toggleDeckCardWishlist,
 		getDeckCards,
@@ -87,8 +95,11 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const [contextMenuCard, setContextMenuCard] = useState<AnyCard | null>(null);
 	const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
 
-	const [bulkSelectMode, setBulkSelectMode] = useState(false);
-	const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
+	const bulk = useDeckBulkSelection();
+	const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
+	const [bulkRemove, setBulkRemove] = useState<{ hasOwned: boolean; hasWishlist: boolean } | null>(
+		null
+	);
 	const [addToCollectionModalOpen, setAddToCollectionModalOpen] = useState(false);
 	const [pdfExportModalOpen, setPdfExportModalOpen] = useState(false);
 	const [pdfSettingsModalOpen, setPdfSettingsModalOpen] = useState(false);
@@ -187,27 +198,18 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 
 	const panelScryfallIdToOracleId = collectionScryfallIdToOracleId;
 
-	const toggleBulkSelect = useCallback((oracleId: string) => {
-		setBulkSelected((prev) => {
-			const next = new Set(prev);
-			if (next.has(oracleId)) next.delete(oracleId);
-			else next.add(oracleId);
-			return next;
-		});
-	}, []);
-
 	const handleCardClick = useCallback(
 		(card: AnyCard) => {
-			if (bulkSelectMode) {
+			if (bulk.selectMode) {
 				const c = card as ResolvedDeckCard;
-				toggleBulkSelect(c.oracle_id ?? c.id);
+				bulk.toggle(c.oracle_id ?? c.id);
 				return;
 			}
 			const c = card as ResolvedDeckCard;
 			const group = groupByCardId.get(c.oracle_id ?? c.id);
 			if (group) openDeckCardModal(deckId, group, c.entry.rowId);
 		},
-		[bulkSelectMode, toggleBulkSelect, groupByCardId, openDeckCardModal, deckId]
+		[bulk, groupByCardId, openDeckCardModal, deckId]
 	);
 
 	const tableColumns: CardListColumn[] = useMemo(
@@ -319,20 +321,99 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		[deckCards, removeCardFromDeck, resolvedCards]
 	);
 
+	const allOracleKeys = useMemo(() => Array.from(groupByCardId.keys()), [groupByCardId]);
+	const allSelected = useMemo(
+		() => allOracleKeys.length > 0 && allOracleKeys.every((k) => bulk.selected.has(k)),
+		[allOracleKeys, bulk.selected]
+	);
+
+	// In select mode, give every section and sub-section a "select all" toggle in
+	// its header. The toggle acts on the union of that section's own cards plus
+	// any descendant sub-section cards (keyed by oracle_id, the selection key).
+	const sectionsWithSelectAll = useMemo(() => {
+		if (!bulk.selectMode) return sections;
+		const decorate = (section: CardListSection): CardListSection => {
+			const children = section.children?.map(decorate);
+			const keys = new Set<string>();
+			for (const card of section.cards) keys.add((card as ResolvedDeckCard).oracle_id ?? card.id);
+			for (const child of children ?? []) {
+				for (const card of child.cards) keys.add((card as ResolvedDeckCard).oracle_id ?? card.id);
+			}
+			const keyList = [...keys];
+			return {
+				...section,
+				children,
+				headerActions: (
+					<SectionSelectButton
+						allSelected={bulk.areAllSelected(keyList)}
+						onToggle={() => bulk.toggleKeys(keyList)}
+					/>
+				),
+			};
+		};
+		return sections.map(decorate);
+	}, [sections, bulk]);
+
 	const handleBulkAddToWishlist = useCallback(() => {
-		for (const oracleId of bulkSelected) {
-			const group = groupByCardId.get(oracleId);
-			if (!group) continue;
-			// Flag the wishlist on an actual deck-card row (first copy), in place —
-			// same behaviour as the single "Add to Wishlist". Skip copies already
-			// wishlisted so bulk add never toggles one off.
-			const firstCopy = Array.from(group.byZone.values()).flat()[0];
-			if (!firstCopy || firstCopy.entry.wishlist) continue;
-			toggleDeckCardWishlist(firstCopy.entry.rowId);
+		// Flag the wishlist on every copy of each selected card. Skip copies that
+		// are already wishlisted so bulk add never toggles one back off.
+		for (const rowId of bulk.selectedRowIds(groupByCardId)) {
+			if (deckCards[rowId]?.entry.wishlist) continue;
+			toggleDeckCardWishlist(rowId);
 		}
-		setBulkSelected(new Set());
-		setBulkSelectMode(false);
-	}, [bulkSelected, groupByCardId, toggleDeckCardWishlist]);
+		bulk.exit();
+	}, [bulk, groupByCardId, deckCards, toggleDeckCardWishlist]);
+
+	const handleBulkAddToCollectionSelection = useCallback(() => {
+		// Mark every un-owned selected copy as owned (non-proxy), mirroring the
+		// per-card "Add to collection" action.
+		for (const rowId of bulk.selectedRowIds(groupByCardId, (c) => !c.entry.ownerId)) {
+			toggleOwned(rowId, false);
+		}
+		bulk.exit();
+	}, [bulk, groupByCardId, toggleOwned]);
+
+	const handleBulkEditApply = useCallback(
+		({ patch, zone }: DeckBulkEdit) => {
+			const rowIds = bulk.selectedRowIds(groupByCardId);
+			const hasPatch = Object.keys(patch).length > 0;
+			for (const rowId of rowIds) {
+				if (zone) changeZone(rowId, zone);
+				if (hasPatch) updateDeckCard(rowId, patch);
+			}
+			setBulkEditModalOpen(false);
+			bulk.exit();
+		},
+		[bulk, groupByCardId, changeZone, updateDeckCard]
+	);
+
+	const handleBulkRemoveRequest = useCallback(() => {
+		const rowIds = bulk.selectedRowIds(groupByCardId);
+		const hasOwned = rowIds.some((rowId) => deckCards[rowId]?.entry.ownerId);
+		const hasWishlist = rowIds.some((rowId) => deckCards[rowId]?.entry.wishlist);
+		setBulkRemove({ hasOwned, hasWishlist });
+	}, [bulk, groupByCardId, deckCards]);
+
+	const handleBulkRemoveConfirm = useCallback(
+		({
+			alsoRemoveCollection,
+			alsoRemoveWishlist,
+		}: {
+			alsoRemoveCollection: boolean;
+			alsoRemoveWishlist: boolean;
+		}) => {
+			for (const rowId of bulk.selectedRowIds(groupByCardId)) {
+				const entry = deckCards[rowId]?.entry;
+				let mode: 'delete' | 'detach' = 'delete';
+				if (entry?.ownerId) mode = alsoRemoveCollection ? 'delete' : 'detach';
+				else if (entry?.wishlist) mode = alsoRemoveWishlist ? 'delete' : 'detach';
+				removeCardFromDeck(rowId, mode);
+			}
+			setBulkRemove(null);
+			bulk.exit();
+		},
+		[bulk, groupByCardId, deckCards, removeCardFromDeck]
+	);
 
 	const handleAssignAllFromCollection = useCallback(() => {
 		for (const rc of resolvedCards) {
@@ -365,8 +446,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			const currentZone = getDeckZone(c.entry.tags);
 			if (!group) return null;
 
-			if (bulkSelectMode) {
-				const checked = bulkSelected.has(c.oracle_id ?? c.id);
+			if (bulk.selectMode) {
+				const checked = bulk.selected.has(c.oracle_id ?? c.id);
 				return withCustomBadge(
 					card,
 					<div
@@ -434,8 +515,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		},
 		[
 			groupByCardId,
-			bulkSelectMode,
-			bulkSelected,
+			bulk.selectMode,
+			bulk.selected,
 			zones,
 			deckId,
 			deckNameResolver,
@@ -502,6 +583,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 						onImportList={() => setImportListOpen(true)}
 						onGeneratePdf={() => setPdfExportModalOpen(true)}
 						onExportText={() => setTextExportModalOpen(true)}
+						selectMode={bulk.selectMode}
+						onToggleSelectMode={bulk.toggleMode}
 					/>
 
 					<DeckSortBar
@@ -520,10 +603,10 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					)}
 
 					<CardList
-						cards={sections}
+						cards={sectionsWithSelectAll}
 						renderOverlay={renderOverlay}
 						onCardClick={handleCardClick}
-						onCardContextMenu={bulkSelectMode ? undefined : handleCardContextMenu}
+						onCardContextMenu={bulk.selectMode ? undefined : handleCardContextMenu}
 						tableColumns={tableColumns}
 						pageSize={false}
 						viewModes={['fluid-grid', 'grid', 'table']}
@@ -543,19 +626,6 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					/>
 
 					<DeckStats stats={stats} warnings={warnings} />
-
-					<div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-						<button
-							type="button"
-							className={`${styles.bulkSelectToggle} ${bulkSelectMode ? styles.bulkSelectToggleActive : ''}`}
-							onClick={() => {
-								setBulkSelectMode((v) => !v);
-								setBulkSelected(new Set());
-							}}
-						>
-							{bulkSelectMode ? 'Cancel select' : 'Select cards'}
-						</button>
-					</div>
 				</div>
 
 				{searchPanelOpen && (
@@ -576,36 +646,36 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				)}
 			</div>
 
-			{bulkSelectMode && bulkSelected.size > 0 && (
-				<div className={styles.bulkBar}>
-					<span className={styles.bulkBarCount}>{bulkSelected.size} selected</span>
-					<button
-						type="button"
-						className="btn btn-primary"
-						style={{
-							padding: '6px 14px',
-							fontSize: 'var(--text-sm)',
-							borderRadius: '4px',
-							cursor: 'pointer',
-							background: 'var(--primary)',
-							color: 'var(--primary-text)',
-							border: 'none',
-							display: 'flex',
-							alignItems: 'center',
-							gap: '6px',
-						}}
-						onClick={handleBulkAddToWishlist}
-					>
-						<WishlistIcon size={13} /> Add to Wishlist
-					</button>
-					<button
-						type="button"
-						className={styles.bulkBarCancel}
-						onClick={() => setBulkSelected(new Set())}
-					>
-						Clear
-					</button>
-				</div>
+			{bulk.selectMode && (
+				<DeckBulkActionBar
+					selectedCount={bulk.selected.size}
+					allSelected={allSelected}
+					onToggleSelectAll={() => bulk.toggleSelectAll(allOracleKeys)}
+					onBulkEdit={() => setBulkEditModalOpen(true)}
+					onBulkAddToCollection={handleBulkAddToCollectionSelection}
+					onBulkAddToWishlist={handleBulkAddToWishlist}
+					onBulkRemove={handleBulkRemoveRequest}
+					onClear={bulk.clear}
+				/>
+			)}
+
+			{bulkEditModalOpen && (
+				<DeckBulkEditModal
+					cardCount={bulk.selected.size}
+					zones={zones}
+					onApply={handleBulkEditApply}
+					onClose={() => setBulkEditModalOpen(false)}
+				/>
+			)}
+
+			{bulkRemove && (
+				<BulkRemoveDeckCardsModal
+					cardCount={bulk.selected.size}
+					hasOwned={bulkRemove.hasOwned}
+					hasWishlist={bulkRemove.hasWishlist}
+					onConfirm={handleBulkRemoveConfirm}
+					onClose={() => setBulkRemove(null)}
+				/>
 			)}
 
 			{addToCollectionModalOpen && (

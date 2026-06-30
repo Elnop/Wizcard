@@ -13,6 +13,9 @@ type Props = {
 	onImportList?: () => void;
 	onGeneratePdf?: () => void;
 	onExportText?: () => void;
+	/** Bulk-selection mode toggle (owner view only). */
+	selectMode?: boolean;
+	onToggleSelectMode?: () => void;
 	/** Read-only (public) view: hides editing, keeps export/copy actions. */
 	readOnly?: boolean;
 };
@@ -25,6 +28,8 @@ export function DeckHeader({
 	onImportList,
 	onGeneratePdf,
 	onExportText,
+	selectMode = false,
+	onToggleSelectMode,
 	readOnly = false,
 }: Props) {
 	const [isEditing, setIsEditing] = useState(false);
@@ -117,6 +122,17 @@ export function DeckHeader({
 					<button type="button" className={styles.actionBtn} onClick={() => onGeneratePdf()}>
 						<PdfIcon />
 						<span>Generate PDF</span>
+					</button>
+				)}
+				{onToggleSelectMode && (
+					<button
+						type="button"
+						className={`${styles.actionBtn} ${selectMode ? styles.actionBtnActive : ''}`}
+						onClick={() => onToggleSelectMode()}
+						aria-pressed={selectMode}
+					>
+						<SelectIcon />
+						<span>{selectMode ? 'Done' : 'Select'}</span>
 					</button>
 				)}
 				{hasMoreActions && (
@@ -219,6 +235,21 @@ function PdfIcon() {
 				strokeLinejoin="round"
 			/>
 			<path d="M14 3v6h6" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+		</svg>
+	);
+}
+
+function SelectIcon() {
+	return (
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+			<rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.8" />
+			<path
+				d="M8 12l3 3 5-6"
+				stroke="currentColor"
+				strokeWidth="1.8"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
 		</svg>
 	);
 }

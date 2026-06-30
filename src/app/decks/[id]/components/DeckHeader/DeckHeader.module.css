@@ -136,6 +136,16 @@
 	color: var(--gold);
 }
 
+.actionBtnActive {
+	color: var(--accent, #7c6af5);
+	background: rgba(124, 106, 245, 0.12);
+}
+
+.actionBtnActive:hover {
+	color: var(--accent, #7c6af5);
+	background: rgba(124, 106, 245, 0.18);
+}
+
 .menuWrapper {
 	position: relative;
 	display: inline-flex;
