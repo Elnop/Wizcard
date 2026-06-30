@@ -2,29 +2,29 @@
 //
 // Scryfall's /sets endpoint has no per-set "games" field, so availability
 // (paper / MTGA / both) is DERIVED from `digital` + `arena_code`:
-//   digital === true                     -> 'mtga'  (numérique uniquement)
+//   digital === true                     -> 'mtga'  (digital only)
 //   digital === false && arena_code set  -> 'both'  (papier + Arena)
 //   digital === false && no arena_code   -> 'paper' (papier uniquement)
 
 import type { ScryfallSet } from '@/lib/scryfall/types/scryfall';
 
 export type GameAvailability = 'paper' | 'mtga' | 'both';
-// Onglets de filtrage. Pas de catégorie « les deux » : un set disponible sur
-// papier ET MTGA apparaît dans les DEUX onglets 'paper' et 'mtga'.
+// Filter tabs. No "both" category: a set available on paper AND MTGA appears
+// in BOTH the 'paper' and 'mtga' tabs.
 export type GameTab = 'all' | 'paper' | 'mtga';
 
 export interface SetClassification {
 	availability: GameAvailability;
 	isAlchemy: boolean; // set_type === 'alchemy' — vrais exclusifs Arena
 	isDigital: boolean; // mirror of set.digital
-	hasArena: boolean; // arena_code présent
+	hasArena: boolean; // arena_code present
 	hasPaper: boolean; // availability !== 'mtga'
 }
 
 export interface SetGroup {
 	key: string; // code du set racine de la famille
 	title: string; // nom du set racine
-	sets: ScryfallSet[]; // racine en premier, puis dérivés par date desc
+	sets: ScryfallSet[]; // root first, then derivatives by date desc
 	latest: number; // max released_at (epoch) pour ordonner les groupes
 }
 
@@ -42,7 +42,7 @@ export function classifySet(set: ScryfallSet): SetClassification {
 		availability,
 		isAlchemy: set.set_type === 'alchemy',
 		isDigital: Boolean(set.digital),
-		hasArena: availability === 'both', // papier + Arena ; les sets numériques affichent un badge dédié
+		hasArena: availability === 'both', // paper + Arena; digital sets show a dedicated badge
 		hasPaper: availability !== 'mtga',
 	};
 }
@@ -74,7 +74,7 @@ export function filterByName(sets: ScryfallSet[], query: string): ScryfallSet[] 
 /**
  * Resolve the family root code for a set: follow `parent_set_code` as long as
  * the parent is present in `present`; otherwise the set is its own root.
- * Example : PSPM/SPE ont parent_set_code "spm" → tous rattachés à la famille "spm".
+ * Example: PSPM/SPE have parent_set_code "spm" → all attached to the "spm" family.
  */
 function rootCode(
 	set: ScryfallSet,
@@ -84,7 +84,7 @@ function rootCode(
 	let current = set;
 	const seen = new Set<string>();
 	while (current.parent_set_code && present.has(current.parent_set_code)) {
-		if (seen.has(current.code)) break; // garde-fou contre un cycle éventuel
+		if (seen.has(current.code)) break; // safeguard against a possible cycle
 		seen.add(current.code);
 		const parent = byCode.get(current.parent_set_code);
 		if (!parent) break;
@@ -94,11 +94,10 @@ function rootCode(
 }
 
 /**
- * Group sets by parent-set family. Un set principal (ex. SPM) et tous ses sets
- * dérivés présents dans la liste (PSPM promos, SPE eternal, …) forment un seul
- * groupe, titré par le nom du set racine. Les groupes sont ordonnés par date la
- * plus récente (desc) ; dans un groupe, la racine est en tête puis les dérivés
- * par date desc.
+ * Group sets by parent-set family. A main set (e.g. SPM) and all its sets
+ * derivatives present in the list (PSPM promos, SPE eternal, …) form a single
+ * group, titled by the root set name. Groups are ordered by most recent date
+ * (desc); within a group, the root comes first then the derivatives by date desc.
  */
 export function groupSets(sets: ScryfallSet[]): SetGroup[] {
 	const byCode = new Map(sets.map((s) => [s.code, s]));
@@ -121,7 +120,7 @@ export function groupSets(sets: ScryfallSet[]): SetGroup[] {
 	const result = Array.from(groups.values());
 	for (const group of result) {
 		group.sets.sort((a, b) => {
-			// La racine de la famille reste toujours en tête.
+			// The family root always stays first.
 			if (a.code === group.key) return -1;
 			if (b.code === group.key) return 1;
 			return releasedEpoch(b) - releasedEpoch(a);

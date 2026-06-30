@@ -152,7 +152,7 @@ export function PdfSettingsModal({
 
 	return (
 		<Modal onClose={generating ? () => {} : onClose} className={styles.dialog} zIndex={1200}>
-			<h2 className={styles.title}>Paramètres PDF</h2>
+			<h2 className={styles.title}>PDF settings</h2>
 
 			<div className={styles.body}>
 				<div className={styles.topRow}>
@@ -272,7 +272,7 @@ export function PdfSettingsModal({
 
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose} disabled={generating}>
-					Annuler
+					Cancel
 				</Button>
 				<Button
 					variant="primary"
@@ -280,7 +280,7 @@ export function PdfSettingsModal({
 					onClick={() => onConfirm(settings)}
 					disabled={generating}
 				>
-					{generating ? 'Génération…' : 'Générer'}
+					{generating ? 'Generating…' : 'Generate'}
 				</Button>
 			</div>
 		</Modal>

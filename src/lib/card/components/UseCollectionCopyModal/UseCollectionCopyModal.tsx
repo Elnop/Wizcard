@@ -25,7 +25,7 @@ interface Props {
 	/** rowId of the collection copy currently linked to the row being edited. */
 	currentCollectionRowId?: string;
 	onSelectCollectionCopy: (rowId: string) => void;
-	/** When provided and a copy is currently linked, shows an "Aucune" option to unassign. */
+	/** When provided and a copy is currently linked, shows a "None" option to unassign. */
 	onSelectNone?: () => void;
 	onClose: () => void;
 }
@@ -157,7 +157,7 @@ export function UseCollectionCopyModal({
 	return (
 		<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
 			<div className={styles.header}>
-				<h2 className={styles.title}>Utiliser une carte de la collection</h2>
+				<h2 className={styles.title}>Use a card from the collection</h2>
 				<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path

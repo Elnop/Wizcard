@@ -174,7 +174,7 @@ function FilterModalContent({
 		<div className={styles.panel}>
 			<div className={styles.header}>
 				<span className={styles.title}>Filtres</span>
-				<button type="button" className={styles.closeButton} onClick={onClose} aria-label="Fermer">
+				<button type="button" className={styles.closeButton} onClick={onClose} aria-label="Close">
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path
 							d="M12 4L4 12M4 4l8 8"

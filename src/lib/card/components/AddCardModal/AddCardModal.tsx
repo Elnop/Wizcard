@@ -111,7 +111,7 @@ export function AddCardModal({
 			topExtras={topExtras}
 			actions={
 				<button type="button" className={styles.changePrintBtn} onClick={handleConfirmAdd}>
-					Confirmer l&apos;ajout
+					Confirm add
 				</button>
 			}
 		/>

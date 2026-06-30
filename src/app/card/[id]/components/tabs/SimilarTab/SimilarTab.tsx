@@ -45,11 +45,11 @@ export function SimilarTab({ card }: Props) {
 	}, [card]);
 
 	if (loading) {
-		return <div className={styles.loading}>Recherche de cartes similaires…</div>;
+		return <div className={styles.loading}>Searching for similar cards…</div>;
 	}
 
 	if (similar.length === 0) {
-		return <div className={styles.empty}>Impossible de trouver des cartes similaires.</div>;
+		return <div className={styles.empty}>Could not find similar cards.</div>;
 	}
 
 	return (

@@ -69,7 +69,7 @@ function SetCardsGridInner({
 				onSortChange={(order, dir) => onSortChange(order as ScryfallSortOrder, dir)}
 			/>
 			{!isLoading && cards.length === 0 && (
-				<p className={styles.error}>Aucune carte ne correspond aux filtres.</p>
+				<p className={styles.error}>No card matches the filters.</p>
 			)}
 		</>
 	);

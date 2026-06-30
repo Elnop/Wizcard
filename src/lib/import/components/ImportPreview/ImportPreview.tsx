@@ -180,7 +180,7 @@ export function ImportPreview({
 					className={styles.sectionSelectAll}
 					onClick={() => toggleSelectKeys(keys)}
 				>
-					{allSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
+					{allSelected ? 'Deselect all' : 'Select all'}
 				</button>
 			);
 		},
@@ -395,15 +395,15 @@ export function ImportPreview({
 			onClick: run(() => moveCardToZone(card, cardZone, z)),
 		}));
 		return [
-			{ type: 'action', label: 'Détail / éditer…', onClick: run(() => openDetail(card)) },
+			{ type: 'action', label: 'Details / edit…', onClick: run(() => openDetail(card)) },
 			{ type: 'divider' },
-			{ type: 'action', label: '+ 1 copie', onClick: run(() => incrementCard(card, cardZone)) },
-			{ type: 'action', label: '− 1 copie', onClick: run(() => decrementCard(card, cardZone)) },
+			{ type: 'action', label: '+ 1 copy', onClick: run(() => incrementCard(card, cardZone)) },
+			{ type: 'action', label: '− 1 copy', onClick: run(() => decrementCard(card, cardZone)) },
 			...(moveItems.length > 0 ? [{ type: 'divider' as const }, ...moveItems] : []),
 			{ type: 'divider' },
 			{
 				type: 'action',
-				label: 'Retirer de l’import',
+				label: 'Remove from import',
 				danger: true,
 				onClick: run(() => removeCardInZone(card.id, cardZone)),
 			},
@@ -413,7 +413,7 @@ export function ImportPreview({
 	const zoneControls = (
 		<div className={styles.options}>
 			<label className={styles.label}>
-				Zone cible
+				Target zone
 				<div className={styles.zoneRow}>
 					<select
 						className={styles.input}
@@ -426,14 +426,14 @@ export function ImportPreview({
 							</option>
 						))}
 					</select>
-					<div className={styles.modeToggle} role="group" aria-label="Mode de zone">
+					<div className={styles.modeToggle} role="group" aria-label="Zone mode">
 						<button
 							type="button"
 							className={`${styles.modeBtn} ${zoneMode === 'fallback' ? styles.modeBtnActive : ''}`}
 							aria-pressed={zoneMode === 'fallback'}
 							onClick={() => setZoneMode('fallback')}
 						>
-							Défaut
+							Default
 						</button>
 						<button
 							type="button"
@@ -441,14 +441,14 @@ export function ImportPreview({
 							aria-pressed={zoneMode === 'force'}
 							onClick={() => setZoneMode('force')}
 						>
-							Forcer
+							Force
 						</button>
 					</div>
 				</div>
 				<span className={styles.hint}>
 					{zoneMode === 'force'
-						? 'Toutes les cartes vont dans cette zone, sections ignorées.'
-						: 'Utilisée seulement pour les cartes sans section dans la liste.'}
+						? 'All cards go into this zone, sections ignored.'
+						: 'Used only for cards without a section in the list.'}
 				</span>
 			</label>
 
@@ -459,7 +459,7 @@ export function ImportPreview({
 						checked={ignoreExisting}
 						onChange={(e) => setIgnoreExisting(e.target.checked)}
 					/>
-					Ignorer les cartes déjà dans le deck
+					Skip cards already in the deck
 				</label>
 			)}
 
@@ -469,7 +469,7 @@ export function ImportPreview({
 					checked={ignoreBasicLands}
 					onChange={(e) => setIgnoreBasicLands(e.target.checked)}
 				/>
-				Ignorer les terrains de base
+				Skip basic lands
 			</label>
 		</div>
 	);
@@ -478,9 +478,9 @@ export function ImportPreview({
 		return (
 			<div className={styles.bulkBar}>
 				<div className={styles.bulkBarRow}>
-					<span className={styles.bulkBarCount}>{selected.size} sélectionnée(s)</span>
+					<span className={styles.bulkBarCount}>{selected.size} selected</span>
 					<div className={styles.bulkMove}>
-						<span className={styles.bulkMoveLabel}>Déplacer&nbsp;:</span>
+						<span className={styles.bulkMoveLabel}>Move&nbsp;:</span>
 						{MOVABLE_ZONES.map((z) => (
 							<button
 								key={z}
@@ -498,7 +498,7 @@ export function ImportPreview({
 							className={styles.bulkMoveBtn}
 							onClick={() => setBulkPrintOpen(true)}
 						>
-							Changer l’édition
+							Change print
 						</button>
 					)}
 					<button
@@ -506,7 +506,7 @@ export function ImportPreview({
 						className={`${styles.bulkMoveBtn} ${styles.bulkRemoveBtn}`}
 						onClick={bulkRemove}
 					>
-						Retirer
+						Remove
 					</button>
 				</div>
 				<ImportBulkApplyPanel cardCount={selectedRowIds.size} onApplyToAll={bulkApplyAttributes} />
@@ -519,10 +519,10 @@ export function ImportPreview({
 			<div className={styles.previewLeft}>
 				<div className={styles.previewStats}>
 					<span className={styles.previewStat}>
-						<span className={styles.previewStatValue}>{uniqueToImport}</span> cartes •{' '}
-						{totalToImport} copie{totalToImport > 1 ? 's' : ''}
+						<span className={styles.previewStatValue}>{uniqueToImport}</span> cards •{' '}
+						{totalToImport} cop{totalToImport > 1 ? 'ies' : 'y'}
 					</span>
-					<span className={styles.previewHint}>Clic droit sur une carte pour l’éditer.</span>
+					<span className={styles.previewHint}>Right-click a card to edit it.</span>
 				</div>
 
 				{headerExtra}
@@ -532,9 +532,7 @@ export function ImportPreview({
 				{notFound.length > 0 && (
 					<div className={styles.scrollArea}>
 						<div className={styles.notFound}>
-							<p className={styles.notFoundTitle}>
-								{notFound.length} non trouvée{notFound.length > 1 ? 's' : ''} sur Scryfall
-							</p>
+							<p className={styles.notFoundTitle}>{notFound.length} not found on Scryfall</p>
 							{notFound.map((n, i) => (
 								<span key={i} className={styles.notFoundRow}>
 									{n}
@@ -546,7 +544,7 @@ export function ImportPreview({
 
 				<div className={styles.actions}>
 					<Button variant="ghost" type="button" onClick={onBack} disabled={isSubmitting}>
-						Changer la liste
+						Change the list
 					</Button>
 					<Button
 						onClick={handleImport}
@@ -572,7 +570,7 @@ export function ImportPreview({
 						className={`${styles.selectToggle} ${selectionMode ? styles.selectToggleActive : ''}`}
 						onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
 					>
-						{selectionMode ? 'Annuler' : 'Sélectionner'}
+						{selectionMode ? 'Cancel' : 'Select'}
 					</button>
 				</div>
 
@@ -580,7 +578,7 @@ export function ImportPreview({
 
 				<div className={styles.previewRightBody}>
 					{sections.length === 0 ? (
-						<p className={styles.previewEmpty}>Aucune carte à importer.</p>
+						<p className={styles.previewEmpty}>No card to import.</p>
 					) : (
 						<CardList
 							cards={sections}

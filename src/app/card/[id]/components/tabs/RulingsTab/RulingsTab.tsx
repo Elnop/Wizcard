@@ -65,11 +65,11 @@ export function RulingsTab({ cardId, oracleId }: Props) {
 	}, [cardId, oracleId]);
 
 	if (loading) {
-		return <div className={styles.loading}>Chargement des rulings…</div>;
+		return <div className={styles.loading}>Loading rulings…</div>;
 	}
 
 	if (rulings.length === 0) {
-		return <div className={styles.empty}>Aucun ruling officiel pour cette carte.</div>;
+		return <div className={styles.empty}>No official ruling for this card.</div>;
 	}
 
 	return (

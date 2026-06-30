@@ -31,7 +31,7 @@ export function ImportPreviewStats({
 			<div className={styles.fileInfo} onClick={onChangeFile}>
 				<span className={styles.fileName}>{preview.fileName}</span>
 				<span className={styles.fileSize}>{formatFileSize(preview.fileSize)}</span>
-				<span className={styles.fileInfoOverlay}>Changer de fichier</span>
+				<span className={styles.fileInfoOverlay}>Change file</span>
 			</div>
 
 			<div className={styles.formatRow}>

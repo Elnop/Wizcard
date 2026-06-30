@@ -549,7 +549,7 @@ function CardModalInner({
 							className={styles.changePrintBtn}
 							onClick={() => setEditingRowId(selectedCard.entry.rowId)}
 						>
-							Modifier
+							Edit
 						</button>
 						{onAssignCollectionCopy && (
 							<button
