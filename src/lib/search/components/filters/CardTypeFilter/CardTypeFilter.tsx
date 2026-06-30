@@ -2,8 +2,8 @@ import type { CardType } from '@/lib/mpc/types';
 import styles from './CardTypeFilter.module.css';
 
 const OPTIONS: { value: CardType | 'all'; label: string }[] = [
-	{ value: 'all', label: 'Tous' },
-	{ value: 'card', label: 'Cartes' },
+	{ value: 'all', label: 'All' },
+	{ value: 'card', label: 'Cards' },
 	{ value: 'token', label: 'Tokens' },
 	{ value: 'cardback', label: 'Cardbacks' },
 ];

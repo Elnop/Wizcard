@@ -11,7 +11,7 @@ export function OracleTextFilter({ value, onChange }: OracleTextFilterProps) {
 	return (
 		<div className={styles.container}>
 			<label className={styles.label} htmlFor="oracle-text-filter">
-				Texte de règles
+				Rules text
 			</label>
 			<input
 				id="oracle-text-filter"
@@ -19,7 +19,7 @@ export function OracleTextFilter({ value, onChange }: OracleTextFilterProps) {
 				className={styles.input}
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
-				placeholder='ex: "flying" ou "draw a card"'
+				placeholder='e.g. "flying" or "draw a card"'
 			/>
 		</div>
 	);

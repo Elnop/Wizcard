@@ -20,7 +20,7 @@ export function RarityFilter({ value, onChange }: RarityFilterProps) {
 
 	return (
 		<div className={styles.container}>
-			<span className={styles.label}>Rareté</span>
+			<span className={styles.label}>Rarity</span>
 			<div className={styles.rarities}>
 				{rarities.map((rarity) => (
 					<button

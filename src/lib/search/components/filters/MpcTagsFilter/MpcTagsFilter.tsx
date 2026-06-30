@@ -140,7 +140,7 @@ function TagInput({
 								type="button"
 								className={styles.chipRemove}
 								onClick={() => onRemove(tag)}
-								aria-label={`Retirer ${tag}`}
+								aria-label={`Remove ${tag}`}
 							>
 								×
 							</button>
@@ -169,7 +169,7 @@ function TagInput({
 				{open && (
 					<div className={styles.dropdown} role="listbox">
 						{suggestions.length === 0 ? (
-							<div className={styles.dropdownEmpty}>Aucun tag trouvé</div>
+							<div className={styles.dropdownEmpty}>No tag found</div>
 						) : (
 							grouped.map(({ group, items }) => (
 								<div key={group}>
@@ -214,8 +214,8 @@ export function MpcTagsFilter({ value, onChange }: MpcTagsFilterProps) {
 				otherSelected={mustNotHave}
 				onAdd={(tag) => onChange({ mustHave: [...mustHave, tag], mustNotHave })}
 				onRemove={(tag) => onChange({ mustHave: mustHave.filter((t) => t !== tag), mustNotHave })}
-				label="Doit avoir au moins un de"
-				placeholder="Rechercher un tag…"
+				label="Must have at least one of"
+				placeholder="Search a tag…"
 			/>
 			<TagInput
 				listId="mustNotHave"
@@ -226,7 +226,7 @@ export function MpcTagsFilter({ value, onChange }: MpcTagsFilterProps) {
 					onChange({ mustHave, mustNotHave: mustNotHave.filter((t) => t !== tag) })
 				}
 				label="Ne doit pas avoir"
-				placeholder="Rechercher un tag…"
+				placeholder="Search a tag…"
 			/>
 		</div>
 	);

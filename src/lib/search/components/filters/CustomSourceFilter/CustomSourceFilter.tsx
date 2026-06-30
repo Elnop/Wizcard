@@ -40,7 +40,7 @@ export function CustomSourceFilter({ sources, value, onChange }: CustomSourceFil
 
 	return (
 		<div className={styles.container} ref={containerRef}>
-			<span className={styles.label}>Créateur</span>
+			<span className={styles.label}>Creator</span>
 			<button
 				type="button"
 				className={styles.trigger}
@@ -48,7 +48,7 @@ export function CustomSourceFilter({ sources, value, onChange }: CustomSourceFil
 				aria-haspopup="listbox"
 				aria-expanded={open}
 			>
-				<span className={styles.triggerText}>{selectedSource ? selectedSource.name : 'Tous'}</span>
+				<span className={styles.triggerText}>{selectedSource ? selectedSource.name : 'All'}</span>
 				<svg
 					className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}
 					width="16"
@@ -71,7 +71,7 @@ export function CustomSourceFilter({ sources, value, onChange }: CustomSourceFil
 						<input
 							type="text"
 							className={styles.searchInput}
-							placeholder="Rechercher..."
+							placeholder="Search..."
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
 							autoFocus
@@ -84,7 +84,7 @@ export function CustomSourceFilter({ sources, value, onChange }: CustomSourceFil
 							aria-selected={value === null}
 							onClick={() => handleSelect(null)}
 						>
-							Tous
+							All
 						</li>
 						{filtered.map((source) => (
 							<li

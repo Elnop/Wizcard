@@ -3,9 +3,9 @@ export type OracleIdFilterValue = 'all' | 'defined' | 'undefined';
 import styles from './OracleIdFilter.module.css';
 
 const OPTIONS: { value: OracleIdFilterValue; label: string }[] = [
-	{ value: 'all', label: 'Tous' },
-	{ value: 'defined', label: 'Défini' },
-	{ value: 'undefined', label: 'Non défini' },
+	{ value: 'all', label: 'All' },
+	{ value: 'defined', label: 'Defined' },
+	{ value: 'undefined', label: 'Undefined' },
 ];
 
 interface OracleIdFilterProps {

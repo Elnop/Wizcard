@@ -221,7 +221,7 @@ function FilterModalContent({
 				{customSources.length > 0 && (
 					<>
 						<div className={styles.sectionDivider} />
-						<div className={styles.sectionTitle}>Cartes Custom</div>
+						<div className={styles.sectionTitle}>Custom Cards</div>
 						<CustomSourceFilter
 							sources={customSources}
 							value={draftCustomSourceId}
@@ -237,7 +237,7 @@ function FilterModalContent({
 
 			<div className={styles.footer}>
 				<button type="button" className={styles.resetButton} onClick={handleReset}>
-					Réinitialiser
+					Reset
 				</button>
 				<button type="button" className={styles.applyButton} onClick={handleApply}>
 					Appliquer

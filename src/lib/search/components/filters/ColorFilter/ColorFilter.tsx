@@ -18,7 +18,7 @@ export interface ColorFilterProps {
 const matchOptions: { value: ColorMatch; label: string }[] = [
 	{ value: 'include', label: 'Inclut' },
 	{ value: 'exact', label: 'Exactement' },
-	{ value: 'atMost', label: 'Au plus' },
+	{ value: 'atMost', label: 'At most' },
 ];
 
 export function ColorFilter({
@@ -49,11 +49,7 @@ export function ColorFilter({
 				))}
 			</div>
 			{selected.length > 0 && onColorMatchChange && (
-				<div
-					className={styles.matchGroup}
-					role="group"
-					aria-label="Mode de correspondance des couleurs"
-				>
+				<div className={styles.matchGroup} role="group" aria-label="Color matching mode">
 					{matchOptions.map((opt) => (
 						<label key={opt.value} className={styles.matchOption}>
 							<input

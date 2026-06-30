@@ -103,7 +103,7 @@ export function TypeFilter({ value, onChange }: TypeFilterProps) {
 								type="button"
 								className={styles.chipRemove}
 								onClick={() => handleRemove(type)}
-								aria-label={`Retirer ${type}`}
+								aria-label={`Remove ${type}`}
 							>
 								×
 							</button>
@@ -117,7 +117,7 @@ export function TypeFilter({ value, onChange }: TypeFilterProps) {
 					ref={inputRef}
 					type="text"
 					className={styles.input}
-					placeholder={isLoading ? 'Chargement des types…' : 'Type ou sous-type (Cat, Goblin…)'}
+					placeholder={isLoading ? 'Loading types…' : 'Type or subtype (Cat, Goblin…)'}
 					value={query}
 					onChange={(e) => {
 						setQuery(e.target.value);
@@ -133,7 +133,7 @@ export function TypeFilter({ value, onChange }: TypeFilterProps) {
 					<div className={styles.dropdown} role="listbox">
 						{suggestions.length === 0 ? (
 							<div className={styles.dropdownEmpty}>
-								{query.trim() ? 'Entrée pour ajouter ce terme' : 'Aucun type trouvé'}
+								{query.trim() ? 'Enter to add this term' : 'No type found'}
 							</div>
 						) : (
 							suggestions.map((type, idx) => (

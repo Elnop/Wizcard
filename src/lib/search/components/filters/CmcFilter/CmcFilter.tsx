@@ -6,8 +6,8 @@ import styles from './CmcFilter.module.css';
 const operators = [
 	{ value: '', label: 'Any' },
 	{ value: ':', label: 'Exactement' },
-	{ value: '>=', label: 'Au moins' },
-	{ value: '<=', label: 'Au plus' },
+	{ value: '>=', label: 'At least' },
+	{ value: '<=', label: 'At most' },
 ];
 
 export interface CmcFilterProps {
@@ -49,13 +49,13 @@ export function CmcFilter({ value, onChange }: CmcFilterProps) {
 
 	return (
 		<div className={styles.container}>
-			<span className={styles.label}>Coût converti (CMC)</span>
+			<span className={styles.label}>Mana value (CMC)</span>
 			<div className={styles.row}>
 				<select
 					className={styles.select}
 					value={op}
 					onChange={(e) => handleOpChange(e.target.value)}
-					aria-label="Opérateur CMC"
+					aria-label="CMC operator"
 				>
 					{operators.map((o) => (
 						<option key={o.value} value={o.value}>
