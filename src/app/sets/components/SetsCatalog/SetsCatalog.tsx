@@ -30,7 +30,7 @@ export function SetsCatalog({
 				<input
 					type="search"
 					className={styles.searchInput}
-					placeholder="Rechercher une extension..."
+					placeholder="Search a set..."
 					value={query}
 					onChange={(e) => onQueryChange(e.target.value)}
 				/>
@@ -39,8 +39,8 @@ export function SetsCatalog({
 
 			{groups.length === 0 ? (
 				<div className={styles.emptyState}>
-					<h2>Aucune extension</h2>
-					<p>Aucun résultat pour cette recherche ou ce filtre.</p>
+					<h2>No set</h2>
+					<p>No result for this search or filter.</p>
 				</div>
 			) : (
 				<div className={styles.grid}>

@@ -21,7 +21,7 @@ function pct(part: number, total: number): number {
 	return Math.round((part / total) * 100);
 }
 
-/** Paper / Arena / Numérique badges for a single set. */
+/** Paper / Arena / Digital badges for a single set. */
 function SetBadges({ set }: { set: ScryfallSet }) {
 	const c = classifySet(set);
 	return (
@@ -31,7 +31,7 @@ function SetBadges({ set }: { set: ScryfallSet }) {
 			{c.isAlchemy ? (
 				<span className={styles.badge}>Alchemy</span>
 			) : (
-				c.isDigital && <span className={styles.badge}>Numérique</span>
+				c.isDigital && <span className={styles.badge}>Digital</span>
 			)}
 		</div>
 	);
@@ -80,7 +80,7 @@ function CompletionSection({
 						size={92}
 						stroke={6}
 						variant="gold"
-						aria-label={`${label} — complétion : ${completionPercent}%`}
+						aria-label={`${label} — completion: ${completionPercent}%`}
 					>
 						{iconSrc ? (
 							// eslint-disable-next-line @next/next/no-img-element
@@ -108,7 +108,7 @@ function CompletionSection({
 							size={46}
 							stroke={4}
 							variant="foil"
-							aria-label={`${label} — cartes en foil : ${foilPercent}%`}
+							aria-label={`${label} — foil cards: ${foilPercent}%`}
 						>
 							<span className={styles.foilStatPercent}>{statsReady ? `${foilPercent}%` : '—'}</span>
 						</CompletionRing>
@@ -165,7 +165,7 @@ export function SetDetailHeader({
 
 			{isPartialCollection && statsReady && (
 				<p className={styles.partialNote}>
-					Collection partiellement chargée — la complétion peut être sous-estimée.
+					Collection partially loaded — completion may be underestimated.
 				</p>
 			)}
 

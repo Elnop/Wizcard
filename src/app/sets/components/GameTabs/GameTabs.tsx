@@ -7,7 +7,7 @@ export interface GameTabsProps {
 }
 
 const TABS: { id: GameTab; label: string }[] = [
-	{ id: 'all', label: 'Toutes' },
+	{ id: 'all', label: 'All' },
 	{ id: 'paper', label: 'Papier' },
 	{ id: 'mtga', label: 'MTGA' },
 ];

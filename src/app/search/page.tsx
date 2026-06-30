@@ -170,11 +170,11 @@ function SearchPageContent() {
 		? customFilterCount
 		: activeFilterCount + customFilterCount + oracleIdFilterCount;
 
-	// Les cardbacks n'ont ni set, ni type, ni CMC, ni prix : seule la colonne nom a du sens.
+	// Cardbacks have no set, type, CMC or price: only the name column makes sense.
 	const tableColumns = isBacks
-		? [{ key: 'name', label: 'Nom', sortKey: 'name' }]
+		? [{ key: 'name', label: 'Name', sortKey: 'name' }]
 		: [
-				{ key: 'name', label: 'Nom', sortKey: 'name' },
+				{ key: 'name', label: 'Name', sortKey: 'name' },
 				{
 					key: 'set',
 					label: 'Set',
@@ -258,7 +258,7 @@ function SearchPageContent() {
 
 				{isDefaultQuery && !isLoading && (
 					<div className={styles.resultInfo}>
-						<span>Cartes populaires EDH</span>
+						<span>Popular EDH cards</span>
 					</div>
 				)}
 
@@ -322,7 +322,7 @@ function SearchPageContent() {
 
 				{customError && (
 					<div className={styles.error}>
-						<p>Impossible de charger les cartes custom.</p>
+						<p>Failed to load custom cards.</p>
 					</div>
 				)}
 

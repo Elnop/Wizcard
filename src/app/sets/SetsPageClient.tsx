@@ -27,8 +27,8 @@ export function SetsPageClient() {
 				<h1 className={styles.title}>Extensions</h1>
 				{!isLoading && !error && (
 					<p className={styles.statsLine}>
-						{visibleCount} extension{visibleCount > 1 ? 's' : ''}
-						{(activeTab !== 'all' || query) && ` sur ${sets.length}`}
+						{visibleCount} set{visibleCount > 1 ? 's' : ''}
+						{(activeTab !== 'all' || query) && ` of ${sets.length}`}
 					</p>
 				)}
 			</div>
@@ -41,7 +41,7 @@ export function SetsPageClient() {
 
 			{error && !isLoading && (
 				<div className={styles.error}>
-					<p>Impossible de charger les extensions.</p>
+					<p>Failed to load sets.</p>
 				</div>
 			)}
 

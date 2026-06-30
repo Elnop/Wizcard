@@ -70,7 +70,7 @@ export function PrintsTab({ card }: Props) {
 	const customSection: CardListSection | null =
 		customPrints.length > 0
 			? {
-					label: 'Cartes Custom',
+					label: 'Custom Cards',
 					cards: customPrints as unknown as AnyCard[],
 				}
 			: null;
@@ -103,7 +103,7 @@ export function PrintsTab({ card }: Props) {
 					},
 					{
 						key: 'set',
-						label: 'Édition',
+						label: 'Print',
 						render: (p: AnyCard) => {
 							const c = p as ScryfallCard;
 							const isProxy = c.set === 'mpc';
@@ -123,7 +123,7 @@ export function PrintsTab({ card }: Props) {
 					},
 					{
 						key: 'rarity',
-						label: 'Rareté',
+						label: 'Rarity',
 						render: (p: AnyCard) => {
 							const c = p as ScryfallCard;
 							if (c.set === 'mpc') return null;
@@ -135,7 +135,7 @@ export function PrintsTab({ card }: Props) {
 						label: '',
 						render: (p: AnyCard) => {
 							if ((p as ScryfallCard).id === card.id) {
-								return <span className={styles.currentBadge}>Affiché</span>;
+								return <span className={styles.currentBadge}>Shown</span>;
 							}
 							return null;
 						},

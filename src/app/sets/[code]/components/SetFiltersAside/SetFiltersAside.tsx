@@ -66,7 +66,7 @@ export function SetFiltersAside({ filters, onChange, activeFilterCount }: SetFil
 						type="button"
 						className={styles.mobileClose}
 						onClick={() => setMobileOpen(false)}
-						aria-label="Fermer les filtres"
+						aria-label="Close filters"
 					>
 						✕
 					</button>
@@ -75,7 +75,7 @@ export function SetFiltersAside({ filters, onChange, activeFilterCount }: SetFil
 				<SearchBar
 					value={filters.name}
 					onChange={(v) => patch('name', v)}
-					placeholder="Rechercher par nom..."
+					placeholder="Search by name..."
 				/>
 
 				<div>
@@ -88,10 +88,10 @@ export function SetFiltersAside({ filters, onChange, activeFilterCount }: SetFil
 						value={filters.ownership}
 						onChange={(e) => patch('ownership', e.target.value as SetFilters['ownership'])}
 					>
-						<option value="all">Toutes</option>
-						<option value="owned">Possédées</option>
+						<option value="all">All</option>
+						<option value="owned">Owned</option>
 						<option value="missing">Manquantes</option>
-						<option value="foil">Possédées en foil</option>
+						<option value="foil">Owned in foil</option>
 					</select>
 				</div>
 
@@ -121,7 +121,7 @@ export function SetFiltersAside({ filters, onChange, activeFilterCount }: SetFil
 
 				{isFiltered && (
 					<button type="button" className={styles.resetButton} onClick={handleReset}>
-						Réinitialiser les filtres
+						Reset filters
 					</button>
 				)}
 			</aside>

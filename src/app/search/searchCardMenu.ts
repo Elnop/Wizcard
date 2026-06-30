@@ -18,7 +18,7 @@ export function buildSearchMenuItems(
 	const items: ContextMenuAction[] = [
 		{
 			type: 'action',
-			label: 'Voir les détails',
+			label: 'View details',
 			icon: '👁',
 			onClick: () => {
 				handlers.onViewDetails(card);
@@ -36,7 +36,7 @@ export function buildSearchMenuItems(
 	items.push(
 		{
 			type: 'action',
-			label: 'Ouvrir la page de la carte',
+			label: 'Open card page',
 			icon: '🔗',
 			onClick: () => {
 				handlers.onOpenCardPage(card);
@@ -46,7 +46,7 @@ export function buildSearchMenuItems(
 		{ type: 'divider' },
 		{
 			type: 'action',
-			label: 'Ajouter à la collection…',
+			label: 'Add to collection…',
 			icon: '▣',
 			onClick: () => {
 				handlers.onAddToCollection(card);
@@ -55,7 +55,7 @@ export function buildSearchMenuItems(
 		},
 		{
 			type: 'action',
-			label: 'Ajouter à la wishlist…',
+			label: 'Add to wishlist…',
 			icon: '♡',
 			onClick: () => {
 				handlers.onAddToWishlist(card);
@@ -64,7 +64,7 @@ export function buildSearchMenuItems(
 		},
 		{
 			type: 'action',
-			label: 'Ajouter à un deck…',
+			label: 'Add to deck…',
 			icon: '🗂',
 			onClick: () => {
 				handlers.onAddToDeck(card);

@@ -19,7 +19,7 @@ export function TokensTab({ card }: Props) {
 	return (
 		<div className={styles.container}>
 			{!loading && tokens.length === 0 ? (
-				<p className={styles.empty}>Cette carte ne génère aucun token.</p>
+				<p className={styles.empty}>This card does not create any token.</p>
 			) : (
 				<CardTokensSection tokens={tokens} loading={loading} onTokenClick={setTokenModalCard} />
 			)}

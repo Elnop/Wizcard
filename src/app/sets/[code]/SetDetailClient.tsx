@@ -26,12 +26,12 @@ export function SetDetailClient({ code }: SetDetailClientProps) {
 	const group = useMemo<SetGroup | null>(() => {
 		if (sets.length === 0) return null;
 		const groups = groupSets(sets);
-		// Le code de l'URL peut être la racine OU n'importe quel set dérivé de la
-		// famille (ex. /sets/pspm ouvre le groupe SPM avec PSPM comme onglet actif).
-		// On retrouve le groupe dont un des sets porte ce code.
+		// The URL code can be the root OR any set derived from the family
+		// (e.g. /sets/pspm opens the SPM group with PSPM as the active tab).
+		// We find the group one of whose sets carries this code.
 		const byMember = groups.find((g) => g.sets.some((s) => s.code === target));
 		if (byMember) return byMember;
-		// Fallback : code inconnu de la liste groupée mais set existant (orphelin).
+		// Fallback: code unknown to the grouped list but an existing set (orphan).
 		const single = sets.find((s) => s.code === target);
 		if (single) return { key: single.code, title: single.name, sets: [single], latest: 0 };
 		return null;
@@ -39,7 +39,7 @@ export function SetDetailClient({ code }: SetDetailClientProps) {
 
 	// `sets` starts empty before the fetch effect runs (and isLoading is still
 	// false at that point), so treat "no sets yet, no error" as loading too —
-	// otherwise the "introuvable" screen flashes on a cold load.
+	// otherwise the "not found" screen flashes on a cold load.
 	if (isLoading || (sets.length === 0 && !error)) {
 		return (
 			<main className={styles.main}>
@@ -54,10 +54,10 @@ export function SetDetailClient({ code }: SetDetailClientProps) {
 		return (
 			<main className={styles.main}>
 				<div className={styles.notFound}>
-					<h1>Extension introuvable</h1>
-					<p>Aucune extension ne correspond au code « {code.toUpperCase()} ».</p>
+					<h1>Set not found</h1>
+					<p>No set matches the code “{code.toUpperCase()}”.</p>
 					<Link href="/sets" className={styles.back}>
-						← Retour aux extensions
+						← Back to sets
 					</Link>
 				</div>
 			</main>

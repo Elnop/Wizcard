@@ -59,7 +59,7 @@ export function PrintContextMenu({
 				}}
 			>
 				<span className={styles.icon}>+</span>
-				Ajouter à la collection
+				Add to collection
 			</button>
 			<button
 				type="button"
@@ -70,7 +70,7 @@ export function PrintContextMenu({
 				}}
 			>
 				<span className={styles.icon}>♡</span>
-				Ajouter à la Wishlist
+				Add to Wishlist
 			</button>
 		</div>,
 		document.body

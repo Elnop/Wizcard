@@ -24,7 +24,7 @@ export function SetCard({ group }: SetCardProps) {
 					<div className={styles.meta}>
 						<span>{year}</span>
 						<span aria-hidden="true">·</span>
-						<span>{root.card_count} cartes</span>
+						<span>{root.card_count} cards</span>
 					</div>
 					<div className={styles.badges}>
 						{c.hasPaper && <span className={styles.badge}>Papier</span>}
@@ -32,7 +32,7 @@ export function SetCard({ group }: SetCardProps) {
 						{c.isAlchemy ? (
 							<span className={styles.badge}>Alchemy</span>
 						) : (
-							c.isDigital && <span className={styles.badge}>Numérique</span>
+							c.isDigital && <span className={styles.badge}>Digital</span>
 						)}
 					</div>
 				</div>
