@@ -12,6 +12,8 @@ type Props = {
 	onBulkAddToWishlist: () => void;
 	onBulkRemove: () => void;
 	onClear: () => void;
+	/** Leave selection mode entirely (clears the selection too). */
+	onExit: () => void;
 };
 
 /**
@@ -28,11 +30,29 @@ export function DeckBulkActionBar({
 	onBulkAddToWishlist,
 	onBulkRemove,
 	onClear,
+	onExit,
 }: Props) {
 	const hasSelection = selectedCount > 0;
 
 	return (
 		<div className={styles.bar}>
+			<button
+				type="button"
+				className={styles.exit}
+				onClick={onExit}
+				aria-label="Quitter le mode sélection"
+				title="Quitter le mode sélection"
+			>
+				<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+					<path
+						d="M2 2l12 12M14 2L2 14"
+						stroke="currentColor"
+						strokeWidth="1.8"
+						strokeLinecap="round"
+					/>
+				</svg>
+			</button>
+
 			<span className={styles.count}>{selectedCount} selected</span>
 
 			<button type="button" className={styles.action} onClick={onToggleSelectAll}>

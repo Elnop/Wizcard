@@ -656,6 +656,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					onBulkAddToWishlist={handleBulkAddToWishlist}
 					onBulkRemove={handleBulkRemoveRequest}
 					onClear={bulk.clear}
+					onExit={bulk.exit}
 				/>
 			)}
 
