@@ -43,6 +43,8 @@ export function useCollectionBadge(
 		const zoneCopies = group.byZone.get(currentZone) ?? [];
 		const neededCount = zoneCopies.length;
 		const ownedCount = zoneCopies.filter((c) => !!c.entry.ownerId).length;
+		// owned and wishlist are mutually exclusive on a copy.
+		const hasWishlistedDeckCopy = zoneCopies.some((c) => c.entry.wishlist);
 
 		const relevantEntries = collectionEntries.filter((e) => scryfallIdSet.has(e.scryfallId));
 		const availableCopies = relevantEntries.filter((e) => !e.entry.deckId);
@@ -50,11 +52,17 @@ export function useCollectionBadge(
 			(e) => e.entry.deckId != null && e.entry.deckId !== currentDeckId
 		);
 		const ownedInCurrentDeck = relevantEntries.filter((e) => e.entry.deckId === currentDeckId);
+		const relevantWishlist = (wishlistEntries ?? []).filter((e) => scryfallIdSet.has(e.scryfallId));
 
+		// The card's own membership wins over the "x/y assignable from collection"
+		// (partial) and locked states: as soon as any copy is owned the badge reads
+		// owned, then wishlist, then the collection-availability hints, then nothing.
 		let badgeState: BadgeState;
-		if (ownedCount === neededCount && neededCount > 0) {
+		if (ownedCount > 0) {
 			badgeState = 'owned';
-		} else if (availableCopies.length > 0 || ownedCount > 0) {
+		} else if (hasWishlistedDeckCopy || relevantWishlist.length > 0) {
+			badgeState = 'wishlist';
+		} else if (availableCopies.length > 0) {
 			badgeState = 'partial';
 		} else if (lockedCopies.length > 0) {
 			badgeState = 'locked';
@@ -126,8 +134,7 @@ export function useCollectionBadge(
 			})
 		);
 
-		// Wishlist copies for this oracle's prints
-		const relevantWishlist = (wishlistEntries ?? []).filter((e) => scryfallIdSet.has(e.scryfallId));
+		// Wishlist copies for this oracle's prints (tooltip detail)
 		const wishlistStackMap = new Map<
 			string,
 			{
@@ -153,17 +160,8 @@ export function useCollectionBadge(
 			})
 		);
 
-		// A deck card may itself be flagged wishlist (same shared `cards` row), which
-		// is independent of which prints are in the collection/deck print set.
-		const hasWishlistedDeckCopy = zoneCopies.some((c) => c.entry.wishlist);
-
-		const effectiveBadgeState: BadgeState =
-			badgeState === 'none' && (relevantWishlist.length > 0 || hasWishlistedDeckCopy)
-				? 'wishlist'
-				: badgeState;
-
 		return {
-			badgeState: effectiveBadgeState,
+			badgeState,
 			ownedCount,
 			neededCount,
 			tooltipCopies,
