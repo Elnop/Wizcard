@@ -112,7 +112,7 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 		<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
 			<div className={styles.header}>
 				<span className={styles.title}>
-					Modifier {cardCount} carte{cardCount > 1 ? 's' : ''}
+					Edit {cardCount} card{cardCount > 1 ? 's' : ''}
 				</span>
 				<button type="button" className={styles.closeIcon} onClick={onClose} aria-label="Close">
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -127,14 +127,12 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 			</div>
 
 			<div className={styles.body}>
-				<p className={styles.hint}>
-					Les champs laissés sur « ne pas toucher » ne sont pas modifiés.
-				</p>
+				<p className={styles.hint}>Fields left on “leave unchanged” are not modified.</p>
 
 				{/* Tags */}
 				<div className={styles.field}>
 					<label className={styles.label} htmlFor="bulk-edit-tags">
-						Tags (ajoutés aux cartes)
+						Tags (added to cards)
 					</label>
 					<div className={styles.tagsField}>
 						{pendingTags.map((tag) => (
@@ -144,7 +142,7 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 									type="button"
 									className={styles.tagRemove}
 									onClick={() => removeTag(tag)}
-									aria-label={`Retirer le tag ${tag}`}
+									aria-label={`Remove tag ${tag}`}
 								>
 									×
 								</button>
@@ -158,7 +156,7 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 							onChange={(e) => setTagInput(e.target.value)}
 							onKeyDown={handleTagKeyDown}
 							onBlur={addTag}
-							placeholder={pendingTags.length === 0 ? 'Ajouter des tags…' : ''}
+							placeholder={pendingTags.length === 0 ? 'Add tags…' : ''}
 						/>
 					</div>
 				</div>
@@ -175,7 +173,7 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 							value={zone}
 							onChange={(e) => setZone(e.target.value as DeckZone | '')}
 						>
-							<option value="">— ne pas toucher —</option>
+							<option value="">— leave unchanged —</option>
 							{zones.map((z) => (
 								<option key={z} value={z}>
 									{ZONE_LABELS[z]}
@@ -195,7 +193,7 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 							value={condition}
 							onChange={(e) => setCondition(e.target.value as CardCondition | '')}
 						>
-							<option value="">— ne pas toucher —</option>
+							<option value="">— leave unchanged —</option>
 							{CONDITIONS.map((c) => (
 								<option key={c} value={c}>
 									{c}
@@ -207,7 +205,7 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 					{/* Language */}
 					<div className={styles.field}>
 						<label className={styles.label} htmlFor="bulk-edit-language">
-							Langue
+							Language
 						</label>
 						<select
 							id="bulk-edit-language"
@@ -215,7 +213,7 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 							value={language}
 							onChange={(e) => setLanguage(e.target.value as MtgLanguage | '')}
 						>
-							<option value="">— ne pas toucher —</option>
+							<option value="">— leave unchanged —</option>
 							{MTG_LANGUAGES.map((lang) => (
 								<option key={lang} value={lang}>
 									{lang}
@@ -235,9 +233,9 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 							value={foil}
 							onChange={(e) => setFoil(e.target.value as TriState)}
 						>
-							<option value="">— ne pas toucher —</option>
-							<option value="true">Oui</option>
-							<option value="false">Non</option>
+							<option value="">— leave unchanged —</option>
+							<option value="true">Yes</option>
+							<option value="false">No</option>
 						</select>
 					</div>
 
@@ -245,7 +243,7 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 					{foil === 'true' && (
 						<div className={styles.field}>
 							<label className={styles.label} htmlFor="bulk-edit-foiltype">
-								Type de foil
+								Foil type
 							</label>
 							<select
 								id="bulk-edit-foiltype"
@@ -270,16 +268,16 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 							value={proxy}
 							onChange={(e) => setProxy(e.target.value as TriState)}
 						>
-							<option value="">— ne pas toucher —</option>
-							<option value="true">Oui</option>
-							<option value="false">Non</option>
+							<option value="">— leave unchanged —</option>
+							<option value="true">Yes</option>
+							<option value="false">No</option>
 						</select>
 					</div>
 
 					{/* For trade */}
 					<div className={styles.field}>
 						<label className={styles.label} htmlFor="bulk-edit-fortrade">
-							À échanger
+							For trade
 						</label>
 						<select
 							id="bulk-edit-fortrade"
@@ -287,16 +285,16 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 							value={forTrade}
 							onChange={(e) => setForTrade(e.target.value as TriState)}
 						>
-							<option value="">— ne pas toucher —</option>
-							<option value="true">Oui</option>
-							<option value="false">Non</option>
+							<option value="">— leave unchanged —</option>
+							<option value="true">Yes</option>
+							<option value="false">No</option>
 						</select>
 					</div>
 
 					{/* Alter */}
 					<div className={styles.field}>
 						<label className={styles.label} htmlFor="bulk-edit-alter">
-							Altérée
+							Altered
 						</label>
 						<select
 							id="bulk-edit-alter"
@@ -304,9 +302,9 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 							value={alter}
 							onChange={(e) => setAlter(e.target.value as TriState)}
 						>
-							<option value="">— ne pas toucher —</option>
-							<option value="true">Oui</option>
-							<option value="false">Non</option>
+							<option value="">— leave unchanged —</option>
+							<option value="true">Yes</option>
+							<option value="false">No</option>
 						</select>
 					</div>
 				</div>
@@ -314,7 +312,7 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 
 			<div className={styles.footer}>
 				<button type="button" className={styles.cancelBtn} onClick={onClose}>
-					Annuler
+					Cancel
 				</button>
 				<button
 					type="button"
@@ -322,7 +320,7 @@ export function DeckBulkEditModal({ cardCount, zones, onApply, onClose }: Props)
 					onClick={handleApply}
 					disabled={!canApply}
 				>
-					Appliquer
+					Apply
 				</button>
 			</div>
 		</Modal>

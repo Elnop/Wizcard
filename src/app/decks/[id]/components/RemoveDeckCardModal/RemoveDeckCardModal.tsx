@@ -21,14 +21,14 @@ export function RemoveDeckCardModal({ cardName, membership, onConfirm, onClose }
 	const [alsoRemove, setAlsoRemove] = useState(membership === 'wishlist');
 
 	const label =
-		membership === 'wishlist' ? 'Retirer aussi de la wishlist' : 'Retirer aussi de la collection';
+		membership === 'wishlist' ? 'Also remove from wishlist' : 'Also remove from collection';
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
-			<h2 className={styles.title}>Retirer du deck</h2>
+			<h2 className={styles.title}>Remove from deck</h2>
 			<p className={styles.summary}>
-				<strong>{cardName}</strong> est aussi dans{' '}
-				{membership === 'wishlist' ? 'ta wishlist' : 'ta collection'}.
+				<strong>{cardName}</strong> is also in{' '}
+				{membership === 'wishlist' ? 'your wishlist' : 'your collection'}.
 			</p>
 
 			<div className={styles.options}>
@@ -44,10 +44,10 @@ export function RemoveDeckCardModal({ cardName, membership, onConfirm, onClose }
 
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Annuler
+					Cancel
 				</Button>
 				<Button variant="primary" size="sm" onClick={() => onConfirm({ alsoRemove })}>
-					Retirer
+					Remove
 				</Button>
 			</div>
 		</Modal>

@@ -24,11 +24,11 @@ type Step = 'input' | 'resolving' | 'preview';
 function modalTitle(step: Step): string {
 	switch (step) {
 		case 'resolving':
-			return 'Récupération des cartes…';
+			return 'Fetching cards…';
 		case 'preview':
-			return "Aperçu de l'import";
+			return 'Import preview';
 		default:
-			return 'Importer une liste';
+			return 'Import a list';
 	}
 }
 
@@ -64,7 +64,7 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 			setErrors(
 				parsed && parsed.parseErrors.length > 0
 					? parsed.parseErrors
-					: ['Aucune carte valide. Collez une liste comme « 4 Lightning Bolt ».']
+					: ['No valid card. Paste a list like “4 Lightning Bolt”.']
 			);
 			return;
 		}
@@ -76,7 +76,7 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 			setNotFound(result.notFound);
 			setStep('preview');
 		} catch (err) {
-			setErrors([`Échec de l'aperçu : ${err instanceof Error ? err.message : 'erreur inconnue'}`]);
+			setErrors([`Preview failed: ${err instanceof Error ? err.message : 'unknown error'}`]);
 			setStep('input');
 		}
 	}, [parsed, normalizeSetCodes]);
@@ -97,7 +97,7 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 		return (
 			<div className={styles.form}>
 				<label className={styles.label}>
-					Liste de cartes
+					Card list
 					<textarea
 						className={styles.textarea}
 						placeholder={PLACEHOLDER}
@@ -120,10 +120,10 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 
 				<div className={styles.actions}>
 					<Button variant="ghost" type="button" onClick={onClose}>
-						Annuler
+						Cancel
 					</Button>
 					<Button onClick={handleResolve} disabled={!text.trim()}>
-						Aperçu
+						Preview
 					</Button>
 				</div>
 			</div>
@@ -134,14 +134,14 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 		return (
 			<div className={styles.loadingScreen}>
 				<Spinner size="md" />
-				<p className={styles.loadingLabel}>Récupération des cartes…</p>
+				<p className={styles.loadingLabel}>Fetching cards…</p>
 			</div>
 		);
 	}
 
 	return (
 		<Modal className={`${styles.modal} ${step === 'preview' ? styles.modalWide : ''}`}>
-			<button className={styles.closeIcon} onClick={onClose} aria-label="Fermer" type="button">
+			<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
 				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 					<path
 						d="M2 2l12 12M14 2L2 14"
@@ -160,7 +160,7 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 					existingOracleIds={existingOracleIds}
 					notFound={notFound}
 					hasSections={hasSections}
-					primaryLabel={(n) => `Ajouter ${n} carte${n === 1 ? '' : 's'}`}
+					primaryLabel={(n) => `Add ${n} card${n === 1 ? '' : 's'}`}
 					onImport={handleImport}
 					onBack={backToInput}
 				/>

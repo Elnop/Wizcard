@@ -46,7 +46,7 @@ function buildContextMenuItems(
 		if (isCurrentCover && onResetCover) {
 			coverItems.push({
 				type: 'action',
-				label: 'Retirer la cover',
+				label: 'Remove cover',
 				icon: '★',
 				onClick: () => {
 					onResetCover();
@@ -56,7 +56,7 @@ function buildContextMenuItems(
 		} else {
 			coverItems.push({
 				type: 'action',
-				label: 'Définir comme cover',
+				label: 'Set as cover',
 				icon: '★',
 				onClick: () => {
 					onSetCover(coverArtUrl);

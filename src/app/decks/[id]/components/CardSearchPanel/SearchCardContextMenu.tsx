@@ -100,7 +100,7 @@ export function SearchCardContextMenu({
 		return [
 			{
 				type: 'action',
-				label: 'Ajouter au deck...',
+				label: 'Add to deck...',
 				onClick: () => {
 					onCardClick(card);
 					onClose();
@@ -113,7 +113,7 @@ export function SearchCardContextMenu({
 						{ type: 'divider' as const },
 						{
 							type: 'action' as const,
-							label: 'Définir comme cover du deck',
+							label: 'Set as deck cover',
 							icon: '★',
 							onClick: () => {
 								const url = getArtCropUrl(card);

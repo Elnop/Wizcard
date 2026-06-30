@@ -172,7 +172,7 @@ export function DeckHeader({
 											onAddAllToCollection();
 										}}
 									>
-										⊕ Ajouter tout à la collection
+										⊕ Add all to collection
 									</button>
 								)}
 								{onImportList && (

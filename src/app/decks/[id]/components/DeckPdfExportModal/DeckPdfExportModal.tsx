@@ -64,7 +64,7 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
-			<h2 className={styles.title}>Générer un PDF</h2>
+			<h2 className={styles.title}>Generate a PDF</h2>
 
 			<div className={styles.controls}>
 				<div className={styles.section}>
@@ -92,7 +92,7 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 								checked={ignoreOwned}
 								onChange={(e) => setIgnoreOwned(e.target.checked)}
 							/>
-							Ignorer les cartes possédées
+							Skip owned cards
 						</label>
 						<label className={styles.option}>
 							<input
@@ -100,7 +100,7 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 								checked={ignoreBasicLands}
 								onChange={(e) => setIgnoreBasicLands(e.target.checked)}
 							/>
-							Ignorer les terrains de base
+							Skip basic lands
 						</label>
 					</div>
 				</div>
@@ -108,7 +108,7 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 
 			<div className={styles.preview}>
 				<p className={styles.sectionTitle}>
-					{filteredCards.length} carte{filteredCards.length !== 1 ? 's' : ''}
+					{filteredCards.length} card{filteredCards.length !== 1 ? 's' : ''}
 					{customCards.length > 0 && (
 						<span className={styles.customBadge}>{customCards.length} proxy MPC</span>
 					)}
@@ -130,7 +130,7 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Annuler
+					Cancel
 				</Button>
 				<Button
 					variant="primary"
@@ -138,7 +138,7 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 					onClick={() => onConfirm(options)}
 					disabled={filteredCards.length === 0}
 				>
-					Suivant ({filteredCards.length})
+					Next ({filteredCards.length})
 				</Button>
 			</div>
 		</Modal>

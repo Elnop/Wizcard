@@ -18,7 +18,7 @@ export function FolderBreadcrumb({ activeFolderId, folders, onNavigate }: Props)
 					My Decks
 				</button>
 				<span className={styles.sep}>›</span>
-				<span className={styles.current}>Sans dossier</span>
+				<span className={styles.current}>No folder</span>
 			</nav>
 		);
 	}

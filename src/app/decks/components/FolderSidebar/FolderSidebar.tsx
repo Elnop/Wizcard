@@ -80,7 +80,7 @@ export function FolderSidebar({
 					onClick={() => onFolderSelect('none')}
 				>
 					<FolderSimpleMinusIcon className={styles.icon} size={16} />
-					<span className={styles.label}>Sans dossier</span>
+					<span className={styles.label}>No folder</span>
 					{unfiledCount > 0 && <span className={styles.count}>{unfiledCount}</span>}
 				</button>
 			</div>
@@ -111,7 +111,7 @@ export function FolderSidebar({
 				<input
 					ref={newFolderInputRef}
 					className={styles.newFolderInput}
-					placeholder="Nom du dossier"
+					placeholder="Folder name"
 					value={newFolderName}
 					onChange={(e) => setNewFolderName(e.target.value)}
 					onBlur={handleNewFolderSubmit}
@@ -126,7 +126,7 @@ export function FolderSidebar({
 			) : (
 				<button className={styles.addFolderBtn} onClick={() => setAddingFolder(true)}>
 					<PlusIcon size={12} />
-					Nouveau dossier
+					New folder
 				</button>
 			)}
 		</nav>

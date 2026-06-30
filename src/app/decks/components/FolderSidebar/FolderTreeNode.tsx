@@ -202,10 +202,10 @@ function FolderContextMenu({
 	return (
 		<div ref={ref} className={styles.contextMenu} style={{ top: y, left: x }}>
 			<button className={styles.contextItem} onClick={onRename}>
-				Renommer
+				Rename
 			</button>
 			<button className={`${styles.contextItem} ${styles.contextItemDanger}`} onClick={onDelete}>
-				Supprimer
+				Delete
 			</button>
 		</div>
 	);

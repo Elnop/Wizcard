@@ -262,7 +262,7 @@ export function CardSearchPanel({
 							type="button"
 							className={styles.closeBtn}
 							onClick={onToggleExpand}
-							aria-label={expanded ? 'Réduire le panel' : 'Étendre le panel'}
+							aria-label={expanded ? 'Collapse panel' : 'Expand panel'}
 						>
 							{expanded ? (
 								<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">

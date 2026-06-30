@@ -91,12 +91,12 @@ export function AddDeckToCollectionModal({
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
-			<h2 className={styles.title}>Ajouter le deck à la collection</h2>
+			<h2 className={styles.title}>Add deck to collection</h2>
 			<p className={styles.summary}>
 				<strong>
-					{addCount} carte{addCount !== 1 ? 's' : ''}
+					{addCount} card{addCount !== 1 ? 's' : ''}
 				</strong>{' '}
-				à ajouter
+				to add
 			</p>
 
 			<div className={styles.section}>
@@ -113,7 +113,7 @@ export function AddDeckToCollectionModal({
 								/>
 								{ZONE_LABELS[zone]}
 								<span className={styles.zoneCount}>
-									({stat.owned} / {stat.total} possédées)
+									({stat.owned} / {stat.total} owned)
 								</span>
 							</label>
 						);
@@ -131,7 +131,7 @@ export function AddDeckToCollectionModal({
 								checked={onlyMissing}
 								onChange={(e) => setOnlyMissing(e.target.checked)}
 							/>
-							Seulement les non possédées ({unownedInSelectedZones} carte
+							Only the unowned ones ({unownedInSelectedZones} card
 							{unownedInSelectedZones !== 1 ? 's' : ''})
 						</label>
 					)}
@@ -142,7 +142,7 @@ export function AddDeckToCollectionModal({
 								checked={ignoreBasicLands}
 								onChange={(e) => setIgnoreBasicLands(e.target.checked)}
 							/>
-							Ignorer les terrains de base ({basicsInSelectedZones} carte
+							Skip basic lands ({basicsInSelectedZones} card
 							{basicsInSelectedZones !== 1 ? 's' : ''})
 						</label>
 					)}
@@ -152,7 +152,7 @@ export function AddDeckToCollectionModal({
 							checked={asProxy}
 							onChange={(e) => setAsProxy(e.target.checked)}
 						/>
-						Marquer comme proxy
+						Mark as proxy
 					</label>
 					{wishlistMatchCount > 0 && (
 						<label className={styles.option}>
@@ -161,7 +161,7 @@ export function AddDeckToCollectionModal({
 								checked={removeWishlist}
 								onChange={(e) => setRemoveWishlist(e.target.checked)}
 							/>
-							Supprimer de la wishlist ({wishlistMatchCount} carte
+							Remove from wishlist ({wishlistMatchCount} card
 							{wishlistMatchCount !== 1 ? 's' : ''})
 						</label>
 					)}
@@ -170,7 +170,7 @@ export function AddDeckToCollectionModal({
 
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Annuler
+					Cancel
 				</Button>
 				<Button
 					variant="primary"
@@ -186,7 +186,7 @@ export function AddDeckToCollectionModal({
 					}
 					disabled={addCount === 0 || selectedZones.size === 0}
 				>
-					Ajouter
+					Add
 				</Button>
 			</div>
 		</Modal>

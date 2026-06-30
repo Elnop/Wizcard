@@ -90,7 +90,7 @@ export function FolderCard({ folder, decks, childFolderCount, summaryMap, onClic
 						<>
 							<span className={styles.statSep}>·</span>
 							<span>
-								{childFolderCount} dossier{childFolderCount !== 1 ? 's' : ''}
+								{childFolderCount} folder{childFolderCount !== 1 ? 's' : ''}
 							</span>
 						</>
 					)}

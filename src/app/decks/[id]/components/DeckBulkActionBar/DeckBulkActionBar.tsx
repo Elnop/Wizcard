@@ -40,8 +40,8 @@ export function DeckBulkActionBar({
 				type="button"
 				className={styles.exit}
 				onClick={onExit}
-				aria-label="Quitter le mode sélection"
-				title="Quitter le mode sélection"
+				aria-label="Exit selection mode"
+				title="Exit selection mode"
 			>
 				<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 					<path

@@ -216,14 +216,14 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		() => [
 			{
 				key: 'qty',
-				label: 'Qté',
+				label: 'Qty',
 				render: (card) => {
 					const c = card as ResolvedDeckCard;
 					const zone = getDeckZone(c.entry.tags);
 					return groupByCardId.get(c.oracle_id ?? c.id)?.byZone.get(zone)?.length ?? 1;
 				},
 			},
-			{ key: 'name', label: 'Nom' },
+			{ key: 'name', label: 'Name' },
 			{ key: 'type_line', label: 'Type' },
 			{
 				key: 'mana_cost',
@@ -247,7 +247,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	// columns instead of reusing the main deck columns.
 	const tokenTableColumns: CardListColumn[] = useMemo(
 		() => [
-			{ key: 'name', label: 'Nom' },
+			{ key: 'name', label: 'Name' },
 			{ key: 'type_line', label: 'Type' },
 			{
 				key: 'pt',

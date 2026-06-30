@@ -37,13 +37,13 @@ export function AddCardToCollectionModal({
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
-			<h2 className={styles.title}>Ajouter à la collection</h2>
+			<h2 className={styles.title}>Add to collection</h2>
 			<p className={styles.summary}>
 				<strong>{cardName}</strong> —{' '}
 				<strong>
-					{addCount} copie{addCount !== 1 ? 's' : ''}
+					{addCount} cop{addCount !== 1 ? 'ies' : 'y'}
 				</strong>{' '}
-				à ajouter
+				to add
 			</p>
 
 			{hasMultiple && (
@@ -52,11 +52,11 @@ export function AddCardToCollectionModal({
 					<div className={styles.options}>
 						<label className={styles.option}>
 							<input type="radio" checked={allCopies} onChange={() => setAllCopies(true)} />
-							Toutes les copies non possédées ({unownedRowIds.length})
+							All unowned copies ({unownedRowIds.length})
 						</label>
 						<label className={styles.option}>
-							<input type="radio" checked={!allCopies} onChange={() => setAllCopies(false)} />
-							Une seule copie
+							<input type="radio" checked={!allCopies} onChange={() => setAllCopies(false)} />A
+							single copy
 						</label>
 					</div>
 				</div>
@@ -71,7 +71,7 @@ export function AddCardToCollectionModal({
 							checked={asProxy}
 							onChange={(e) => setAsProxy(e.target.checked)}
 						/>
-						Marquer comme proxy
+						Mark as proxy
 					</label>
 					{wishlistMatchCount > 0 && (
 						<label className={styles.option}>
@@ -80,7 +80,7 @@ export function AddCardToCollectionModal({
 								checked={removeWishlist}
 								onChange={(e) => setRemoveWishlist(e.target.checked)}
 							/>
-							Retirer de la wishlist ({wishlistMatchCount} carte
+							Remove from wishlist ({wishlistMatchCount} card
 							{wishlistMatchCount !== 1 ? 's' : ''})
 						</label>
 					)}
@@ -89,7 +89,7 @@ export function AddCardToCollectionModal({
 
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Annuler
+					Cancel
 				</Button>
 				<Button
 					variant="primary"
@@ -103,7 +103,7 @@ export function AddCardToCollectionModal({
 					}
 					disabled={unownedRowIds.length === 0}
 				>
-					Ajouter
+					Add
 				</Button>
 			</div>
 		</Modal>

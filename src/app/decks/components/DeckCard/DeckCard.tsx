@@ -36,18 +36,18 @@ function formatRelativeDate(iso: string): string {
 
 	if (diffDays > 30) {
 		const diffMonths = Math.floor(diffDays / 30);
-		return diffMonths === 1 ? 'il y a 1 mois' : `il y a ${diffMonths} mois`;
+		return diffMonths === 1 ? '1 month ago' : `${diffMonths} months ago`;
 	}
 	if (diffDays > 0) {
-		return diffDays === 1 ? 'il y a 1 jour' : `il y a ${diffDays} jours`;
+		return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
 	}
 	if (diffHours > 0) {
-		return diffHours === 1 ? 'il y a 1 heure' : `il y a ${diffHours} heures`;
+		return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
 	}
 	if (diffMin > 0) {
-		return diffMin === 1 ? 'il y a 1 min' : `il y a ${diffMin} min`;
+		return diffMin === 1 ? '1 min ago' : `${diffMin} min ago`;
 	}
-	return "à l'instant";
+	return 'just now';
 }
 
 type ContextMenuState = { x: number; y: number } | null;
@@ -74,11 +74,11 @@ function NewFolderModal({
 
 	return (
 		<Modal onClose={onClose} className={styles.newFolderDialog} zIndex={1100}>
-			<p className={styles.newFolderTitle}>Nouveau dossier</p>
+			<p className={styles.newFolderTitle}>New folder</p>
 			<input
 				ref={inputRef}
 				className={styles.newFolderInput}
-				placeholder="Nom du dossier"
+				placeholder="Folder name"
 				value={name}
 				onChange={(e) => setName(e.target.value)}
 				onKeyDown={(e) => {
@@ -88,10 +88,10 @@ function NewFolderModal({
 			/>
 			<div className={styles.newFolderActions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Annuler
+					Cancel
 				</Button>
 				<Button size="sm" onClick={handleSubmit}>
-					Créer
+					Create
 				</Button>
 			</div>
 		</Modal>
@@ -146,7 +146,7 @@ function MoveMenu({
 							onClose();
 						}}
 					>
-						+ Nouveau dossier
+						+ New folder
 					</button>
 					<div className={styles.contextDivider} />
 				</>
@@ -159,7 +159,7 @@ function MoveMenu({
 						onClose();
 					}}
 				>
-					Retirer du dossier
+					Remove from folder
 				</button>
 			)}
 			{folders.length > 0 && <div className={styles.contextDivider} />}
@@ -177,7 +177,7 @@ function MoveMenu({
 				</button>
 			))}
 			{folders.length === 0 && currentFolderId === null && (
-				<span className={styles.contextEmpty}>Aucun dossier</span>
+				<span className={styles.contextEmpty}>No folder</span>
 			)}
 		</div>
 	);

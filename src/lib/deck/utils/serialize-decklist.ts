@@ -1,9 +1,8 @@
 import type { DeckZone } from '@/types/decks';
 import type { ResolvedDeckCard } from '@/app/decks/[id]/useDeckDetail';
 
-// Zones exportées, dans l'ordre du standard MTGA, avec leur en-tête de section.
-// Les tokens sont volontairement absents (générés automatiquement, non gérés par
-// les outils cibles).
+// Exported zones, in MTGA standard order, with their section header.
+// Tokens are deliberately absent (auto-generated, not handled by the target tools).
 const EXPORT_SECTIONS: { zone: DeckZone; header: string }[] = [
 	{ zone: 'commander', header: 'Commander' },
 	{ zone: 'mainboard', header: 'Deck' },
@@ -17,8 +16,8 @@ function cardKey(card: ResolvedDeckCard): string {
 	return card.oracle_id ?? card.id;
 }
 
-// Ligne MTGA/MTGO : "{qty} {name} ({SET}) {collector}" ou "{qty} {name}" si set/collector
-// manquant. Inverse exact de parseMtgaCardLine.
+// MTGA/MTGO line: "{qty} {name} ({SET}) {collector}", or "{qty} {name}" when
+// set/collector is missing. Exact inverse of parseMtgaCardLine.
 function formatLine(qty: number, card: ResolvedDeckCard): string {
 	const set = card.set;
 	const collector = card.collector_number;
@@ -29,7 +28,7 @@ function formatLine(qty: number, card: ResolvedDeckCard): string {
 }
 
 function serializeZone(cards: ResolvedDeckCard[]): string[] {
-	// Regroupe par carte en préservant l'ordre de première apparition.
+	// Group by card, preserving first-appearance order.
 	const order: string[] = [];
 	const byKey = new Map<string, { count: number; card: ResolvedDeckCard }>();
 	for (const card of cards) {
@@ -49,9 +48,9 @@ function serializeZone(cards: ResolvedDeckCard[]): string[] {
 }
 
 /**
- * Sérialise un deck en decklist texte au format MTGA/MTGO.
- * Sections : Commander, Deck, Sideboard, Maybeboard (zones vides omises),
- * séparées par une ligne vide. Tokens exclus. Retourne '' si aucune carte.
+ * Serialize a deck into an MTGA/MTGO text decklist.
+ * Sections: Commander, Deck, Sideboard, Maybeboard (empty zones omitted),
+ * separated by a blank line. Tokens excluded. Returns '' if there are no cards.
  */
 export function serializeDecklist(cardsByZone: Record<DeckZone, ResolvedDeckCard[]>): string {
 	const blocks: string[] = [];

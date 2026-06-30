@@ -155,9 +155,9 @@ export default function DecksPageClient() {
 
 	let activeFolderName: string;
 	if (activeFolderId !== null && activeFolderId !== 'none') {
-		activeFolderName = foldersMap[activeFolderId]?.name ?? 'Dossier';
+		activeFolderName = foldersMap[activeFolderId]?.name ?? 'Folder';
 	} else if (activeFolderId === 'none') {
-		activeFolderName = 'Sans dossier';
+		activeFolderName = 'No folder';
 	} else {
 		activeFolderName = 'My Decks';
 	}
@@ -267,8 +267,8 @@ export default function DecksPageClient() {
 
 					{filteredDecks.length === 0 && visibleFolders.length === 0 && activeFolderId !== null && (
 						<div className={styles.emptyState}>
-							<h2>Dossier vide</h2>
-							<p>Glissez des decks ici ou créez-en un nouveau.</p>
+							<h2>Empty folder</h2>
+							<p>Drag decks here or create a new one.</p>
 							<Button onClick={() => setShowCreate(true)}>New Deck</Button>
 						</div>
 					)}
@@ -349,8 +349,8 @@ export default function DecksPageClient() {
 
 			{deckToDelete && (
 				<ConfirmModal
-					message="Supprimer ce deck ?"
-					confirmLabel="Supprimer"
+					message="Delete this deck?"
+					confirmLabel="Delete"
 					onConfirm={() => {
 						deleteDeck(deckToDelete, { deleteCollectionCopies });
 						setDeckToDelete(null);
@@ -367,15 +367,15 @@ export default function DecksPageClient() {
 							checked={deleteCollectionCopies}
 							onChange={(e) => setDeleteCollectionCopies(e.target.checked)}
 						/>
-						Supprimer les cartes de la collection
+						Delete the cards from the collection
 					</label>
 				</ConfirmModal>
 			)}
 
 			{folderToDelete && (
 				<ConfirmModal
-					message="Supprimer ce dossier ? Les decks qu'il contient seront déplacés dans « Sans dossier »."
-					confirmLabel="Supprimer"
+					message="Delete this folder? The decks it contains will be moved to “No folder”."
+					confirmLabel="Delete"
 					onConfirm={() => {
 						deleteFolder(folderToDelete);
 						setFolderToDelete(null);

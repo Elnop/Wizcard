@@ -289,9 +289,9 @@ export function ImportDeckModal({ onClose }: Props) {
 		}
 	}, [moxfieldData]);
 
-	// Both paste and URL modes now step through a preview ("Aperçu").
+	// Both paste and URL modes now step through a preview.
 	const handlePrimary = mode === 'paste' ? handleResolvePaste : handleResolveMoxfield;
-	const primaryLabel = 'Aperçu';
+	const primaryLabel = 'Preview';
 
 	const canImport =
 		mode === 'paste'

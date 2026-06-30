@@ -27,7 +27,7 @@ export function DeckTextExportModal({ text, deckName, onClose }: Props) {
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		} catch {
-			setError('Copie impossible — sélectionnez le texte et copiez-le manuellement.');
+			setError('Copy failed — select the text and copy it manually.');
 		}
 	}
 
@@ -46,7 +46,7 @@ export function DeckTextExportModal({ text, deckName, onClose }: Props) {
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
-			<h2 className={styles.title}>Exporter la decklist</h2>
+			<h2 className={styles.title}>Export decklist</h2>
 
 			<textarea className={styles.textarea} value={text} readOnly aria-label="Decklist" />
 
@@ -54,13 +54,13 @@ export function DeckTextExportModal({ text, deckName, onClose }: Props) {
 
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Fermer
+					Close
 				</Button>
 				<Button variant="secondary" size="sm" onClick={handleDownload}>
-					Télécharger .txt
+					Download .txt
 				</Button>
 				<Button variant="primary" size="sm" onClick={handleCopy}>
-					{copied ? 'Copié ✓' : 'Copier'}
+					{copied ? 'Copied ✓' : 'Copy'}
 				</Button>
 			</div>
 		</Modal>

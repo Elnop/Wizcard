@@ -90,13 +90,13 @@ export function DeckTokens({
 						onClick={handleAdd}
 						disabled={isAdding || selectedZones.size === 0}
 					>
-						{isAdding ? <Spinner /> : '+'} Autodétecter les tokens
+						{isAdding ? <Spinner /> : '+'} Auto-detect tokens
 					</button>
 					<button
 						type="button"
 						className={styles.caret}
 						onClick={() => setMenuOpen((v) => !v)}
-						aria-label="Choisir les zones à scanner"
+						aria-label="Choose zones to scan"
 						aria-expanded={menuOpen}
 						disabled={isAdding}
 					>
@@ -104,7 +104,7 @@ export function DeckTokens({
 					</button>
 					{menuOpen && (
 						<div className={styles.menu}>
-							<div className={styles.menuTitle}>Zones à scanner</div>
+							<div className={styles.menuTitle}>Zones to scan</div>
 							{availableZones.map((zone) => (
 								<label key={zone} className={styles.menuItem}>
 									<input
@@ -124,8 +124,8 @@ export function DeckTokens({
 				<div className={styles.emptyRow} style={{ height: CARD_ROW_HEIGHT }}>
 					<span className={styles.emptyText}>
 						{hasScanned || isAdding
-							? 'Aucun token nécessaire dans ce deck'
-							: 'Autodétecter les tokens du deck'}
+							? 'No tokens needed in this deck'
+							: 'Auto-detect the deck tokens'}
 					</span>
 				</div>
 			) : (

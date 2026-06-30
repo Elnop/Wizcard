@@ -90,7 +90,7 @@ export function CreateDeckModal({
 							value={folderId}
 							onChange={(e) => setFolderId(e.target.value)}
 						>
-							<option value="">Aucun dossier</option>
+							<option value="">No folder</option>
 							{folders.map((f) => (
 								<option key={f.id} value={f.id} className={styles.option}>
 									{f.name}

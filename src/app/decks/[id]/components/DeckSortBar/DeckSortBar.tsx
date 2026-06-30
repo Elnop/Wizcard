@@ -6,14 +6,14 @@ import { Select } from '@/components/Select/Select';
 import styles from './DeckSortBar.module.css';
 
 const SORT_OPTIONS: { value: DeckSortOrder; label: string }[] = [
-	{ value: 'cmc', label: 'Coût de mana' },
-	{ value: 'name', label: 'Nom' },
-	{ value: 'rarity', label: 'Rareté' },
+	{ value: 'cmc', label: 'Mana value' },
+	{ value: 'name', label: 'Name' },
+	{ value: 'rarity', label: 'Rarity' },
 ];
 
 const GROUP_OPTIONS: { value: DeckGroupBy; label: string }[] = [
-	{ value: 'type', label: 'Par type' },
-	{ value: 'none', label: 'Sans groupe' },
+	{ value: 'type', label: 'By type' },
+	{ value: 'none', label: 'No grouping' },
 ];
 
 interface DeckSortBarProps {
@@ -38,31 +38,26 @@ export function DeckSortBar({
 	return (
 		<div className={styles.bar}>
 			<div className={styles.field}>
-				<span className={styles.label}>Grouper</span>
+				<span className={styles.label}>Group</span>
 				<Select
 					value={groupBy}
 					options={GROUP_OPTIONS}
 					onChange={onGroupByChange}
-					ariaLabel="Grouper par"
+					ariaLabel="Group by"
 				/>
 			</div>
 
 			<div className={styles.field}>
-				<span className={styles.label}>Trier</span>
-				<Select
-					value={order}
-					options={SORT_OPTIONS}
-					onChange={onOrderChange}
-					ariaLabel="Trier par"
-				/>
+				<span className={styles.label}>Sort</span>
+				<Select value={order} options={SORT_OPTIONS} onChange={onOrderChange} ariaLabel="Sort by" />
 			</div>
 
 			<button
 				type="button"
 				className={`${styles.dirToggle} ${dir !== 'asc' ? styles.dirToggleActive : ''}`}
 				onClick={() => onDirChange(nextDir)}
-				aria-label={dir === 'asc' ? 'Croissant' : 'Décroissant'}
-				title={dir === 'asc' ? 'Croissant' : 'Décroissant'}
+				aria-label={dir === 'asc' ? 'Ascending' : 'Descending'}
+				title={dir === 'asc' ? 'Ascending' : 'Descending'}
 			>
 				{dir === 'asc' ? (
 					<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">

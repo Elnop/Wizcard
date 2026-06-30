@@ -150,7 +150,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 								onClick={() => void copyDeck(deck, resolvedCards)}
 								disabled={isCopying || isResolving}
 							>
-								{isCopying ? 'Copie…' : 'Copier dans mes decks'}
+								{isCopying ? 'Copying…' : 'Copy to my decks'}
 							</Button>
 						</div>
 					)}

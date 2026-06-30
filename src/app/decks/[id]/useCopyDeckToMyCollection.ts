@@ -28,7 +28,7 @@ export function useCopyDeckToMyCollection(): {
 			setIsCopying(true);
 			try {
 				const newDeckId = createDeck(
-					`${source.name} (copie)`,
+					`${source.name} (copy)`,
 					source.format,
 					source.description ?? null
 				);

@@ -33,9 +33,9 @@ export function BulkRemoveDeckCardsModal({
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
-			<h2 className={styles.title}>Retirer du deck</h2>
+			<h2 className={styles.title}>Remove from deck</h2>
 			<p className={styles.summary}>
-				Retirer <strong>{cardCount}</strong> carte{cardCount > 1 ? 's' : ''} du deck.
+				Remove <strong>{cardCount}</strong> card{cardCount > 1 ? 's' : ''} from the deck.
 			</p>
 
 			{(hasOwned || hasWishlist) && (
@@ -47,7 +47,7 @@ export function BulkRemoveDeckCardsModal({
 								checked={alsoRemoveCollection}
 								onChange={(e) => setAlsoRemoveCollection(e.target.checked)}
 							/>
-							Retirer aussi de la collection
+							Also remove from collection
 						</label>
 					)}
 					{hasWishlist && (
@@ -57,7 +57,7 @@ export function BulkRemoveDeckCardsModal({
 								checked={alsoRemoveWishlist}
 								onChange={(e) => setAlsoRemoveWishlist(e.target.checked)}
 							/>
-							Retirer aussi de la wishlist
+							Also remove from wishlist
 						</label>
 					)}
 				</div>
@@ -65,14 +65,14 @@ export function BulkRemoveDeckCardsModal({
 
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Annuler
+					Cancel
 				</Button>
 				<Button
 					variant="primary"
 					size="sm"
 					onClick={() => onConfirm({ alsoRemoveCollection, alsoRemoveWishlist })}
 				>
-					Retirer
+					Remove
 				</Button>
 			</div>
 		</Modal>
