@@ -7,7 +7,7 @@ import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { validateDeck } from '@/lib/deck/utils/format-rules';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { CardList } from '@/lib/card/components/CardList/CardList';
-import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { getDeckZone } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
@@ -15,7 +15,7 @@ import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall'
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
-import { useDeckCardModal } from '@/lib/card/hooks/useDeckCardModal';
+import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
 import { findFreeCollectionCopy } from '@/lib/deck/utils/collectionCopyResolver';
@@ -37,9 +37,7 @@ import {
 	RemoveDeckCardModal,
 	type RemoveDeckCardMembership,
 } from './components/RemoveDeckCardModal/RemoveDeckCardModal';
-import { buildCollectionAddRequest, type CollectionAddRequest } from './collectionAddRequest';
-import { OwnershipBadge } from '@/lib/card/components/OwnershipBadge/OwnershipBadge';
-import { getCopyBadgeState } from '@/lib/card/components/OwnershipBadge/copyBadgeState';
+import { type CollectionAddRequest } from './collectionAddRequest';
 import { DeckPdfExportModal } from './components/DeckPdfExportModal/DeckPdfExportModal';
 import { DeckTextExportModal } from './components/DeckTextExportModal/DeckTextExportModal';
 import { ImportListIntoDeckModal } from './components/ImportListIntoDeckModal/ImportListIntoDeckModal';
@@ -51,21 +49,10 @@ import { filterCardsForPdf } from '@/lib/pdf/filterCardsForPdf';
 import { resolveLocalizedImageUris } from '@/lib/scryfall/utils/resolveLocalizedImageUri';
 import { useDeckSort } from './useDeckSort';
 import { useDeckTokens } from './useDeckTokens';
-import { cardProducesToken } from '@/lib/deck/utils/collectDeckTokens';
 import { DeckSortBar } from './components/DeckSortBar/DeckSortBar';
 import { DeckTokens } from './components/DeckTokens/DeckTokens';
 import type { DeckGroupBy } from './useDeckCardSections';
 import styles from './page.module.css';
-
-function resolveAssignedDeckName(
-	deckId: string | undefined,
-	assignedToCurrentDeck: boolean,
-	currentDeckName: string | undefined,
-	deckNameById: Map<string, string>
-): string | undefined {
-	if (deckId == null) return undefined;
-	return assignedToCurrentDeck ? currentDeckName : deckNameById.get(deckId);
-}
 
 export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const {
@@ -150,57 +137,10 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const { addTokens, isAdding: isAddingTokens } = useDeckTokens(deckId, cardsByZone, tokenCards);
 	const symbolMap = useScryfallSymbols();
 
-	const {
-		selectedCards,
-		selectedZone,
-		clickedRowId,
-		handleCardGroupClick,
-		handleClose,
-		handleSave,
-		handleAddCopy,
-		handleChangeZone,
-		handleChangePrint,
-		handleAssignCollectionCopy,
-		handleUnassignCollectionCopy,
-	} = useDeckCardModal(deckId, groupByCardId);
+	const { openDeckCardModal } = useCardModalContext();
 
 	const { entries } = useCollectionContext();
 	const { addToWishlist, removeFromWishlist, entries: wishlistEntries } = useWishlistContext();
-
-	// scryfallIds of all prints in the currently selected card group
-	const selectedScryfallIds = useMemo(
-		() => new Set(selectedCards?.map((c) => c.id) ?? []),
-		[selectedCards]
-	);
-
-	// When the open modal shows a token, list the deck cards that generate it,
-	// split into sections by zone.
-	const tokenProducerSections = useMemo((): CardListSection[] | undefined => {
-		const selected = selectedCards?.[0];
-		if (!selected || getDeckZone(selected.entry.tags) !== 'tokens') return undefined;
-
-		const PRODUCER_ZONES: { zone: DeckZone; label: string }[] = [
-			{ zone: 'commander', label: 'Commander' },
-			{ zone: 'mainboard', label: 'Mainboard' },
-			{ zone: 'sideboard', label: 'Sideboard' },
-			{ zone: 'maybeboard', label: 'Maybeboard' },
-		];
-
-		const sections: CardListSection[] = [];
-		for (const { zone, label } of PRODUCER_ZONES) {
-			const seen = new Set<string>();
-			const cards: AnyCard[] = [];
-			for (const card of cardsByZone[zone]) {
-				if (!cardProducesToken(card as ScryfallCard, selected)) continue;
-				const key = card.oracle_id ?? card.id;
-				if (seen.has(key)) continue;
-				seen.add(key);
-				cards.push(card);
-			}
-			if (cards.length > 0) sections.push({ label: `${label} (${cards.length})`, cards });
-		}
-		return sections.length > 0 ? sections : undefined;
-	}, [selectedCards, cardsByZone]);
 
 	const deckNameById = useMemo(() => new Map(allDecks.map((d) => [d.id, d.name])), [allDecks]);
 
@@ -245,51 +185,6 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		return map;
 	}, [collectionScryfallIdToOracleId, entries]);
 
-	// All collection copies (assigned + free) for the selected card.
-	// Matched by oracle_id (all editions), like the ownership badge — not just the
-	// exact prints present in the deck — so copies of a different edition are offered too.
-	const allCollectionCopies = useMemo(() => {
-		const selected = selectedCards?.[0];
-		const oracleId = selected ? collectionScryfallIdToOracleId.get(selected.id) : undefined;
-		const matchingScryfallIds = oracleId
-			? (oracleIdToAllScryfallIds.get(oracleId) ?? selectedScryfallIds)
-			: selectedScryfallIds;
-		return entries
-			.filter((e) => matchingScryfallIds.has(e.scryfallId))
-			.map((e) => {
-				const assignedToCurrentDeck = !!e.entry.deckId && e.entry.deckId === deck?.id;
-				return {
-					rowId: e.entry.rowId,
-					scryfallId: e.scryfallId,
-					condition: e.entry.condition,
-					isFoil: e.entry.isFoil,
-					foilType: e.entry.foilType,
-					proxy: e.entry.proxy,
-					language: e.entry.language,
-					assignedToDeckName: resolveAssignedDeckName(
-						e.entry.deckId,
-						assignedToCurrentDeck,
-						deck?.name,
-						deckNameById
-					),
-					isCurrentDeck: assignedToCurrentDeck,
-				};
-			});
-	}, [
-		entries,
-		selectedCards,
-		selectedScryfallIds,
-		collectionScryfallIdToOracleId,
-		oracleIdToAllScryfallIds,
-		deck,
-		deckNameById,
-	]);
-
-	const wishlistScryfallIds = useMemo(
-		() => new Set(wishlistEntries.map((e) => e.scryfallId)),
-		[wishlistEntries]
-	);
-
 	const panelScryfallIdToOracleId = collectionScryfallIdToOracleId;
 
 	const toggleBulkSelect = useCallback((oracleId: string) => {
@@ -310,9 +205,9 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			}
 			const c = card as ResolvedDeckCard;
 			const group = groupByCardId.get(c.oracle_id ?? c.id);
-			if (group) handleCardGroupClick(group, c.entry.rowId);
+			if (group) openDeckCardModal(deckId, group, c.entry.rowId);
 		},
-		[bulkSelectMode, toggleBulkSelect, groupByCardId, handleCardGroupClick]
+		[bulkSelectMode, toggleBulkSelect, groupByCardId, openDeckCardModal, deckId]
 	);
 
 	const tableColumns: CardListColumn[] = useMemo(
@@ -519,7 +414,9 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					onDuplicate={handleDuplicateCard}
 					onRemove={handleRemoveRequest}
 					onChangeZone={changeZone}
-					onBadgeClick={() => handleCardGroupClick(group, firstCopy?.entry.rowId ?? c.entry.rowId)}
+					onBadgeClick={() =>
+						openDeckCardModal(deckId, group, firstCopy?.entry.rowId ?? c.entry.rowId)
+					}
 					onAddToCollectionClick={(req) => {
 						if (req.unownedRowIds.length > 0) setPendingCollectionAdd(req);
 					}}
@@ -546,7 +443,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			handleDuplicateCard,
 			handleRemoveRequest,
 			changeZone,
-			handleCardGroupClick,
+			openDeckCardModal,
 			toggleDeckCardWishlist,
 			wishlistEntries,
 			deck?.coverArtUrl,
@@ -790,75 +687,6 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			)}
 
 			<DeckFooter stats={stats} format={deck.format} warnings={warnings} />
-
-			<CardModal
-				cards={selectedCards}
-				initialRowId={clickedRowId ?? undefined}
-				zone={selectedZone ?? undefined}
-				availableZones={zones}
-				onClose={handleClose}
-				onSave={handleSave}
-				onRemoveEntry={(rowId) => {
-					handleRemoveRequest(rowId);
-					handleClose();
-				}}
-				onIncrement={handleAddCopy}
-				onChangeZone={handleChangeZone}
-				onChangePrint={handleChangePrint}
-				collectionCopies={allCollectionCopies}
-				onAssignCollectionCopy={handleAssignCollectionCopy}
-				onUnassignCollectionCopy={handleUnassignCollectionCopy}
-				onAddToCollectionFromEntry={(rowIds) => {
-					const card = selectedCards?.[0];
-					if (!card || rowIds.length === 0) return;
-					const oracleScryfallIds = Array.from(
-						oracleIdToAllScryfallIds.get(card.oracle_id ?? card.id) ?? new Set<string>([card.id])
-					);
-					const copies = rowIds
-						.map((id) => selectedCards?.find((c) => c.entry.rowId === id))
-						.filter((c): c is NonNullable<typeof c> => c != null);
-					const req = buildCollectionAddRequest(
-						card.name,
-						copies,
-						oracleScryfallIds,
-						wishlistEntries
-					);
-					if (req.unownedRowIds.length > 0) setPendingCollectionAdd(req);
-				}}
-				onRemoveFromCollectionEntry={(rowId) => toggleOwned(rowId)}
-				onAddToWishlistFromEntry={(deckCardRowId) => {
-					toggleDeckCardWishlist(deckCardRowId);
-				}}
-				producerSections={tokenProducerSections}
-				onProducerClick={handleCardClick}
-				renderCopyBadge={(copy) => {
-					const state = getCopyBadgeState(copy, wishlistScryfallIds);
-					return (
-						<OwnershipBadge
-							badgeState={state}
-							onClick={
-								state === 'none'
-									? () => {
-											const card = selectedCards?.[0];
-											if (!card) return;
-											const oracleScryfallIds = Array.from(
-												oracleIdToAllScryfallIds.get(card.oracle_id ?? card.id) ??
-													new Set<string>([card.id])
-											);
-											const req = buildCollectionAddRequest(
-												card.name,
-												[copy],
-												oracleScryfallIds,
-												wishlistEntries
-											);
-											if (req.unownedRowIds.length > 0) setPendingCollectionAdd(req);
-										}
-									: undefined
-							}
-						/>
-					);
-				}}
-			/>
 
 			{pendingCollectionAdd && (
 				<AddCardToCollectionModal

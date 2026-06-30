@@ -5,7 +5,9 @@ import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import type { DeckCardGroup } from '@/types/decks';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
+import { DeckCardModalHost } from '@/app/decks/[id]/DeckCardModalHost';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
@@ -27,11 +29,18 @@ type OpenState =
 	| { kind: 'stack'; oracleKey: string }
 	| { kind: 'frozen'; cards: Card[] }
 	| { kind: 'bare'; card: ScryfallCard | CustomCard }
+	| { kind: 'deck'; deckId: string; oracleKey: string; clickedRowId: string }
 	| null;
 
 type CardModalContextValue = {
 	/** Open the modal for a bare card (search/sets/prints) or a resolved stack's cards. */
 	openCardModal: (input: ScryfallCard | CustomCard | Card[], opts?: { readOnly?: boolean }) => void;
+	/**
+	 * Open the deck-owner modal for a clicked deck-card group. Deck state lives on
+	 * the page; the call-site already has the group, so we pass it through and the
+	 * provider re-resolves the live stack by oracle key + deckId.
+	 */
+	openDeckCardModal: (deckId: string, group: DeckCardGroup, clickedRowId: string) => void;
 	close: () => void;
 };
 
@@ -98,6 +107,19 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 		[]
 	);
 
+	const openDeckCardModal = useCallback(
+		(deckId: string, group: DeckCardGroup, clickedRowId: string) => {
+			const rep = group.representative;
+			setOpen({ kind: 'deck', deckId, oracleKey: oracleKeyOf(rep), clickedRowId });
+		},
+		[]
+	);
+
+	// Token-producer clicks (inside the deck modal) re-target the open deck modal.
+	const reopenDeckCard = useCallback((oracleKey: string, clickedRowId: string) => {
+		setOpen((prev) => (prev?.kind === 'deck' ? { ...prev, oracleKey, clickedRowId } : prev));
+	}, []);
+
 	const close = useCallback(() => setOpen(null), []);
 
 	// Re-resolve the displayed cards on every render so they track store mutations
@@ -108,6 +130,9 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 		source: 'collection' | 'wishlist' | null;
 	}>(() => {
 		if (!open) return { cards: null, rep: null, source: null };
+		// Deck cards are rendered by DeckCardModalHost (its own derivation), never
+		// re-resolved against the collection/wishlist here.
+		if (open.kind === 'deck') return { cards: null, rep: null, source: null };
 		if (open.kind === 'bare') return { cards: open.card, rep: open.card, source: null };
 		if (open.kind === 'frozen') {
 			// Verbatim, read-only — no mutations derived (source stays null).
@@ -210,15 +235,26 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 	]);
 
 	const value = useMemo<CardModalContextValue>(
-		() => ({ openCardModal, close }),
-		[openCardModal, close]
+		() => ({ openCardModal, openDeckCardModal, close }),
+		[openCardModal, openDeckCardModal, close]
 	);
 
 	return (
 		<CardModalContext.Provider value={value}>
 			{children}
-			{open && resolved.cards && (
-				<CardModal cards={resolved.cards} onClose={close} {...(derivedProps ?? {})} />
+			{open?.kind === 'deck' ? (
+				<DeckCardModalHost
+					deckId={open.deckId}
+					oracleKey={open.oracleKey}
+					clickedRowId={open.clickedRowId}
+					onClose={close}
+					onReopen={reopenDeckCard}
+				/>
+			) : (
+				open &&
+				resolved.cards && (
+					<CardModal cards={resolved.cards} onClose={close} {...(derivedProps ?? {})} />
+				)
 			)}
 		</CardModalContext.Provider>
 	);

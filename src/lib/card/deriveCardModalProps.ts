@@ -52,8 +52,8 @@ function hasEntry(card: AnyCard): card is Card {
 /**
  * Pure derivation of CardModal mutation props from a card's TYPE, for the simple
  * (non-deck) cases. Deck cards (`entry.deckId`) are handled by the stateful
- * `useDeckCardModalProps` hook instead — this helper returns only `onAddToDeck`
- * for them (the provider routes deck cards to the hook).
+ * `useDeckCardModalProps` hook + `DeckCardModalHost` instead — the provider routes
+ * them through `openDeckCardModal` rather than this helper.
  *
  * - Bare Scryfall/custom (no entry) → add-to-collection / add-to-wishlist / add-to-deck.
  * - Owned (entry, not wishlisted) → full collection edit suite.
