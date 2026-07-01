@@ -114,10 +114,32 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		[store, userId, triggerSync]
 	);
 
-	const clearWishlist = useCallback(
-		() => store.clearWishlist(userId, triggerSync),
-		[store, userId, triggerSync]
-	);
+	const clearWishlist = useCallback(() => {
+		// A wishlist row may be a shared `cards` row that is also a deck card. Deleting
+		// it would destroy the deck card (and, with owner_id=NULL, the owner-filtered
+		// bulk-delete wouldn't even match it). So mirror removeFromWishlist per row:
+		// pure wishlist rows are deleted, wishlisted deck cards just lose their wishlist
+		// flag and survive in their deck.
+		const current = useWishlistStore.getState().entries;
+		useWishlistStore.setState({ entries: {} });
+		if (!userId) return;
+
+		const deleteRowIds: string[] = [];
+		for (const [rowId, copy] of Object.entries(current)) {
+			const isDeckCard = copy.entry.deckId != null || getLoadedDeckCard(rowId) != null;
+			if (isDeckCard) {
+				patchLoadedDeckCard(rowId, (c) => ({ ...c, entry: { ...c.entry, wishlist: undefined } }));
+				enqueue({ type: DECK_CARD_UPDATE, payload: { rowId, updates: { wishlist: false } } });
+			} else {
+				deleteRowIds.push(rowId);
+			}
+		}
+
+		if (deleteRowIds.length > 0) {
+			enqueue({ type: 'bulk-delete', payload: { userId, rowIds: deleteRowIds } });
+		}
+		triggerSync();
+	}, [userId, triggerSync]);
 
 	const moveToCollection = useCallback(
 		(rowIds: string[], scryfallId: string, entryPatch: Partial<CardEntry>) => {

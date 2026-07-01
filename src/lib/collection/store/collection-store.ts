@@ -266,13 +266,26 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 	clearCollection: (userId, triggerSync) => {
 		const current = get().entries;
 		set({ entries: {} });
-		if (userId) {
-			const rowIds = Object.keys(current);
-			if (rowIds.length > 0) {
-				enqueue({ type: 'bulk-delete', payload: { userId, rowIds } });
-			}
-			triggerSync();
+		if (!userId) return;
+
+		// A card may live in the collection AND a deck (one row, owner_id + deck_id).
+		// Deleting such a row cascades it out of the deck, so deck-linked copies are
+		// detached from the collection (owner_id -> null) instead of deleted; they
+		// survive in their deck. Collection-only copies are deleted outright.
+		const deleteRowIds: string[] = [];
+		const detachRowIds: string[] = [];
+		for (const [rowId, copy] of Object.entries(current)) {
+			if (copy.entry.deckId) detachRowIds.push(rowId);
+			else deleteRowIds.push(rowId);
 		}
+
+		if (deleteRowIds.length > 0) {
+			enqueue({ type: 'bulk-delete', payload: { userId, rowIds: deleteRowIds } });
+		}
+		for (const rowId of detachRowIds) {
+			enqueue({ type: 'deck-card-update', payload: { rowId, updates: { owner_id: null } } });
+		}
+		triggerSync();
 	},
 
 	importCards: (cards, userId, triggerSync) => {
