@@ -13,13 +13,10 @@ import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
 import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
 import { Button } from '@/components/Button/Button';
 import { ExportMenu } from './ExportMenu/ExportMenu';
-import { ShareButton } from '@/components/ShareButton/ShareButton';
-import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import styles from './page.module.css';
 import { CollectionView } from './lib/CollectionView/CollectionView';
 
 function CollectionPageInner() {
-	const { user } = useAuth();
 	const { entries, isLoaded, isFullyLoaded, clearCollection } = useCollectionContext();
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCardsContext();
 	const { status, openModal } = useImportContext();
@@ -60,7 +57,6 @@ function CollectionPageInner() {
 
 	const actions = (
 		<>
-			{user && <ShareButton path={`/users/${user.id}/collection`} />}
 			{entries.length > 0 && (
 				<>
 					<ExportMenu
@@ -73,7 +69,7 @@ function CollectionPageInner() {
 					</Button>
 				</>
 			)}
-			<Button variant="primary" onClick={openModal} disabled={isBusy}>
+			<Button variant="primary" onClick={() => openModal('collection')} disabled={isBusy}>
 				{isBusy ? 'Importing…' : 'Import'}
 			</Button>
 		</>

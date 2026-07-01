@@ -8,10 +8,13 @@ import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
+import { useImportContext } from '@/lib/import/context/ImportContext';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
 import { Button } from '@/components/Button/Button';
+import { ExportMenu } from '@/app/collection/ExportMenu/ExportMenu';
+import { ImportModal } from '@/app/collection/lib/ImportModal/ImportModal';
 import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
@@ -21,6 +24,7 @@ import styles from './page.module.css';
 
 function WishlistPageInner() {
 	const { entries, isLoaded, clearWishlist, moveToCollection } = useWishlistContext();
+	const { status: importStatus, openModal: openImportModal } = useImportContext();
 
 	const { stacks, isLoading: isHydrating } = useCollectionCards(entries);
 
@@ -63,6 +67,12 @@ function WishlistPageInner() {
 	const totalCards = entries.length;
 	const uniqueCards = stacks.length;
 
+	const isImporting =
+		importStatus === 'parsing' ||
+		importStatus === 'previewing' ||
+		importStatus === 'fetching' ||
+		importStatus === 'merging';
+
 	if (!isLoaded) {
 		return <div className={styles.page} />;
 	}
@@ -81,16 +91,30 @@ function WishlistPageInner() {
 							</p>
 						)}
 					</div>
-					{entries.length > 0 && (
-						<div className={styles.actions}>
-							<Button variant="secondary" onClick={pdf.openModal} disabled={isHydrating}>
-								Generate PDF
-							</Button>
-							<Button variant="danger" onClick={handleClearWishlist}>
-								Clear
-							</Button>
-						</div>
-					)}
+					<div className={styles.actions}>
+						{entries.length > 0 && (
+							<>
+								<Button variant="secondary" onClick={pdf.openModal} disabled={isHydrating}>
+									Generate PDF
+								</Button>
+								<ExportMenu
+									cards={stacks.flatMap((s) => s.cards)}
+									filenameBase="my-wishlist"
+									disabled={isImporting || isHydrating}
+								/>
+								<Button variant="danger" onClick={handleClearWishlist} disabled={isImporting}>
+									Clear
+								</Button>
+							</>
+						)}
+						<Button
+							variant="primary"
+							onClick={() => openImportModal('wishlist')}
+							disabled={isImporting}
+						>
+							{isImporting ? 'Importing…' : 'Import'}
+						</Button>
+					</div>
 				</div>
 
 				{entries.length === 0 ? (
@@ -186,6 +210,8 @@ function WishlistPageInner() {
 					onClose={pdf.closeModal}
 				/>
 			)}
+
+			<ImportModal />
 		</div>
 	);
 }

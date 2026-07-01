@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, useContext, useCallback } from 'react';
+import { createContext, useContext, useCallback, useMemo } from 'react';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useImport } from '@/lib/import/hooks/useImport';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 
@@ -11,17 +12,31 @@ const ImportContext = createContext<ImportContextValue | null>(null);
 
 export function ImportProvider({ children }: { children: React.ReactNode }) {
 	const { triggerSync } = useSyncQueueContext();
-	const { importCards } = useCollectionContext();
+	const { importCards: importToCollection } = useCollectionContext();
+	const { importCards: importToWishlist } = useWishlistContext();
 
-	const importCardsAndSync = useCallback(
-		(cards: Parameters<typeof importCards>[0]) => {
-			importCards(cards);
+	const collectionImport = useCallback(
+		(cards: Parameters<typeof importToCollection>[0]) => {
+			importToCollection(cards);
 			triggerSync();
 		},
-		[importCards, triggerSync]
+		[importToCollection, triggerSync]
 	);
 
-	const importValue = useImport(importCardsAndSync);
+	const wishlistImport = useCallback(
+		(cards: Parameters<typeof importToWishlist>[0]) => {
+			importToWishlist(cards);
+			triggerSync();
+		},
+		[importToWishlist, triggerSync]
+	);
+
+	const importers = useMemo(
+		() => ({ collection: collectionImport, wishlist: wishlistImport }),
+		[collectionImport, wishlistImport]
+	);
+
+	const importValue = useImport(importers);
 
 	return <ImportContext value={importValue}>{children}</ImportContext>;
 }

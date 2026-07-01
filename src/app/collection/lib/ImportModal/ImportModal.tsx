@@ -24,7 +24,7 @@ import { STATIC_IMPORT_COLUMNS } from './tableColumns';
 const TITLE_IMPORT_FILE = 'Import a file';
 const LABEL_FETCHING_CARDS = 'Fetching cards…';
 
-function modalTitle(status: ImportStatus): string {
+function modalTitle(status: ImportStatus, mergingLabel: string): string {
 	switch (status) {
 		case 'selecting':
 			return TITLE_IMPORT_FILE;
@@ -35,7 +35,7 @@ function modalTitle(status: ImportStatus): string {
 		case 'fetching':
 			return LABEL_FETCHING_CARDS;
 		case 'merging':
-			return 'Adding to collection…';
+			return mergingLabel;
 		default:
 			return TITLE_IMPORT_FILE;
 	}
@@ -59,6 +59,7 @@ function LoadingScreen({ label, children }: { label: string; children?: ReactNod
 export function ImportModal() {
 	const {
 		status,
+		destination,
 		preview,
 		resolved,
 		formatRegistry,
@@ -68,7 +69,7 @@ export function ImportModal() {
 		selectFile: onFileSelect,
 		submitText: onTextSubmit,
 		changeFormat: onChangeFormat,
-		openModal: onChangeFile,
+		openModal,
 		confirm: onConfirm,
 		cancel: onCancel,
 		reset: onClose,
@@ -79,6 +80,9 @@ export function ImportModal() {
 	const { sets, isLoading: setsLoading } = useScryfallSets();
 
 	const isOpen = status !== 'idle';
+	const mergingLabel = destination === 'wishlist' ? 'Adding to wishlist…' : 'Adding to collection…';
+	// "Change file" re-opens the picker for the same destination.
+	const onChangeFile = () => openModal(destination);
 
 	const state = useImportPreviewState({
 		preview,
@@ -242,13 +246,13 @@ export function ImportModal() {
 		if (status === 'parsing') return <LoadingScreen label="Parsing the file…" />;
 		if (status === 'previewing') return renderPreviewBody();
 		if (status === 'fetching') return <LoadingScreen label={fetchProgressLabel} />;
-		if (status === 'merging') return <LoadingScreen label="Adding to collection…" />;
+		if (status === 'merging') return <LoadingScreen label={mergingLabel} />;
 		return null;
 	}
 
 	return (
 		<Modal className={`${styles.modal} ${isPreviewWide ? styles.modalWide : ''}`}>
-			<h2 className={styles.title}>{modalTitle(status)}</h2>
+			<h2 className={styles.title}>{modalTitle(status, mergingLabel)}</h2>
 			{renderContent()}
 			<ImportSupportModals state={state} sets={sets} setsLoading={setsLoading} />
 		</Modal>

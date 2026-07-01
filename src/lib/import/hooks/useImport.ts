@@ -34,10 +34,14 @@ export interface ImportPreview {
 	parsed: import('@/lib/import/types').ParsedImportResult;
 }
 
-export function useImport(
-	importCards: (cards: Array<{ scryfallId: string; entry: CardEntry }>) => void
-) {
+// Where a confirmed import writes its cards. The same modal/pipeline serves both.
+export type ImportDestination = 'collection' | 'wishlist';
+
+type ImportCards = (cards: Array<{ scryfallId: string; entry: CardEntry }>) => void;
+
+export function useImport(importers: Record<ImportDestination, ImportCards>) {
 	const [status, setStatus] = useState<ImportStatus>('idle');
+	const [destination, setDestination] = useState<ImportDestination>('collection');
 	const [progress, setProgress] = useState<ImportProgress>({ current: 0, total: 0 });
 	const [result, setResult] = useState<ImportResult | null>(null);
 	const [preview, setPreview] = useState<ImportPreview | null>(null);
@@ -73,7 +77,7 @@ export function useImport(
 		setStatus,
 		setProgress,
 		setResult,
-		importCards,
+		importCards: importers[destination],
 	});
 
 	const { updateCard, removeCard } = useImportRowEditing({ setResolved });
@@ -87,16 +91,20 @@ export function useImport(
 		[fileHandling, fileText, preview]
 	);
 
-	const openModal = useCallback(() => {
-		setStatus('selecting');
-		setPreview(null);
-		setResult(null);
-		setFileText('');
-		setResolved(null);
-		setIsLoadingPreview(false);
-		setPreviewProgress({ current: 0, total: 0 });
-		cancelPreviewFetch();
-	}, [cancelPreviewFetch]);
+	const openModal = useCallback(
+		(dest: ImportDestination = 'collection') => {
+			setDestination(dest);
+			setStatus('selecting');
+			setPreview(null);
+			setResult(null);
+			setFileText('');
+			setResolved(null);
+			setIsLoadingPreview(false);
+			setPreviewProgress({ current: 0, total: 0 });
+			cancelPreviewFetch();
+		},
+		[cancelPreviewFetch]
+	);
 
 	const cancel = useCallback(() => {
 		cancelPreviewFetch();
@@ -121,6 +129,7 @@ export function useImport(
 
 	return {
 		status,
+		destination,
 		progress,
 		result,
 		preview,

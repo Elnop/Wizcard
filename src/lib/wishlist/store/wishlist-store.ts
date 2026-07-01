@@ -26,6 +26,11 @@ type WishlistActions = {
 		count?: number
 	) => void;
 	removeFromWishlist: (rowId: string, userId: string | null, triggerSync: () => void) => void;
+	importCards: (
+		cards: Array<{ scryfallId: string; entry: CardEntry }>,
+		userId: string | null,
+		triggerSync: () => void
+	) => void;
 	changePrint: (
 		rowId: string,
 		newScryfallId: string,
@@ -79,6 +84,24 @@ export const useWishlistStore = create<WishlistState & WishlistActions>()((set, 
 		set({ entries: next });
 		if (userId) {
 			enqueue({ type: 'delete', payload: { userId, rowId } });
+			triggerSync();
+		}
+	},
+
+	importCards: (cards, userId, triggerSync) => {
+		const current = get().entries;
+		const next = { ...current };
+		const toInsert: Array<{ rowId: string; scryfallId: string; entry: CardEntry }> = [];
+		for (const card of cards) {
+			// Force wishlist=true: imported rows land in the wishlist regardless of the
+			// source entry's flag. owner_id is set by the insert path (bulk-insert).
+			const entry: CardEntry = { ...card.entry, wishlist: true };
+			next[entry.rowId] = { scryfallId: card.scryfallId, entry };
+			toInsert.push({ rowId: entry.rowId, scryfallId: card.scryfallId, entry });
+		}
+		set({ entries: next });
+		if (userId && toInsert.length > 0) {
+			enqueue({ type: 'bulk-insert', payload: { userId, rows: toInsert } });
 			triggerSync();
 		}
 	},

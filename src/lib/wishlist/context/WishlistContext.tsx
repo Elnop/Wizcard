@@ -19,6 +19,7 @@ type WishlistContextValue = {
 	addToWishlist: (card: ScryfallCard, entryPatch?: Partial<CardEntry>, count?: number) => void;
 	duplicateEntry: (scryfallId: string, sourceEntry: CardEntry) => void;
 	removeFromWishlist: (rowId: string) => void;
+	importCards: (cards: Array<{ scryfallId: string; entry: CardEntry }>) => void;
 	clearWishlist: () => void;
 	moveToCollection: (rowIds: string[], scryfallId: string, entryPatch: Partial<CardEntry>) => void;
 	moveToWishlist: (rowIds: string[]) => void;
@@ -111,6 +112,12 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 			}
 			store.removeFromWishlist(rowId, userId, triggerSync);
 		},
+		[store, userId, triggerSync]
+	);
+
+	const importCards = useCallback(
+		(cards: Array<{ scryfallId: string; entry: CardEntry }>) =>
+			store.importCards(cards, userId, triggerSync),
 		[store, userId, triggerSync]
 	);
 
@@ -329,6 +336,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		addToWishlist,
 		duplicateEntry,
 		removeFromWishlist,
+		importCards,
 		clearWishlist,
 		moveToCollection,
 		moveToWishlist,
