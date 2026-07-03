@@ -98,10 +98,10 @@ export function Navbar() {
 									<img src={profile.avatarUrl} alt="" className={styles.avatar} />
 								) : (
 									<span className={styles.avatarFallback}>
-										{(profile?.nickname || user.email || '?').charAt(0).toUpperCase()}
+										{(profile?.nickname || 'Wizard').charAt(0).toUpperCase()}
 									</span>
 								)}
-								<span className={styles.userName}>{profile?.nickname || user.email}</span>
+								<span className={styles.userName}>{profile?.nickname || 'Wizard'}</span>
 							</Link>
 							<button className={styles.signOutBtn} onClick={() => void handleSignOut()}>
 								Log out
