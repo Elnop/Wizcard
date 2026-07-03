@@ -10,14 +10,20 @@ interface ProfileMenuProps {
 	onSignOut: () => void;
 	/** Called when the user navigates to the profile page (e.g. to close a drawer). */
 	onNavigate?: () => void;
+	/**
+	 * When true, the menu expands inline (in normal flow, full width) instead
+	 * of as a floating dropdown — suited to the mobile drawer, where an
+	 * absolutely-positioned overlay renders poorly.
+	 */
+	inline?: boolean;
 }
 
 /**
- * Avatar + nickname trigger that toggles a dropdown with Profile / Log out.
- * Never renders the user's email. Used in both the desktop navbar and the
- * mobile drawer.
+ * Avatar + nickname trigger that toggles a menu with Profile / Log out.
+ * Never renders the user's email. Used in both the desktop navbar (floating
+ * dropdown) and the mobile drawer (inline expander).
  */
-export function ProfileMenu({ onSignOut, onNavigate }: ProfileMenuProps) {
+export function ProfileMenu({ onSignOut, onNavigate, inline = false }: ProfileMenuProps) {
 	const { profile } = useProfileContext();
 	const [open, setOpen] = useState(false);
 	const ref = useRef<HTMLDivElement>(null);
@@ -51,7 +57,12 @@ export function ProfileMenu({ onSignOut, onNavigate }: ProfileMenuProps) {
 	}
 
 	return (
-		<div className={styles.profileMenu} ref={ref}>
+		<div
+			className={[styles.profileMenu, inline ? styles.profileMenuInline : '']
+				.filter(Boolean)
+				.join(' ')}
+			ref={ref}
+		>
 			<button
 				type="button"
 				className={styles.profileTrigger}
@@ -66,12 +77,14 @@ export function ProfileMenu({ onSignOut, onNavigate }: ProfileMenuProps) {
 					<span className={styles.avatarFallback}>{displayName.charAt(0).toUpperCase()}</span>
 				)}
 				<span className={styles.userName}>{displayName}</span>
-				<span className={styles.caret} aria-hidden>
-					▾
-				</span>
 			</button>
 			{open && (
-				<div className={styles.profileDropdown} role="menu">
+				<div
+					className={[styles.profileDropdown, inline ? styles.profileDropdownInline : '']
+						.filter(Boolean)
+						.join(' ')}
+					role="menu"
+				>
 					<Link
 						href="/profile"
 						className={styles.dropdownItem}

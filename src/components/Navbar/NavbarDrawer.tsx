@@ -107,7 +107,7 @@ export function NavbarDrawer() {
 				<div className={styles.drawerDivider} />
 
 				{user ? (
-					<ProfileMenu onSignOut={() => void handleSignOut()} onNavigate={closeDrawer} />
+					<ProfileMenu onSignOut={() => void handleSignOut()} onNavigate={closeDrawer} inline />
 				) : (
 					<Link
 						href="/auth/login"
