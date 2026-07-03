@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { enqueue } from '@/lib/supabase/sync-queue';
@@ -21,13 +21,21 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 	const userId = user?.id ?? null;
 
 	const store = useProfileStore();
+	const prevUserIdRef = useRef<string | null | undefined>(undefined);
 
 	useEffect(() => {
 		if (authLoading) return;
 
+		const prevUserId = prevUserIdRef.current;
+		prevUserIdRef.current = userId;
+
 		if (!userId) {
 			store.reset();
 			return;
+		}
+
+		if (prevUserId !== undefined && prevUserId !== null && prevUserId !== userId) {
+			store.reset();
 		}
 
 		void store.hydrateProfile(userId);
