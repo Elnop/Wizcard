@@ -1,0 +1,77 @@
+.dialog {
+	max-width: 480px;
+	padding: 28px 32px;
+}
+
+.title {
+	font-size: var(--text-xl);
+	font-weight: 600;
+	color: var(--foreground);
+	margin: 0 0 8px;
+}
+
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	min-width: 360px;
+}
+
+.label {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-size: var(--text-base);
+	font-weight: 500;
+	color: var(--text-muted);
+}
+
+.input {
+	padding: 10px 12px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	color: var(--foreground);
+	font-size: var(--text-base);
+	outline: none;
+	transition: border-color 0.15s;
+}
+
+.input:focus {
+	border-color: var(--primary);
+}
+
+.textarea {
+	padding: 10px 12px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	color: var(--foreground);
+	font-size: var(--text-base);
+	outline: none;
+	resize: vertical;
+	font-family: inherit;
+	transition: border-color 0.15s;
+}
+
+.textarea:focus {
+	border-color: var(--primary);
+}
+
+.fileInput {
+	font-size: var(--text-sm);
+	color: var(--text-muted);
+}
+
+.error {
+	font-size: var(--text-sm);
+	color: var(--error);
+	margin: 0;
+}
+
+.actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 8px;
+}
