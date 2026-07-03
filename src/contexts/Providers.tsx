@@ -1,6 +1,7 @@
 'use client';
 
 import { AuthProvider } from '@/lib/supabase/contexts/AuthContext';
+import { ProfileProvider } from '@/lib/profile/context/ProfileContext';
 import { CollectionProvider } from '@/lib/collection/context/CollectionContext';
 import { WishlistProvider } from '@/lib/wishlist/context/WishlistContext';
 import { DeckProvider } from '@/lib/deck/context/DeckContext';
@@ -14,19 +15,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
 	return (
 		<AuthProvider>
 			<SyncQueueRunner>
-				<CollectionProvider>
-					<WishlistProvider>
-						<DeckProvider>
-							<ImportProvider>
-								<AddToDeckModalProvider>
-									<AddCardModalProvider>
-										<CardModalProvider>{children}</CardModalProvider>
-									</AddCardModalProvider>
-								</AddToDeckModalProvider>
-							</ImportProvider>
-						</DeckProvider>
-					</WishlistProvider>
-				</CollectionProvider>
+				<ProfileProvider>
+					<CollectionProvider>
+						<WishlistProvider>
+							<DeckProvider>
+								<ImportProvider>
+									<AddToDeckModalProvider>
+										<AddCardModalProvider>
+											<CardModalProvider>{children}</CardModalProvider>
+										</AddCardModalProvider>
+									</AddToDeckModalProvider>
+								</ImportProvider>
+							</DeckProvider>
+						</WishlistProvider>
+					</CollectionProvider>
+				</ProfileProvider>
 			</SyncQueueRunner>
 		</AuthProvider>
 	);
