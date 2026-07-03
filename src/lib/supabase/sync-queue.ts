@@ -1,5 +1,6 @@
 import type { CardEntry } from '@/types/cards';
 import type { DeckMeta, FolderMeta } from '@/types/decks';
+import type { ProfileUpdate } from '@/lib/profile/types';
 
 const QUEUE_KEY = 'wizcard-sync-queue';
 
@@ -147,6 +148,13 @@ export type SyncOp =
 			id: string;
 			type: 'deck-move';
 			payload: { userId: string; deckId: string; folderId: string | null };
+			retries: number;
+			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'profile-update';
+			payload: { userId: string; updates: ProfileUpdate };
 			retries: number;
 			createdAt: string;
 	  };

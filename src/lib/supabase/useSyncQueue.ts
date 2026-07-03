@@ -19,6 +19,7 @@ import {
 	moveDeckToFolder,
 } from '@/lib/deck/db/decks';
 import { insertFolder, updateFolder, deleteFolder } from '@/lib/deck/db/folders';
+import { upsertProfile } from '@/lib/profile/db/profiles';
 import { createClient } from '@/lib/supabase/client';
 import {
 	peek,
@@ -66,6 +67,8 @@ async function executeOp(op: SyncOp): Promise<void> {
 		await deleteFolder(op.payload.userId, op.payload.folderId);
 	} else if (op.type === 'deck-move') {
 		await moveDeckToFolder(op.payload.userId, op.payload.deckId, op.payload.folderId);
+	} else if (op.type === 'profile-update') {
+		await upsertProfile(op.payload.userId, op.payload.updates);
 	} else {
 		await updateEntry(op.payload.userId, op.payload.rowId, op.payload.entry, op.payload.scryfallId);
 	}
