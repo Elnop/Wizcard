@@ -11,6 +11,7 @@ import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { getQueueLength } from '@/lib/supabase/sync-queue';
 import { SyncIndicator } from '@/lib/supabase/components/SyncIndicator/SyncIndicator';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
+import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import styles from './Navbar.module.css';
 
 const NavbarDrawer = dynamic(() => import('./NavbarDrawer').then((m) => m.NavbarDrawer), {
@@ -24,6 +25,7 @@ export function Navbar() {
 	const { entries: wishlistEntries } = useWishlistContext();
 	const { status } = useImportContext();
 	const { triggerSync } = useSyncQueueContext();
+	const { profile } = useProfileContext();
 
 	const totalCollectionCards = entries.length;
 	const totalWishlistCards = wishlistEntries.length;
@@ -90,7 +92,17 @@ export function Navbar() {
 				<div className={styles.authSection}>
 					{user ? (
 						<>
-							<span className={styles.userEmail}>{user.email}</span>
+							<Link href="/profile" className={styles.profileLink}>
+								{profile?.avatarUrl ? (
+									// eslint-disable-next-line @next/next/no-img-element -- external Supabase storage URL, no next/image loader configured for it
+									<img src={profile.avatarUrl} alt="" className={styles.avatar} />
+								) : (
+									<span className={styles.avatarFallback}>
+										{(profile?.nickname || user.email || '?').charAt(0).toUpperCase()}
+									</span>
+								)}
+								<span className={styles.userName}>{profile?.nickname || user.email}</span>
+							</Link>
 							<button className={styles.signOutBtn} onClick={() => void handleSignOut()}>
 								Log out
 							</button>
