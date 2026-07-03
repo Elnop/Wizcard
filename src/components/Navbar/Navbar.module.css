@@ -97,13 +97,31 @@
 	margin-left: 8px;
 }
 
-.profileLink {
+.profileMenu {
+	position: relative;
+	display: inline-block;
+}
+
+.profileTrigger {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	padding: 4px 0;
+	padding: 4px 6px;
+	background: none;
+	border: none;
 	color: var(--foreground);
-	text-decoration: none;
+	cursor: pointer;
+	border-radius: 4px;
+	transition: background 0.15s;
+}
+
+.profileTrigger:hover {
+	background: var(--surface-hover);
+}
+
+.caret {
+	font-size: var(--text-xs);
+	color: var(--text-muted);
 }
 
 .avatar,
@@ -136,26 +154,43 @@
 	white-space: nowrap;
 }
 
-.signOutBtn {
-	font-size: var(--text-xs);
-	font-weight: 600;
-	font-family: var(--font-display);
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-	color: var(--brass);
-	background: none;
-	border: 1px solid var(--glass-border);
-	border-radius: 2px;
-	padding: 5px 12px;
-	cursor: pointer;
-	transition:
-		color 0.25s,
-		border-color 0.25s;
+.profileDropdown {
+	position: absolute;
+	top: calc(100% + 4px);
+	right: 0;
+	z-index: 200;
+	display: flex;
+	flex-direction: column;
+	min-width: 160px;
+	padding: 4px 0;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
-.signOutBtn:hover {
-	color: var(--gold);
-	border-color: var(--gold);
+.dropdownItem {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	padding: 8px 14px;
+	background: transparent;
+	border: none;
+	color: var(--foreground);
+	font-size: var(--text-sm);
+	font-family: var(--font-body);
+	text-align: left;
+	text-decoration: none;
+	cursor: pointer;
+	transition: background 0.12s;
+}
+
+.dropdownItem:hover {
+	background: var(--surface-hover);
+}
+
+.dropdownItemDanger {
+	color: var(--error);
 }
 
 /* ── Hamburger button — hidden on desktop ── */
@@ -267,31 +302,6 @@
 	height: 1px;
 	background: var(--border);
 	margin: 8px 0;
-}
-
-.drawerSignOutBtn {
-	display: block;
-	width: 100%;
-	padding: 10px 12px;
-	font-size: var(--text-xs);
-	font-weight: 600;
-	font-family: var(--font-display);
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-	color: var(--brass);
-	background: none;
-	border: 1px solid var(--glass-border);
-	border-radius: 4px;
-	cursor: pointer;
-	text-align: left;
-	transition:
-		color 0.25s,
-		border-color 0.25s;
-}
-
-.drawerSignOutBtn:hover {
-	color: var(--gold);
-	border-color: var(--gold);
 }
 
 @media (max-width: 768px) {
