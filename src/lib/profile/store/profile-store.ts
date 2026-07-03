@@ -34,7 +34,8 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
 				},
 				isLoading: false,
 			});
-		} catch {
+		} catch (err) {
+			console.error('Failed to hydrate profile', err);
 			set({ isLoading: false });
 		}
 	},
