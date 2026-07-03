@@ -20,18 +20,11 @@ const DEFAULT_SELECTED: Set<DeckZone> = new Set(['commander', 'mainboard', 'side
 type Props = {
 	zoneStats: Record<DeckZone, ZoneStat>;
 	availableZones: DeckZone[];
-	wishlistMatchCount: number;
 	onConfirm: (options: AddDeckToCollectionOptions) => void;
 	onClose: () => void;
 };
 
-export function AddDeckToCollectionModal({
-	zoneStats,
-	availableZones,
-	wishlistMatchCount,
-	onConfirm,
-	onClose,
-}: Props) {
+export function AddDeckToCollectionModal({ zoneStats, availableZones, onConfirm, onClose }: Props) {
 	const [selectedZones, setSelectedZones] = useState<Set<DeckZone>>(
 		() => new Set(availableZones.filter((z) => DEFAULT_SELECTED.has(z)))
 	);
@@ -73,7 +66,6 @@ export function AddDeckToCollectionModal({
 	const hasAnyOwned = ownedInSelectedZones > 0;
 	const [onlyMissing, setOnlyMissing] = useState(hasAnyOwned);
 	const [asProxy, setAsProxy] = useState(false);
-	const [removeWishlist, setRemoveWishlist] = useState(wishlistMatchCount > 0);
 	const [ignoreBasicLands, setIgnoreBasicLands] = useState(false);
 
 	const base = onlyMissing ? unownedInSelectedZones : totalInSelectedZones;
@@ -154,17 +146,6 @@ export function AddDeckToCollectionModal({
 						/>
 						Mark as proxy
 					</label>
-					{wishlistMatchCount > 0 && (
-						<label className={styles.option}>
-							<input
-								type="checkbox"
-								checked={removeWishlist}
-								onChange={(e) => setRemoveWishlist(e.target.checked)}
-							/>
-							Remove from wishlist ({wishlistMatchCount} card
-							{wishlistMatchCount !== 1 ? 's' : ''})
-						</label>
-					)}
 				</div>
 			</div>
 
@@ -179,7 +160,6 @@ export function AddDeckToCollectionModal({
 						onConfirm({
 							onlyMissing: onlyMissing && hasAnyOwned,
 							asProxy,
-							removeWishlist,
 							ignoreBasicLands,
 							zones: Array.from(selectedZones),
 						})

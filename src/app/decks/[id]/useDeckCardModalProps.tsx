@@ -256,16 +256,13 @@ export function useDeckCardModalProps(
 		(rowIds: string[]) => {
 			const card = selectedCards?.[0];
 			if (!card || rowIds.length === 0) return;
-			const oracleScryfallIds = Array.from(
-				oracleIdToAllScryfallIds.get(card.oracle_id ?? card.id) ?? new Set<string>([card.id])
-			);
 			const copies = rowIds
 				.map((id) => selectedCards?.find((c) => c.entry.rowId === id))
 				.filter((c): c is NonNullable<typeof c> => c != null);
-			const req = buildCollectionAddRequest(card.name, copies, oracleScryfallIds, wishlistEntries);
+			const req = buildCollectionAddRequest(card.name, copies);
 			if (req.unownedRowIds.length > 0) setPendingCollectionAdd(req);
 		},
-		[selectedCards, oracleIdToAllScryfallIds, wishlistEntries]
+		[selectedCards]
 	);
 
 	const onSave = useCallback(

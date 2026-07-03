@@ -202,12 +202,7 @@ export function DeckCardOverlay({
 	const isCurrentCover = deckCoverArtUrl != null && deckCoverArtUrl === cardCoverArtUrl;
 
 	const buildAddRequest = (): CollectionAddRequest =>
-		buildCollectionAddRequest(
-			group.representative.name,
-			zoneCopies,
-			oracleScryfallIds,
-			wishlistEntries ?? []
-		);
+		buildCollectionAddRequest(group.representative.name, zoneCopies);
 
 	const items = buildContextMenuItems(
 		zoneCopies,

@@ -151,7 +151,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const { openDeckCardModal } = useCardModalContext();
 
 	const { entries } = useCollectionContext();
-	const { addToWishlist, removeFromWishlist, entries: wishlistEntries } = useWishlistContext();
+	const { addToWishlist, entries: wishlistEntries } = useWishlistContext();
 
 	const deckNameById = useMemo(() => new Map(allDecks.map((d) => [d.id, d.name])), [allDecks]);
 
@@ -433,7 +433,6 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	}, [resolvedCards, collectionScryfallIdToOracleId, deckId, replaceDeckCardWithCollectionCopy]);
 
 	const {
-		wishlistMatchCount,
 		zoneStats,
 		availableZones,
 		execute: executeAddToCollection,
@@ -683,7 +682,6 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				<AddDeckToCollectionModal
 					zoneStats={zoneStats}
 					availableZones={availableZones}
-					wishlistMatchCount={wishlistMatchCount}
 					onConfirm={(options) => {
 						executeAddToCollection(options);
 						setAddToCollectionModalOpen(false);
@@ -763,14 +761,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				<AddCardToCollectionModal
 					cardName={pendingCollectionAdd.cardName}
 					unownedRowIds={pendingCollectionAdd.unownedRowIds}
-					wishlistMatchCount={pendingCollectionAdd.wishlistRowIds.length}
-					onConfirm={({ rowIds, asProxy, removeWishlist }) => {
+					onConfirm={({ rowIds, asProxy }) => {
 						for (const rowId of rowIds) toggleOwned(rowId, asProxy);
-						if (removeWishlist) {
-							for (const rowId of pendingCollectionAdd.wishlistRowIds) {
-								removeFromWishlist(rowId);
-							}
-						}
 						setPendingCollectionAdd(null);
 					}}
 					onClose={() => setPendingCollectionAdd(null)}

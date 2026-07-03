@@ -612,11 +612,21 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		const { deckId: foundDeckId, copy } = found;
 		const isCurrentlyOwned = !!copy.entry.ownerId;
 		const newOwnerId = isCurrentlyOwned ? null : userId;
-		const updates: { owner_id: string | null; proxy?: boolean | null } = { owner_id: newOwnerId };
+		const claiming = newOwnerId != null;
+		const updates: {
+			owner_id: string | null;
+			proxy?: boolean | null;
+			wishlist?: boolean;
+		} = { owner_id: newOwnerId };
 		if (proxy !== undefined) updates.proxy = proxy;
+		// Invariant: a single entity (same rowId) is never in both wishlist and
+		// collection. Claiming ownership clears the wishlist flag in place. Un-owning
+		// must NOT re-wishlist, so only touch wishlist on the claim branch.
+		if (claiming) updates.wishlist = false;
 		const newEntry = {
 			...copy.entry,
 			ownerId: newOwnerId ?? undefined,
+			...(claiming ? { wishlist: undefined } : {}),
 			...(proxy !== undefined ? { proxy } : {}),
 		};
 		set((state) => ({
@@ -635,6 +645,14 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			useCollectionStore.setState({
 				entries: { ...colEntries, [rowId]: { scryfallId: copy.scryfallId, entry: newEntry } },
 			});
+			// Enforce the wishlist/collection invariant in memory too: if this same
+			// rowId was wishlisted, drop it from the wishlist view.
+			const wishEntries = useWishlistStore.getState().entries;
+			if (wishEntries[rowId]) {
+				const rest = { ...wishEntries };
+				delete rest[rowId];
+				useWishlistStore.setState({ entries: rest });
+			}
 		} else if (colEntries[rowId]) {
 			const rest = { ...colEntries };
 			delete rest[rowId];

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
-import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { AddCardToCollectionModal } from './components/AddCardToCollectionModal/AddCardToCollectionModal';
 import { RemoveDeckCardModal } from './components/RemoveDeckCardModal/RemoveDeckCardModal';
 import { useDeckCardModalProps } from './useDeckCardModalProps';
@@ -31,7 +30,6 @@ type Props = {
  */
 export function DeckCardModalHost({ deckId, oracleKey, clickedRowId, onClose, onReopen }: Props) {
 	const { toggleOwned, removeCardFromDeck } = useDeckContext();
-	const { removeFromWishlist } = useWishlistContext();
 	const [cardModalDismissed, setCardModalDismissed] = useState(false);
 
 	const { props, pendingCollectionAdd, setPendingCollectionAdd, pendingRemove, setPendingRemove } =
@@ -75,12 +73,8 @@ export function DeckCardModalHost({ deckId, oracleKey, clickedRowId, onClose, on
 				<AddCardToCollectionModal
 					cardName={pendingCollectionAdd.cardName}
 					unownedRowIds={pendingCollectionAdd.unownedRowIds}
-					wishlistMatchCount={pendingCollectionAdd.wishlistRowIds.length}
-					onConfirm={({ rowIds, asProxy, removeWishlist }) => {
+					onConfirm={({ rowIds, asProxy }) => {
 						for (const rowId of rowIds) toggleOwned(rowId, asProxy);
-						if (removeWishlist) {
-							for (const rowId of pendingCollectionAdd.wishlistRowIds) removeFromWishlist(rowId);
-						}
 						setPendingCollectionAdd(null);
 					}}
 					onClose={() => setPendingCollectionAdd(null)}
