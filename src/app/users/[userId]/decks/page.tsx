@@ -12,14 +12,16 @@ import { useDeckSummaries } from '@/app/decks/useDeckSummaries';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import DecksPageClient from '@/app/decks/DecksPageClient';
 import { usePublicDecks } from './usePublicDecks';
+import { useProfileByNickname } from '../useProfileByNickname';
+import { UserNotFound } from '../components/UserNotFound';
 import styles from '@/app/decks/page.module.css';
 
-function PublicDecksView({ userId }: { userId: string }) {
+function PublicDecksView({ ownerId, handle }: { ownerId: string; handle: string }) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const symbolMap = useScryfallSymbols();
 
-	const { decks, folders, isLoading } = usePublicDecks(userId);
+	const { decks, folders, isLoading } = usePublicDecks(ownerId);
 	const summaryMap = useDeckSummaries(decks);
 
 	const folderParam = searchParams.get('folder') as string | null;
@@ -27,9 +29,9 @@ function PublicDecksView({ userId }: { userId: string }) {
 
 	const handleFolderSelect = (id: string | null | 'none') => {
 		if (id === null) {
-			router.replace(`/users/${userId}/decks`);
+			router.replace(`/users/${handle}/decks`);
 		} else {
-			router.replace(`/users/${userId}/decks?folder=${id}`);
+			router.replace(`/users/${handle}/decks?folder=${id}`);
 		}
 	};
 
@@ -147,10 +149,11 @@ function PublicDecksView({ userId }: { userId: string }) {
  */
 export default function UserDecksPage() {
 	const params = useParams();
-	const userId = params.userId as string;
-	const { user, isLoading } = useAuth();
+	const nickname = params.userId as string;
+	const { user, isLoading: authLoading } = useAuth();
+	const { profile, status } = useProfileByNickname(nickname);
 
-	if (isLoading) {
+	if (authLoading || status === 'loading') {
 		return (
 			<div className={styles.page}>
 				<div className={styles.loading}>
@@ -160,6 +163,10 @@ export default function UserDecksPage() {
 		);
 	}
 
-	const isOwner = !!user && user.id === userId;
-	return isOwner ? <DecksPageClient /> : <PublicDecksView userId={userId} />;
+	if (status === 'not-found' || !profile) {
+		return <UserNotFound />;
+	}
+
+	const isOwner = !!user && user.id === profile.id;
+	return isOwner ? <DecksPageClient /> : <PublicDecksView ownerId={profile.id} handle={nickname} />;
 }

@@ -33,6 +33,22 @@ export async function fetchProfile(userId: string): Promise<Profile | null> {
 }
 
 /**
+ * Resolve a profile by its (case-insensitive) nickname — the identifier used in
+ * `/users/<nickname>/...` URLs. Returns null if no user has that nickname.
+ */
+export async function fetchProfileByNickname(nickname: string): Promise<Profile | null> {
+	const supabase = createClient();
+	const escaped = nickname.replace(/([%_\\])/g, '\\$1');
+	const { data, error } = await supabase
+		.from('profiles')
+		.select('id, nickname, description, avatar_url, created_at, updated_at')
+		.ilike('nickname', escaped)
+		.maybeSingle();
+	if (error) throw error;
+	return data ? rowToProfile(data as ProfileRow) : null;
+}
+
+/**
  * Case-insensitive check whether a nickname is already used by another user.
  * Excludes `excludeUserId` (the current user) so re-saving your own unchanged
  * nickname doesn't report a conflict. Relies on the public SELECT policy.

@@ -25,6 +25,9 @@ export function ProfileView({
 	// placeholder and then swapping in the real nickname.
 	const loaded = profile !== null && !isLoading;
 	const displayName = profile?.nickname || 'Wizard';
+	// URLs are keyed by nickname; fall back to the id only if a nickname is
+	// somehow missing (every user gets a generated one).
+	const urlHandle = profile?.nickname || userId;
 
 	let avatarNode: React.ReactNode;
 	if (!loaded) {
@@ -61,10 +64,10 @@ export function ProfileView({
 			</div>
 			{profile?.description && <p className={styles.description}>{profile.description}</p>}
 			<div className={styles.links}>
-				<Link href={`/users/${userId}/decks`} className={styles.link}>
+				<Link href={`/users/${urlHandle}/decks`} className={styles.link}>
 					Decks
 				</Link>
-				<Link href={`/users/${userId}/collection`} className={styles.link}>
+				<Link href={`/users/${urlHandle}/collection`} className={styles.link}>
 					Collection
 				</Link>
 			</div>

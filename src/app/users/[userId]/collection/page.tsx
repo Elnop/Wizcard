@@ -9,9 +9,11 @@ import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { Spinner } from '@/components/Spinner/Spinner';
 import CollectionPage from '@/app/collection/page';
 import { usePublicCollection } from './usePublicCollection';
+import { useProfileByNickname } from '../useProfileByNickname';
+import { UserNotFound } from '../components/UserNotFound';
 
-function PublicCollectionView({ userId }: { userId: string }) {
-	const { entries, isLoaded, isFullyLoaded } = usePublicCollection(userId);
+function PublicCollectionView({ ownerId }: { ownerId: string }) {
+	const { entries, isLoaded, isFullyLoaded } = usePublicCollection(ownerId);
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
 	const { openCardModal } = useCardModalContext();
 
@@ -56,10 +58,11 @@ function PublicCollectionView({ userId }: { userId: string }) {
  */
 export default function UserCollectionPage() {
 	const params = useParams();
-	const userId = params.userId as string;
-	const { user, isLoading } = useAuth();
+	const nickname = params.userId as string;
+	const { user, isLoading: authLoading } = useAuth();
+	const { profile, status } = useProfileByNickname(nickname);
 
-	if (isLoading) {
+	if (authLoading || status === 'loading') {
 		return (
 			<div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
 				<Spinner />
@@ -67,6 +70,10 @@ export default function UserCollectionPage() {
 		);
 	}
 
-	const isOwner = !!user && user.id === userId;
-	return isOwner ? <CollectionPage /> : <PublicCollectionView userId={userId} />;
+	if (status === 'not-found' || !profile) {
+		return <UserNotFound />;
+	}
+
+	const isOwner = !!user && user.id === profile.id;
+	return isOwner ? <CollectionPage /> : <PublicCollectionView ownerId={profile.id} />;
 }
