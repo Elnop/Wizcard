@@ -19,8 +19,10 @@
 	z-index: 20;
 	/* Match the container's horizontal padding so it lines up with the content. */
 	padding: 40px 24px 12px;
-	background: var(--background);
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+	/* Match the navbar's glass background. */
+	background: var(--glass-bg);
+	border-bottom: 1px solid var(--glass-border);
+	backdrop-filter: blur(var(--glass-blur));
 	/* Slide animation with no start delay (duration, easing, 0s delay). */
 	transition: transform 0.18s ease-out 0s;
 }
