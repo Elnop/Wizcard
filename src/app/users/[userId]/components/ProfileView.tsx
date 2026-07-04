@@ -12,6 +12,7 @@ import { DeckCard } from '@/app/decks/components/DeckCard/DeckCard';
 import { useProfileSummary, PREVIEW_LIMIT } from '../useProfileSummary';
 import { PublicCollectionView } from '../collection/page';
 import { PublicWishlistView } from '../wishlist/page';
+import { useHideOnScrollDown } from './useHideOnScrollDown';
 import styles from './ProfileView.module.css';
 
 type Tab = 'decks' | 'collection' | 'wishlist';
@@ -36,6 +37,7 @@ export function ProfileView({
 	const symbolMap = useScryfallSymbols();
 	const summary = useProfileSummary(userId);
 	const [tab, setTab] = useState<Tab>('decks');
+	const headerVisible = useHideOnScrollDown();
 
 	// Show a skeleton until the profile loads, rather than flashing the "Wizard"
 	// placeholder and then swapping in the real nickname.
@@ -69,39 +71,41 @@ export function ProfileView({
 
 	return (
 		<div className={styles.container}>
-			<div className={styles.header}>
-				{avatarNode}
-				<div className={styles.headerText}>
-					{!loaded ? (
-						<span className={styles.skeletonName} aria-hidden />
-					) : (
-						<h1 className={styles.name}>{displayName}</h1>
-					)}
-					{onEdit && (
-						<Button variant="secondary" size="sm" onClick={onEdit}>
-							Edit profile
-						</Button>
-					)}
+			<div className={`${styles.stickyBar} ${headerVisible ? '' : styles.stickyBarHidden}`}>
+				<div className={styles.header}>
+					{avatarNode}
+					<div className={styles.headerText}>
+						{!loaded ? (
+							<span className={styles.skeletonName} aria-hidden />
+						) : (
+							<h1 className={styles.name}>{displayName}</h1>
+						)}
+						{onEdit && (
+							<Button variant="secondary" size="sm" onClick={onEdit}>
+								Edit profile
+							</Button>
+						)}
+					</div>
 				</div>
-			</div>
 
-			{profile?.description && <p className={styles.description}>{profile.description}</p>}
+				{profile?.description && <p className={styles.description}>{profile.description}</p>}
 
-			{/* Tab bar with counts */}
-			<div className={styles.tabs} role="tablist">
-				{stats.map((s) => (
-					<button
-						key={s.key}
-						type="button"
-						role="tab"
-						aria-selected={tab === s.key}
-						className={`${styles.tab} ${tab === s.key ? styles.tabActive : ''}`}
-						onClick={() => setTab(s.key)}
-					>
-						{s.label}
-						<span className={styles.tabCount}>{summary.isLoading ? '—' : s.count}</span>
-					</button>
-				))}
+				{/* Tab bar with counts */}
+				<div className={styles.tabs} role="tablist">
+					{stats.map((s) => (
+						<button
+							key={s.key}
+							type="button"
+							role="tab"
+							aria-selected={tab === s.key}
+							className={`${styles.tab} ${tab === s.key ? styles.tabActive : ''}`}
+							onClick={() => setTab(s.key)}
+						>
+							{s.label}
+							<span className={styles.tabCount}>{summary.isLoading ? '—' : s.count}</span>
+						</button>
+					))}
+				</div>
 			</div>
 
 			<div className={styles.tabPanel}>

@@ -5,6 +5,24 @@
 	padding: 40px 24px;
 }
 
+/*
+ * Header + tabs stick below the fixed navbar. They hide when scrolling down and
+ * slide back in when scrolling up (visibility driven by useHideOnScrollDown).
+ */
+.stickyBar {
+	position: sticky;
+	top: var(--navbar-height);
+	z-index: 20;
+	background: var(--background);
+	padding-top: 12px;
+	transition: transform 0.25s ease;
+}
+
+.stickyBarHidden {
+	/* Slide up out of view (bar height + navbar offset covers it fully). */
+	transform: translateY(calc(-100% - var(--navbar-height)));
+}
+
 .header {
 	display: flex;
 	align-items: center;
