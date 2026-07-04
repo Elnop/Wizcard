@@ -18,7 +18,7 @@
 	right: 0;
 	z-index: 20;
 	/* Match the container's horizontal padding so it lines up with the content. */
-	padding: 12px 24px 0;
+	padding: 24px 24px 0;
 	/* Navbar-style glass, but darker (based on the page background). */
 	background: rgba(11, 12, 16, 0.82);
 	border-bottom: 1px solid var(--glass-border);
@@ -38,7 +38,7 @@
 
 @media (max-width: 480px) {
 	.overlayBar {
-		padding: 12px 16px 0;
+		padding: 24px 16px 0;
 	}
 }
 
