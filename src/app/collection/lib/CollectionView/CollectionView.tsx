@@ -212,7 +212,7 @@ export function CollectionView({
 
 	return (
 		<div className={styles.page}>
-			<div className={styles.layout}>
+			<div className={`${styles.layout} ${isModal ? styles.layoutModal : ''}`}>
 				{!isModal && (
 					<CollectionFiltersAside
 						filters={filters}

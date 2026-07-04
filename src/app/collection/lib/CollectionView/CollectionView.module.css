@@ -9,6 +9,11 @@
 	height: 100%;
 }
 
+/* Modal filter layout has no sidebar — the card list spans full width. */
+.layoutModal {
+	padding-left: 0;
+}
+
 .main {
 	min-width: 0;
 	padding: 32px;
