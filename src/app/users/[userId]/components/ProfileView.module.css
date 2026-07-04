@@ -44,6 +44,32 @@
 	gap: 10px;
 }
 
+/* Loading skeletons — shown until the profile loads, so the real nickname
+   never has to replace a "Wizard" placeholder. */
+.skeletonAvatar {
+	background: var(--surface);
+	animation: profileViewSkeletonPulse 1.2s ease-in-out infinite;
+}
+
+.skeletonName {
+	display: block;
+	width: 180px;
+	height: 1.4em;
+	border-radius: 6px;
+	background: var(--surface);
+	animation: profileViewSkeletonPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes profileViewSkeletonPulse {
+	0%,
+	100% {
+		opacity: 0.5;
+	}
+	50% {
+		opacity: 0.9;
+	}
+}
+
 .name {
 	font-size: var(--text-xl);
 	font-weight: 700;

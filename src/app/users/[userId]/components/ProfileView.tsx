@@ -13,24 +13,45 @@ import styles from './ProfileView.module.css';
 export function ProfileView({
 	userId,
 	profile,
+	isLoading = false,
 	onEdit,
 }: {
 	userId: string;
 	profile: Profile | null;
+	isLoading?: boolean;
 	onEdit?: () => void;
 }) {
+	// Show a skeleton until the profile loads, rather than flashing the "Wizard"
+	// placeholder and then swapping in the real nickname.
+	const loaded = profile !== null && !isLoading;
 	const displayName = profile?.nickname || 'Wizard';
+
+	let avatarNode: React.ReactNode;
+	if (!loaded) {
+		avatarNode = (
+			<span className={`${styles.avatarFallback} ${styles.skeletonAvatar}`} aria-hidden />
+		);
+	} else if (profile?.avatarUrl) {
+		avatarNode = (
+			// eslint-disable-next-line @next/next/no-img-element -- external Supabase storage URL
+			<img src={profile.avatarUrl} alt="" className={styles.avatar} />
+		);
+	} else {
+		avatarNode = (
+			<span className={styles.avatarFallback}>{displayName.charAt(0).toUpperCase()}</span>
+		);
+	}
+
 	return (
 		<div className={styles.container}>
 			<div className={styles.header}>
-				{profile?.avatarUrl ? (
-					// eslint-disable-next-line @next/next/no-img-element -- external Supabase storage URL
-					<img src={profile.avatarUrl} alt="" className={styles.avatar} />
-				) : (
-					<span className={styles.avatarFallback}>{displayName.charAt(0).toUpperCase()}</span>
-				)}
+				{avatarNode}
 				<div className={styles.headerText}>
-					<h1 className={styles.name}>{displayName}</h1>
+					{!loaded ? (
+						<span className={styles.skeletonName} aria-hidden />
+					) : (
+						<h1 className={styles.name}>{displayName}</h1>
+					)}
 					{onEdit && (
 						<Button variant="secondary" size="sm" onClick={onEdit}>
 							Edit profile

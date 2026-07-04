@@ -28,6 +28,9 @@ export function ProfileMenu({ onSignOut, onNavigate, inline = false }: ProfileMe
 	const [open, setOpen] = useState(false);
 	const ref = useRef<HTMLDivElement>(null);
 
+	// Until the profile has loaded, show a skeleton rather than flashing the
+	// "Wizard" placeholder and then swapping it for the real nickname.
+	const loaded = profile !== null;
 	const displayName = profile?.nickname || 'Wizard';
 
 	useEffect(() => {
@@ -69,14 +72,24 @@ export function ProfileMenu({ onSignOut, onNavigate, inline = false }: ProfileMe
 				onClick={() => setOpen((v) => !v)}
 				aria-haspopup="menu"
 				aria-expanded={open}
+				disabled={!loaded}
 			>
-				{profile?.avatarUrl ? (
-					// eslint-disable-next-line @next/next/no-img-element -- external Supabase storage URL, no next/image loader configured for it
-					<img src={profile.avatarUrl} alt="" className={styles.avatar} />
+				{!loaded ? (
+					<>
+						<span className={`${styles.avatarFallback} ${styles.skeleton}`} aria-hidden />
+						<span className={`${styles.userName} ${styles.skeletonName}`} aria-hidden />
+					</>
 				) : (
-					<span className={styles.avatarFallback}>{displayName.charAt(0).toUpperCase()}</span>
+					<>
+						{profile?.avatarUrl ? (
+							// eslint-disable-next-line @next/next/no-img-element -- external Supabase storage URL, no next/image loader configured for it
+							<img src={profile.avatarUrl} alt="" className={styles.avatar} />
+						) : (
+							<span className={styles.avatarFallback}>{displayName.charAt(0).toUpperCase()}</span>
+						)}
+						<span className={styles.userName}>{displayName}</span>
+					</>
 				)}
-				<span className={styles.userName}>{displayName}</span>
 			</button>
 			{open && (
 				<div

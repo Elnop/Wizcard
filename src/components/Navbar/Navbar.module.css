@@ -159,6 +159,34 @@
 	white-space: nowrap;
 }
 
+/* Loading skeleton shown until the profile has hydrated (avoids a "Wizard"
+   placeholder flash before the real nickname arrives). */
+.skeleton,
+.skeletonName {
+	background: var(--surface-hover);
+	border-radius: 4px;
+	animation: profileSkeletonPulse 1.2s ease-in-out infinite;
+}
+
+.skeleton {
+	border-radius: 50%;
+}
+
+.skeletonName {
+	width: 84px;
+	height: 0.8em;
+}
+
+@keyframes profileSkeletonPulse {
+	0%,
+	100% {
+		opacity: 0.5;
+	}
+	50% {
+		opacity: 0.9;
+	}
+}
+
 .profileDropdown {
 	position: absolute;
 	top: calc(100% + 4px);

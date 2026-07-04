@@ -24,12 +24,14 @@ export default function ProfilePage() {
 	const ownerCtx = useProfileContext();
 	const visitor = useProfile(userId);
 	const profile = isOwner ? ownerCtx.profile : visitor.profile;
+	const isLoading = isOwner ? ownerCtx.isLoading : visitor.isLoading;
 
 	return (
 		<>
 			<ProfileView
 				userId={userId}
 				profile={profile}
+				isLoading={isLoading}
 				onEdit={isOwner ? () => setEditing(true) : undefined}
 			/>
 			{editing && <ProfileEditModal onClose={() => setEditing(false)} />}
