@@ -70,9 +70,11 @@ export function ProfileView({
 		{ key: 'wishlist', label: 'Wishlist', count: summary.wishlistCount },
 	];
 
-	const headerContent = (
+	// `compact` = the sticky overlay: smaller avatar, no bio, no Edit button, so
+	// the pinned bar stays thin.
+	const renderHeader = (compact: boolean) => (
 		<>
-			<div className={styles.header}>
+			<div className={`${styles.header} ${compact ? styles.headerCompact : ''}`}>
 				{avatarNode}
 				<div className={styles.headerText}>
 					{!loaded ? (
@@ -80,7 +82,7 @@ export function ProfileView({
 					) : (
 						<h1 className={styles.name}>{displayName}</h1>
 					)}
-					{onEdit && (
+					{!compact && onEdit && (
 						<Button variant="secondary" size="sm" onClick={onEdit}>
 							Edit profile
 						</Button>
@@ -88,7 +90,9 @@ export function ProfileView({
 				</div>
 			</div>
 
-			{profile?.description && <p className={styles.description}>{profile.description}</p>}
+			{!compact && profile?.description && (
+				<p className={styles.description}>{profile.description}</p>
+			)}
 
 			{/* Tab bar with counts */}
 			<div className={styles.tabs} role="tablist">
@@ -116,11 +120,11 @@ export function ProfileView({
 	return (
 		<div className={styles.container}>
 			{/* Normal in-flow header at the top — never animates, scrolls away. */}
-			<div ref={barRef}>{headerContent}</div>
+			<div ref={barRef}>{renderHeader(false)}</div>
 
 			{/* Second overlay header that engages only once scrolled past the first,
-			    sliding in/out on scroll direction. */}
-			{pinned && <div className={overlayClass}>{headerContent}</div>}
+			    sliding in/out on scroll direction. Compact = thin. */}
+			{pinned && <div className={overlayClass}>{renderHeader(true)}</div>}
 
 			<div className={styles.tabPanel}>
 				{tab === 'decks' && (

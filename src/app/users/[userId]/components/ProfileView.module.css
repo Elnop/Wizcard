@@ -18,7 +18,7 @@
 	right: 0;
 	z-index: 20;
 	/* Match the container's horizontal padding so it lines up with the content. */
-	padding: 40px 24px 12px;
+	padding: 16px 24px 12px;
 	/* Navbar-style glass, but darker (based on the page background). */
 	background: rgba(11, 12, 16, 0.82);
 	border-bottom: 1px solid var(--glass-border);
@@ -38,7 +38,7 @@
 
 @media (max-width: 480px) {
 	.overlayBar {
-		padding: 40px 16px 12px;
+		padding: 16px 16px 12px;
 	}
 }
 
@@ -47,6 +47,23 @@
 	align-items: center;
 	gap: 20px;
 	margin-bottom: 20px;
+}
+
+/* Compact header for the sticky overlay: small avatar, tight spacing. */
+.headerCompact {
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.headerCompact .avatar,
+.headerCompact .avatarFallback {
+	width: 36px;
+	height: 36px;
+	font-size: var(--text-base);
+}
+
+.headerCompact .name {
+	font-size: var(--text-base);
 }
 
 .avatar {
