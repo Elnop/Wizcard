@@ -6,6 +6,7 @@ import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 import { useCollectionFiltering } from './useCollectionFiltering';
 import { PAGE_SIZE } from '@/lib/collection/constants';
 import { CollectionFiltersAside } from './CollectionFiltersAside/CollectionFiltersAside';
+import { CollectionFiltersBar } from './CollectionFiltersBar/CollectionFiltersBar';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
@@ -38,6 +39,12 @@ type Props = {
 	buildCardMenuItems?: (stack: CardStack, close: () => void) => ContextMenuAction[] | null;
 	/** Show a "in a deck" badge on cards whose copies are assigned to a deck (owner view only). */
 	showDeckBadges?: boolean;
+	/**
+	 * Filter presentation: `'aside'` (default) renders the sidebar; `'modal'`
+	 * renders a search bar + filter button that opens the FilterModal, suited to
+	 * narrow embeds like the profile tabs.
+	 */
+	filterLayout?: 'aside' | 'modal';
 	/** Modal(s) rendered as a sibling of the layout (owner edit / read-only view). */
 	children?: ReactNode;
 };
@@ -62,6 +69,7 @@ export function CollectionView({
 	onCardClick,
 	buildCardMenuItems,
 	showDeckBadges = false,
+	filterLayout = 'aside',
 	children,
 }: Props) {
 	// The collection loads in two stages: entries arrive page by page from
@@ -200,16 +208,20 @@ export function CollectionView({
 		);
 	}
 
+	const isModal = filterLayout === 'modal';
+
 	return (
 		<div className={styles.page}>
 			<div className={styles.layout}>
-				<CollectionFiltersAside
-					filters={filters}
-					onChange={setFilters}
-					sets={sets}
-					setsLoading={setsLoading}
-					activeFilterCount={activeFilterCount}
-				/>
+				{!isModal && (
+					<CollectionFiltersAside
+						filters={filters}
+						onChange={setFilters}
+						sets={sets}
+						setsLoading={setsLoading}
+						activeFilterCount={activeFilterCount}
+					/>
+				)}
 
 				<main className={styles.main}>
 					<div className={styles.titleSection}>
@@ -225,6 +237,16 @@ export function CollectionView({
 						</div>
 						{actions && <div className={styles.actions}>{actions}</div>}
 					</div>
+
+					{isModal && (
+						<CollectionFiltersBar
+							filters={filters}
+							onChange={setFilters}
+							sets={sets}
+							setsLoading={setsLoading}
+							activeFilterCount={activeFilterCount}
+						/>
+					)}
 
 					{body}
 				</main>

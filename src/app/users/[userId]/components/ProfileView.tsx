@@ -117,8 +117,8 @@ export function ProfileView({
 				{/* Collection / wishlist tabs render the full browsing view (search +
 				    filters + grid) lazily — only mounted when their tab is active, so
 				    opening the profile doesn't fetch a whole collection up front. */}
-				{tab === 'collection' && <PublicCollectionView ownerId={userId} />}
-				{tab === 'wishlist' && <PublicWishlistView ownerId={userId} />}
+				{tab === 'collection' && <PublicCollectionView ownerId={userId} filterLayout="modal" />}
+				{tab === 'wishlist' && <PublicWishlistView ownerId={userId} filterLayout="modal" />}
 			</div>
 		</div>
 	);

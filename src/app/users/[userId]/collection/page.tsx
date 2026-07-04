@@ -12,7 +12,13 @@ import { usePublicCollection } from './usePublicCollection';
 import { useProfileByNickname } from '../useProfileByNickname';
 import { UserNotFound } from '../components/UserNotFound';
 
-export function PublicCollectionView({ ownerId }: { ownerId: string }) {
+export function PublicCollectionView({
+	ownerId,
+	filterLayout,
+}: {
+	ownerId: string;
+	filterLayout?: 'aside' | 'modal';
+}) {
 	const { entries, isLoaded, isFullyLoaded } = usePublicCollection(ownerId);
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
 	const { openCardModal } = useCardModalContext();
@@ -45,6 +51,7 @@ export function PublicCollectionView({ ownerId }: { ownerId: string }) {
 			title="Collection"
 			actions={actions || undefined}
 			emptyState={emptyState}
+			filterLayout={filterLayout}
 			onCardClick={(stack) => openCardModal(stack.cards, { readOnly: true })}
 		/>
 	);

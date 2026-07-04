@@ -12,7 +12,13 @@ import { usePublicWishlist } from './usePublicWishlist';
 import { useProfileByNickname } from '../useProfileByNickname';
 import { UserNotFound } from '../components/UserNotFound';
 
-export function PublicWishlistView({ ownerId }: { ownerId: string }) {
+export function PublicWishlistView({
+	ownerId,
+	filterLayout,
+}: {
+	ownerId: string;
+	filterLayout?: 'aside' | 'modal';
+}) {
 	const { entries, isLoaded, isFullyLoaded } = usePublicWishlist(ownerId);
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
 	const { openCardModal } = useCardModalContext();
@@ -45,6 +51,7 @@ export function PublicWishlistView({ ownerId }: { ownerId: string }) {
 			title="Wishlist"
 			actions={actions || undefined}
 			emptyState={emptyState}
+			filterLayout={filterLayout}
 			onCardClick={(stack) => openCardModal(stack.cards, { readOnly: true })}
 		/>
 	);
