@@ -23,17 +23,21 @@
 	background: rgba(11, 12, 16, 0.82);
 	border-bottom: 1px solid var(--glass-border);
 	backdrop-filter: blur(var(--glass-blur));
-	/* Slide animation with no start delay (duration, easing, 0s delay). */
-	transition: transform 0.18s ease-out 0s;
+	/* Slide + fade together, no start delay (duration, easing, 0s delay). */
+	transition:
+		transform 0.18s ease-out 0s,
+		opacity 0.18s ease-out 0s;
 }
 
 .overlayVisible {
 	transform: translateY(0);
+	opacity: 1;
 }
 
 .overlayHidden {
 	/* Slide fully up out of view (its own height + the navbar offset above it). */
 	transform: translateY(calc(-100% - var(--navbar-height)));
+	opacity: 0;
 }
 
 @media (max-width: 480px) {
