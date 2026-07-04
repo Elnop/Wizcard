@@ -62,7 +62,7 @@ export function ProfileView({
 
 	const stats: Array<{ key: Tab; label: string; count: number }> = [
 		{ key: 'decks', label: 'Decks', count: summary.deckCount },
-		{ key: 'collection', label: 'Cards', count: summary.collectionCount },
+		{ key: 'collection', label: 'Collection', count: summary.collectionCount },
 		{ key: 'wishlist', label: 'Wishlist', count: summary.wishlistCount },
 	];
 
@@ -86,22 +86,7 @@ export function ProfileView({
 
 			{profile?.description && <p className={styles.description}>{profile.description}</p>}
 
-			{/* Stats row — each stat also selects its tab. */}
-			<div className={styles.stats}>
-				{stats.map((s) => (
-					<button
-						key={s.key}
-						type="button"
-						className={`${styles.stat} ${tab === s.key ? styles.statActive : ''}`}
-						onClick={() => setTab(s.key)}
-					>
-						<span className={styles.statCount}>{summary.isLoading ? '—' : s.count}</span>
-						<span className={styles.statLabel}>{s.label}</span>
-					</button>
-				))}
-			</div>
-
-			{/* Tab bar */}
+			{/* Tab bar with counts */}
 			<div className={styles.tabs} role="tablist">
 				{stats.map((s) => (
 					<button
@@ -113,6 +98,7 @@ export function ProfileView({
 						onClick={() => setTab(s.key)}
 					>
 						{s.label}
+						<span className={styles.tabCount}>{summary.isLoading ? '—' : s.count}</span>
 					</button>
 				))}
 			</div>
