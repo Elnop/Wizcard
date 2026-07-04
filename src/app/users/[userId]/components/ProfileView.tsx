@@ -38,7 +38,7 @@ export function ProfileView({
 	const summary = useProfileSummary(userId);
 	const [tab, setTab] = useState<Tab>('decks');
 	const barRef = useRef<HTMLDivElement>(null);
-	const { pinned, visible, height } = useStickyHeader(barRef);
+	const { pinned, visible } = useStickyHeader(barRef);
 
 	// Show a skeleton until the profile loads, rather than flashing the "Wizard"
 	// placeholder and then swapping in the real nickname.
@@ -70,55 +70,57 @@ export function ProfileView({
 		{ key: 'wishlist', label: 'Wishlist', count: summary.wishlistCount },
 	];
 
-	const barClass = [
-		styles.stickyBar,
-		pinned && styles.stickyBarPinned,
-		pinned && !visible && styles.stickyBarHidden,
-	]
+	const headerContent = (
+		<>
+			<div className={styles.header}>
+				{avatarNode}
+				<div className={styles.headerText}>
+					{!loaded ? (
+						<span className={styles.skeletonName} aria-hidden />
+					) : (
+						<h1 className={styles.name}>{displayName}</h1>
+					)}
+					{onEdit && (
+						<Button variant="secondary" size="sm" onClick={onEdit}>
+							Edit profile
+						</Button>
+					)}
+				</div>
+			</div>
+
+			{profile?.description && <p className={styles.description}>{profile.description}</p>}
+
+			{/* Tab bar with counts */}
+			<div className={styles.tabs} role="tablist">
+				{stats.map((s) => (
+					<button
+						key={s.key}
+						type="button"
+						role="tab"
+						aria-selected={tab === s.key}
+						className={`${styles.tab} ${tab === s.key ? styles.tabActive : ''}`}
+						onClick={() => setTab(s.key)}
+					>
+						{s.label}
+						<span className={styles.tabCount}>{summary.isLoading ? '—' : s.count}</span>
+					</button>
+				))}
+			</div>
+		</>
+	);
+
+	const overlayClass = [styles.overlayBar, visible ? styles.overlayVisible : styles.overlayHidden]
 		.filter(Boolean)
 		.join(' ');
 
 	return (
 		<div className={styles.container}>
-			<div ref={barRef} className={barClass}>
-				<div className={styles.header}>
-					{avatarNode}
-					<div className={styles.headerText}>
-						{!loaded ? (
-							<span className={styles.skeletonName} aria-hidden />
-						) : (
-							<h1 className={styles.name}>{displayName}</h1>
-						)}
-						{onEdit && (
-							<Button variant="secondary" size="sm" onClick={onEdit}>
-								Edit profile
-							</Button>
-						)}
-					</div>
-				</div>
+			{/* Normal in-flow header at the top — never animates, scrolls away. */}
+			<div ref={barRef}>{headerContent}</div>
 
-				{profile?.description && <p className={styles.description}>{profile.description}</p>}
-
-				{/* Tab bar with counts */}
-				<div className={styles.tabs} role="tablist">
-					{stats.map((s) => (
-						<button
-							key={s.key}
-							type="button"
-							role="tab"
-							aria-selected={tab === s.key}
-							className={`${styles.tab} ${tab === s.key ? styles.tabActive : ''}`}
-							onClick={() => setTab(s.key)}
-						>
-							{s.label}
-							<span className={styles.tabCount}>{summary.isLoading ? '—' : s.count}</span>
-						</button>
-					))}
-				</div>
-			</div>
-
-			{/* Spacer keeps content in place while the bar is pinned (out of flow). */}
-			{pinned && <div style={{ height }} aria-hidden />}
+			{/* Second overlay header that engages only once scrolled past the first,
+			    sliding in/out on scroll direction. */}
+			{pinned && <div className={overlayClass}>{headerContent}</div>}
 
 			<div className={styles.tabPanel}>
 				{tab === 'decks' && (

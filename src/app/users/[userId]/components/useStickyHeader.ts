@@ -3,28 +3,26 @@
 import { useEffect, useState, type RefObject } from 'react';
 
 export type StickyHeaderState = {
-	/** Header should be pinned (fixed) rather than in normal flow. */
+	/** True once scrolled past the in-flow header (the overlay header may show). */
 	pinned: boolean;
-	/** Header is currently shown (vs hidden by scrolling down). */
+	/** While pinned: true = show the overlay header, false = hide it (scroll down). */
 	visible: boolean;
-	/** Height of the header, for the in-flow spacer that prevents content jump. */
-	height: number;
 };
 
 /**
- * Drives an app-style reappearing header for the element in `ref`:
- * - in normal flow near the top,
- * - once scrolled past, it pins (fixed) below the navbar,
- * - hides when scrolling DOWN, reappears on scrolling UP.
+ * Drives a second, overlay header that only engages BELOW the in-flow header in
+ * `ref`. The normal header stays at the top of the page (no animation); the
+ * overlay only appears once scrolled past it, hiding on scroll DOWN and
+ * reappearing on scroll UP. Keeping the two separate avoids the jitter a single
+ * element gets from small scrolls near the top.
  *
- * Reads the scroll position from whichever element actually scrolls and listens
- * in the capture phase, so it works even when overflow on html/body moves the
- * scroller off `window` (and `position: sticky` can't be relied on).
+ * Reads scroll from whichever element actually scrolls and listens in the
+ * capture phase, so it works even when overflow on html/body moves the scroller
+ * off `window`.
  */
 export function useStickyHeader(ref: RefObject<HTMLElement | null>): StickyHeaderState {
 	const [pinned, setPinned] = useState(false);
-	const [visible, setVisible] = useState(true);
-	const [height, setHeight] = useState(0);
+	const [visible, setVisible] = useState(false);
 
 	useEffect(() => {
 		const el = ref.current;
@@ -33,12 +31,10 @@ export function useStickyHeader(ref: RefObject<HTMLElement | null>): StickyHeade
 		const readScrollY = () =>
 			window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
 
-		// The point at which the header would scroll out of view = its offset from
-		// the top of the document.
-		let pinAt = el.offsetTop;
+		// Engage the overlay only once scrolled past the in-flow header's bottom.
+		let pinAt = el.offsetTop + el.offsetHeight;
 		const measure = () => {
-			setHeight(el.offsetHeight);
-			pinAt = el.offsetTop;
+			pinAt = el.offsetTop + el.offsetHeight;
 		};
 		measure();
 
@@ -49,19 +45,17 @@ export function useStickyHeader(ref: RefObject<HTMLElement | null>): StickyHeade
 			const y = readScrollY();
 			const delta = y - lastY;
 
-			// Pin once we've scrolled past where the header naturally sits.
-			setPinned(y > pinAt);
-
-			if (Math.abs(delta) > 6) {
-				if (y <= pinAt) {
-					setVisible(true);
-				} else if (delta > 0) {
-					setVisible(false); // scrolling down
-				} else {
-					setVisible(true); // scrolling up
+			if (y <= pinAt) {
+				// Above the threshold: only the in-flow header shows, overlay is off.
+				setPinned(false);
+				setVisible(false);
+			} else {
+				setPinned(true);
+				if (Math.abs(delta) > 6) {
+					setVisible(delta < 0); // show when scrolling up, hide when down
 				}
-				lastY = y;
 			}
+			lastY = y;
 			ticking = false;
 		};
 
@@ -80,5 +74,5 @@ export function useStickyHeader(ref: RefObject<HTMLElement | null>): StickyHeade
 		};
 	}, [ref]);
 
-	return { pinned, visible, height };
+	return { pinned, visible };
 }
