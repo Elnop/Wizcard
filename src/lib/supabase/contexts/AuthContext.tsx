@@ -22,24 +22,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		const supabase = createClient();
 
 		// getUser() validates the token server-side — if the user no longer exists, sign out
-		supabase.auth.getUser().then(({ data: { user }, error }) => {
-			if (error || !user) {
-				void supabase.auth.signOut();
+		supabase.auth
+			.getUser()
+			.then(({ data: { user }, error }) => {
+				if (error || !user) {
+					void supabase.auth.signOut();
+					setSession(null);
+					setUser(null);
+					setIsLoading(false);
+					return;
+				}
+				supabase.auth.getSession().then(({ data: { session } }) => {
+					setSession(session);
+					setUser(user);
+					setIsLoading(false);
+				});
+			})
+			.catch(() => {
+				// Network/unexpected failure — resolve loading so the UI doesn't
+				// hang on an empty auth slot forever.
 				setSession(null);
 				setUser(null);
 				setIsLoading(false);
-				return;
-			}
-			supabase.auth.getSession().then(({ data: { session } }) => {
-				setSession(session);
-				setUser(user);
-				setIsLoading(false);
 			});
-		});
 
 		const {
 			data: { subscription },
-		} = supabase.auth.onAuthStateChange((_event, session) => {
+		} = supabase.auth.onAuthStateChange((event, session) => {
+			// The INITIAL_SESSION event fires on mount before getUser() has
+			// validated the token. Ignore it — getUser() above owns the initial
+			// determination — so we don't briefly flip to a null user (which
+			// flashes the "Connexion" link before the profile menu). Only react
+			// to real transitions (SIGNED_IN / SIGNED_OUT / TOKEN_REFRESHED / ...).
+			if (event === 'INITIAL_SESSION') return;
 			setSession(session);
 			setUser(session?.user ?? null);
 			setIsLoading(false);
