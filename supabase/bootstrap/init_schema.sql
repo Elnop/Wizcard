@@ -116,6 +116,46 @@ create policy "Users can update own profile"
   on public.profiles for update
   to authenticated using (auth.uid() = id) with check (auth.uid() = id);
 
+-- Unique, auto-generated default nickname (wizard_<hex> from the user id).
+create unique index if not exists profiles_nickname_lower_key
+  on public.profiles (lower(nickname))
+  where nickname is not null;
+
+create function public.default_nickname_base(uid uuid)
+  returns text
+  language sql
+  immutable
+as $$
+  select 'wizard_' || substr(md5(uid::text), 1, 6);
+$$;
+
+create function public.generate_unique_nickname(uid uuid)
+  returns text
+  language plpgsql
+  security definer
+  set search_path = public
+as $$
+declare
+  candidate text;
+  hexlen int := 6;
+begin
+  loop
+    candidate := 'wizard_' || substr(md5(uid::text), 1, hexlen);
+    exit when not exists (
+      select 1 from public.profiles where lower(nickname) = lower(candidate)
+    );
+    hexlen := hexlen + 1;
+    if hexlen > 32 then
+      candidate := 'wizard_' || substr(md5(random()::text || clock_timestamp()::text), 1, 8);
+      exit when not exists (
+        select 1 from public.profiles where lower(nickname) = lower(candidate)
+      );
+    end if;
+  end loop;
+  return candidate;
+end;
+$$;
+
 create function public.handle_new_user()
   returns trigger
   language plpgsql
@@ -123,7 +163,9 @@ create function public.handle_new_user()
   set search_path = public
 as $$
 begin
-  insert into public.profiles (id) values (new.id) on conflict (id) do nothing;
+  insert into public.profiles (id, nickname)
+    values (new.id, public.generate_unique_nickname(new.id))
+    on conflict (id) do nothing;
   return new;
 end;
 $$;
@@ -133,8 +175,8 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- Backfill existing users
-insert into public.profiles (id)
-  select id from auth.users
+insert into public.profiles (id, nickname)
+  select id, public.generate_unique_nickname(id) from auth.users
   on conflict (id) do nothing;
 
 -- Avatars storage bucket
