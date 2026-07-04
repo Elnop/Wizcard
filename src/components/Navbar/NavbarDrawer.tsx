@@ -15,7 +15,7 @@ import styles from './Navbar.module.css';
 
 export function NavbarDrawer() {
 	const pathname = usePathname();
-	const { user, signOut } = useAuth();
+	const { user, isLoading: authLoading, signOut } = useAuth();
 	const { entries } = useCollectionContext();
 	const { entries: wishlistEntries } = useWishlistContext();
 	const { status } = useImportContext();
@@ -38,6 +38,23 @@ export function NavbarDrawer() {
 
 	function closeDrawer() {
 		setDrawerOpen(false);
+	}
+
+	// While auth is still resolving, render nothing so the "Connexion" link
+	// doesn't flash before the profile menu appears.
+	let authNode: React.ReactNode = null;
+	if (!authLoading) {
+		authNode = user ? (
+			<ProfileMenu onSignOut={() => void handleSignOut()} onNavigate={closeDrawer} inline />
+		) : (
+			<Link
+				href="/auth/login"
+				className={`${styles.drawerLink} ${pathname === '/auth/login' ? styles.drawerLinkActive : ''}`}
+				onClick={closeDrawer}
+			>
+				Connexion
+			</Link>
+		);
 	}
 
 	return (
@@ -106,17 +123,7 @@ export function NavbarDrawer() {
 
 				<div className={styles.drawerDivider} />
 
-				{user ? (
-					<ProfileMenu onSignOut={() => void handleSignOut()} onNavigate={closeDrawer} inline />
-				) : (
-					<Link
-						href="/auth/login"
-						className={`${styles.drawerLink} ${pathname === '/auth/login' ? styles.drawerLinkActive : ''}`}
-						onClick={closeDrawer}
-					>
-						Connexion
-					</Link>
-				)}
+				{authNode}
 			</nav>
 		</>
 	);
