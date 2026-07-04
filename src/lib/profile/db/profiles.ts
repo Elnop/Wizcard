@@ -32,6 +32,28 @@ export async function fetchProfile(userId: string): Promise<Profile | null> {
 	return data ? rowToProfile(data as ProfileRow) : null;
 }
 
+/**
+ * Case-insensitive check whether a nickname is already used by another user.
+ * Excludes `excludeUserId` (the current user) so re-saving your own unchanged
+ * nickname doesn't report a conflict. Relies on the public SELECT policy.
+ *
+ * The DB has a case-insensitive unique index as the ultimate backstop; this is
+ * the pre-submit check that lets the UI show a friendly message.
+ */
+export async function isNicknameTaken(nickname: string, excludeUserId: string): Promise<boolean> {
+	const supabase = createClient();
+	// Escape LIKE wildcards so a nickname containing % or _ matches literally.
+	const escaped = nickname.replace(/([%_\\])/g, '\\$1');
+	const { data, error } = await supabase
+		.from('profiles')
+		.select('id')
+		.ilike('nickname', escaped)
+		.neq('id', excludeUserId)
+		.limit(1);
+	if (error) throw error;
+	return (data?.length ?? 0) > 0;
+}
+
 export async function upsertProfile(userId: string, updates: ProfileUpdate): Promise<void> {
 	const supabase = createClient();
 	const cols: Record<string, unknown> = { id: userId, updated_at: new Date().toISOString() };

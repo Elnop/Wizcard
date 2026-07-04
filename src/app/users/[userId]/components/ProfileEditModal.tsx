@@ -5,7 +5,7 @@ import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
-import { uploadAvatar } from '@/lib/profile/db/profiles';
+import { uploadAvatar, isNicknameTaken } from '@/lib/profile/db/profiles';
 import styles from './ProfileEditModal.module.css';
 
 export function ProfileEditModal({ onClose }: { onClose: () => void }) {
@@ -23,10 +23,20 @@ export function ProfileEditModal({ onClose }: { onClose: () => void }) {
 		setIsSaving(true);
 		setError(null);
 		try {
+			const trimmedNickname = nickname.trim();
+			// If the nickname changed to a non-empty value, verify it's free first
+			// (case-insensitive). The DB unique index is the ultimate backstop.
+			if (trimmedNickname && trimmedNickname !== (profile?.nickname ?? '')) {
+				if (await isNicknameTaken(trimmedNickname, user.id)) {
+					setError('This nickname is already taken.');
+					setIsSaving(false);
+					return;
+				}
+			}
 			let avatarUrl: string | undefined;
 			if (file) avatarUrl = await uploadAvatar(user.id, file);
 			updateProfile({
-				nickname: nickname.trim() || null,
+				nickname: trimmedNickname || null,
 				description: description.trim() || null,
 				...(avatarUrl !== undefined ? { avatarUrl } : {}),
 			});
