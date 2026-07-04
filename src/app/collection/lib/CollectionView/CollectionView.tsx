@@ -209,10 +209,13 @@ export function CollectionView({
 	}
 
 	const isModal = filterLayout === 'modal';
+	const pageClass = [styles.page, isModal && styles.pageModal].filter(Boolean).join(' ');
+	const layoutClass = [styles.layout, isModal && styles.layoutModal].filter(Boolean).join(' ');
+	const mainClass = [styles.main, isModal && styles.mainModal].filter(Boolean).join(' ');
 
 	return (
-		<div className={styles.page}>
-			<div className={`${styles.layout} ${isModal ? styles.layoutModal : ''}`}>
+		<div className={pageClass}>
+			<div className={layoutClass}>
 				{!isModal && (
 					<CollectionFiltersAside
 						filters={filters}
@@ -223,7 +226,7 @@ export function CollectionView({
 					/>
 				)}
 
-				<main className={styles.main}>
+				<main className={mainClass}>
 					<div className={styles.titleSection}>
 						<div className={styles.titleLeft}>
 							<h1 className={styles.title}>{title}</h1>

@@ -4,6 +4,16 @@
 	overflow: hidden;
 }
 
+/*
+ * Modal layout is embedded (e.g. profile tabs): don't create a fixed-height
+ * self-scrolling viewport — grow with content and let the page scroll, so there
+ * is no nested/double scrollbar.
+ */
+.pageModal {
+	height: auto;
+	overflow: visible;
+}
+
 .layout {
 	padding-left: 280px;
 	height: 100%;
@@ -20,6 +30,12 @@
 	height: 100%;
 	overflow-y: auto;
 	overflow-x: hidden;
+}
+
+.mainModal {
+	padding: 0;
+	height: auto;
+	overflow: visible;
 }
 
 .titleSection {
