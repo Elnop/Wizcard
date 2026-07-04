@@ -84,7 +84,7 @@ export function Navbar() {
 					</Link>
 					<Link
 						href="/wishlist"
-						className={`${styles.navLink} ${pathname === '/wishlist' ? styles.navLinkActive : ''}`}
+						className={`${styles.navLink} ${pathname === '/wishlist' || pathname.endsWith('/wishlist') ? styles.navLinkActive : ''}`}
 					>
 						<WishlistIcon />
 						Wishlist

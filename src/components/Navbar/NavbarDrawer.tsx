@@ -104,7 +104,7 @@ export function NavbarDrawer() {
 				</Link>
 				<Link
 					href="/wishlist"
-					className={`${styles.drawerLink} ${pathname === '/wishlist' ? styles.drawerLinkActive : ''}`}
+					className={`${styles.drawerLink} ${pathname === '/wishlist' || pathname.endsWith('/wishlist') ? styles.drawerLinkActive : ''}`}
 					onClick={closeDrawer}
 				>
 					<WishlistIcon />

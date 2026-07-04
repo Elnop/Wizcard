@@ -26,6 +26,32 @@ export async function fetchCardRowsPage(
 	return { rows: data as CardDbRow[], hasMore: data.length === filter.pageSize };
 }
 
+/**
+ * Public, read-only page of a given owner's STANDALONE wishlist cards (owner_id
+ * = ownerId, wishlist = true), read via the price-free `public_collection_cards`
+ * view. Deck-flagged wishlist cards (owner_id null) are intentionally excluded —
+ * the shared wishlist shows only the owner's own standalone wants.
+ */
+export async function fetchPublicWishlistCardRowsPage(
+	ownerId: string,
+	from: number,
+	pageSize: number
+): Promise<{ rows: CardDbRow[]; hasMore: boolean }> {
+	const supabase = createClient();
+	const { data, error } = await supabase
+		.from('public_collection_cards')
+		.select('*')
+		.eq('owner_id', ownerId)
+		.eq('wishlist', true)
+		.range(from, from + pageSize - 1);
+
+	if (error) {
+		console.error('[queries/cards] fetchPublicWishlistCardRowsPage error:', error);
+		return { rows: [], hasMore: false };
+	}
+	return { rows: data as CardDbRow[], hasMore: data.length === pageSize };
+}
+
 export async function fetchWishlistCardRowsPage(
 	userId: string,
 	from: number,

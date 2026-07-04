@@ -70,6 +70,9 @@ export function ProfileView({
 				<Link href={`/users/${urlHandle}/collection`} className={styles.link}>
 					Collection
 				</Link>
+				<Link href={`/users/${urlHandle}/wishlist`} className={styles.link}>
+					Wishlist
+				</Link>
 			</div>
 		</div>
 	);

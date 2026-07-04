@@ -1,6 +1,9 @@
 import type { CardEntry } from '@/types/cards';
 import { rowToCardEntry } from '@/lib/card/db/cardRow';
-import { fetchWishlistCardRowsPage } from '@/lib/supabase/queries/cards';
+import {
+	fetchWishlistCardRowsPage,
+	fetchPublicWishlistCardRowsPage,
+} from '@/lib/supabase/queries/cards';
 
 const DB_FETCH_PAGE_SIZE = 1000;
 
@@ -13,6 +16,25 @@ export async function fetchWishlistPage(
 	// is reachable via deck ownership; RLS already restricts visibility to the
 	// user's own rows, so the deck-card branch can match on deck_id presence.
 	const { rows, hasMore } = await fetchWishlistCardRowsPage(userId, from, DB_FETCH_PAGE_SIZE);
+	return {
+		rows: rows.map((row) => ({ scryfallId: row.scryfall_id, entry: rowToCardEntry(row) })),
+		hasMore,
+	};
+}
+
+/**
+ * Public, read-only variant: a given owner's standalone wishlist cards via the
+ * price-free public view. Mirrors `fetchPublicCollectionPage`.
+ */
+export async function fetchPublicWishlistPage(
+	ownerId: string,
+	from: number
+): Promise<{ rows: Array<{ scryfallId: string; entry: CardEntry }>; hasMore: boolean }> {
+	const { rows, hasMore } = await fetchPublicWishlistCardRowsPage(
+		ownerId,
+		from,
+		DB_FETCH_PAGE_SIZE
+	);
 	return {
 		rows: rows.map((row) => ({ scryfallId: row.scryfall_id, entry: rowToCardEntry(row) })),
 		hasMore,
