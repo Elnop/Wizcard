@@ -12,7 +12,7 @@ import { usePublicWishlist } from './usePublicWishlist';
 import { useProfileByNickname } from '../useProfileByNickname';
 import { UserNotFound } from '../components/UserNotFound';
 
-function PublicWishlistView({ ownerId }: { ownerId: string }) {
+export function PublicWishlistView({ ownerId }: { ownerId: string }) {
 	const { entries, isLoaded, isFullyLoaded } = usePublicWishlist(ownerId);
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
 	const { openCardModal } = useCardModalContext();

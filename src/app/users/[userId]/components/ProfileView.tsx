@@ -9,8 +9,9 @@ import type { ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
 import { Button } from '@/components/Button/Button';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { DeckCard } from '@/app/decks/components/DeckCard/DeckCard';
-import { useProfileSummary, PREVIEW_LIMIT, type CardPreview } from '../useProfileSummary';
-import { ProfileCardGrid } from './ProfileCardGrid';
+import { useProfileSummary, PREVIEW_LIMIT } from '../useProfileSummary';
+import { PublicCollectionView } from '../collection/page';
+import { PublicWishlistView } from '../wishlist/page';
 import styles from './ProfileView.module.css';
 
 type Tab = 'decks' | 'collection' | 'wishlist';
@@ -113,47 +114,13 @@ export function ProfileView({
 						onOpen={(id) => router.push(`/decks/${id}`)}
 					/>
 				)}
-				{tab === 'collection' && (
-					<SectionGrid
-						preview={summary.collectionPreview}
-						total={summary.collectionCount}
-						seeAllHref={`/users/${urlHandle}/collection`}
-						emptyLabel="No public cards yet."
-					/>
-				)}
-				{tab === 'wishlist' && (
-					<SectionGrid
-						preview={summary.wishlistPreview}
-						total={summary.wishlistCount}
-						seeAllHref={`/users/${urlHandle}/wishlist`}
-						emptyLabel="No wishlist cards yet."
-					/>
-				)}
+				{/* Collection / wishlist tabs render the full browsing view (search +
+				    filters + grid) lazily — only mounted when their tab is active, so
+				    opening the profile doesn't fetch a whole collection up front. */}
+				{tab === 'collection' && <PublicCollectionView ownerId={userId} />}
+				{tab === 'wishlist' && <PublicWishlistView ownerId={userId} />}
 			</div>
 		</div>
-	);
-}
-
-function SectionGrid({
-	preview,
-	total,
-	seeAllHref,
-	emptyLabel,
-}: {
-	preview: CardPreview[];
-	total: number;
-	seeAllHref: string;
-	emptyLabel: string;
-}) {
-	return (
-		<>
-			<ProfileCardGrid preview={preview} emptyLabel={emptyLabel} />
-			{total > PREVIEW_LIMIT && (
-				<Link href={seeAllHref} className={styles.seeAll}>
-					See all {total} →
-				</Link>
-			)}
-		</>
 	);
 }
 

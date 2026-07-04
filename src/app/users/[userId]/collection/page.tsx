@@ -12,7 +12,7 @@ import { usePublicCollection } from './usePublicCollection';
 import { useProfileByNickname } from '../useProfileByNickname';
 import { UserNotFound } from '../components/UserNotFound';
 
-function PublicCollectionView({ ownerId }: { ownerId: string }) {
+export function PublicCollectionView({ ownerId }: { ownerId: string }) {
 	const { entries, isLoaded, isFullyLoaded } = usePublicCollection(ownerId);
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
 	const { openCardModal } = useCardModalContext();

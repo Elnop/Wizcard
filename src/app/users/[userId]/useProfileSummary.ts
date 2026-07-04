@@ -2,43 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import type { DeckMeta } from '@/types/decks';
-import type { CardEntry } from '@/types/cards';
 import { fetchDecks } from '@/lib/deck/db/decks';
-import {
-	fetchPublicWishlistCardRowsPage,
-	fetchPublicCardCount,
-} from '@/lib/supabase/queries/cards';
-import { fetchPublicCollectionPage } from '@/lib/collection/db/collection';
-import { rowToCardEntry } from '@/lib/card/db/cardRow';
-
-export type CardPreview = { scryfallId: string; entry: CardEntry };
+import { fetchPublicCardCount } from '@/lib/supabase/queries/cards';
 
 export type ProfileSummary = {
 	decks: DeckMeta[];
 	deckCount: number;
-	collectionPreview: CardPreview[];
 	collectionCount: number;
-	wishlistPreview: CardPreview[];
 	wishlistCount: number;
 	isLoading: boolean;
 };
 
-/** How many thumbnails each section shows on the profile before "See all". */
+/** How many decks the Decks tab shows before its "See all" link. */
 export const PREVIEW_LIMIT = 12;
 
 /**
- * Loads the three-section summary the profile page shows: deck list (small,
- * loaded fully), plus a capped preview + exact count for collection and
- * wishlist (so large collections aren't fully fetched here — the dedicated
- * pages handle that). All reads rely on the public SELECT policy.
+ * Loads what the profile header/tabs need: the deck list (small, loaded fully,
+ * for the Decks tab) plus the exact collection and wishlist counts for the tab
+ * badges. The full collection/wishlist card lists are loaded lazily by their
+ * own tabs, not here. All reads rely on the public SELECT policy.
  */
 export function useProfileSummary(ownerId: string): ProfileSummary {
 	const [state, setState] = useState<Omit<ProfileSummary, 'isLoading'>>({
 		decks: [],
 		deckCount: 0,
-		collectionPreview: [],
 		collectionCount: 0,
-		wishlistPreview: [],
 		wishlistCount: 0,
 	});
 	const [isLoading, setIsLoading] = useState(true);
@@ -47,24 +35,16 @@ export function useProfileSummary(ownerId: string): ProfileSummary {
 		let cancelled = false;
 		async function load() {
 			setIsLoading(true);
-			const [decks, collectionFirst, wishlistFirst, collectionCount, wishlistCount] =
-				await Promise.all([
-					fetchDecks(ownerId),
-					fetchPublicCollectionPage(ownerId, 0),
-					fetchPublicWishlistCardRowsPage(ownerId, 0, PREVIEW_LIMIT),
-					fetchPublicCardCount(ownerId, false),
-					fetchPublicCardCount(ownerId, true),
-				]);
+			const [decks, collectionCount, wishlistCount] = await Promise.all([
+				fetchDecks(ownerId),
+				fetchPublicCardCount(ownerId, false),
+				fetchPublicCardCount(ownerId, true),
+			]);
 			if (cancelled) return;
 			setState({
 				decks,
 				deckCount: decks.length,
-				collectionPreview: collectionFirst.rows.slice(0, PREVIEW_LIMIT),
 				collectionCount,
-				wishlistPreview: wishlistFirst.rows.map((row) => ({
-					scryfallId: row.scryfall_id,
-					entry: rowToCardEntry(row),
-				})),
 				wishlistCount,
 			});
 			setIsLoading(false);
