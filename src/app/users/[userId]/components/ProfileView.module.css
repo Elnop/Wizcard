@@ -13,9 +13,12 @@
  */
 .stickyBar {
 	background: var(--background);
-	transition: transform 0.25s ease;
 }
 
+/*
+ * The slide transition applies ONLY while pinned, so the header at the top of
+ * the page (in normal flow) snaps into place with no animation — no glitch.
+ */
 .stickyBarPinned {
 	position: fixed;
 	top: var(--navbar-height);
@@ -25,6 +28,7 @@
 	/* Match the container's horizontal padding so it lines up with the content. */
 	padding: 8px 24px 0;
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+	transition: transform 0.25s ease;
 }
 
 .stickyBarHidden {
