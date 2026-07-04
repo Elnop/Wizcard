@@ -135,6 +135,7 @@
 
 .tabPanel {
 	min-height: 200px;
+	padding-top: 20px;
 }
 
 .deckGrid {
