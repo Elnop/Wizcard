@@ -19,8 +19,8 @@
 	z-index: 20;
 	/* Match the container's horizontal padding so it lines up with the content. */
 	padding: 40px 24px 12px;
-	/* Match the navbar's glass background. */
-	background: var(--glass-bg);
+	/* Navbar-style glass, but darker (based on the page background). */
+	background: rgba(11, 12, 16, 0.82);
 	border-bottom: 1px solid var(--glass-border);
 	backdrop-filter: blur(var(--glass-blur));
 	/* Slide animation with no start delay (duration, easing, 0s delay). */
