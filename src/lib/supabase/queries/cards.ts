@@ -52,6 +52,26 @@ export async function fetchPublicWishlistCardRowsPage(
 	return { rows: data as CardDbRow[], hasMore: data.length === pageSize };
 }
 
+/**
+ * Exact count of a given owner's public collection (`wishlist=false`) or
+ * wishlist (`wishlist=true`) cards, via a head-only query (no rows fetched).
+ * Used by the profile page to show section totals without loading all cards.
+ */
+export async function fetchPublicCardCount(ownerId: string, wishlist: boolean): Promise<number> {
+	const supabase = createClient();
+	const { count, error } = await supabase
+		.from('public_collection_cards')
+		.select('*', { count: 'exact', head: true })
+		.eq('owner_id', ownerId)
+		.eq('wishlist', wishlist);
+
+	if (error) {
+		console.error('[queries/cards] fetchPublicCardCount error:', error);
+		return 0;
+	}
+	return count ?? 0;
+}
+
 export async function fetchWishlistCardRowsPage(
 	userId: string,
 	from: number,

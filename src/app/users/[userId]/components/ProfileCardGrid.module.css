@@ -1,0 +1,37 @@
+.grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+	gap: 12px;
+}
+
+.cell {
+	padding: 0;
+	background: none;
+	border: none;
+	cursor: pointer;
+	border-radius: 8px;
+	overflow: hidden;
+	transition:
+		transform 0.15s,
+		box-shadow 0.15s;
+}
+
+.cell:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.empty {
+	grid-column: 1 / -1;
+	text-align: center;
+	padding: 3rem 1rem;
+	color: var(--text-muted);
+	font-size: var(--text-sm);
+}
+
+@media (max-width: 480px) {
+	.grid {
+		grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+		gap: 8px;
+	}
+}

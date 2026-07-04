@@ -1,14 +1,24 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { Profile } from '@/lib/profile/types';
+import type { DeckMeta } from '@/types/decks';
+import type { ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
 import { Button } from '@/components/Button/Button';
+import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
+import { DeckCard } from '@/app/decks/components/DeckCard/DeckCard';
+import { useProfileSummary, PREVIEW_LIMIT, type CardPreview } from '../useProfileSummary';
+import { ProfileCardGrid } from './ProfileCardGrid';
 import styles from './ProfileView.module.css';
 
+type Tab = 'decks' | 'collection' | 'wishlist';
+
 /**
- * Presentational, read-only profile display. Never receives or renders an
- * email — non-owner visitors only get `userId` and the public `profile`
- * fields (nickname/description/avatarUrl), so there is nothing to leak here.
+ * Instagram-style profile: header (avatar / name / bio) + a stats row of
+ * section counts, then tabs that switch between deck / collection / wishlist
+ * previews inline. Never receives or renders an email — only public fields.
  */
 export function ProfileView({
 	userId,
@@ -21,6 +31,11 @@ export function ProfileView({
 	isLoading?: boolean;
 	onEdit?: () => void;
 }) {
+	const router = useRouter();
+	const symbolMap = useScryfallSymbols();
+	const summary = useProfileSummary(userId);
+	const [tab, setTab] = useState<Tab>('decks');
+
 	// Show a skeleton until the profile loads, rather than flashing the "Wizard"
 	// placeholder and then swapping in the real nickname.
 	const loaded = profile !== null && !isLoading;
@@ -45,6 +60,12 @@ export function ProfileView({
 		);
 	}
 
+	const stats: Array<{ key: Tab; label: string; count: number }> = [
+		{ key: 'decks', label: 'Decks', count: summary.deckCount },
+		{ key: 'collection', label: 'Cards', count: summary.collectionCount },
+		{ key: 'wishlist', label: 'Wishlist', count: summary.wishlistCount },
+	];
+
 	return (
 		<div className={styles.container}>
 			<div className={styles.header}>
@@ -62,18 +83,129 @@ export function ProfileView({
 					)}
 				</div>
 			</div>
+
 			{profile?.description && <p className={styles.description}>{profile.description}</p>}
-			<div className={styles.links}>
-				<Link href={`/users/${urlHandle}/decks`} className={styles.link}>
-					Decks
-				</Link>
-				<Link href={`/users/${urlHandle}/collection`} className={styles.link}>
-					Collection
-				</Link>
-				<Link href={`/users/${urlHandle}/wishlist`} className={styles.link}>
-					Wishlist
-				</Link>
+
+			{/* Stats row — each stat also selects its tab. */}
+			<div className={styles.stats}>
+				{stats.map((s) => (
+					<button
+						key={s.key}
+						type="button"
+						className={`${styles.stat} ${tab === s.key ? styles.statActive : ''}`}
+						onClick={() => setTab(s.key)}
+					>
+						<span className={styles.statCount}>{summary.isLoading ? '—' : s.count}</span>
+						<span className={styles.statLabel}>{s.label}</span>
+					</button>
+				))}
+			</div>
+
+			{/* Tab bar */}
+			<div className={styles.tabs} role="tablist">
+				{stats.map((s) => (
+					<button
+						key={s.key}
+						type="button"
+						role="tab"
+						aria-selected={tab === s.key}
+						className={`${styles.tab} ${tab === s.key ? styles.tabActive : ''}`}
+						onClick={() => setTab(s.key)}
+					>
+						{s.label}
+					</button>
+				))}
+			</div>
+
+			<div className={styles.tabPanel}>
+				{tab === 'decks' && (
+					<DecksTab
+						decks={summary.decks}
+						symbolMap={symbolMap}
+						isLoading={summary.isLoading}
+						handle={urlHandle}
+						onOpen={(id) => router.push(`/decks/${id}`)}
+					/>
+				)}
+				{tab === 'collection' && (
+					<SectionGrid
+						preview={summary.collectionPreview}
+						total={summary.collectionCount}
+						seeAllHref={`/users/${urlHandle}/collection`}
+						emptyLabel="No public cards yet."
+					/>
+				)}
+				{tab === 'wishlist' && (
+					<SectionGrid
+						preview={summary.wishlistPreview}
+						total={summary.wishlistCount}
+						seeAllHref={`/users/${urlHandle}/wishlist`}
+						emptyLabel="No wishlist cards yet."
+					/>
+				)}
 			</div>
 		</div>
+	);
+}
+
+function SectionGrid({
+	preview,
+	total,
+	seeAllHref,
+	emptyLabel,
+}: {
+	preview: CardPreview[];
+	total: number;
+	seeAllHref: string;
+	emptyLabel: string;
+}) {
+	return (
+		<>
+			<ProfileCardGrid preview={preview} emptyLabel={emptyLabel} />
+			{total > PREVIEW_LIMIT && (
+				<Link href={seeAllHref} className={styles.seeAll}>
+					See all {total} →
+				</Link>
+			)}
+		</>
+	);
+}
+
+function DecksTab({
+	decks,
+	symbolMap,
+	isLoading,
+	handle,
+	onOpen,
+}: {
+	decks: DeckMeta[];
+	symbolMap: Record<string, ScryfallCardSymbol>;
+	isLoading: boolean;
+	handle: string;
+	onOpen: (id: string) => void;
+}) {
+	if (!isLoading && decks.length === 0) {
+		return <p className={styles.emptyText}>No decks yet.</p>;
+	}
+	const shown = decks.slice(0, PREVIEW_LIMIT);
+	return (
+		<>
+			<div className={styles.deckGrid}>
+				{shown.map((deck) => (
+					<DeckCard
+						key={deck.id}
+						deck={deck}
+						symbolMap={symbolMap}
+						readOnly
+						onClick={() => onOpen(deck.id)}
+					/>
+				))}
+			</div>
+			{decks.length > PREVIEW_LIMIT && (
+				<Link href={`/users/${handle}/decks`} className={styles.seeAll}>
+					See all {decks.length} →
+				</Link>
+			)}
+		</>
 	);
 }

@@ -1,7 +1,7 @@
 .container {
 	background: var(--background);
 	min-height: calc(100vh - var(--navbar-height));
-	max-width: 720px;
+	max-width: 960px;
 	margin: 0 auto;
 	padding: 40px 20px;
 }
@@ -84,23 +84,111 @@
 	margin: 0 0 24px;
 }
 
-.links {
+/* Stats row */
+.stats {
 	display: flex;
-	gap: 16px;
-	border-top: 1px solid var(--border);
-	padding-top: 16px;
+	gap: 8px;
+	margin-bottom: 20px;
 }
 
-.link {
-	font-size: var(--text-sm);
-	font-weight: 500;
+.stat {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	padding: 12px 8px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	cursor: pointer;
+	transition:
+		border-color 0.15s,
+		background 0.15s;
+}
+
+.stat:hover {
+	border-color: var(--primary);
+}
+
+.statActive {
+	border-color: var(--primary);
+	background: var(--surface-hover);
+}
+
+.statCount {
+	font-size: var(--text-xl);
+	font-weight: 700;
 	color: var(--foreground);
-	text-decoration: none;
-	transition: color 0.15s;
+	font-family: var(--font-display);
 }
 
-.link:hover {
+.statLabel {
+	font-size: var(--text-xs);
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+
+/* Tab bar */
+.tabs {
+	display: flex;
+	gap: 4px;
+	border-bottom: 1px solid var(--border);
+	margin-bottom: 20px;
+}
+
+.tab {
+	padding: 10px 16px;
+	background: none;
+	border: none;
+	border-bottom: 2px solid transparent;
+	color: var(--text-muted);
+	font-size: var(--text-sm);
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		color 0.15s,
+		border-color 0.15s;
+}
+
+.tab:hover {
+	color: var(--foreground);
+}
+
+.tabActive {
+	color: var(--foreground);
+	border-bottom-color: var(--primary);
+}
+
+.tabPanel {
+	min-height: 200px;
+}
+
+.deckGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	gap: 16px;
+}
+
+.seeAll {
+	display: inline-block;
+	margin-top: 20px;
+	font-size: var(--text-sm);
+	font-weight: 600;
 	color: var(--primary);
+	text-decoration: none;
+}
+
+.seeAll:hover {
+	text-decoration: underline;
+}
+
+.emptyText {
+	text-align: center;
+	padding: 3rem 1rem;
+	color: var(--text-muted);
+	font-size: var(--text-sm);
 }
 
 @media (max-width: 480px) {
