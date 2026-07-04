@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Profile } from '@/lib/profile/types';
@@ -12,7 +12,7 @@ import { DeckCard } from '@/app/decks/components/DeckCard/DeckCard';
 import { useProfileSummary, PREVIEW_LIMIT } from '../useProfileSummary';
 import { PublicCollectionView } from '../collection/page';
 import { PublicWishlistView } from '../wishlist/page';
-import { useHideOnScrollDown } from './useHideOnScrollDown';
+import { useStickyHeader } from './useStickyHeader';
 import styles from './ProfileView.module.css';
 
 type Tab = 'decks' | 'collection' | 'wishlist';
@@ -37,7 +37,8 @@ export function ProfileView({
 	const symbolMap = useScryfallSymbols();
 	const summary = useProfileSummary(userId);
 	const [tab, setTab] = useState<Tab>('decks');
-	const headerVisible = useHideOnScrollDown();
+	const barRef = useRef<HTMLDivElement>(null);
+	const { pinned, visible, height } = useStickyHeader(barRef);
 
 	// Show a skeleton until the profile loads, rather than flashing the "Wizard"
 	// placeholder and then swapping in the real nickname.
@@ -69,9 +70,17 @@ export function ProfileView({
 		{ key: 'wishlist', label: 'Wishlist', count: summary.wishlistCount },
 	];
 
+	const barClass = [
+		styles.stickyBar,
+		pinned && styles.stickyBarPinned,
+		pinned && !visible && styles.stickyBarHidden,
+	]
+		.filter(Boolean)
+		.join(' ');
+
 	return (
 		<div className={styles.container}>
-			<div className={`${styles.stickyBar} ${headerVisible ? '' : styles.stickyBarHidden}`}>
+			<div ref={barRef} className={barClass}>
 				<div className={styles.header}>
 					{avatarNode}
 					<div className={styles.headerText}>
@@ -107,6 +116,9 @@ export function ProfileView({
 					))}
 				</div>
 			</div>
+
+			{/* Spacer keeps content in place while the bar is pinned (out of flow). */}
+			{pinned && <div style={{ height }} aria-hidden />}
 
 			<div className={styles.tabPanel}>
 				{tab === 'decks' && (

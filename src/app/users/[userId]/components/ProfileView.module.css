@@ -6,21 +6,36 @@
 }
 
 /*
- * Header + tabs stick below the fixed navbar. They hide when scrolling down and
- * slide back in when scrolling up (visibility driven by useHideOnScrollDown).
+ * Header + tabs behave like an app header: in normal flow near the top, then
+ * pinned below the fixed navbar once scrolled past — hiding when scrolling down
+ * and reappearing when scrolling up (driven by useStickyHeader). A spacer in the
+ * JSX fills the gap while pinned so content doesn't jump.
  */
 .stickyBar {
-	position: sticky;
-	top: var(--navbar-height);
-	z-index: 20;
 	background: var(--background);
-	padding-top: 12px;
 	transition: transform 0.25s ease;
 }
 
+.stickyBarPinned {
+	position: fixed;
+	top: var(--navbar-height);
+	left: 0;
+	right: 0;
+	z-index: 20;
+	/* Match the container's horizontal padding so it lines up with the content. */
+	padding: 8px 24px 0;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
 .stickyBarHidden {
-	/* Slide up out of view (bar height + navbar offset covers it fully). */
+	/* Slide fully up out of view (bar height + the navbar offset above it). */
 	transform: translateY(calc(-100% - var(--navbar-height)));
+}
+
+@media (max-width: 480px) {
+	.stickyBarPinned {
+		padding: 8px 16px 0;
+	}
 }
 
 .header {
