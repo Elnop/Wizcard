@@ -70,28 +70,30 @@ export function ProfileView({
 		{ key: 'wishlist', label: 'Wishlist', count: summary.wishlistCount },
 	];
 
-	// `compact` = the sticky overlay: smaller avatar, no bio, no Edit button, so
-	// the pinned bar stays thin.
+	// `compact` = the sticky overlay: tabs only (no avatar / nickname / bio /
+	// edit), so the pinned bar stays thin.
 	const renderHeader = (compact: boolean) => (
 		<>
-			<div className={`${styles.header} ${compact ? styles.headerCompact : ''}`}>
-				{avatarNode}
-				<div className={styles.headerText}>
-					{!loaded ? (
-						<span className={styles.skeletonName} aria-hidden />
-					) : (
-						<h1 className={styles.name}>{displayName}</h1>
-					)}
-					{!compact && onEdit && (
-						<Button variant="secondary" size="sm" onClick={onEdit}>
-							Edit profile
-						</Button>
-					)}
-				</div>
-			</div>
+			{!compact && (
+				<>
+					<div className={styles.header}>
+						{avatarNode}
+						<div className={styles.headerText}>
+							{!loaded ? (
+								<span className={styles.skeletonName} aria-hidden />
+							) : (
+								<h1 className={styles.name}>{displayName}</h1>
+							)}
+							{onEdit && (
+								<Button variant="secondary" size="sm" onClick={onEdit}>
+									Edit profile
+								</Button>
+							)}
+						</div>
+					</div>
 
-			{!compact && profile?.description && (
-				<p className={styles.description}>{profile.description}</p>
+					{profile?.description && <p className={styles.description}>{profile.description}</p>}
+				</>
 			)}
 
 			{/* Tab bar with counts */}

@@ -49,23 +49,6 @@
 	margin-bottom: 20px;
 }
 
-/* Compact header for the sticky overlay: small avatar, tight spacing. */
-.headerCompact {
-	gap: 12px;
-	margin-bottom: 12px;
-}
-
-.headerCompact .avatar,
-.headerCompact .avatarFallback {
-	width: 36px;
-	height: 36px;
-	font-size: var(--text-base);
-}
-
-.headerCompact .name {
-	font-size: var(--text-base);
-}
-
 .avatar {
 	width: 96px;
 	height: 96px;
