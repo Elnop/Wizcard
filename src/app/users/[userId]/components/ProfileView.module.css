@@ -1,9 +1,8 @@
 .container {
 	background: var(--background);
 	min-height: calc(100vh - var(--navbar-height));
-	max-width: 960px;
 	margin: 0 auto;
-	padding: 40px 8px;
+	padding: 40px 24px;
 }
 
 .header {
@@ -166,7 +165,7 @@
 
 @media (max-width: 480px) {
 	.container {
-		padding: 24px 6px;
+		padding: 24px 16px;
 	}
 
 	.header {
