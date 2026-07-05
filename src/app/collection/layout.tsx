@@ -1,13 +1,12 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/supabase/auth/auth-server';
-import { fetchNicknameById } from '@/lib/profile/db/profiles.server';
 
-// `/collection` is a shortcut to the canonical shareable URL. Logged-in users are
-// sent to /users/<nickname>/collection; anonymous users to login. The owner view
-// component (collection/page.tsx) is reused by the canonical page, not this route.
-export default async function CollectionLayout() {
+// `/collection` is the owner's personal, editable collection working page. It is
+// owner-only: anonymous visitors are sent to login, then the signed-in user's
+// own collection (collection/page.tsx) renders directly here. The public,
+// shareable view lives at /users/<nickname>/collection.
+export default async function CollectionLayout({ children }: { children: React.ReactNode }) {
 	const user = await getCurrentUser();
 	if (!user) redirect('/auth/login');
-	const nickname = await fetchNicknameById(user.id);
-	redirect(`/users/${nickname ?? user.id}/collection`);
+	return <>{children}</>;
 }
