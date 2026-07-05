@@ -254,7 +254,8 @@ export function CardSearchPanel({
 		loadMore,
 	} = useScryfallCardSearch(scryfallFilters);
 
-	const cards = inCollectionOnly ? filteredCollectionCards : scryfallCards;
+	const inCollectionCards = userCiDisjoint ? [] : filteredCollectionCards;
+	const cards = inCollectionOnly ? inCollectionCards : scryfallCards;
 	const isLoading = inCollectionOnly ? collectionLoading : scryfallLoading;
 
 	const showEdhrecTab = isCommanderFormat && !!commanderName;
