@@ -1,0 +1,101 @@
+.overview {
+	display: flex;
+	flex-direction: column;
+	gap: 2rem;
+	padding: 1rem 0;
+}
+
+.statsGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+	gap: 1rem;
+}
+
+.statCard {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	padding: 1rem 1.25rem;
+	border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+	border-radius: 0.75rem;
+	background: var(--surface, rgba(255, 255, 255, 0.03));
+}
+
+.statValue {
+	font-size: 1.5rem;
+	font-weight: 700;
+	line-height: 1.1;
+}
+
+.statLabel {
+	font-size: 0.8125rem;
+	opacity: 0.7;
+}
+
+.block {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.blockTitle {
+	font-size: 1rem;
+	font-weight: 600;
+	margin: 0;
+}
+
+.empty {
+	opacity: 0.6;
+	font-size: 0.875rem;
+	margin: 0;
+}
+
+.cardStrip {
+	display: flex;
+	gap: 0.75rem;
+	overflow-x: auto;
+	padding-bottom: 0.25rem;
+}
+
+.cardThumb {
+	flex: 0 0 auto;
+	width: 96px;
+	border-radius: 0.5rem;
+	overflow: hidden;
+	background: var(--surface, rgba(255, 255, 255, 0.05));
+}
+
+.cardImg {
+	width: 100%;
+	height: auto;
+	display: block;
+}
+
+.cardName {
+	display: block;
+	padding: 0.5rem;
+	font-size: 0.75rem;
+	text-align: center;
+}
+
+.deckList {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.deckLink {
+	display: block;
+	padding: 0.625rem 0.875rem;
+	border-radius: 0.5rem;
+	border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+	text-decoration: none;
+	color: inherit;
+}
+
+.deckLink:hover {
+	background: var(--surface-hover, rgba(255, 255, 255, 0.06));
+}
