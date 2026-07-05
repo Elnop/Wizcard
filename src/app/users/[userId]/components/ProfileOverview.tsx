@@ -1,13 +1,16 @@
 'use client';
 
 import { useMemo } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import type { Profile } from '@/lib/profile/types';
 import type { DeckMeta } from '@/types/decks';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
 import { scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
+import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
+import { DeckCard } from '@/app/decks/components/DeckCard/DeckCard';
+import { useDeckSummaries } from '@/app/decks/useDeckSummaries';
 import type { ProfileSummary } from '../useProfileSummary';
 import { useProfileOverview } from '../useProfileOverview';
 import styles from './ProfileOverview.module.css';
@@ -37,6 +40,7 @@ export function ProfileOverview({
 	profile: Profile | null;
 	summary: ProfileSummary;
 }) {
+	const router = useRouter();
 	const { uniqueCount, recentCards, isLoading } = useProfileOverview(ownerId);
 	const { stacks } = useCollectionCards(recentCards);
 
@@ -48,6 +52,10 @@ export function ProfileOverview({
 				.slice(0, RECENT_DECKS_LIMIT),
 		[summary.decks]
 	);
+
+	// Reuse the exact deck-preview component from the Decks tab (read-only).
+	const symbolMap = useScryfallSymbols();
+	const deckSummaryMap = useDeckSummaries(recentDecks);
 
 	const totalCopies = summary.collectionCount;
 	const memberSince = profile ? formatMemberSince(profile.createdAt) : '—';
@@ -77,7 +85,7 @@ export function ProfileOverview({
 					<div className={styles.cardStrip}>
 						{stacks.slice(0, recentCards.length).map((stack) => {
 							const card = stack.cards[0];
-							const src = getScryfallCardImageUriBySize(card, 'small');
+							const src = getScryfallCardImageUriBySize(card, 'normal');
 							return (
 								<div key={card.entry.rowId} className={styles.cardThumb} title={card.name}>
 									{src ? (
@@ -85,8 +93,8 @@ export function ProfileOverview({
 											loader={scryfallImageLoader}
 											src={src}
 											alt={card.name}
-											width={146}
-											height={204}
+											width={244}
+											height={340}
 											className={styles.cardImg}
 										/>
 									) : (
@@ -104,15 +112,18 @@ export function ProfileOverview({
 				{recentDecks.length === 0 ? (
 					<p className={styles.empty}>Aucun deck pour l&apos;instant.</p>
 				) : (
-					<ul className={styles.deckList}>
+					<div className={styles.deckGrid}>
 						{recentDecks.map((deck) => (
-							<li key={deck.id}>
-								<Link href={`/decks/${deck.id}`} className={styles.deckLink}>
-									{deck.name}
-								</Link>
-							</li>
+							<DeckCard
+								key={deck.id}
+								deck={deck}
+								summary={deckSummaryMap[deck.id]}
+								symbolMap={symbolMap}
+								readOnly
+								onClick={() => router.push(`/decks/${deck.id}`)}
+							/>
 						))}
-					</ul>
+					</div>
 				)}
 			</section>
 		</div>
