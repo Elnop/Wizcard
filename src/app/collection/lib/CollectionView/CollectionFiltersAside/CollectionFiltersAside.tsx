@@ -103,6 +103,8 @@ export function CollectionFiltersAside({
 				<ColorIdentityFilter
 					selected={filters.colorIdentity}
 					onChange={(colorIdentity: ScryfallColor[]) => patch('colorIdentity', colorIdentity)}
+					colorIdentityMatch={filters.colorIdentityMatch}
+					onColorIdentityMatchChange={(m) => patch('colorIdentityMatch', m)}
 					symbolMap={symbolMap}
 				/>
 

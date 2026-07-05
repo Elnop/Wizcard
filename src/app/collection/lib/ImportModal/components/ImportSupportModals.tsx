@@ -23,6 +23,7 @@ export function ImportSupportModals({ state, sets, setsLoading }: Props) {
 				colors={state.filters.colors}
 				colorMatch={state.filters.colorMatch}
 				colorIdentity={state.filters.colorIdentity}
+				colorIdentityMatch={state.filters.colorIdentityMatch}
 				type={state.filters.type}
 				set={state.filters.set}
 				rarities={state.filters.rarities}
