@@ -9,6 +9,7 @@ import type { CardType } from '@/lib/mpc/types';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { Modal } from '@/components/Modal/Modal';
 import { ColorFilter } from '@/lib/search/components/filters/ColorFilter/ColorFilter';
+import { ColorIdentityFilter } from '@/lib/search/components/filters/ColorIdentityFilter/ColorIdentityFilter';
 import { RarityFilter } from '@/lib/search/components/filters/RarityFilter/RarityFilter';
 import { TypeFilter } from '@/lib/search/components/filters/TypeFilter/TypeFilter';
 import { OracleTextFilter } from '@/lib/search/components/filters/OracleTextFilter/OracleTextFilter';
@@ -31,6 +32,7 @@ interface FilterModalProps {
 	isOpen: boolean;
 	colors: ScryfallColor[];
 	colorMatch?: ColorMatch;
+	colorIdentity: ScryfallColor[];
 	type: string[];
 	set: string;
 	rarities: string[];
@@ -49,6 +51,7 @@ interface FilterModalProps {
 	onApply: (filters: {
 		colors: ScryfallColor[];
 		colorMatch: ColorMatch;
+		colorIdentity: ScryfallColor[];
 		type: string[];
 		set: string;
 		rarities: string[];
@@ -69,6 +72,7 @@ interface FilterModalContentProps {
 	setsLoading?: boolean;
 	initialColors: ScryfallColor[];
 	initialColorMatch: 'exact' | 'include' | 'atMost';
+	initialColorIdentity: ScryfallColor[];
 	initialType: string[];
 	initialSet: string;
 	initialRarities: string[];
@@ -91,6 +95,7 @@ function FilterModalContent({
 	setsLoading,
 	initialColors,
 	initialColorMatch,
+	initialColorIdentity,
 	initialType,
 	initialSet,
 	initialRarities,
@@ -112,6 +117,8 @@ function FilterModalContent({
 	const [draftColorMatch, setDraftColorMatch] = useState<'exact' | 'include' | 'atMost'>(
 		initialColorMatch
 	);
+	const [draftColorIdentity, setDraftColorIdentity] =
+		useState<ScryfallColor[]>(initialColorIdentity);
 	const [draftType, setDraftType] = useState<string[]>(initialType);
 	const [draftSet, setDraftSet] = useState(initialSet);
 	const [draftRarities, setDraftRarities] = useState<string[]>(initialRarities);
@@ -135,6 +142,7 @@ function FilterModalContent({
 		onApply({
 			colors: draftColors,
 			colorMatch: draftColorMatch,
+			colorIdentity: draftColorIdentity,
 			type: draftType,
 			set: draftSet,
 			rarities: draftRarities,
@@ -154,6 +162,7 @@ function FilterModalContent({
 		if (variant !== 'backs') {
 			setDraftColors([]);
 			setDraftColorMatch('include');
+			setDraftColorIdentity([]);
 			setDraftType([]);
 			setDraftSet('');
 			setDraftRarities([]);
@@ -194,6 +203,11 @@ function FilterModalContent({
 							onChange={setDraftColors}
 							colorMatch={draftColorMatch}
 							onColorMatchChange={setDraftColorMatch}
+							symbolMap={symbolMap}
+						/>
+						<ColorIdentityFilter
+							selected={draftColorIdentity}
+							onChange={setDraftColorIdentity}
 							symbolMap={symbolMap}
 						/>
 						<RarityFilter value={draftRarities} onChange={setDraftRarities} />
@@ -251,6 +265,7 @@ export function FilterModal({
 	isOpen,
 	colors,
 	colorMatch = 'include',
+	colorIdentity,
 	type,
 	set,
 	rarities,
@@ -279,6 +294,7 @@ export function FilterModal({
 				setsLoading={setsLoading}
 				initialColors={colors}
 				initialColorMatch={colorMatch}
+				initialColorIdentity={colorIdentity}
 				initialType={type}
 				initialSet={set}
 				initialRarities={rarities}
