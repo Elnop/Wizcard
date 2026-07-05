@@ -11,6 +11,7 @@ export interface ScryfallQueryParams {
 	cmc?: string;
 	legal?: string;
 	colorIdentity?: ScryfallColor[];
+	colorIdentityMatch?: 'atMost' | 'exact';
 	isToken?: boolean;
 	matchNothing?: boolean;
 }
@@ -101,7 +102,8 @@ export function buildScryfallQuery(params: ScryfallQueryParams): string {
 	}
 
 	if (params.colorIdentity && params.colorIdentity.length > 0) {
-		parts.push(`ci<=${params.colorIdentity.join('')}`);
+		const op = params.colorIdentityMatch === 'exact' ? '=' : '<=';
+		parts.push(`ci${op}${params.colorIdentity.join('')}`);
 	}
 
 	return parts.join(' ');
