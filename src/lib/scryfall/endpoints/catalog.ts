@@ -8,6 +8,7 @@ import type { ScryfallCatalog } from '../types/scryfall';
 // set of values usable with Scryfall's `t:` operator (main types + creature/land/etc. subtypes).
 const TYPE_CATALOGS: ScryfallCatalogType[] = [
 	'card-types',
+	'supertypes',
 	'creature-types',
 	'planeswalker-types',
 	'land-types',

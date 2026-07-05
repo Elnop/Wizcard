@@ -81,4 +81,5 @@ export type ScryfallCatalogType =
 	| 'keyword-actions'
 	| 'ability-words'
 	| 'flavor-words'
-	| 'card-types';
+	| 'card-types'
+	| 'supertypes';
