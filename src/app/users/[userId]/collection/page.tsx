@@ -1,20 +1,15 @@
 'use client';
 
-import { useParams } from 'next/navigation';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { CollectionView } from '@/app/collection/lib/CollectionView/CollectionView';
 import { ExportMenu } from '@/app/collection/ExportMenu/ExportMenu';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
-import { useAuth } from '@/lib/supabase/contexts/AuthContext';
-import { Spinner } from '@/components/Spinner/Spinner';
 import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
 import { buildViewerCardMenu } from '@/lib/card/viewerCardMenu';
 import { useOwnedCardMenuHandlers } from '@/lib/card/hooks/useOwnedCardMenuHandlers';
 import { useViewerCardMenuHandlers } from '@/lib/card/hooks/useViewerCardMenuHandlers';
-import CollectionPage from '@/app/collection/page';
 import { usePublicCollection } from './usePublicCollection';
-import { useProfileByNickname } from '../useProfileByNickname';
-import { UserNotFound } from '../components/UserNotFound';
+import { useProfileShell } from '../ProfileShellContext';
 
 export function PublicCollectionView({
 	ownerId,
@@ -75,29 +70,11 @@ export function PublicCollectionView({
 }
 
 /**
- * Canonical, shareable collection URL. Renders the full editable owner view when
- * the signed-in user owns this collection (reusing the owner CollectionPage,
- * which reads the owner contexts — correct since it's that user's own data),
- * otherwise the public read-only view.
+ * Collection tab of the profile shell. Always the public collection view; the
+ * owner gets editable cards / owner menu via `isOwner`. Identity comes from the
+ * layout via ProfileShellContext — this page does not resolve the nickname.
  */
 export default function UserCollectionPage() {
-	const params = useParams();
-	const nickname = params.userId as string;
-	const { user, isLoading: authLoading } = useAuth();
-	const { profile, status } = useProfileByNickname(nickname);
-
-	if (authLoading || status === 'loading') {
-		return (
-			<div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
-				<Spinner />
-			</div>
-		);
-	}
-
-	if (status === 'not-found' || !profile) {
-		return <UserNotFound />;
-	}
-
-	const isOwner = !!user && user.id === profile.id;
-	return isOwner ? <CollectionPage /> : <PublicCollectionView ownerId={profile.id} />;
+	const { ownerId, isOwner } = useProfileShell();
+	return <PublicCollectionView ownerId={ownerId} filterLayout="modal" isOwner={isOwner} />;
 }
