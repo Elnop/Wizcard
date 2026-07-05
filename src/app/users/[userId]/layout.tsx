@@ -51,7 +51,6 @@ export default function UserProfileLayout({ children }: { children: React.ReactN
 				userId={resolved.id}
 				profile={profile}
 				isLoading={isOwner ? ownerCtx.isLoading : false}
-				isOwner={isOwner}
 				onEdit={isOwner ? () => setEditing(true) : undefined}
 				handle={nickname}
 			>

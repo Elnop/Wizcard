@@ -29,7 +29,6 @@ export function ProfileView({
 	userId,
 	profile,
 	isLoading = false,
-	isOwner = false,
 	onEdit,
 	handle,
 	children,
@@ -37,8 +36,7 @@ export function ProfileView({
 	userId: string;
 	profile: Profile | null;
 	isLoading?: boolean;
-	/** True when the signed-in user is viewing their OWN profile. */
-	isOwner?: boolean;
+	/** Set (by the layout, only for the owner) to show the Edit-profile button. */
 	onEdit?: () => void;
 	/** URL nickname used to build tab hrefs. */
 	handle: string;
