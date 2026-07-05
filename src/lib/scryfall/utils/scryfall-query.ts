@@ -12,6 +12,7 @@ export interface ScryfallQueryParams {
 	legal?: string;
 	colorIdentity?: ScryfallColor[];
 	isToken?: boolean;
+	matchNothing?: boolean;
 }
 
 function buildColorQuery(
@@ -49,6 +50,13 @@ function buildRarityQuery(rarities: string[]): string {
 }
 
 export function buildScryfallQuery(params: ScryfallQueryParams): string {
+	// A non-empty user color-identity selection that is disjoint from the commander's
+	// identity is an impossible constraint: no card can satisfy `ci<=colorless` AND
+	// `ci>={w,u,b,r,g}` simultaneously, so this always yields zero results.
+	if (params.matchNothing) {
+		return 'id<=c id>=wubrg';
+	}
+
 	const parts: string[] = [];
 
 	if (params.isToken) {

@@ -221,6 +221,14 @@ export function CardSearchPanel({
 	const colorIdentityToApply =
 		effectiveColorIdentity.length > 0 ? effectiveColorIdentity : undefined;
 
+	// The user made a real (non-empty) selection, a commander constraint exists, and the
+	// two are disjoint: no card can satisfy both, so the search must yield zero results.
+	const userCiDisjoint =
+		!!colorIdentityFilter &&
+		colorIdentityFilter.length > 0 &&
+		colorIdentity.length > 0 &&
+		effectiveColorIdentity.length === 0;
+
 	const scryfallFilters: SearchFilters = {
 		name: inCollectionOnly ? '' : searchName,
 		colors: inCollectionOnly ? [] : colors,
@@ -232,6 +240,7 @@ export function CardSearchPanel({
 		cmc: inCollectionOnly ? '' : cmc,
 		legal: inCollectionOnly ? undefined : legalFilter,
 		colorIdentity: inCollectionOnly ? undefined : colorIdentityToApply,
+		matchNothing: inCollectionOnly ? false : userCiDisjoint,
 		isToken: isTokenMode,
 		order: inCollectionOnly ? 'name' : order,
 		dir: inCollectionOnly ? 'auto' : dir,
