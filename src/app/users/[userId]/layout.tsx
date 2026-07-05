@@ -47,6 +47,8 @@ export default function UserProfileLayout({ children }: { children: React.ReactN
 
 	return (
 		<ProfileShellProvider value={{ ownerId: resolved.id, isOwner, handle: nickname }}>
+			{/* `userId` (the real id) keys the summary/count queries; `handle` (the URL
+			    nickname) builds the tab hrefs — they are deliberately distinct. */}
 			<ProfileView
 				userId={resolved.id}
 				profile={profile}

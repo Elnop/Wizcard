@@ -13,9 +13,6 @@ export type ProfileSummary = {
 	isLoading: boolean;
 };
 
-/** How many decks the Decks tab shows before its "See all" link. */
-export const PREVIEW_LIMIT = 12;
-
 /**
  * Loads what the profile header/tabs need: the deck list (small, loaded fully,
  * for the Decks tab) plus the exact collection and wishlist counts for the tab
