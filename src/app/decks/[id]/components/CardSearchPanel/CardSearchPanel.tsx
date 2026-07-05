@@ -64,6 +64,7 @@ export function CardSearchPanel({
 	const [filterModalOpen, setFilterModalOpen] = useState(false);
 	const [colors, setColors] = useState<ScryfallColor[]>([]);
 	const [colorMatch, setColorMatch] = useState<'exact' | 'include' | 'atMost'>('include');
+	const [colorIdentity, setColorIdentity] = useState<ScryfallColor[]>([]);
 	const [filterType, setFilterType] = useState<string[]>([]);
 	const [filterSet, setFilterSet] = useState('');
 	const [rarities, setRarities] = useState<string[]>([]);
@@ -81,6 +82,7 @@ export function CardSearchPanel({
 
 	const activeFilterCount =
 		colors.length +
+		colorIdentity.length +
 		(filterType.length > 0 ? 1 : 0) +
 		(filterSet ? 1 : 0) +
 		rarities.length +
@@ -91,6 +93,7 @@ export function CardSearchPanel({
 		(f: {
 			colors: ScryfallColor[];
 			colorMatch: 'exact' | 'include' | 'atMost';
+			colorIdentity: ScryfallColor[];
 			type: string[];
 			set: string;
 			rarities: string[];
@@ -101,6 +104,7 @@ export function CardSearchPanel({
 		}) => {
 			setColors(f.colors);
 			setColorMatch(f.colorMatch);
+			setColorIdentity(f.colorIdentity);
 			setFilterType(f.type);
 			setFilterSet(f.set);
 			setRarities(f.rarities);
@@ -139,6 +143,7 @@ export function CardSearchPanel({
 			name: searchName,
 			colors,
 			colorMatch,
+			colorIdentity,
 			type: filterType,
 			set: filterSet,
 			rarities,
@@ -147,7 +152,19 @@ export function CardSearchPanel({
 			order,
 			dir,
 		}),
-		[searchName, colors, colorMatch, filterType, filterSet, rarities, oracleText, cmc, order, dir]
+		[
+			searchName,
+			colors,
+			colorMatch,
+			colorIdentity,
+			filterType,
+			filterSet,
+			rarities,
+			oracleText,
+			cmc,
+			order,
+			dir,
+		]
 	);
 
 	const showLegalToggle = deckFormat != null && !FORMATS_WITHOUT_LEGALITY.includes(deckFormat);
@@ -190,6 +207,20 @@ export function CardSearchPanel({
 	const legalFilter = !isTokenMode && showLegalToggle && legalOnly ? deckFormat : undefined;
 	const colorIdentityFilter = legalFilter && isCommanderFormat ? commanderColorIdentity : undefined;
 
+	// User's color-identity selection combines with the commander constraint (both are
+	// "at most" ci<= sets), so the effective allowance is their intersection.
+	let effectiveColorIdentity: ScryfallColor[];
+	if (colorIdentityFilter && colorIdentityFilter.length > 0) {
+		effectiveColorIdentity =
+			colorIdentity.length > 0
+				? colorIdentity.filter((c) => colorIdentityFilter.includes(c))
+				: colorIdentityFilter;
+	} else {
+		effectiveColorIdentity = colorIdentity;
+	}
+	const colorIdentityToApply =
+		effectiveColorIdentity.length > 0 ? effectiveColorIdentity : undefined;
+
 	const scryfallFilters: SearchFilters = {
 		name: inCollectionOnly ? '' : searchName,
 		colors: inCollectionOnly ? [] : colors,
@@ -200,7 +231,7 @@ export function CardSearchPanel({
 		oracleText: inCollectionOnly ? '' : oracleText,
 		cmc: inCollectionOnly ? '' : cmc,
 		legal: inCollectionOnly ? undefined : legalFilter,
-		colorIdentity: inCollectionOnly ? undefined : colorIdentityFilter,
+		colorIdentity: inCollectionOnly ? undefined : colorIdentityToApply,
 		isToken: isTokenMode,
 		order: inCollectionOnly ? 'name' : order,
 		dir: inCollectionOnly ? 'auto' : dir,
@@ -372,6 +403,7 @@ export function CardSearchPanel({
 						isOpen={filterModalOpen}
 						colors={colors}
 						colorMatch={colorMatch}
+						colorIdentity={colorIdentity}
 						type={filterType}
 						set={filterSet}
 						rarities={rarities}
