@@ -46,6 +46,7 @@ export default function ProfilePage() {
 				userId={resolved.id}
 				profile={profile}
 				isLoading={isOwner ? ownerCtx.isLoading : false}
+				isOwner={isOwner}
 				onEdit={isOwner ? () => setEditing(true) : undefined}
 			/>
 			{editing && <ProfileEditModal onClose={() => setEditing(false)} />}

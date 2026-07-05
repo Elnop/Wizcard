@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import type { Card, CardEntry } from '@/types/cards';
+import type { Card, CardEntry, CardStack } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
@@ -16,6 +16,10 @@ import { getCard } from '@/lib/scryfall/store/cards-store';
 import { putCardsInCache } from '@/lib/scryfall/utils/card-cache';
 import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
 import { deriveCardModalProps } from '@/lib/card/deriveCardModalProps';
+import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
+import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
+import { buildViewerCardMenu } from '@/lib/card/viewerCardMenu';
+import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 
@@ -60,6 +64,87 @@ function buildMoveInitialEntry(entry: CardEntry): Partial<CardEntry> {
 	return patch;
 }
 
+/** Primitives the modal's image context menu acts on. Passed to the module-level
+ *  builders below so the deeply-nested inline arrows stay out of the component. */
+type ImageMenuDeps = {
+	mutations: ReturnType<typeof useCardMutations>;
+	requestMoveToCollection: (rowId: string) => void;
+	openAddToDeck: (card: AnyCard) => void;
+	openAddCard: (params: {
+		scryfallCard: ScryfallCard;
+		onAdd: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
+	}) => void;
+	addToCollection: (card: ScryfallCard, count: number, entry: Partial<CardEntry>) => void;
+	addToWishlist: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
+	closeModal: () => void;
+};
+
+/** Owner image menu (own collection/wishlist card). Mirrors `useOwnedCardMenuHandlers`. */
+function buildOwnedImageMenu(
+	stack: CardStack,
+	source: 'collection' | 'wishlist',
+	deps: ImageMenuDeps,
+	closeMenu: () => void
+): ContextMenuAction[] {
+	const { mutations } = deps;
+	const isWishlist = source === 'wishlist';
+	return buildOwnedCardMenu(
+		stack,
+		source,
+		{
+			// Already viewing this card in the modal — no re-open needed.
+			onViewDetails: () => {},
+			onChangePrint: () => {},
+			onAddCopy: (r) =>
+				isWishlist
+					? mutations.wishlist.duplicate(r.id, r.entry)
+					: mutations.collection.duplicate(r.id, r.entry),
+			onRemoveCopy: (r) =>
+				isWishlist
+					? mutations.wishlist.remove(r.entry.rowId)
+					: mutations.collection.decrement(r.id),
+			onMove: (r) =>
+				isWishlist
+					? deps.requestMoveToCollection(r.entry.rowId)
+					: mutations.moveToWishlist(r.entry.rowId),
+			onAddToDeck: (s) => deps.openAddToDeck(s.cards[0]),
+			onRemove: (r) => {
+				if (isWishlist) mutations.wishlist.remove(r.entry.rowId);
+				else mutations.collection.remove(r.id);
+				deps.closeModal();
+			},
+		},
+		closeMenu
+	);
+}
+
+/** Viewer image menu (another user's card / bare search card): acts on MY lists. */
+function buildViewerImageMenu(
+	card: AnyCard,
+	deps: ImageMenuDeps,
+	closeMenu: () => void
+): ContextMenuAction[] {
+	return buildViewerCardMenu(
+		card,
+		{
+			// Already open in the modal.
+			onViewDetails: () => {},
+			onAddToCollection: (c) =>
+				deps.openAddCard({
+					scryfallCard: c as ScryfallCard,
+					onAdd: (sc, entry, count) => deps.addToCollection(sc, count, entry),
+				}),
+			onAddToWishlist: (c) =>
+				deps.openAddCard({
+					scryfallCard: c as ScryfallCard,
+					onAdd: (sc, entry, count) => deps.addToWishlist(sc, entry, count),
+				}),
+			onAddToDeck: (c) => deps.openAddToDeck(c),
+		},
+		closeMenu
+	);
+}
+
 /** Rebuild a stack's Card[] (all copies, same oracle key) from a context's entries
  *  + the global hydrated-cards store. Mirrors how the grid derives stacks. */
 function resolveStackCards(oracleKey: string, entries: StoredCopy[]): Card[] {
@@ -88,6 +173,7 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 	const wishlist = useWishlistContext();
 	const { openAddToDeck } = useAddToDeckModal();
 	const { openAddCard } = useAddCardModal();
+	const mutations = useCardMutations();
 
 	const [open, setOpen] = useState<OpenState>(null);
 
@@ -234,6 +320,50 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 		requestMoveToCollection,
 	]);
 
+	// Right-click menu for the modal's main image. Mirrors the card grid: the
+	// owner (own data → `stack`) gets the full owned menu; a viewer (another
+	// user's card → `frozen`, or a bare search card → `bare`) gets the viewer menu
+	// acting on their OWN lists. This is what unlocks actions on a frozen modal,
+	// where no mutation handlers are derived.
+	const buildImageMenuItems = useMemo<
+		((card: AnyCard, closeMenu: () => void) => ContextMenuAction[] | null) | undefined
+	>(() => {
+		if (!open || open.kind === 'deck') return undefined;
+
+		const deps: ImageMenuDeps = {
+			mutations,
+			requestMoveToCollection,
+			openAddToDeck,
+			openAddCard,
+			addToCollection: collection.addCards,
+			addToWishlist: wishlist.addToWishlist,
+			closeModal: close,
+		};
+
+		// Owner (own data) → full owned menu. Otherwise (frozen/bare) → viewer menu
+		// on MY lists — this is what unlocks actions on another user's frozen modal.
+		if (open.kind === 'stack' && resolved.source) {
+			const stackCards = Array.isArray(resolved.cards) ? resolved.cards : [];
+			const rep = stackCards[0];
+			if (!rep) return undefined;
+			const stack: CardStack = { oracleId: oracleKeyOf(rep), name: rep.name, cards: stackCards };
+			const source = resolved.source;
+			return (_card, closeMenu) => buildOwnedImageMenu(stack, source, deps, closeMenu);
+		}
+
+		return (card, closeMenu) => buildViewerImageMenu(card, deps, closeMenu);
+	}, [
+		open,
+		resolved,
+		mutations,
+		requestMoveToCollection,
+		openAddToDeck,
+		openAddCard,
+		collection.addCards,
+		wishlist.addToWishlist,
+		close,
+	]);
+
 	const value = useMemo<CardModalContextValue>(
 		() => ({ openCardModal, openDeckCardModal, close }),
 		[openCardModal, openDeckCardModal, close]
@@ -253,7 +383,12 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 			) : (
 				open &&
 				resolved.cards && (
-					<CardModal cards={resolved.cards} onClose={close} {...(derivedProps ?? {})} />
+					<CardModal
+						cards={resolved.cards}
+						onClose={close}
+						{...(derivedProps ?? {})}
+						buildImageMenuItems={buildImageMenuItems}
+					/>
 				)
 			)}
 		</CardModalContext.Provider>

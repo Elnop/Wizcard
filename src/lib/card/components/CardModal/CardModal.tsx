@@ -20,6 +20,8 @@ import type { CollectionCopyEntry } from '@/lib/card/components/CardPrintPickerM
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
 import { Modal } from '@/components/Modal/Modal';
 import { CardList } from '@/lib/card/components/CardList/CardList';
+import { ContextMenu, type ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
+import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
@@ -77,6 +79,12 @@ interface Props {
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
 	renderCopyBadge?: (copy: Card) => React.ReactNode;
+	/**
+	 * Right-click menu for the main card image. Owner vs viewer variant is decided
+	 * by the caller (CardModalProvider) from the open-state; returns null to show
+	 * no menu (e.g. custom cards).
+	 */
+	buildImageMenuItems?: (card: AnyCard, close: () => void) => ContextMenuAction[] | null;
 }
 
 interface InnerProps {
@@ -104,6 +112,41 @@ interface InnerProps {
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
 	renderCopyBadge?: (copy: Card) => React.ReactNode;
+	buildImageMenuItems?: (card: AnyCard, close: () => void) => ContextMenuAction[] | null;
+}
+
+/**
+ * Wraps the main card image with a right-click context menu, reusing the shared
+ * `useContextMenu` + `ContextMenu` (portal, edge-flip, click/Escape/scroll close).
+ * When `buildItems` is absent or returns an empty list, the native menu shows.
+ */
+function ImageContextMenuWrapper({
+	card,
+	buildItems,
+	children,
+}: {
+	card: AnyCard;
+	buildItems?: (card: AnyCard, close: () => void) => ContextMenuAction[] | null;
+	children: React.ReactNode;
+}) {
+	const menu = useContextMenu<AnyCard>();
+	const items = buildItems ? (buildItems(card, menu.close) ?? []) : [];
+
+	return (
+		<>
+			<div
+				onContextMenu={(e) => {
+					if (items.length === 0) return;
+					menu.open(card, e);
+				}}
+			>
+				{children}
+			</div>
+			{menu.menu && items.length > 0 && (
+				<ContextMenu items={items} position={menu.menu.position} onClose={menu.close} />
+			)}
+		</>
+	);
 }
 
 function CopyMetaSection({ entry }: { entry: CardEntry }) {
@@ -325,6 +368,7 @@ function CardModalInner({
 	producerSections,
 	onProducerClick,
 	renderCopyBadge,
+	buildImageMenuItems,
 }: InnerProps) {
 	const [lightbox, setLightbox] = useState(false);
 	const [selectedRowId, setSelectedRowId] = useState<string>(initialRowId ?? cards[0].entry.rowId);
@@ -535,15 +579,17 @@ function CardModalInner({
 
 				<div className={styles.layout}>
 					<div className={styles.imageCol}>
-						<CardImage
-							card={selectedCard}
-							size="large"
-							priority
-							onClick={() => setLightbox(true)}
-							isFoil={selectedCard.entry.isFoil}
-							foilType={selectedCard.entry.foilType}
-							isProxy={selectedCard.entry.proxy}
-						/>
+						<ImageContextMenuWrapper card={selectedCard} buildItems={buildImageMenuItems}>
+							<CardImage
+								card={selectedCard}
+								size="large"
+								priority
+								onClick={() => setLightbox(true)}
+								isFoil={selectedCard.entry.isFoil}
+								foilType={selectedCard.entry.foilType}
+								isProxy={selectedCard.entry.proxy}
+							/>
+						</ImageContextMenuWrapper>
 						<button
 							type="button"
 							className={styles.changePrintBtn}
@@ -777,6 +823,7 @@ function ScryfallCardModalInner({
 	availableZones,
 	onAddToWishlist,
 	onAddToDeck,
+	buildImageMenuItems,
 }: {
 	card: ScryfallCard;
 	onClose: () => void;
@@ -785,6 +832,7 @@ function ScryfallCardModalInner({
 	availableZones?: DeckZone[];
 	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
 	onAddToDeck?: (card: ScryfallCard) => void;
+	buildImageMenuItems?: (card: AnyCard, close: () => void) => ContextMenuAction[] | null;
 }) {
 	const [lightbox, setLightbox] = useState(false);
 	const [addingCard, setAddingCard] = useState(false);
@@ -807,7 +855,9 @@ function ScryfallCardModalInner({
 
 				<div className={styles.layout}>
 					<div className={styles.imageCol}>
-						<CardImage card={card} size="large" priority onClick={() => setLightbox(true)} />
+						<ImageContextMenuWrapper card={card} buildItems={buildImageMenuItems}>
+							<CardImage card={card} size="large" priority onClick={() => setLightbox(true)} />
+						</ImageContextMenuWrapper>
 						{onAddToCollection && (
 							<button
 								type="button"
@@ -943,6 +993,7 @@ export function CardModal({
 	producerSections,
 	onProducerClick,
 	renderCopyBadge,
+	buildImageMenuItems,
 }: Props) {
 	if (cards === null) return null;
 
@@ -967,6 +1018,7 @@ export function CardModal({
 				availableZones={availableZones}
 				onAddToWishlist={onAddToWishlist}
 				onAddToDeck={onAddToDeck}
+				buildImageMenuItems={buildImageMenuItems}
 			/>
 		);
 	}
@@ -998,6 +1050,7 @@ export function CardModal({
 			producerSections={producerSections}
 			onProducerClick={onProducerClick}
 			renderCopyBadge={renderCopyBadge}
+			buildImageMenuItems={buildImageMenuItems}
 		/>
 	);
 }

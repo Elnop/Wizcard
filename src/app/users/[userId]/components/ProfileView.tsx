@@ -26,11 +26,14 @@ export function ProfileView({
 	userId,
 	profile,
 	isLoading = false,
+	isOwner = false,
 	onEdit,
 }: {
 	userId: string;
 	profile: Profile | null;
 	isLoading?: boolean;
+	/** True when the signed-in user is viewing their OWN profile. */
+	isOwner?: boolean;
 	onEdit?: () => void;
 }) {
 	const router = useRouter();
@@ -141,8 +144,12 @@ export function ProfileView({
 				{/* Collection / wishlist tabs render the full browsing view (search +
 				    filters + grid) lazily — only mounted when their tab is active, so
 				    opening the profile doesn't fetch a whole collection up front. */}
-				{tab === 'collection' && <PublicCollectionView ownerId={userId} filterLayout="modal" />}
-				{tab === 'wishlist' && <PublicWishlistView ownerId={userId} filterLayout="modal" />}
+				{tab === 'collection' && (
+					<PublicCollectionView ownerId={userId} filterLayout="modal" isOwner={isOwner} />
+				)}
+				{tab === 'wishlist' && (
+					<PublicWishlistView ownerId={userId} filterLayout="modal" isOwner={isOwner} />
+				)}
 			</div>
 		</div>
 	);

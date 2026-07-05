@@ -7,6 +7,10 @@ import { ExportMenu } from '@/app/collection/ExportMenu/ExportMenu';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { Spinner } from '@/components/Spinner/Spinner';
+import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
+import { buildViewerCardMenu } from '@/lib/card/viewerCardMenu';
+import { useOwnedCardMenuHandlers } from '@/lib/card/hooks/useOwnedCardMenuHandlers';
+import { useViewerCardMenuHandlers } from '@/lib/card/hooks/useViewerCardMenuHandlers';
 import WishlistPage from '@/app/wishlist/page';
 import { usePublicWishlist } from './usePublicWishlist';
 import { useProfileByNickname } from '../useProfileByNickname';
@@ -15,13 +19,18 @@ import { UserNotFound } from '../components/UserNotFound';
 export function PublicWishlistView({
 	ownerId,
 	filterLayout,
+	isOwner = false,
 }: {
 	ownerId: string;
 	filterLayout?: 'aside' | 'modal';
+	/** True when the signed-in user is viewing their OWN profile. */
+	isOwner?: boolean;
 }) {
 	const { entries, isLoaded, isFullyLoaded } = usePublicWishlist(ownerId);
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
 	const { openCardModal } = useCardModalContext();
+	const ownerHandlers = useOwnedCardMenuHandlers(stacks, 'wishlist');
+	const viewerHandlers = useViewerCardMenuHandlers();
 
 	const isLoadingWishlist = !isFullyLoaded || isHydrating;
 
@@ -52,7 +61,15 @@ export function PublicWishlistView({
 			actions={actions || undefined}
 			emptyState={emptyState}
 			filterLayout={filterLayout}
-			onCardClick={(stack) => openCardModal(stack.cards, { readOnly: true })}
+			onCardClick={(stack) =>
+				isOwner ? openCardModal(stack.cards) : openCardModal(stack.cards, { readOnly: true })
+			}
+			buildCardMenuItems={(stack, close) =>
+				isOwner
+					? buildOwnedCardMenu(stack, 'wishlist', ownerHandlers, close)
+					: buildViewerCardMenu(stack.cards[0], viewerHandlers, close)
+			}
+			showDeckBadges={isOwner}
 		/>
 	);
 }
