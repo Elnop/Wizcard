@@ -130,6 +130,7 @@ function SearchPageContent() {
 		name,
 		colors: isBacks ? [] : colors,
 		colorMatch,
+		colorIdentity: [],
 		type: isBacks ? [] : type,
 		set: isBacks ? '' : set,
 		rarities: isBacks ? [] : rarities,

@@ -194,6 +194,7 @@ export function useSearchFiltersFromUrl() {
 		name: '',
 		colors,
 		colorMatch,
+		colorIdentity: [],
 		type,
 		set,
 		rarities,
