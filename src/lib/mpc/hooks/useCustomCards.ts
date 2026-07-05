@@ -33,6 +33,7 @@ export function useCustomCards(
 		colors: [],
 		colorMatch: 'include',
 		colorIdentity: [],
+		colorIdentityMatch: 'atMost',
 		type: [],
 		set: '',
 		rarities: [],

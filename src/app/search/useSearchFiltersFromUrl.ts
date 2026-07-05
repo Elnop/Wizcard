@@ -202,6 +202,7 @@ export function useSearchFiltersFromUrl() {
 		colors,
 		colorMatch,
 		colorIdentity,
+		colorIdentityMatch: 'atMost',
 		type,
 		set,
 		rarities,

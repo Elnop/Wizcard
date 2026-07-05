@@ -10,6 +10,7 @@ export interface CardFilters {
 	colors: ScryfallColor[];
 	colorMatch: ColorMatch;
 	colorIdentity: ScryfallColor[];
+	colorIdentityMatch: 'atMost' | 'exact';
 	type: string[];
 	set: string;
 	rarities: string[];
@@ -24,6 +25,7 @@ export const DEFAULT_CARD_FILTERS: CardFilters = {
 	colors: [],
 	colorMatch: 'include',
 	colorIdentity: [],
+	colorIdentityMatch: 'atMost',
 	type: [],
 	set: '',
 	rarities: [],

@@ -133,6 +133,7 @@ function SearchPageContent() {
 		colors: isBacks ? [] : colors,
 		colorMatch,
 		colorIdentity: [],
+		colorIdentityMatch: 'atMost',
 		type: isBacks ? [] : type,
 		set: isBacks ? '' : set,
 		rarities: isBacks ? [] : rarities,
