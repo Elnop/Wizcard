@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { DeckMeta } from '@/types/decks';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { Spinner } from '@/components/Spinner/Spinner';
@@ -9,11 +9,8 @@ import { DeckCard } from '@/app/decks/components/DeckCard/DeckCard';
 import { FolderCard } from '@/app/decks/components/FolderCard/FolderCard';
 import { FolderBreadcrumb } from '@/app/decks/components/FolderBreadcrumb/FolderBreadcrumb';
 import { useDeckSummaries } from '@/app/decks/useDeckSummaries';
-import { useAuth } from '@/lib/supabase/contexts/AuthContext';
-import DecksPageClient from '@/app/decks/DecksPageClient';
 import { usePublicDecks } from './usePublicDecks';
-import { useProfileByNickname } from '../useProfileByNickname';
-import { UserNotFound } from '../components/UserNotFound';
+import { useProfileShell } from '../ProfileShellContext';
 import styles from '@/app/decks/page.module.css';
 
 function PublicDecksView({ ownerId, handle }: { ownerId: string; handle: string }) {
@@ -144,29 +141,11 @@ function PublicDecksView({ ownerId, handle }: { ownerId: string; handle: string 
 }
 
 /**
- * Canonical, shareable decks-list URL. Owner => full editable client
- * (DecksPageClient, which reads the owner DeckContext); visitor => read-only view.
+ * Decks tab of the profile shell. Always the public decks view (folders + all
+ * decks, read-only). Identity comes from the layout via ProfileShellContext —
+ * this page does not resolve the nickname.
  */
 export default function UserDecksPage() {
-	const params = useParams();
-	const nickname = params.userId as string;
-	const { user, isLoading: authLoading } = useAuth();
-	const { profile, status } = useProfileByNickname(nickname);
-
-	if (authLoading || status === 'loading') {
-		return (
-			<div className={styles.page}>
-				<div className={styles.loading}>
-					<Spinner />
-				</div>
-			</div>
-		);
-	}
-
-	if (status === 'not-found' || !profile) {
-		return <UserNotFound />;
-	}
-
-	const isOwner = !!user && user.id === profile.id;
-	return isOwner ? <DecksPageClient /> : <PublicDecksView ownerId={profile.id} handle={nickname} />;
+	const { ownerId, handle } = useProfileShell();
+	return <PublicDecksView ownerId={ownerId} handle={handle} />;
 }
