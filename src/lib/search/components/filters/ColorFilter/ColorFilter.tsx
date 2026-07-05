@@ -32,7 +32,7 @@ export function ColorFilter({
 
 	return (
 		<div className={styles.container}>
-			<span className={styles.label}>Colors</span>
+			<span className={styles.label}>Colors (cost)</span>
 			<div className={styles.colors}>
 				{MTG_COLORS.map((color) => (
 					<button
