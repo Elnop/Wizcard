@@ -125,3 +125,42 @@ export async function updateCardRow(
 		throw new Error(`[queries/cards] updateCardRow error: ${error.message}`);
 	}
 }
+
+/**
+ * Exact count of an owner's DISTINCT public prints (scryfall_id) via the
+ * count_distinct_public_cards RPC. Used by the profile Overview "unique cards"
+ * stat; the plain fetchPublicCardCount gives total copies (rows).
+ */
+export async function fetchDistinctPublicCardCount(ownerId: string): Promise<number> {
+	const supabase = createClient();
+	const { data, error } = await supabase.rpc('count_distinct_public_cards', { owner: ownerId });
+	if (error) {
+		console.error('[queries/cards] fetchDistinctPublicCardCount error:', error);
+		return 0;
+	}
+	return (data as number | null) ?? 0;
+}
+
+/**
+ * The `limit` most recently added public collection rows for an owner
+ * (wishlist=false), newest first. Read via the price-free public view; used by
+ * the profile Overview "recently added" strip.
+ */
+export async function fetchRecentPublicCardRows(
+	ownerId: string,
+	limit: number
+): Promise<CardDbRow[]> {
+	const supabase = createClient();
+	const { data, error } = await supabase
+		.from('public_collection_cards')
+		.select('*')
+		.eq('owner_id', ownerId)
+		.eq('wishlist', false)
+		.order('date_added', { ascending: false })
+		.limit(limit);
+	if (error) {
+		console.error('[queries/cards] fetchRecentPublicCardRows error:', error);
+		return [];
+	}
+	return data as CardDbRow[];
+}
