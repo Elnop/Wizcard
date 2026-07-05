@@ -33,6 +33,7 @@ interface FilterModalProps {
 	colors: ScryfallColor[];
 	colorMatch?: ColorMatch;
 	colorIdentity: ScryfallColor[];
+	colorIdentityMatch: 'atMost' | 'exact';
 	type: string[];
 	set: string;
 	rarities: string[];
@@ -52,6 +53,7 @@ interface FilterModalProps {
 		colors: ScryfallColor[];
 		colorMatch: ColorMatch;
 		colorIdentity: ScryfallColor[];
+		colorIdentityMatch: 'atMost' | 'exact';
 		type: string[];
 		set: string;
 		rarities: string[];
@@ -73,6 +75,7 @@ interface FilterModalContentProps {
 	initialColors: ScryfallColor[];
 	initialColorMatch: 'exact' | 'include' | 'atMost';
 	initialColorIdentity: ScryfallColor[];
+	initialColorIdentityMatch: 'atMost' | 'exact';
 	initialType: string[];
 	initialSet: string;
 	initialRarities: string[];
@@ -96,6 +99,7 @@ function FilterModalContent({
 	initialColors,
 	initialColorMatch,
 	initialColorIdentity,
+	initialColorIdentityMatch,
 	initialType,
 	initialSet,
 	initialRarities,
@@ -119,6 +123,9 @@ function FilterModalContent({
 	);
 	const [draftColorIdentity, setDraftColorIdentity] =
 		useState<ScryfallColor[]>(initialColorIdentity);
+	const [draftColorIdentityMatch, setDraftColorIdentityMatch] = useState<'atMost' | 'exact'>(
+		initialColorIdentityMatch
+	);
 	const [draftType, setDraftType] = useState<string[]>(initialType);
 	const [draftSet, setDraftSet] = useState(initialSet);
 	const [draftRarities, setDraftRarities] = useState<string[]>(initialRarities);
@@ -143,6 +150,7 @@ function FilterModalContent({
 			colors: draftColors,
 			colorMatch: draftColorMatch,
 			colorIdentity: draftColorIdentity,
+			colorIdentityMatch: draftColorIdentityMatch,
 			type: draftType,
 			set: draftSet,
 			rarities: draftRarities,
@@ -163,6 +171,7 @@ function FilterModalContent({
 			setDraftColors([]);
 			setDraftColorMatch('include');
 			setDraftColorIdentity([]);
+			setDraftColorIdentityMatch('atMost');
 			setDraftType([]);
 			setDraftSet('');
 			setDraftRarities([]);
@@ -208,6 +217,8 @@ function FilterModalContent({
 						<ColorIdentityFilter
 							selected={draftColorIdentity}
 							onChange={setDraftColorIdentity}
+							colorIdentityMatch={draftColorIdentityMatch}
+							onColorIdentityMatchChange={setDraftColorIdentityMatch}
 							symbolMap={symbolMap}
 						/>
 						<RarityFilter value={draftRarities} onChange={setDraftRarities} />
@@ -266,6 +277,7 @@ export function FilterModal({
 	colors,
 	colorMatch = 'include',
 	colorIdentity,
+	colorIdentityMatch = 'atMost',
 	type,
 	set,
 	rarities,
@@ -295,6 +307,7 @@ export function FilterModal({
 				initialColors={colors}
 				initialColorMatch={colorMatch}
 				initialColorIdentity={colorIdentity}
+				initialColorIdentityMatch={colorIdentityMatch}
 				initialType={type}
 				initialSet={set}
 				initialRarities={rarities}
