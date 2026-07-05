@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { Profile } from '@/lib/profile/types';
 import { Button } from '@/components/Button/Button';
-import { useProfileSummary } from '../useProfileSummary';
+import type { ProfileSummary } from '../useProfileSummary';
 import { useStickyHeader } from './useStickyHeader';
 import styles from './ProfileView.module.css';
 
@@ -31,6 +31,7 @@ export function ProfileView({
 	isLoading = false,
 	onEdit,
 	handle,
+	summary,
 	children,
 }: {
 	userId: string;
@@ -40,12 +41,13 @@ export function ProfileView({
 	onEdit?: () => void;
 	/** URL nickname used to build tab hrefs. */
 	handle: string;
+	/** Section counts, loaded once by the layout and passed down. */
+	summary: ProfileSummary;
 	/** Active tab content, injected by the layout. */
 	children: React.ReactNode;
 }) {
 	const pathname = usePathname();
 	const activeTab = tabFromPathname(pathname);
-	const summary = useProfileSummary(userId);
 	const barRef = useRef<HTMLDivElement>(null);
 	const { pinned, visible } = useStickyHeader(barRef);
 

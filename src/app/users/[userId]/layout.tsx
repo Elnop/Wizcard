@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { useProfileByNickname } from './useProfileByNickname';
+import { useProfileSummary } from './useProfileSummary';
 import { ProfileShellProvider } from './ProfileShellContext';
 import { ProfileView } from './components/ProfileView';
 import { ProfileEditModal } from './components/ProfileEditModal';
@@ -28,6 +29,7 @@ export default function UserProfileLayout({ children }: { children: React.ReactN
 
 	const { profile: resolved, status } = useProfileByNickname(nickname);
 	const ownerCtx = useProfileContext();
+	const summary = useProfileSummary(resolved?.id ?? '');
 
 	if (status === 'loading') {
 		return (
@@ -46,7 +48,9 @@ export default function UserProfileLayout({ children }: { children: React.ReactN
 	const profile = isOwner ? ownerCtx.profile : resolved;
 
 	return (
-		<ProfileShellProvider value={{ ownerId: resolved.id, isOwner, handle: nickname }}>
+		<ProfileShellProvider
+			value={{ ownerId: resolved.id, isOwner, handle: nickname, summary, profile }}
+		>
 			{/* `userId` (the real id) keys the summary/count queries; `handle` (the URL
 			    nickname) builds the tab hrefs — they are deliberately distinct. */}
 			<ProfileView
@@ -55,6 +59,7 @@ export default function UserProfileLayout({ children }: { children: React.ReactN
 				isLoading={isOwner ? ownerCtx.isLoading : false}
 				onEdit={isOwner ? () => setEditing(true) : undefined}
 				handle={nickname}
+				summary={summary}
 			>
 				{children}
 			</ProfileView>
