@@ -1,20 +1,15 @@
 'use client';
 
-import { useParams } from 'next/navigation';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { CollectionView } from '@/app/collection/lib/CollectionView/CollectionView';
 import { ExportMenu } from '@/app/collection/ExportMenu/ExportMenu';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
-import { useAuth } from '@/lib/supabase/contexts/AuthContext';
-import { Spinner } from '@/components/Spinner/Spinner';
 import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
 import { buildViewerCardMenu } from '@/lib/card/viewerCardMenu';
 import { useOwnedCardMenuHandlers } from '@/lib/card/hooks/useOwnedCardMenuHandlers';
 import { useViewerCardMenuHandlers } from '@/lib/card/hooks/useViewerCardMenuHandlers';
-import WishlistPage from '@/app/wishlist/page';
 import { usePublicWishlist } from './usePublicWishlist';
-import { useProfileByNickname } from '../useProfileByNickname';
-import { UserNotFound } from '../components/UserNotFound';
+import { useProfileShell } from '../ProfileShellContext';
 
 export function PublicWishlistView({
 	ownerId,
@@ -75,28 +70,11 @@ export function PublicWishlistView({
 }
 
 /**
- * Canonical, shareable wishlist URL. The owner sees their full editable wishlist
- * (reusing the owner WishlistPage, which reads the owner contexts); visitors see
- * a read-only view of the owner's standalone wishlist cards.
+ * Wishlist tab of the profile shell. Always the public wishlist view; the owner
+ * gets editable cards / owner menu via `isOwner`. Identity comes from the layout
+ * via ProfileShellContext — this page does not resolve the nickname.
  */
 export default function UserWishlistPage() {
-	const params = useParams();
-	const nickname = params.userId as string;
-	const { user, isLoading: authLoading } = useAuth();
-	const { profile, status } = useProfileByNickname(nickname);
-
-	if (authLoading || status === 'loading') {
-		return (
-			<div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
-				<Spinner />
-			</div>
-		);
-	}
-
-	if (status === 'not-found' || !profile) {
-		return <UserNotFound />;
-	}
-
-	const isOwner = !!user && user.id === profile.id;
-	return isOwner ? <WishlistPage /> : <PublicWishlistView ownerId={profile.id} />;
+	const { ownerId, isOwner } = useProfileShell();
+	return <PublicWishlistView ownerId={ownerId} filterLayout="modal" isOwner={isOwner} />;
 }
