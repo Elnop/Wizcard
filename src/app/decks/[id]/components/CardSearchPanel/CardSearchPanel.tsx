@@ -65,6 +65,7 @@ export function CardSearchPanel({
 	const [colors, setColors] = useState<ScryfallColor[]>([]);
 	const [colorMatch, setColorMatch] = useState<'exact' | 'include' | 'atMost'>('include');
 	const [colorIdentity, setColorIdentity] = useState<ScryfallColor[]>([]);
+	const [colorIdentityMatch, setColorIdentityMatch] = useState<'atMost' | 'exact'>('atMost');
 	const [filterType, setFilterType] = useState<string[]>([]);
 	const [filterSet, setFilterSet] = useState('');
 	const [rarities, setRarities] = useState<string[]>([]);
@@ -94,6 +95,7 @@ export function CardSearchPanel({
 			colors: ScryfallColor[];
 			colorMatch: 'exact' | 'include' | 'atMost';
 			colorIdentity: ScryfallColor[];
+			colorIdentityMatch: 'atMost' | 'exact';
 			type: string[];
 			set: string;
 			rarities: string[];
@@ -105,6 +107,7 @@ export function CardSearchPanel({
 			setColors(f.colors);
 			setColorMatch(f.colorMatch);
 			setColorIdentity(f.colorIdentity);
+			setColorIdentityMatch(f.colorIdentityMatch);
 			setFilterType(f.type);
 			setFilterSet(f.set);
 			setRarities(f.rarities);
@@ -144,6 +147,7 @@ export function CardSearchPanel({
 			colors,
 			colorMatch,
 			colorIdentity,
+			colorIdentityMatch,
 			type: filterType,
 			set: filterSet,
 			rarities,
@@ -157,6 +161,7 @@ export function CardSearchPanel({
 			colors,
 			colorMatch,
 			colorIdentity,
+			colorIdentityMatch,
 			filterType,
 			filterSet,
 			rarities,
@@ -221,13 +226,17 @@ export function CardSearchPanel({
 	const colorIdentityToApply =
 		effectiveColorIdentity.length > 0 ? effectiveColorIdentity : undefined;
 
-	// The user made a real (non-empty) selection, a commander constraint exists, and the
-	// two are disjoint: no card can satisfy both, so the search must yield zero results.
-	const userCiDisjoint =
-		!!colorIdentityFilter &&
-		colorIdentityFilter.length > 0 &&
+	// The intersection shrank the user's selection: at least one selected color is outside
+	// the commander's identity. In exact mode this makes "exactly <selection>" impossible.
+	const commanderConstrained = !!colorIdentityFilter && colorIdentityFilter.length > 0;
+	const intersectionShrunk =
+		commanderConstrained && colorIdentity.length !== effectiveColorIdentity.length;
+	// No card can satisfy the constraint: either the intersection is empty (at-most and exact),
+	// or exact mode was asked but the commander narrowed the selection.
+	const userCiImpossible =
+		commanderConstrained &&
 		colorIdentity.length > 0 &&
-		effectiveColorIdentity.length === 0;
+		(effectiveColorIdentity.length === 0 || (colorIdentityMatch === 'exact' && intersectionShrunk));
 
 	const scryfallFilters: SearchFilters = {
 		name: inCollectionOnly ? '' : searchName,
@@ -240,7 +249,8 @@ export function CardSearchPanel({
 		cmc: inCollectionOnly ? '' : cmc,
 		legal: inCollectionOnly ? undefined : legalFilter,
 		colorIdentity: inCollectionOnly ? undefined : colorIdentityToApply,
-		matchNothing: inCollectionOnly ? false : userCiDisjoint,
+		colorIdentityMatch,
+		matchNothing: inCollectionOnly ? false : userCiImpossible,
 		isToken: isTokenMode,
 		order: inCollectionOnly ? 'name' : order,
 		dir: inCollectionOnly ? 'auto' : dir,
@@ -254,7 +264,7 @@ export function CardSearchPanel({
 		loadMore,
 	} = useScryfallCardSearch(scryfallFilters);
 
-	const inCollectionCards = userCiDisjoint ? [] : filteredCollectionCards;
+	const inCollectionCards = userCiImpossible ? [] : filteredCollectionCards;
 	const cards = inCollectionOnly ? inCollectionCards : scryfallCards;
 	const isLoading = inCollectionOnly ? collectionLoading : scryfallLoading;
 
@@ -414,6 +424,7 @@ export function CardSearchPanel({
 						colors={colors}
 						colorMatch={colorMatch}
 						colorIdentity={colorIdentity}
+						colorIdentityMatch={colorIdentityMatch}
 						type={filterType}
 						set={filterSet}
 						rarities={rarities}
