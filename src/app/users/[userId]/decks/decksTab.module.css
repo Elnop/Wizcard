@@ -1,0 +1,11 @@
+/* Profile "Decks" tab embed override for the shared /decks page styles.
+   The standalone /decks page reserves a fixed left sidebar (margin-left:220px on
+   .main) and comfortable page padding; inside the profile shell there is no
+   sidebar, so drop the sidebar offset and shrink the lateral padding. Applied as
+   an extra class alongside the shared `.main`, so it only affects this embed. */
+.mainTight {
+	margin-left: 0;
+	padding-left: 4px;
+	padding-right: 4px;
+	max-width: none;
+}

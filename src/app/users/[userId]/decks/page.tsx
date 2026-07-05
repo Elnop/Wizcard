@@ -12,6 +12,7 @@ import { useDeckSummaries } from '@/app/decks/useDeckSummaries';
 import { usePublicDecks } from './usePublicDecks';
 import { useProfileShell } from '../ProfileShellContext';
 import styles from '@/app/decks/page.module.css';
+import tabStyles from './decksTab.module.css';
 
 function PublicDecksView({ ownerId, handle }: { ownerId: string; handle: string }) {
 	const router = useRouter();
@@ -88,7 +89,7 @@ function PublicDecksView({ ownerId, handle }: { ownerId: string; handle: string 
 
 	return (
 		<div className={styles.page}>
-			<div className={styles.main}>
+			<div className={`${styles.main} ${tabStyles.mainTight}`}>
 				{activeFolderId !== null && (
 					<FolderBreadcrumb
 						activeFolderId={activeFolderId}
