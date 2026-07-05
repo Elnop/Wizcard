@@ -64,6 +64,7 @@ export function CollectionFiltersBar({
 				variant="default"
 				colors={filters.colors}
 				colorMatch={filters.colorMatch}
+				colorIdentity={filters.colorIdentity}
 				type={filters.type}
 				set={filters.set}
 				rarities={filters.rarities}
@@ -79,6 +80,7 @@ export function CollectionFiltersBar({
 						...filters,
 						colors: applied.colors,
 						colorMatch: applied.colorMatch,
+						colorIdentity: applied.colorIdentity,
 						type: applied.type,
 						set: applied.set,
 						rarities: applied.rarities,

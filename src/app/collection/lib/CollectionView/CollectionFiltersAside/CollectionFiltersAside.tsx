@@ -5,6 +5,7 @@ import type { ScryfallColor, ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
 import { ColorFilter } from '@/lib/search/components/filters/ColorFilter/ColorFilter';
+import { ColorIdentityFilter } from '@/lib/search/components/filters/ColorIdentityFilter/ColorIdentityFilter';
 import { RarityFilter } from '@/lib/search/components/filters/RarityFilter/RarityFilter';
 import { TypeFilter } from '@/lib/search/components/filters/TypeFilter/TypeFilter';
 import { OracleTextFilter } from '@/lib/search/components/filters/OracleTextFilter/OracleTextFilter';
@@ -96,6 +97,12 @@ export function CollectionFiltersAside({
 					onChange={(colors: ScryfallColor[]) => patch('colors', colors)}
 					colorMatch={filters.colorMatch}
 					onColorMatchChange={(colorMatch) => patch('colorMatch', colorMatch)}
+					symbolMap={symbolMap}
+				/>
+
+				<ColorIdentityFilter
+					selected={filters.colorIdentity}
+					onChange={(colorIdentity: ScryfallColor[]) => patch('colorIdentity', colorIdentity)}
 					symbolMap={symbolMap}
 				/>
 
