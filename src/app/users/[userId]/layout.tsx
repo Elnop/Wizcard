@@ -51,10 +51,9 @@ export default function UserProfileLayout({ children }: { children: React.ReactN
 		<ProfileShellProvider
 			value={{ ownerId: resolved.id, isOwner, handle: nickname, summary, profile }}
 		>
-			{/* `userId` (the real id) keys the summary/count queries; `handle` (the URL
-			    nickname) builds the tab hrefs — they are deliberately distinct. */}
+			{/* `resolved.id` (the real id) keys the summary/count queries; `handle`
+			    (the URL nickname) builds the tab hrefs — they are deliberately distinct. */}
 			<ProfileView
-				userId={resolved.id}
 				profile={profile}
 				isLoading={isOwner ? ownerCtx.isLoading : false}
 				onEdit={isOwner ? () => setEditing(true) : undefined}

@@ -26,7 +26,6 @@ function tabFromPathname(pathname: string): Tab {
  * renders an email — only public fields.
  */
 export function ProfileView({
-	userId,
 	profile,
 	isLoading = false,
 	onEdit,
@@ -34,7 +33,6 @@ export function ProfileView({
 	summary,
 	children,
 }: {
-	userId: string;
 	profile: Profile | null;
 	isLoading?: boolean;
 	/** Set (by the layout, only for the owner) to show the Edit-profile button. */

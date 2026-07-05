@@ -29,6 +29,10 @@ export function useProfileSummary(ownerId: string): ProfileSummary {
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
+		if (!ownerId) {
+			// No owner resolved yet — nothing to load; don't hit the DB with an empty id.
+			return;
+		}
 		let cancelled = false;
 		async function load() {
 			setIsLoading(true);
@@ -52,5 +56,8 @@ export function useProfileSummary(ownerId: string): ProfileSummary {
 		};
 	}, [ownerId]);
 
-	return { ...state, isLoading };
+	// While no owner id is resolved yet, report not-loading (nothing to load)
+	// rather than the `useState(true)` initial value, without an extra
+	// synchronous setState in the effect.
+	return { ...state, isLoading: ownerId ? isLoading : false };
 }
