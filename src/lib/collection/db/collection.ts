@@ -10,6 +10,7 @@ import {
 	insertCardRows,
 	deleteCardRowsByIds,
 	updateCardRow,
+	fetchRecentPublicCardRows,
 } from '@/lib/supabase/queries/cards';
 
 const DB_FETCH_PAGE_SIZE = 1000;
@@ -45,6 +46,19 @@ export async function fetchPublicCollectionPage(
 		pageSize: DB_FETCH_PAGE_SIZE,
 	});
 	return { rows: mapRows(rows), hasMore };
+}
+
+/**
+ * The `limit` most recently added public collection cards for an owner, mapped
+ * to { scryfallId, entry } so they can be hydrated by useCollectionCards. Feeds
+ * the profile Overview "recently added" strip.
+ */
+export async function fetchRecentPublicCards(
+	ownerId: string,
+	limit: number
+): Promise<Array<{ scryfallId: string; entry: CardEntry }>> {
+	const rows = await fetchRecentPublicCardRows(ownerId, limit);
+	return mapRows(rows);
 }
 
 export async function insertEntry(
