@@ -50,34 +50,6 @@
 	margin: 0;
 }
 
-.cardStrip {
-	display: flex;
-	gap: 0.75rem;
-	overflow-x: auto;
-	padding-bottom: 0.25rem;
-}
-
-.cardThumb {
-	flex: 0 0 auto;
-	width: 180px;
-	border-radius: 0.75rem;
-	overflow: hidden;
-	background: var(--surface, rgba(255, 255, 255, 0.05));
-}
-
-.cardImg {
-	width: 100%;
-	height: auto;
-	display: block;
-}
-
-.cardName {
-	display: block;
-	padding: 0.5rem;
-	font-size: 0.75rem;
-	text-align: center;
-}
-
 /* Same responsive grid as the Decks tab, so the reused DeckCard previews lay
    out identically. */
 .deckGrid {

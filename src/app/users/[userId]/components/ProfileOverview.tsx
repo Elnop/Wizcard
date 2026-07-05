@@ -1,16 +1,17 @@
 'use client';
 
 import { useMemo } from 'react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import type { Profile } from '@/lib/profile/types';
+import type { CardStack } from '@/types/cards';
 import type { DeckMeta } from '@/types/decks';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
-import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
-import { scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
+import { CardList } from '@/lib/card/components/CardList/CardList';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { DeckCard } from '@/app/decks/components/DeckCard/DeckCard';
 import { useDeckSummaries } from '@/app/decks/useDeckSummaries';
+import { useCardModalContext } from '@/contexts/CardModalProvider';
 import type { ProfileSummary } from '../useProfileSummary';
 import { useProfileOverview } from '../useProfileOverview';
 import styles from './ProfileOverview.module.css';
@@ -41,8 +42,28 @@ export function ProfileOverview({
 	summary: ProfileSummary;
 }) {
 	const router = useRouter();
+	const { openCardModal } = useCardModalContext();
 	const { uniqueCount, recentCards, isLoading } = useProfileOverview(ownerId);
 	const { stacks } = useCollectionCards(recentCards);
+
+	// One representative card per stack for CardList, plus a lookup back to the
+	// stack so a click can open the (read-only) modal with all its copies.
+	const recentReps = useMemo(
+		() =>
+			stacks
+				.slice(0, recentCards.length)
+				.map((s) => s.cards[0])
+				.filter((c): c is NonNullable<typeof c> => c !== undefined),
+		[stacks, recentCards.length]
+	);
+	const stackByCardId = useMemo(() => {
+		const map = new Map<string, CardStack>();
+		for (const stack of stacks) {
+			const rep = stack.cards[0];
+			if (rep) map.set(rep.id, stack);
+		}
+		return map;
+	}, [stacks]);
 
 	// Newest-first, capped. Sort a copy — never mutate summary.decks in place.
 	const recentDecks: DeckMeta[] = useMemo(
@@ -82,28 +103,16 @@ export function ProfileOverview({
 				{!isLoading && recentCards.length === 0 ? (
 					<p className={styles.empty}>Aucune carte publique pour l&apos;instant.</p>
 				) : (
-					<div className={styles.cardStrip}>
-						{stacks.slice(0, recentCards.length).map((stack) => {
-							const card = stack.cards[0];
-							const src = getScryfallCardImageUriBySize(card, 'normal');
-							return (
-								<div key={card.entry.rowId} className={styles.cardThumb} title={card.name}>
-									{src ? (
-										<Image
-											loader={scryfallImageLoader}
-											src={src}
-											alt={card.name}
-											width={244}
-											height={340}
-											className={styles.cardImg}
-										/>
-									) : (
-										<span className={styles.cardName}>{card.name}</span>
-									)}
-								</div>
-							);
-						})}
-					</div>
+					<CardList
+						cards={recentReps}
+						isLoading={isLoading}
+						skeletonCount={recentCards.length || undefined}
+						viewModes={['grid']}
+						onCardClick={(card: AnyCard) => {
+							const stack = stackByCardId.get(card.id);
+							if (stack) openCardModal(stack.cards, { readOnly: true });
+						}}
+					/>
 				)}
 			</section>
 
