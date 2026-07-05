@@ -1,26 +1,29 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import type { Profile } from '@/lib/profile/types';
-import type { DeckMeta } from '@/types/decks';
-import type { ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
 import { Button } from '@/components/Button/Button';
-import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
-import { DeckCard } from '@/app/decks/components/DeckCard/DeckCard';
-import { useProfileSummary, PREVIEW_LIMIT } from '../useProfileSummary';
-import { PublicCollectionView } from '../collection/page';
-import { PublicWishlistView } from '../wishlist/page';
+import { useProfileSummary } from '../useProfileSummary';
 import { useStickyHeader } from './useStickyHeader';
 import styles from './ProfileView.module.css';
 
 type Tab = 'decks' | 'collection' | 'wishlist';
 
+/** Derive the active tab from the URL's last segment (defaults to decks). */
+function tabFromPathname(pathname: string): Tab {
+	if (pathname.endsWith('/collection')) return 'collection';
+	if (pathname.endsWith('/wishlist')) return 'wishlist';
+	return 'decks';
+}
+
 /**
- * Instagram-style profile: header (avatar / name / bio) + a stats row of
- * section counts, then tabs that switch between deck / collection / wishlist
- * previews inline. Never receives or renders an email — only public fields.
+ * Instagram-style profile shell: header (avatar / name / bio) + a stats row of
+ * section counts, then tabs that are real links to `/users/<handle>/<tab>`. The
+ * active tab's content is supplied as `children` by the users/[userId] layout,
+ * so switching tabs is a real navigation with a shareable URL. Never receives or
+ * renders an email — only public fields.
  */
 export function ProfileView({
 	userId,
@@ -28,6 +31,8 @@ export function ProfileView({
 	isLoading = false,
 	isOwner = false,
 	onEdit,
+	handle,
+	children,
 }: {
 	userId: string;
 	profile: Profile | null;
@@ -35,11 +40,14 @@ export function ProfileView({
 	/** True when the signed-in user is viewing their OWN profile. */
 	isOwner?: boolean;
 	onEdit?: () => void;
+	/** URL nickname used to build tab hrefs. */
+	handle: string;
+	/** Active tab content, injected by the layout. */
+	children: React.ReactNode;
 }) {
-	const router = useRouter();
-	const symbolMap = useScryfallSymbols();
+	const pathname = usePathname();
+	const activeTab = tabFromPathname(pathname);
 	const summary = useProfileSummary(userId);
-	const [tab, setTab] = useState<Tab>('decks');
 	const barRef = useRef<HTMLDivElement>(null);
 	const { pinned, visible } = useStickyHeader(barRef);
 
@@ -47,9 +55,6 @@ export function ProfileView({
 	// placeholder and then swapping in the real nickname.
 	const loaded = profile !== null && !isLoading;
 	const displayName = profile?.nickname || 'Wizard';
-	// URLs are keyed by nickname; fall back to the id only if a nickname is
-	// somehow missing (every user gets a generated one).
-	const urlHandle = profile?.nickname || userId;
 
 	let avatarNode: React.ReactNode;
 	if (!loaded) {
@@ -99,20 +104,19 @@ export function ProfileView({
 				</>
 			)}
 
-			{/* Tab bar with counts */}
+			{/* Tab bar with counts — real links to the tab sub-routes. */}
 			<div className={styles.tabs} role="tablist">
 				{stats.map((s) => (
-					<button
+					<Link
 						key={s.key}
-						type="button"
+						href={`/users/${handle}/${s.key}`}
 						role="tab"
-						aria-selected={tab === s.key}
-						className={`${styles.tab} ${tab === s.key ? styles.tabActive : ''}`}
-						onClick={() => setTab(s.key)}
+						aria-selected={activeTab === s.key}
+						className={`${styles.tab} ${activeTab === s.key ? styles.tabActive : ''}`}
 					>
 						{s.label}
 						<span className={styles.tabCount}>{summary.isLoading ? '—' : s.count}</span>
-					</button>
+					</Link>
 				))}
 			</div>
 		</>
@@ -131,65 +135,7 @@ export function ProfileView({
 			    sliding in/out on scroll direction. Compact = thin. */}
 			{pinned && <div className={overlayClass}>{renderHeader(true)}</div>}
 
-			<div className={styles.tabPanel}>
-				{tab === 'decks' && (
-					<DecksTab
-						decks={summary.decks}
-						symbolMap={symbolMap}
-						isLoading={summary.isLoading}
-						handle={urlHandle}
-						onOpen={(id) => router.push(`/decks/${id}`)}
-					/>
-				)}
-				{/* Collection / wishlist tabs render the full browsing view (search +
-				    filters + grid) lazily — only mounted when their tab is active, so
-				    opening the profile doesn't fetch a whole collection up front. */}
-				{tab === 'collection' && (
-					<PublicCollectionView ownerId={userId} filterLayout="modal" isOwner={isOwner} />
-				)}
-				{tab === 'wishlist' && (
-					<PublicWishlistView ownerId={userId} filterLayout="modal" isOwner={isOwner} />
-				)}
-			</div>
+			<div className={styles.tabPanel}>{children}</div>
 		</div>
-	);
-}
-
-function DecksTab({
-	decks,
-	symbolMap,
-	isLoading,
-	handle,
-	onOpen,
-}: {
-	decks: DeckMeta[];
-	symbolMap: Record<string, ScryfallCardSymbol>;
-	isLoading: boolean;
-	handle: string;
-	onOpen: (id: string) => void;
-}) {
-	if (!isLoading && decks.length === 0) {
-		return <p className={styles.emptyText}>No decks yet.</p>;
-	}
-	const shown = decks.slice(0, PREVIEW_LIMIT);
-	return (
-		<>
-			<div className={styles.deckGrid}>
-				{shown.map((deck) => (
-					<DeckCard
-						key={deck.id}
-						deck={deck}
-						symbolMap={symbolMap}
-						readOnly
-						onClick={() => onOpen(deck.id)}
-					/>
-				))}
-			</div>
-			{decks.length > PREVIEW_LIMIT && (
-				<Link href={`/users/${handle}/decks`} className={styles.seeAll}>
-					See all {decks.length} →
-				</Link>
-			)}
-		</>
 	);
 }
