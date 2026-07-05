@@ -9,13 +9,15 @@ import type { ProfileSummary } from '../useProfileSummary';
 import { useStickyHeader } from './useStickyHeader';
 import styles from './ProfileView.module.css';
 
-type Tab = 'decks' | 'collection' | 'wishlist';
+type Tab = 'overview' | 'decks' | 'collection' | 'wishlist';
 
-/** Derive the active tab from the URL's last segment (defaults to decks). */
+/** Derive the active tab from the URL. The shell root (/users/<handle>, no
+ *  trailing decks|collection|wishlist segment) is the Overview tab. */
 function tabFromPathname(pathname: string): Tab {
 	if (pathname.endsWith('/collection')) return 'collection';
 	if (pathname.endsWith('/wishlist')) return 'wishlist';
-	return 'decks';
+	if (pathname.endsWith('/decks')) return 'decks';
+	return 'overview';
 }
 
 /**
@@ -104,6 +106,14 @@ export function ProfileView({
 
 			{/* Tab bar with counts — real links to the tab sub-routes. */}
 			<div className={styles.tabs} role="tablist">
+				<Link
+					href={`/users/${handle}`}
+					role="tab"
+					aria-selected={activeTab === 'overview'}
+					className={`${styles.tab} ${activeTab === 'overview' ? styles.tabActive : ''}`}
+				>
+					Overview
+				</Link>
 				{stats.map((s) => (
 					<Link
 						key={s.key}
