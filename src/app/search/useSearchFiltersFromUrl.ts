@@ -30,6 +30,7 @@ const VALID_ORDERS = new Set([
 ]);
 const VALID_DIRS = new Set(['auto', 'asc', 'desc']);
 const VALID_COLOR_MATCHES = new Set(['exact', 'include', 'atMost']);
+const VALID_COLOR_IDENTITY_MATCHES = new Set(['atMost', 'exact']);
 const VALID_RARITIES = new Set(['common', 'uncommon', 'rare', 'mythic']);
 const VALID_MODES = new Set(['official', 'custom', 'backs']);
 
@@ -72,6 +73,11 @@ function parseColorMatch(param: string | null): ColorMatch {
 	return 'include';
 }
 
+function parseColorIdentityMatch(param: string | null): 'atMost' | 'exact' {
+	if (param && VALID_COLOR_IDENTITY_MATCHES.has(param)) return param as 'atMost' | 'exact';
+	return 'atMost';
+}
+
 function parseRarities(param: string | null): string[] {
 	if (!param) return [];
 	return param.split(',').filter((r) => VALID_RARITIES.has(r));
@@ -81,6 +87,7 @@ export type SearchFilters = {
 	colors: ScryfallColor[];
 	colorMatch: 'exact' | 'include' | 'atMost';
 	colorIdentity: ScryfallColor[];
+	colorIdentityMatch: 'atMost' | 'exact';
 	type: string[];
 	set: string;
 	rarities: string[];
@@ -106,6 +113,9 @@ export function useSearchFiltersFromUrl() {
 	);
 	const [colorIdentity, setColorIdentity] = useState<ScryfallColor[]>(() =>
 		parseColors(searchParams.get('ci'))
+	);
+	const [colorIdentityMatch, setColorIdentityMatch] = useState<'atMost' | 'exact'>(() =>
+		parseColorIdentityMatch(searchParams.get('cim'))
 	);
 	const [type, setType] = useState<string[]>(
 		() => searchParams.get('type')?.split(',').filter(Boolean) ?? []
@@ -145,6 +155,7 @@ export function useSearchFiltersFromUrl() {
 		if (colors.length > 0) params.set('colors', colors.join(','));
 		if (colorMatch !== 'include') params.set('colorMatch', colorMatch);
 		if (colorIdentity.length > 0) params.set('ci', colorIdentity.join(','));
+		if (colorIdentityMatch !== 'atMost') params.set('cim', colorIdentityMatch);
 		if (type.length > 0) params.set('type', type.join(','));
 		if (set) params.set('set', set);
 		if (rarities.length > 0) params.set('rarities', rarities.join(','));
@@ -167,6 +178,7 @@ export function useSearchFiltersFromUrl() {
 		colors,
 		colorMatch,
 		colorIdentity,
+		colorIdentityMatch,
 		type,
 		set,
 		rarities,
@@ -185,6 +197,7 @@ export function useSearchFiltersFromUrl() {
 		setColors(filters.colors);
 		setColorMatch(filters.colorMatch);
 		setColorIdentity(filters.colorIdentity);
+		setColorIdentityMatch(filters.colorIdentityMatch);
 		setType(filters.type);
 		setSet(filters.set);
 		setRarities(filters.rarities);
@@ -202,7 +215,7 @@ export function useSearchFiltersFromUrl() {
 		colors,
 		colorMatch,
 		colorIdentity,
-		colorIdentityMatch: 'atMost',
+		colorIdentityMatch,
 		type,
 		set,
 		rarities,
@@ -218,6 +231,7 @@ export function useSearchFiltersFromUrl() {
 		colors,
 		colorMatch,
 		colorIdentity,
+		colorIdentityMatch,
 		type,
 		set,
 		rarities,

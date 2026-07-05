@@ -69,6 +69,7 @@ function SearchPageContent() {
 		colors,
 		colorMatch,
 		colorIdentity,
+		colorIdentityMatch,
 		type,
 		set,
 		rarities,
@@ -109,6 +110,7 @@ function SearchPageContent() {
 			colors,
 			colorMatch,
 			colorIdentity,
+			colorIdentityMatch,
 			type,
 			set,
 			rarities,
@@ -239,6 +241,7 @@ function SearchPageContent() {
 					colors={colors}
 					colorMatch={colorMatch}
 					colorIdentity={colorIdentity}
+					colorIdentityMatch={colorIdentityMatch}
 					type={type}
 					set={set}
 					rarities={rarities}

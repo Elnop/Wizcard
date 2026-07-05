@@ -21,6 +21,7 @@ export interface SearchFilters {
 	cmc: string;
 	legal?: string;
 	colorIdentity?: ScryfallColor[];
+	colorIdentityMatch?: 'atMost' | 'exact';
 	isToken?: boolean;
 	matchNothing?: boolean;
 	order?: ScryfallSortOrder;
@@ -96,6 +97,7 @@ export function useScryfallCardSearch(
 				cmc: filters.cmc || undefined,
 				legal: filters.legal || undefined,
 				colorIdentity,
+				colorIdentityMatch: filters.colorIdentityMatch,
 				isToken: filters.isToken,
 				matchNothing: filters.matchNothing,
 			});
@@ -110,6 +112,7 @@ export function useScryfallCardSearch(
 			filters.cmc,
 			filters.legal,
 			colorIdentityKey,
+			filters.colorIdentityMatch,
 			filters.isToken,
 			filters.matchNothing,
 		]
