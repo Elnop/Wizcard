@@ -97,14 +97,14 @@ export function NavbarDrawer() {
 				</Link>
 				<Link
 					href="/decks"
-					className={`${styles.drawerLink} ${pathname.startsWith('/decks') || pathname.endsWith('/decks') ? styles.drawerLinkActive : ''}`}
+					className={`${styles.drawerLink} ${pathname.startsWith('/decks') ? styles.drawerLinkActive : ''}`}
 					onClick={closeDrawer}
 				>
 					Decks
 				</Link>
 				<Link
 					href="/wishlist"
-					className={`${styles.drawerLink} ${pathname === '/wishlist' || pathname.endsWith('/wishlist') ? styles.drawerLinkActive : ''}`}
+					className={`${styles.drawerLink} ${pathname === '/wishlist' ? styles.drawerLinkActive : ''}`}
 					onClick={closeDrawer}
 				>
 					<WishlistIcon />
@@ -113,7 +113,7 @@ export function NavbarDrawer() {
 				</Link>
 				<Link
 					href="/collection"
-					className={`${styles.drawerLink} ${pathname === '/collection' || pathname.endsWith('/collection') ? styles.drawerLinkActive : ''}`}
+					className={`${styles.drawerLink} ${pathname === '/collection' ? styles.drawerLinkActive : ''}`}
 					onClick={closeDrawer}
 				>
 					Collection
