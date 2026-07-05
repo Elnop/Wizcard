@@ -82,6 +82,16 @@ function matchColors(
 	}
 }
 
+function matchColorIdentity(
+	cardColorIdentity: ScryfallColor[] | undefined,
+	selected: ScryfallColor[]
+): boolean {
+	// "At most" (ci<=): every color of the card's identity must be in the selection.
+	if (selected.length === 0) return true;
+	const identity = cardColorIdentity ?? [];
+	return identity.every((c) => selected.includes(c));
+}
+
 const RARITY_ORDER: Record<string, number> = {
 	common: 0,
 	uncommon: 1,
@@ -197,6 +207,8 @@ function cardMatchesFilters(
 ): boolean {
 	if (filters.name && !card.name.toLowerCase().includes(filters.name.toLowerCase())) return false;
 	if (!matchColors(card.colors, filters.colors, filters.colorMatch)) return false;
+	if (!matchColorIdentity((card as ScryfallCard).color_identity, filters.colorIdentity))
+		return false;
 	if (!matchesType(card.type_line, filters.type)) return false;
 	if (filters.set && card.set !== filters.set) return false;
 	if (
