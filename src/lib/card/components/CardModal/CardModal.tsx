@@ -135,6 +135,7 @@ function ImageContextMenuWrapper({
 	return (
 		<>
 			<div
+				className={styles.imageMenuWrapper}
 				onContextMenu={(e) => {
 					if (items.length === 0) return;
 					menu.open(card, e);

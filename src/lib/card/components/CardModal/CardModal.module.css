@@ -39,6 +39,14 @@
 	gap: 8px;
 }
 
+/* The right-click wrapper around the main CardImage must be transparent to the
+   flex layout: `display: contents` lets CardImage's own container be the flex
+   item (stretching to .imageCol's 260px), so its width:100% image resolves to a
+   real width instead of collapsing to 0. */
+.imageMenuWrapper {
+	display: contents;
+}
+
 .imageCol img {
 	border-radius: 8px;
 }
