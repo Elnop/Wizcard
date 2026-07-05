@@ -68,6 +68,7 @@ function SearchPageContent() {
 		setName,
 		colors,
 		colorMatch,
+		colorIdentity,
 		type,
 		set,
 		rarities,
@@ -107,6 +108,7 @@ function SearchPageContent() {
 			name,
 			colors,
 			colorMatch,
+			colorIdentity,
 			type,
 			set,
 			rarities,
@@ -161,7 +163,14 @@ function SearchPageContent() {
 	);
 
 	const hasFilters =
-		name || colors.length > 0 || type.length > 0 || set || rarities.length > 0 || oracleText || cmc;
+		name ||
+		colors.length > 0 ||
+		colorIdentity.length > 0 ||
+		type.length > 0 ||
+		set ||
+		rarities.length > 0 ||
+		oracleText ||
+		cmc;
 	const isDefaultQuery = !hasFilters && mode === 'official';
 
 	const customFilterCount = computeCustomFilterCount(customSourceId, mpcTags);
@@ -228,6 +237,7 @@ function SearchPageContent() {
 					variant={isBacks ? 'backs' : 'search'}
 					colors={colors}
 					colorMatch={colorMatch}
+					colorIdentity={colorIdentity}
 					type={type}
 					set={set}
 					rarities={rarities}

@@ -80,6 +80,7 @@ function parseRarities(param: string | null): string[] {
 export type SearchFilters = {
 	colors: ScryfallColor[];
 	colorMatch: 'exact' | 'include' | 'atMost';
+	colorIdentity: ScryfallColor[];
 	type: string[];
 	set: string;
 	rarities: string[];
@@ -102,6 +103,9 @@ export function useSearchFiltersFromUrl() {
 	);
 	const [colorMatch, setColorMatch] = useState<'exact' | 'include' | 'atMost'>(() =>
 		parseColorMatch(searchParams.get('colorMatch'))
+	);
+	const [colorIdentity, setColorIdentity] = useState<ScryfallColor[]>(() =>
+		parseColors(searchParams.get('ci'))
 	);
 	const [type, setType] = useState<string[]>(
 		() => searchParams.get('type')?.split(',').filter(Boolean) ?? []
@@ -140,6 +144,7 @@ export function useSearchFiltersFromUrl() {
 		if (name) params.set('name', name);
 		if (colors.length > 0) params.set('colors', colors.join(','));
 		if (colorMatch !== 'include') params.set('colorMatch', colorMatch);
+		if (colorIdentity.length > 0) params.set('ci', colorIdentity.join(','));
 		if (type.length > 0) params.set('type', type.join(','));
 		if (set) params.set('set', set);
 		if (rarities.length > 0) params.set('rarities', rarities.join(','));
@@ -161,6 +166,7 @@ export function useSearchFiltersFromUrl() {
 		name,
 		colors,
 		colorMatch,
+		colorIdentity,
 		type,
 		set,
 		rarities,
@@ -178,6 +184,7 @@ export function useSearchFiltersFromUrl() {
 	const applyFilters = (filters: SearchFilters) => {
 		setColors(filters.colors);
 		setColorMatch(filters.colorMatch);
+		setColorIdentity(filters.colorIdentity);
 		setType(filters.type);
 		setSet(filters.set);
 		setRarities(filters.rarities);
@@ -194,7 +201,7 @@ export function useSearchFiltersFromUrl() {
 		name: '',
 		colors,
 		colorMatch,
-		colorIdentity: [],
+		colorIdentity,
 		type,
 		set,
 		rarities,
@@ -209,6 +216,7 @@ export function useSearchFiltersFromUrl() {
 		setName,
 		colors,
 		colorMatch,
+		colorIdentity,
 		type,
 		set,
 		rarities,
