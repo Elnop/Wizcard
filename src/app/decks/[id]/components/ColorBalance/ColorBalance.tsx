@@ -10,7 +10,6 @@ const COLOR_CSS: Record<string, string> = {
 	B: 'var(--mana-black)',
 	R: 'var(--mana-red)',
 	G: 'var(--mana-green)',
-	C: 'var(--mana-colorless)',
 };
 const COLOR_LABELS: Record<string, string> = {
 	W: 'White',
