@@ -1,0 +1,51 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.rowLabel {
+	width: 72px;
+	flex-shrink: 0;
+	font-size: var(--text-xs);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--text-muted);
+}
+
+.bar {
+	flex: 1;
+	display: flex;
+	height: 12px;
+	border-radius: 2px;
+	overflow: hidden;
+	background: var(--surface);
+}
+
+.segment {
+	display: block;
+	transition: width 0.3s ease;
+}
+
+.notes {
+	list-style: none;
+	margin: 4px 0 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.note {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--text-xs);
+	color: var(--gold);
+}
