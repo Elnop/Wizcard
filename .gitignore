@@ -50,3 +50,6 @@ cosmos.imports.ts
 cosmos-export
 
 *.log
+
+# Superpowers brainstorming companion
+.superpowers/
