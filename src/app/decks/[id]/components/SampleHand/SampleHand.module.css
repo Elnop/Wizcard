@@ -1,0 +1,44 @@
+.panel {
+	margin-top: 16px;
+	padding: 20px 24px;
+	background: var(--glass-bg);
+	border: 1px solid var(--glass-border);
+	border-radius: 2px;
+	backdrop-filter: blur(var(--glass-blur));
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.title {
+	font-size: var(--text-base);
+	font-weight: 600;
+	color: var(--brass);
+	margin: 0;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.emptyState {
+	display: flex;
+	justify-content: center;
+	padding: 8px 0;
+}
+
+.actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.counter {
+	font-size: var(--text-sm);
+	color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+	.panel {
+		padding: 16px;
+	}
+}
