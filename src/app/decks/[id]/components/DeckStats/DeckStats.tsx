@@ -2,25 +2,10 @@
 
 import type { DeckStats as DeckStatsType } from '@/lib/deck/utils/deck-stats';
 import type { ValidationWarning } from '@/lib/deck/utils/format-rules';
-import { ColorIdentityIcons } from '@/lib/scryfall/components/ColorIdentityIcons';
 import { ManaCurve } from '../ManaCurve/ManaCurve';
+import { ColorBalance } from '../ColorBalance/ColorBalance';
+import { TypeBar } from '../TypeBar/TypeBar';
 import styles from './DeckStats.module.css';
-
-const COLOR_LABELS: Record<string, string> = {
-	W: 'White',
-	U: 'Blue',
-	B: 'Black',
-	R: 'Red',
-	G: 'Green',
-};
-
-const COLOR_CSS: Record<string, string> = {
-	W: 'var(--mana-white, #f9faf4)',
-	U: 'var(--mana-blue, #0e68ab)',
-	B: 'var(--mana-black, #150b00)',
-	R: 'var(--mana-red, #d3202a)',
-	G: 'var(--mana-green, #00733e)',
-};
 
 type Props = {
 	stats: DeckStatsType;
@@ -28,52 +13,57 @@ type Props = {
 };
 
 export function DeckStats({ stats, warnings }: Props) {
-	const colorEntries = Object.entries(stats.colorDistribution).sort((a, b) => b[1] - a[1]);
-	const totalColorPips = colorEntries.reduce((sum, [, count]) => sum + count, 0) || 1;
+	const kpis = [
+		{ label: 'Cards', value: stats.totalCards },
+		{ label: 'Avg CMC', value: stats.averageCmc.toFixed(2) },
+		{ label: 'Lands', value: stats.landCount },
+		{ label: 'Creatures', value: stats.typeDistribution.Creature },
+	];
 
 	return (
-		<div className={styles.container}>
-			<div className={styles.section}>
-				<h3 className={styles.sectionTitle}>Mana Curve</h3>
-				<ManaCurve curve={stats.manaCurve} />
+		<div className={styles.panel}>
+			<div className={styles.kpis}>
+				{kpis.map((k) => (
+					<div key={k.label} className={styles.kpi}>
+						<span className={styles.kpiValue}>{k.value}</span>
+						<span className={styles.kpiLabel}>{k.label}</span>
+					</div>
+				))}
 			</div>
 
-			{colorEntries.length > 0 && (
-				<div className={styles.section}>
-					<h3 className={styles.sectionTitle}>Colors</h3>
-					<div className={styles.colorBar}>
-						{colorEntries.map(([color, count]) => (
-							<div
-								key={color}
-								className={styles.colorSegment}
-								style={{
-									width: `${(count / totalColorPips) * 100}%`,
-									background: COLOR_CSS[color] ?? 'var(--text-muted)',
-								}}
-								title={`${COLOR_LABELS[color] ?? color}: ${count}`}
-							/>
-						))}
-					</div>
-					<div className={styles.colorLegend}>
-						{colorEntries.map(([color, count]) => (
-							<span key={color} className={styles.colorItem}>
-								<ColorIdentityIcons colors={[color]} size={16} />
-								{COLOR_LABELS[color] ?? color} ({count})
-							</span>
-						))}
-					</div>
-				</div>
-			)}
+			<hr className={styles.hair} />
+
+			<section className={styles.section}>
+				<h3 className={styles.sectionTitle}>Mana Curve</h3>
+				<ManaCurve curve={stats.manaCurve} />
+			</section>
+
+			<hr className={styles.hair} />
+
+			<section className={styles.section}>
+				<h3 className={styles.sectionTitle}>Color Balance — Cost vs Production</h3>
+				<ColorBalance cost={stats.colorsCost} production={stats.colorsProduction} />
+			</section>
+
+			<hr className={styles.hair} />
+
+			<section className={styles.section}>
+				<h3 className={styles.sectionTitle}>Types</h3>
+				<TypeBar types={stats.typeDistribution} />
+			</section>
 
 			{warnings.length > 0 && (
-				<div className={styles.section}>
-					<h3 className={styles.sectionTitle}>Warnings</h3>
-					{warnings.map((w, i) => (
-						<div key={i} className={styles.warning}>
-							{w.message}
-						</div>
-					))}
-				</div>
+				<>
+					<hr className={styles.hair} />
+					<section className={styles.section}>
+						<h3 className={styles.sectionTitle}>Warnings</h3>
+						{warnings.map((w, i) => (
+							<div key={i} className={styles.warning}>
+								{w.message}
+							</div>
+						))}
+					</section>
+				</>
 			)}
 		</div>
 	);
