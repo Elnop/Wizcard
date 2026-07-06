@@ -23,6 +23,7 @@ import { useDeckSort } from './useDeckSort';
 import { useCopyDeckToMyCollection } from './useCopyDeckToMyCollection';
 import { DeckHeader } from './components/DeckHeader/DeckHeader';
 import { DeckStats } from './components/DeckStats/DeckStats';
+import { SampleHand } from './components/SampleHand/SampleHand';
 import { DeckFooter } from './components/DeckFooter/DeckFooter';
 import { DeckSortBar } from './components/DeckSortBar/DeckSortBar';
 import { DeckTextExportModal } from './components/DeckTextExportModal/DeckTextExportModal';
@@ -193,6 +194,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 					)}
 
 					<DeckStats stats={stats} warnings={warnings} />
+					<SampleHand mainboard={cardsByZone.mainboard} />
 				</div>
 			</div>
 

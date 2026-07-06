@@ -23,6 +23,7 @@ import { useDeckDetail, type ResolvedDeckCard } from './useDeckDetail';
 import { useDeckCardSections, dedupeByOracle } from './useDeckCardSections';
 import { DeckHeader } from './components/DeckHeader/DeckHeader';
 import { DeckStats } from './components/DeckStats/DeckStats';
+import { SampleHand } from './components/SampleHand/SampleHand';
 import { DeckCardOverlay } from './components/DeckCardOverlay/DeckCardOverlay';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import { DeckFooter } from './components/DeckFooter/DeckFooter';
@@ -625,6 +626,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					/>
 
 					<DeckStats stats={stats} warnings={warnings} />
+					<SampleHand mainboard={cardsByZone.mainboard} />
 				</div>
 
 				{searchPanelOpen && (
