@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { Card } from '@/types/cards';
 import { shuffle } from '@/lib/deck/utils/sample-hand';
 
@@ -20,10 +20,13 @@ export function useSampleHand(mainboard: Card[]): SampleHandState {
 	});
 
 	// Deck édité (mainboard change d'identité) → réinitialiser la main.
-	useEffect(() => {
-		// eslint-disable-next-line react-hooks/set-state-in-effect
+	// Adjust state during render (React-documented pattern) instead of an effect,
+	// to stay lint-clean and avoid an extra render pass.
+	const [prevMainboard, setPrevMainboard] = useState(mainboard);
+	if (prevMainboard !== mainboard) {
+		setPrevMainboard(mainboard);
 		setState({ shuffled: null, handSize: INITIAL_HAND_SIZE });
-	}, [mainboard]);
+	}
 
 	const deal = useCallback(() => {
 		setState({
