@@ -25,7 +25,11 @@ export function ManaCurve({ curve }: Props) {
 				{grouped.map((entry, i) => {
 					const heightPct = `${(entry.count / maxCount) * 100}%`;
 					return (
-						<div key={entry.cmc} className={styles.column}>
+						<div
+							key={entry.cmc}
+							className={styles.column}
+							title={`CMC ${entry.cmc === 7 ? '7+' : entry.cmc} — ${entry.count} card${entry.count === 1 ? '' : 's'}`}
+						>
 							<span className={styles.count}>{entry.count || ''}</span>
 							<div
 								className={styles.bar}
