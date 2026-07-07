@@ -44,7 +44,7 @@ export function SampleHand({ mainboard }: Props) {
 							Piocher
 						</Button>
 						<span className={styles.counter}>
-							{hand.length} cartes · bibliothèque : {mainboard.length}
+							{hand.length} cartes · bibliothèque : {mainboard.length - hand.length}
 						</span>
 					</div>
 				</>
