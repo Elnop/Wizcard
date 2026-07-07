@@ -14,7 +14,7 @@ type Props = {
 
 export function SampleHand({ mainboard }: Props) {
 	const { openCardModal } = useCardModalContext();
-	const { hand, hasHand, canDraw, deal, mulligan, draw } = useSampleHand(mainboard);
+	const { hand, hasHand, canDraw, mulligan, draw } = useSampleHand(mainboard);
 
 	if (mainboard.length === 0) return null;
 
@@ -23,11 +23,7 @@ export function SampleHand({ mainboard }: Props) {
 			<h3 className={styles.title}>Main de test</h3>
 
 			{!hasHand ? (
-				<div className={styles.emptyState}>
-					<Button variant="primary" onClick={deal}>
-						Tirer une main
-					</Button>
-				</div>
+				<div className={styles.placeholder} aria-hidden />
 			) : (
 				<>
 					<CardList

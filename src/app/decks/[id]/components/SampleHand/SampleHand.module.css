@@ -19,10 +19,27 @@
 	letter-spacing: 0.5px;
 }
 
-.emptyState {
-	display: flex;
-	justify-content: center;
-	padding: 8px 0;
+.placeholder {
+	min-height: 204px;
+	border-radius: 2px;
+	background: linear-gradient(
+		90deg,
+		var(--surface) 0%,
+		var(--surface-hover) 50%,
+		var(--surface) 100%
+	);
+	background-size: 200% 100%;
+	animation: shimmer 1.4s ease-in-out infinite;
+	opacity: 0.5;
+}
+
+@keyframes shimmer {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
 }
 
 .actions {
