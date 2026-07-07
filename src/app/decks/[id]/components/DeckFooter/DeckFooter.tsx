@@ -74,9 +74,7 @@ export function DeckFooter({ stats, format, warnings }: Props) {
 
 					{target !== null ? (
 						<div className={`${styles.item} ${isValid ? styles.valid : styles.invalid}`}>
-							<span className={styles.value}>
-								{current}/{target}
-							</span>
+							<span className={styles.value}>{current}</span>
 							<span className={styles.label}>Cards</span>
 						</div>
 					) : (
@@ -85,13 +83,6 @@ export function DeckFooter({ stats, format, warnings }: Props) {
 							<span className={styles.label}>Total</span>
 						</div>
 					)}
-
-					<div className={styles.separator} />
-
-					<div className={styles.item}>
-						<span className={styles.value}>{stats.mainboardCount}</span>
-						<span className={styles.label}>Main</span>
-					</div>
 
 					{stats.sideboardCount > 0 && (
 						<>

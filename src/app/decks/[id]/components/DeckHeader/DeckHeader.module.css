@@ -182,3 +182,44 @@
 .dropdownItem:hover {
 	background: rgba(255, 255, 255, 0.06);
 }
+
+/*
+ * Responsive action visibility. On mobile "Generate PDF" moves out of the
+ * action row and into the More menu, so we render it in both places and let
+ * CSS show the right one for the viewport.
+ */
+.mobileOnly {
+	display: none;
+}
+
+@media (max-width: 768px) {
+	.desktopOnly {
+		display: none;
+	}
+
+	.mobileOnly {
+		display: flex;
+	}
+
+	/*
+	 * Keep the action buttons on a single row on mobile — no wrapping. Tighten
+	 * the spacing and padding to make room; if it still overflows the row
+	 * scrolls sideways rather than wrapping to a second line.
+	 */
+	.actions {
+		flex-wrap: nowrap;
+		gap: 2px;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+
+	.actions::-webkit-scrollbar {
+		display: none;
+	}
+
+	.actionBtn {
+		flex-shrink: 0;
+		gap: 5px;
+		padding: 6px 8px;
+	}
+}

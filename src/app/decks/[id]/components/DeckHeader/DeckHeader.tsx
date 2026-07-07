@@ -89,7 +89,15 @@ export function DeckHeader({
 		);
 	}
 
-	const hasMoreActions = Boolean(onAssignAllFromCollection || onAddAllToCollection || onImportList);
+	// On mobile "Generate PDF" moves into the More menu (see the mobileOnly item
+	// below), so the menu must render whenever there's a PDF action too.
+	const hasDesktopMoreActions = Boolean(
+		onAssignAllFromCollection || onAddAllToCollection || onImportList
+	);
+	const hasMoreActions = hasDesktopMoreActions || Boolean(onGeneratePdf);
+	// When the only reason the menu exists is the mobile PDF item, hide the whole
+	// menu on desktop so we don't show a "More" button with an empty dropdown.
+	const menuIsMobileOnly = !hasDesktopMoreActions && Boolean(onGeneratePdf);
 
 	return (
 		<div className={styles.header}>
@@ -119,7 +127,11 @@ export function DeckHeader({
 					</button>
 				)}
 				{onGeneratePdf && (
-					<button type="button" className={styles.actionBtn} onClick={() => onGeneratePdf()}>
+					<button
+						type="button"
+						className={`${styles.actionBtn} ${styles.desktopOnly}`}
+						onClick={() => onGeneratePdf()}
+					>
 						<PdfIcon />
 						<span>Generate PDF</span>
 					</button>
@@ -136,7 +148,11 @@ export function DeckHeader({
 					</button>
 				)}
 				{hasMoreActions && (
-					<div className={styles.menuWrapper} ref={menuRef} onClick={(e) => e.stopPropagation()}>
+					<div
+						className={`${styles.menuWrapper} ${menuIsMobileOnly ? styles.mobileOnly : ''}`}
+						ref={menuRef}
+						onClick={(e) => e.stopPropagation()}
+					>
 						<button
 							type="button"
 							className={styles.actionBtn}
@@ -149,6 +165,19 @@ export function DeckHeader({
 						</button>
 						{menuOpen && (
 							<div className={styles.dropdown} role="menu">
+								{onGeneratePdf && (
+									<button
+										type="button"
+										className={`${styles.dropdownItem} ${styles.mobileOnly}`}
+										role="menuitem"
+										onClick={() => {
+											setMenuOpen(false);
+											onGeneratePdf();
+										}}
+									>
+										⊕ Generate PDF
+									</button>
+								)}
 								{onAssignAllFromCollection && (
 									<button
 										type="button"

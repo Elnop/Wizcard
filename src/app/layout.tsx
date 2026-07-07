@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono, Cinzel } from 'next/font/google';
 import { Providers } from '@/contexts/Providers';
 import { Navbar } from '@/components/Navbar/Navbar';
@@ -25,6 +25,11 @@ export const metadata: Metadata = {
 	description:
 		'Search through every Magic: The Gathering card ever printed. Filter by color, type, set, and more.',
 	keywords: ['magic the gathering', 'mtg', 'card search', 'scryfall', 'trading cards'],
+};
+
+export const viewport: Viewport = {
+	width: 'device-width',
+	initialScale: 1,
 };
 
 export default function RootLayout({

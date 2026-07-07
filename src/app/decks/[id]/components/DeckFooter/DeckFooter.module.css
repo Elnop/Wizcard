@@ -10,6 +10,13 @@
 	border-top: 1px solid var(--glass-border);
 }
 
+/* Hide the stats footer entirely on mobile — too dense for a phone. */
+@media (max-width: 768px) {
+	.footer {
+		display: none;
+	}
+}
+
 .inner {
 	display: flex;
 	align-items: center;
@@ -169,6 +176,33 @@
 	background: rgba(201, 168, 76, 0.1);
 	border: 1px solid rgba(201, 168, 76, 0.2);
 	border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+	/*
+	 * The footer packs ~10 stat items (Format, Cards, Total, Main, Side, Cmdr,
+	 * Lands, CMC, colors, Warns) — far more than fits on a phone. Rather than
+	 * wrap (which would overlap the fixed-height bar), let it scroll sideways
+	 * as one row. justify-content must yield to flex-start so the scroll starts
+	 * at the left edge instead of centering and clipping both ends.
+	 */
+	.inner {
+		justify-content: flex-start;
+		gap: 12px;
+		overflow-x: auto;
+		overflow-y: hidden;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+	}
+
+	.inner::-webkit-scrollbar {
+		display: none;
+	}
+
+	.left,
+	.right {
+		flex-shrink: 0;
+	}
 }
 
 @media (max-width: 480px) {

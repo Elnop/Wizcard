@@ -333,6 +333,62 @@
 	width: var(--card-width);
 }
 
+/*
+ * Mobile fluid layout.
+ *
+ * NOTE: this MUST come after the base .fluidItemGrid rules above. A media
+ * query and a plain rule have equal specificity, so source order decides —
+ * placing it here lets it win over the desktop flex layout. (An earlier
+ * attempt inside a media query near the top of the file was silently
+ * overridden by these base rules.)
+ *
+ * The whole fluid chain defaults to width:max-content so each level hugs its
+ * cards; force every level to full width so the 2-column grid has room for
+ * two cards. Columns are capped at 140px (not 1fr) so cards stay narrow and
+ * don't stretch to the screen edge; justify-content:start left-aligns them,
+ * so a section with a single card shows it at the same size, on the left.
+ */
+@media (max-width: 768px) {
+	.fluidSectionParent,
+	.fluidSectionBody,
+	.fluidSection,
+	.fluidSubSection,
+	.fluidSectionBodyCards {
+		width: 100%;
+		flex-basis: 100%;
+		max-width: 100%;
+		min-width: 0;
+	}
+
+	/*
+	 * A fluid sub-section nests two padded wrappers (fluidSectionBody around the
+	 * sub-section, then fluidSectionBodyCards around its grid) — ~28px of extra
+	 * horizontal padding per side that the plain grid view doesn't have. That
+	 * shrinks the 1fr columns, so fluid cards came out smaller than grid cards.
+	 * Drop the inner horizontal padding on mobile so both views get the same
+	 * available width and therefore the same card size.
+	 */
+	.fluidSectionBody,
+	.fluidSectionBodyCards {
+		padding-left: 0;
+		padding-right: 0;
+	}
+
+	.fluidItemGrid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		justify-content: start;
+		width: 100%;
+		gap: 12px;
+	}
+
+	.fluidItemGrid > * {
+		flex: none;
+		width: auto;
+		min-width: 0;
+	}
+}
+
 /* ─── Fluid section decorators ──────────────────────────────────────────── */
 
 .fluidSection > .sectionHeading,

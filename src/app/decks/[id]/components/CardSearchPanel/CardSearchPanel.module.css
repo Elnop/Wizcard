@@ -174,3 +174,24 @@
 	font-weight: 700;
 	line-height: 1;
 }
+
+/*
+ * On mobile the 480px side panel can't fit — a 480px fixed panel would spill
+ * off a ~375px screen. Force the side (non-expanded) panel to full-screen, the
+ * same layout the expand toggle produces on desktop.
+ */
+@media (max-width: 768px) {
+	.panel {
+		width: 100vw;
+		border-left: none;
+		/* Fill the full viewport height down to the bottom edge (dvh accounts
+		   for the mobile URL bar). The page footer is hidden on mobile, so
+		   nothing overlaps the panel's lower area anymore. */
+		height: 100dvh;
+	}
+
+	/* Already full-screen on mobile, so the expand/collapse toggle is moot. */
+	.expandBtn {
+		display: none;
+	}
+}

@@ -130,4 +130,37 @@
 	.content {
 		padding: 20px 16px 80px;
 	}
+
+	/*
+	 * On narrow viewports the search panel becomes a full-screen overlay
+	 * (see CardSearchPanel mobile styles), so the content must NOT reserve
+	 * 480px on the right — that reservation would crush the deck list.
+	 */
+	.layoutWithPanel .content {
+		padding-right: 16px;
+	}
+
+	/*
+	 * On desktop the button floats top-right in the header gutter. On mobile
+	 * that gutter doesn't exist, so it landed on top of the deck name. Move it
+	 * to a floating action button above the footer instead.
+	 */
+	.addCardsBtn {
+		top: auto;
+		right: 16px;
+		bottom: calc(56px + 16px);
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+	}
+}
+
+@media (max-width: 768px) {
+	/* The footer is hidden at this width, so the content no longer needs to
+	   clear it and the Cards FAB drops to the bottom edge. */
+	.content {
+		padding-bottom: 24px;
+	}
+
+	.addCardsBtn {
+		bottom: calc(16px + env(safe-area-inset-bottom));
+	}
 }

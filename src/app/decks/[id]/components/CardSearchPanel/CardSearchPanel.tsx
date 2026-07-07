@@ -311,7 +311,7 @@ export function CardSearchPanel({
 					{onToggleExpand && (
 						<button
 							type="button"
-							className={styles.closeBtn}
+							className={`${styles.closeBtn} ${styles.expandBtn}`}
 							onClick={onToggleExpand}
 							aria-label={expanded ? 'Collapse panel' : 'Expand panel'}
 						>
