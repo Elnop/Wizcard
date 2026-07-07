@@ -35,20 +35,23 @@ export function CardPageHeader({ card }: Props) {
 	return (
 		<>
 			<div className={styles.container}>
+				{/* Card name + mana cost. Lives here (a direct grid/flex child, not
+				    inside infoSection) so that on mobile CSS `order` can lift it
+				    above the image while keeping the image centered below. */}
+				<header className={styles.header}>
+					<h1 className={styles.name}>{card.name}</h1>
+					{card.mana_cost && (
+						<span className={styles.manaCost}>
+							<SymbolText text={card.mana_cost} symbolMap={symbolMap} />
+						</span>
+					)}
+				</header>
+
 				<div className={styles.imageSection}>
 					<CardImage card={card} size="normal" priority onClick={() => setLightbox(true)} />
 				</div>
 
 				<div className={styles.infoSection}>
-					<header className={styles.header}>
-						<h1 className={styles.name}>{card.name}</h1>
-						{card.mana_cost && (
-							<span className={styles.manaCost}>
-								<SymbolText text={card.mana_cost} symbolMap={symbolMap} />
-							</span>
-						)}
-					</header>
-
 					{card.type_line && <div className={styles.typeLine}>{card.type_line}</div>}
 
 					{custom ? (

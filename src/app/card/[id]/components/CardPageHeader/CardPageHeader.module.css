@@ -1,13 +1,19 @@
 .container {
 	display: grid;
 	grid-template-columns: auto 1fr;
-	gap: 40px;
+	grid-template-areas:
+		'image header'
+		'image info';
+	grid-template-rows: auto 1fr;
+	column-gap: 40px;
+	row-gap: 20px;
 	max-width: 1200px;
 	margin: 0 auto;
 	padding: 32px 32px 0;
 }
 
 .imageSection {
+	grid-area: image;
 	flex-shrink: 0;
 	cursor: zoom-in;
 	width: 220px;
@@ -23,12 +29,14 @@
 }
 
 .infoSection {
+	grid-area: info;
 	display: flex;
 	flex-direction: column;
 	gap: 20px;
 }
 
 .header {
+	grid-area: header;
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
@@ -121,17 +129,39 @@
 @media (max-width: 900px) {
 	.container {
 		grid-template-columns: 1fr;
-		gap: 24px;
+		/* Single column: name/cost first, then the big centered image, then the
+		   rest of the info. */
+		grid-template-areas:
+			'header'
+			'image'
+			'info';
+		grid-template-rows: auto auto 1fr;
+		gap: 20px;
 		padding: 24px 24px 0;
 	}
 
-	.imageSection {
-		display: flex;
+	/* Center the name/cost row; keep name and cost side by side on one line. */
+	.header {
+		align-items: center;
 		justify-content: center;
+		text-align: center;
+		gap: 10px;
 	}
 
 	.name {
 		font-size: var(--text-2xl);
+	}
+
+	/* Bigger, centered card image. Cap the width so it stays a reasonable size
+	   on tablets but fills small phones. */
+	.imageSection {
+		display: flex;
+		justify-content: center;
+		width: 100%;
+	}
+
+	.imageSection > :first-child {
+		width: min(300px, 78vw);
 	}
 }
 
