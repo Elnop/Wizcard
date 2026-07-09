@@ -1,6 +1,6 @@
 .page {
 	min-height: 100vh;
-	padding: 24px 16px;
+	padding: 32px;
 }
 
 .main {
@@ -27,14 +27,14 @@
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	font-size: 1.5rem;
+	font-size: var(--text-4xl);
 	font-weight: 700;
 	margin: 0;
 }
 
 .statsLine {
-	font-size: 0.85rem;
-	color: var(--text-secondary, #888);
+	font-size: var(--text-base);
+	color: var(--text-muted);
 	margin: 0;
 }
 
@@ -54,12 +54,12 @@
 }
 
 .emptyState h2 {
-	font-size: 1.25rem;
+	font-size: var(--text-xl);
 	margin: 0;
 }
 
 .emptyState p {
-	color: var(--text-secondary, #888);
+	color: var(--text-muted);
 	margin: 0;
 }
 
@@ -81,4 +81,25 @@
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 	z-index: 1;
 	pointer-events: none;
+}
+
+@media (max-width: 768px) {
+	.page {
+		padding: 16px 12px 80px;
+	}
+
+	.titleSection {
+		margin-bottom: 16px;
+		gap: 10px;
+	}
+
+	.title {
+		font-size: var(--text-2xl);
+	}
+
+	/* Actions take the full row and wrap so buttons don't overflow the screen. */
+	.actions {
+		width: 100%;
+		flex-wrap: wrap;
+	}
 }
