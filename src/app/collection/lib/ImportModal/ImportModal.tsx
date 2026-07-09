@@ -251,7 +251,10 @@ export function ImportModal() {
 	}
 
 	return (
-		<Modal className={`${styles.modal} ${isPreviewWide ? styles.modalWide : ''}`}>
+		<Modal
+			className={`${styles.modal} ${isPreviewWide ? styles.modalWide : ''}`}
+			bodyClassName={styles.modalBody}
+		>
 			<h2 className={styles.title}>{modalTitle(status, mergingLabel)}</h2>
 			{renderContent()}
 			<ImportSupportModals state={state} sets={sets} setsLoading={setsLoading} />

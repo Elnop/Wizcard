@@ -27,6 +27,42 @@
 		0 24px 48px rgba(0, 0, 0, 0.4);
 }
 
+/*
+ * Content wrapper. Carries the modal's own scroll (when content is taller than
+ * the frame) so that .modal itself never scrolls and the absolutely-positioned
+ * corner ornaments stay pinned to the visible frame. Lays out as a full-height
+ * flex column so existing modal bodies (which assume they're flex children of
+ * the frame) keep their layout.
+ */
+.body {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	width: 100%;
+	/* No padding by default — modals that want their padding on the scrollable
+	   body (so corners stay flush) pass a bodyClassName. Others keep padding on
+	   their own .modal class as before. */
+}
+
+/*
+ * On mobile the content wrapper becomes the single scroller for the whole
+ * modal, so tall content scrolls as one piece while .modal (and its corner
+ * ornaments) stays fixed. Placed AFTER the base .body rule so it wins on source
+ * order (a media query and a plain rule have equal specificity).
+ */
+@media (max-width: 768px) {
+	.overlay {
+		padding: 16px;
+	}
+
+	.body {
+		overflow-y: auto;
+		overflow-x: hidden;
+	}
+}
+
 /* Art Deco corner ornaments */
 .cornerTL,
 .cornerTR,
@@ -36,6 +72,7 @@
 	width: 16px;
 	height: 16px;
 	pointer-events: none;
+	z-index: 1;
 }
 
 .cornerTL {

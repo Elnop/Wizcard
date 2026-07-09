@@ -1,14 +1,20 @@
 .modal {
 	max-width: 720px;
-	padding: 32px;
 	overflow: hidden;
-	display: flex;
-	flex-direction: column;
-	gap: 20px;
 }
 
 .modalWide {
 	max-width: 1280px;
+}
+
+/*
+ * Padding + layout live on the scrollable body wrapper (passed via
+ * bodyClassName), not on .modal — so the frame's corner ornaments stay flush
+ * and the padding scrolls with the content on mobile.
+ */
+.modalBody {
+	padding: 32px;
+	gap: 20px;
 }
 
 .title {
@@ -603,4 +609,57 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	max-width: 0;
+}
+
+@media (max-width: 768px) {
+	/*
+	 * Mobile preview strategy: ONE scroll for the whole modal, no nested
+	 * scrollable panes. The desktop layout nests several flex:1 + overflow:auto
+	 * containers (previewRight → previewRightBody → grid), which on a phone
+	 * collapse into tiny scroll boxes. Here we let every inner container grow to
+	 * its content height; the single scroll lives on the Modal's .body wrapper
+	 * (see Modal.module.css) so the corner ornaments stay pinned to the frame.
+	 */
+	.modalBody {
+		padding: 20px;
+	}
+
+	/*
+	 * The preview is a two-column layout: a fixed 340px left column plus a
+	 * flexible right column. On a phone that's far wider than the screen, so
+	 * stack the columns vertically.
+	 */
+	.previewLayout {
+		flex-direction: column;
+		flex: none;
+		min-height: 0;
+		overflow: visible;
+	}
+
+	.previewLeft {
+		width: 100%;
+		overflow: visible;
+	}
+
+	.previewRight {
+		flex: none;
+		overflow: visible;
+		border-left: none;
+		padding-left: 0;
+		border-top: 1px solid var(--border);
+		padding-top: 16px;
+	}
+
+	/* Kill the inner scroll boxes so content flows into the modal's own scroll. */
+	.previewRightBody,
+	.scrollArea {
+		flex: none;
+		min-height: 0;
+		overflow: visible;
+	}
+
+	/* Action buttons (Cancel / Confirm) wrap instead of overflowing. */
+	.actions {
+		flex-wrap: wrap;
+	}
 }
