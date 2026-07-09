@@ -130,6 +130,14 @@
 	display: flex;
 	gap: 4px;
 	border-bottom: 1px solid var(--border);
+	/* Scroll sideways instead of wrapping/overflowing when the tabs (with their
+	   count pills) don't fit a narrow screen. */
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+	display: none;
 }
 
 .tab {
@@ -143,6 +151,8 @@
 	color: var(--text-muted);
 	font-size: var(--text-sm);
 	font-weight: 600;
+	white-space: nowrap;
+	flex-shrink: 0;
 	cursor: pointer;
 	transition:
 		color 0.15s,

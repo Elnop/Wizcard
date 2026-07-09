@@ -233,13 +233,6 @@ export function DeckCard({
 				<div className={styles.header}>
 					<h3 className={styles.name}>{deck.name}</h3>
 					<div className={styles.headerRight}>
-						{colors && colors.length > 0 && (
-							<div className={styles.colors}>
-								{colors.map((color) => (
-									<ManaSymbol key={color} symbol={`{${color}}`} symbolMap={symbolMap} />
-								))}
-							</div>
-						)}
 						{!readOnly && onDelete && (
 							<button
 								type="button"
@@ -265,6 +258,15 @@ export function DeckCard({
 							<div className={styles.artOverlay} />
 						</>
 					)}
+					{/* Color pips overlaid on the cover (moved off the header row to save
+					    space there). */}
+					{colors && colors.length > 0 && (
+						<div className={styles.colors}>
+							{colors.map((color) => (
+								<ManaSymbol key={color} symbol={`{${color}}`} symbolMap={symbolMap} />
+							))}
+						</div>
+					)}
 					{hasManaCurve && (
 						<div className={styles.curveOverlay}>
 							<MiniManaCurve curve={summary!.manaCurve} />
@@ -280,8 +282,12 @@ export function DeckCard({
 					<div className={styles.metaRow}>
 						{deck.format && <span className={styles.format}>{deck.format}</span>}
 						{summary && deck.format && summary.warningCount > 0 && (
-							<span className={styles.warningBadge}>
-								{summary.warningCount} warning{summary.warningCount !== 1 ? 's' : ''}
+							<span
+								className={styles.warningBadge}
+								aria-label={`${summary.warningCount} warning${summary.warningCount !== 1 ? 's' : ''}`}
+							>
+								<span aria-hidden="true">⚠</span>
+								{summary.warningCount}
 								<span className={styles.warningTooltip}>
 									{summary.warnings.map((msg, i) => (
 										<span key={i} className={styles.warningTooltipItem}>
