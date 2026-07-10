@@ -102,9 +102,15 @@ export async function fetchDeckCardTagRows(
 
 export async function fetchDeckCardRows(deckId: string): Promise<CardDbRow[]> {
 	const supabase = createClient();
+	// Explicit column list (omits purchase_price): anon has no table-level
+	// SELECT on cards, only a column grant on these. purchase_price is never
+	// displayed on the deck path, only written. See migration
+	// 20260710120000_fix_purchase_price_leak.sql.
 	const { data, error } = await supabase
 		.from('cards')
-		.select('*')
+		.select(
+			'id, owner_id, scryfall_id, date_added, is_foil, foil_type, condition, language, alter, proxy, tags, for_trade, deck_id, wishlist'
+		)
 		.eq('deck_id', deckId)
 		.order('date_added', { ascending: true });
 	if (error) throw new Error(`[queries/decks] fetchDeckCardRows error: ${error.message}`);
