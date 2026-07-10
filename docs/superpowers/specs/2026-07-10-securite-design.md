@@ -86,51 +86,75 @@ L'owner voit ses cartes par **deux chemins** : `owner_id = auth.uid()`
 **Cette policy ne doit PAS être modifiée** — sinon l'owner perd la vue de ses
 cartes de deck.
 
-### Pourquoi la view et non un column-GRANT
+### Le fix : column-level REVOKE sur `purchase_price` pour `anon`
 
-Un column-level `GRANT SELECT (cols)` s'attache à un **rôle** (`anon` /
-`authenticated`), pas à une **ligne**. La règle « le prix est visible par le
-owner de la ligne, pas par les autres » est une règle **par ligne** : un
-utilisateur connecté est le rôle `authenticated` qu'il regarde sa collection ou
-celle d'un autre. Un GRANT de colonne ne peut pas distinguer les deux → il
-fuirait `purchase_price` vers tout compte connecté. **La view est le bon outil**
-(elle n'était pas inutile — c'est la policy redondante qui la contournait).
+**Fait découvert à la préparation du plan** (vérifié dans le code) : la page
+publique de deck (`/decks/[id]`) charge les cartes de **n'importe quel** deck
+pour un visiteur **anonyme** via
+`src/lib/supabase/queries/decks.ts::fetchDeckCardRows` →
+`from('cards').select('*').eq('deck_id', deckId)`, autorisé par la policy
+`"Public can view deck cards" USING (deck_id is not null)`. Or :
+
+- `cardEntryToRow` (`src/lib/card/db/cardRow.ts:97`) **émet `purchase_price`** —
+  une carte de deck peut donc porter un prix.
+- La contrainte `cards_owner_or_deck` est un **OR**, pas un XOR : une ligne peut
+  avoir `deck_id` ET `purchase_price` non-nuls.
+
+**Conséquences :**
+
+1. Un `REVOKE SELECT ON cards FROM anon` **global casserait l'affichage public
+   des decks** (l'anon a besoin de `select('*')` sur `cards`). → écarté.
+2. **Dropper la seule policy collection ne suffit PAS** : le prix fuirait encore
+   sur toute carte ayant un `deck_id`, lue en anonyme via la policy deck.
+
+Pour `purchase_price`, la règle se ramène en fait à « **jamais visible pour
+`anon`** » : le owner est toujours `authenticated` (il lit son prix par la RLS
+ligne), et aucune vue anonyme légitime n'a besoin du prix (la view
+`public_collection_cards` l'omet déjà). Le bon outil est donc un **REVOKE de
+colonne unique sur `anon`** :
+
+```sql
+REVOKE SELECT (purchase_price) ON public.cards FROM anon;
+```
+
+`anon` garde `SELECT` sur toutes les autres colonnes → `select('*')` continue de
+fonctionner (PostgREST renvoie silencieusement les colonnes accordées, sans
+erreur), l'affichage des decks est intact, mais `purchase_price` est
+inaccessible sur **toute** ligne, deck ou collection. Le owner lit son prix via
+`authenticated` (inchangé). Un `authenticated` regardant les lignes d'autrui est
+déjà bloqué **au niveau ligne** par la RLS owner (`owner_id = auth.uid() OR
+deck_id in (...)`), donc ne voit jamais les lignes de collection d'autrui.
 
 ### Solution (une migration)
 
-Deux chemins de lecture distingués :
-
-1. **Owner (`authenticated`) → `cards` directement**, RLS ligne
-   (`owner_id = auth.uid() OR deck_id in (...)`), toutes colonnes y compris
-   `purchase_price`. **Inchangé.**
-2. **Visiteur (anon + authenticated regardant autrui) → view
-   `public_collection_cards`**, qui n'expose pas `purchase_price`. C'est déjà le
-   chemin utilisé par le front (`src/lib/supabase/queries/cards.ts`,
-   `collection/db/collection.ts`).
-
-Migration :
-
 1. `DROP POLICY "Public can view collection cards" ON public.cards;`
-   → ferme le SELECT public brut qui contournait la view.
+   → ferme le SELECT public brut qui contournait la view
+   `public_collection_cards`.
 2. **Conserver** `"Public can view deck cards"` (`using (deck_id is not null)`)
    — les cartes de deck restent publiquement lisibles (un deck partagé EST
    public).
 3. **Conserver intacte** la policy owner (`auth.uid() = owner_id OR deck_id in
-(...)`).
-4. Défense en profondeur : `REVOKE SELECT ON public.cards FROM anon;` — un
-   anonyme ne touche plus jamais la table brute, uniquement la view.
-   (`authenticated` garde le GRANT complet — la RLS ligne le protège.)
+(...)`) — l'owner garde collection + cartes de deck.
+4. `REVOKE SELECT (purchase_price) ON public.cards FROM anon;`
+   → le prix devient inaccessible à tout visiteur anonyme, sur toute ligne, tout
+   en préservant `select('*')` pour l'affichage des decks.
+
+La view `public_collection_cards` reste en place : c'est le chemin par lequel le
+front lit les **collections** d'autrui (avec ou sans session), et elle omet
+déjà `purchase_price`.
 
 ### Impact front
 
 **Aucun changement attendu.** Vérifié :
 
-- Collections d'autrui lues via `public_collection_cards` (view). ✅
-- Accès directs à `cards` = owner-scoped ou deck-scoped. ✅
+- Collections d'autrui lues via `public_collection_cards` (view, omet le prix). ✅
+- Affichage public des decks via `from('cards').select('*')` — préservé, le
+  `REVOKE` de colonne n'erreure pas et masque juste `purchase_price`. ✅
+- Owner lit `cards` (collection + deck) via `authenticated`, prix inclus. ✅
 
-À confirmer à l'implémentation : que le point 4 (`REVOKE anon`) ne casse aucune
-lecture anonyme légitime des cartes de deck (celles-ci passent-elles par `cards`
-ou par un autre objet en anonyme ?).
+À valider en test runtime : lecture anonyme d'un deck (cartes visibles, pas de
+`purchase_price` dans la réponse réseau), lecture owner (prix présent), lecture
+collection anonyme via la view (pas de prix).
 
 ---
 
