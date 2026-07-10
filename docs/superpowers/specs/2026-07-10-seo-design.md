@@ -91,7 +91,7 @@ le manifest peut les référencer via leurs routes générées.
 ### Root `layout.tsx` — enrichir `metadata`
 
 - `metadataBase: new URL('https://wizcard.xyz')` (rend OG/canonical absolus).
-- `title: { default: 'Wizcard — Recherche de cartes Magic: The Gathering',
+- `title: { default: 'Wizcard — Magic: The Gathering Card Search',
 template: '%s | Wizcard' }` (les pages enfant fournissent `%s`).
 - `description` soignée (marque + valeur).
 - `openGraph` par défaut (`type: website`, `siteName: 'Wizcard'`, `url`, `locale`,
@@ -114,7 +114,7 @@ place dans `card/[id]/page.tsx`).
   logique auth/ownership/édition **inchangée**).
 - Nouveau `src/app/decks/[id]/page.tsx` = **server component** :
   - `generateMetadata({ params })` : `await params`, `fetchDeckMetaById(id)`
-    (déjà server-safe). Si `null` → `{ title: 'Deck introuvable' }` (pas de
+    (déjà server-safe). Si `null` → `{ title: 'Deck Not Found' }` (pas de
     `notFound()` dans generateMetadata ; le client gère l'affichage). Sinon
     `title: '<nom>'`, `description` (format + description deck, tronquée),
     `openGraph` (title/description + image OG dynamique), `alternates.canonical:
@@ -141,7 +141,7 @@ updated_at').eq('nickname', nickname).maybeSingle()`. Retourne
   - `generateMetadata({ params })` : `fetchProfileByNickname(nickname)` →
     `title: '<nickname>'`, `description` (description profil ou fallback),
     `openGraph` (+ image OG dynamique), `alternates.canonical:
-'/users/<nickname>'`. Profil introuvable → `{ title: 'Profil introuvable' }`.
+'/users/<nickname>'`. Profil introuvable → `{ title: 'Profile Not Found' }`.
   - Rendu : `<h1>` serveur (nickname) + `<UserOverviewClient />`.
 - `src/app/users/[userId]/opengraph-image.tsx` : `ImageResponse` (1200×630)
   nickname + branding.
