@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Cinzel } from 'next/font/google';
 import { Providers } from '@/contexts/Providers';
 import { Navbar } from '@/components/Navbar/Navbar';
 import { Footer } from '@/components/Footer/Footer';
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/seo/site';
 import './globals.css';
 
 const geistSans = Geist({
@@ -21,11 +22,28 @@ const cinzel = Cinzel({
 	display: 'swap',
 });
 
+const SITE_TITLE = 'Wizcard — Magic: The Gathering Card Search';
+
 export const metadata: Metadata = {
-	title: 'Wizcard - Magic: The Gathering Card Search',
-	description:
-		'Search through every Magic: The Gathering card ever printed. Filter by color, type, set, and more.',
-	keywords: ['magic the gathering', 'mtg', 'card search', 'scryfall', 'trading cards'],
+	metadataBase: new URL(SITE_URL),
+	title: {
+		default: SITE_TITLE,
+		template: '%s | Wizcard',
+	},
+	description: SITE_DESCRIPTION,
+	alternates: { canonical: '/' },
+	openGraph: {
+		type: 'website',
+		siteName: SITE_NAME,
+		url: SITE_URL,
+		title: SITE_TITLE,
+		description: SITE_DESCRIPTION,
+	},
+	twitter: {
+		card: 'summary_large_image',
+		title: SITE_TITLE,
+		description: SITE_DESCRIPTION,
+	},
 };
 
 export const viewport: Viewport = {
