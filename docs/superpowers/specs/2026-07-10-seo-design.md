@@ -35,6 +35,12 @@ publiques aujourd'hui invisibles aux crawlers.
   cartes ».
 - **URL de base** : `https://wizcard.xyz` (en dur, sans www).
 - **Manifest PWA** : inclus.
+- **Icônes** : **générées via Next** (`src/app/icon.tsx` + `apple-icon.tsx`,
+  `ImageResponse`) — zéro fichier image à fournir. Le manifest les référence.
+- **Langue SEO** : **anglais** (cohérent avec `card/[id]`/`sets`). Une
+  implémentation **i18n est prévue** → garder les titres/descriptions SEO
+  **minimaux et simples** (pas d'effort rédactionnel, ils seront repris par
+  l'i18n). YAGNI sur la copie.
 - **Images OG dynamiques** : générées via Next `ImageResponse`
   (`opengraph-image.tsx`) pour deck et profil — zéro asset à fournir.
 - **Renommage** `page.tsx → *Client.tsx` pour les pages client passant en
@@ -77,9 +83,10 @@ updated_at`.
 `MetadataRoute.Manifest` de base : `name: 'Wizcard'`, `short_name: 'Wizcard'`,
 `description`, `start_url: '/'`, `display: 'standalone'`, `background_color` /
 `theme_color` (aligner sur `--primary` #c9a84c / fond sombre), `icons`.
-**Dépendance asset** : nécessite au moins une icône PNG 192×192 et 512×512. Si
-non fournies au moment de l'implémentation : démarrer avec `favicon.ico`
-référencé et laisser un TODO ops pour les PNG (documenté, pas bloquant).
+**Icônes générées** : `src/app/icon.tsx` et `src/app/apple-icon.tsx`
+(`ImageResponse`) rendent une icône à la volée depuis un glyphe/texte de marque
+(ex. « W » sur fond sombre/or) — aucun fichier PNG à fournir. Next les expose et
+le manifest peut les référencer via leurs routes générées.
 
 ### Root `layout.tsx` — enrichir `metadata`
 
@@ -161,9 +168,9 @@ Layouts de segment déjà présents : `collection/layout.tsx`, `wishlist/layout.
   titre/description d'accueil soignés + `openGraph`. Page la plus importante pour
   le référencement de marque.
 - `src/app/search/layout.tsx` (**à créer**, server) : `export const metadata`
-  avec `title: 'Recherche de cartes Magic: The Gathering'` + description +
-  `robots: { index: true }`. Le `search/page.tsx` client reste inchangé comme
-  `children`.
+  avec un titre simple en anglais (ex. `'Card Search'` → rendu `Card Search |
+Wizcard` via le template) + description courte + `robots: { index: true }`. Le
+  `search/page.tsx` client reste inchangé comme `children`.
 
 ### `noindex` sur les pages privées (défense en profondeur, en plus de robots)
 
@@ -185,9 +192,8 @@ follow: false } }`.
 - URLs absolues via `metadataBase` (ne pas hardcoder l'origine dans chaque page).
 - Ne PAS réécrire la logique interactive client en serveur — server shell fin
   uniquement.
-- Français pour les titres/descriptions orientés utilisateur ; garder cohérence
-  avec l'existant (certaines pages ont des titres en anglais — à uniformiser vers
-  le FR pour les nouvelles).
+- **Anglais** pour tous les titres/descriptions (cohérent avec l'existant). i18n
+  à venir → copie SEO minimale, pas d'effort rédactionnel.
 - Pas de framework de test — vérif via `npm run check` + runtime (curl du HTML
   rendu montrant les balises `<title>`/`<meta>`/`<h1>` côté serveur ; `/robots.txt`
   et `/sitemap.xml` accessibles).
