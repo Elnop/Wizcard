@@ -1,0 +1,63 @@
+.footer {
+	border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+	padding: 1.5rem 1.25rem;
+	margin-top: 3rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	align-items: center;
+	text-align: center;
+	font-size: 0.85rem;
+	/* Promote the footer to its own compositor layer. On the deck page a fixed
+	 * DeckFooter with backdrop-filter:blur sits above; without an isolated
+	 * layer, hovering a footer link failed to repaint the glyphs on some GPUs
+	 * (correct CSS, blank text). translateZ(0) + isolate give the footer a
+	 * stable layer that repaints independently of the blur layer. */
+	transform: translateZ(0);
+	isolation: isolate;
+}
+
+/*
+ * Some pages (deck detail) render a position:fixed footer pinned to the
+ * viewport bottom (≈57px tall), which would otherwise cover the last strip of
+ * this global footer. Reserving space below it lets the page scroll far enough
+ * for the whole global footer to clear that fixed bar. Desktop-only: the fixed
+ * DeckFooter is display:none below 769px, and nothing else renders below this
+ * footer, so the small gap is invisible on pages without a fixed bar.
+ */
+@media (min-width: 769px) {
+	.footer {
+		margin-bottom: 64px;
+	}
+}
+
+.links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	justify-content: center;
+}
+
+.links a {
+	/* Explicit color, not the global `a { color: inherit }`: the footer must
+	 * stay legible regardless of the ambient text color of the page above it.
+	 * --foreground is the light body color; the footer bg is near-black. */
+	color: var(--foreground);
+	opacity: 0.75;
+	text-decoration: none;
+}
+
+.links a:hover {
+	/* Hover shifts to the gold accent (well-contrasted on the dark footer) and
+	 * full opacity — a real color change, so it reads even where opacity alone
+	 * wouldn't. No text-decoration toggle: switching underline on/off at hover
+	 * forced a line reflow that, combined with the fixed footer's
+	 * backdrop-filter above, could leave the glyphs unpainted on some GPUs. */
+	color: var(--primary);
+	opacity: 1;
+}
+
+.copy {
+	opacity: 0.6;
+	margin: 0;
+}
