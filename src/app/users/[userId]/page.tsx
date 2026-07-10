@@ -21,26 +21,6 @@ export async function generateMetadata({ params }: UserPageProps): Promise<Metad
 	};
 }
 
-export default async function UserPage({ params }: UserPageProps) {
-	const { userId } = await params;
-	const nickname = decodeURIComponent(userId);
-	const profile = await fetchProfileByNickname(nickname);
-	return (
-		<>
-			{/* Server-rendered heading for crawlers; visual heading comes from the
-			    client view. Off-screen so it doesn't duplicate on screen. */}
-			<h1
-				style={{
-					position: 'absolute',
-					width: 1,
-					height: 1,
-					overflow: 'hidden',
-					clip: 'rect(0 0 0 0)',
-				}}
-			>
-				{profile?.nickname ?? nickname}
-			</h1>
-			<UserOverviewClient />
-		</>
-	);
+export default async function UserPage() {
+	return <UserOverviewClient />;
 }

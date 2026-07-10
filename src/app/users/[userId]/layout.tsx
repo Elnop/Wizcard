@@ -1,68 +1,37 @@
-'use client';
+import { fetchProfileByNickname } from '@/lib/profile/db/profile.server';
+import ProfileShell from './ProfileShell';
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
-import { useAuth } from '@/lib/supabase/contexts/AuthContext';
-import { useProfileContext } from '@/lib/profile/context/ProfileContext';
-import { Spinner } from '@/components/Spinner/Spinner';
-import { useProfileByNickname } from './useProfileByNickname';
-import { useProfileSummary } from './useProfileSummary';
-import { ProfileShellProvider } from './ProfileShellContext';
-import { ProfileView } from './components/ProfileView';
-import { ProfileEditModal } from './components/ProfileEditModal';
-import { UserNotFound } from './components/UserNotFound';
+interface UserLayoutProps {
+	children: React.ReactNode;
+	params: Promise<{ userId: string }>;
+}
 
 /**
- * Shell for every `/users/<nickname>/...` route. Resolves the nickname to a
- * profile ONCE, handles loading / not-found, computes ownership, and renders the
- * ProfileView shell (header + tab links) with the active tab's page as
- * `children`. The resolved identity is published via ProfileShellContext so the
- * tab sub-pages don't each re-resolve the nickname. The owner sees their live
- * profile (from ProfileContext) plus an Edit button; visitors see the read-only
- * public profile. Not auth-gated — public sharing is enforced by RLS.
+ * Server wrapper for the /users/[userId] segment. Emits a crawlable, static
+ * <h1> with the profile nickname BEFORE the client ProfileShell (which gates
+ * its own UI behind a loading spinner). Without this, the only server-rendered
+ * heading would be Suspense-streamed and invisible to no-JS crawlers. The h1 is
+ * visually hidden (off-screen) — ProfileView renders the visible name heading.
  */
-export default function UserProfileLayout({ children }: { children: React.ReactNode }) {
-	const params = useParams();
-	const nickname = params.userId as string;
-	const { user } = useAuth();
-	const [editing, setEditing] = useState(false);
-
-	const { profile: resolved, status } = useProfileByNickname(nickname);
-	const ownerCtx = useProfileContext();
-	const summary = useProfileSummary(resolved?.id ?? '');
-
-	if (status === 'loading') {
-		return (
-			<div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
-				<Spinner />
-			</div>
-		);
-	}
-	if (status === 'not-found' || !resolved) {
-		return <UserNotFound />;
-	}
-
-	const isOwner = !!user && user.id === resolved.id;
-	// The owner's live profile (reflects unsaved edits) comes from context; a
-	// visitor sees the resolved public profile.
-	const profile = isOwner ? ownerCtx.profile : resolved;
-
+export default async function UserLayout({ children, params }: UserLayoutProps) {
+	const { userId } = await params;
+	const nickname = decodeURIComponent(userId);
+	const profile = await fetchProfileByNickname(nickname);
+	const heading = profile?.nickname ?? nickname;
 	return (
-		<ProfileShellProvider
-			value={{ ownerId: resolved.id, isOwner, handle: nickname, summary, profile }}
-		>
-			{/* `resolved.id` (the real id) keys the summary/count queries; `handle`
-			    (the URL nickname) builds the tab hrefs — they are deliberately distinct. */}
-			<ProfileView
-				profile={profile}
-				isLoading={isOwner ? ownerCtx.isLoading : false}
-				onEdit={isOwner ? () => setEditing(true) : undefined}
-				handle={nickname}
-				summary={summary}
+		<>
+			<h1
+				style={{
+					position: 'absolute',
+					width: 1,
+					height: 1,
+					overflow: 'hidden',
+					clip: 'rect(0 0 0 0)',
+				}}
 			>
-				{children}
-			</ProfileView>
-			{editing && <ProfileEditModal onClose={() => setEditing(false)} />}
-		</ProfileShellProvider>
+				{heading}
+			</h1>
+			<ProfileShell>{children}</ProfileShell>
+		</>
 	);
 }
