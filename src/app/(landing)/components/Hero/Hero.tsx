@@ -2,15 +2,12 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/Button/Button';
-import { useInView } from '@/app/(landing)/hooks/useInView';
 import { RandomBackdrop } from './backdrops/RandomBackdrop';
 import styles from './Hero.module.css';
 
 export function Hero() {
-	const [ref, inView] = useInView({ threshold: 0.1 });
-
 	return (
-		<section ref={ref} className={`${styles.hero} ${inView ? styles.visible : ''}`}>
+		<section className={styles.hero}>
 			<div className={styles.background}>
 				<div className={styles.gradient} />
 				<div className={styles.decoLines} />
