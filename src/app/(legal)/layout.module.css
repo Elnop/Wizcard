@@ -1,0 +1,40 @@
+.container {
+	max-width: 48rem;
+	margin: 0 auto;
+	padding: 2.5rem 1.25rem 4rem;
+}
+
+.prose {
+	line-height: 1.65;
+}
+
+.prose :global(h1) {
+	font-size: 1.9rem;
+	margin-bottom: 0.5rem;
+}
+
+.prose :global(h2) {
+	font-size: 1.3rem;
+	margin-top: 2rem;
+	margin-bottom: 0.5rem;
+}
+
+.prose :global(p),
+.prose :global(li) {
+	margin-bottom: 0.75rem;
+}
+
+.prose :global(ul) {
+	padding-left: 1.25rem;
+	list-style: disc;
+}
+
+.prose :global(a) {
+	text-decoration: underline;
+}
+
+.prose :global(.updated) {
+	opacity: 0.7;
+	font-size: 0.9rem;
+	margin-bottom: 2rem;
+}
