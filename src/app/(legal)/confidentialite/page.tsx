@@ -78,8 +78,14 @@ export default function ConfidentialitePage() {
 
 			<h2>9. Réclamation</h2>
 			<p>
-				Vous pouvez introduire une réclamation auprès de la Commission nationale de l’informatique
-				et des libertés (CNIL),{' '}
+				Pour toute question ou réclamation concernant vos données, nous vous invitons à nous
+				contacter en priorité, par e-mail à {contact} ou sur notre{' '}
+				<a href={editor.discordUrl} target="_blank" rel="noreferrer noopener">
+					serveur Discord
+				</a>
+				: nous nous efforçons de résoudre chaque demande rapidement et directement. Si une
+				difficulté persistait, vous conservez le droit d’introduire une réclamation auprès de la
+				Commission nationale de l’informatique et des libertés (CNIL),{' '}
 				<a href="https://www.cnil.fr" target="_blank" rel="noreferrer noopener">
 					www.cnil.fr
 				</a>
