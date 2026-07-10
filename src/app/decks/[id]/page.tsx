@@ -1,60 +1,43 @@
-'use client';
+import type { Metadata } from 'next';
+import { fetchDeckMetaServer } from '@/lib/deck/db/deck.server';
+import DeckDetailClient from './DeckDetailClient';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { useAuth } from '@/lib/supabase/contexts/AuthContext';
-import { fetchDeckMetaById } from '@/lib/deck/db/decks';
-import { Spinner } from '@/components/Spinner/Spinner';
-import DeckDetailOwnerView from './DeckDetailOwnerView';
-import { DeckDetailReadOnlyView } from './DeckDetailReadOnlyView';
-import styles from './page.module.css';
+interface DeckPageProps {
+	params: Promise<{ id: string }>;
+}
 
-/**
- * Deck detail route. Renders the full editable owner view when the current user
- * owns the deck, otherwise a public read-only view (also used by anonymous
- * visitors). Ownership is resolved from the deck's `owner_id` vs the auth user.
- */
-export default function DeckDetailPage() {
-	const params = useParams();
-	const deckId = params.id as string;
-	const { user, isLoading: authLoading } = useAuth();
+export async function generateMetadata({ params }: DeckPageProps): Promise<Metadata> {
+	const { id } = await params;
+	const deck = await fetchDeckMetaServer(id);
+	if (!deck) return { title: 'Deck Not Found' };
+	const desc = deck.description?.slice(0, 160) ?? `${deck.format ?? 'MTG'} deck on Wizcard.`;
+	return {
+		title: deck.name,
+		description: desc,
+		alternates: { canonical: `/decks/${deck.id}` },
+		openGraph: { title: deck.name, description: desc, url: `/decks/${deck.id}` },
+	};
+}
 
-	const [ownerId, setOwnerId] = useState<string | null>(null);
-	const [resolved, setResolved] = useState(false);
-
-	useEffect(() => {
-		let cancelled = false;
-		async function resolve() {
-			setResolved(false);
-			try {
-				const meta = await fetchDeckMetaById(deckId);
-				if (cancelled) return;
-				setOwnerId(meta?.ownerId ?? null);
-			} finally {
-				if (!cancelled) setResolved(true);
-			}
-		}
-		void resolve();
-		return () => {
-			cancelled = true;
-		};
-	}, [deckId]);
-
-	if (authLoading || !resolved) {
-		return (
-			<div className={styles.page}>
-				<div className={styles.loading}>
-					<Spinner />
-				</div>
-			</div>
-		);
-	}
-
-	const isOwner = !!user && ownerId === user.id;
-
-	return isOwner ? (
-		<DeckDetailOwnerView deckId={deckId} />
-	) : (
-		<DeckDetailReadOnlyView deckId={deckId} />
+export default async function DeckPage({ params }: DeckPageProps) {
+	const { id } = await params;
+	const deck = await fetchDeckMetaServer(id);
+	return (
+		<>
+			{/* Server-rendered heading for crawlers; visual heading comes from the
+			    client view. Off-screen so it doesn't duplicate on screen. */}
+			<h1
+				style={{
+					position: 'absolute',
+					width: 1,
+					height: 1,
+					overflow: 'hidden',
+					clip: 'rect(0 0 0 0)',
+				}}
+			>
+				{deck?.name ?? 'Deck'}
+			</h1>
+			<DeckDetailClient />
+		</>
 	);
 }
