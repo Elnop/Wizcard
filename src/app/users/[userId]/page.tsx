@@ -1,17 +1,46 @@
-'use client';
+import type { Metadata } from 'next';
+import { fetchProfileByNickname } from '@/lib/profile/db/profile.server';
+import UserOverviewClient from './UserOverviewClient';
 
-import { ProfileOverview } from './components/ProfileOverview';
-import { useProfileShell } from './ProfileShellContext';
+interface UserPageProps {
+	params: Promise<{ userId: string }>;
+}
 
-/**
- * Overview tab — the profile's landing page. Unlike the other tabs it has no
- * sub-route: `/users/<nickname>` IS the Overview. Identity, the resolved
- * profile, and the shell's already-loaded summary come from
- * ProfileShellContext, so nothing is refetched beyond the Overview-only reads
- * inside ProfileOverview. Public for everyone — identical for owner and
- * visitor.
- */
-export default function UserOverviewPage() {
-	const { ownerId, summary, profile } = useProfileShell();
-	return <ProfileOverview ownerId={ownerId} profile={profile} summary={summary} />;
+export async function generateMetadata({ params }: UserPageProps): Promise<Metadata> {
+	const { userId } = await params;
+	const nickname = decodeURIComponent(userId);
+	const profile = await fetchProfileByNickname(nickname);
+	if (!profile) return { title: 'Profile Not Found' };
+	const name = profile.nickname ?? nickname;
+	const desc = profile.description?.slice(0, 160) ?? `${name}'s profile on Wizcard.`;
+	return {
+		title: name,
+		description: desc,
+		alternates: { canonical: `/users/${nickname}` },
+		openGraph: { title: name, description: desc, url: `/users/${nickname}` },
+	};
+}
+
+export default async function UserPage({ params }: UserPageProps) {
+	const { userId } = await params;
+	const nickname = decodeURIComponent(userId);
+	const profile = await fetchProfileByNickname(nickname);
+	return (
+		<>
+			{/* Server-rendered heading for crawlers; visual heading comes from the
+			    client view. Off-screen so it doesn't duplicate on screen. */}
+			<h1
+				style={{
+					position: 'absolute',
+					width: 1,
+					height: 1,
+					overflow: 'hidden',
+					clip: 'rect(0 0 0 0)',
+				}}
+			>
+				{profile?.nickname ?? nickname}
+			</h1>
+			<UserOverviewClient />
+		</>
+	);
 }
