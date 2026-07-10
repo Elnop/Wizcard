@@ -1,0 +1,33 @@
+.footer {
+	border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+	padding: 1.5rem 1.25rem;
+	margin-top: 3rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	align-items: center;
+	text-align: center;
+	font-size: 0.85rem;
+}
+
+.links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	justify-content: center;
+}
+
+.links a {
+	opacity: 0.8;
+	text-decoration: none;
+}
+
+.links a:hover {
+	opacity: 1;
+	text-decoration: underline;
+}
+
+.copy {
+	opacity: 0.6;
+	margin: 0;
+}
