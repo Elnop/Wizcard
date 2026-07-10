@@ -1,6 +1,7 @@
 .container {
 	position: relative;
 	display: inline-block;
+	aspect-ratio: 63 / 88;
 }
 
 .clickable {

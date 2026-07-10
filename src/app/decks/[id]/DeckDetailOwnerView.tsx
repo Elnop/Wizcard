@@ -604,6 +604,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 
 					<CardList
 						cards={sectionsWithSelectAll}
+						isLoading={isResolving && resolvedCards.length === 0}
+						skeletonCount={Object.keys(deckCards).length || undefined}
 						renderOverlay={renderOverlay}
 						onCardClick={handleCardClick}
 						onCardContextMenu={bulk.selectMode ? undefined : handleCardContextMenu}

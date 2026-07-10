@@ -144,5 +144,9 @@ export function usePublicDeckDetail(deckId: string) {
 		coverArtUrl,
 		isLoading,
 		isResolving,
+		// Known before Scryfall resolution completes — lets the UI reserve a
+		// skeleton grid sized to the real deck instead of a fixed placeholder
+		// count, avoiding a layout shift when resolvedCards pops in.
+		deckCardCount: deckCards.length,
 	};
 }

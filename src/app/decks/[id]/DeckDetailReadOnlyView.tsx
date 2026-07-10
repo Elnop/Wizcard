@@ -37,8 +37,16 @@ import styles from './page.module.css';
  */
 export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 	const { user } = useAuth();
-	const { deck, cardsByZone, resolvedCards, stats, coverArtUrl, isLoading, isResolving } =
-		usePublicDeckDetail(deckId);
+	const {
+		deck,
+		cardsByZone,
+		resolvedCards,
+		stats,
+		coverArtUrl,
+		isLoading,
+		isResolving,
+		deckCardCount,
+	} = usePublicDeckDetail(deckId);
 	const { addCards } = useCollectionContext();
 	const { openAddCard } = useAddCardModal();
 
@@ -173,6 +181,8 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 
 					<CardList
 						cards={sections}
+						isLoading={isResolving && resolvedCards.length === 0}
+						skeletonCount={deckCardCount || undefined}
 						onCardClick={handleCardClick}
 						onCardContextMenu={user ? handleCardContextMenu : undefined}
 						pageSize={false}
