@@ -11,11 +11,26 @@ export function useImportConfirmation(deps: {
 	setProgress: (p: ImportProgress) => void;
 	setResult: (r: ImportResult) => void;
 	importCards: (cards: Array<{ scryfallId: string; entry: CardEntry }>) => void;
+	currentCollectionCount: number;
 }) {
-	const { resolved, setStatus, setProgress, setResult, importCards } = deps;
+	const { resolved, setStatus, setProgress, setResult, importCards, currentCollectionCount } = deps;
 
 	const confirm = useCallback(async () => {
 		if (!resolved) return;
+
+		const COLLECTION_CAP = 250000;
+		const incoming = resolved.resolved.length;
+		if (currentCollectionCount + incoming > COLLECTION_CAP) {
+			setResult({
+				imported: 0,
+				notFound: resolved.notFound.length,
+				errors: [
+					`Cet import de ${incoming} cartes dépasserait la limite de ${COLLECTION_CAP} cartes en collection (${currentCollectionCount} déjà présentes). Réduisez la sélection.`,
+				],
+			});
+			setStatus('error');
+			return;
+		}
 
 		try {
 			setStatus('merging');
@@ -47,7 +62,7 @@ export function useImportConfirmation(deps: {
 			});
 			setStatus('error');
 		}
-	}, [resolved, setStatus, setProgress, setResult, importCards]);
+	}, [resolved, setStatus, setProgress, setResult, importCards, currentCollectionCount]);
 
 	return { confirm };
 }

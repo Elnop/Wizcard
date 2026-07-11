@@ -10,6 +10,7 @@ import { useImportConfirmation } from '@/lib/import/hooks/useImportConfirmation'
 import { useImportRowEditing } from '@/lib/import/hooks/useImportRowEditing';
 import { useImportBulkApply } from '@/lib/import/hooks/useImportBulkApply';
 import { useSetCodeNormalizer } from '@/lib/import/hooks/useSetCodeNormalizer';
+import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 
 export type ImportStatus =
 	| 'idle'
@@ -57,6 +58,8 @@ export function useImport(importers: Record<ImportDestination, ImportCards>) {
 	// variant (normalize) is consumed directly by ImportDeckModal via the hook.
 	const { normalizePending } = useSetCodeNormalizer();
 
+	const { entries } = useCollectionContext();
+
 	const { fetchPreviewCards, cancelPreviewFetch } = useImportPreviewFetch({
 		setResolved,
 		setIsLoadingPreview,
@@ -78,6 +81,7 @@ export function useImport(importers: Record<ImportDestination, ImportCards>) {
 		setProgress,
 		setResult,
 		importCards: importers[destination],
+		currentCollectionCount: entries.length,
 	});
 
 	const { updateCard, removeCard } = useImportRowEditing({ setResolved });
