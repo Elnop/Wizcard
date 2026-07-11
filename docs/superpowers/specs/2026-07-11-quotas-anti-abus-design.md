@@ -65,7 +65,7 @@ message **préfixé reconnaissable** que le client mappe vers un texte lisible.
 | Limite                      | Valeur              | Justification usage normal                             |
 | --------------------------- | ------------------- | ------------------------------------------------------ |
 | Decks par utilisateur       | **1000**            | Aucun joueur légitime n'approche ça ; power user ~200. |
-| Cartes par deck             | **1000**            | Couvre cube (720), highlander, Commander (100).        |
+| Cartes par deck             | **5000**            | Couvre gros cubes, decks de test/maybeboard chargés.   |
 | Cartes en collection        | **250 000**         | Quasi illimité ; plus grosse collection imaginable.    |
 | Débit d'insertion de cartes | **50 000 / 15 min** | Absorbe le plus gros import réaliste en une rafale.    |
 
@@ -101,7 +101,7 @@ create table public.user_usage (
 
 Le nombre de cartes d'un **deck** donné n'est pas un compteur par user → il reste
 un `count(*) FROM cards WHERE deck_id = NEW.deck_id`, appuyé sur l'index existant
-`cards (deck_id) WHERE deck_id IS NOT NULL`. Borné par 1000 → count léger.
+`cards (deck_id) WHERE deck_id IS NOT NULL`. Borné par 5000 → count léger.
 
 ## Rate limit : horodatage DB non falsifiable
 
@@ -143,7 +143,7 @@ la fenêtre récente, jamais toute la table (même à 250k). Count léger via l'
 
 **`cards` — BEFORE INSERT** :
 
-- si `NEW.deck_id IS NOT NULL` et `count(cards WHERE deck_id=NEW.deck_id) >= 1000`
+- si `NEW.deck_id IS NOT NULL` et `count(cards WHERE deck_id=NEW.deck_id) >= 5000`
   → `WIZCARD_LIMIT_DECK_CARDS`.
 - si `NEW.owner_id IS NOT NULL` :
   - `card_count >= 250000` → `WIZCARD_LIMIT_COLLECTION`.
@@ -189,7 +189,7 @@ renvoie un texte FR lisible. Appelé par `insertCardRows`, `insertDeckCardRows`,
 
 ## Vérification (pas de framework de test — cf. `project_no_test_framework`)
 
-- `npm run sb:reset` puis Studio : insérer > 1000 decks / > 1000 cartes deck /
+- `npm run sb:reset` puis Studio : insérer > 1000 decks / > 5000 cartes deck /
   simuler > seuils → l'insert est refusé avec le bon préfixe.
 - Import légitime volumineux (~15k) → passe sans accroc, compteurs corrects.
 - Falsification : poster `created_at` dans le passé via PostgREST → refusé
