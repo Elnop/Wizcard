@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCollectionStore } from '@/lib/collection/store/collection-store';
 import {
 	insertEntry,
 	insertEntries,
@@ -19,6 +20,7 @@ import {
 	moveDeckToFolder,
 } from '@/lib/deck/db/decks';
 import { insertFolder, updateFolder, deleteFolder } from '@/lib/deck/db/folders';
+import { useDeckStore } from '@/lib/deck/store/deck-store';
 import { upsertProfile } from '@/lib/profile/db/profiles';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -158,6 +160,22 @@ export function useSyncQueue(userId: string | null | undefined) {
 					// permanently-failed par skipFailed en tête de boucle.
 					for (let i = op.retries; i < MAX_RETRIES; i++) incrementRetry(op.id);
 					refreshStatus();
+					// Réconciliation : l'écriture optimiste locale n'a jamais été
+					// (entièrement) persistée en DB — on recharge depuis la source
+					// de vérité pour faire disparaître les lignes fantômes. On passe
+					// un triggerSync no-op pour ne pas déclencher une nouvelle passe
+					// de sync après un échec permanent (risque de boucle).
+					try {
+						if (op.type === 'insert' || op.type === 'bulk-insert') {
+							await useCollectionStore.getState().hydrateFromSupabase(op.payload.userId, () => {});
+						} else if (op.type === 'deck-card-insert' || op.type === 'deck-card-bulk-insert') {
+							await useDeckStore.getState().hydrateActiveDeck(op.payload.deckId);
+						} else if (op.type === 'deck-insert') {
+							await useDeckStore.getState().hydrateDecks(op.payload.userId);
+						}
+					} catch (reconcileErr) {
+						console.error('[sync-queue] Reconciliation after quota rejection failed', reconcileErr);
+					}
 					continue;
 				}
 				const delay = BACKOFF_BASE_MS * Math.pow(2, op.retries);
