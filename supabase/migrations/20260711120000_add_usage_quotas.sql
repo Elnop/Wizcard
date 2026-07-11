@@ -11,7 +11,19 @@ alter table public.cards
   add column created_at timestamptz not null default now();
 
 -- Le client ne doit jamais écrire created_at (sinon le rate limit est esquivable).
-revoke insert (created_at), update (created_at) on public.cards from anon, authenticated;
+-- Un REVOKE de colonne ne peut PAS restreindre un GRANT de table préexistant
+-- (même piège que 20260710000000 pour purchase_price/SELECT). On révoque donc
+-- le privilège de table INSERT/UPDATE puis on le re-grant colonne par colonne,
+-- SAUF created_at (posé uniquement par le default DB).
+revoke insert, update on public.cards from anon, authenticated;
+grant insert (
+  id, owner_id, scryfall_id, date_added, is_foil, foil_type, condition,
+  language, purchase_price, for_trade, wishlist, alter, proxy, tags, deck_id
+) on public.cards to anon, authenticated;
+grant update (
+  id, owner_id, scryfall_id, date_added, is_foil, foil_type, condition,
+  language, purchase_price, for_trade, wishlist, alter, proxy, tags, deck_id
+) on public.cards to anon, authenticated;
 
 -- Index pour le count de la fenêtre de rate limit (borné par ~50k lignes récentes).
 create index cards_owner_created_at_idx
