@@ -30,6 +30,7 @@ import {
 	getQueueLength,
 	skipFailed,
 } from '@/lib/supabase/sync-queue';
+import { isUsageLimitError, mapUsageLimitError } from '@/lib/supabase/usage-limit-error';
 
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 1000;
@@ -146,6 +147,17 @@ export function useSyncQueue(userId: string | null | undefined) {
 						refreshStatus();
 						return;
 					}
+					continue;
+				}
+				// Rejet de quota DB : erreur permanente. Inutile de retry
+				// (le volume ne baissera pas tout seul) — on marque l'op échouée
+				// immédiatement et on affiche un message clair.
+				if (isUsageLimitError(err)) {
+					setLastError(mapUsageLimitError(err));
+					// Épuiser les retries d'un coup → l'op est traitée comme
+					// permanently-failed par skipFailed en tête de boucle.
+					for (let i = op.retries; i < MAX_RETRIES; i++) incrementRetry(op.id);
+					refreshStatus();
 					continue;
 				}
 				const delay = BACKOFF_BASE_MS * Math.pow(2, op.retries);
