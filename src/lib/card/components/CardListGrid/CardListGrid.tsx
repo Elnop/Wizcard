@@ -11,6 +11,7 @@ import type { CardListGridProps } from './CardListGrid.types';
 import styles from './CardListGrid.module.css';
 
 const DEFAULT_SKELETON_COUNT = 12;
+const PRIORITY_CARD_COUNT = 4;
 
 function getSectionWrapperBase(
 	isSubSection: boolean,
@@ -153,6 +154,40 @@ export function CardListGrid({
 
 	const hasCardMenu = !!buildCardMenuItems || !!onCardContextMenu;
 
+	function renderDefaultCardItem(c: AnyCard, priorityIndex: number) {
+		const isPriority = priorityIndex < PRIORITY_CARD_COUNT;
+		return (
+			<div
+				key={c.id}
+				className={[styles.item, onCardClick ? styles.itemClickable : undefined]
+					.filter(Boolean)
+					.join(' ')}
+				title={c.name}
+				onClick={onCardClick ? () => onCardClick(c) : undefined}
+				onContextMenu={hasCardMenu ? (e) => handleCardContextMenu(c, e) : undefined}
+			>
+				{showCardNames && <p className={styles.cardName}>{c.name}</p>}
+				<div className={styles.imageWrapper}>
+					<CardImage
+						card={c}
+						// Grid cells render ~150-200px wide (see .grid in
+						// CardListGrid.module.css); `normal` (488x680) is ~2.5-3x more
+						// resolution than needed there. Keep `normal` only for the
+						// handful of above-the-fold priority cards so they stay crisp;
+						// everything else downloads the much lighter `small` (146x204)
+						// source.
+						size={isPriority ? 'normal' : 'small'}
+						priority={isPriority}
+						isFoil={'entry' in c ? c.entry.isFoil : undefined}
+						foilType={'entry' in c ? c.entry.foilType : undefined}
+						isProxy={'entry' in c ? c.entry.proxy : undefined}
+					/>
+					{renderOverlay?.(c)}
+				</div>
+			</div>
+		);
+	}
+
 	const gridClass = [cardsPerLine ? styles.gridFixed : styles.grid, className]
 		.filter(Boolean)
 		.join(' ');
@@ -180,32 +215,9 @@ export function CardListGrid({
 		return (
 			<div className={itemClass} style={fluid ? undefined : gridStyle}>
 				{cardItems.map((c, i) =>
-					renderItem ? (
-						renderItem(c, priorityOffset + i)
-					) : (
-						<div
-							key={c.id}
-							className={[styles.item, onCardClick ? styles.itemClickable : undefined]
-								.filter(Boolean)
-								.join(' ')}
-							title={c.name}
-							onClick={onCardClick ? () => onCardClick(c) : undefined}
-							onContextMenu={hasCardMenu ? (e) => handleCardContextMenu(c, e) : undefined}
-						>
-							{showCardNames && <p className={styles.cardName}>{c.name}</p>}
-							<div className={styles.imageWrapper}>
-								<CardImage
-									card={c}
-									size="normal"
-									priority={priorityOffset + i < 4}
-									isFoil={'entry' in c ? c.entry.isFoil : undefined}
-									foilType={'entry' in c ? c.entry.foilType : undefined}
-									isProxy={'entry' in c ? c.entry.proxy : undefined}
-								/>
-								{renderOverlay?.(c)}
-							</div>
-						</div>
-					)
+					renderItem
+						? renderItem(c, priorityOffset + i)
+						: renderDefaultCardItem(c, priorityOffset + i)
 				)}
 				{withLoadMoreSkeletons &&
 					isLoadingMore &&
@@ -259,7 +271,8 @@ export function CardListGrid({
 		parentKey: string,
 		priorityOffset: number,
 		isFluid: boolean,
-		hasChildren: boolean
+		hasChildren: boolean,
+		isFirstTopLevel: boolean
 	) {
 		if (section.loading) {
 			return (
@@ -275,7 +288,10 @@ export function CardListGrid({
 					i,
 					depth + 1,
 					`${parentKey}::${sectionKey(child)}`,
-					false,
+					// Only the first child of the first top-level section stays on the
+					// priority-eligible path — everything else (later children, deeper
+					// nesting) falls back to no priority.
+					isFirstTopLevel && i === 0,
 					fluidSections
 				)
 			);
@@ -323,7 +339,10 @@ export function CardListGrid({
 			</>
 		);
 
-		const priorityOffset = isFirstTopLevel && depth === 0 ? 0 : Infinity;
+		// Priority-eligible path: the first top-level section, followed down through
+		// only its first child at each depth (e.g. Commander/Mainboard's first
+		// sub-section). Any section off that path renders with no priority images.
+		const priorityOffset = isFirstTopLevel ? 0 : Infinity;
 
 		return (
 			<div key={keyForSection} className={wrapperClass} style={wrapperStyle}>
@@ -344,7 +363,8 @@ export function CardListGrid({
 							keyForSection,
 							priorityOffset,
 							isFluid,
-							hasChildren
+							hasChildren,
+							isFirstTopLevel
 						)}
 					</div>
 				)}

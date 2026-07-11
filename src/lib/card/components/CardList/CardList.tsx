@@ -150,6 +150,8 @@ export function CardList({
 					<CardListGrid
 						cards={[]}
 						sections={sections}
+						isLoading={isLoading}
+						skeletonCount={skeletonCount}
 						onCardClick={onCardClick}
 						buildCardMenuItems={buildCardMenuItems}
 						onCardContextMenu={onCardContextMenu}

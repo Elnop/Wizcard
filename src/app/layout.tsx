@@ -59,6 +59,8 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<body className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable}`}>
+				{/* App Router hoists <link> rendered anywhere in the tree into <head>. */}
+				<link rel="preconnect" href="https://cards.scryfall.io" />
 				<Providers>
 					<Navbar />
 					{children}
