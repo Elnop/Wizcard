@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { Spinner } from '@/components/Spinner/Spinner';
@@ -9,7 +8,6 @@ import { useProfileByNickname } from './useProfileByNickname';
 import { useProfileSummary } from './useProfileSummary';
 import { ProfileShellProvider } from './ProfileShellContext';
 import { ProfileView } from './components/ProfileView';
-import { ProfileEditModal } from './components/ProfileEditModal';
 import { UserNotFound } from './components/UserNotFound';
 
 /**
@@ -23,9 +21,9 @@ import { UserNotFound } from './components/UserNotFound';
  */
 export default function ProfileShell({ children }: { children: React.ReactNode }) {
 	const params = useParams();
+	const router = useRouter();
 	const nickname = params.userId as string;
 	const { user } = useAuth();
-	const [editing, setEditing] = useState(false);
 
 	const { profile: resolved, status } = useProfileByNickname(nickname);
 	const ownerCtx = useProfileContext();
@@ -56,13 +54,12 @@ export default function ProfileShell({ children }: { children: React.ReactNode }
 			<ProfileView
 				profile={profile}
 				isLoading={isOwner ? ownerCtx.isLoading : false}
-				onEdit={isOwner ? () => setEditing(true) : undefined}
+				onEdit={isOwner ? () => router.push('/settings') : undefined}
 				handle={nickname}
 				summary={summary}
 			>
 				{children}
 			</ProfileView>
-			{editing && <ProfileEditModal onClose={() => setEditing(false)} />}
 		</ProfileShellProvider>
 	);
 }
