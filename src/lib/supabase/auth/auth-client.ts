@@ -22,10 +22,10 @@ export async function verifyEmailOtpClient(
 }
 
 /**
- * Verify one leg of a secure (double-confirm) email change. Supabase sends a
- * token to BOTH the current and the new address; each is verified against its
- * own address with type 'email_change'. The change completes once both legs
- * succeed. `email` is the address the token was delivered to.
+ * Verify the confirmation code Supabase mails to the NEW address during an
+ * email change. With double_confirm_changes disabled, only the new address is
+ * confirmed here — control of the current address is already proven by the
+ * emailed link (see /api/account/email/request). `email` is the new address.
  */
 export async function verifyEmailChangeOtp(
 	email: string,
