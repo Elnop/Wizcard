@@ -253,12 +253,53 @@ from unnest(array[
   'user manage own storage objects','user upload to own folder'
 ]) p;
 
--- SÉCURITÉ : la policy sur-permissive "Public can view collection cards" DOIT
--- avoir été droppée (fix fuite purchase_price, 20260710120000).
+-- SÉCURITÉ : "Public can view collection cards" a été RÉINTRODUITE (20260713130000)
+-- pour porter le filtre de confidentialité, MAIS la protection prix ne repose plus
+-- sur son absence — elle repose sur les grants colonne (cf. assertion « anon cannot
+-- SELECT cards.purchase_price » plus bas). Cette policy DOIT désormais exister ET
+-- filtrer par la visibilité du profil propriétaire.
 select pg_temp.chk(
-  'security', 'cards :: no "Public can view collection cards"',
-  not pg_temp.has_policy('public','cards','Public can view collection cards'),
-  'policy sur-permissive TOUJOURS PRÉSENTE → fuite purchase_price aux anonymes'
+  'security', 'cards collection read is privacy-gated',
+  exists (select 1 from pg_policies
+          where schemaname='public' and tablename='cards'
+            and policyname='Public can view collection cards'
+            and qual ilike '%profile_is_public%'),
+  'policy "Public can view collection cards" absente ou ne filtre pas par profile_is_public'
+);
+
+-- SÉCURITÉ : les lectures publiques decks / deck_folders / deck-cards doivent
+-- toutes être filtrées par la visibilité du profil propriétaire (20260713130000).
+select pg_temp.chk(
+  'security', 'decks public read is privacy-gated',
+  exists (select 1 from pg_policies
+          where schemaname='public' and tablename='decks'
+            and policyname='Public can view all decks'
+            and qual ilike '%profile_is_public%'),
+  'policy "Public can view all decks" ne filtre pas par profile_is_public'
+);
+select pg_temp.chk(
+  'security', 'deck_folders public read is privacy-gated',
+  exists (select 1 from pg_policies
+          where schemaname='public' and tablename='deck_folders'
+            and policyname='Public can view all deck folders'
+            and qual ilike '%profile_is_public%'),
+  'policy "Public can view all deck folders" ne filtre pas par profile_is_public'
+);
+select pg_temp.chk(
+  'security', 'deck cards public read is privacy-gated',
+  exists (select 1 from pg_policies
+          where schemaname='public' and tablename='cards'
+            and policyname='Public can view deck cards'
+            and qual ilike '%profile_is_public%'),
+  'policy "Public can view deck cards" ne filtre pas par profile_is_public'
+);
+
+-- Le helper de visibilité doit exister (SECURITY DEFINER, utilisé par les policies).
+select pg_temp.chk(
+  'security', 'function public.profile_is_public(uuid)',
+  exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname='public' and p.proname='profile_is_public'),
+  'fonction profile_is_public absente'
 );
 
 -- SÉCURITÉ : la policy SELECT sur profiles doit filtrer par is_public (remplace
