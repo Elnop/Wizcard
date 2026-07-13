@@ -120,7 +120,7 @@ $$;
 select pg_temp.chk('table', 'public.'||t, pg_temp.has_table(t), 'table absente')
 from unnest(array[
   'decks','cards','deck_folders','profiles',
-  'custom_cards','custom_card_sources','user_usage'
+  'custom_cards','custom_card_sources','user_usage','email_change_requests'
 ]) t;
 
 -- =============================================================================
@@ -175,7 +175,12 @@ with expected(t, col, typ) as (
     ('custom_cards','type_line','text'),('custom_cards','mana_cost','text'),
     ('custom_cards','oracle_text','text'),('custom_cards','rarity','text'),
     ('custom_cards','set_name','text'),('custom_cards','display_name','text'),
-    ('custom_cards','image_hash','text'),('custom_cards','drive_folder_path','text')
+    ('custom_cards','image_hash','text'),('custom_cards','drive_folder_path','text'),
+    -- email_change_requests
+    ('email_change_requests','id','uuid'),('email_change_requests','user_id','uuid'),
+    ('email_change_requests','token_hash','text'),('email_change_requests','expires_at','timestamp with time zone'),
+    ('email_change_requests','used_at','timestamp with time zone'),
+    ('email_change_requests','created_at','timestamp with time zone')
 )
 select pg_temp.chk(
   'column', e.t||'.'||e.col,
@@ -317,6 +322,15 @@ select pg_temp.chk(
   'ancienne policy sur-permissive TOUJOURS PRÉSENTE → fuite de profils privés'
 );
 
+-- SÉCURITÉ : email_change_requests est service-role only — RLS activée mais
+-- AUCUNE policy (jamais accédée depuis le client, cf. 20260713140000).
+select pg_temp.chk(
+  'security', 'email_change_requests :: RLS enabled, no policy',
+  exists (select 1 from pg_class where relname='email_change_requests' and relrowsecurity)
+    and not exists (select 1 from pg_policies where tablename='email_change_requests'),
+  'table doit avoir RLS activée et AUCUNE policy (service-role only)'
+);
+
 -- =============================================================================
 -- 5. VUE public_collection_cards (existe, sans purchase_price, security_invoker)
 -- =============================================================================
@@ -408,6 +422,13 @@ with idx(t, name) as (
 select pg_temp.chk('index', idx.t||' :: '||idx.name,
   pg_temp.has_index(idx.t, idx.name), 'index absent')
 from idx;
+
+-- Index sur email_change_requests.token_hash (recherche du token en clair
+-- hashé, cf. 20260713140000) : vérifié par indexdef plutôt que par nom exact.
+select pg_temp.chk('index', 'email_change_requests.token_hash',
+  exists (select 1 from pg_indexes where tablename='email_change_requests'
+          and indexdef ilike '%token_hash%'),
+  'index token_hash absent');
 
 -- =============================================================================
 -- 11. SÉCURITÉ — grants colonne sensibles sur cards
