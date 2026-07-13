@@ -258,6 +258,44 @@
 			"deleteConfirm": "Cette action est irréversible : votre compte et toutes vos données (collection, decks) seront définitivement supprimés."
 		}
 	},
+	"profile": {
+		"editProfile": "Modifier le profil",
+		"tabOverview": "Aperçu",
+		"tabDecks": "Decks",
+		"tabCollection": "Collection",
+		"tabWishlist": "Wishlist",
+		"uniqueCards": "Cartes uniques",
+		"copies": "Exemplaires",
+		"memberSince": "Membre depuis",
+		"statsAria": "Statistiques",
+		"recentlyAddedAria": "Cartes récemment ajoutées",
+		"recentlyAdded": "Récemment ajoutées",
+		"noPublicCard": "Aucune carte publique pour l'instant.",
+		"mostExpensiveAria": "Cartes les plus chères",
+		"mostExpensive": "Cartes les plus chères",
+		"noPricedCard": "Aucune carte avec un prix Cardmarket.",
+		"recentDecksAria": "Decks récemment modifiés",
+		"recentDecks": "Decks récents",
+		"noDeck": "Aucun deck pour l'instant.",
+		"collectionTitle": "Collection",
+		"wishlistTitle": "Wishlist",
+		"emptyCollection": "Collection vide",
+		"emptyCollectionText": "Cet utilisateur n'a pas encore de carte publique.",
+		"emptyWishlist": "Liste de souhaits vide",
+		"emptyWishlistText": "Cet utilisateur n'a pas encore de carte publique.",
+		"noPublicDeck": "Aucun deck public",
+		"noPublicDeckDescription": "Cet utilisateur n'a pas encore de deck.",
+		"decksTitle": "Decks",
+		"folder": "Dossier",
+		"userNotFound": "Utilisateur introuvable",
+		"userNotFoundText": "Aucun sorcier ne porte ce nom.",
+		"backHome": "Retour à l'accueil",
+		"ogAlt": "Profil sur Wizcard",
+		"viewDetails": "Voir les détails",
+		"addToMyCollection": "Ajouter à ma collection…",
+		"addToMyWishlist": "Ajouter à ma liste de souhaits…",
+		"addToMyDeck": "Ajouter à mon deck…"
+	},
 	"wishlist": {
 		"title": "Ma liste de souhaits",
 		"stats": "{cards, plural, one {# carte} other {# cartes}} · {unique} unique",
@@ -513,6 +551,10 @@
 		},
 		"changeEmail": {
 			"title": "Changer d'adresse e-mail"
+		},
+		"userProfile": {
+			"notFound": "Profil introuvable",
+			"defaultDescription": "Le profil de {name} sur Wizcard."
 		},
 		"cgu": {
 			"title": "Conditions générales d'utilisation",

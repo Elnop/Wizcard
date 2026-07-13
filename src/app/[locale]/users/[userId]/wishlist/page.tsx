@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { CollectionView } from '@/app/[locale]/collection/lib/CollectionView/CollectionView';
 import { ExportMenu } from '@/app/[locale]/collection/ExportMenu/ExportMenu';
@@ -7,6 +8,7 @@ import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
 import { useOwnedCardMenuLabels } from '@/lib/card/hooks/useOwnedCardMenuLabels';
 import { buildViewerCardMenu } from '@/lib/card/viewerCardMenu';
+import { useViewerCardMenuLabels } from '@/lib/card/hooks/useViewerCardMenuLabels';
 import { useOwnedCardMenuHandlers } from '@/lib/card/hooks/useOwnedCardMenuHandlers';
 import { useViewerCardMenuHandlers } from '@/lib/card/hooks/useViewerCardMenuHandlers';
 import { usePublicWishlist } from './usePublicWishlist';
@@ -25,16 +27,18 @@ export function PublicWishlistView({
 	const { entries, isLoaded, isFullyLoaded } = usePublicWishlist(ownerId);
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
 	const { openCardModal } = useCardModalContext();
+	const t = useTranslations('profile');
 	const ownerHandlers = useOwnedCardMenuHandlers(stacks, 'wishlist');
 	const ownerMenuLabels = useOwnedCardMenuLabels('wishlist');
 	const viewerHandlers = useViewerCardMenuHandlers();
+	const viewerMenuLabels = useViewerCardMenuLabels();
 
 	const isLoadingWishlist = !isFullyLoaded || isHydrating;
 
 	const emptyState = (
 		<div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-			<h2>Empty wishlist</h2>
-			<p>This user has no public wishlist cards yet.</p>
+			<h2>{t('emptyWishlist')}</h2>
+			<p>{t('emptyWishlistText')}</p>
 		</div>
 	);
 
@@ -54,7 +58,7 @@ export function PublicWishlistView({
 			totalExpected={totalExpected}
 			isLoaded={isLoaded}
 			isFullyLoaded={isFullyLoaded}
-			title="Wishlist"
+			title={t('wishlistTitle')}
 			actions={actions || undefined}
 			emptyState={emptyState}
 			filterLayout={filterLayout}
@@ -64,7 +68,7 @@ export function PublicWishlistView({
 			buildCardMenuItems={(stack, close) =>
 				isOwner
 					? buildOwnedCardMenu(stack, 'wishlist', ownerHandlers, close, ownerMenuLabels)
-					: buildViewerCardMenu(stack.cards[0], viewerHandlers, close)
+					: buildViewerCardMenu(stack.cards[0], viewerHandlers, close, viewerMenuLabels)
 			}
 			showDeckBadges={isOwner}
 		/>

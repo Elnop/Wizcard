@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import type { Profile } from '@/lib/profile/types';
 import type { Card, CardStack } from '@/types/cards';
@@ -21,11 +22,11 @@ import styles from './ProfileOverview.module.css';
 const RECENT_DECKS_LIMIT = 5;
 const TOP_PRICED_LIMIT = 8;
 
-/** "juil. 2026"-style month+year from an ISO date (French locale). */
-function formatMemberSince(iso: string): string {
+/** "juil. 2026"-style month+year from an ISO date, in the active locale. */
+function formatMemberSince(iso: string, locale: string): string {
 	const d = new Date(iso);
 	if (Number.isNaN(d.getTime())) return '—';
-	return d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+	return d.toLocaleDateString(locale, { month: 'short', year: 'numeric' });
 }
 
 /**
@@ -40,9 +41,6 @@ function cardmarketPrice(card: Card): number | null {
 	const n = Number(raw);
 	return Number.isFinite(n) ? n : null;
 }
-
-/** French EUR formatting, e.g. "12,50 €". */
-const eurFormat = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
 
 /**
  * Overview tab of the profile shell: a public dashboard. Recap stats (unique
@@ -60,6 +58,9 @@ export function ProfileOverview({
 	profile: Profile | null;
 	summary: ProfileSummary;
 }) {
+	const t = useTranslations('profile');
+	const locale = useLocale();
+	const eurFormat = new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' });
 	const router = useRouter();
 	const { openCardModal } = useCardModalContext();
 	const { uniqueCount, recentCards, isLoading } = useProfileOverview(ownerId);
@@ -131,29 +132,29 @@ export function ProfileOverview({
 	const deckSummaryMap = useDeckSummaries(recentDecks);
 
 	const totalCopies = summary.collectionCount;
-	const memberSince = profile ? formatMemberSince(profile.createdAt) : '—';
+	const memberSince = profile ? formatMemberSince(profile.createdAt, locale) : '—';
 
 	return (
 		<div className={styles.overview}>
-			<section className={styles.statsGrid} aria-label="Statistiques">
+			<section className={styles.statsGrid} aria-label={t('statsAria')}>
 				<div className={styles.statCard}>
 					<span className={styles.statValue}>{isLoading ? '—' : uniqueCount}</span>
-					<span className={styles.statLabel}>Cartes uniques</span>
+					<span className={styles.statLabel}>{t('uniqueCards')}</span>
 				</div>
 				<div className={styles.statCard}>
 					<span className={styles.statValue}>{summary.isLoading ? '—' : totalCopies}</span>
-					<span className={styles.statLabel}>Exemplaires</span>
+					<span className={styles.statLabel}>{t('copies')}</span>
 				</div>
 				<div className={styles.statCard}>
 					<span className={styles.statValue}>{memberSince}</span>
-					<span className={styles.statLabel}>Membre depuis</span>
+					<span className={styles.statLabel}>{t('memberSince')}</span>
 				</div>
 			</section>
 
-			<section className={styles.block} aria-label="Cartes récemment ajoutées">
-				<h2 className={styles.blockTitle}>Récemment ajoutées</h2>
+			<section className={styles.block} aria-label={t('recentlyAddedAria')}>
+				<h2 className={styles.blockTitle}>{t('recentlyAdded')}</h2>
 				{!isLoading && recentCards.length === 0 ? (
-					<p className={styles.empty}>Aucune carte publique pour l&apos;instant.</p>
+					<p className={styles.empty}>{t('noPublicCard')}</p>
 				) : (
 					<CardList
 						cards={recentReps}
@@ -168,10 +169,10 @@ export function ProfileOverview({
 				)}
 			</section>
 
-			<section className={styles.block} aria-label="Cartes les plus chères">
-				<h2 className={styles.blockTitle}>Cartes les plus chères</h2>
+			<section className={styles.block} aria-label={t('mostExpensiveAria')}>
+				<h2 className={styles.blockTitle}>{t('mostExpensive')}</h2>
 				{collectionLoaded && topPriced.length === 0 ? (
-					<p className={styles.empty}>Aucune carte avec un prix Cardmarket.</p>
+					<p className={styles.empty}>{t('noPricedCard')}</p>
 				) : (
 					<CardList
 						cards={topPricedCards}
@@ -195,10 +196,10 @@ export function ProfileOverview({
 				)}
 			</section>
 
-			<section className={styles.block} aria-label="Decks récemment modifiés">
-				<h2 className={styles.blockTitle}>Decks récents</h2>
+			<section className={styles.block} aria-label={t('recentDecksAria')}>
+				<h2 className={styles.blockTitle}>{t('recentDecks')}</h2>
 				{recentDecks.length === 0 ? (
-					<p className={styles.empty}>Aucun deck pour l&apos;instant.</p>
+					<p className={styles.empty}>{t('noDeck')}</p>
 				) : (
 					<div className={styles.deckGrid}>
 						{recentDecks.map((deck) => (

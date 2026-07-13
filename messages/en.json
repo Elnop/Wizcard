@@ -258,6 +258,44 @@
 			"deleteConfirm": "This action is irreversible: your account and all your data (collection, decks) will be permanently deleted."
 		}
 	},
+	"profile": {
+		"editProfile": "Edit profile",
+		"tabOverview": "Overview",
+		"tabDecks": "Decks",
+		"tabCollection": "Collection",
+		"tabWishlist": "Wishlist",
+		"uniqueCards": "Unique cards",
+		"copies": "Copies",
+		"memberSince": "Member since",
+		"statsAria": "Statistics",
+		"recentlyAddedAria": "Recently added cards",
+		"recentlyAdded": "Recently added",
+		"noPublicCard": "No public card yet.",
+		"mostExpensiveAria": "Most expensive cards",
+		"mostExpensive": "Most expensive cards",
+		"noPricedCard": "No card with a Cardmarket price.",
+		"recentDecksAria": "Recently updated decks",
+		"recentDecks": "Recent decks",
+		"noDeck": "No deck yet.",
+		"collectionTitle": "Collection",
+		"wishlistTitle": "Wishlist",
+		"emptyCollection": "Empty collection",
+		"emptyCollectionText": "This user has no public cards yet.",
+		"emptyWishlist": "Empty wishlist",
+		"emptyWishlistText": "This user has no public cards yet.",
+		"noPublicDeck": "No public deck",
+		"noPublicDeckDescription": "This user has no decks yet.",
+		"decksTitle": "Decks",
+		"folder": "Folder",
+		"userNotFound": "User not found",
+		"userNotFoundText": "No wizard goes by that name.",
+		"backHome": "Back home",
+		"ogAlt": "Profile on Wizcard",
+		"viewDetails": "View details",
+		"addToMyCollection": "Add to my collection…",
+		"addToMyWishlist": "Add to my wishlist…",
+		"addToMyDeck": "Add to my deck…"
+	},
 	"wishlist": {
 		"title": "My Wishlist",
 		"stats": "{cards, plural, one {# card} other {# cards}} · {unique} unique",
@@ -513,6 +551,10 @@
 		},
 		"changeEmail": {
 			"title": "Change email address"
+		},
+		"userProfile": {
+			"notFound": "Profile Not Found",
+			"defaultDescription": "{name}'s profile on Wizcard."
 		},
 		"cgu": {
 			"title": "Terms of Use",

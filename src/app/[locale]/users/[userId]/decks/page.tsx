@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import type { DeckMeta } from '@/types/decks';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
@@ -16,6 +17,7 @@ import styles from '@/app/[locale]/decks/page.module.css';
 import tabStyles from './decksTab.module.css';
 
 function PublicDecksView({ ownerId, handle }: { ownerId: string; handle: string }) {
+	const t = useTranslations('profile');
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const symbolMap = useScryfallSymbols();
@@ -73,9 +75,9 @@ function PublicDecksView({ ownerId, handle }: { ownerId: string; handle: string 
 
 	let activeFolderName: string;
 	if (activeFolderId !== null && activeFolderId !== 'none') {
-		activeFolderName = foldersMap[activeFolderId]?.name ?? 'Folder';
+		activeFolderName = foldersMap[activeFolderId]?.name ?? t('folder');
 	} else {
-		activeFolderName = 'Decks';
+		activeFolderName = t('decksTitle');
 	}
 
 	if (isLoading) {
@@ -110,8 +112,8 @@ function PublicDecksView({ ownerId, handle }: { ownerId: string; handle: string 
 
 				{decks.length === 0 ? (
 					<div className={styles.emptyState}>
-						<h2>No public deck</h2>
-						<p>This user has no decks yet.</p>
+						<h2>{t('noPublicDeck')}</h2>
+						<p>{t('noPublicDeckDescription')}</p>
 					</div>
 				) : (
 					<div className={styles.grid}>

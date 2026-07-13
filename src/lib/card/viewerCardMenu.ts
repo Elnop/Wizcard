@@ -15,6 +15,14 @@ export type ViewerCardMenuHandlers = {
 	onAddToDeck: (card: AnyCard) => void;
 };
 
+/** Libellés du menu viewer, résolus par l'appelant (useViewerCardMenuLabels). */
+export type ViewerCardMenuLabels = {
+	viewDetails: string;
+	addToCollection: string;
+	addToWishlist: string;
+	addToDeck: string;
+};
+
 /**
  * Builds the right-click menu for cards on someone else's profile. Custom cards
  * / cardbacks aren't Scryfall-tracked, so only "View details" applies to them.
@@ -22,7 +30,8 @@ export type ViewerCardMenuHandlers = {
 export function buildViewerCardMenu(
 	card: AnyCard,
 	handlers: ViewerCardMenuHandlers,
-	close: () => void
+	close: () => void,
+	labels: ViewerCardMenuLabels
 ): ContextMenuAction[] {
 	const run = (fn: () => void) => () => {
 		fn();
@@ -32,7 +41,7 @@ export function buildViewerCardMenu(
 	const items: ContextMenuAction[] = [
 		{
 			type: 'action',
-			label: 'View details',
+			label: labels.viewDetails,
 			icon: '👁',
 			onClick: run(() => handlers.onViewDetails(card)),
 		},
@@ -46,19 +55,19 @@ export function buildViewerCardMenu(
 		{ type: 'divider' },
 		{
 			type: 'action',
-			label: 'Add to my collection…',
+			label: labels.addToCollection,
 			icon: '▣',
 			onClick: run(() => handlers.onAddToCollection(card)),
 		},
 		{
 			type: 'action',
-			label: 'Add to my wishlist…',
+			label: labels.addToWishlist,
 			icon: '♡',
 			onClick: run(() => handlers.onAddToWishlist(card)),
 		},
 		{
 			type: 'action',
-			label: 'Add to my deck…',
+			label: labels.addToDeck,
 			icon: '🗂',
 			onClick: run(() => handlers.onAddToDeck(card)),
 		}

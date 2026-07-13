@@ -19,7 +19,8 @@ import { deriveCardModalProps } from '@/lib/card/deriveCardModalProps';
 import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
 import { buildOwnedCardMenu, type OwnedCardMenuLabels } from '@/lib/card/ownedCardMenu';
 import { useOwnedCardMenuLabels } from '@/lib/card/hooks/useOwnedCardMenuLabels';
-import { buildViewerCardMenu } from '@/lib/card/viewerCardMenu';
+import { buildViewerCardMenu, type ViewerCardMenuLabels } from '@/lib/card/viewerCardMenu';
+import { useViewerCardMenuLabels } from '@/lib/card/hooks/useViewerCardMenuLabels';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
@@ -125,7 +126,8 @@ function buildOwnedImageMenu(
 function buildViewerImageMenu(
 	card: AnyCard,
 	deps: ImageMenuDeps,
-	closeMenu: () => void
+	closeMenu: () => void,
+	labels: ViewerCardMenuLabels
 ): ContextMenuAction[] {
 	return buildViewerCardMenu(
 		card,
@@ -144,7 +146,8 @@ function buildViewerImageMenu(
 				}),
 			onAddToDeck: (c) => deps.openAddToDeck(c),
 		},
-		closeMenu
+		closeMenu,
+		labels
 	);
 }
 
@@ -174,6 +177,7 @@ function resolveStackCards(oracleKey: string, entries: StoredCopy[]): Card[] {
 export function CardModalProvider({ children }: { children: React.ReactNode }) {
 	const collectionMenuLabels = useOwnedCardMenuLabels('collection');
 	const wishlistMenuLabels = useOwnedCardMenuLabels('wishlist');
+	const viewerMenuLabels = useViewerCardMenuLabels();
 	const collection = useCollectionContext();
 	const wishlist = useWishlistContext();
 	const { openAddToDeck } = useAddToDeckModal();
@@ -357,7 +361,7 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 			return (_card, closeMenu) => buildOwnedImageMenu(stack, source, deps, closeMenu, labels);
 		}
 
-		return (card, closeMenu) => buildViewerImageMenu(card, deps, closeMenu);
+		return (card, closeMenu) => buildViewerImageMenu(card, deps, closeMenu, viewerMenuLabels);
 	}, [
 		open,
 		resolved,
@@ -370,6 +374,7 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 		close,
 		collectionMenuLabels,
 		wishlistMenuLabels,
+		viewerMenuLabels,
 	]);
 
 	const value = useMemo<CardModalContextValue>(

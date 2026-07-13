@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { CollectionView } from '@/app/[locale]/collection/lib/CollectionView/CollectionView';
 import { ExportMenu } from '@/app/[locale]/collection/ExportMenu/ExportMenu';
@@ -7,6 +8,7 @@ import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
 import { useOwnedCardMenuLabels } from '@/lib/card/hooks/useOwnedCardMenuLabels';
 import { buildViewerCardMenu } from '@/lib/card/viewerCardMenu';
+import { useViewerCardMenuLabels } from '@/lib/card/hooks/useViewerCardMenuLabels';
 import { useOwnedCardMenuHandlers } from '@/lib/card/hooks/useOwnedCardMenuHandlers';
 import { useViewerCardMenuHandlers } from '@/lib/card/hooks/useViewerCardMenuHandlers';
 import { usePublicCollection } from './usePublicCollection';
@@ -25,16 +27,18 @@ export function PublicCollectionView({
 	const { entries, isLoaded, isFullyLoaded } = usePublicCollection(ownerId);
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
 	const { openCardModal } = useCardModalContext();
+	const t = useTranslations('profile');
 	const ownerHandlers = useOwnedCardMenuHandlers(stacks, 'collection');
 	const ownerMenuLabels = useOwnedCardMenuLabels('collection');
 	const viewerHandlers = useViewerCardMenuHandlers();
+	const viewerMenuLabels = useViewerCardMenuLabels();
 
 	const isLoadingCollection = !isFullyLoaded || isHydrating;
 
 	const emptyState = (
 		<div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-			<h2>Collection vide</h2>
-			<p>This user has no public cards yet.</p>
+			<h2>{t('emptyCollection')}</h2>
+			<p>{t('emptyCollectionText')}</p>
 		</div>
 	);
 
@@ -54,7 +58,7 @@ export function PublicCollectionView({
 			totalExpected={totalExpected}
 			isLoaded={isLoaded}
 			isFullyLoaded={isFullyLoaded}
-			title="Collection"
+			title={t('collectionTitle')}
 			actions={actions || undefined}
 			emptyState={emptyState}
 			filterLayout={filterLayout}
@@ -64,7 +68,7 @@ export function PublicCollectionView({
 			buildCardMenuItems={(stack, close) =>
 				isOwner
 					? buildOwnedCardMenu(stack, 'collection', ownerHandlers, close, ownerMenuLabels)
-					: buildViewerCardMenu(stack.cards[0], viewerHandlers, close)
+					: buildViewerCardMenu(stack.cards[0], viewerHandlers, close, viewerMenuLabels)
 			}
 			showDeckBadges={isOwner}
 		/>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { usePathname } from '@/i18n/navigation';
 import type { Profile } from '@/lib/profile/types';
@@ -46,6 +47,7 @@ export function ProfileView({
 	/** Active tab content, injected by the layout. */
 	children: React.ReactNode;
 }) {
+	const t = useTranslations('profile');
 	const pathname = usePathname();
 	const activeTab = tabFromPathname(pathname);
 	const barRef = useRef<HTMLDivElement>(null);
@@ -73,9 +75,9 @@ export function ProfileView({
 	}
 
 	const stats: Array<{ key: Tab; label: string; count: number }> = [
-		{ key: 'decks', label: 'Decks', count: summary.deckCount },
-		{ key: 'collection', label: 'Collection', count: summary.collectionCount },
-		{ key: 'wishlist', label: 'Wishlist', count: summary.wishlistCount },
+		{ key: 'decks', label: t('tabDecks'), count: summary.deckCount },
+		{ key: 'collection', label: t('tabCollection'), count: summary.collectionCount },
+		{ key: 'wishlist', label: t('tabWishlist'), count: summary.wishlistCount },
 	];
 
 	// `compact` = the sticky overlay: tabs only (no avatar / nickname / bio /
@@ -94,7 +96,7 @@ export function ProfileView({
 							)}
 							{onEdit && (
 								<Button variant="secondary" size="sm" onClick={onEdit}>
-									Edit profile
+									{t('editProfile')}
 								</Button>
 							)}
 						</div>
@@ -112,7 +114,7 @@ export function ProfileView({
 					aria-selected={activeTab === 'overview'}
 					className={`${styles.tab} ${activeTab === 'overview' ? styles.tabActive : ''}`}
 				>
-					Overview
+					{t('tabOverview')}
 				</Link>
 				{stats.map((s) => (
 					<Link
