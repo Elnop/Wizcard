@@ -1,8 +1,8 @@
 'use client';
 
-import { Link } from '@/i18n/navigation';
-import { usePathname } from '@/i18n/navigation';
+import { Link, usePathname } from '@/i18n/navigation';
 import dynamic from 'next/dynamic';
+import { useTranslations } from 'next-intl';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useImportContext } from '@/lib/import/context/ImportContext';
@@ -19,6 +19,7 @@ const NavbarDrawer = dynamic(() => import('./NavbarDrawer').then((m) => m.Navbar
 });
 
 export function Navbar() {
+	const t = useTranslations('nav');
 	const pathname = usePathname();
 	const { user, isLoading: authLoading, signOut } = useAuth();
 	const { entries } = useCollectionContext();
@@ -50,7 +51,7 @@ export function Navbar() {
 				href="/auth/login"
 				className={`${styles.navLink} ${pathname === '/auth/login' ? styles.navLinkActive : ''}`}
 			>
-				Connexion
+				{t('login')}
 			</Link>
 		);
 	}
@@ -58,6 +59,7 @@ export function Navbar() {
 	return (
 		<>
 			<header className={styles.navbar}>
+				{/* eslint-disable-next-line i18next/no-literal-string -- nom de marque, non traduit */}
 				<Link href="/" className={styles.logo}>
 					Wizcard
 				</Link>
@@ -68,33 +70,33 @@ export function Navbar() {
 						href="/search"
 						className={`${styles.navLink} ${pathname === '/search' ? styles.navLinkActive : ''}`}
 					>
-						Search
+						{t('search')}
 					</Link>
 					<Link
 						href="/sets"
 						className={`${styles.navLink} ${pathname === '/sets' ? styles.navLinkActive : ''}`}
 					>
-						Extensions
+						{t('sets')}
 					</Link>
 					<Link
 						href="/decks"
 						className={`${styles.navLink} ${pathname.startsWith('/decks') ? styles.navLinkActive : ''}`}
 					>
-						Decks
+						{t('decks')}
 					</Link>
 					<Link
 						href="/wishlist"
 						className={`${styles.navLink} ${pathname === '/wishlist' ? styles.navLinkActive : ''}`}
 					>
 						<WishlistIcon />
-						Wishlist
+						{t('wishlist')}
 						{totalWishlistCards > 0 && <span className={styles.badge}>{totalWishlistCards}</span>}
 					</Link>
 					<Link
 						href="/collection"
 						className={`${styles.navLink} ${pathname === '/collection' ? styles.navLinkActive : ''}`}
 					>
-						Collection
+						{t('collection')}
 						{isImporting && <span className={styles.spinner} />}
 						{totalCollectionCards > 0 && (
 							<span className={styles.badge}>{totalCollectionCards}</span>

@@ -2,6 +2,7 @@
 
 import { Link } from '@/i18n/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import styles from './Navbar.module.css';
 
@@ -24,6 +25,7 @@ interface ProfileMenuProps {
  * dropdown) and the mobile drawer (inline expander).
  */
 export function ProfileMenu({ onSignOut, onNavigate, inline = false }: ProfileMenuProps) {
+	const t = useTranslations('nav');
 	const { profile } = useProfileContext();
 	const [open, setOpen] = useState(false);
 	const ref = useRef<HTMLDivElement>(null);
@@ -104,7 +106,7 @@ export function ProfileMenu({ onSignOut, onNavigate, inline = false }: ProfileMe
 						role="menuitem"
 						onClick={handleProfileClick}
 					>
-						Profile
+						{t('profile')}
 					</Link>
 					<Link
 						href="/settings"
@@ -112,7 +114,7 @@ export function ProfileMenu({ onSignOut, onNavigate, inline = false }: ProfileMe
 						role="menuitem"
 						onClick={handleProfileClick}
 					>
-						Paramètres
+						{t('settings')}
 					</Link>
 					<button
 						type="button"
@@ -120,7 +122,7 @@ export function ProfileMenu({ onSignOut, onNavigate, inline = false }: ProfileMe
 						role="menuitem"
 						onClick={handleSignOutClick}
 					>
-						Log out
+						{t('logout')}
 					</button>
 				</div>
 			)}

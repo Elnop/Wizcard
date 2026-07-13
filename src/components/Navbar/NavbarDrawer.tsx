@@ -1,8 +1,8 @@
 'use client';
 
-import { Link } from '@/i18n/navigation';
-import { usePathname } from '@/i18n/navigation';
+import { Link, usePathname } from '@/i18n/navigation';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useImportContext } from '@/lib/import/context/ImportContext';
@@ -14,6 +14,7 @@ import { ProfileMenu } from './ProfileMenu';
 import styles from './Navbar.module.css';
 
 export function NavbarDrawer() {
+	const t = useTranslations('nav');
 	const pathname = usePathname();
 	const { user, isLoading: authLoading, signOut } = useAuth();
 	const { entries } = useCollectionContext();
@@ -52,7 +53,7 @@ export function NavbarDrawer() {
 				className={`${styles.drawerLink} ${pathname === '/auth/login' ? styles.drawerLinkActive : ''}`}
 				onClick={closeDrawer}
 			>
-				Connexion
+				{t('login')}
 			</Link>
 		);
 	}
@@ -61,7 +62,7 @@ export function NavbarDrawer() {
 		<>
 			<button
 				className={styles.hamburger}
-				aria-label="Menu"
+				aria-label={t('menu')}
 				onClick={() => setDrawerOpen((o) => !o)}
 			>
 				<span
@@ -86,21 +87,21 @@ export function NavbarDrawer() {
 					className={`${styles.drawerLink} ${pathname === '/search' ? styles.drawerLinkActive : ''}`}
 					onClick={closeDrawer}
 				>
-					Search
+					{t('search')}
 				</Link>
 				<Link
 					href="/sets"
 					className={`${styles.drawerLink} ${pathname === '/sets' ? styles.drawerLinkActive : ''}`}
 					onClick={closeDrawer}
 				>
-					Extensions
+					{t('sets')}
 				</Link>
 				<Link
 					href="/decks"
 					className={`${styles.drawerLink} ${pathname.startsWith('/decks') ? styles.drawerLinkActive : ''}`}
 					onClick={closeDrawer}
 				>
-					Decks
+					{t('decks')}
 				</Link>
 				<Link
 					href="/wishlist"
@@ -108,7 +109,7 @@ export function NavbarDrawer() {
 					onClick={closeDrawer}
 				>
 					<WishlistIcon />
-					Wishlist
+					{t('wishlist')}
 					{totalWishlistCards > 0 && <span className={styles.badge}>{totalWishlistCards}</span>}
 				</Link>
 				<Link
@@ -116,7 +117,7 @@ export function NavbarDrawer() {
 					className={`${styles.drawerLink} ${pathname === '/collection' ? styles.drawerLinkActive : ''}`}
 					onClick={closeDrawer}
 				>
-					Collection
+					{t('collection')}
 					{isImporting && <span className={styles.spinner} />}
 					{totalCollectionCards > 0 && <span className={styles.badge}>{totalCollectionCards}</span>}
 				</Link>

@@ -1,4 +1,28 @@
 {
+	"common": {
+		"confirm": "Confirmer",
+		"cancel": "Annuler"
+	},
+	"nav": {
+		"search": "Recherche",
+		"sets": "Extensions",
+		"decks": "Decks",
+		"wishlist": "Wishlist",
+		"collection": "Collection",
+		"login": "Connexion",
+		"menu": "Menu",
+		"profile": "Profil",
+		"settings": "Paramètres",
+		"logout": "Se déconnecter"
+	},
+	"footer": {
+		"legalLinks": "Liens légaux",
+		"legalNotice": "Mentions légales",
+		"privacy": "Confidentialité",
+		"terms": "CGU",
+		"discord": "Discord",
+		"copy": "© {year} {siteName}. Projet non officiel — Magic: The Gathering est une marque de Wizards of the Coast."
+	},
 	"seo": {
 		"home": {
 			"title": "Wizcard — Recherche de cartes Magic: The Gathering",

@@ -54,12 +54,15 @@ const eslintConfig = defineConfig([
 		},
 	},
 	{
-		// i18n — domaines migrés : passer les globs `files` de chaque domaine ici au
-		// fur et à mesure de son extraction vers `t()`. `mode: 'jsx-text-only'` ne
+		// i18n — domaines migrés : étendre ces globs au fur et à mesure de
+		// l'extraction de chaque domaine vers `t()`. `mode: 'jsx-text-only'` ne
 		// cible que le texte visible dans le JSX (ignore les props techniques).
-		// Exemple (à décommenter/étendre par domaine) :
-		//   files: ['src/components/Navbar/**', 'src/components/Footer/**'],
-		files: ['src/i18n/**/__never__'],
+		// Phase 1 : nav (Navbar), footer, common (ConfirmModal).
+		files: [
+			'src/components/Navbar/**',
+			'src/components/Footer/**',
+			'src/components/ConfirmModal/**',
+		],
 		rules: {
 			'i18next/no-literal-string': ['error', { mode: 'jsx-text-only' }],
 		},

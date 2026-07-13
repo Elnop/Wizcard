@@ -1,4 +1,28 @@
 {
+	"common": {
+		"confirm": "Confirm",
+		"cancel": "Cancel"
+	},
+	"nav": {
+		"search": "Search",
+		"sets": "Extensions",
+		"decks": "Decks",
+		"wishlist": "Wishlist",
+		"collection": "Collection",
+		"login": "Log in",
+		"menu": "Menu",
+		"profile": "Profile",
+		"settings": "Settings",
+		"logout": "Log out"
+	},
+	"footer": {
+		"legalLinks": "Legal links",
+		"legalNotice": "Legal notice",
+		"privacy": "Privacy",
+		"terms": "Terms",
+		"discord": "Discord",
+		"copy": "© {year} {siteName}. Unofficial project — Magic: The Gathering is a trademark of Wizards of the Coast."
+	},
 	"seo": {
 		"home": {
 			"title": "Wizcard — Magic: The Gathering Card Search",
