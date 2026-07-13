@@ -1339,7 +1339,7 @@ git commit -m "feat(settings): account deletion via service-role API route"
 
 **Files:**
 
-- Modify: `supabase/verify_prod_schema.sql`
+- Modify: `supabase/verify_schema.sql`
 
 **Interfaces:**
 
@@ -1348,7 +1348,7 @@ git commit -m "feat(settings): account deletion via service-role API route"
 
 - [ ] **Step 1: Read the existing assertion patterns**
 
-Run: `grep -n "chk(\|profiles\|policy\|column" supabase/verify_prod_schema.sql | head -40`
+Run: `grep -n "chk(\|profiles\|policy\|column" supabase/verify_schema.sql | head -40`
 Expected: shows how existing column/default/policy checks are written (the helper + `information_schema` / `pg_policies` queries). Follow that exact style.
 
 - [ ] **Step 2: Add column assertions**
@@ -1385,7 +1385,7 @@ Expected: report shows the new assertions PASS; overall summary reflects the add
 - [ ] **Step 5: Commit**
 
 ```bash
-git add supabase/verify_prod_schema.sql
+git add supabase/verify_schema.sql
 git commit -m "chore(db): verify profile preference columns + visibility policy"
 ```
 

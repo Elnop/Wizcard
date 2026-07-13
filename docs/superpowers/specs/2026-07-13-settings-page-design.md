@@ -71,6 +71,19 @@ restent inchangées.
 `/users/[id]` doit renvoyer **404** quand la ligne profil n'est pas visible
 (row absente du résultat filtré par RLS), plutôt qu'une page vide.
 
+**Confidentialité étendue à TOUTES les données utilisateur** : le toggle ne
+masque pas seulement la page profil. Les tables à lecture publique
+(`decks`, `deck_folders`, `cards` — decks + collection + wishlist) sont
+également filtrées par la visibilité du profil propriétaire, sinon un visiteur
+connaissant l'`owner_id` (ou détenant un ancien lien de deck partagé) pourrait
+toujours lire les données d'un profil privé au niveau API. Migration dédiée
+(`20260713130000_privacy_gate_public_reads`) : un helper `SECURITY DEFINER`
+`public.profile_is_public(uuid)` + réécriture des policies SELECT publiques en
+`using (<prédicat existant> and (profile_is_public(owner) or auth.uid() = owner))`.
+La protection du prix d'achat (`purchase_price`) reste assurée par les grants
+au niveau colonne pour `anon` (inchangés), pas par l'absence de policy —
+vérifié par des SELECT anon explicites.
+
 ## Architecture front
 
 Route `src/app/settings/` :
@@ -139,7 +152,7 @@ par `npm run check` + runtime + outils Supabase.
 
 - `npm run check` (TypeScript + ESLint + Prettier) doit passer.
 - `npm run sb:reset` puis `npm run sb:verify` : appliquer la migration sur DB
-  vierge et auditer la conformité. **Étendre `supabase/verify_prod_schema.sql`**
+  vierge et auditer la conformité. **Étendre `supabase/verify_schema.sql`**
   avec des assertions sur les 5 nouvelles colonnes (présence, type, default,
   check) et la policy `select` modifiée.
 - Runtime (dev) : parcourir `/settings`, éditer chaque champ, vérifier
