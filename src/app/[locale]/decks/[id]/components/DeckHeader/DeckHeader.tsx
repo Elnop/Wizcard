@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { DeckMeta } from '@/types/decks';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/Button/Button';
 import styles from './DeckHeader.module.css';
 
@@ -32,6 +33,7 @@ export function DeckHeader({
 	onToggleSelectMode,
 	readOnly = false,
 }: Props) {
+	const t = useTranslations('decks');
 	const [isEditing, setIsEditing] = useState(false);
 	const [name, setName] = useState(deck.name);
 	const [description, setDescription] = useState(deck.description ?? '');
@@ -74,15 +76,15 @@ export function DeckHeader({
 					className={styles.descInput}
 					value={description}
 					onChange={(e) => setDescription(e.target.value)}
-					placeholder="Description..."
+					placeholder={t('descriptionPlaceholder2')}
 					rows={2}
 				/>
 				<div className={styles.editActions}>
 					<Button variant="ghost" size="sm" onClick={handleCancel}>
-						Cancel
+						{t('cancel')}
 					</Button>
 					<Button size="sm" onClick={handleSave} disabled={!name.trim()}>
-						Save
+						{t('save')}
 					</Button>
 				</div>
 			</div>
@@ -117,13 +119,13 @@ export function DeckHeader({
 				{!readOnly && (
 					<button type="button" className={styles.actionBtn} onClick={() => setIsEditing(true)}>
 						<EditIcon />
-						<span>Edit</span>
+						<span>{t('headerEdit')}</span>
 					</button>
 				)}
 				{onExportText && (
 					<button type="button" className={styles.actionBtn} onClick={() => onExportText()}>
 						<ExportIcon />
-						<span>Export</span>
+						<span>{t('headerExport')}</span>
 					</button>
 				)}
 				{onGeneratePdf && (
@@ -133,7 +135,7 @@ export function DeckHeader({
 						onClick={() => onGeneratePdf()}
 					>
 						<PdfIcon />
-						<span>Generate PDF</span>
+						<span>{t('generatePdf')}</span>
 					</button>
 				)}
 				{onToggleSelectMode && (
@@ -144,7 +146,7 @@ export function DeckHeader({
 						aria-pressed={selectMode}
 					>
 						<SelectIcon />
-						<span>{selectMode ? 'Done' : 'Select'}</span>
+						<span>{selectMode ? t('done') : t('select')}</span>
 					</button>
 				)}
 				{hasMoreActions && (
@@ -161,7 +163,7 @@ export function DeckHeader({
 							aria-expanded={menuOpen}
 						>
 							<MoreIcon />
-							<span>More</span>
+							<span>{t('more')}</span>
 						</button>
 						{menuOpen && (
 							<div className={styles.dropdown} role="menu">
@@ -175,7 +177,7 @@ export function DeckHeader({
 											onGeneratePdf();
 										}}
 									>
-										⊕ Generate PDF
+										⊕ {t('generatePdf')}
 									</button>
 								)}
 								{onAssignAllFromCollection && (
@@ -188,7 +190,7 @@ export function DeckHeader({
 											onAssignAllFromCollection();
 										}}
 									>
-										⊕ Assign all from collection
+										⊕ {t('assignAllFromCollection')}
 									</button>
 								)}
 								{onAddAllToCollection && (
@@ -201,7 +203,7 @@ export function DeckHeader({
 											onAddAllToCollection();
 										}}
 									>
-										⊕ Add all to collection
+										⊕ {t('addAllToCollection')}
 									</button>
 								)}
 								{onImportList && (
@@ -214,7 +216,7 @@ export function DeckHeader({
 											onImportList();
 										}}
 									>
-										⊕ Import list
+										⊕ {t('importList')}
 									</button>
 								)}
 							</div>

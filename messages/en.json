@@ -470,7 +470,13 @@
 		"statsAvgCmc": "Avg CMC",
 		"statsLands": "Lands",
 		"statsCreatures": "Creatures",
-		"colorBalance": "Color Balance — Cost vs Production"
+		"colorBalance": "Color Balance — Cost vs Production",
+		"save": "Save",
+		"done": "Done",
+		"select": "Select",
+		"importList": "Import list",
+		"assignAllFromCollection": "Assign all from collection",
+		"addAllToCollection": "Add all to collection"
 	},
 	"collection": {
 		"title": "My Collection",

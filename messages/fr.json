@@ -470,7 +470,13 @@
 		"statsAvgCmc": "CMC moyen",
 		"statsLands": "Terrains",
 		"statsCreatures": "Créatures",
-		"colorBalance": "Équilibre des couleurs — Coût vs Production"
+		"colorBalance": "Équilibre des couleurs — Coût vs Production",
+		"save": "Enregistrer",
+		"done": "Terminé",
+		"select": "Sélectionner",
+		"importList": "Importer une liste",
+		"assignAllFromCollection": "Assigner tout depuis la collection",
+		"addAllToCollection": "Tout ajouter à la collection"
 	},
 	"collection": {
 		"title": "Ma collection",
