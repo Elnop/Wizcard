@@ -57,6 +57,13 @@ export async function POST() {
 		// Sent to the CURRENT address to prove control before any new-address step.
 		await sendMail({ to: user.email, ...mail });
 	} catch {
+		// Roll back the just-created request so the rate-limit doesn't lock the
+		// user out of retrying after a mail-send failure.
+		await admin
+			.from('email_change_requests')
+			.delete()
+			.eq('user_id', user.id)
+			.eq('token_hash', tokenHash);
 		return NextResponse.json({ error: 'Échec de l’envoi de l’e-mail.' }, { status: 500 });
 	}
 	return NextResponse.json({ ok: true });
