@@ -3,6 +3,13 @@
 		"confirm": "Confirm",
 		"cancel": "Cancel"
 	},
+	"cardMenu": {
+		"viewDetails": "View details",
+		"openCardPage": "Open card page",
+		"addToCollection": "Add to collection…",
+		"addToWishlist": "Add to wishlist…",
+		"addToDeck": "Add to deck…"
+	},
 	"nav": {
 		"search": "Search",
 		"sets": "Extensions",
@@ -147,6 +154,64 @@
 			"deleteConfirm": "This action is irreversible: your account and all your data (collection, decks) will be permanently deleted."
 		}
 	},
+	"sets": {
+		"title": "Sets",
+		"catalogPlaceholder": "Search a set...",
+		"tabAll": "All",
+		"tabPaper": "Paper",
+		"tabMtga": "MTGA",
+		"setsCount": "{count, plural, one {# set} other {# sets}}",
+		"ofTotal": "of {total}",
+		"cardsCount": "{count, plural, one {# card} other {# cards}}",
+		"loadError": "Failed to load sets.",
+		"emptyTitle": "No set",
+		"emptyDescription": "No result for this search or filter.",
+		"badgePaper": "Paper",
+		"badgeArena": "Arena",
+		"badgeAlchemy": "Alchemy",
+		"badgeDigital": "Digital",
+		"back": "← Sets",
+		"backToSets": "← Back to sets",
+		"notFoundTitle": "Set not found",
+		"notFoundDescription": "No set matches the code “{code}”.",
+		"scopeGroup": "Group",
+		"scopeActive": "Current set",
+		"cards": "cards",
+		"foil": "Foil",
+		"partialCollection": "Collection partially loaded — completion may be underestimated.",
+		"filters": "Filters",
+		"closeFilters": "Close filters",
+		"searchByName": "Search by name...",
+		"ownership": "Ownership",
+		"ownershipAll": "All",
+		"ownershipOwned": "Owned",
+		"ownershipMissing": "Missing",
+		"ownershipFoil": "Owned in foil",
+		"resetFilters": "Reset filters",
+		"noCardMatch": "No card matches the filters."
+	},
+	"search": {
+		"placeholder": "Search for cards...",
+		"filters": "Filters",
+		"modeOfficial": "Official",
+		"modeCustom": "Custom",
+		"modeBacks": "Backs",
+		"modeAriaLabel": "Search mode",
+		"colName": "Name",
+		"colSet": "Set",
+		"colType": "Type",
+		"colCmc": "CMC",
+		"colPriceUsd": "USD Price",
+		"showing": "Showing {shown} of {total} cards",
+		"customCount": "{count} custom",
+		"cardbacksCount": "{count} cardbacks",
+		"popularEdh": "Popular EDH cards",
+		"genericError": "An error occurred. Please try again.",
+		"customError": "Failed to load custom cards.",
+		"noResults": "No cards found",
+		"didYouMean": "Did you mean:",
+		"adjustSearch": "Try adjusting your search or filters."
+	},
 	"legal": {
 		"lastUpdated": "Last updated: {date}",
 		"cgu": {
@@ -230,6 +295,16 @@
 		},
 		"settings": {
 			"title": "Settings"
+		},
+		"search": {
+			"title": "Card Search",
+			"description": "Search every Magic: The Gathering card by name, color, type, and set."
+		},
+		"sets": {
+			"title": "Sets"
+		},
+		"setDetail": {
+			"title": "{code} | Sets"
 		},
 		"changeEmail": {
 			"title": "Change email address"

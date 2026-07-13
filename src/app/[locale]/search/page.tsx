@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, Suspense } from 'react';
+import { useTranslations } from 'next-intl';
 import { useScryfallCardSearch } from '@/lib/scryfall/hooks/useScryfallCardSearch';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
@@ -55,6 +56,15 @@ export default function SearchPage() {
 }
 
 function SearchPageContent() {
+	const t = useTranslations('search');
+	const tMenu = useTranslations('cardMenu');
+	const cardMenuLabels = {
+		viewDetails: tMenu('viewDetails'),
+		openCardPage: tMenu('openCardPage'),
+		addToCollection: tMenu('addToCollection'),
+		addToWishlist: tMenu('addToWishlist'),
+		addToDeck: tMenu('addToDeck'),
+	};
 	const { addCards } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();
 	const router = useRouter();
@@ -185,20 +195,20 @@ function SearchPageContent() {
 
 	// Cardbacks have no set, type, CMC or price: only the name column makes sense.
 	const tableColumns = isBacks
-		? [{ key: 'name', label: 'Name', sortKey: 'name' }]
+		? [{ key: 'name', label: t('colName'), sortKey: 'name' }]
 		: [
-				{ key: 'name', label: 'Name', sortKey: 'name' },
+				{ key: 'name', label: t('colName'), sortKey: 'name' },
 				{
 					key: 'set',
-					label: 'Set',
+					label: t('colSet'),
 					sortKey: 'set',
 					render: (card: AnyCard) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
 				},
-				{ key: 'type_line', label: 'Type' },
-				{ key: 'cmc', label: 'CMC', sortKey: 'cmc' },
+				{ key: 'type_line', label: t('colType') },
+				{ key: 'cmc', label: t('colCmc'), sortKey: 'cmc' },
 				{
 					key: 'prices',
-					label: 'Prix USD',
+					label: t('colPriceUsd'),
 					sortKey: 'usd',
 					render: (card: AnyCard) =>
 						'prices' in card && card.prices && 'usd' in card.prices
@@ -212,7 +222,7 @@ function SearchPageContent() {
 			<main className={styles.main}>
 				<div className={styles.searchSection}>
 					<div className={styles.searchRow}>
-						<SearchBar value={name} onChange={setName} placeholder="Search for cards..." />
+						<SearchBar value={name} onChange={setName} placeholder={t('placeholder')} />
 						<SearchModeSwitcher value={mode} onChange={setMode} />
 						<button
 							type="button"
@@ -227,7 +237,7 @@ function SearchPageContent() {
 									strokeLinecap="round"
 								/>
 							</svg>
-							Filtres
+							{t('filters')}
 							{totalActiveFilterCount > 0 && (
 								<span className={styles.filterBadge}>{totalActiveFilterCount}</span>
 							)}
@@ -264,22 +274,22 @@ function SearchPageContent() {
 						<span>
 							{mode === 'official' &&
 								cards.length > 0 &&
-								`Showing ${cards.length} of ${totalCards.toLocaleString()} cards`}
-							{mode === 'custom' && `${customTotal} custom`}
-							{mode === 'backs' && `${customTotal} cardbacks`}
+								t('showing', { shown: cards.length, total: totalCards })}
+							{mode === 'custom' && t('customCount', { count: customTotal })}
+							{mode === 'backs' && t('cardbacksCount', { count: customTotal })}
 						</span>
 					</div>
 				)}
 
 				{isDefaultQuery && !isLoading && (
 					<div className={styles.resultInfo}>
-						<span>Popular EDH cards</span>
+						<span>{t('popularEdh')}</span>
 					</div>
 				)}
 
 				{mode === 'official' && error && (
 					<div className={styles.error}>
-						<p>An error occurred. Please try again.</p>
+						<p>{t('genericError')}</p>
 					</div>
 				)}
 
@@ -321,7 +331,8 @@ function SearchPageContent() {
 									}),
 								onAddToDeck: (c) => openAddToDeck(c),
 							},
-							close
+							close,
+							cardMenuLabels
 						)
 					}
 					renderOverlay={withCustomBadge}
@@ -337,7 +348,7 @@ function SearchPageContent() {
 
 				{customError && (
 					<div className={styles.error}>
-						<p>Failed to load custom cards.</p>
+						<p>{t('customError')}</p>
 					</div>
 				)}
 
@@ -348,10 +359,10 @@ function SearchPageContent() {
 					!error &&
 					!customError && (
 						<div className={styles.noResults}>
-							<h3>No cards found</h3>
+							<h3>{t('noResults')}</h3>
 							{suggestions.length > 0 ? (
 								<>
-									<p>Did you mean:</p>
+									<p>{t('didYouMean')}</p>
 									<ul className={styles.suggestions}>
 										{suggestions.map((s) => (
 											<li key={s}>
@@ -367,7 +378,7 @@ function SearchPageContent() {
 									</ul>
 								</>
 							) : (
-								<p>Try adjusting your search or filters.</p>
+								<p>{t('adjustSearch')}</p>
 							)}
 						</div>
 					)}

@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
@@ -28,6 +29,7 @@ function SetCardsGridInner({
 	sortDir,
 	onSortChange,
 }: SetCardsGridProps) {
+	const t = useTranslations('sets');
 	const { getOwnership } = useCollectionContext();
 	const { entries: wishlistEntries } = useWishlistContext();
 	const { openCardModal } = useCardModalContext();
@@ -68,9 +70,7 @@ function SetCardsGridInner({
 				sortDir={sortDir}
 				onSortChange={(order, dir) => onSortChange(order as ScryfallSortOrder, dir)}
 			/>
-			{!isLoading && cards.length === 0 && (
-				<p className={styles.error}>No card matches the filters.</p>
-			)}
+			{!isLoading && cards.length === 0 && <p className={styles.error}>{t('noCardMatch')}</p>}
 		</>
 	);
 }

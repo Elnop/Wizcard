@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { classifySet, type SetGroup } from '@/lib/scryfall/utils/set-classification';
 import type { ScryfallSet } from '@/lib/scryfall/types/scryfall';
@@ -23,15 +24,16 @@ function pct(part: number, total: number): number {
 
 /** Paper / Arena / Digital badges for a single set. */
 function SetBadges({ set }: { set: ScryfallSet }) {
+	const t = useTranslations('sets');
 	const c = classifySet(set);
 	return (
 		<div className={styles.badges}>
-			{c.hasPaper && <span className={styles.badge}>Papier</span>}
-			{c.hasArena && <span className={styles.badge}>Arena</span>}
+			{c.hasPaper && <span className={styles.badge}>{t('badgePaper')}</span>}
+			{c.hasArena && <span className={styles.badge}>{t('badgeArena')}</span>}
 			{c.isAlchemy ? (
-				<span className={styles.badge}>Alchemy</span>
+				<span className={styles.badge}>{t('badgeAlchemy')}</span>
 			) : (
-				c.isDigital && <span className={styles.badge}>Digital</span>
+				c.isDigital && <span className={styles.badge}>{t('badgeDigital')}</span>
 			)}
 		</div>
 	);
@@ -59,6 +61,7 @@ function CompletionSection({
 	/** Section-specific meta (badges, date…). */
 	children?: React.ReactNode;
 }) {
+	const t = useTranslations('sets');
 	const { totalPrints, ownedPrints, ownedFoilPrints } = completion;
 	const completionPercent = pct(ownedPrints, totalPrints);
 	const foilPercent = pct(ownedFoilPrints, totalPrints);
@@ -66,7 +69,9 @@ function CompletionSection({
 
 	return (
 		<section className={styles.section} data-scope={scope}>
-			<span className={styles.sectionScope}>{scope === 'group' ? 'Groupe' : 'Set actuel'}</span>
+			<span className={styles.sectionScope}>
+				{scope === 'group' ? t('scopeGroup') : t('scopeActive')}
+			</span>
 			{titleNode ?? (
 				<span className={styles.sectionLabel} title={label}>
 					{label}
@@ -99,7 +104,7 @@ function CompletionSection({
 
 				<div className={styles.sectionInfo}>
 					<span className={styles.sectionCount}>
-						{totalPrints} <span className={styles.muted}>cartes</span>
+						{totalPrints} <span className={styles.muted}>{t('cards')}</span>
 					</span>
 					{children}
 					<div className={styles.foilStat}>
@@ -113,7 +118,7 @@ function CompletionSection({
 							<span className={styles.foilStatPercent}>{statsReady ? `${foilPercent}%` : '—'}</span>
 						</CompletionRing>
 						<div className={styles.foilStatMeta}>
-							<span className={styles.foilStatLabel}>Foil</span>
+							<span className={styles.foilStatLabel}>{t('foil')}</span>
 							<span className={styles.foilStatValue}>{ownedFoilPrints} ✦</span>
 						</div>
 					</div>
@@ -130,6 +135,7 @@ export function SetDetailHeader({
 	activeCompletion,
 	isPartialCollection,
 }: SetDetailHeaderProps) {
+	const t = useTranslations('sets');
 	const root = group.sets[0];
 	const active = group.sets.find((s) => s.code === activeCode) ?? root;
 	const activeYear = active.released_at?.slice(0, 4) ?? '—';
@@ -139,7 +145,7 @@ export function SetDetailHeader({
 		<div className={styles.container}>
 			<div className={styles.topBar}>
 				<Link href="/sets" className={styles.back}>
-					← Extensions
+					{t('back')}
 				</Link>
 			</div>
 
@@ -164,9 +170,7 @@ export function SetDetailHeader({
 			</div>
 
 			{isPartialCollection && statsReady && (
-				<p className={styles.partialNote}>
-					Collection partially loaded — completion may be underestimated.
-				</p>
+				<p className={styles.partialNote}>{t('partialCollection')}</p>
 			)}
 
 			<div className={styles.externalLinks}>

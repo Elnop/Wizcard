@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
@@ -20,6 +21,7 @@ export interface SetFiltersAsideProps {
 }
 
 export function SetFiltersAside({ filters, onChange, activeFilterCount }: SetFiltersAsideProps) {
+	const t = useTranslations('sets');
 	const symbolMap = useScryfallSymbols();
 	const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -49,7 +51,7 @@ export function SetFiltersAside({ filters, onChange, activeFilterCount }: SetFil
 						strokeLinecap="round"
 					/>
 				</svg>
-				Filtres
+				{t('filters')}
 				{isFiltered && <span className={styles.badge}>{activeFilterCount}</span>}
 			</button>
 
@@ -60,13 +62,14 @@ export function SetFiltersAside({ filters, onChange, activeFilterCount }: SetFil
 			<aside className={`${styles.aside} ${mobileOpen ? styles.mobileVisible : ''}`}>
 				<div className={styles.asideHeader}>
 					<span className={styles.asideTitle}>
-						Filtres{isFiltered && <span className={styles.badge}>{activeFilterCount}</span>}
+						{t('filters')}
+						{isFiltered && <span className={styles.badge}>{activeFilterCount}</span>}
 					</span>
 					<button
 						type="button"
 						className={styles.mobileClose}
 						onClick={() => setMobileOpen(false)}
-						aria-label="Close filters"
+						aria-label={t('closeFilters')}
 					>
 						✕
 					</button>
@@ -75,12 +78,12 @@ export function SetFiltersAside({ filters, onChange, activeFilterCount }: SetFil
 				<SearchBar
 					value={filters.name}
 					onChange={(v) => patch('name', v)}
-					placeholder="Search by name..."
+					placeholder={t('searchByName')}
 				/>
 
 				<div>
 					<label htmlFor="set-ownership-filter" className={styles.filterLabel}>
-						Possession
+						{t('ownership')}
 					</label>
 					<select
 						id="set-ownership-filter"
@@ -88,10 +91,10 @@ export function SetFiltersAside({ filters, onChange, activeFilterCount }: SetFil
 						value={filters.ownership}
 						onChange={(e) => patch('ownership', e.target.value as SetFilters['ownership'])}
 					>
-						<option value="all">All</option>
-						<option value="owned">Owned</option>
-						<option value="missing">Manquantes</option>
-						<option value="foil">Owned in foil</option>
+						<option value="all">{t('ownershipAll')}</option>
+						<option value="owned">{t('ownershipOwned')}</option>
+						<option value="missing">{t('ownershipMissing')}</option>
+						<option value="foil">{t('ownershipFoil')}</option>
 					</select>
 				</div>
 
@@ -121,7 +124,7 @@ export function SetFiltersAside({ filters, onChange, activeFilterCount }: SetFil
 
 				{isFiltered && (
 					<button type="button" className={styles.resetButton} onClick={handleReset}>
-						Reset filters
+						{t('resetFilters')}
 					</button>
 				)}
 			</aside>

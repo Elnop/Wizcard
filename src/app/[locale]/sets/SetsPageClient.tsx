@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { matchesTab, filterByName, type GameTab } from '@/lib/scryfall/utils/set-classification';
@@ -8,6 +9,7 @@ import { SetsCatalog } from './components/SetsCatalog/SetsCatalog';
 import styles from './page.module.css';
 
 export function SetsPageClient() {
+	const t = useTranslations('sets');
 	const { sets, isLoading, error } = useScryfallSets();
 	const [activeTab, setActiveTab] = useState<GameTab>('all');
 	const [query, setQuery] = useState('');
@@ -24,11 +26,11 @@ export function SetsPageClient() {
 	return (
 		<main className={styles.main}>
 			<div className={styles.titleSection}>
-				<h1 className={styles.title}>Extensions</h1>
+				<h1 className={styles.title}>{t('title')}</h1>
 				{!isLoading && !error && (
 					<p className={styles.statsLine}>
-						{visibleCount} set{visibleCount > 1 ? 's' : ''}
-						{(activeTab !== 'all' || query) && ` of ${sets.length}`}
+						{t('setsCount', { count: visibleCount })}
+						{(activeTab !== 'all' || query) && ` ${t('ofTotal', { total: sets.length })}`}
 					</p>
 				)}
 			</div>
@@ -41,7 +43,7 @@ export function SetsPageClient() {
 
 			{error && !isLoading && (
 				<div className={styles.error}>
-					<p>Failed to load sets.</p>
+					<p>{t('loadError')}</p>
 				</div>
 			)}
 

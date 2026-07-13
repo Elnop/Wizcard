@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { classifySet, type SetGroup } from '@/lib/scryfall/utils/set-classification';
 import styles from './SetCard.module.css';
@@ -7,6 +8,7 @@ export interface SetCardProps {
 }
 
 export function SetCard({ group }: SetCardProps) {
+	const t = useTranslations('sets');
 	const [root, ...derivatives] = group.sets;
 	const c = classifySet(root);
 	const year = root.released_at?.slice(0, 4) ?? '—';
@@ -24,15 +26,15 @@ export function SetCard({ group }: SetCardProps) {
 					<div className={styles.meta}>
 						<span>{year}</span>
 						<span aria-hidden="true">·</span>
-						<span>{root.card_count} cards</span>
+						<span>{t('cardsCount', { count: root.card_count })}</span>
 					</div>
 					<div className={styles.badges}>
-						{c.hasPaper && <span className={styles.badge}>Papier</span>}
-						{c.hasArena && <span className={styles.badge}>Arena</span>}
+						{c.hasPaper && <span className={styles.badge}>{t('badgePaper')}</span>}
+						{c.hasArena && <span className={styles.badge}>{t('badgeArena')}</span>}
 						{c.isAlchemy ? (
-							<span className={styles.badge}>Alchemy</span>
+							<span className={styles.badge}>{t('badgeAlchemy')}</span>
 						) : (
-							c.isDigital && <span className={styles.badge}>Digital</span>
+							c.isDigital && <span className={styles.badge}>{t('badgeDigital')}</span>
 						)}
 					</div>
 				</div>

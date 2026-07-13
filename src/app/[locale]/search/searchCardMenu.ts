@@ -10,15 +10,25 @@ export type SearchCardMenuHandlers = {
 	onAddToDeck: (card: AnyCard) => void;
 };
 
+/** Libellés du menu carte, résolus par l'appelant via useTranslations('cardMenu'). */
+export type CardMenuLabels = {
+	viewDetails: string;
+	openCardPage: string;
+	addToCollection: string;
+	addToWishlist: string;
+	addToDeck: string;
+};
+
 export function buildSearchMenuItems(
 	card: AnyCard,
 	handlers: SearchCardMenuHandlers,
-	close: () => void
+	close: () => void,
+	labels: CardMenuLabels
 ): ContextMenuAction[] {
 	const items: ContextMenuAction[] = [
 		{
 			type: 'action',
-			label: 'View details',
+			label: labels.viewDetails,
 			icon: '👁',
 			onClick: () => {
 				handlers.onViewDetails(card);
@@ -36,7 +46,7 @@ export function buildSearchMenuItems(
 	items.push(
 		{
 			type: 'action',
-			label: 'Open card page',
+			label: labels.openCardPage,
 			icon: '🔗',
 			onClick: () => {
 				handlers.onOpenCardPage(card);
@@ -46,7 +56,7 @@ export function buildSearchMenuItems(
 		{ type: 'divider' },
 		{
 			type: 'action',
-			label: 'Add to collection…',
+			label: labels.addToCollection,
 			icon: '▣',
 			onClick: () => {
 				handlers.onAddToCollection(card);
@@ -55,7 +65,7 @@ export function buildSearchMenuItems(
 		},
 		{
 			type: 'action',
-			label: 'Add to wishlist…',
+			label: labels.addToWishlist,
 			icon: '♡',
 			onClick: () => {
 				handlers.onAddToWishlist(card);
@@ -64,7 +74,7 @@ export function buildSearchMenuItems(
 		},
 		{
 			type: 'action',
-			label: 'Add to deck…',
+			label: labels.addToDeck,
 			icon: '🗂',
 			onClick: () => {
 				handlers.onAddToDeck(card);

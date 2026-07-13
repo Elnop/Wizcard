@@ -3,6 +3,13 @@
 		"confirm": "Confirmer",
 		"cancel": "Annuler"
 	},
+	"cardMenu": {
+		"viewDetails": "Voir les détails",
+		"openCardPage": "Ouvrir la page de la carte",
+		"addToCollection": "Ajouter à la collection…",
+		"addToWishlist": "Ajouter à la liste de souhaits…",
+		"addToDeck": "Ajouter à un deck…"
+	},
 	"nav": {
 		"search": "Recherche",
 		"sets": "Extensions",
@@ -147,6 +154,64 @@
 			"deleteConfirm": "Cette action est irréversible : votre compte et toutes vos données (collection, decks) seront définitivement supprimés."
 		}
 	},
+	"sets": {
+		"title": "Extensions",
+		"catalogPlaceholder": "Rechercher une extension...",
+		"tabAll": "Toutes",
+		"tabPaper": "Papier",
+		"tabMtga": "MTGA",
+		"setsCount": "{count, plural, one {# extension} other {# extensions}}",
+		"ofTotal": "sur {total}",
+		"cardsCount": "{count, plural, one {# carte} other {# cartes}}",
+		"loadError": "Échec du chargement des extensions.",
+		"emptyTitle": "Aucune extension",
+		"emptyDescription": "Aucun résultat pour cette recherche ou ce filtre.",
+		"badgePaper": "Papier",
+		"badgeArena": "Arena",
+		"badgeAlchemy": "Alchemy",
+		"badgeDigital": "Digital",
+		"back": "← Extensions",
+		"backToSets": "← Retour aux extensions",
+		"notFoundTitle": "Extension introuvable",
+		"notFoundDescription": "Aucune extension ne correspond au code « {code} ».",
+		"scopeGroup": "Groupe",
+		"scopeActive": "Set actuel",
+		"cards": "cartes",
+		"foil": "Foil",
+		"partialCollection": "Collection partiellement chargée — la complétion peut être sous-estimée.",
+		"filters": "Filtres",
+		"closeFilters": "Fermer les filtres",
+		"searchByName": "Rechercher par nom...",
+		"ownership": "Possession",
+		"ownershipAll": "Toutes",
+		"ownershipOwned": "Possédées",
+		"ownershipMissing": "Manquantes",
+		"ownershipFoil": "Possédées en foil",
+		"resetFilters": "Réinitialiser les filtres",
+		"noCardMatch": "Aucune carte ne correspond aux filtres."
+	},
+	"search": {
+		"placeholder": "Rechercher des cartes...",
+		"filters": "Filtres",
+		"modeOfficial": "Officiel",
+		"modeCustom": "Custom",
+		"modeBacks": "Backs",
+		"modeAriaLabel": "Mode de recherche",
+		"colName": "Nom",
+		"colSet": "Extension",
+		"colType": "Type",
+		"colCmc": "CMC",
+		"colPriceUsd": "Prix USD",
+		"showing": "Affichage de {shown} sur {total} cartes",
+		"customCount": "{count} personnalisées",
+		"cardbacksCount": "{count} dos de cartes",
+		"popularEdh": "Cartes EDH populaires",
+		"genericError": "Une erreur s'est produite. Veuillez réessayer.",
+		"customError": "Échec du chargement des cartes personnalisées.",
+		"noResults": "Aucune carte trouvée",
+		"didYouMean": "Vouliez-vous dire :",
+		"adjustSearch": "Essayez d'ajuster votre recherche ou vos filtres."
+	},
 	"legal": {
 		"lastUpdated": "Dernière mise à jour : {date}",
 		"cgu": {
@@ -230,6 +295,16 @@
 		},
 		"settings": {
 			"title": "Paramètres"
+		},
+		"search": {
+			"title": "Recherche de cartes",
+			"description": "Recherchez toutes les cartes Magic: The Gathering par nom, couleur, type et extension."
+		},
+		"sets": {
+			"title": "Extensions"
+		},
+		"setDetail": {
+			"title": "{code} | Extensions"
 		},
 		"changeEmail": {
 			"title": "Changer d'adresse e-mail"

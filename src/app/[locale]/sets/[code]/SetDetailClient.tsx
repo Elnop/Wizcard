@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import { Spinner } from '@/components/Spinner/Spinner';
@@ -20,6 +21,7 @@ export interface SetDetailClientProps {
 }
 
 export function SetDetailClient({ code }: SetDetailClientProps) {
+	const t = useTranslations('sets');
 	const { sets, isLoading, error } = useScryfallSets();
 	const target = code.toLowerCase();
 
@@ -54,10 +56,10 @@ export function SetDetailClient({ code }: SetDetailClientProps) {
 		return (
 			<main className={styles.main}>
 				<div className={styles.notFound}>
-					<h1>Set not found</h1>
-					<p>No set matches the code “{code.toUpperCase()}”.</p>
+					<h1>{t('notFoundTitle')}</h1>
+					<p>{t('notFoundDescription', { code: code.toUpperCase() })}</p>
 					<Link href="/sets" className={styles.back}>
-						← Back to sets
+						{t('backToSets')}
 					</Link>
 				</div>
 			</main>

@@ -60,6 +60,7 @@ const eslintConfig = defineConfig([
 		// Phase 1 : nav (Navbar), footer, common (ConfirmModal).
 		// Phase 2 : landing, auth.
 		// Phase 3 : legal, settings, account.
+		// Phase 4 : search, sets.
 		files: [
 			'src/components/Navbar/**',
 			'src/components/Footer/**',
@@ -69,6 +70,8 @@ const eslintConfig = defineConfig([
 			'src/app/[locale]/(legal)/**',
 			'src/app/[locale]/settings/**',
 			'src/app/[locale]/account/**',
+			'src/app/[locale]/search/**',
+			'src/app/[locale]/sets/**',
 		],
 		rules: {
 			'i18next/no-literal-string': ['error', { mode: 'jsx-text-only' }],
