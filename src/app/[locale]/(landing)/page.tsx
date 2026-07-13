@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import dynamic from 'next/dynamic';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Locale } from '@/i18n/routing';
+import { buildAlternates } from '@/lib/seo/alternates';
 import { Hero } from './components/Hero/Hero';
 import { Features } from './components/Features/Features';
 import { CallToAction } from './components/CallToAction/CallToAction';
@@ -24,10 +25,7 @@ export async function generateMetadata({
 	return {
 		title: { absolute: t('title') },
 		description: t('description'),
-		alternates: {
-			canonical: `/${locale}`,
-			languages: { fr: '/fr', en: '/en', 'x-default': '/fr' },
-		},
+		alternates: buildAlternates(locale),
 	};
 }
 

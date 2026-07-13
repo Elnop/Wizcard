@@ -1,21 +1,30 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
+import type { Locale } from '@/i18n/routing';
+import { buildAlternates } from '@/lib/seo/alternates';
 import { fetchDeckMetaServer } from '@/lib/deck/db/deck.server';
 import DeckDetailClient from './DeckDetailClient';
 
 interface DeckPageProps {
-	params: Promise<{ id: string }>;
+	params: Promise<{ locale: Locale; id: string }>;
 }
 
 export async function generateMetadata({ params }: DeckPageProps): Promise<Metadata> {
-	const { id } = await params;
+	const { locale, id } = await params;
+	const t = await getTranslations({ locale, namespace: 'seo' });
 	const deck = await fetchDeckMetaServer(id);
-	if (!deck) return { title: 'Deck Not Found' };
-	const desc = deck.description?.slice(0, 160) ?? `${deck.format ?? 'MTG'} deck on Wizcard.`;
+	if (!deck) return { title: t('deckNotFound.title'), robots: { index: false, follow: false } };
+	const desc =
+		deck.description?.slice(0, 160) ??
+		t('deckDefaultDescription.text', { format: deck.format ?? 'MTG' });
 	return {
 		title: deck.name,
 		description: desc,
-		alternates: { canonical: `/decks/${deck.id}` },
-		openGraph: { title: deck.name, description: desc, url: `/decks/${deck.id}` },
+		// `/decks/[id]` is publicly shareable, so re-enable indexing (the parent
+		// decks/layout.tsx sets noindex for the owner-only /decks list).
+		robots: { index: true, follow: true },
+		alternates: buildAlternates(locale, `decks/${deck.id}`),
+		openGraph: { title: deck.name, description: desc, url: `/${locale}/decks/${deck.id}` },
 	};
 }
 

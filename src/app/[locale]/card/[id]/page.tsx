@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import type { Locale } from '@/i18n/routing';
+import { buildAlternates } from '@/lib/seo/alternates';
 import { getCardById } from '@/lib/scryfall/endpoints/cards';
 import { getCustomCardWithSource } from '@/lib/mpc/db/custom-cards.server';
 import { CardPageHeader } from './components/CardPageHeader/CardPageHeader';
@@ -26,6 +27,7 @@ export async function generateMetadata({ params }: CardPageProps) {
 		return {
 			title: card.name,
 			description: card.type_line ?? card.name,
+			alternates: buildAlternates(locale, `card/${encodeURIComponent(id)}`),
 		};
 	}
 
@@ -34,6 +36,7 @@ export async function generateMetadata({ params }: CardPageProps) {
 		return {
 			title: card.name,
 			description: `${card.type_line} - ${card.oracle_text?.slice(0, 150) ?? card.name}`,
+			alternates: buildAlternates(locale, `card/${encodeURIComponent(id)}`),
 		};
 	} catch {
 		return {

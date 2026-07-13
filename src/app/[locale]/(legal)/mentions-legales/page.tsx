@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Locale } from '@/i18n/routing';
+import { buildAlternates } from '@/lib/seo/alternates';
 import { legalConfig } from '@/lib/legal/legal-config';
 
 export async function generateMetadata({
@@ -13,6 +14,7 @@ export async function generateMetadata({
 	return {
 		title: t('title'),
 		description: t('description'),
+		alternates: buildAlternates(locale, 'mentions-legales'),
 		robots: { index: true, follow: true },
 	};
 }

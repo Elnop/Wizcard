@@ -784,6 +784,21 @@
 		"legalNotice": {
 			"title": "Mentions légales",
 			"description": "Mentions légales du site Wizcard."
+		},
+		"deckNotFound": {
+			"title": "Deck introuvable"
+		},
+		"deckDefaultDescription": {
+			"text": "Deck {format} sur Wizcard."
+		},
+		"decks": {
+			"title": "Mes decks"
+		},
+		"collection": {
+			"title": "Ma collection"
+		},
+		"wishlist": {
+			"title": "Ma liste de souhaits"
 		}
 	},
 	"apiErrors": {

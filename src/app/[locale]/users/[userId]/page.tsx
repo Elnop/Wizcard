@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import type { Locale } from '@/i18n/routing';
+import { buildAlternates } from '@/lib/seo/alternates';
 import { fetchProfileByNickname } from '@/lib/profile/db/profile.server';
 import UserOverviewClient from './UserOverviewClient';
 
@@ -19,8 +20,12 @@ export async function generateMetadata({ params }: UserPageProps): Promise<Metad
 	return {
 		title: name,
 		description: desc,
-		alternates: { canonical: `/users/${nickname}` },
-		openGraph: { title: name, description: desc, url: `/users/${nickname}` },
+		alternates: buildAlternates(locale, `users/${encodeURIComponent(nickname)}`),
+		openGraph: {
+			title: name,
+			description: desc,
+			url: `/${locale}/users/${encodeURIComponent(nickname)}`,
+		},
 	};
 }
 
