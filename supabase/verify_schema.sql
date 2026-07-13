@@ -21,8 +21,8 @@
 -- schéma/relation attendu est absent. Aucune transaction englobante : un objet
 -- manquant ne peut pas avorter le rapport entier.
 --
--- RÉFÉRENCE : état attendu = migrations rejouées jusqu'à 20260711120000
--- (add_usage_quotas incluse). Dumpé depuis une DB locale à jour le 2026-07-13.
+-- RÉFÉRENCE : état attendu = migrations rejouées jusqu'à 20260713120000
+-- (add_profile_preferences incluse). Dumpé depuis une DB locale à jour le 2026-07-13.
 -- =============================================================================
 
 -- Pas de transaction englobante : on veut qu'un objet manquant produise un FAIL,
@@ -64,6 +64,10 @@ create or replace function pg_temp.has_col(t text, col text) returns boolean lan
 $$;
 create or replace function pg_temp.col_type(t text, col text) returns text language sql stable as $$
   select data_type from information_schema.columns
+  where table_schema='public' and table_name=t and column_name=col;
+$$;
+create or replace function pg_temp.col_default(t text, col text) returns text language sql stable as $$
+  select column_default from information_schema.columns
   where table_schema='public' and table_name=t and column_name=col;
 $$;
 create or replace function pg_temp.rls_on(t text) returns boolean language sql stable as $$
@@ -145,6 +149,9 @@ with expected(t, col, typ) as (
     ('profiles','id','uuid'),('profiles','nickname','text'),('profiles','description','text'),
     ('profiles','avatar_url','text'),('profiles','created_at','timestamp with time zone'),
     ('profiles','updated_at','timestamp with time zone'),
+    ('profiles','language','text'),('profiles','price_currency','text'),
+    ('profiles','show_prices','boolean'),('profiles','theme_preference','text'),
+    ('profiles','is_public','boolean'),
     -- user_usage
     ('user_usage','owner_id','uuid'),('user_usage','deck_count','integer'),('user_usage','card_count','integer'),
     -- custom_card_sources
@@ -180,6 +187,22 @@ select pg_temp.chk(
 )
 from expected e;
 
+-- Défauts des colonnes de préférence profiles (20260713120000_add_profile_preferences).
+with expected_default(t, col, dflt) as (
+  values
+    ('profiles','language','''fr''::text'),
+    ('profiles','price_currency','''eur''::text'),
+    ('profiles','show_prices','true'),
+    ('profiles','theme_preference','''system''::text'),
+    ('profiles','is_public','true')
+)
+select pg_temp.chk(
+  'column-default', e.t||'.'||e.col,
+  pg_temp.col_default(e.t, e.col) is not distinct from e.dflt,
+  'défaut '||coalesce(pg_temp.col_default(e.t,e.col),'∅')||' ≠ attendu '||e.dflt
+)
+from expected_default e;
+
 -- =============================================================================
 -- 3. RLS activé sur toutes les tables métier
 -- =============================================================================
@@ -207,7 +230,7 @@ with pol(t, p) as (
     ('deck_folders','Users can update their own folders'),('deck_folders','Users can delete their own folders'),
     ('deck_folders','Public can view all deck folders'),
     -- profiles
-    ('profiles','Public can view profiles'),('profiles','Users can insert own profile'),
+    ('profiles','Visible profiles are viewable'),('profiles','Users can insert own profile'),
     ('profiles','Users can update own profile'),
     -- user_usage
     ('user_usage','Users can view their own usage'),
@@ -236,6 +259,21 @@ select pg_temp.chk(
   'security', 'cards :: no "Public can view collection cards"',
   not pg_temp.has_policy('public','cards','Public can view collection cards'),
   'policy sur-permissive TOUJOURS PRÉSENTE → fuite purchase_price aux anonymes'
+);
+
+-- SÉCURITÉ : la policy SELECT sur profiles doit filtrer par is_public (remplace
+-- l'ancienne "Public can view profiles" using(true), cf. 20260713120000).
+select pg_temp.chk(
+  'security', 'profiles select visibility',
+  exists (select 1 from pg_policies
+          where schemaname='public' and tablename='profiles'
+            and cmd='SELECT' and qual ilike '%is_public%'),
+  'la policy SELECT profiles ne filtre pas par is_public'
+);
+select pg_temp.chk(
+  'security', 'profiles :: no "Public can view profiles"',
+  not pg_temp.has_policy('public','profiles','Public can view profiles'),
+  'ancienne policy sur-permissive TOUJOURS PRÉSENTE → fuite de profils privés'
 );
 
 -- =============================================================================
@@ -302,7 +340,10 @@ with con(t, name) as (
     ('cards','cards_condition_check'),('cards','cards_foil_type_check'),
     ('cards','cards_owner_or_deck'),
     ('custom_cards','custom_cards_card_type_check'),
-    ('custom_cards','custom_cards_source_type_check')
+    ('custom_cards','custom_cards_source_type_check'),
+    ('profiles','profiles_language_check'),
+    ('profiles','profiles_price_currency_check'),
+    ('profiles','profiles_theme_preference_check')
 )
 select pg_temp.chk('check', con.t||' :: '||con.name,
   pg_temp.has_check(con.t, con.name), 'contrainte CHECK absente')
