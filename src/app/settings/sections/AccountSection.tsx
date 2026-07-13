@@ -1,18 +1,23 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
+import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
 import { SettingsSection } from '../components/SettingsSection';
 
 export function AccountSection() {
-	const { user } = useAuth();
+	const { user, signOut } = useAuth();
+	const router = useRouter();
 	const [email, setEmail] = useState(user?.email ?? '');
 	const [emailMsg, setEmailMsg] = useState<string | null>(null);
 	const [password, setPassword] = useState('');
 	const [passwordConfirm, setPasswordConfirm] = useState('');
 	const [pwMsg, setPwMsg] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
+	const [confirming, setConfirming] = useState(false);
+	const [deleteErr, setDeleteErr] = useState<string | null>(null);
 
 	const changeEmail = async () => {
 		setEmailMsg(null);
@@ -48,6 +53,24 @@ export function AccountSection() {
 			}
 		} finally {
 			setBusy(false);
+		}
+	};
+
+	const deleteAccount = async () => {
+		setDeleteErr(null);
+		setBusy(true);
+		try {
+			const res = await fetch('/api/account/delete', { method: 'POST' });
+			if (!res.ok) {
+				const body = (await res.json().catch(() => ({}))) as { error?: string };
+				setDeleteErr(body.error ?? 'Échec de la suppression.');
+				return;
+			}
+			await signOut();
+			router.push('/');
+		} finally {
+			setBusy(false);
+			setConfirming(false);
 		}
 	};
 
@@ -91,6 +114,26 @@ export function AccountSection() {
 				Changer le mot de passe
 			</button>
 			{pwMsg && <span style={{ fontSize: '0.85rem' }}>{pwMsg}</span>}
+
+			<hr style={{ opacity: 0.2, width: '100%' }} />
+
+			<button
+				type="button"
+				onClick={() => setConfirming(true)}
+				disabled={busy}
+				style={{ color: '#dc2626' }}
+			>
+				Supprimer mon compte
+			</button>
+			{deleteErr && <span style={{ color: '#dc2626', fontSize: '0.85rem' }}>{deleteErr}</span>}
+			{confirming && (
+				<ConfirmModal
+					message="Cette action est irréversible : votre compte et toutes vos données (collection, decks) seront définitivement supprimés."
+					confirmLabel="Supprimer mon compte"
+					onConfirm={deleteAccount}
+					onClose={() => setConfirming(false)}
+				/>
+			)}
 		</SettingsSection>
 	);
 }
