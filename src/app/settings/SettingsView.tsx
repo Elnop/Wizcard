@@ -2,6 +2,7 @@
 
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { Spinner } from '@/components/Spinner/Spinner';
+import { AccountSection } from './sections/AccountSection';
 import { DisplaySection } from './sections/DisplaySection';
 import { LanguageSection } from './sections/LanguageSection';
 import { PrivacySection } from './sections/PrivacySection';
@@ -26,6 +27,7 @@ export default function SettingsView() {
 			<LanguageSection />
 			<DisplaySection />
 			<PrivacySection />
+			<AccountSection />
 		</main>
 	);
 }
