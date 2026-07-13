@@ -4,21 +4,23 @@ import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { sendMail } from '@/lib/email/sendMail';
 import { emailChangeRequest } from '@/lib/email/templates/emailChangeRequest';
 import { generateToken } from '@/lib/account/emailChangeToken';
+import { getApiTranslations } from '@/i18n/api';
 
 export async function POST() {
+	const t = await getApiTranslations();
 	const supabase = await createServerClient();
 	const {
 		data: { user },
 	} = await supabase.auth.getUser();
 	if (!user?.email) {
-		return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+		return NextResponse.json({ error: t('notAuthenticated') }, { status: 401 });
 	}
 
 	const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 	const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 	const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 	if (!url || !serviceKey || !siteUrl) {
-		return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
+		return NextResponse.json({ error: t('serverNotConfigured') }, { status: 500 });
 	}
 	const admin = createAdminClient(url, serviceKey, {
 		auth: { autoRefreshToken: false, persistSession: false },
@@ -34,10 +36,7 @@ export async function POST() {
 		.gt('expires_at', nowIso)
 		.limit(1);
 	if (active && active.length > 0) {
-		return NextResponse.json(
-			{ error: 'Une demande est déjà en cours. Vérifiez votre boîte mail.' },
-			{ status: 429 }
-		);
+		return NextResponse.json({ error: t('emailChangeInProgress') }, { status: 429 });
 	}
 
 	const { token, tokenHash } = generateToken();
@@ -64,7 +63,7 @@ export async function POST() {
 			.delete()
 			.eq('user_id', user.id)
 			.eq('token_hash', tokenHash);
-		return NextResponse.json({ error: 'Échec de l’envoi de l’e-mail.' }, { status: 500 });
+		return NextResponse.json({ error: t('emailSendFailed') }, { status: 500 });
 	}
 	return NextResponse.json({ ok: true });
 }

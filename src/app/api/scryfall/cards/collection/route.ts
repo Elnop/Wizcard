@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getApiTranslations } from '@/i18n/api';
 
 const SCRYFALL_URL = 'https://api.scryfall.com/cards/collection';
 
@@ -10,27 +11,28 @@ const MAX_IDENTIFIERS = 75;
 const MAX_BODY_BYTES = 64 * 1024;
 
 export async function POST(req: Request) {
+	const t = await getApiTranslations();
 	// Reject oversized bodies up front (defends the open proxy from abuse).
 	const contentLength = Number(req.headers.get('content-length') ?? '0');
 	if (contentLength > MAX_BODY_BYTES) {
-		return NextResponse.json({ error: 'Request body too large' }, { status: 413 });
+		return NextResponse.json({ error: t('bodyTooLarge') }, { status: 413 });
 	}
 
 	const raw = await req.text();
 	if (raw.length > MAX_BODY_BYTES) {
-		return NextResponse.json({ error: 'Request body too large' }, { status: 413 });
+		return NextResponse.json({ error: t('bodyTooLarge') }, { status: 413 });
 	}
 
 	let body: unknown;
 	try {
 		body = JSON.parse(raw);
 	} catch {
-		return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+		return NextResponse.json({ error: t('invalidJsonBody') }, { status: 400 });
 	}
 
 	// Validate shape: { identifiers: object[] } with 1..MAX_IDENTIFIERS entries.
 	if (typeof body !== 'object' || body === null || !('identifiers' in body)) {
-		return NextResponse.json({ error: 'Missing identifiers' }, { status: 400 });
+		return NextResponse.json({ error: t('missingIdentifiers') }, { status: 400 });
 	}
 	const { identifiers } = body as { identifiers: unknown };
 	if (
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
 		identifiers.length > MAX_IDENTIFIERS ||
 		!identifiers.every((i) => typeof i === 'object' && i !== null)
 	) {
-		return NextResponse.json({ error: 'Invalid identifiers' }, { status: 400 });
+		return NextResponse.json({ error: t('invalidIdentifiers') }, { status: 400 });
 	}
 
 	const res = await fetch(SCRYFALL_URL, {

@@ -1,21 +1,23 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { getApiTranslations } from '@/i18n/api';
 
 export async function POST() {
+	const t = await getApiTranslations();
 	// Identify the caller from their session cookie (SSR client).
 	const supabase = await createServerClient();
 	const {
 		data: { user },
 	} = await supabase.auth.getUser();
 	if (!user) {
-		return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+		return NextResponse.json({ error: t('notAuthenticated') }, { status: 401 });
 	}
 
 	const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 	const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 	if (!url || !serviceKey) {
-		return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
+		return NextResponse.json({ error: t('serverNotConfigured') }, { status: 500 });
 	}
 
 	// Admin client (service-role) is the only way to delete an auth user.

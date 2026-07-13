@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
+import { getApiTranslations } from '@/i18n/api';
 
 const MOXFIELD_API = 'https://api.moxfield.com/v2/decks/all';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+	const t = await getApiTranslations();
 	const { id } = await params;
 
 	if (!/^[A-Za-z0-9_-]{5,30}$/.test(id)) {
-		return NextResponse.json({ error: 'Invalid deck ID' }, { status: 400 });
+		return NextResponse.json({ error: t('invalidDeckId') }, { status: 400 });
 	}
 
 	const res = await fetch(`${MOXFIELD_API}/${encodeURIComponent(id)}`, {
@@ -19,7 +21,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 	if (!res.ok) {
 		const status = res.status === 404 || res.status === 403 ? res.status : 502;
 		return NextResponse.json(
-			{ error: status === 404 ? 'Deck not found' : 'Failed to fetch deck from Moxfield' },
+			{ error: status === 404 ? t('deckNotFound') : t('moxfieldFetchFailed') },
 			{ status }
 		);
 	}

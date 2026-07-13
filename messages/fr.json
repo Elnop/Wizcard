@@ -786,5 +786,23 @@
 			"description": "Mentions légales du site Wizcard."
 		}
 	},
-	"apiErrors": {}
+	"apiErrors": {
+		"notAuthenticated": "Non authentifié",
+		"serverNotConfigured": "Serveur non configuré",
+		"invalidDeckId": "Identifiant de deck invalide",
+		"deckNotFound": "Deck introuvable",
+		"moxfieldFetchFailed": "Échec de la récupération du deck depuis Moxfield",
+		"invalidCommanderSlug": "Identifiant de commandant invalide",
+		"edhrecFetchFailed": "Échec de la récupération des recommandations depuis EDHREC",
+		"bodyTooLarge": "Corps de requête trop volumineux",
+		"invalidJsonBody": "Corps JSON invalide",
+		"missingIdentifiers": "Identifiants manquants",
+		"invalidIdentifiers": "Identifiants invalides",
+		"invalidRequest": "Requête invalide.",
+		"sameEmail": "La nouvelle adresse est identique à l’actuelle.",
+		"invalidOrExpiredLink": "Lien invalide ou expiré.",
+		"emailChangeInProgress": "Une demande est déjà en cours. Vérifiez votre boîte mail.",
+		"emailSendFailed": "Échec de l’envoi de l’e-mail.",
+		"noEdhrecData": "Aucune donnée EDHREC pour ce commandant"
+	}
 }

@@ -2,17 +2,19 @@ import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { hashToken } from '@/lib/account/emailChangeToken';
+import { getApiTranslations } from '@/i18n/api';
 
 // eslint-disable-next-line sonarjs/slow-regex
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
+	const t = await getApiTranslations();
 	const supabase = await createServerClient();
 	const {
 		data: { user },
 	} = await supabase.auth.getUser();
 	if (!user?.email) {
-		return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+		return NextResponse.json({ error: t('notAuthenticated') }, { status: 401 });
 	}
 
 	const body = (await request.json().catch(() => ({}))) as {
@@ -22,19 +24,16 @@ export async function POST(request: Request) {
 	const token = body.token?.trim();
 	const newEmail = body.newEmail?.trim().toLowerCase();
 	if (!token || !newEmail || !EMAIL_RE.test(newEmail)) {
-		return NextResponse.json({ error: 'Requête invalide.' }, { status: 400 });
+		return NextResponse.json({ error: t('invalidRequest') }, { status: 400 });
 	}
 	if (newEmail === user.email.toLowerCase()) {
-		return NextResponse.json(
-			{ error: 'La nouvelle adresse est identique à l’actuelle.' },
-			{ status: 400 }
-		);
+		return NextResponse.json({ error: t('sameEmail') }, { status: 400 });
 	}
 
 	const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 	const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 	if (!url || !serviceKey) {
-		return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
+		return NextResponse.json({ error: t('serverNotConfigured') }, { status: 500 });
 	}
 	const admin = createAdminClient(url, serviceKey, {
 		auth: { autoRefreshToken: false, persistSession: false },
@@ -52,7 +51,7 @@ export async function POST(request: Request) {
 		.limit(1);
 	const req = rows?.[0];
 	if (!req) {
-		return NextResponse.json({ error: 'Lien invalide ou expiré.' }, { status: 400 });
+		return NextResponse.json({ error: t('invalidOrExpiredLink') }, { status: 400 });
 	}
 
 	// Single-use: burn the token before triggering the change.

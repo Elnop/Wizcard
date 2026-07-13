@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
+import { getApiTranslations } from '@/i18n/api';
 
 const EDHREC_JSON_BASE = 'https://json.edhrec.com/pages/commanders';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
+	const t = await getApiTranslations();
 	const { slug } = await params;
 
 	if (!/^[a-z0-9-]{1,80}$/.test(slug)) {
-		return NextResponse.json({ error: 'Invalid commander slug' }, { status: 400 });
+		return NextResponse.json({ error: t('invalidCommanderSlug') }, { status: 400 });
 	}
 
 	const res = await fetch(`${EDHREC_JSON_BASE}/${slug}.json`, {
@@ -24,9 +26,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
 		const status = notFound ? 404 : 502;
 		return NextResponse.json(
 			{
-				error: notFound
-					? 'No EDHREC data found for this commander'
-					: 'Failed to fetch recommendations from EDHREC',
+				error: notFound ? t('noEdhrecData') : t('edhrecFetchFailed'),
 			},
 			{ status }
 		);

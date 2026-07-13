@@ -786,5 +786,23 @@
 			"description": "Legal notice of the Wizcard site."
 		}
 	},
-	"apiErrors": {}
+	"apiErrors": {
+		"notAuthenticated": "Not authenticated",
+		"serverNotConfigured": "Server not configured",
+		"invalidDeckId": "Invalid deck ID",
+		"deckNotFound": "Deck not found",
+		"moxfieldFetchFailed": "Failed to fetch deck from Moxfield",
+		"invalidCommanderSlug": "Invalid commander slug",
+		"edhrecFetchFailed": "Failed to fetch recommendations from EDHREC",
+		"bodyTooLarge": "Request body too large",
+		"invalidJsonBody": "Invalid JSON body",
+		"missingIdentifiers": "Missing identifiers",
+		"invalidIdentifiers": "Invalid identifiers",
+		"invalidRequest": "Invalid request.",
+		"sameEmail": "The new address is the same as the current one.",
+		"invalidOrExpiredLink": "Invalid or expired link.",
+		"emailChangeInProgress": "A request is already in progress. Check your inbox.",
+		"emailSendFailed": "Failed to send the email.",
+		"noEdhrecData": "No EDHREC data found for this commander"
+	}
 }
