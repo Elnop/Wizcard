@@ -23,10 +23,81 @@
 		"discord": "Discord",
 		"copy": "© {year} {siteName}. Unofficial project — Magic: The Gathering is a trademark of Wizards of the Coast."
 	},
+	"landing": {
+		"hero": {
+			"tagline": "Your complete Magic: The Gathering companion",
+			"description": "Search, collect, and manage every Magic card ever printed. Powerful filters, offline sync, and bulk import — all in one place.",
+			"startSearching": "Start Searching",
+			"myCollection": "My Collection"
+		},
+		"features": {
+			"heading": "Everything You Need",
+			"instantSearch": {
+				"title": "Instant Search",
+				"description": "Find any card as you type. Scryfall-powered autocomplete with real-time results across every set ever printed."
+			},
+			"advancedFilters": {
+				"title": "Advanced Filters",
+				"description": "Filter by color identity, card type, set, mana cost, rarity, and oracle text. Combine filters freely."
+			},
+			"collectionManagement": {
+				"title": "Collection Management",
+				"description": "Track conditions, foil status, language, purchase price, and more for every card in your collection."
+			},
+			"importAnywhere": {
+				"title": "Import from Anywhere",
+				"description": "Import your collection from Moxfield or MTG Arena export format. Bulk import hundreds of cards at once."
+			},
+			"cloudSync": {
+				"title": "Cloud Sync",
+				"description": "Sign in to sync your collection across devices. Works offline and syncs automatically when you reconnect."
+			}
+		},
+		"showcase": {
+			"heading": "Explore Iconic Cards",
+			"subheading": "From the Power Nine to modern staples — every card at your fingertips.",
+			"legendaryStaples": "Legendary Staples ({count})",
+			"modernClassics": "Modern Classics ({count})"
+		},
+		"cta": {
+			"title": "Ready to Explore?",
+			"description": "Search through over 80,000 unique Magic: The Gathering cards. Build and manage your collection with ease.",
+			"startSearching": "Start Searching"
+		}
+	},
+	"auth": {
+		"login": {
+			"title": "Sign in",
+			"email": "Email",
+			"emailPlaceholder": "you@email.com",
+			"sending": "Sending…",
+			"sendLink": "Send the sign-in link",
+			"emailSent": "Email sent to <strong>{email}</strong>.",
+			"emailSentSub": "Click the link in the email, or enter the code below.",
+			"otpLabel": "6-digit code",
+			"verifying": "Verifying…",
+			"signIn": "Sign in",
+			"changeAddress": "← Change address"
+		},
+		"error": {
+			"confirmationFailedTitle": "Invalid link",
+			"confirmationFailedDescription": "This sign-in link is invalid or has already been used.",
+			"otpExpiredTitle": "Link expired",
+			"otpExpiredDescription": "This sign-in link has expired. Links are valid for 1 hour.",
+			"accessDeniedTitle": "Access denied",
+			"accessDeniedDescription": "The sign-in was refused. Try again by requesting a new link.",
+			"defaultTitle": "Sign-in error",
+			"defaultDescription": "An unexpected error occurred. Try again by requesting a new link.",
+			"requestNewLink": "Request a new link"
+		}
+	},
 	"seo": {
 		"home": {
 			"title": "Wizcard — Magic: The Gathering Card Search",
 			"description": "Search every Magic: The Gathering card, build decks, and track your collection."
+		},
+		"login": {
+			"title": "Sign in"
 		}
 	},
 	"apiErrors": {}

@@ -1,17 +1,13 @@
 'use client';
 
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { isScryfallImageUrl, scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
 import { useInView } from '@/app/[locale]/(landing)/hooks/useInView';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import { SHOWCASE_SECTIONS, type ShowcaseCard } from './showcaseData';
 import styles from './CardShowcase.module.css';
-
-const sections: CardListSection[] = SHOWCASE_SECTIONS.map((group) => ({
-	label: group.label,
-	cards: group.cards as unknown as AnyCard[],
-}));
 
 function renderShowcaseItem(card: AnyCard, index: number) {
 	const showcase = card as unknown as ShowcaseCard;
@@ -35,8 +31,14 @@ function renderShowcaseItem(card: AnyCard, index: number) {
 }
 
 export function CardShowcase() {
+	const t = useTranslations('landing.showcase');
 	const [headerRef, headerInView] = useInView({ threshold: 0.3 });
 	const [sectionsRef, sectionsInView] = useInView({ threshold: 0.1 });
+
+	const sections: CardListSection[] = SHOWCASE_SECTIONS.map((group) => ({
+		label: t(group.labelKey, { count: group.cards.length }),
+		cards: group.cards as unknown as AnyCard[],
+	}));
 
 	return (
 		<section className={styles.showcase}>
@@ -46,12 +48,10 @@ export function CardShowcase() {
 			>
 				<div className={styles.header}>
 					<div className={styles.ornamentLine} />
-					<h2 className={styles.heading}>Explore Iconic Cards</h2>
+					<h2 className={styles.heading}>{t('heading')}</h2>
 					<div className={styles.ornamentLine} />
 				</div>
-				<p className={styles.subheading}>
-					From the Power Nine to modern staples — every card at your fingertips.
-				</p>
+				<p className={styles.subheading}>{t('subheading')}</p>
 			</div>
 
 			<div

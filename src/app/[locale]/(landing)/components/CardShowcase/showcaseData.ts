@@ -6,7 +6,7 @@ export interface ShowcaseCard {
 
 export const SHOWCASE_SECTIONS = [
 	{
-		label: 'Legendary Staples (9)',
+		labelKey: 'legendaryStaples',
 		cards: [
 			{
 				id: 'black-lotus',
@@ -56,7 +56,7 @@ export const SHOWCASE_SECTIONS = [
 		],
 	},
 	{
-		label: 'Modern Classics (9)',
+		labelKey: 'modernClassics',
 		cards: [
 			{
 				id: 'lightning-bolt',
@@ -105,4 +105,4 @@ export const SHOWCASE_SECTIONS = [
 			},
 		],
 	},
-];
+] as const;

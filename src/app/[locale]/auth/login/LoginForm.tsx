@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { signInWithEmailOtp, verifyEmailOtpClient } from '@/lib/supabase/auth/auth-client';
 import styles from './page.module.css';
 
 export function LoginForm() {
+	const t = useTranslations('auth.login');
 	const router = useRouter();
 	const [email, setEmail] = useState('');
 	const [otp, setOtp] = useState('');
@@ -55,7 +57,7 @@ export function LoginForm() {
 			<form className={styles.form} onSubmit={handleSubmitEmail}>
 				<div className={styles.field}>
 					<label className={styles.label} htmlFor="email">
-						Email
+						{t('email')}
 					</label>
 					<input
 						id="email"
@@ -65,12 +67,12 @@ export function LoginForm() {
 						onChange={(e) => setEmail(e.target.value)}
 						required
 						autoComplete="email"
-						placeholder="ton@email.com"
+						placeholder={t('emailPlaceholder')}
 					/>
 				</div>
 				{error && <p className={styles.error}>{error}</p>}
 				<button type="submit" className={styles.submitBtn} disabled={isLoading}>
-					{isLoading ? 'Sending…' : 'Send the sign-in link'}
+					{isLoading ? t('sending') : t('sendLink')}
 				</button>
 			</form>
 		);
@@ -79,15 +81,14 @@ export function LoginForm() {
 	return (
 		<div className={styles.sentWrapper}>
 			<p className={styles.sentText}>
-				Email sent to <strong>{email}</strong>.<br />
-				<span className={styles.sentSub}>
-					Click the link in the email, or enter the code below.
-				</span>
+				{t.rich('emailSent', { email, strong: (chunks) => <strong>{chunks}</strong> })}
+				<br />
+				<span className={styles.sentSub}>{t('emailSentSub')}</span>
 			</p>
 			<form className={styles.form} onSubmit={handleSubmitOtp}>
 				<div className={styles.field}>
 					<label className={styles.label} htmlFor="otp">
-						6-digit code
+						{t('otpLabel')}
 					</label>
 					<input
 						id="otp"
@@ -104,7 +105,7 @@ export function LoginForm() {
 				</div>
 				{error && <p className={styles.error}>{error}</p>}
 				<button type="submit" className={styles.submitBtn} disabled={isLoading || otp.length < 6}>
-					{isLoading ? 'Verifying…' : 'Sign in'}
+					{isLoading ? t('verifying') : t('signIn')}
 				</button>
 				<button
 					type="button"
@@ -115,7 +116,7 @@ export function LoginForm() {
 						setError(null);
 					}}
 				>
-					← Change address
+					{t('changeAddress')}
 				</button>
 			</form>
 		</div>

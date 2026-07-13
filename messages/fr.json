@@ -23,10 +23,81 @@
 		"discord": "Discord",
 		"copy": "© {year} {siteName}. Projet non officiel — Magic: The Gathering est une marque de Wizards of the Coast."
 	},
+	"landing": {
+		"hero": {
+			"tagline": "Votre compagnon Magic: The Gathering complet",
+			"description": "Recherchez, collectionnez et gérez toutes les cartes Magic jamais imprimées. Filtres puissants, synchronisation hors ligne et import en masse — le tout au même endroit.",
+			"startSearching": "Commencer la recherche",
+			"myCollection": "Ma collection"
+		},
+		"features": {
+			"heading": "Tout ce qu'il vous faut",
+			"instantSearch": {
+				"title": "Recherche instantanée",
+				"description": "Trouvez n'importe quelle carte au fil de la frappe. Autocomplétion propulsée par Scryfall avec des résultats en temps réel sur toutes les extensions jamais imprimées."
+			},
+			"advancedFilters": {
+				"title": "Filtres avancés",
+				"description": "Filtrez par identité de couleur, type de carte, extension, coût de mana, rareté et texte oracle. Combinez les filtres librement."
+			},
+			"collectionManagement": {
+				"title": "Gestion de collection",
+				"description": "Suivez l'état, le statut foil, la langue, le prix d'achat et plus encore pour chaque carte de votre collection."
+			},
+			"importAnywhere": {
+				"title": "Import depuis partout",
+				"description": "Importez votre collection depuis le format d'export Moxfield ou MTG Arena. Importez des centaines de cartes en une seule fois."
+			},
+			"cloudSync": {
+				"title": "Synchronisation cloud",
+				"description": "Connectez-vous pour synchroniser votre collection sur tous vos appareils. Fonctionne hors ligne et se synchronise automatiquement à la reconnexion."
+			}
+		},
+		"showcase": {
+			"heading": "Explorez des cartes iconiques",
+			"subheading": "Du Power Nine aux incontournables modernes — chaque carte à portée de main.",
+			"legendaryStaples": "Incontournables légendaires ({count})",
+			"modernClassics": "Classiques modernes ({count})"
+		},
+		"cta": {
+			"title": "Prêt à explorer ?",
+			"description": "Parcourez plus de 80 000 cartes Magic: The Gathering uniques. Construisez et gérez votre collection en toute simplicité.",
+			"startSearching": "Commencer la recherche"
+		}
+	},
+	"auth": {
+		"login": {
+			"title": "Se connecter",
+			"email": "E-mail",
+			"emailPlaceholder": "ton@email.com",
+			"sending": "Envoi…",
+			"sendLink": "Envoyer le lien de connexion",
+			"emailSent": "E-mail envoyé à <strong>{email}</strong>.",
+			"emailSentSub": "Cliquez sur le lien dans l'e-mail, ou saisissez le code ci-dessous.",
+			"otpLabel": "Code à 6 chiffres",
+			"verifying": "Vérification…",
+			"signIn": "Se connecter",
+			"changeAddress": "← Changer d'adresse"
+		},
+		"error": {
+			"confirmationFailedTitle": "Lien invalide",
+			"confirmationFailedDescription": "Ce lien de connexion est invalide ou a déjà été utilisé.",
+			"otpExpiredTitle": "Lien expiré",
+			"otpExpiredDescription": "Ce lien de connexion a expiré. Les liens sont valables 1 heure.",
+			"accessDeniedTitle": "Accès refusé",
+			"accessDeniedDescription": "La connexion a été refusée. Réessayez en demandant un nouveau lien.",
+			"defaultTitle": "Erreur de connexion",
+			"defaultDescription": "Une erreur inattendue s'est produite. Réessayez en demandant un nouveau lien.",
+			"requestNewLink": "Demander un nouveau lien"
+		}
+	},
 	"seo": {
 		"home": {
 			"title": "Wizcard — Recherche de cartes Magic: The Gathering",
 			"description": "Recherchez toutes les cartes Magic: The Gathering, construisez des decks et suivez votre collection."
+		},
+		"login": {
+			"title": "Se connecter"
 		}
 	},
 	"apiErrors": {}

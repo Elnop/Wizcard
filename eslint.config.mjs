@@ -58,10 +58,13 @@ const eslintConfig = defineConfig([
 		// l'extraction de chaque domaine vers `t()`. `mode: 'jsx-text-only'` ne
 		// cible que le texte visible dans le JSX (ignore les props techniques).
 		// Phase 1 : nav (Navbar), footer, common (ConfirmModal).
+		// Phase 2 : landing, auth.
 		files: [
 			'src/components/Navbar/**',
 			'src/components/Footer/**',
 			'src/components/ConfirmModal/**',
+			'src/app/[locale]/(landing)/**',
+			'src/app/[locale]/auth/**',
 		],
 		rules: {
 			'i18next/no-literal-string': ['error', { mode: 'jsx-text-only' }],

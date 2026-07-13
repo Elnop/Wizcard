@@ -3,15 +3,13 @@
 import { useEffect } from 'react';
 import { useRouter } from '@/i18n/navigation';
 
-type Message = { title: string; description: string };
-
-export function HashErrorHandler({
-	messages,
-	defaultMessage,
-}: {
-	messages: Record<string, Message>;
-	defaultMessage: Message;
-}) {
+/**
+ * Certaines erreurs Supabase arrivent dans le fragment d'URL
+ * (`#error_code=otp_expired`), invisible côté serveur. Ce composant les relit
+ * côté client et les repromeut en query param pour que la page serveur affiche
+ * le bon message localisé.
+ */
+export function HashErrorHandler() {
 	const router = useRouter();
 
 	useEffect(() => {
@@ -23,7 +21,7 @@ export function HashErrorHandler({
 		if (!errorCode) return;
 
 		router.replace(`/auth/error?error_code=${encodeURIComponent(errorCode)}`);
-	}, [messages, defaultMessage, router]);
+	}, [router]);
 
 	return null;
 }

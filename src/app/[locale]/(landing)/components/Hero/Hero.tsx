@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/Button/Button';
 import { RandomBackdrop } from './backdrops/RandomBackdrop';
 import styles from './Hero.module.css';
 
 export function Hero() {
+	const t = useTranslations('landing.hero');
 	return (
 		<section className={styles.hero}>
 			<div className={styles.background}>
@@ -28,19 +30,16 @@ export function Hero() {
 					<div className={styles.diamondOrnament} />
 					<h1 className={styles.title}>WIZCARD</h1>
 					<div className={styles.titleRule} />
-					<p className={styles.tagline}>Your complete Magic: The Gathering companion</p>
-					<p className={styles.description}>
-						Search, collect, and manage every Magic card ever printed. Powerful filters, offline
-						sync, and bulk import — all in one place.
-					</p>
+					<p className={styles.tagline}>{t('tagline')}</p>
+					<p className={styles.description}>{t('description')}</p>
 
 					<div className={styles.cta}>
 						<Link href="/search">
-							<Button size="lg">Start Searching</Button>
+							<Button size="lg">{t('startSearching')}</Button>
 						</Link>
 						<Link href="/collection">
 							<Button variant="ghost" size="lg">
-								My Collection
+								{t('myCollection')}
 							</Button>
 						</Link>
 					</div>

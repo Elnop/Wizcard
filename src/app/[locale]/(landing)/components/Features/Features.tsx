@@ -1,13 +1,13 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useInView } from '@/app/[locale]/(landing)/hooks/useInView';
 import styles from './Features.module.css';
 
+// Icônes seules — les libellés viennent du catalogue via la clé `key`.
 const FEATURES = [
 	{
-		title: 'Instant Search',
-		description:
-			'Find any card as you type. Scryfall-powered autocomplete with real-time results across every set ever printed.',
+		key: 'instantSearch',
 		icon: (
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -26,9 +26,7 @@ const FEATURES = [
 		),
 	},
 	{
-		title: 'Advanced Filters',
-		description:
-			'Filter by color identity, card type, set, mana cost, rarity, and oracle text. Combine filters freely.',
+		key: 'advancedFilters',
 		icon: (
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -46,9 +44,7 @@ const FEATURES = [
 		),
 	},
 	{
-		title: 'Collection Management',
-		description:
-			'Track conditions, foil status, language, purchase price, and more for every card in your collection.',
+		key: 'collectionManagement',
 		icon: (
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -69,9 +65,7 @@ const FEATURES = [
 		),
 	},
 	{
-		title: 'Import from Anywhere',
-		description:
-			'Import your collection from Moxfield or MTG Arena export format. Bulk import hundreds of cards at once.',
+		key: 'importAnywhere',
 		icon: (
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -91,9 +85,7 @@ const FEATURES = [
 		),
 	},
 	{
-		title: 'Cloud Sync',
-		description:
-			'Sign in to sync your collection across devices. Works offline and syncs automatically when you reconnect.',
+		key: 'cloudSync',
 		icon: (
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -112,9 +104,10 @@ const FEATURES = [
 			</svg>
 		),
 	},
-];
+] as const;
 
 export function Features() {
+	const t = useTranslations('landing.features');
 	const [headerRef, headerInView] = useInView({ threshold: 0.3 });
 	const [mainRef, mainInView] = useInView({ threshold: 0.15 });
 	const [sideRef, sideInView] = useInView({ threshold: 0.15 });
@@ -126,7 +119,7 @@ export function Features() {
 		<section className={styles.section}>
 			<div ref={headerRef} className={`${styles.header} ${headerInView ? styles.visible : ''}`}>
 				<div className={styles.ornamentLine} />
-				<h2 className={styles.heading}>Everything You Need</h2>
+				<h2 className={styles.heading}>{t('heading')}</h2>
 				<div className={styles.ornamentLine} />
 			</div>
 
@@ -134,15 +127,15 @@ export function Features() {
 				<div ref={mainRef} className={`${styles.mainColumn} ${mainInView ? styles.visible : ''}`}>
 					{mainFeatures.map((feature, i) => (
 						<div
-							key={feature.title}
+							key={feature.key}
 							className={styles.mainCard}
 							style={{ transitionDelay: `${i * 0.15}s` }}
 						>
 							<div className={styles.cornerTL} />
 							<div className={styles.cornerBR} />
 							<div className={styles.mainIcon}>{feature.icon}</div>
-							<h3 className={styles.mainTitle}>{feature.title}</h3>
-							<p className={styles.mainDescription}>{feature.description}</p>
+							<h3 className={styles.mainTitle}>{t(`${feature.key}.title`)}</h3>
+							<p className={styles.mainDescription}>{t(`${feature.key}.description`)}</p>
 							<div className={styles.cardShine} />
 						</div>
 					))}
@@ -151,14 +144,14 @@ export function Features() {
 				<div ref={sideRef} className={`${styles.sideColumn} ${sideInView ? styles.visible : ''}`}>
 					{sideFeatures.map((feature, i) => (
 						<div
-							key={feature.title}
+							key={feature.key}
 							className={styles.sideCard}
 							style={{ transitionDelay: `${i * 0.1}s` }}
 						>
 							<div className={styles.sideIcon}>{feature.icon}</div>
 							<div>
-								<h3 className={styles.sideTitle}>{feature.title}</h3>
-								<p className={styles.sideDescription}>{feature.description}</p>
+								<h3 className={styles.sideTitle}>{t(`${feature.key}.title`)}</h3>
+								<p className={styles.sideDescription}>{t(`${feature.key}.description`)}</p>
 							</div>
 						</div>
 					))}
