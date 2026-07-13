@@ -16,8 +16,6 @@ import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import type { DeckMeta } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
-import { useAuth } from '@/lib/supabase/contexts/AuthContext';
-import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { FolderIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/Button/Button';
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
@@ -44,8 +42,6 @@ export default function DecksPageClient() {
 		moveDeckToFolder,
 		moveFolderToFolder,
 	} = useDeckContext();
-	const { user } = useAuth();
-	const { profile } = useProfileContext();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const symbolMap = useScryfallSymbols();
@@ -66,14 +62,13 @@ export default function DecksPageClient() {
 
 	const handleFolderSelect = (id: string | null | 'none') => {
 		setSidebarOpen(false);
-		// Navigate within the canonical /users/<nickname>/decks URL: a bare /decks
-		// would server-redirect here and drop the ?folder= query string.
-		const handle = profile?.nickname ?? user?.id;
-		const base = handle ? `/users/${handle}/decks` : '/decks';
+		// Stay on the owner's editable /decks page. `?folder=` is read back via
+		// useSearchParams above; `/decks` only redirects anonymous visitors, so a
+		// logged-in owner keeps the query string.
 		if (id === null) {
-			router.replace(base);
+			router.replace('/decks');
 		} else {
-			router.replace(`${base}?folder=${id}`);
+			router.replace(`/decks?folder=${id}`);
 		}
 	};
 
