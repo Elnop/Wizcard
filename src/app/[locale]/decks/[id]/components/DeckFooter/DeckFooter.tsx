@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import type { DeckStats } from '@/lib/deck/utils/deck-stats';
 import type { DeckFormat } from '@/types/decks';
 import type { ValidationWarning } from '@/lib/deck/utils/format-rules';
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export function DeckFooter({ stats, format, warnings }: Props) {
+	const t = useTranslations('decks');
 	const [warningsOpen, setWarningsOpen] = useState(false);
 	const panelRef = useRef<HTMLDivElement>(null);
 	const triggerRef = useRef<HTMLButtonElement>(null);
@@ -75,12 +77,12 @@ export function DeckFooter({ stats, format, warnings }: Props) {
 					{target !== null ? (
 						<div className={`${styles.item} ${isValid ? styles.valid : styles.invalid}`}>
 							<span className={styles.value}>{current}</span>
-							<span className={styles.label}>Cards</span>
+							<span className={styles.label}>{t('footerCards')}</span>
 						</div>
 					) : (
 						<div className={styles.item}>
 							<span className={styles.value}>{stats.totalCards}</span>
-							<span className={styles.label}>Total</span>
+							<span className={styles.label}>{t('footerTotal')}</span>
 						</div>
 					)}
 
@@ -89,7 +91,7 @@ export function DeckFooter({ stats, format, warnings }: Props) {
 							<div className={styles.separator} />
 							<div className={styles.item}>
 								<span className={styles.value}>{stats.sideboardCount}</span>
-								<span className={styles.label}>Side</span>
+								<span className={styles.label}>{t('footerSide')}</span>
 							</div>
 						</>
 					)}
@@ -99,7 +101,7 @@ export function DeckFooter({ stats, format, warnings }: Props) {
 							<div className={styles.separator} />
 							<div className={styles.item}>
 								<span className={styles.value}>{stats.commanderCount}</span>
-								<span className={styles.label}>Cmdr</span>
+								<span className={styles.label}>{t('footerCmdr')}</span>
 							</div>
 						</>
 					)}
@@ -108,14 +110,14 @@ export function DeckFooter({ stats, format, warnings }: Props) {
 				<div className={styles.right}>
 					<div className={styles.item}>
 						<span className={styles.value}>{stats.landCount}</span>
-						<span className={styles.label}>Lands</span>
+						<span className={styles.label}>{t('footerLands')}</span>
 					</div>
 
 					<div className={styles.separator} />
 
 					<div className={styles.item}>
 						<span className={styles.value}>{stats.averageCmc.toFixed(1)}</span>
-						<span className={styles.label}>CMC</span>
+						<span className={styles.label}>{t('footerCmc')}</span>
 					</div>
 
 					{colors.length > 0 && (
@@ -137,7 +139,7 @@ export function DeckFooter({ stats, format, warnings }: Props) {
 								onClick={() => setWarningsOpen((v) => !v)}
 							>
 								<span className={styles.warningsValue}>{warnings.length}</span>
-								<span className={styles.warningsLabel}>Warns</span>
+								<span className={styles.warningsLabel}>{t('footerWarns')}</span>
 								<span className={styles.chevron} />
 							</button>
 						</>

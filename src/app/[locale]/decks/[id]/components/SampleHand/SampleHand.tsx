@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { Card } from '@/types/cards';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { CardList } from '@/lib/card/components/CardList/CardList';
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export function SampleHand({ mainboard }: Props) {
+	const t = useTranslations('decks');
 	const { openCardModal } = useCardModalContext();
 	const { hand, hasHand, canDraw, mulligan, draw } = useSampleHand(mainboard);
 
@@ -20,7 +22,7 @@ export function SampleHand({ mainboard }: Props) {
 
 	return (
 		<div className={styles.panel}>
-			<h3 className={styles.title}>Main de test</h3>
+			<h3 className={styles.title}>{t('sampleHand')}</h3>
 
 			{!hasHand ? (
 				<div className={styles.placeholder} aria-hidden />

@@ -1,20 +1,10 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { DeckSortDir, DeckSortOrder } from '../../useDeckSort';
 import type { DeckGroupBy } from '../../useDeckCardSections';
 import { Select } from '@/components/Select/Select';
 import styles from './DeckSortBar.module.css';
-
-const SORT_OPTIONS: { value: DeckSortOrder; label: string }[] = [
-	{ value: 'cmc', label: 'Mana value' },
-	{ value: 'name', label: 'Name' },
-	{ value: 'rarity', label: 'Rarity' },
-];
-
-const GROUP_OPTIONS: { value: DeckGroupBy; label: string }[] = [
-	{ value: 'type', label: 'By type' },
-	{ value: 'none', label: 'No grouping' },
-];
 
 interface DeckSortBarProps {
 	order: DeckSortOrder;
@@ -33,23 +23,39 @@ export function DeckSortBar({
 	groupBy,
 	onGroupByChange,
 }: DeckSortBarProps) {
+	const t = useTranslations('decks');
 	const nextDir = dir === 'asc' ? 'desc' : 'asc';
+
+	const sortOptions: { value: DeckSortOrder; label: string }[] = [
+		{ value: 'cmc', label: t('sortManaValue') },
+		{ value: 'name', label: t('sortName') },
+		{ value: 'rarity', label: t('sortRarity') },
+	];
+	const groupOptions: { value: DeckGroupBy; label: string }[] = [
+		{ value: 'type', label: t('groupByType') },
+		{ value: 'none', label: t('groupNone') },
+	];
 
 	return (
 		<div className={styles.bar}>
 			<div className={styles.field}>
-				<span className={styles.label}>Group</span>
+				<span className={styles.label}>{t('group')}</span>
 				<Select
 					value={groupBy}
-					options={GROUP_OPTIONS}
+					options={groupOptions}
 					onChange={onGroupByChange}
-					ariaLabel="Group by"
+					ariaLabel={t('groupBy')}
 				/>
 			</div>
 
 			<div className={styles.field}>
-				<span className={styles.label}>Sort</span>
-				<Select value={order} options={SORT_OPTIONS} onChange={onOrderChange} ariaLabel="Sort by" />
+				<span className={styles.label}>{t('sort')}</span>
+				<Select
+					value={order}
+					options={sortOptions}
+					onChange={onOrderChange}
+					ariaLabel={t('sortBy')}
+				/>
 			</div>
 
 			<button

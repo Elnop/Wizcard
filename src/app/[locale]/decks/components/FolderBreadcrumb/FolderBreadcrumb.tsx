@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { FolderMeta } from '@/types/decks';
 import { getFolderAncestors } from '@/lib/deck/utils/folder-tree';
 import styles from './FolderBreadcrumb.module.css';
@@ -11,14 +12,15 @@ type Props = {
 };
 
 export function FolderBreadcrumb({ activeFolderId, folders, onNavigate }: Props) {
+	const t = useTranslations('decks');
 	if (activeFolderId === 'none') {
 		return (
-			<nav className={styles.breadcrumb} aria-label="Breadcrumb">
+			<nav className={styles.breadcrumb} aria-label={t('breadcrumb')}>
 				<button className={styles.crumb} onClick={() => onNavigate(null)}>
-					My Decks
+					{t('myDecks')}
 				</button>
 				<span className={styles.sep}>›</span>
-				<span className={styles.current}>No folder</span>
+				<span className={styles.current}>{t('noFolder')}</span>
 			</nav>
 		);
 	}
@@ -27,9 +29,9 @@ export function FolderBreadcrumb({ activeFolderId, folders, onNavigate }: Props)
 	const current = folders[activeFolderId];
 
 	return (
-		<nav className={styles.breadcrumb} aria-label="Breadcrumb">
+		<nav className={styles.breadcrumb} aria-label={t('breadcrumb')}>
 			<button className={styles.crumb} onClick={() => onNavigate(null)}>
-				My Decks
+				{t('myDecks')}
 			</button>
 			{ancestors.map((ancestor) => (
 				<>

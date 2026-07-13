@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import styles from './DeckTextExportModal.module.css';
@@ -17,6 +18,7 @@ function sanitizeFileName(name: string): string {
 }
 
 export function DeckTextExportModal({ text, deckName, onClose }: Props) {
+	const t = useTranslations('decks');
 	const [copied, setCopied] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +29,7 @@ export function DeckTextExportModal({ text, deckName, onClose }: Props) {
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		} catch {
-			setError('Copy failed — select the text and copy it manually.');
+			setError(t('copyFailed'));
 		}
 	}
 
@@ -46,21 +48,21 @@ export function DeckTextExportModal({ text, deckName, onClose }: Props) {
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
-			<h2 className={styles.title}>Export decklist</h2>
+			<h2 className={styles.title}>{t('exportDecklist')}</h2>
 
-			<textarea className={styles.textarea} value={text} readOnly aria-label="Decklist" />
+			<textarea className={styles.textarea} value={text} readOnly aria-label={t('decklist')} />
 
 			{error && <p className={styles.error}>{error}</p>}
 
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Close
+					{t('close')}
 				</Button>
 				<Button variant="secondary" size="sm" onClick={handleDownload}>
-					Download .txt
+					{t('downloadTxt')}
 				</Button>
 				<Button variant="primary" size="sm" onClick={handleCopy}>
-					{copied ? 'Copied ✓' : 'Copy'}
+					{copied ? t('copied') : t('copy')}
 				</Button>
 			</div>
 		</Modal>
