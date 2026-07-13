@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import { CardList } from '@/lib/card/components/CardList/CardList';
@@ -28,6 +29,7 @@ type Props = {
 };
 
 export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }: Props) {
+	const t = useTranslations('decks');
 	const [selectedZones, setSelectedZones] = useState<Set<DeckZone>>(
 		() => new Set(availableZones.filter((z) => DEFAULT_SELECTED.has(z)))
 	);
@@ -64,11 +66,11 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
-			<h2 className={styles.title}>Generate a PDF</h2>
+			<h2 className={styles.title}>{t('generateAPdf')}</h2>
 
 			<div className={styles.controls}>
 				<div className={styles.section}>
-					<p className={styles.sectionTitle}>Zones</p>
+					<p className={styles.sectionTitle}>{t('zones')}</p>
 					<div className={styles.options}>
 						{availableZones.map((zone) => (
 							<label key={zone} className={styles.option}>
@@ -84,7 +86,7 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 				</div>
 
 				<div className={styles.section}>
-					<p className={styles.sectionTitle}>Options</p>
+					<p className={styles.sectionTitle}>{t('options')}</p>
 					<div className={styles.options}>
 						<label className={styles.option}>
 							<input
@@ -92,7 +94,7 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 								checked={ignoreOwned}
 								onChange={(e) => setIgnoreOwned(e.target.checked)}
 							/>
-							Skip owned cards
+							{t('skipOwnedCards')}
 						</label>
 						<label className={styles.option}>
 							<input
@@ -100,7 +102,7 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 								checked={ignoreBasicLands}
 								onChange={(e) => setIgnoreBasicLands(e.target.checked)}
 							/>
-							Skip basic lands
+							{t('skipBasicLands')}
 						</label>
 					</div>
 				</div>
@@ -108,9 +110,11 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 
 			<div className={styles.preview}>
 				<p className={styles.sectionTitle}>
-					{filteredCards.length} card{filteredCards.length !== 1 ? 's' : ''}
+					{t('cardCount2', { count: filteredCards.length })}
 					{customCards.length > 0 && (
-						<span className={styles.customBadge}>{customCards.length} proxy MPC</span>
+						<span className={styles.customBadge}>
+							{t('proxyMpc', { count: customCards.length })}
+						</span>
 					)}
 				</p>
 				{officialCards.length > 0 && (
@@ -120,7 +124,7 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 				)}
 				{customCards.length > 0 && (
 					<>
-						<p className={styles.sectionSubtitle}>Custom (MPC)</p>
+						<p className={styles.sectionSubtitle}>{t('customMpc')}</p>
 						<div className={styles.cardListWrapper}>
 							<CardList cards={customCards} viewModes={['grid', 'table']} pageSize={false} />
 						</div>
@@ -130,7 +134,7 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Cancel
+					{t('cancel')}
 				</Button>
 				<Button
 					variant="primary"

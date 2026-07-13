@@ -476,7 +476,18 @@
 		"select": "Select",
 		"importList": "Import list",
 		"assignAllFromCollection": "Assign all from collection",
-		"addAllToCollection": "Add all to collection"
+		"addAllToCollection": "Add all to collection",
+		"generateAPdf": "Generate a PDF",
+		"skipOwnedCards": "Skip owned cards",
+		"skipBasicLands": "Skip basic lands",
+		"cardCount2": "{count, plural, one {# card} other {# cards}}",
+		"proxyMpc": "{count} proxy MPC",
+		"customMpc": "Custom (MPC)",
+		"generate": "Generate",
+		"addDeckToCollection2": "Add deck to collection",
+		"addToCollection2": "Add to collection",
+		"copies2": "Copies",
+		"add": "Add"
 	},
 	"collection": {
 		"title": "My Collection",
