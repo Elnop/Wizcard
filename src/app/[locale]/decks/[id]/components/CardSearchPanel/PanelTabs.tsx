@@ -1,13 +1,9 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import styles from './PanelTabs.module.css';
 
 export type PanelTab = 'search' | 'edhrec';
-
-const TABS: { value: PanelTab; label: string }[] = [
-	{ value: 'search', label: 'Search' },
-	{ value: 'edhrec', label: 'EDHREC' },
-];
 
 type Props = {
 	value: PanelTab;
@@ -15,9 +11,15 @@ type Props = {
 };
 
 export function PanelTabs({ value, onChange }: Props) {
+	const t = useTranslations('decks');
+	// EDHREC is a proper name (kept as-is); only "Search" is translated.
+	const tabs: { value: PanelTab; label: string }[] = [
+		{ value: 'search', label: t('tabSearch') },
+		{ value: 'edhrec', label: 'EDHREC' },
+	];
 	return (
-		<div className={styles.tabs} role="tablist" aria-label="Add cards source">
-			{TABS.map((tab) => (
+		<div className={styles.tabs} role="tablist" aria-label={t('addCardsSource')}>
+			{tabs.map((tab) => (
 				<button
 					key={tab.value}
 					type="button"

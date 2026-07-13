@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import styles from './DeckBulkActionBar.module.css';
 
@@ -32,6 +33,7 @@ export function DeckBulkActionBar({
 	onClear,
 	onExit,
 }: Props) {
+	const t = useTranslations('decks');
 	const hasSelection = selectedCount > 0;
 
 	return (
@@ -40,8 +42,8 @@ export function DeckBulkActionBar({
 				type="button"
 				className={styles.exit}
 				onClick={onExit}
-				aria-label="Exit selection mode"
-				title="Exit selection mode"
+				aria-label={t('exitSelectionMode')}
+				title={t('exitSelectionMode')}
 			>
 				<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 					<path
@@ -53,16 +55,16 @@ export function DeckBulkActionBar({
 				</svg>
 			</button>
 
-			<span className={styles.count}>{selectedCount} selected</span>
+			<span className={styles.count}>{t('selectedCount', { count: selectedCount })}</span>
 
 			<button type="button" className={styles.action} onClick={onToggleSelectAll}>
-				{allSelected ? 'Deselect all' : 'Select all'}
+				{allSelected ? t('deselectAll') : t('selectAll')}
 			</button>
 
 			<span className={styles.divider} aria-hidden="true" />
 
 			<button type="button" className={styles.action} onClick={onBulkEdit} disabled={!hasSelection}>
-				Edit
+				{t('edit')}
 			</button>
 			<button
 				type="button"
@@ -70,7 +72,7 @@ export function DeckBulkActionBar({
 				onClick={onBulkAddToCollection}
 				disabled={!hasSelection}
 			>
-				Add to collection
+				{t('addToCollection')}
 			</button>
 			<button
 				type="button"
@@ -78,7 +80,7 @@ export function DeckBulkActionBar({
 				onClick={onBulkAddToWishlist}
 				disabled={!hasSelection}
 			>
-				<WishlistIcon size={13} /> Wishlist
+				<WishlistIcon size={13} /> {t('wishlist')}
 			</button>
 			<button
 				type="button"
@@ -86,13 +88,13 @@ export function DeckBulkActionBar({
 				onClick={onBulkRemove}
 				disabled={!hasSelection}
 			>
-				Remove
+				{t('remove')}
 			</button>
 
 			<span className={styles.divider} aria-hidden="true" />
 
 			<button type="button" className={styles.clear} onClick={onClear} disabled={!hasSelection}>
-				Clear
+				{t('clear')}
 			</button>
 		</div>
 	);

@@ -1,47 +1,50 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import styles from './TypeBar.module.css';
 
-// Ordre d'affichage + couleur de segment (teintes DA, distinctes des couleurs mana).
-const TYPE_ORDER: Array<{ key: string; label: string; css: string }> = [
-	{ key: 'Creature', label: 'Creatures', css: 'var(--brass)' },
-	{ key: 'Instant', label: 'Instants', css: '#5a6b8a' },
-	{ key: 'Sorcery', label: 'Sorceries', css: '#6b7a9a' },
-	{ key: 'Enchantment', label: 'Enchantments', css: '#8a6b9a' },
-	{ key: 'Artifact', label: 'Artifacts', css: '#9a8a6b' },
-	{ key: 'Planeswalker', label: 'Planeswalkers', css: '#8a5a6b' },
-	{ key: 'Land', label: 'Lands', css: 'var(--surface-hover)' },
-	{ key: 'Other', label: 'Other', css: 'var(--border)' },
-];
+// Ordre d'affichage + clé de traduction + couleur de segment. `key` est le type
+// MTG (donnée) ; `labelKey` pointe vers le libellé traduit.
+const TYPE_ORDER = [
+	{ key: 'Creature', labelKey: 'typeCreatures', css: 'var(--brass)' },
+	{ key: 'Instant', labelKey: 'typeInstants', css: '#5a6b8a' },
+	{ key: 'Sorcery', labelKey: 'typeSorceries', css: '#6b7a9a' },
+	{ key: 'Enchantment', labelKey: 'typeEnchantments', css: '#8a6b9a' },
+	{ key: 'Artifact', labelKey: 'typeArtifacts', css: '#9a8a6b' },
+	{ key: 'Planeswalker', labelKey: 'typePlaneswalkers', css: '#8a5a6b' },
+	{ key: 'Land', labelKey: 'typeLands', css: 'var(--surface-hover)' },
+	{ key: 'Other', labelKey: 'typeOther', css: 'var(--border)' },
+] as const;
 
 type Props = {
 	types: Record<string, number>;
 };
 
 export function TypeBar({ types }: Props) {
-	const entries = TYPE_ORDER.map((t) => ({ ...t, count: types[t.key] ?? 0 })).filter(
-		(t) => t.count > 0
+	const t = useTranslations('decks');
+	const entries = TYPE_ORDER.map((e) => ({ ...e, count: types[e.key] ?? 0 })).filter(
+		(e) => e.count > 0
 	);
-	const total = entries.reduce((s, t) => s + t.count, 0);
+	const total = entries.reduce((s, e) => s + e.count, 0);
 	if (total === 0) return null;
 
 	return (
 		<div className={styles.container}>
 			<div className={styles.bar}>
-				{entries.map((t) => (
+				{entries.map((e) => (
 					<span
-						key={t.key}
+						key={e.key}
 						className={styles.segment}
-						style={{ width: `${(t.count / total) * 100}%`, background: t.css }}
-						title={`${t.label}: ${t.count}`}
+						style={{ width: `${(e.count / total) * 100}%`, background: e.css }}
+						title={`${t(e.labelKey)}: ${e.count}`}
 					/>
 				))}
 			</div>
 			<ul className={styles.legend}>
-				{entries.map((t) => (
-					<li key={t.key} className={styles.item}>
-						<span className={styles.dot} style={{ background: t.css }} />
-						{t.label} ({t.count})
+				{entries.map((e) => (
+					<li key={e.key} className={styles.item}>
+						<span className={styles.dot} style={{ background: e.css }} />
+						{t(e.labelKey)} ({e.count})
 					</li>
 				))}
 			</ul>

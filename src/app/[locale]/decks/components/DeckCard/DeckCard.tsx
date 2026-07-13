@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { useDraggable } from '@dnd-kit/core';
 import type { ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
 import type { DeckMeta, FolderMeta } from '@/types/decks';
@@ -25,29 +26,25 @@ type Props = {
 	readOnly?: boolean;
 };
 
-function formatRelativeDate(iso: string): string {
+/**
+ * Relative "time ago" label, localized via Intl.RelativeTimeFormat. `justNow`
+ * (< 1 min) is passed in from the caller's translations since RelativeTimeFormat
+ * has no "just now" unit.
+ */
+function formatRelativeDate(iso: string, locale: string, justNow: string): string {
 	const date = new Date(iso);
-	const now = new Date();
-	const diffMs = now.getTime() - date.getTime();
-	const diffSec = Math.floor(diffMs / 1000);
-	const diffMin = Math.floor(diffSec / 60);
-	const diffHours = Math.floor(diffMin / 60);
-	const diffDays = Math.floor(diffHours / 24);
+	const diffMs = date.getTime() - Date.now();
+	const diffMin = Math.round(diffMs / 60000);
+	const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
 
-	if (diffDays > 30) {
-		const diffMonths = Math.floor(diffDays / 30);
-		return diffMonths === 1 ? '1 month ago' : `${diffMonths} months ago`;
-	}
-	if (diffDays > 0) {
-		return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
-	}
-	if (diffHours > 0) {
-		return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
-	}
-	if (diffMin > 0) {
-		return diffMin === 1 ? '1 min ago' : `${diffMin} min ago`;
-	}
-	return 'just now';
+	const absMin = Math.abs(diffMin);
+	if (absMin < 1) return justNow;
+	if (absMin < 60) return rtf.format(diffMin, 'minute');
+	const diffHours = Math.round(diffMin / 60);
+	if (Math.abs(diffHours) < 24) return rtf.format(diffHours, 'hour');
+	const diffDays = Math.round(diffHours / 24);
+	if (Math.abs(diffDays) <= 30) return rtf.format(diffDays, 'day');
+	return rtf.format(Math.round(diffDays / 30), 'month');
 }
 
 type ContextMenuState = { x: number; y: number } | null;
@@ -59,6 +56,7 @@ function NewFolderModal({
 	onSubmit: (name: string) => void;
 	onClose: () => void;
 }) {
+	const t = useTranslations('decks');
 	const [name, setName] = useState('');
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -74,11 +72,11 @@ function NewFolderModal({
 
 	return (
 		<Modal onClose={onClose} className={styles.newFolderDialog} zIndex={1100}>
-			<p className={styles.newFolderTitle}>New folder</p>
+			<p className={styles.newFolderTitle}>{t('newFolder')}</p>
 			<input
 				ref={inputRef}
 				className={styles.newFolderInput}
-				placeholder="Folder name"
+				placeholder={t('folderName')}
 				value={name}
 				onChange={(e) => setName(e.target.value)}
 				onKeyDown={(e) => {
@@ -88,10 +86,10 @@ function NewFolderModal({
 			/>
 			<div className={styles.newFolderActions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Cancel
+					{t('cancel')}
 				</Button>
 				<Button size="sm" onClick={handleSubmit}>
-					Create
+					{t('create')}
 				</Button>
 			</div>
 		</Modal>
@@ -113,6 +111,7 @@ function MoveMenu({
 	onClose: () => void;
 	position: { x: number; y: number };
 }) {
+	const t = useTranslations('decks');
 	const ref = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -146,7 +145,7 @@ function MoveMenu({
 							onClose();
 						}}
 					>
-						+ New folder
+						{t('newFolderPlus')}
 					</button>
 					<div className={styles.contextDivider} />
 				</>
@@ -159,7 +158,7 @@ function MoveMenu({
 						onClose();
 					}}
 				>
-					Remove from folder
+					{t('removeFromFolder')}
 				</button>
 			)}
 			{folders.length > 0 && <div className={styles.contextDivider} />}
@@ -177,7 +176,7 @@ function MoveMenu({
 				</button>
 			))}
 			{folders.length === 0 && currentFolderId === null && (
-				<span className={styles.contextEmpty}>No folder</span>
+				<span className={styles.contextEmpty}>{t('noFolder')}</span>
 			)}
 		</div>
 	);
@@ -194,6 +193,8 @@ export function DeckCard({
 	onCreateFolderAndMove,
 	readOnly = false,
 }: Props) {
+	const t = useTranslations('decks');
+	const locale = useLocale();
 	const colors = summary?.colors;
 	const hasManaCurve = summary?.manaCurve && Object.keys(summary.manaCurve).length > 0;
 	const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
@@ -241,7 +242,7 @@ export function DeckCard({
 									e.stopPropagation();
 									onDelete();
 								}}
-								aria-label="Delete deck"
+								aria-label={t('deleteDeckAria')}
 							>
 								&times;
 							</button>
@@ -284,7 +285,7 @@ export function DeckCard({
 						{summary && deck.format && summary.warningCount > 0 && (
 							<span
 								className={styles.warningBadge}
-								aria-label={`${summary.warningCount} warning${summary.warningCount !== 1 ? 's' : ''}`}
+								aria-label={t('warningCount', { count: summary.warningCount })}
 							>
 								<span aria-hidden="true">⚠</span>
 								{summary.warningCount}
@@ -316,7 +317,9 @@ export function DeckCard({
 						) : (
 							<div />
 						)}
-						<span className={styles.updatedAt}>{formatRelativeDate(deck.updatedAt)}</span>
+						<span className={styles.updatedAt}>
+							{formatRelativeDate(deck.updatedAt, locale, t('justNow'))}
+						</span>
 					</div>
 				</div>
 			</div>
