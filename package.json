@@ -46,6 +46,7 @@
 		"ink-scroll-view": "^0.3.7",
 		"jspdf": "^4.2.1",
 		"next": "^16.2.9",
+		"nodemailer": "^9.0.3",
 		"p-limit": "^7.3.0",
 		"react": "19.2.3",
 		"react-dom": "19.2.3",
@@ -54,6 +55,7 @@
 	},
 	"devDependencies": {
 		"@types/node": "^20",
+		"@types/nodemailer": "^8.0.1",
 		"@types/react": "^19",
 		"@types/react-dom": "^19",
 		"@types/sql.js": "^1.4.11",
