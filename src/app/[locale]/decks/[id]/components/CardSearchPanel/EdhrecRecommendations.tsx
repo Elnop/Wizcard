@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { useEdhrecRecommendations } from '@/lib/edhrec/useEdhrecRecommendations';
@@ -15,6 +16,7 @@ type Props = {
 };
 
 export function EdhrecRecommendations({ commanderName, onCardClick, renderOverlay }: Props) {
+	const t = useTranslations('decks');
 	const { sections, isLoading, error } = useEdhrecRecommendations(commanderName);
 
 	const listSections = useMemo<CardListSection[]>(
@@ -44,7 +46,7 @@ export function EdhrecRecommendations({ commanderName, onCardClick, renderOverla
 	if (error) {
 		return (
 			<div className={styles.results}>
-				<p className={styles.noResults}>No EDHREC recommendations for this commander</p>
+				<p className={styles.noResults}>{t('noEdhrecForCommander')}</p>
 			</div>
 		);
 	}
@@ -52,7 +54,7 @@ export function EdhrecRecommendations({ commanderName, onCardClick, renderOverla
 	if (listSections.length === 0) {
 		return (
 			<div className={styles.results}>
-				<p className={styles.noResults}>No EDHREC recommendations found</p>
+				<p className={styles.noResults}>{t('noEdhrecFound')}</p>
 			</div>
 		);
 	}

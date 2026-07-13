@@ -463,7 +463,14 @@
 		"groupBy": "Grouper par",
 		"sortBy": "Trier par",
 		"modeCards": "Cartes",
-		"modeToken": "Jeton"
+		"modeToken": "Jeton",
+		"ascending": "Croissant",
+		"descending": "Décroissant",
+		"statsCards": "Cartes",
+		"statsAvgCmc": "CMC moyen",
+		"statsLands": "Terrains",
+		"statsCreatures": "Créatures",
+		"colorBalance": "Équilibre des couleurs — Coût vs Production"
 	},
 	"collection": {
 		"title": "Ma collection",

@@ -463,7 +463,14 @@
 		"groupBy": "Group by",
 		"sortBy": "Sort by",
 		"modeCards": "Cards",
-		"modeToken": "Token"
+		"modeToken": "Token",
+		"ascending": "Ascending",
+		"descending": "Descending",
+		"statsCards": "Cards",
+		"statsAvgCmc": "Avg CMC",
+		"statsLands": "Lands",
+		"statsCreatures": "Creatures",
+		"colorBalance": "Color Balance — Cost vs Production"
 	},
 	"collection": {
 		"title": "My Collection",

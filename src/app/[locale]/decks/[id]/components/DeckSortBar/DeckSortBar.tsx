@@ -62,8 +62,8 @@ export function DeckSortBar({
 				type="button"
 				className={`${styles.dirToggle} ${dir !== 'asc' ? styles.dirToggleActive : ''}`}
 				onClick={() => onDirChange(nextDir)}
-				aria-label={dir === 'asc' ? 'Ascending' : 'Descending'}
-				title={dir === 'asc' ? 'Ascending' : 'Descending'}
+				aria-label={dir === 'asc' ? t('ascending') : t('descending')}
+				title={dir === 'asc' ? t('ascending') : t('descending')}
 			>
 				{dir === 'asc' ? (
 					<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">

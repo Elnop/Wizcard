@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, type MouseEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { validateDeck } from '@/lib/deck/utils/format-rules';
 import { Spinner } from '@/components/Spinner/Spinner';
@@ -36,6 +37,7 @@ import styles from './page.module.css';
  * gets a "copy this deck into my account" action.
  */
 export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
+	const t = useTranslations('decks');
 	const { user } = useAuth();
 	const {
 		deck,
@@ -115,8 +117,8 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 	// duplicate copies must not render as separate stacks.
 	const tokenSections = useMemo(() => {
 		const tokens = dedupeByOracle(cardsByZone.tokens);
-		return tokens.length > 0 ? [{ label: 'Tokens', cards: tokens }] : [];
-	}, [cardsByZone.tokens]);
+		return tokens.length > 0 ? [{ label: t('tokens'), cards: tokens }] : [];
+	}, [cardsByZone.tokens, t]);
 
 	if (isLoading) {
 		return (
@@ -132,7 +134,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 		return (
 			<div className={styles.page}>
 				<div className={styles.notFound}>
-					<h2>Deck not found</h2>
+					<h2>{t('deckNotFound')}</h2>
 				</div>
 			</div>
 		);
