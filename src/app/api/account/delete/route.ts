@@ -4,7 +4,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { getApiTranslations } from '@/i18n/api';
 
 export async function POST() {
-	const t = await getApiTranslations();
+	const t = await getApiTranslations({ namespace: 'apiErrors' });
 	// Identify the caller from their session cookie (SSR client).
 	const supabase = await createServerClient();
 	const {

@@ -7,7 +7,7 @@ import { generateToken } from '@/lib/account/emailChangeToken';
 import { getApiTranslations } from '@/i18n/api';
 
 export async function POST() {
-	const t = await getApiTranslations();
+	const t = await getApiTranslations({ namespace: 'apiErrors' });
 	const supabase = await createServerClient();
 	const {
 		data: { user },

@@ -18,7 +18,6 @@
 		"settings.status.**",
 		"search.mode**",
 		"sets.tab**",
-		"decks.type**",
-		"apiErrors.**"
+		"decks.type**"
 	]
 }

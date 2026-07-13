@@ -8,7 +8,7 @@ import { getApiTranslations } from '@/i18n/api';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
-	const t = await getApiTranslations();
+	const t = await getApiTranslations({ namespace: 'apiErrors' });
 	const supabase = await createServerClient();
 	const {
 		data: { user },

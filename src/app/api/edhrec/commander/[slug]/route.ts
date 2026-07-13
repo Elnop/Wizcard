@@ -4,7 +4,7 @@ import { getApiTranslations } from '@/i18n/api';
 const EDHREC_JSON_BASE = 'https://json.edhrec.com/pages/commanders';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
-	const t = await getApiTranslations();
+	const t = await getApiTranslations({ namespace: 'apiErrors' });
 	const { slug } = await params;
 
 	if (!/^[a-z0-9-]{1,80}$/.test(slug)) {

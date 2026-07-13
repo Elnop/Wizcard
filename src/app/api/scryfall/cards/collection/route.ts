@@ -11,7 +11,7 @@ const MAX_IDENTIFIERS = 75;
 const MAX_BODY_BYTES = 64 * 1024;
 
 export async function POST(req: Request) {
-	const t = await getApiTranslations();
+	const t = await getApiTranslations({ namespace: 'apiErrors' });
 	// Reject oversized bodies up front (defends the open proxy from abuse).
 	const contentLength = Number(req.headers.get('content-length') ?? '0');
 	if (contentLength > MAX_BODY_BYTES) {

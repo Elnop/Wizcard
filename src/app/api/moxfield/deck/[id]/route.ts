@@ -4,7 +4,7 @@ import { getApiTranslations } from '@/i18n/api';
 const MOXFIELD_API = 'https://api.moxfield.com/v2/decks/all';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-	const t = await getApiTranslations();
+	const t = await getApiTranslations({ namespace: 'apiErrors' });
 	const { id } = await params;
 
 	if (!/^[A-Za-z0-9_-]{5,30}$/.test(id)) {
