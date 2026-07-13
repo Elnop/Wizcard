@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { BadgeState } from '@/app/decks/[id]/components/DeckCardOverlay/useCollectionBadge';
+import type { BadgeState } from '@/app/[locale]/decks/[id]/components/DeckCardOverlay/useCollectionBadge';
 import styles from './OwnershipBadge.module.css';
 
 const BADGE_CLASS_MAP: Record<string, string> = {

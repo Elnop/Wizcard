@@ -2,5 +2,11 @@
 	"editor.defaultFormatter": "esbenp.prettier-vscode",
 	"editor.formatOnSave": true,
 	"editor.insertSpaces": false,
-	"editor.tabSize": 2
+	"editor.tabSize": 2,
+	"i18n-ally.localesPaths": ["messages"],
+	"i18n-ally.keystyle": "nested",
+	"i18n-ally.sourceLanguage": "fr",
+	"i18n-ally.displayLanguage": "fr",
+	"i18n-ally.enabledFrameworks": ["next-intl"],
+	"i18n-ally.namespace": true
 }

@@ -6,7 +6,7 @@ import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
-import { useMoveToCollection } from '@/app/wishlist/useMoveToCollection';
+import { useMoveToCollection } from '@/app/[locale]/wishlist/useMoveToCollection';
 import type { OwnedCardMenuHandlers, OwnedCardMenuMode } from '@/lib/card/ownedCardMenu';
 
 /**

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { Modal } from '@/components/Modal/Modal';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';

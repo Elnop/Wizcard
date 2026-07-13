@@ -1,0 +1,9 @@
+{
+	"seo": {
+		"home": {
+			"title": "Wizcard — Magic: The Gathering Card Search",
+			"description": "Search every Magic: The Gathering card, build decks, and track your collection."
+		}
+	},
+	"apiErrors": {}
+}

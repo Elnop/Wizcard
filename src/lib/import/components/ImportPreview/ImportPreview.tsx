@@ -8,7 +8,7 @@ import { CardList } from '@/lib/card/components/CardList/CardList';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { CardPrintPickerModal } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
 import { groupByCardType } from '@/lib/card/utils/group-by-card-type';
-import { ImportBulkApplyPanel } from '@/app/collection/lib/ImportModal/components/ImportBulkApplyPanel/ImportBulkApplyPanel';
+import { ImportBulkApplyPanel } from '@/app/[locale]/collection/lib/ImportModal/components/ImportBulkApplyPanel/ImportBulkApplyPanel';
 import type { BulkApplyPatch } from '@/lib/import/hooks/useImportBulkApply';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import type { Card, CardEntry } from '@/types/cards';

@@ -7,7 +7,7 @@ import type { CustomCard } from '@/lib/mpc/types';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { DeckCardGroup } from '@/types/decks';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
-import { DeckCardModalHost } from '@/app/decks/[id]/DeckCardModalHost';
+import { DeckCardModalHost } from '@/app/[locale]/decks/[id]/DeckCardModalHost';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';

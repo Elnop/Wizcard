@@ -1,5 +1,5 @@
 import type { DeckZone } from '@/types/decks';
-import type { ResolvedDeckCard } from '@/app/decks/[id]/useDeckDetail';
+import type { ResolvedDeckCard } from '@/app/[locale]/decks/[id]/useDeckDetail';
 
 // Exported zones, in MTGA standard order, with their section header.
 // Tokens are deliberately absent (auto-generated, not handled by the target tools).

@@ -1,4 +1,4 @@
-import type { BadgeState } from '@/app/decks/[id]/components/DeckCardOverlay/useCollectionBadge';
+import type { BadgeState } from '@/app/[locale]/decks/[id]/components/DeckCardOverlay/useCollectionBadge';
 import type { Card } from '@/types/cards';
 
 /**
