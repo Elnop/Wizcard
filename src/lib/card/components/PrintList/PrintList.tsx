@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card } from '@/types/cards';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
@@ -19,6 +20,7 @@ export function PrintList({
 	currentLang,
 	onSelect,
 }: PrintListProps) {
+	const t = useTranslations('card');
 	const { prints, loading, error } = useCardPrints(prints_search_uri);
 	const [lightboxCard, setLightboxCard] = useState<Card | ScryfallCard | null>(null);
 
@@ -58,7 +60,7 @@ export function PrintList({
 	const tableColumns = [
 		{
 			key: 'set',
-			label: 'Print',
+			label: t('colPrint'),
 			render: (anyCard: AnyCard) => {
 				const card = anyCard as ScryfallCard;
 				return (
@@ -71,7 +73,7 @@ export function PrintList({
 		},
 		{
 			key: 'rarity',
-			label: 'Rarity',
+			label: t('rarity'),
 			render: (anyCard: AnyCard) => {
 				const rarity = (anyCard as ScryfallCard).rarity ?? '';
 				return rarity.charAt(0).toUpperCase() + rarity.slice(1);
@@ -84,9 +86,9 @@ export function PrintList({
 		},
 	];
 
-	if (loading) return <p className={styles.status}>Loading prints…</p>;
+	if (loading) return <p className={styles.status}>{t('loadingPrints')}</p>;
 	if (error) return <p className={styles.statusError}>{error}</p>;
-	if (sections.length === 0) return <p className={styles.status}>No print found.</p>;
+	if (sections.length === 0) return <p className={styles.status}>{t('noPrintFound')}</p>;
 
 	return (
 		<>

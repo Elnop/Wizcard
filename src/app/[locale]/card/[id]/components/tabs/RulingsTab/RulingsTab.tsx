@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ScryfallRuling } from '@/lib/scryfall/types/scryfall';
 import { getCardRulings } from '@/lib/scryfall/endpoints/cards';
 import { scryfallGet } from '@/lib/scryfall/utils/fetcher';
@@ -33,6 +34,7 @@ async function resolveRulings(
 }
 
 export function RulingsTab({ cardId, oracleId }: Props) {
+	const t = useTranslations('card');
 	const [rulings, setRulings] = useState<ScryfallRuling[]>([]);
 	const [loading, setLoading] = useState(true);
 
@@ -65,11 +67,11 @@ export function RulingsTab({ cardId, oracleId }: Props) {
 	}, [cardId, oracleId]);
 
 	if (loading) {
-		return <div className={styles.loading}>Loading rulings…</div>;
+		return <div className={styles.loading}>{t('loadingRulings')}</div>;
 	}
 
 	if (rulings.length === 0) {
-		return <div className={styles.empty}>No official ruling for this card.</div>;
+		return <div className={styles.empty}>{t('noRulings')}</div>;
 	}
 
 	return (

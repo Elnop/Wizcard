@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import styles from './CardLightbox.module.css';
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function CardLightbox({ card, onClose, isFoil = false, foilType = 'foil' }: Props) {
+	const t = useTranslations('card');
 	const [effectsEnabled, setEffectsEnabled] = useState(true);
 
 	if (typeof document === 'undefined') return null;
@@ -38,14 +40,14 @@ export function CardLightbox({ card, onClose, isFoil = false, foilType = 'foil' 
 					}
 				}}
 			>
-				<span className={styles.toggleLabel}>Effets</span>
+				<span className={styles.toggleLabel}>{t('effects')}</span>
 				<span className={styles.toggleTrack} data-active={effectsEnabled}>
 					<span className={styles.toggleThumb} />
 				</span>
 			</div>
 
 			{/* Close button — top right */}
-			<button type="button" onClick={onClose} aria-label="Close" className={styles.closeBtn}>
+			<button type="button" onClick={onClose} aria-label={t('close')} className={styles.closeBtn}>
 				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 					<path
 						d="M2 2l12 12M14 2L2 14"

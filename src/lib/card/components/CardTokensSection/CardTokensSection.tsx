@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
@@ -17,8 +18,9 @@ interface CardTokensSectionProps {
  * loading is done and no token resolved.
  */
 export function CardTokensSection({ tokens, loading, onTokenClick }: CardTokensSectionProps) {
+	const t = useTranslations('card');
 	if (loading) {
-		return <p className={styles.loading}>Loading tokens…</p>;
+		return <p className={styles.loading}>{t('loadingTokens')}</p>;
 	}
 
 	if (tokens.length === 0) return null;

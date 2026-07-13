@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { type DeckZone, setDeckZone } from '@/types/decks';
@@ -38,6 +39,7 @@ export function AddCardModal({
 	maxQuantity,
 	initialEntry,
 }: AddCardModalProps) {
+	const t = useTranslations('card');
 	const initialZone: DeckZone = defaultZone ?? 'mainboard';
 	const form = useCardEntryForm(
 		{ ...initialEntry, tags: setDeckZone(initialEntry?.tags, initialZone) },
@@ -57,7 +59,7 @@ export function AddCardModal({
 			{!hideQuantity && (
 				<div className={styles.field}>
 					<label className={styles.label} htmlFor="copy-add-quantity">
-						Quantity
+						{t('quantity')}
 					</label>
 					<input
 						id="copy-add-quantity"
@@ -79,7 +81,7 @@ export function AddCardModal({
 			{availableZones && availableZones.length > 1 && (
 				<div className={styles.field}>
 					<label className={styles.label} htmlFor="copy-add-zone">
-						Zone
+						{t('zone')}
 					</label>
 					<select
 						id="copy-add-zone"
@@ -105,13 +107,15 @@ export function AddCardModal({
 
 	return (
 		<CardEntryFormBody
-			title={`Add — ${form.selectedPrint.set_name} #${form.selectedPrint.collector_number}`}
+			title={t('addTitle', {
+				print: `${form.selectedPrint.set_name} #${form.selectedPrint.collector_number}`,
+			})}
 			form={form}
 			onClose={onClose}
 			topExtras={topExtras}
 			actions={
 				<button type="button" className={styles.changePrintBtn} onClick={handleConfirmAdd}>
-					Confirm add
+					{t('confirmAdd')}
 				</button>
 			}
 		/>

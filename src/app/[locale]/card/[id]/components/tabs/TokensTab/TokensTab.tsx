@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
 import { CardTokensSection } from '@/lib/card/components/CardTokensSection/CardTokensSection';
@@ -13,13 +14,14 @@ interface Props {
 }
 
 export function TokensTab({ card }: Props) {
+	const t = useTranslations('card');
 	const { tokens, loading } = useCardTokens(card);
 	const [tokenModalCard, setTokenModalCard] = useState<ScryfallCard | null>(null);
 
 	return (
 		<div className={styles.container}>
 			{!loading && tokens.length === 0 ? (
-				<p className={styles.empty}>This card does not create any token.</p>
+				<p className={styles.empty}>{t('noTokens')}</p>
 			) : (
 				<CardTokensSection tokens={tokens} loading={loading} onTokenClick={setTokenModalCard} />
 			)}

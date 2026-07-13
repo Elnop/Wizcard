@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useCardEntryForm } from './useCardEntryForm';
@@ -15,6 +16,7 @@ export interface EditCardModalProps {
 
 /** Modal for editing an existing owned copy (metadata + print/language). */
 export function EditCardModal({ card, onSave, onChangePrint, onClose }: EditCardModalProps) {
+	const t = useTranslations('card');
 	const form = useCardEntryForm({ ...card.entry }, card as ScryfallCard);
 
 	function handleSave() {
@@ -29,12 +31,14 @@ export function EditCardModal({ card, onSave, onChangePrint, onClose }: EditCard
 
 	return (
 		<CardEntryFormBody
-			title={`Edit copy — ${card.set?.toUpperCase() ?? ''} #${card.collector_number ?? ''}`}
+			title={t('editTitle', {
+				print: `${card.set?.toUpperCase() ?? ''} #${card.collector_number ?? ''}`,
+			})}
 			form={form}
 			onClose={onClose}
 			actions={
 				<button type="button" className={styles.saveBtn} onClick={handleSave}>
-					Sauvegarder
+					{t('save')}
 				</button>
 			}
 		/>

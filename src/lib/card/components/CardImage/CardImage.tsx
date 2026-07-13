@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
 import { isScryfallImageUrl, scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
@@ -55,6 +56,7 @@ export function CardImage({
 	isProxy = false,
 	disableTilt = false,
 }: CardImageProps) {
+	const t = useTranslations('card');
 	const [currentFace, setCurrentFace] = useState(0);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState(false);
@@ -195,13 +197,14 @@ export function CardImage({
 						aria-hidden="true"
 					/>
 				)}
+				{/* eslint-disable-next-line i18next/no-literal-string -- terme MTG standard */}
 				{isProxy && <span className={styles.proxyBadge}>proxy</span>}
 			</div>
 			{isDoubleFaced && (
 				<button
 					className={styles.flipButton}
 					onClick={handleFlip}
-					aria-label="Flip card"
+					aria-label={t('flipCard')}
 					type="button"
 				>
 					<svg

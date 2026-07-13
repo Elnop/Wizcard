@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { Modal } from '@/components/Modal/Modal';
 import { PrintList } from '@/lib/card/components/PrintList/PrintList';
@@ -27,11 +28,17 @@ export function CardPrintPickerModal({
 	onSelect,
 	onClose,
 }: Props) {
+	const t = useTranslations('card');
 	return (
 		<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
 			<div className={styles.header}>
-				<h2 className={styles.title}>Change print</h2>
-				<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
+				<h2 className={styles.title}>{t('changePrint')}</h2>
+				<button
+					className={styles.closeIcon}
+					onClick={onClose}
+					aria-label={t('close')}
+					type="button"
+				>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path
 							d="M2 2l12 12M14 2L2 14"

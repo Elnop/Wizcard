@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
 import { isCustomCard } from '@/lib/mpc/types';
@@ -33,6 +34,7 @@ function MiniThumb({ card }: { card: ScryfallCard }): ReactNode {
 }
 
 export function PrintsTab({ card }: Props) {
+	const t = useTranslations('card');
 	const custom = isCustomCard(card) ? card : null;
 	const scryfall = custom ? null : (card as ScryfallCard);
 
@@ -63,14 +65,14 @@ export function PrintsTab({ card }: Props) {
 	if (prints.length > 0) {
 		const byLang = groupPrintsByLang(prints, currentLang);
 		officialSections = hasCustomPrints
-			? [{ label: 'Prints officiels', cards: [], children: byLang }]
+			? [{ label: t('officialPrints'), cards: [], children: byLang }]
 			: byLang;
 	}
 
 	const customSection: CardListSection | null =
 		customPrints.length > 0
 			? {
-					label: 'Custom Cards',
+					label: t('customCards'),
 					cards: customPrints as unknown as AnyCard[],
 				}
 			: null;
@@ -103,7 +105,7 @@ export function PrintsTab({ card }: Props) {
 					},
 					{
 						key: 'set',
-						label: 'Print',
+						label: t('colPrint'),
 						render: (p: AnyCard) => {
 							const c = p as ScryfallCard;
 							const isProxy = c.set === 'mpc';
@@ -123,7 +125,7 @@ export function PrintsTab({ card }: Props) {
 					},
 					{
 						key: 'rarity',
-						label: 'Rarity',
+						label: t('rarity'),
 						render: (p: AnyCard) => {
 							const c = p as ScryfallCard;
 							if (c.set === 'mpc') return null;
@@ -135,7 +137,7 @@ export function PrintsTab({ card }: Props) {
 						label: '',
 						render: (p: AnyCard) => {
 							if ((p as ScryfallCard).id === card.id) {
-								return <span className={styles.currentBadge}>Shown</span>;
+								return <span className={styles.currentBadge}>{t('shown')}</span>;
 							}
 							return null;
 						},

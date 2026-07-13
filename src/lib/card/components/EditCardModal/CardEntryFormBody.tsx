@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import type { CardEntry } from '@/types/cards';
 import { MTG_LANGUAGES } from '@/lib/mtg/languages';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
@@ -28,6 +29,7 @@ type Props = {
  * the specific modal via `topExtras` / `actions`.
  */
 export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: Props) {
+	const t = useTranslations('card');
 	const { draftEntry: entry, selectedPrint } = form;
 	const isFoil = entry.isFoil ?? false;
 
@@ -36,7 +38,12 @@ export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: 
 			<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
 				<div className={styles.header}>
 					<span className={styles.title}>{title}</span>
-					<button type="button" className={styles.closeIcon} onClick={onClose} aria-label="Close">
+					<button
+						type="button"
+						className={styles.closeIcon}
+						onClick={onClose}
+						aria-label={t('close')}
+					>
 						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 							<path
 								d="M2 2l12 12M14 2L2 14"
@@ -58,7 +65,7 @@ export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: 
 						{/* Condition */}
 						<div className={styles.field}>
 							<label className={styles.label} htmlFor="copy-edit-condition">
-								Condition
+								{t('condition')}
 							</label>
 							<select
 								id="copy-edit-condition"
@@ -68,7 +75,7 @@ export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: 
 									form.save({ condition: (e.target.value as CardEntry['condition']) || undefined })
 								}
 							>
-								<option value="">— select —</option>
+								<option value="">{t('selectPlaceholder')}</option>
 								{CONDITIONS.map((c) => (
 									<option key={c} value={c}>
 										{c}
@@ -79,7 +86,7 @@ export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: 
 
 						{/* Foil */}
 						<div className={styles.field}>
-							<label className={styles.label}>Foil</label>
+							<label className={styles.label}>{t('colFoil')}</label>
 							<div className={styles.foilRow}>
 								<button
 									type="button"
@@ -123,7 +130,7 @@ export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: 
 						{/* Language */}
 						<div className={styles.field}>
 							<label className={styles.label} htmlFor="copy-edit-language">
-								Language
+								{t('language')}
 							</label>
 							<select
 								id="copy-edit-language"
@@ -131,7 +138,7 @@ export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: 
 								value={entry.language ?? ''}
 								onChange={(e) => form.handleLanguageChange(e.target.value)}
 							>
-								<option value="">— select —</option>
+								<option value="">{t('selectPlaceholder')}</option>
 								{MTG_LANGUAGES.map((lang) => (
 									<option key={lang} value={lang}>
 										{lang}
@@ -144,7 +151,7 @@ export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: 
 						{/* Tags */}
 						<div className={styles.field}>
 							<label className={styles.label} htmlFor="copy-edit-tags">
-								Tags
+								{t('tags')}
 							</label>
 							<div className={styles.tagsField}>
 								{(entry.tags ?? [])
@@ -156,7 +163,7 @@ export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: 
 												type="button"
 												className={styles.tagRemove}
 												onClick={() => form.removeTag(tag)}
-												aria-label={`Remove tag ${tag}`}
+												aria-label={t('removeTag', { tag })}
 											>
 												×
 											</button>
@@ -171,7 +178,7 @@ export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: 
 									onKeyDown={form.handleTagKeyDown}
 									placeholder={
 										(entry.tags ?? []).filter((tag) => !tag.includes(':')).length === 0
-											? 'Add tags…'
+											? t('addTags')
 											: ''
 									}
 								/>
@@ -184,7 +191,7 @@ export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: 
 							className={styles.changePrintBtn}
 							onClick={() => form.setShowPrintPicker(true)}
 						>
-							Change print
+							{t('changePrint')}
 						</button>
 
 						{actions}

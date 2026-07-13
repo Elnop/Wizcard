@@ -1,6 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '@/i18n/navigation';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function CardTabs({ card }: Props) {
+	const t = useTranslations('card');
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -31,14 +33,14 @@ export function CardTabs({ card }: Props) {
 	);
 
 	const tabs: { id: TabId; label: string }[] = [
-		...(isEnriched ? [{ id: 'overview' as const, label: 'Overview' }] : []),
-		...(hasOracleId || !custom ? [{ id: 'prints' as const, label: 'Prints' }] : []),
-		...(hasOracleId || !custom ? [{ id: 'rulings' as const, label: 'Rulings' }] : []),
-		...(hasOracleId || !custom ? [{ id: 'similar' as const, label: 'Similaires' }] : []),
-		...(hasTokenParts ? [{ id: 'tokens' as const, label: 'Tokens' }] : []),
+		...(isEnriched ? [{ id: 'overview' as const, label: t('tabOverview') }] : []),
+		...(hasOracleId || !custom ? [{ id: 'prints' as const, label: t('tabPrints') }] : []),
+		...(hasOracleId || !custom ? [{ id: 'rulings' as const, label: t('tabRulings') }] : []),
+		...(hasOracleId || !custom ? [{ id: 'similar' as const, label: t('tabSimilar') }] : []),
+		...(hasTokenParts ? [{ id: 'tokens' as const, label: t('tabTokens') }] : []),
 	];
 
-	const validTabIds = new Set(tabs.map((t) => t.id));
+	const validTabIds = new Set(tabs.map((tab) => tab.id));
 	const rawTab = searchParams.get('tab') as TabId | null;
 	const activeTab: TabId = rawTab && validTabIds.has(rawTab) ? rawTab : (tabs[0]?.id ?? 'overview');
 

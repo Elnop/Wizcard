@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function OverviewTab({ card }: Props) {
+	const t = useTranslations('card');
 	const symbolMap = useScryfallSymbols();
 	const colors = card.colors ?? card.color_identity ?? [];
 	const oracleLines = splitOracleText(card.oracle_text);
@@ -40,7 +42,7 @@ export function OverviewTab({ card }: Props) {
 
 			{(card.power || card.toughness) && (
 				<div className={styles.stats}>
-					<span className={styles.statLabel}>P/T:</span>
+					<span className={styles.statLabel}>{t('pt')}</span>
 					<span className={styles.statValue}>
 						{card.power}/{card.toughness}
 					</span>
@@ -49,7 +51,7 @@ export function OverviewTab({ card }: Props) {
 
 			{card.loyalty && (
 				<div className={styles.stats}>
-					<span className={styles.statLabel}>Loyalty:</span>
+					<span className={styles.statLabel}>{t('loyaltyStat')}</span>
 					<span className={styles.statValue}>{card.loyalty}</span>
 				</div>
 			)}
@@ -57,13 +59,13 @@ export function OverviewTab({ card }: Props) {
 			<div className={styles.metadata}>
 				{card.artist && (
 					<div className={styles.metaRow}>
-						<span className={styles.metaLabel}>Artist</span>
+						<span className={styles.metaLabel}>{t('detailArtist')}</span>
 						<span className={styles.metaValue}>{card.artist}</span>
 					</div>
 				)}
 				{colors.length > 0 && (
 					<div className={styles.metaRow}>
-						<span className={styles.metaLabel}>Colors</span>
+						<span className={styles.metaLabel}>{t('colors')}</span>
 						<ColorIdentityIcons colors={colors} size={18} />
 					</div>
 				)}
@@ -71,7 +73,7 @@ export function OverviewTab({ card }: Props) {
 
 			{card.legalities && (
 				<div className={styles.legalities}>
-					<h3 className={styles.legalitiesTitle}>Legalities</h3>
+					<h3 className={styles.legalitiesTitle}>{t('legalities')}</h3>
 					<div className={styles.legalityGrid}>
 						{Object.entries(card.legalities).map(([format, legality]) => (
 							<div key={format} className={styles.legalityItem} data-legality={legality}>

@@ -1,5 +1,6 @@
 import { useEffect, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslations } from 'next-intl';
 import type { Card } from '@/types/cards';
 import type { DeckZone } from '@/types/decks';
 import styles from './CopyCardOverlay.module.css';
@@ -39,6 +40,7 @@ export function CopyCardOverlay({
 	contextMenuPos,
 	onContextMenuClose,
 }: Props) {
+	const t = useTranslations('card');
 	const closeMenu = useCallback(() => onContextMenuClose?.(), [onContextMenuClose]);
 
 	useEffect(() => {
@@ -93,7 +95,7 @@ export function CopyCardOverlay({
 							}}
 						>
 							<span className={styles.menuIcon}>✎</span>
-							Edit
+							{t('edit')}
 						</button>
 
 						{hasDivider && <div className={styles.menuDivider} />}
@@ -108,7 +110,7 @@ export function CopyCardOverlay({
 								}}
 							>
 								<span className={styles.menuIcon}>⧉</span>
-								Duplicate
+								{t('duplicate')}
 							</button>
 						)}
 
@@ -138,7 +140,7 @@ export function CopyCardOverlay({
 							}}
 						>
 							<span className={styles.menuIcon}>×</span>
-							Remove
+							{t('remove')}
 						</button>
 					</div>,
 					document.body

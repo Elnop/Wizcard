@@ -1,5 +1,7 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
+import type { Locale } from '@/i18n/routing';
 import { getCardById } from '@/lib/scryfall/endpoints/cards';
 import { getCustomCardWithSource } from '@/lib/mpc/db/custom-cards.server';
 import { CardPageHeader } from './components/CardPageHeader/CardPageHeader';
@@ -8,19 +10,21 @@ import styles from './page.module.css';
 
 interface CardPageProps {
 	params: Promise<{
+		locale: Locale;
 		id: string;
 	}>;
 }
 
 export async function generateMetadata({ params }: CardPageProps) {
-	const { id: rawId } = await params;
+	const { locale, id: rawId } = await params;
 	const id = decodeURIComponent(rawId);
+	const t = await getTranslations({ locale, namespace: 'seo.cardNotFound' });
 
 	if (id.startsWith('mpc:')) {
 		const card = await getCustomCardWithSource(id);
-		if (!card) return { title: 'Card Not Found | Wizcard' };
+		if (!card) return { title: t('title') };
 		return {
-			title: `${card.name} | Wizcard`,
+			title: card.name,
 			description: card.type_line ?? card.name,
 		};
 	}
@@ -28,12 +32,12 @@ export async function generateMetadata({ params }: CardPageProps) {
 	try {
 		const card = await getCardById(id);
 		return {
-			title: `${card.name} | Wizcard`,
+			title: card.name,
 			description: `${card.type_line} - ${card.oracle_text?.slice(0, 150) ?? card.name}`,
 		};
 	} catch {
 		return {
-			title: 'Card Not Found | Wizcard',
+			title: t('title'),
 		};
 	}
 }

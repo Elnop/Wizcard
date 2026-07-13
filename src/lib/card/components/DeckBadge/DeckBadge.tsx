@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import type { Card } from '@/types/cards';
 import styles from './DeckBadge.module.css';
@@ -16,6 +17,7 @@ type Props = {
  * reveals which decks (with per-deck copy counts).
  */
 export function DeckBadge({ cards }: Props) {
+	const t = useTranslations('card');
 	const { decks } = useDeckContext();
 
 	const { assignedCount, breakdown } = useMemo(() => {
@@ -49,7 +51,7 @@ export function DeckBadge({ cards }: Props) {
 			</svg>
 			{assignedCount}
 			<span className={styles.tooltip}>
-				<span className={styles.tooltipHeader}>Decks</span>
+				<span className={styles.tooltipHeader}>{t('decks')}</span>
 				{breakdown.map((line) => (
 					<span key={line} className={styles.tooltipItem}>
 						{line}

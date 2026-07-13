@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { Card, CardEntry } from '@/types/cards';
 import type { ScryfallCard, ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
@@ -151,11 +152,13 @@ function ImageContextMenuWrapper({
 }
 
 function CopyMetaSection({ entry }: { entry: CardEntry }) {
-	let finish = 'Normal';
+	const t = useTranslations('card');
+	const locale = useLocale();
+	let finish = t('finishNormal');
 	if (entry.isFoil) finish = entry.foilType === 'etched' ? '✨ Etched' : '✨ Foil';
 	const userTags = removeDeckZoneTags(entry.tags);
 	const addedDate = entry.dateAdded
-		? new Date(entry.dateAdded).toLocaleDateString('fr-FR', {
+		? new Date(entry.dateAdded).toLocaleDateString(locale, {
 				year: 'numeric',
 				month: 'long',
 				day: 'numeric',
@@ -166,9 +169,9 @@ function CopyMetaSection({ entry }: { entry: CardEntry }) {
 		<>
 			<hr className={styles.divider} />
 			<div className={styles.details}>
-				<span className={styles.tokensTitle}>Cette copie</span>
+				<span className={styles.tokensTitle}>{t('thisCopy')}</span>
 				<div className={styles.detailRow}>
-					<span className={styles.detailLabel}>Finition</span>
+					<span className={styles.detailLabel}>{t('finish')}</span>
 					<span className={styles.copyBadges}>
 						<span className={entry.isFoil ? styles.copyBadgeFoil : styles.detailValue}>
 							{finish}
@@ -180,29 +183,29 @@ function CopyMetaSection({ entry }: { entry: CardEntry }) {
 				</div>
 				{entry.condition && (
 					<div className={styles.detailRow}>
-						<span className={styles.detailLabel}>Condition</span>
+						<span className={styles.detailLabel}>{t('condition')}</span>
 						<span className={styles.detailValue}>{entry.condition}</span>
 					</div>
 				)}
 				{entry.language && (
 					<div className={styles.detailRow}>
-						<span className={styles.detailLabel}>Langue</span>
+						<span className={styles.detailLabel}>{t('detailLanguage')}</span>
 						<span className={styles.detailValue}>{entry.language}</span>
 					</div>
 				)}
 				{entry.purchasePrice && (
 					<div className={styles.detailRow}>
-						<span className={styles.detailLabel}>Prix</span>
+						<span className={styles.detailLabel}>{t('price')}</span>
 						<span className={styles.detailValue}>{entry.purchasePrice}</span>
 					</div>
 				)}
 				{userTags.length > 0 && (
 					<div className={styles.detailRow}>
-						<span className={styles.detailLabel}>Tags</span>
+						<span className={styles.detailLabel}>{t('tags')}</span>
 						<span className={styles.keywords}>
-							{userTags.map((t) => (
-								<span key={t} className={styles.keyword}>
-									{t}
+							{userTags.map((tag) => (
+								<span key={tag} className={styles.keyword}>
+									{tag}
 								</span>
 							))}
 						</span>
@@ -210,7 +213,7 @@ function CopyMetaSection({ entry }: { entry: CardEntry }) {
 				)}
 				{addedDate && (
 					<div className={styles.detailRow}>
-						<span className={styles.detailLabel}>Added</span>
+						<span className={styles.detailLabel}>{t('added')}</span>
 						<span className={styles.detailValue}>{addedDate}</span>
 					</div>
 				)}
@@ -232,6 +235,7 @@ function CardDetailSection({
 	isCustom?: boolean;
 	entry?: CardEntry;
 }) {
+	const t = useTranslations('card');
 	const { tokens, loading: tokensLoading, hasTokens } = useCardTokens(card);
 	const [tokenModalCard, setTokenModalCard] = useState<ScryfallCard | null>(null);
 
@@ -258,12 +262,12 @@ function CardDetailSection({
 			<div className={styles.details}>
 				{card.type_line && (
 					<div className={styles.detailRow}>
-						<span className={styles.detailLabel}>Type</span>
+						<span className={styles.detailLabel}>{t('detailType')}</span>
 						<span className={styles.detailValue}>{card.type_line}</span>
 					</div>
 				)}
 				<div className={styles.detailRow}>
-					<span className={styles.detailLabel}>Set</span>
+					<span className={styles.detailLabel}>{t('detailSet')}</span>
 					<span className={styles.detailValue}>
 						{card.set_name}
 						{card.rarity && (
@@ -273,7 +277,7 @@ function CardDetailSection({
 				</div>
 				{card.oracle_text && (
 					<div>
-						<span className={styles.detailLabel}>Oracle</span>
+						<span className={styles.detailLabel}>{t('detailOracle')}</span>
 						<div className={styles.oracleText}>
 							{card.oracle_text.split('\n').map((line, i) => (
 								<p key={i} className={styles.oracleLine}>
@@ -286,7 +290,7 @@ function CardDetailSection({
 				{card.flavor_text && <p className={styles.flavorText}>{card.flavor_text}</p>}
 				{card.loyalty && (
 					<div className={styles.detailRow}>
-						<span className={styles.detailLabel}>Loyalty</span>
+						<span className={styles.detailLabel}>{t('detailLoyalty')}</span>
 						<span className={styles.detailValue}>{card.loyalty}</span>
 					</div>
 				)}
@@ -300,12 +304,12 @@ function CardDetailSection({
 					</div>
 				)}
 				<div className={styles.detailRow}>
-					<span className={styles.detailLabel}>Artist</span>
+					<span className={styles.detailLabel}>{t('detailArtist')}</span>
 					<span className={styles.detailValue}>{card.artist ?? '—'}</span>
 				</div>
 				{card.set && (
 					<div className={styles.detailRow}>
-						<span className={styles.detailLabel}>Print</span>
+						<span className={styles.detailLabel}>{t('detailPrint')}</span>
 						<span className={styles.detailValue}>
 							{card.set.toUpperCase()} #{card.collector_number}
 						</span>
@@ -313,7 +317,7 @@ function CardDetailSection({
 				)}
 				{language && language !== 'English' && (
 					<div className={styles.detailRow}>
-						<span className={styles.detailLabel}>Langue</span>
+						<span className={styles.detailLabel}>{t('detailLanguage')}</span>
 						<span className={styles.detailValue}>{language}</span>
 					</div>
 				)}
@@ -323,7 +327,7 @@ function CardDetailSection({
 
 			{hasTokens && (
 				<div className={styles.tokensSection}>
-					<span className={styles.tokensTitle}>Tokens</span>
+					<span className={styles.tokensTitle}>{t('tokens')}</span>
 					<CardTokensSection
 						tokens={tokens}
 						loading={tokensLoading}
@@ -334,7 +338,7 @@ function CardDetailSection({
 
 			{!isCustom && (
 				<Link href={`/card/${card.id}`} className={styles.moreInfoLink}>
-					Plus d&apos;informations
+					{t('moreInfo')}
 				</Link>
 			)}
 
@@ -371,6 +375,7 @@ function CardModalInner({
 	renderCopyBadge,
 	buildImageMenuItems,
 }: InnerProps) {
+	const t = useTranslations('card');
 	const [lightbox, setLightbox] = useState(false);
 	const [selectedRowId, setSelectedRowId] = useState<string>(initialRowId ?? cards[0].entry.rowId);
 	const [editingRowId, setEditingRowId] = useState<string | null>(null);
@@ -443,7 +448,7 @@ function CardModalInner({
 		() => [
 			{
 				key: 'print',
-				label: 'Print',
+				label: t('colPrint'),
 				render: (c) => {
 					const card = c as Card;
 					return `${card.set?.toUpperCase() ?? ''} #${card.collector_number ?? ''}`;
@@ -451,17 +456,17 @@ function CardModalInner({
 			},
 			{
 				key: 'condition',
-				label: 'Condition',
+				label: t('colCondition'),
 				render: (c) => (c as Card).entry.condition ?? '—',
 			},
 			{
 				key: 'foil',
-				label: 'Foil',
+				label: t('colFoil'),
 				render: (c) => ((c as Card).entry.isFoil ? '✦' : '—'),
 			},
 			{
 				key: 'language',
-				label: 'Language',
+				label: t('colLanguage'),
 				render: (c) => (c as Card).entry.language ?? 'English',
 			},
 			{
@@ -479,13 +484,13 @@ function CardModalInner({
 									setEditingRowId(card.entry.rowId);
 								}}
 							>
-								Edit
+								{t('edit')}
 							</button>
 							{onDuplicate && (
 								<button
 									type="button"
 									className={styles.tableActionBtn}
-									title="Duplicate"
+									title={t('duplicate')}
 									onClick={(e) => {
 										e.stopPropagation();
 										onDuplicate(card.id, card.entry);
@@ -502,7 +507,7 @@ function CardModalInner({
 											key={z}
 											type="button"
 											className={styles.tableActionBtn}
-											title={`Move to ${ZONE_LABELS[z]}`}
+											title={t('moveTo', { zone: ZONE_LABELS[z] })}
 											// eslint-disable-next-line sonarjs/no-nested-functions -- JSX event handler
 											onClick={(e) => {
 												e.stopPropagation();
@@ -527,7 +532,7 @@ function CardModalInner({
 				},
 			},
 		],
-		[onDuplicate, onChangeZone, availableZones, handleRemoveCopy]
+		[onDuplicate, onChangeZone, availableZones, handleRemoveCopy, t]
 	);
 
 	const renderCopyOverlay = useCallback(
@@ -567,7 +572,12 @@ function CardModalInner({
 	return (
 		<>
 			<Modal onClose={onClose} className={styles.modal}>
-				<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
+				<button
+					className={styles.closeIcon}
+					onClick={onClose}
+					aria-label={t('close')}
+					type="button"
+				>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path
 							d="M2 2l12 12M14 2L2 14"
@@ -596,7 +606,7 @@ function CardModalInner({
 							className={styles.changePrintBtn}
 							onClick={() => setEditingRowId(selectedCard.entry.rowId)}
 						>
-							Edit
+							{t('edit')}
 						</button>
 						{onAssignCollectionCopy && (
 							<button
@@ -605,17 +615,17 @@ function CardModalInner({
 								disabled={(collectionCopies?.length ?? 0) === 0}
 								onClick={() => setUsingCollectionCopy(true)}
 							>
-								Utiliser une carte de la collection
+								{t('useCollectionCard')}
 							</button>
 						)}
 						{onUnassignCollectionCopy && selectedCard.entry.ownerId && (
 							<button
 								type="button"
 								className={styles.changePrintBtn}
-								title="Unassign this card from the deck (becomes unowned again)"
+								title={t('unassignFromDeck')}
 								onClick={() => onUnassignCollectionCopy()}
 							>
-								Unassign from collection
+								{t('unassignFromCollection')}
 							</button>
 						)}
 						{(onAddToCollectionFromEntry || onRemoveFromCollectionEntry) && (
@@ -628,7 +638,7 @@ function CardModalInner({
 										: onAddToCollectionFromEntry?.([selectedCard.entry.rowId])
 								}
 							>
-								{selectedCard.entry.ownerId ? 'Remove from collection' : 'Add to collection'}
+								{selectedCard.entry.ownerId ? t('removeFromCollection') : t('addToCollection')}
 							</button>
 						)}
 						{onAddToCollectionFromEntry && unownedRowIds.length > 0 && (
@@ -637,7 +647,7 @@ function CardModalInner({
 								className={styles.changePrintBtn}
 								onClick={() => onAddToCollectionFromEntry(unownedRowIds)}
 							>
-								Add to collection
+								{t('addToCollection')}
 							</button>
 						)}
 						{onMoveToCollection && (
@@ -646,7 +656,7 @@ function CardModalInner({
 								className={styles.changePrintBtn}
 								onClick={() => onMoveToCollection(selectedCard.entry.rowId)}
 							>
-								Move to Collection
+								{t('moveToCollection')}
 							</button>
 						)}
 						{onAddToWishlistFromEntry && (
@@ -656,7 +666,7 @@ function CardModalInner({
 								onClick={() => onAddToWishlistFromEntry(selectedCard.entry.rowId)}
 							>
 								<WishlistIcon size={13} />{' '}
-								{selectedCard.entry.wishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+								{selectedCard.entry.wishlist ? t('removeFromWishlist') : t('addToWishlist')}
 							</button>
 						)}
 						{onAddToDeck && (
@@ -665,7 +675,7 @@ function CardModalInner({
 								className={styles.changePrintBtn}
 								onClick={() => onAddToDeck(selectedCard as ScryfallCard)}
 							>
-								🗂 Add to deck
+								<span aria-hidden="true">🗂</span> {t('addToDeck')}
 							</button>
 						)}
 					</div>
@@ -681,12 +691,12 @@ function CardModalInner({
 						{/* Copies list */}
 						<div className={styles.copiesSection}>
 							<div className={styles.copiesHeader}>
-								<span className={styles.copiesTitle}>Copies ({count})</span>
+								<span className={styles.copiesTitle}>{t('copies', { count })}</span>
 								<button
 									type="button"
 									onClick={() => setAddingCopy(true)}
 									className={styles.addCopyBtn}
-									aria-label="Add copy"
+									aria-label={t('addCopy')}
 								>
 									+
 								</button>
@@ -720,14 +730,14 @@ function CardModalInner({
 									className={styles.removeAllBtn}
 									onClick={() => setConfirmRemoveAll(true)}
 								>
-									Remove all
+									{t('removeAll')}
 								</button>
 							)}
 						</div>
 
 						{producerSections && producerSections.length > 0 && (
 							<div className={styles.tokensSection}>
-								<span className={styles.tokensTitle}>Cards that create this token</span>
+								<span className={styles.tokensTitle}>{t('tokenProducers')}</span>
 								<CardList
 									cards={producerSections}
 									onCardClick={onProducerClick}
@@ -753,13 +763,12 @@ function CardModalInner({
 
 			{confirmRemoveAll && (
 				<ConfirmModal
-					message={
-						<>
-							Remove all {cards.length} cop{cards.length === 1 ? 'y' : 'ies'} of{' '}
-							<strong>{selectedCard.name}</strong>?
-						</>
-					}
-					confirmLabel="Remove all"
+					message={t.rich('removeAllConfirm', {
+						count: cards.length,
+						name: selectedCard.name,
+						strong: (chunks) => <strong>{chunks}</strong>,
+					})}
+					confirmLabel={t('removeAll')}
 					onConfirm={() => {
 						const uniqueIds = [...new Set(cards.map((c) => c.id))];
 						uniqueIds.forEach((id) => onRemove?.(id));
@@ -820,7 +829,7 @@ function ScryfallCardModalInner({
 	card,
 	onClose,
 	onAddToCollection,
-	addLabel = 'Add to Collection',
+	addLabel,
 	availableZones,
 	onAddToWishlist,
 	onAddToDeck,
@@ -835,6 +844,7 @@ function ScryfallCardModalInner({
 	onAddToDeck?: (card: ScryfallCard) => void;
 	buildImageMenuItems?: (card: AnyCard, close: () => void) => ContextMenuAction[] | null;
 }) {
+	const t = useTranslations('card');
 	const [lightbox, setLightbox] = useState(false);
 	const [addingCard, setAddingCard] = useState(false);
 	const [addingToWishlist, setAddingToWishlist] = useState(false);
@@ -843,7 +853,12 @@ function ScryfallCardModalInner({
 	return (
 		<>
 			<Modal onClose={onClose} className={styles.modal}>
-				<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
+				<button
+					className={styles.closeIcon}
+					onClick={onClose}
+					aria-label={t('close')}
+					type="button"
+				>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path
 							d="M2 2l12 12M14 2L2 14"
@@ -865,7 +880,7 @@ function ScryfallCardModalInner({
 								className={styles.changePrintBtn}
 								onClick={() => setAddingCard(true)}
 							>
-								{addLabel}
+								{addLabel ?? t('addToCollection')}
 							</button>
 						)}
 						{onAddToWishlist && (
@@ -874,7 +889,7 @@ function ScryfallCardModalInner({
 								className={styles.changePrintBtn}
 								onClick={() => setAddingToWishlist(true)}
 							>
-								<WishlistIcon size={13} /> Add to Wishlist
+								<WishlistIcon size={13} /> {t('addToWishlist')}
 							</button>
 						)}
 						{onAddToDeck && (
@@ -883,7 +898,7 @@ function ScryfallCardModalInner({
 								className={styles.changePrintBtn}
 								onClick={() => onAddToDeck(card)}
 							>
-								🗂 Add to deck
+								<span aria-hidden="true">🗂</span> {t('addToDeck')}
 							</button>
 						)}
 					</div>
@@ -923,13 +938,19 @@ function ScryfallCardModalInner({
 }
 
 function CustomCardModalInner({ card, onClose }: { card: CustomCard; onClose: () => void }) {
+	const t = useTranslations('card');
 	const [lightbox, setLightbox] = useState(false);
 	const symbolMap = useScryfallSymbols();
 
 	return (
 		<>
 			<Modal onClose={onClose} className={styles.modal}>
-				<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
+				<button
+					className={styles.closeIcon}
+					onClick={onClose}
+					aria-label={t('close')}
+					type="button"
+				>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path
 							d="M2 2l12 12M14 2L2 14"
@@ -952,7 +973,7 @@ function CustomCardModalInner({ card, onClose }: { card: CustomCard; onClose: ()
 							isCustom
 						/>
 						<Link href={`/card/${card.id}`} className={styles.moreInfoLink}>
-							Plus d&apos;informations
+							{t('moreInfo')}
 						</Link>
 						<CustomCardSection card={card} />
 					</div>

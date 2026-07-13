@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Modal } from '@/components/Modal/Modal';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export function AddToDeckModal({ card, ownedRowIds, onAssign, onClose }: Props) {
+	const t = useTranslations('card');
 	const { decks, addCardToDeck, addCollectionCardToDeck } = useDeckContext();
 
 	const sortedDecks = useMemo(
@@ -75,13 +77,18 @@ export function AddToDeckModal({ card, ownedRowIds, onAssign, onClose }: Props) 
 		onClose();
 	}
 
-	const title = `Add to deck — ${card.name}`;
+	const title = t('addToDeckTitle', { name: card.name });
 
 	return (
 		<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
 			<div className={styles.header}>
 				<span className={styles.title}>{title}</span>
-				<button type="button" className={styles.closeIcon} onClick={onClose} aria-label="Close">
+				<button
+					type="button"
+					className={styles.closeIcon}
+					onClick={onClose}
+					aria-label={t('close')}
+				>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path
 							d="M2 2l12 12M14 2L2 14"
@@ -101,16 +108,16 @@ export function AddToDeckModal({ card, ownedRowIds, onAssign, onClose }: Props) 
 				<div className={styles.form}>
 					{sortedDecks.length === 0 ? (
 						<div className={styles.empty}>
-							<p>You don&apos;t have any deck.</p>
+							<p>{t('noDeck')}</p>
 							<Link href="/decks" className={styles.createLink} onClick={onClose}>
-								Create a deck
+								{t('createDeck')}
 							</Link>
 						</div>
 					) : (
 						<>
 							<div className={styles.field}>
 								<label className={styles.label} htmlFor="add-deck-deck">
-									Deck
+									{t('deck')}
 								</label>
 								<select
 									id="add-deck-deck"
@@ -128,7 +135,7 @@ export function AddToDeckModal({ card, ownedRowIds, onAssign, onClose }: Props) 
 
 							<div className={styles.field}>
 								<label className={styles.label} htmlFor="add-deck-zone">
-									Zone
+									{t('zone')}
 								</label>
 								<select
 									id="add-deck-zone"
@@ -147,7 +154,7 @@ export function AddToDeckModal({ card, ownedRowIds, onAssign, onClose }: Props) 
 							{showQuantity && (
 								<div className={styles.field}>
 									<label className={styles.label} htmlFor="add-deck-quantity">
-										Quantity
+										{t('quantity')}
 									</label>
 									<input
 										id="add-deck-quantity"
@@ -167,7 +174,7 @@ export function AddToDeckModal({ card, ownedRowIds, onAssign, onClose }: Props) 
 							)}
 
 							<button type="button" className={styles.confirmBtn} onClick={handleConfirm}>
-								Add
+								{t('add')}
 							</button>
 						</>
 					)}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
@@ -13,6 +14,7 @@ export interface AddToCollectionButtonProps {
 }
 
 export function AddToCollectionButton({ card }: AddToCollectionButtonProps) {
+	const t = useTranslations('card');
 	const { addCards, decrementCard, getQuantity } = useCollectionContext();
 	const { openAddCard } = useAddCardModal();
 	const [showFeedback, setShowFeedback] = useState(false);
@@ -53,7 +55,7 @@ export function AddToCollectionButton({ card }: AddToCollectionButtonProps) {
 						type="button"
 						className={styles.quantityButton}
 						onClick={() => decrementCard(card.id)}
-						aria-label="Remove one"
+						aria-label={t('removeOne')}
 					>
 						-
 					</button>
@@ -62,7 +64,7 @@ export function AddToCollectionButton({ card }: AddToCollectionButtonProps) {
 						type="button"
 						className={styles.quantityButton}
 						onClick={openAdd}
-						aria-label="Add one"
+						aria-label={t('addOne')}
 					>
 						+
 					</button>

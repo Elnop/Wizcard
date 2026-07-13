@@ -61,6 +61,7 @@ const eslintConfig = defineConfig([
 		// Phase 2 : landing, auth.
 		// Phase 3 : legal, settings, account.
 		// Phase 4 : search, sets.
+		// Phase 5 : card (app/card + lib/card).
 		files: [
 			'src/components/Navbar/**',
 			'src/components/Footer/**',
@@ -72,9 +73,33 @@ const eslintConfig = defineConfig([
 			'src/app/[locale]/account/**',
 			'src/app/[locale]/search/**',
 			'src/app/[locale]/sets/**',
+			'src/app/[locale]/card/**',
+			'src/lib/card/components/**',
 		],
 		rules: {
-			'i18next/no-literal-string': ['error', { mode: 'jsx-text-only' }],
+			'i18next/no-literal-string': [
+				'error',
+				{
+					mode: 'jsx-text-only',
+					// Termes de jeu MTG standard (non traduits, identiques fr/en) et
+					// glyphes / symboles purs (icônes textuelles).
+					words: {
+						exclude: [
+							'^\\s*[✦✎⧉▾▴→←×✕✓✨🗂🛒♡▣+·—\\-–/#()%\\d.,:!?…\\s]*$',
+							'^\\s*(✦\\s*)?Foil\\s*$',
+							'^\\s*Etched\\s*$',
+							'^\\s*(▣\\s*)?Proxy\\s*$',
+							'^\\s*Alter\\s*$',
+							'^\\s*Trade\\s*$',
+							'^\\s*Mainboard\\s*$',
+							'^\\s*Sideboard\\s*$',
+							'^\\s*Maybeboard\\s*$',
+							'^\\s*Commander\\s*$',
+							'^\\s*Scryfall\\s*$',
+						],
+					},
+				},
+			],
 		},
 	},
 	{

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card } from '@/types/cards';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
@@ -38,6 +39,7 @@ export function UseCollectionCopyModal({
 	onSelectNone,
 	onClose,
 }: Props) {
+	const t = useTranslations('card');
 	const { prints, loading, error } = useCardPrints(prints_search_uri);
 	const [lightboxCard, setLightboxCard] = useState<Card | ScryfallCard | null>(null);
 
@@ -63,7 +65,7 @@ export function UseCollectionCopyModal({
 		if (isSelected) {
 			return (
 				<button type="button" className={`${styles.selectBtn} ${styles.selectBtnActive}`} disabled>
-					Selected
+					{t('selected')}
 				</button>
 			);
 		}
@@ -71,8 +73,8 @@ export function UseCollectionCopyModal({
 		return (
 			<>
 				{assignedDeckName && (
-					<span className={styles.assignedBadge} title={`Used in: ${assignedDeckName}`}>
-						Used
+					<span className={styles.assignedBadge} title={t('usedIn', { deck: assignedDeckName })}>
+						{t('used')}
 					</span>
 				)}
 				<button
@@ -83,7 +85,7 @@ export function UseCollectionCopyModal({
 						handleSelect(card.entry.rowId);
 					}}
 				>
-					Utiliser
+					{t('use')}
 				</button>
 			</>
 		);
@@ -92,7 +94,7 @@ export function UseCollectionCopyModal({
 	const tableColumns = [
 		{
 			key: 'set',
-			label: 'Print',
+			label: t('colPrint'),
 			render: (anyCard: AnyCard) => {
 				const card = anyCard as ScryfallCard;
 				return (
@@ -105,7 +107,7 @@ export function UseCollectionCopyModal({
 		},
 		{
 			key: 'meta',
-			label: 'Details',
+			label: t('detailsCol'),
 			render: (anyCard: AnyCard) => {
 				if (!('entry' in anyCard)) return null;
 				const card = anyCard as Card;
@@ -136,11 +138,11 @@ export function UseCollectionCopyModal({
 
 	let content: ReactNode;
 	if (loading) {
-		content = <p className={styles.status}>Loading prints…</p>;
+		content = <p className={styles.status}>{t('loadingPrints')}</p>;
 	} else if (error) {
 		content = <p className={styles.statusError}>{error}</p>;
 	} else if (sections.length === 0) {
-		content = <p className={styles.status}>No card in the collection.</p>;
+		content = <p className={styles.status}>{t('noCardInCollection')}</p>;
 	} else {
 		content = (
 			<CardList
@@ -157,8 +159,13 @@ export function UseCollectionCopyModal({
 	return (
 		<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
 			<div className={styles.header}>
-				<h2 className={styles.title}>Use a card from the collection</h2>
-				<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
+				<h2 className={styles.title}>{t('useCollectionCardTitle')}</h2>
+				<button
+					className={styles.closeIcon}
+					onClick={onClose}
+					aria-label={t('close')}
+					type="button"
+				>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path
 							d="M2 2l12 12M14 2L2 14"
@@ -175,13 +182,13 @@ export function UseCollectionCopyModal({
 						<button
 							type="button"
 							className={styles.noneBtn}
-							title="Unassign this card from the deck (becomes unowned again)"
+							title={t('unassignFromDeck')}
 							onClick={() => {
 								onSelectNone();
 								onClose();
 							}}
 						>
-							None ✕
+							{t('none')} ✕
 						</button>
 					</div>
 				)}

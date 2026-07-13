@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function SimilarTab({ card }: Props) {
+	const t = useTranslations('card');
 	const [similar, setSimilar] = useState<ScryfallCard[]>([]);
 	const [loading, setLoading] = useState(true);
 
@@ -45,11 +47,11 @@ export function SimilarTab({ card }: Props) {
 	}, [card]);
 
 	if (loading) {
-		return <div className={styles.loading}>Searching for similar cards…</div>;
+		return <div className={styles.loading}>{t('searchingSimilar')}</div>;
 	}
 
 	if (similar.length === 0) {
-		return <div className={styles.empty}>Could not find similar cards.</div>;
+		return <div className={styles.empty}>{t('noSimilar')}</div>;
 	}
 
 	return (

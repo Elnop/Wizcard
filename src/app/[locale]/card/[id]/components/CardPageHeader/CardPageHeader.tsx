@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
 import { isCustomCard } from '@/lib/mpc/types';
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function CardPageHeader({ card }: Props) {
+	const t = useTranslations('card');
 	const symbolMap = useScryfallSymbols();
 	const [lightbox, setLightbox] = useState(false);
 	const custom = isCustomCard(card) ? card.custom : null;
@@ -60,7 +62,7 @@ export function CardPageHeader({ card }: Props) {
 							{custom.set_code && custom.collector_number && <span>·</span>}
 							{custom.collector_number && <span>#{custom.collector_number}</span>}
 							{(custom.set_code || custom.collector_number) && <span>·</span>}
-							<span className={styles.badge}>Custom</span>
+							<span className={styles.badge}>{t('custom')}</span>
 						</div>
 					) : (
 						<div className={styles.setInfo}>

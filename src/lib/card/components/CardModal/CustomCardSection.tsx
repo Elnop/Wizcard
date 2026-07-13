@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import type { CustomCard } from '@/lib/mpc/types';
 import styles from './CustomCardSection.module.css';
 
@@ -13,10 +14,11 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
 };
 
 export function CustomCardSection({ card }: { card: CustomCard }) {
+	const t = useTranslations('card');
 	const m = card.custom;
 	return (
 		<div className={styles.section}>
-			<div className={styles.sectionTitle}>Carte Custom</div>
+			<div className={styles.sectionTitle}>{t('customTitle')}</div>
 
 			<div className={styles.badgeRow}>
 				<span className={styles.badge}>{CARD_TYPE_LABELS[m.card_type] ?? m.card_type}</span>
@@ -27,7 +29,7 @@ export function CustomCardSection({ card }: { card: CustomCard }) {
 
 			{m.source_name && (
 				<div className={styles.row}>
-					<span className={styles.label}>Source</span>
+					<span className={styles.label}>{t('source')}</span>
 					{m.source_type === 'mpc_ingested' && m.source_drive_folder_id ? (
 						<a
 							className={styles.value}
@@ -45,7 +47,7 @@ export function CustomCardSection({ card }: { card: CustomCard }) {
 
 			{m.set_code && (
 				<div className={styles.row}>
-					<span className={styles.label}>Set</span>
+					<span className={styles.label}>{t('detailSet')}</span>
 					<span className={styles.value}>
 						{m.set_code.toUpperCase()}
 						{m.collector_number ? ` #${m.collector_number}` : ''}
@@ -55,14 +57,14 @@ export function CustomCardSection({ card }: { card: CustomCard }) {
 
 			{m.lang && (
 				<div className={styles.row}>
-					<span className={styles.label}>Langue</span>
+					<span className={styles.label}>{t('detailLanguage')}</span>
 					<span className={styles.value}>{m.lang}</span>
 				</div>
 			)}
 
 			{m.tags.length > 0 && (
 				<div className={styles.chipGroup}>
-					<span className={styles.label}>Tags</span>
+					<span className={styles.label}>{t('tags')}</span>
 					<div className={styles.chips}>
 						{m.tags.map((tag) => (
 							<span key={tag} className={styles.chip}>
@@ -74,7 +76,7 @@ export function CustomCardSection({ card }: { card: CustomCard }) {
 			)}
 
 			<details className={styles.rawName}>
-				<summary className={styles.rawNameSummary}>Fichier</summary>
+				<summary className={styles.rawNameSummary}>{t('file')}</summary>
 				{m.source_type === 'mpc_ingested' && m.source_drive_folder_id ? (
 					<a
 						className={styles.rawNameValue}
