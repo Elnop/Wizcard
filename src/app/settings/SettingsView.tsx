@@ -2,6 +2,7 @@
 
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { Spinner } from '@/components/Spinner/Spinner';
+import { DisplaySection } from './sections/DisplaySection';
 import { LanguageSection } from './sections/LanguageSection';
 import styles from './SettingsView.module.css';
 
@@ -20,6 +21,7 @@ export default function SettingsView() {
 		<main className={styles.page}>
 			<h1 className={styles.title}>Paramètres</h1>
 			<LanguageSection />
+			<DisplaySection />
 		</main>
 	);
 }
