@@ -11,9 +11,9 @@
 	"i18n-ally.enabledParsers": ["json"],
 	"i18n-ally.usage.scanningIgnore": ["**/messages/**", "**/.next/**"],
 	"i18n-ally.keysInUse": [
-		"landing.features.*",
+		"landing.features.**",
 		"landing.showcase.legendaryStaples",
 		"landing.showcase.modernClassics",
-		"auth.error.*"
+		"auth.error.**"
 	]
 }
