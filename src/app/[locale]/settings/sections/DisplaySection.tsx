@@ -1,34 +1,36 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Select } from '@/components/Select/Select';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import type { PriceCurrency, ThemePreference } from '@/lib/profile/types';
 import { SettingsSection, settingsStyles as s } from '../components/SettingsSection';
 import { useSaveStatus } from '../useSaveStatus';
 
-const THEMES: { value: ThemePreference; label: string }[] = [
-	{ value: 'system', label: 'Système' },
-	{ value: 'light', label: 'Clair' },
-	{ value: 'dark', label: 'Sombre' },
-];
-const CURRENCIES: { value: PriceCurrency; label: string }[] = [
-	{ value: 'eur', label: '€ EUR (Cardmarket)' },
-	{ value: 'usd', label: '$ USD (TCGplayer)' },
-];
-
 export function DisplaySection() {
+	const t = useTranslations('settings.display');
 	const { profile, updateProfile } = useProfileContext();
 	const { status, markSaving } = useSaveStatus();
 	if (!profile) return null;
 
+	const themes: { value: ThemePreference; label: string }[] = [
+		{ value: 'system', label: t('themeSystem') },
+		{ value: 'light', label: t('themeLight') },
+		{ value: 'dark', label: t('themeDark') },
+	];
+	const currencies: { value: PriceCurrency; label: string }[] = [
+		{ value: 'eur', label: t('currencyEur') },
+		{ value: 'usd', label: t('currencyUsd') },
+	];
+
 	return (
-		<SettingsSection title="Affichage" status={status}>
+		<SettingsSection title={t('title')} status={status}>
 			<div className={s.field}>
-				<span className={s.label}>Thème</span>
+				<span className={s.label}>{t('theme')}</span>
 				<Select
 					value={profile.themePreference}
-					options={THEMES}
-					ariaLabel="Thème"
+					options={themes}
+					ariaLabel={t('theme')}
 					onChange={(value) => {
 						markSaving();
 						updateProfile({ themePreference: value });
@@ -46,15 +48,15 @@ export function DisplaySection() {
 						updateProfile({ showPrices: e.target.checked });
 					}}
 				/>
-				<span>Afficher les prix</span>
+				<span>{t('showPrices')}</span>
 			</label>
 
 			<div className={s.field}>
-				<span className={s.label}>Devise</span>
+				<span className={s.label}>{t('currency')}</span>
 				<Select
 					value={profile.priceCurrency}
-					options={CURRENCIES}
-					ariaLabel="Devise"
+					options={currencies}
+					ariaLabel={t('currency')}
 					disabled={!profile.showPrices}
 					onChange={(value) => {
 						markSaving();

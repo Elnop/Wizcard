@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { AccountSection } from './sections/AccountSection';
@@ -10,6 +11,7 @@ import { ProfileSection } from './sections/ProfileSection';
 import styles from './SettingsView.module.css';
 
 export default function SettingsView() {
+	const t = useTranslations('settings');
 	const { profile, isLoading } = useProfileContext();
 
 	if (isLoading || !profile) {
@@ -22,7 +24,7 @@ export default function SettingsView() {
 
 	return (
 		<main className={styles.page}>
-			<h1 className={styles.title}>Paramètres</h1>
+			<h1 className={styles.title}>{t('title')}</h1>
 			<ProfileSection />
 			<LanguageSection />
 			<DisplaySection />

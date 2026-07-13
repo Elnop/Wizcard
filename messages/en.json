@@ -91,6 +91,135 @@
 			"requestNewLink": "Request a new link"
 		}
 	},
+	"settings": {
+		"title": "Settings",
+		"status": {
+			"saving": "Saving…",
+			"saved": "Saved",
+			"error": "Failed to save"
+		},
+		"profile": {
+			"title": "Profile",
+			"nickname": "Nickname",
+			"nicknamePlaceholder": "Your display name",
+			"nicknameTaken": "This nickname is already taken.",
+			"nicknameCheckFailed": "Unable to check the nickname right now.",
+			"description": "Description",
+			"descriptionPlaceholder": "Tell other wizards about yourself...",
+			"avatar": "Avatar",
+			"avatarAlt": "Avatar",
+			"avatarUploading": "Uploading…",
+			"avatarChange": "Change avatar",
+			"avatarUploadFailed": "Avatar upload failed."
+		},
+		"language": {
+			"title": "Language",
+			"fieldLabel": "Interface language",
+			"hint": "The default card language stays English for now.",
+			"french": "Français",
+			"english": "English"
+		},
+		"display": {
+			"title": "Display",
+			"theme": "Theme",
+			"themeSystem": "System",
+			"themeLight": "Light",
+			"themeDark": "Dark",
+			"showPrices": "Show prices",
+			"currency": "Currency",
+			"currencyEur": "€ EUR (Cardmarket)",
+			"currencyUsd": "$ USD (TCGplayer)"
+		},
+		"privacy": {
+			"title": "Privacy",
+			"publicProfile": "Public profile",
+			"hint": "When your profile is private, your public page as well as your decks, collection and wishlist are no longer visible to other users."
+		},
+		"account": {
+			"title": "Account",
+			"email": "Email address",
+			"changeEmail": "Change email",
+			"emailChangeRequested": "A confirmation email has been sent to your current address.",
+			"emailChangeFailed": "Request failed.",
+			"dangerZone": "Danger zone",
+			"deleteAccount": "Delete my account",
+			"deleteFailed": "Deletion failed.",
+			"deleteConfirm": "This action is irreversible: your account and all your data (collection, decks) will be permanently deleted."
+		}
+	},
+	"legal": {
+		"lastUpdated": "Last updated: {date}",
+		"cgu": {
+			"title": "Terms of Use",
+			"objectHeading": "1. Purpose",
+			"object": "{siteName} is a free collection and deck management service for the Magic: The Gathering game. Using the service implies acceptance of these terms.",
+			"accountHeading": "2. Account",
+			"account": "Creating an account requires an email address (sign-in via one-time code). You are responsible for the content you publish (nickname, description, avatar, custom cards) and warrant that you hold the necessary rights to the files you import.",
+			"ipHeading": "3. Intellectual property",
+			"ip": "Magic: The Gathering as well as card names and images are the property of Wizards of the Coast, LLC. {siteName} is an independent, unofficial project, not affiliated with or endorsed by Wizards of the Coast.",
+			"userContentHeading": "4. User content",
+			"userContent": "The publisher reserves the right to remove any unlawful content or content that breaches these terms. You remain responsible for the content you upload.",
+			"liabilityHeading": "5. Liability",
+			"liability": "The service is provided \"as is\", without any warranty of continuous availability or freedom from errors. The publisher cannot be held liable for damages resulting from the use or unavailability of the service.",
+			"contactHeading": "6. Contact and governing law",
+			"contact": "For any question: <email></email> or <discord>Discord</discord>. These terms are governed by French law."
+		},
+		"privacy": {
+			"title": "Privacy Policy",
+			"intro": "This policy describes how {siteName} processes your personal data, in accordance with the General Data Protection Regulation (GDPR).",
+			"controllerHeading": "1. Data controller",
+			"controller": "The data controller is {editorName}. For any request regarding your data: <email></email>.",
+			"dataHeading": "2. Data collected",
+			"dataEmail": "Email address (required to create the account and sign in);",
+			"dataProfile": "Optional profile information you provide (nickname, description, avatar);",
+			"dataTechnical": "Technical data (server connection logs, IP address).",
+			"purposesHeading": "3. Purposes",
+			"purposes": "Creating and managing your account, authentication, displaying your public profile, running the service (collections and decks) and site security.",
+			"legalBasisHeading": "4. Legal bases",
+			"legalBasis": "Performance of the service you request (account and profile data management) and our legitimate interest in ensuring site security and keeping technical logs.",
+			"recipientsHeading": "5. Recipients and hosting",
+			"recipients": "Your data is hosted by the publisher ({hostLabel}). Sending sign-in emails relies on {mailProvider}, acting as a processor. Your data is neither sold nor shared for commercial purposes. <strong>No transfer outside the European Union is carried out.</strong>",
+			"retentionHeading": "6. Retention period",
+			"retention": "Your account data is kept for as long as the account exists; you may delete it at any time. Technical logs are kept for {months} months.",
+			"rightsHeading": "7. Your rights",
+			"rights": "You have the rights of access, rectification, erasure, portability, restriction and objection regarding your data. To exercise them, contact <email></email>.",
+			"cookiesHeading": "8. Cookies",
+			"cookies": "{siteName} only uses cookies strictly necessary for the service to function (authentication and maintaining your session). These cookies are exempt from consent; no audience-measurement or advertising-tracking cookie is set. No consent banner is therefore required.",
+			"complaintHeading": "9. Complaint",
+			"complaint": "For any question or complaint regarding your data, we invite you to contact us first, by email at <email></email> or on our <discord>Discord server</discord>: we strive to resolve each request quickly and directly. Should a difficulty persist, you retain the right to lodge a complaint with the French data protection authority (CNIL), <cnil>www.cnil.fr</cnil>."
+		},
+		"legalNotice": {
+			"title": "Legal Notice",
+			"editorHeading": "Site publisher",
+			"editorBusiness": "{legalName} — SIRET {siret}",
+			"editorBusinessVat": "Intra-community VAT: {vat}",
+			"editorBusinessDirector": "Publication director: {director}",
+			"editorBusinessContact": "Contact: <email></email>",
+			"editorPersonal": "The site {siteName} is published by {editorName}. Publication director: {director}. Contact: <email></email> — Discord: <discord>community server</discord>.",
+			"hostingHeading": "Hosting",
+			"hosting": "{hostLabel}. The transactional email service (sending sign-in emails) is provided by {mailProvider}.",
+			"ipHeading": "Intellectual property",
+			"ip": "Magic: The Gathering as well as card names and images are the property of Wizards of the Coast, LLC. {siteName} is an independent, unofficial project that is neither affiliated with, nor endorsed or sponsored by Wizards of the Coast. The other content of the site (code, interface) remains the property of the publisher.",
+			"contactHeading": "Contact",
+			"contact": "For any question about the site, you can write to <email></email> or join us on <discord>Discord</discord>."
+		}
+	},
+	"account": {
+		"changeEmail": {
+			"title": "Change email address",
+			"newEmail": "New email address",
+			"newEmailPlaceholder": "new@address.com",
+			"continue": "Continue",
+			"codeLabel": "Code received at the new address",
+			"verifyCode": "Verify code",
+			"enterEmail": "Enter an email address.",
+			"requestFailed": "Request failed.",
+			"codeSent": "A confirmation code has been sent to {email}.",
+			"enterCode": "Enter the 6-digit code.",
+			"invalidCode": "Invalid code: {message}",
+			"updated": "Email address updated."
+		}
+	},
 	"seo": {
 		"home": {
 			"title": "Wizcard — Magic: The Gathering Card Search",
@@ -98,6 +227,24 @@
 		},
 		"login": {
 			"title": "Sign in"
+		},
+		"settings": {
+			"title": "Settings"
+		},
+		"changeEmail": {
+			"title": "Change email address"
+		},
+		"cgu": {
+			"title": "Terms of Use",
+			"description": "Terms of use of the Wizcard service."
+		},
+		"privacy": {
+			"title": "Privacy Policy",
+			"description": "Wizcard's privacy policy and personal data protection."
+		},
+		"legalNotice": {
+			"title": "Legal Notice",
+			"description": "Legal notice of the Wizcard site."
 		}
 	},
 	"apiErrors": {}

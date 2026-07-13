@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { verifyEmailChangeOtp } from '@/lib/supabase/auth/auth-client';
 import { Button } from '@/components/Button/Button';
@@ -9,6 +10,7 @@ import { settingsStyles as s } from '@/app/[locale]/settings/components/Settings
 type Step = 'enter-email' | 'enter-code' | 'done';
 
 export default function ChangeEmailView({ token }: { token: string }) {
+	const t = useTranslations('account.changeEmail');
 	const router = useRouter();
 	const [step, setStep] = useState<Step>('enter-email');
 	const [newEmail, setNewEmail] = useState('');
@@ -21,7 +23,7 @@ export default function ChangeEmailView({ token }: { token: string }) {
 		setErr(null);
 		const email = newEmail.trim().toLowerCase();
 		if (!email) {
-			setErr('Entrez une adresse e-mail.');
+			setErr(t('enterEmail'));
 			return;
 		}
 		setBusy(true);
@@ -33,11 +35,11 @@ export default function ChangeEmailView({ token }: { token: string }) {
 			});
 			if (!res.ok) {
 				const body = (await res.json().catch(() => ({}))) as { error?: string };
-				setErr(body.error ?? 'Échec de la demande.');
+				setErr(body.error ?? t('requestFailed'));
 				return;
 			}
 			setStep('enter-code');
-			setMsg(`Un code de confirmation a été envoyé à ${email}.`);
+			setMsg(t('codeSent', { email }));
 		} finally {
 			setBusy(false);
 		}
@@ -47,18 +49,18 @@ export default function ChangeEmailView({ token }: { token: string }) {
 		setErr(null);
 		const c = code.trim();
 		if (c.length < 6) {
-			setErr('Entrez le code à 6 chiffres.');
+			setErr(t('enterCode'));
 			return;
 		}
 		setBusy(true);
 		try {
 			const { error } = await verifyEmailChangeOtp(newEmail.trim().toLowerCase(), c);
 			if (error) {
-				setErr(`Code invalide : ${error.message}`);
+				setErr(t('invalidCode', { message: error.message }));
 				return;
 			}
 			setStep('done');
-			setMsg('Adresse e-mail mise à jour.');
+			setMsg(t('updated'));
 			setTimeout(() => router.push('/settings'), 1200);
 		} finally {
 			setBusy(false);
@@ -68,29 +70,29 @@ export default function ChangeEmailView({ token }: { token: string }) {
 	return (
 		<main style={{ maxWidth: 480, margin: '0 auto', padding: '2rem 1rem' }}>
 			<h1 className={s.label} style={{ fontSize: 'var(--text-2xl)', marginBottom: '1.5rem' }}>
-				Changer d’adresse e-mail
+				{t('title')}
 			</h1>
 
 			{step === 'enter-email' && (
 				<div className={s.field}>
-					<span className={s.label}>Nouvelle adresse e-mail</span>
+					<span className={s.label}>{t('newEmail')}</span>
 					<input
 						className={s.input}
 						type="email"
 						value={newEmail}
 						onChange={(e) => setNewEmail(e.target.value)}
-						placeholder="nouvelle@adresse.fr"
+						placeholder={t('newEmailPlaceholder')}
 						disabled={busy}
 					/>
 					<Button variant="secondary" size="sm" onClick={submitNewEmail} disabled={busy}>
-						Continuer
+						{t('continue')}
 					</Button>
 				</div>
 			)}
 
 			{step === 'enter-code' && (
 				<div className={s.field}>
-					<span className={s.label}>Code reçu sur la nouvelle adresse</span>
+					<span className={s.label}>{t('codeLabel')}</span>
 					<input
 						className={s.input}
 						type="text"
@@ -104,7 +106,7 @@ export default function ChangeEmailView({ token }: { token: string }) {
 						disabled={busy}
 					/>
 					<Button variant="secondary" size="sm" onClick={submitCode} disabled={busy}>
-						Vérifier le code
+						{t('verifyCode')}
 					</Button>
 				</div>
 			)}

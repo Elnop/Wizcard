@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { isNicknameTaken, uploadAvatar } from '@/lib/profile/db/profiles';
@@ -9,6 +10,7 @@ import { SettingsSection, settingsStyles as s } from '../components/SettingsSect
 import { useSaveStatus } from '../useSaveStatus';
 
 export function ProfileSection() {
+	const t = useTranslations('settings.profile');
 	const { user } = useAuth();
 	const { profile, updateProfile } = useProfileContext();
 	const { status, markSaving } = useSaveStatus();
@@ -29,11 +31,11 @@ export function ProfileSection() {
 		if (trimmed) {
 			try {
 				if (await isNicknameTaken(trimmed, user.id)) {
-					setNicknameError('Ce pseudo est déjà pris.');
+					setNicknameError(t('nicknameTaken'));
 					return;
 				}
 			} catch {
-				setNicknameError('Impossible de vérifier le pseudo pour le moment.');
+				setNicknameError(t('nicknameCheckFailed'));
 				return;
 			}
 		}
@@ -57,47 +59,47 @@ export function ProfileSection() {
 			markSaving();
 			updateProfile({ avatarUrl: url });
 		} catch {
-			setAvatarError("Échec du téléversement de l'avatar.");
+			setAvatarError(t('avatarUploadFailed'));
 		} finally {
 			setAvatarBusy(false);
 		}
 	};
 
 	return (
-		<SettingsSection title="Profil" status={status}>
+		<SettingsSection title={t('title')} status={status}>
 			<div className={s.field}>
-				<span className={s.label}>Pseudo</span>
+				<span className={s.label}>{t('nickname')}</span>
 				<input
 					className={s.input}
 					value={nickname}
 					onChange={(e) => setNickname(e.target.value)}
 					onBlur={commitNickname}
-					placeholder="Votre nom d'affichage"
+					placeholder={t('nicknamePlaceholder')}
 					maxLength={50}
 				/>
 				{nicknameError && <span className={s.errorText}>{nicknameError}</span>}
 			</div>
 
 			<div className={s.field}>
-				<span className={s.label}>Description</span>
+				<span className={s.label}>{t('description')}</span>
 				<textarea
 					className={s.textarea}
 					value={description}
 					onChange={(e) => setDescription(e.target.value)}
 					onBlur={commitDescription}
-					placeholder="Parlez de vous aux autres sorciers..."
+					placeholder={t('descriptionPlaceholder')}
 					rows={4}
 					maxLength={500}
 				/>
 			</div>
 
 			<div className={s.field}>
-				<span className={s.label}>Avatar</span>
+				<span className={s.label}>{t('avatar')}</span>
 				<div className={s.avatarRow}>
 					{profile.avatarUrl && (
 						<Image
 							src={profile.avatarUrl}
-							alt="Avatar"
+							alt={t('avatarAlt')}
 							width={64}
 							height={64}
 							className={s.avatar}
@@ -105,7 +107,7 @@ export function ProfileSection() {
 						/>
 					)}
 					<label className={s.fileTrigger}>
-						{avatarBusy ? 'Téléversement…' : "Changer l'avatar"}
+						{avatarBusy ? t('avatarUploading') : t('avatarChange')}
 						<input type="file" accept="image/*" onChange={onAvatarChange} disabled={avatarBusy} />
 					</label>
 				</div>

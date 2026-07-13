@@ -59,12 +59,16 @@ const eslintConfig = defineConfig([
 		// cible que le texte visible dans le JSX (ignore les props techniques).
 		// Phase 1 : nav (Navbar), footer, common (ConfirmModal).
 		// Phase 2 : landing, auth.
+		// Phase 3 : legal, settings, account.
 		files: [
 			'src/components/Navbar/**',
 			'src/components/Footer/**',
 			'src/components/ConfirmModal/**',
 			'src/app/[locale]/(landing)/**',
 			'src/app/[locale]/auth/**',
+			'src/app/[locale]/(legal)/**',
+			'src/app/[locale]/settings/**',
+			'src/app/[locale]/account/**',
 		],
 		rules: {
 			'i18next/no-literal-string': ['error', { mode: 'jsx-text-only' }],

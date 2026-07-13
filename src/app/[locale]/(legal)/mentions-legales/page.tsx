@@ -1,73 +1,82 @@
 import type { Metadata } from 'next';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+import type { Locale } from '@/i18n/routing';
 import { legalConfig } from '@/lib/legal/legal-config';
 
-export const metadata: Metadata = {
-	title: 'Mentions légales | Wizcard',
-	description: 'Mentions légales du site Wizcard.',
-	robots: { index: true, follow: true },
-};
+export async function generateMetadata({
+	params,
+}: {
+	params: Promise<{ locale: Locale }>;
+}): Promise<Metadata> {
+	const { locale } = await params;
+	const t = await getTranslations({ locale, namespace: 'seo.legalNotice' });
+	return {
+		title: t('title'),
+		description: t('description'),
+		robots: { index: true, follow: true },
+	};
+}
 
-export default function MentionsLegalesPage() {
-	const { editor, host, business, lastUpdated } = legalConfig;
+export default async function MentionsLegalesPage({
+	params,
+}: {
+	params: Promise<{ locale: Locale }>;
+}) {
+	const { locale } = await params;
+	setRequestLocale(locale);
+	const t = await getTranslations('legal');
+	const { editor, host, business, siteName, lastUpdated } = legalConfig;
+
+	const email = () => <a href={`mailto:${editor.contactEmail}`}>{editor.contactEmail}</a>;
+	const discord = (chunks: React.ReactNode) => (
+		<a href={editor.discordUrl} target="_blank" rel="noreferrer noopener">
+			{chunks}
+		</a>
+	);
+
 	return (
 		<>
-			<h1>Mentions légales</h1>
-			<p className="updated">Dernière mise à jour : {lastUpdated}</p>
+			<h1>{t('legalNotice.title')}</h1>
+			<p className="updated">{t('lastUpdated', { date: lastUpdated })}</p>
 
-			<h2>Éditeur du site</h2>
+			<h2>{t('legalNotice.editorHeading')}</h2>
 			{business ? (
 				<p>
-					{business.legalName} — SIRET {business.siret}
-					<br />
-					{business.address}
+					{t('legalNotice.editorBusiness', {
+						legalName: business.legalName,
+						siret: business.siret,
+					})}
 					{business.vat ? (
 						<>
 							<br />
-							TVA intracommunautaire : {business.vat}
+							{t('legalNotice.editorBusinessVat', { vat: business.vat })}
 						</>
 					) : null}
 					<br />
-					Directeur de la publication : {editor.publicationDirector}
+					{t('legalNotice.editorBusinessDirector', { director: editor.publicationDirector })}
 					<br />
-					Contact : <a href={`mailto:${editor.contactEmail}`}>{editor.contactEmail}</a>
+					{t.rich('legalNotice.editorBusinessContact', { email })}
 				</p>
 			) : (
 				<p>
-					Le site {legalConfig.siteName} est édité par {editor.name}.
-					<br />
-					Directeur de la publication : {editor.publicationDirector}.
-					<br />
-					Contact : <a href={`mailto:${editor.contactEmail}`}>{editor.contactEmail}</a> — Discord :{' '}
-					<a href={editor.discordUrl} target="_blank" rel="noreferrer noopener">
-						serveur communautaire
-					</a>
-					.
+					{t.rich('legalNotice.editorPersonal', {
+						siteName,
+						editorName: editor.name,
+						director: editor.publicationDirector,
+						email,
+						discord,
+					})}
 				</p>
 			)}
 
-			<h2>Hébergement</h2>
-			<p>
-				{host.label}. Le service de messagerie transactionnelle (envoi des e-mails de connexion) est
-				assuré par {host.mailProvider}.
-			</p>
+			<h2>{t('legalNotice.hostingHeading')}</h2>
+			<p>{t('legalNotice.hosting', { hostLabel: host.label, mailProvider: host.mailProvider })}</p>
 
-			<h2>Propriété intellectuelle</h2>
-			<p>
-				Magic: The Gathering ainsi que les noms et images de cartes sont la propriété de Wizards of
-				the Coast, LLC. {legalConfig.siteName} est un projet indépendant, non officiel, qui n’est ni
-				affilié à, ni approuvé ou sponsorisé par Wizards of the Coast. Les autres contenus du site
-				(code, interface) demeurent la propriété de l’éditeur.
-			</p>
+			<h2>{t('legalNotice.ipHeading')}</h2>
+			<p>{t('legalNotice.ip', { siteName })}</p>
 
-			<h2>Contact</h2>
-			<p>
-				Pour toute question relative au site, vous pouvez écrire à{' '}
-				<a href={`mailto:${editor.contactEmail}`}>{editor.contactEmail}</a> ou nous rejoindre sur{' '}
-				<a href={editor.discordUrl} target="_blank" rel="noreferrer noopener">
-					Discord
-				</a>
-				.
-			</p>
+			<h2>{t('legalNotice.contactHeading')}</h2>
+			<p>{t.rich('legalNotice.contact', { email, discord })}</p>
 		</>
 	);
 }

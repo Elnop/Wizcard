@@ -91,6 +91,135 @@
 			"requestNewLink": "Demander un nouveau lien"
 		}
 	},
+	"settings": {
+		"title": "Paramètres",
+		"status": {
+			"saving": "Enregistrement…",
+			"saved": "Enregistré",
+			"error": "Échec de l'enregistrement"
+		},
+		"profile": {
+			"title": "Profil",
+			"nickname": "Pseudo",
+			"nicknamePlaceholder": "Votre nom d'affichage",
+			"nicknameTaken": "Ce pseudo est déjà pris.",
+			"nicknameCheckFailed": "Impossible de vérifier le pseudo pour le moment.",
+			"description": "Description",
+			"descriptionPlaceholder": "Parlez de vous aux autres sorciers...",
+			"avatar": "Avatar",
+			"avatarAlt": "Avatar",
+			"avatarUploading": "Téléversement…",
+			"avatarChange": "Changer l'avatar",
+			"avatarUploadFailed": "Échec du téléversement de l'avatar."
+		},
+		"language": {
+			"title": "Langue",
+			"fieldLabel": "Langue de l'interface",
+			"hint": "La langue par défaut des cartes reste l'anglais pour le moment.",
+			"french": "Français",
+			"english": "English"
+		},
+		"display": {
+			"title": "Affichage",
+			"theme": "Thème",
+			"themeSystem": "Système",
+			"themeLight": "Clair",
+			"themeDark": "Sombre",
+			"showPrices": "Afficher les prix",
+			"currency": "Devise",
+			"currencyEur": "€ EUR (Cardmarket)",
+			"currencyUsd": "$ USD (TCGplayer)"
+		},
+		"privacy": {
+			"title": "Confidentialité",
+			"publicProfile": "Profil public",
+			"hint": "Lorsque votre profil est privé, votre page publique ainsi que vos decks, collection et liste de souhaits ne sont plus visibles par les autres utilisateurs."
+		},
+		"account": {
+			"title": "Compte",
+			"email": "Adresse e-mail",
+			"changeEmail": "Changer l'e-mail",
+			"emailChangeRequested": "Un e-mail de confirmation a été envoyé à votre adresse actuelle.",
+			"emailChangeFailed": "Échec de la demande.",
+			"dangerZone": "Zone sensible",
+			"deleteAccount": "Supprimer mon compte",
+			"deleteFailed": "Échec de la suppression.",
+			"deleteConfirm": "Cette action est irréversible : votre compte et toutes vos données (collection, decks) seront définitivement supprimés."
+		}
+	},
+	"legal": {
+		"lastUpdated": "Dernière mise à jour : {date}",
+		"cgu": {
+			"title": "Conditions générales d'utilisation",
+			"objectHeading": "1. Objet",
+			"object": "{siteName} est un service gratuit de gestion de collection et de decks pour le jeu Magic: The Gathering. L'utilisation du service implique l'acceptation des présentes conditions.",
+			"accountHeading": "2. Compte",
+			"account": "La création d'un compte requiert une adresse e-mail (connexion par code à usage unique). Vous êtes responsable des contenus que vous publiez (pseudonyme, description, avatar, cartes personnalisées) et garantissez disposer des droits nécessaires sur les fichiers que vous importez.",
+			"ipHeading": "3. Propriété intellectuelle",
+			"ip": "Magic: The Gathering ainsi que les noms et images de cartes sont la propriété de Wizards of the Coast, LLC. {siteName} est un projet indépendant, non officiel, non affilié à ni approuvé par Wizards of the Coast.",
+			"userContentHeading": "4. Contenu utilisateur",
+			"userContent": "L'éditeur se réserve le droit de retirer tout contenu illicite ou contraire aux présentes conditions. Vous conservez la responsabilité des contenus que vous mettez en ligne.",
+			"liabilityHeading": "5. Responsabilité",
+			"liability": "Le service est fourni « en l'état », sans garantie de disponibilité continue ni d'absence d'erreurs. L'éditeur ne saurait être tenu responsable des dommages résultant de l'utilisation ou de l'indisponibilité du service.",
+			"contactHeading": "6. Contact et droit applicable",
+			"contact": "Pour toute question : <email></email> ou <discord>Discord</discord>. Les présentes conditions sont soumises au droit français."
+		},
+		"privacy": {
+			"title": "Politique de confidentialité",
+			"intro": "La présente politique décrit comment {siteName} traite vos données personnelles, conformément au Règlement général sur la protection des données (RGPD).",
+			"controllerHeading": "1. Responsable de traitement",
+			"controller": "Le responsable de traitement est {editorName}. Pour toute demande relative à vos données : <email></email>.",
+			"dataHeading": "2. Données collectées",
+			"dataEmail": "Adresse e-mail (nécessaire à la création du compte et à la connexion) ;",
+			"dataProfile": "Informations de profil optionnelles que vous fournissez (pseudonyme, description, avatar) ;",
+			"dataTechnical": "Données techniques (journaux de connexion du serveur, adresse IP).",
+			"purposesHeading": "3. Finalités",
+			"purposes": "Création et gestion de votre compte, authentification, affichage de votre profil public, fonctionnement du service (collections et decks) et sécurité du site.",
+			"legalBasisHeading": "4. Bases légales",
+			"legalBasis": "L'exécution du service que vous demandez (gestion du compte et des données de profil) et notre intérêt légitime à assurer la sécurité du site et à conserver des journaux techniques.",
+			"recipientsHeading": "5. Destinataires et hébergement",
+			"recipients": "Vos données sont hébergées par l'éditeur ({hostLabel}). L'envoi des e-mails de connexion fait appel à {mailProvider}, agissant comme sous-traitant. Vos données ne sont ni vendues ni partagées à des fins commerciales. <strong>Aucun transfert hors de l'Union européenne n'est réalisé.</strong>",
+			"retentionHeading": "6. Durée de conservation",
+			"retention": "Les données de votre compte sont conservées tant que le compte existe ; vous pouvez le supprimer à tout moment. Les journaux techniques sont conservés {months} mois.",
+			"rightsHeading": "7. Vos droits",
+			"rights": "Vous disposez des droits d'accès, de rectification, d'effacement, de portabilité, de limitation et d'opposition sur vos données. Pour les exercer, contactez <email></email>.",
+			"cookiesHeading": "8. Cookies",
+			"cookies": "{siteName} n'utilise que des cookies strictement nécessaires au fonctionnement du service (authentification et maintien de votre session). Ces cookies sont exemptés de consentement ; aucun cookie de mesure d'audience ni de suivi publicitaire n'est déposé. Aucune bannière de consentement n'est donc requise.",
+			"complaintHeading": "9. Réclamation",
+			"complaint": "Pour toute question ou réclamation concernant vos données, nous vous invitons à nous contacter en priorité, par e-mail à <email></email> ou sur notre <discord>serveur Discord</discord> : nous nous efforçons de résoudre chaque demande rapidement et directement. Si une difficulté persistait, vous conservez le droit d'introduire une réclamation auprès de la Commission nationale de l'informatique et des libertés (CNIL), <cnil>www.cnil.fr</cnil>."
+		},
+		"legalNotice": {
+			"title": "Mentions légales",
+			"editorHeading": "Éditeur du site",
+			"editorBusiness": "{legalName} — SIRET {siret}",
+			"editorBusinessVat": "TVA intracommunautaire : {vat}",
+			"editorBusinessDirector": "Directeur de la publication : {director}",
+			"editorBusinessContact": "Contact : <email></email>",
+			"editorPersonal": "Le site {siteName} est édité par {editorName}. Directeur de la publication : {director}. Contact : <email></email> — Discord : <discord>serveur communautaire</discord>.",
+			"hostingHeading": "Hébergement",
+			"hosting": "{hostLabel}. Le service de messagerie transactionnelle (envoi des e-mails de connexion) est assuré par {mailProvider}.",
+			"ipHeading": "Propriété intellectuelle",
+			"ip": "Magic: The Gathering ainsi que les noms et images de cartes sont la propriété de Wizards of the Coast, LLC. {siteName} est un projet indépendant, non officiel, qui n'est ni affilié à, ni approuvé ou sponsorisé par Wizards of the Coast. Les autres contenus du site (code, interface) demeurent la propriété de l'éditeur.",
+			"contactHeading": "Contact",
+			"contact": "Pour toute question relative au site, vous pouvez écrire à <email></email> ou nous rejoindre sur <discord>Discord</discord>."
+		}
+	},
+	"account": {
+		"changeEmail": {
+			"title": "Changer d'adresse e-mail",
+			"newEmail": "Nouvelle adresse e-mail",
+			"newEmailPlaceholder": "nouvelle@adresse.fr",
+			"continue": "Continuer",
+			"codeLabel": "Code reçu sur la nouvelle adresse",
+			"verifyCode": "Vérifier le code",
+			"enterEmail": "Entrez une adresse e-mail.",
+			"requestFailed": "Échec de la demande.",
+			"codeSent": "Un code de confirmation a été envoyé à {email}.",
+			"enterCode": "Entrez le code à 6 chiffres.",
+			"invalidCode": "Code invalide : {message}",
+			"updated": "Adresse e-mail mise à jour."
+		}
+	},
 	"seo": {
 		"home": {
 			"title": "Wizcard — Recherche de cartes Magic: The Gathering",
@@ -98,6 +227,24 @@
 		},
 		"login": {
 			"title": "Se connecter"
+		},
+		"settings": {
+			"title": "Paramètres"
+		},
+		"changeEmail": {
+			"title": "Changer d'adresse e-mail"
+		},
+		"cgu": {
+			"title": "Conditions générales d'utilisation",
+			"description": "Conditions générales d'utilisation du service Wizcard."
+		},
+		"privacy": {
+			"title": "Politique de confidentialité",
+			"description": "Politique de confidentialité et protection des données personnelles de Wizcard."
+		},
+		"legalNotice": {
+			"title": "Mentions légales",
+			"description": "Mentions légales du site Wizcard."
 		}
 	},
 	"apiErrors": {}
