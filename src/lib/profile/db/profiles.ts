@@ -6,6 +6,11 @@ type ProfileRow = {
 	nickname: string | null;
 	description: string | null;
 	avatar_url: string | null;
+	language: string;
+	price_currency: string;
+	show_prices: boolean;
+	theme_preference: string;
+	is_public: boolean;
 	created_at: string;
 	updated_at: string;
 };
@@ -16,6 +21,11 @@ function rowToProfile(row: ProfileRow): Profile {
 		nickname: row.nickname,
 		description: row.description,
 		avatarUrl: row.avatar_url,
+		language: (row.language as Profile['language']) ?? 'fr',
+		priceCurrency: (row.price_currency as Profile['priceCurrency']) ?? 'eur',
+		showPrices: row.show_prices ?? true,
+		themePreference: (row.theme_preference as Profile['themePreference']) ?? 'system',
+		isPublic: row.is_public ?? true,
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,
 	};
@@ -25,7 +35,9 @@ export async function fetchProfile(userId: string): Promise<Profile | null> {
 	const supabase = createClient();
 	const { data, error } = await supabase
 		.from('profiles')
-		.select('id, nickname, description, avatar_url, created_at, updated_at')
+		.select(
+			'id, nickname, description, avatar_url, language, price_currency, show_prices, theme_preference, is_public, created_at, updated_at'
+		)
 		.eq('id', userId)
 		.maybeSingle();
 	if (error) throw error;
@@ -41,7 +53,9 @@ export async function fetchProfileByNickname(nickname: string): Promise<Profile 
 	const escaped = nickname.replace(/([%_\\])/g, '\\$1');
 	const { data, error } = await supabase
 		.from('profiles')
-		.select('id, nickname, description, avatar_url, created_at, updated_at')
+		.select(
+			'id, nickname, description, avatar_url, language, price_currency, show_prices, theme_preference, is_public, created_at, updated_at'
+		)
 		.ilike('nickname', escaped)
 		.maybeSingle();
 	if (error) throw error;
@@ -76,6 +90,11 @@ export async function upsertProfile(userId: string, updates: ProfileUpdate): Pro
 	if (updates.nickname !== undefined) cols.nickname = updates.nickname;
 	if (updates.description !== undefined) cols.description = updates.description;
 	if (updates.avatarUrl !== undefined) cols.avatar_url = updates.avatarUrl;
+	if (updates.language !== undefined) cols.language = updates.language;
+	if (updates.priceCurrency !== undefined) cols.price_currency = updates.priceCurrency;
+	if (updates.showPrices !== undefined) cols.show_prices = updates.showPrices;
+	if (updates.themePreference !== undefined) cols.theme_preference = updates.themePreference;
+	if (updates.isPublic !== undefined) cols.is_public = updates.isPublic;
 	const { error } = await supabase.from('profiles').upsert(cols);
 	if (error) throw error;
 }

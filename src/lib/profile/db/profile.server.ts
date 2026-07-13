@@ -10,7 +10,9 @@ export async function fetchProfileByNickname(nickname: string): Promise<Profile 
 	const supabase = await createClient();
 	const { data, error } = await supabase
 		.from('profiles')
-		.select('id, nickname, description, avatar_url, created_at, updated_at')
+		.select(
+			'id, nickname, description, avatar_url, language, price_currency, show_prices, theme_preference, is_public, created_at, updated_at'
+		)
 		.eq('nickname', nickname)
 		.maybeSingle();
 	if (error || !data) return null;
@@ -19,6 +21,11 @@ export async function fetchProfileByNickname(nickname: string): Promise<Profile 
 		nickname: (data.nickname ?? null) as string | null,
 		description: (data.description ?? null) as string | null,
 		avatarUrl: (data.avatar_url ?? null) as string | null,
+		language: ((data.language as string) ?? 'fr') as Profile['language'],
+		priceCurrency: ((data.price_currency as string) ?? 'eur') as Profile['priceCurrency'],
+		showPrices: (data.show_prices as boolean) ?? true,
+		themePreference: ((data.theme_preference as string) ?? 'system') as Profile['themePreference'],
+		isPublic: (data.is_public as boolean) ?? true,
 		createdAt: data.created_at as string,
 		updatedAt: data.updated_at as string,
 	};
