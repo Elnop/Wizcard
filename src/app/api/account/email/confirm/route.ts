@@ -58,8 +58,12 @@ export async function POST(request: Request) {
 	// Single-use: burn the token before triggering the change.
 	await admin.from('email_change_requests').update({ used_at: nowIso }).eq('id', req.id);
 
-	// Triggers Supabase to email a confirmation code to the NEW address.
-	const { error } = await admin.auth.admin.updateUserById(user.id, { email: newEmail });
+	// Trigger the email change on the SESSION client (not the admin API):
+	// `updateUser` runs GoTrue's email-change flow and mails a confirmation
+	// code to the NEW address, which the page verifies via verifyEmailChangeOtp.
+	// The admin API (updateUserById) is an administrative write that does NOT
+	// send any confirmation email, so it must not be used here.
+	const { error } = await supabase.auth.updateUser({ email: newEmail });
 	if (error) {
 		return NextResponse.json({ error: error.message }, { status: 500 });
 	}

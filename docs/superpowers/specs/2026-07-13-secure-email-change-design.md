@@ -111,8 +111,13 @@ Deux routes API, service-role, vérifiant d'abord la session (401 si anon).
   `user_id` courant**. Sinon `400`.
 - Valide `newEmail` (format ; ≠ adresse actuelle).
 - Marque `used_at = now()` (usage unique).
-- Appelle `admin.updateUserById(user.id, { email: newEmail })` → Supabase envoie
-  le **code de confirmation à la nouvelle adresse**.
+- Appelle `supabase.auth.updateUser({ email: newEmail })` **sur le client de
+  session SSR** (pas l'API admin) → GoTrue exécute le flux de changement d'e-mail
+  et envoie le **code de confirmation à la nouvelle adresse**. NB : l'API admin
+  `admin.updateUserById({ email })` est une écriture administrative qui
+  n'envoie AUCUN e-mail de confirmation — elle ne convient pas ici. Le client
+  admin (service-role) reste néanmoins nécessaire pour lire/écrire
+  `email_change_requests` (RLS activée, sans policy).
 - Répond `{ ok: true }`.
 
 ### Étape 3 (client)
@@ -161,9 +166,9 @@ Les blocs mot de passe et suppression de compte restent inchangés.
   manipulée uniquement par les routes service-role.
 - La clé service-role reste côté serveur (routes uniquement), jamais
   `NEXT_PUBLIC_`.
-- Le changement effectif passe par `admin.updateUserById` qui confirme la
-  nouvelle adresse par code (l'utilisateur doit aussi prouver l'accès à la
-  nouvelle adresse).
+- Le changement effectif passe par `supabase.auth.updateUser({ email })` sur le
+  client de session, qui confirme la nouvelle adresse par code (l'utilisateur
+  doit aussi prouver l'accès à la nouvelle adresse).
 
 ## Vérification
 
