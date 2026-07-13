@@ -2,6 +2,7 @@
 
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { Spinner } from '@/components/Spinner/Spinner';
+import { LanguageSection } from './sections/LanguageSection';
 import styles from './SettingsView.module.css';
 
 export default function SettingsView() {
@@ -18,7 +19,7 @@ export default function SettingsView() {
 	return (
 		<main className={styles.page}>
 			<h1 className={styles.title}>Paramètres</h1>
-			{/* Sections added in later tasks */}
+			<LanguageSection />
 		</main>
 	);
 }
