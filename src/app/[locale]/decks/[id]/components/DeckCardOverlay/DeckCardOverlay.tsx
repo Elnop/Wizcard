@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import type { DeckZone, DeckCardGroup } from '@/types/decks';
@@ -38,7 +39,17 @@ function buildContextMenuItems(
 	isCurrentCover: boolean,
 	onSetCover: ((artCropUrl: string) => void) | undefined,
 	onResetCover: (() => void) | undefined,
-	closeMenu: () => void
+	closeMenu: () => void,
+	labels: {
+		removeCover: string;
+		setAsCover: string;
+		addCopy: string;
+		removeCopy: string;
+		addToCollection: string;
+		addToWishlist: string;
+		removeFromWishlist: string;
+		moveTo: (zone: string) => string;
+	}
 ): ContextMenuAction[] {
 	const coverItems: ContextMenuAction[] = [];
 	if (onSetCover && coverArtUrl) {
@@ -46,7 +57,7 @@ function buildContextMenuItems(
 		if (isCurrentCover && onResetCover) {
 			coverItems.push({
 				type: 'action',
-				label: 'Remove cover',
+				label: labels.removeCover,
 				icon: '★',
 				onClick: () => {
 					onResetCover();
@@ -56,7 +67,7 @@ function buildContextMenuItems(
 		} else {
 			coverItems.push({
 				type: 'action',
-				label: 'Set as cover',
+				label: labels.setAsCover,
 				icon: '★',
 				onClick: () => {
 					onSetCover(coverArtUrl);
@@ -69,7 +80,7 @@ function buildContextMenuItems(
 	return [
 		{
 			type: 'action',
-			label: 'Add copy',
+			label: labels.addCopy,
 			icon: '+',
 			onClick: () => {
 				onDuplicate(zoneCopies[0] ?? (group.representative as Card));
@@ -80,7 +91,7 @@ function buildContextMenuItems(
 			? [
 					{
 						type: 'action' as const,
-						label: 'Remove copy',
+						label: labels.removeCopy,
 						icon: '−',
 						danger: true,
 						onClick: () => {
@@ -95,7 +106,7 @@ function buildContextMenuItems(
 			? [
 					{
 						type: 'action' as const,
-						label: 'Add to Collection',
+						label: labels.addToCollection,
 						icon: '＋',
 						onClick: () => {
 							onAddToCollection(buildRequest());
@@ -108,7 +119,7 @@ function buildContextMenuItems(
 			? [
 					{
 						type: 'action' as const,
-						label: isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist',
+						label: isWishlisted ? labels.removeFromWishlist : labels.addToWishlist,
 						icon: '🛒',
 						onClick: () => {
 							onAddToWishlist(wishlistTargetRowId);
@@ -120,7 +131,7 @@ function buildContextMenuItems(
 		...(otherZones.length > 0 ? [{ type: 'divider' as const }] : []),
 		...otherZones.map((zone) => ({
 			type: 'action' as const,
-			label: `Move to ${ZONE_LABELS[zone]}`,
+			label: labels.moveTo(ZONE_LABELS[zone]),
 			icon: '→',
 			onClick: () => {
 				if (lastCopy) onChangeZone(lastCopy.entry.rowId, zone);
@@ -172,6 +183,7 @@ export function DeckCardOverlay({
 	contextMenuPos,
 	onContextMenuClose,
 }: Props) {
+	const t = useTranslations('decks');
 	const otherZones = currentZone === 'tokens' ? [] : zones.filter((z) => z !== currentZone);
 	const zoneCopies = group.byZone.get(currentZone) ?? [];
 	const lastCopy = zoneCopies[zoneCopies.length - 1];
@@ -223,7 +235,17 @@ export function DeckCardOverlay({
 		isCurrentCover,
 		onSetCover,
 		onResetCover,
-		closeMenu
+		closeMenu,
+		{
+			removeCover: t('removeCover'),
+			setAsCover: t('setAsCover'),
+			addCopy: t('addCopy'),
+			removeCopy: t('removeCopy'),
+			addToCollection: t('addToCollection'),
+			addToWishlist: t('addToWishlist'),
+			removeFromWishlist: t('removeFromWishlist'),
+			moveTo: (zone: string) => t('moveTo', { zone }),
+		}
 	);
 
 	// The grey badge ("none") opens the add-to-collection confirmation modal via
@@ -245,7 +267,7 @@ export function DeckCardOverlay({
 				<span className={styles.ownershipTooltip}>
 					{tooltipCopies.length > 0 && (
 						<>
-							<span className={styles.ownershipTooltipHeader}>Ma collection</span>
+							<span className={styles.ownershipTooltipHeader}>{t('inMyCollection')}</span>
 							{tooltipCopies.map((copy) => (
 								<span
 									key={copy.key}
@@ -284,7 +306,7 @@ export function DeckCardOverlay({
 						</>
 					)}
 					{tooltipCopies.length === 0 && wishlistTooltipCopies.length === 0 && (
-						<span className={styles.ownershipTooltipItem}>Pas dans ma collection</span>
+						<span className={styles.ownershipTooltipItem}>{t('notInMyCollection')}</span>
 					)}
 				</span>
 			</OwnershipBadge>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import styles from './RemoveDeckCardModal.module.css';
@@ -17,18 +18,21 @@ type Props = {
 };
 
 export function RemoveDeckCardModal({ cardName, membership, onConfirm, onClose }: Props) {
+	const t = useTranslations('decks');
 	// Default: remove from wishlist too (yes), keep in collection (no).
 	const [alsoRemove, setAlsoRemove] = useState(membership === 'wishlist');
 
 	const label =
-		membership === 'wishlist' ? 'Also remove from wishlist' : 'Also remove from collection';
+		membership === 'wishlist' ? t('alsoRemoveFromWishlist') : t('alsoRemoveFromCollection');
+	const strong = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
-			<h2 className={styles.title}>Remove from deck</h2>
+			<h2 className={styles.title}>{t('removeFromDeck')}</h2>
 			<p className={styles.summary}>
-				<strong>{cardName}</strong> is also in{' '}
-				{membership === 'wishlist' ? 'your wishlist' : 'your collection'}.
+				{membership === 'wishlist'
+					? t.rich('alsoInWishlist', { name: cardName, strong })
+					: t.rich('alsoInCollection', { name: cardName, strong })}
 			</p>
 
 			<div className={styles.options}>
@@ -44,10 +48,10 @@ export function RemoveDeckCardModal({ cardName, membership, onConfirm, onClose }
 
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Cancel
+					{t('cancel')}
 				</Button>
 				<Button variant="primary" size="sm" onClick={() => onConfirm({ alsoRemove })}>
-					Remove
+					{t('remove')}
 				</Button>
 			</div>
 		</Modal>

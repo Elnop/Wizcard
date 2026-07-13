@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import type { DeckZone } from '@/types/decks';
@@ -25,6 +26,7 @@ type Props = {
 };
 
 export function AddDeckToCollectionModal({ zoneStats, availableZones, onConfirm, onClose }: Props) {
+	const t = useTranslations('decks');
 	const [selectedZones, setSelectedZones] = useState<Set<DeckZone>>(
 		() => new Set(availableZones.filter((z) => DEFAULT_SELECTED.has(z)))
 	);
@@ -83,7 +85,7 @@ export function AddDeckToCollectionModal({ zoneStats, availableZones, onConfirm,
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
-			<h2 className={styles.title}>Add deck to collection</h2>
+			<h2 className={styles.title}>{t('addDeckToCollection2')}</h2>
 			<p className={styles.summary}>
 				<strong>
 					{addCount} card{addCount !== 1 ? 's' : ''}
@@ -92,7 +94,7 @@ export function AddDeckToCollectionModal({ zoneStats, availableZones, onConfirm,
 			</p>
 
 			<div className={styles.section}>
-				<p className={styles.sectionTitle}>Zones</p>
+				<p className={styles.sectionTitle}>{t('zones')}</p>
 				<div className={styles.options}>
 					{availableZones.map((zone) => {
 						const stat = zoneStats[zone];
@@ -114,7 +116,7 @@ export function AddDeckToCollectionModal({ zoneStats, availableZones, onConfirm,
 			</div>
 
 			<div className={styles.section}>
-				<p className={styles.sectionTitle}>Options</p>
+				<p className={styles.sectionTitle}>{t('options')}</p>
 				<div className={styles.options}>
 					{hasAnyOwned && (
 						<label className={styles.option}>
@@ -123,8 +125,7 @@ export function AddDeckToCollectionModal({ zoneStats, availableZones, onConfirm,
 								checked={onlyMissing}
 								onChange={(e) => setOnlyMissing(e.target.checked)}
 							/>
-							Only the unowned ones ({unownedInSelectedZones} card
-							{unownedInSelectedZones !== 1 ? 's' : ''})
+							{t('onlyUnowned', { count: unownedInSelectedZones })}
 						</label>
 					)}
 					{basicsInSelectedZones > 0 && (
@@ -134,8 +135,7 @@ export function AddDeckToCollectionModal({ zoneStats, availableZones, onConfirm,
 								checked={ignoreBasicLands}
 								onChange={(e) => setIgnoreBasicLands(e.target.checked)}
 							/>
-							Skip basic lands ({basicsInSelectedZones} card
-							{basicsInSelectedZones !== 1 ? 's' : ''})
+							{t('skipBasicLandsCount', { count: basicsInSelectedZones })}
 						</label>
 					)}
 					<label className={styles.option}>
@@ -144,14 +144,14 @@ export function AddDeckToCollectionModal({ zoneStats, availableZones, onConfirm,
 							checked={asProxy}
 							onChange={(e) => setAsProxy(e.target.checked)}
 						/>
-						Mark as proxy
+						{t('markAsProxy')}
 					</label>
 				</div>
 			</div>
 
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Cancel
+					{t('cancel')}
 				</Button>
 				<Button
 					variant="primary"
@@ -166,7 +166,7 @@ export function AddDeckToCollectionModal({ zoneStats, availableZones, onConfirm,
 					}
 					disabled={addCount === 0 || selectedZones.size === 0}
 				>
-					Add
+					{t('add')}
 				</Button>
 			</div>
 		</Modal>

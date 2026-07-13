@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
@@ -63,6 +64,7 @@ import type { DeckGroupBy } from './useDeckCardSections';
 import styles from './page.module.css';
 
 export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
+	const t = useTranslations('decks');
 	const {
 		decks: allDecks,
 		updateDeck,
@@ -217,18 +219,18 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		() => [
 			{
 				key: 'qty',
-				label: 'Qty',
+				label: t('colQty'),
 				render: (card) => {
 					const c = card as ResolvedDeckCard;
 					const zone = getDeckZone(c.entry.tags);
 					return groupByCardId.get(c.oracle_id ?? c.id)?.byZone.get(zone)?.length ?? 1;
 				},
 			},
-			{ key: 'name', label: 'Name' },
-			{ key: 'type_line', label: 'Type' },
+			{ key: 'name', label: t('colName') },
+			{ key: 'type_line', label: t('colType') },
 			{
 				key: 'mana_cost',
-				label: 'Mana',
+				label: t('colMana'),
 				render: (card) => {
 					const cost = 'mana_cost' in card ? (card.mana_cost as string) : '';
 					if (!cost) return '—';
@@ -237,22 +239,22 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			},
 			{
 				key: 'set',
-				label: 'Set',
+				label: t('colSet'),
 				render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
 			},
 		],
-		[groupByCardId, symbolMap]
+		[groupByCardId, symbolMap, t]
 	);
 
 	// Tokens have no deck quantity or relevant mana cost; show identity-focused
 	// columns instead of reusing the main deck columns.
 	const tokenTableColumns: CardListColumn[] = useMemo(
 		() => [
-			{ key: 'name', label: 'Name' },
-			{ key: 'type_line', label: 'Type' },
+			{ key: 'name', label: t('colName') },
+			{ key: 'type_line', label: t('colType') },
 			{
 				key: 'pt',
-				label: 'P/F',
+				label: t('colPf'),
 				render: (card) => {
 					const power = 'power' in card ? (card.power as string | undefined) : undefined;
 					const toughness =
@@ -261,7 +263,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				},
 			},
 		],
-		[]
+		[t]
 	);
 
 	const warnings = useMemo(() => {
@@ -554,7 +556,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		return (
 			<div className={styles.page}>
 				<div className={styles.notFound}>
-					<h2>Deck not found</h2>
+					<h2>{t('deckNotFound')}</h2>
 				</div>
 			</div>
 		);

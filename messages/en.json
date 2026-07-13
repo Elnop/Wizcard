@@ -487,7 +487,20 @@
 		"addDeckToCollection2": "Add deck to collection",
 		"addToCollection2": "Add to collection",
 		"copies2": "Copies",
-		"add": "Add"
+		"add": "Add",
+		"skipOwnedCopies": "Skip already-owned copies",
+		"alsoInWishlist": "<strong>{name}</strong> is also in your wishlist.",
+		"alsoInCollection": "<strong>{name}</strong> is also in your collection.",
+		"alsoRemoveFromWishlist": "Also remove from wishlist",
+		"alsoRemoveFromCollection": "Also remove from collection",
+		"removeCardsFromDeck": "Remove <strong>{count}</strong> {count, plural, one {card} other {cards}} from the deck.",
+		"addToWishlist": "Add to Wishlist",
+		"removeFromWishlist": "Remove from Wishlist",
+		"moveTo": "Move to {zone}",
+		"onlyUnowned": "Only the unowned ones ({count, plural, one {# card} other {# cards}})",
+		"skipBasicLandsCount": "Skip basic lands ({count, plural, one {# card} other {# cards}})",
+		"markAsProxy": "Mark as proxy",
+		"confirm": "Confirm"
 	},
 	"collection": {
 		"title": "My Collection",

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import styles from './RemoveDeckCardModal.module.css';
@@ -28,14 +29,18 @@ export function BulkRemoveDeckCardsModal({
 	onConfirm,
 	onClose,
 }: Props) {
+	const t = useTranslations('decks');
 	const [alsoRemoveCollection, setAlsoRemoveCollection] = useState(false);
 	const [alsoRemoveWishlist, setAlsoRemoveWishlist] = useState(true);
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
-			<h2 className={styles.title}>Remove from deck</h2>
+			<h2 className={styles.title}>{t('removeFromDeck')}</h2>
 			<p className={styles.summary}>
-				Remove <strong>{cardCount}</strong> card{cardCount > 1 ? 's' : ''} from the deck.
+				{t.rich('removeCardsFromDeck', {
+					count: cardCount,
+					strong: (chunks) => <strong>{chunks}</strong>,
+				})}
 			</p>
 
 			{(hasOwned || hasWishlist) && (
@@ -47,7 +52,7 @@ export function BulkRemoveDeckCardsModal({
 								checked={alsoRemoveCollection}
 								onChange={(e) => setAlsoRemoveCollection(e.target.checked)}
 							/>
-							Also remove from collection
+							{t('alsoRemoveFromCollection')}
 						</label>
 					)}
 					{hasWishlist && (
@@ -57,7 +62,7 @@ export function BulkRemoveDeckCardsModal({
 								checked={alsoRemoveWishlist}
 								onChange={(e) => setAlsoRemoveWishlist(e.target.checked)}
 							/>
-							Also remove from wishlist
+							{t('alsoRemoveFromWishlist')}
 						</label>
 					)}
 				</div>
@@ -65,7 +70,7 @@ export function BulkRemoveDeckCardsModal({
 
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Cancel
+					{t('cancel')}
 				</Button>
 				<Button
 					variant="primary"
