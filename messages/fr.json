@@ -290,7 +290,6 @@
 		"userNotFound": "Utilisateur introuvable",
 		"userNotFoundText": "Aucun sorcier ne porte ce nom.",
 		"backHome": "Retour à l'accueil",
-		"ogAlt": "Profil sur Wizcard",
 		"viewDetails": "Voir les détails",
 		"addToMyCollection": "Ajouter à ma collection…",
 		"addToMyWishlist": "Ajouter à ma liste de souhaits…",
@@ -342,10 +341,6 @@
 		"descriptionPlaceholder": "Stratégie du deck, notes...",
 		"create": "Créer",
 		"cancel": "Annuler",
-		"importDeckTitle": "Importer un deck",
-		"deckList": "Liste du deck",
-		"deckListPlaceholder": "Collez votre liste de deck ici...",
-		"importAction": "Importer",
 		"importDeckTitle2": "Importer un deck",
 		"pasteList": "Coller la liste",
 		"moxfieldUrl": "URL Moxfield",
@@ -370,10 +365,6 @@
 		"newFolder": "Nouveau dossier",
 		"deleteDeckAria": "Supprimer le deck",
 		"warningCount": "{count, plural, one {# avertissement} other {# avertissements}}",
-		"renameFolder": "Renommer le dossier",
-		"deleteFolderAction": "Supprimer le dossier",
-		"moveToFolder": "Déplacer vers un dossier",
-		"createFolderAndMove": "Créer un dossier et déplacer",
 		"removeFromFolder": "Retirer du dossier",
 		"newFolderPlus": "+ Nouveau dossier",
 		"justNow": "à l'instant",
@@ -438,7 +429,6 @@
 		"noEdhrecForCommander": "Aucune recommandation EDHREC pour ce commandant",
 		"noEdhrecFound": "Aucune recommandation EDHREC trouvée",
 		"deckNotFound": "Deck introuvable",
-		"generateaPdf": "Générer un PDF",
 		"zones": "Zones",
 		"options": "Options",
 		"addCards": "Ajouter des cartes",
@@ -452,10 +442,8 @@
 		"manaCurve": "Courbe de mana",
 		"types": "Types",
 		"warnings": "Alertes",
-		"addDeckToCollection": "Ajouter le deck à la collection",
 		"zonesToScan": "Zones à scanner",
 		"chooseZonesToScan": "Choisir les zones à scanner",
-		"copies": "Exemplaires",
 		"sortManaValue": "Valeur de mana",
 		"sortName": "Nom",
 		"sortRarity": "Rareté",
@@ -484,12 +472,10 @@
 		"cardCount2": "{count, plural, one {# carte} other {# cartes}}",
 		"proxyMpc": "{count} proxy MPC",
 		"customMpc": "Custom (MPC)",
-		"generate": "Générer",
 		"addDeckToCollection2": "Ajouter le deck à la collection",
 		"addToCollection2": "Ajouter à la collection",
 		"copies2": "Exemplaires",
 		"add": "Ajouter",
-		"skipOwnedCopies": "Ignorer les exemplaires déjà possédés",
 		"alsoInWishlist": "<strong>{name}</strong> est aussi dans votre liste de souhaits.",
 		"alsoInCollection": "<strong>{name}</strong> est aussi dans votre collection.",
 		"alsoRemoveFromWishlist": "Retirer aussi de la liste de souhaits",
@@ -501,7 +487,6 @@
 		"onlyUnowned": "Uniquement les non possédées ({count, plural, one {# carte} other {# cartes}})",
 		"skipBasicLandsCount": "Ignorer les terrains de base ({count, plural, one {# carte} other {# cartes}})",
 		"markAsProxy": "Marquer comme proxy",
-		"confirm": "Confirmer",
 		"copiesToAdd": "<strong>{name}</strong> — <strong>{count, plural, one {# exemplaire} other {# exemplaires}}</strong> à ajouter",
 		"allUnownedCopies": "Tous les exemplaires non possédés ({count})",
 		"aSingleCopy": "Un seul exemplaire",
@@ -615,7 +600,6 @@
 		"confirmImport": "Confirmer l'import",
 		"notFoundOnScryfall": "{prints, plural, one {# impression} other {# impressions}} introuvable{prints, plural, one {} other {s}} sur Scryfall ({copies, plural, one {# exemplaire} other {# exemplaires}})",
 		"format": "Format :",
-		"searchName": "Rechercher par nom...",
 		"autoDetect": "Détection auto",
 		"tabFile": "Fichier",
 		"tabPaste": "Coller le texte",
@@ -772,15 +756,6 @@
 		"search": {
 			"title": "Recherche de cartes",
 			"description": "Recherchez toutes les cartes Magic: The Gathering par nom, couleur, type et extension."
-		},
-		"collection": {
-			"title": "Ma collection"
-		},
-		"wishlist": {
-			"title": "Ma liste de souhaits"
-		},
-		"decks": {
-			"title": "Mes decks"
 		},
 		"sets": {
 			"title": "Extensions"

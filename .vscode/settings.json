@@ -17,6 +17,7 @@
 		"auth.error.**",
 		"settings.status.**",
 		"search.mode**",
-		"sets.tab**"
+		"sets.tab**",
+		"decks.type**"
 	]
 }
