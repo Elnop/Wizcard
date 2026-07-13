@@ -13,6 +13,8 @@ type Props<T extends string> = {
 	/** Accessible name for the trigger button (when no visible label wraps it). */
 	ariaLabel?: string;
 	className?: string;
+	/** When true the trigger is inert and cannot be opened. */
+	disabled?: boolean;
 };
 
 /**
@@ -27,6 +29,7 @@ export function Select<T extends string>({
 	onChange,
 	ariaLabel,
 	className,
+	disabled = false,
 }: Props<T>) {
 	const [open, setOpen] = useState(false);
 	const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -124,6 +127,7 @@ export function Select<T extends string>({
 				aria-haspopup="listbox"
 				aria-expanded={open}
 				aria-label={ariaLabel}
+				disabled={disabled}
 				onClick={() => (open ? setOpen(false) : openList())}
 				onKeyDown={handleKeyDown}
 			>

@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
+import { Button } from '@/components/Button/Button';
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
-import { SettingsSection } from '../components/SettingsSection';
+import { SettingsSection, settingsStyles as s } from '../components/SettingsSection';
 
 export function AccountSection() {
 	const { user, signOut } = useAuth();
@@ -76,56 +77,57 @@ export function AccountSection() {
 
 	return (
 		<SettingsSection title="Compte">
-			<label>
-				<span>Adresse e-mail</span>
+			<div className={s.field}>
+				<span className={s.label}>Adresse e-mail</span>
 				<input
+					className={s.input}
 					type="email"
 					value={email}
 					onChange={(e) => setEmail(e.target.value)}
 					disabled={busy}
 				/>
-			</label>
-			<button type="button" onClick={changeEmail} disabled={busy}>
-				Changer l’e-mail
-			</button>
-			{emailMsg && <span style={{ fontSize: '0.85rem' }}>{emailMsg}</span>}
+			</div>
+			<Button variant="secondary" size="sm" onClick={changeEmail} disabled={busy}>
+				Changer l&apos;e-mail
+			</Button>
+			{emailMsg && <span className={s.successText}>{emailMsg}</span>}
 
-			<hr style={{ opacity: 0.2, width: '100%' }} />
+			<hr className={s.divider} />
 
-			<label>
-				<span>Nouveau mot de passe</span>
+			<div className={s.field}>
+				<span className={s.label}>Nouveau mot de passe</span>
 				<input
+					className={s.input}
 					type="password"
 					value={password}
 					onChange={(e) => setPassword(e.target.value)}
 					disabled={busy}
 				/>
-			</label>
-			<label>
-				<span>Confirmer le mot de passe</span>
+			</div>
+			<div className={s.field}>
+				<span className={s.label}>Confirmer le mot de passe</span>
 				<input
+					className={s.input}
 					type="password"
 					value={passwordConfirm}
 					onChange={(e) => setPasswordConfirm(e.target.value)}
 					disabled={busy}
 				/>
-			</label>
-			<button type="button" onClick={changePassword} disabled={busy}>
+			</div>
+			<Button variant="secondary" size="sm" onClick={changePassword} disabled={busy}>
 				Changer le mot de passe
-			</button>
-			{pwMsg && <span style={{ fontSize: '0.85rem' }}>{pwMsg}</span>}
+			</Button>
+			{pwMsg && <span className={s.successText}>{pwMsg}</span>}
 
-			<hr style={{ opacity: 0.2, width: '100%' }} />
+			<hr className={s.divider} />
 
-			<button
-				type="button"
-				onClick={() => setConfirming(true)}
-				disabled={busy}
-				style={{ color: '#dc2626' }}
-			>
-				Supprimer mon compte
-			</button>
-			{deleteErr && <span style={{ color: '#dc2626', fontSize: '0.85rem' }}>{deleteErr}</span>}
+			<div className={s.dangerZone}>
+				<span className={s.dangerTitle}>Zone sensible</span>
+				<Button variant="danger" size="sm" onClick={() => setConfirming(true)} disabled={busy}>
+					Supprimer mon compte
+				</Button>
+				{deleteErr && <span className={s.errorText}>{deleteErr}</span>}
+			</div>
 			{confirming && (
 				<ConfirmModal
 					message="Cette action est irréversible : votre compte et toutes vos données (collection, decks) seront définitivement supprimés."

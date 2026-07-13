@@ -1,8 +1,9 @@
 'use client';
 
+import { Select } from '@/components/Select/Select';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import type { PriceCurrency, ThemePreference } from '@/lib/profile/types';
-import { SettingsSection } from '../components/SettingsSection';
+import { SettingsSection, settingsStyles as s } from '../components/SettingsSection';
 import { useSaveStatus } from '../useSaveStatus';
 
 const THEMES: { value: ThemePreference; label: string }[] = [
@@ -22,26 +23,23 @@ export function DisplaySection() {
 
 	return (
 		<SettingsSection title="Affichage" status={status}>
-			<label>
-				<span>Thème</span>
-				<select
+			<div className={s.field}>
+				<span className={s.label}>Thème</span>
+				<Select
 					value={profile.themePreference}
-					onChange={(e) => {
+					options={THEMES}
+					ariaLabel="Thème"
+					onChange={(value) => {
 						markSaving();
-						updateProfile({ themePreference: e.target.value as ThemePreference });
+						updateProfile({ themePreference: value });
 					}}
-				>
-					{THEMES.map((t) => (
-						<option key={t.value} value={t.value}>
-							{t.label}
-						</option>
-					))}
-				</select>
-			</label>
+				/>
+			</div>
 
-			<label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+			<label className={s.checkboxRow}>
 				<input
 					type="checkbox"
+					className={s.checkbox}
 					checked={profile.showPrices}
 					onChange={(e) => {
 						markSaving();
@@ -51,23 +49,19 @@ export function DisplaySection() {
 				<span>Afficher les prix</span>
 			</label>
 
-			<label>
-				<span>Devise</span>
-				<select
+			<div className={s.field}>
+				<span className={s.label}>Devise</span>
+				<Select
 					value={profile.priceCurrency}
+					options={CURRENCIES}
+					ariaLabel="Devise"
 					disabled={!profile.showPrices}
-					onChange={(e) => {
+					onChange={(value) => {
 						markSaving();
-						updateProfile({ priceCurrency: e.target.value as PriceCurrency });
+						updateProfile({ priceCurrency: value });
 					}}
-				>
-					{CURRENCIES.map((c) => (
-						<option key={c.value} value={c.value}>
-							{c.label}
-						</option>
-					))}
-				</select>
-			</label>
+				/>
+			</div>
 		</SettingsSection>
 	);
 }

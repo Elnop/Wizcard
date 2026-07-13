@@ -3,6 +3,9 @@
 import type { SaveStatus } from '../useSaveStatus';
 import styles from './SettingsSection.module.css';
 
+/** Shared themed field classes (input, textarea, checkbox, hint, …) for sections. */
+export { styles as settingsStyles };
+
 const STATUS_LABEL: Record<SaveStatus, string> = {
 	idle: '',
 	saving: 'Enregistrement…',

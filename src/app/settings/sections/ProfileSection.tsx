@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { isNicknameTaken, uploadAvatar } from '@/lib/profile/db/profiles';
-import { SettingsSection } from '../components/SettingsSection';
+import { SettingsSection, settingsStyles as s } from '../components/SettingsSection';
 import { useSaveStatus } from '../useSaveStatus';
 
 export function ProfileSection() {
@@ -65,23 +65,23 @@ export function ProfileSection() {
 
 	return (
 		<SettingsSection title="Profil" status={status}>
-			<label>
-				<span>Pseudo</span>
+			<div className={s.field}>
+				<span className={s.label}>Pseudo</span>
 				<input
+					className={s.input}
 					value={nickname}
 					onChange={(e) => setNickname(e.target.value)}
 					onBlur={commitNickname}
 					placeholder="Votre nom d'affichage"
 					maxLength={50}
 				/>
-			</label>
-			{nicknameError && (
-				<span style={{ color: '#dc2626', fontSize: '0.85rem' }}>{nicknameError}</span>
-			)}
+				{nicknameError && <span className={s.errorText}>{nicknameError}</span>}
+			</div>
 
-			<label>
-				<span>Description</span>
+			<div className={s.field}>
+				<span className={s.label}>Description</span>
 				<textarea
+					className={s.textarea}
 					value={description}
 					onChange={(e) => setDescription(e.target.value)}
 					onBlur={commitDescription}
@@ -89,25 +89,28 @@ export function ProfileSection() {
 					rows={4}
 					maxLength={500}
 				/>
-			</label>
-
-			<div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-				{profile.avatarUrl && (
-					<Image
-						src={profile.avatarUrl}
-						alt="Avatar"
-						width={64}
-						height={64}
-						style={{ borderRadius: '50%', objectFit: 'cover' }}
-						unoptimized
-					/>
-				)}
-				<label>
-					<span>{avatarBusy ? 'Téléversement…' : "Changer l'avatar"}</span>
-					<input type="file" accept="image/*" onChange={onAvatarChange} disabled={avatarBusy} />
-				</label>
 			</div>
-			{avatarError && <span style={{ color: '#dc2626', fontSize: '0.85rem' }}>{avatarError}</span>}
+
+			<div className={s.field}>
+				<span className={s.label}>Avatar</span>
+				<div className={s.avatarRow}>
+					{profile.avatarUrl && (
+						<Image
+							src={profile.avatarUrl}
+							alt="Avatar"
+							width={64}
+							height={64}
+							className={s.avatar}
+							unoptimized
+						/>
+					)}
+					<label className={s.fileTrigger}>
+						{avatarBusy ? 'Téléversement…' : "Changer l'avatar"}
+						<input type="file" accept="image/*" onChange={onAvatarChange} disabled={avatarBusy} />
+					</label>
+				</div>
+				{avatarError && <span className={s.errorText}>{avatarError}</span>}
+			</div>
 		</SettingsSection>
 	);
 }

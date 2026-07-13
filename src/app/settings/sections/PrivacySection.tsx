@@ -1,7 +1,7 @@
 'use client';
 
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
-import { SettingsSection } from '../components/SettingsSection';
+import { SettingsSection, settingsStyles as s } from '../components/SettingsSection';
 import { useSaveStatus } from '../useSaveStatus';
 
 export function PrivacySection() {
@@ -11,9 +11,10 @@ export function PrivacySection() {
 
 	return (
 		<SettingsSection title="Confidentialité" status={status}>
-			<label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+			<label className={s.checkboxRow}>
 				<input
 					type="checkbox"
+					className={s.checkbox}
 					checked={profile.isPublic}
 					onChange={(e) => {
 						markSaving();
@@ -22,9 +23,9 @@ export function PrivacySection() {
 				/>
 				<span>Profil public</span>
 			</label>
-			<p style={{ fontSize: '0.85rem', opacity: 0.7 }}>
-				Lorsque votre profil est privé, votre page publique et vos collections partagées ne sont
-				plus visibles par les autres utilisateurs.
+			<p className={s.hint}>
+				Lorsque votre profil est privé, votre page publique ainsi que vos decks, collection et liste
+				de souhaits ne sont plus visibles par les autres utilisateurs.
 			</p>
 		</SettingsSection>
 	);

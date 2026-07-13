@@ -4,12 +4,15 @@
 	padding: 2rem 1rem 4rem;
 	display: flex;
 	flex-direction: column;
-	gap: 2rem;
+	gap: 1.5rem;
 }
 
 .title {
-	font-size: 1.75rem;
+	font-family: var(--font-display);
+	font-size: var(--text-4xl);
 	font-weight: 700;
+	color: var(--foreground);
+	letter-spacing: 0.02em;
 }
 
 .loading {

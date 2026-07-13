@@ -1,8 +1,9 @@
 'use client';
 
+import { Select } from '@/components/Select/Select';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import type { Language } from '@/lib/profile/types';
-import { SettingsSection } from '../components/SettingsSection';
+import { SettingsSection, settingsStyles as s } from '../components/SettingsSection';
 import { useSaveStatus } from '../useSaveStatus';
 
 const LANGUAGES: { value: Language; label: string }[] = [
@@ -17,23 +18,19 @@ export function LanguageSection() {
 
 	return (
 		<SettingsSection title="Langue" status={status}>
-			<label>
-				<span>Langue des cartes et de l&apos;interface</span>
-				<select
+			<div className={s.field}>
+				<span className={s.label}>Langue des cartes et de l&apos;interface</span>
+				<Select
 					value={profile.language}
-					onChange={(e) => {
+					options={LANGUAGES}
+					ariaLabel="Langue des cartes et de l'interface"
+					onChange={(value) => {
 						markSaving();
-						updateProfile({ language: e.target.value as Language });
+						updateProfile({ language: value });
 					}}
-				>
-					{LANGUAGES.map((l) => (
-						<option key={l.value} value={l.value}>
-							{l.label}
-						</option>
-					))}
-				</select>
-			</label>
-			<p style={{ fontSize: '0.85rem', opacity: 0.7 }}>
+				/>
+			</div>
+			<p className={s.hint}>
 				La traduction de l&apos;interface arrive bientôt. Ce réglage s&apos;applique
 				aujourd&apos;hui à l&apos;affichage des cartes.
 			</p>

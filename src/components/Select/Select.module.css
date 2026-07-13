@@ -20,8 +20,13 @@
 		box-shadow 0.15s;
 }
 
-.trigger:hover {
+.trigger:hover:not(:disabled) {
 	border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+}
+
+.trigger:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 .trigger:focus-visible,
