@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import type { DeckFormat, FolderMeta } from '@/types/decks';
 import styles from './CreateDeckModal.module.css';
 
+// Format names are MTG-universal (kept in English); only "No format" is translated.
 const FORMATS: { value: DeckFormat | ''; label: string }[] = [
 	{ value: '', label: 'No format' },
 	{ value: 'standard', label: 'Standard' },
@@ -39,6 +41,7 @@ export function CreateDeckModal({
 	onCreate,
 	onClose,
 }: Props) {
+	const t = useTranslations('decks');
 	const [name, setName] = useState('');
 	const [format, setFormat] = useState<DeckFormat | ''>('');
 	const [description, setDescription] = useState('');
@@ -53,22 +56,22 @@ export function CreateDeckModal({
 	return (
 		<Modal onClose={onClose} className={styles.dialog}>
 			<form onSubmit={handleSubmit} className={styles.form}>
-				<h2 className={styles.title}>New Deck</h2>
+				<h2 className={styles.title}>{t('createDeckTitle')}</h2>
 
 				<label className={styles.label}>
-					Name
+					{t('deckName')}
 					<input
 						type="text"
 						className={styles.input}
 						value={name}
 						onChange={(e) => setName(e.target.value)}
-						placeholder="My Deck"
+						placeholder={t('deckNamePlaceholder')}
 						autoFocus
 					/>
 				</label>
 
 				<label className={styles.label}>
-					Format
+					{t('format')}
 					<select
 						className={styles.input}
 						value={format}
@@ -76,7 +79,7 @@ export function CreateDeckModal({
 					>
 						{FORMATS.map((f) => (
 							<option key={f.value} value={f.value} className={styles.option}>
-								{f.label}
+								{f.value ? f.label : t('noFormatOption')}
 							</option>
 						))}
 					</select>
@@ -84,13 +87,13 @@ export function CreateDeckModal({
 
 				{folders.length > 0 && (
 					<label className={styles.label}>
-						Folder
+						{t('folder')}
 						<select
 							className={styles.input}
 							value={folderId}
 							onChange={(e) => setFolderId(e.target.value)}
 						>
-							<option value="">No folder</option>
+							<option value="">{t('noFolderOption')}</option>
 							{folders.map((f) => (
 								<option key={f.id} value={f.id} className={styles.option}>
 									{f.name}
@@ -101,22 +104,22 @@ export function CreateDeckModal({
 				)}
 
 				<label className={styles.label}>
-					Description
+					{t('descriptionOptional')}
 					<textarea
 						className={styles.textarea}
 						value={description}
 						onChange={(e) => setDescription(e.target.value)}
-						placeholder="Deck strategy, notes..."
+						placeholder={t('descriptionPlaceholder')}
 						rows={3}
 					/>
 				</label>
 
 				<div className={styles.actions}>
 					<Button variant="ghost" type="button" onClick={onClose}>
-						Cancel
+						{t('cancel')}
 					</Button>
 					<Button type="submit" disabled={!name.trim()}>
-						Create
+						{t('create')}
 					</Button>
 				</div>
 			</form>

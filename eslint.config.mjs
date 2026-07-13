@@ -80,6 +80,7 @@ const eslintConfig = defineConfig([
 			'src/lib/wishlist/**',
 			'src/app/[locale]/users/**',
 			'src/app/[locale]/profile/**',
+			'src/app/[locale]/decks/**',
 		],
 		rules: {
 			'i18next/no-literal-string': [

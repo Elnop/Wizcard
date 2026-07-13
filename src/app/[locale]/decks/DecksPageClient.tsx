@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import {
 	DndContext,
@@ -43,6 +44,7 @@ export default function DecksPageClient() {
 		moveDeckToFolder,
 		moveFolderToFolder,
 	} = useDeckContext();
+	const t = useTranslations('decks');
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const symbolMap = useScryfallSymbols();
@@ -153,11 +155,11 @@ export default function DecksPageClient() {
 
 	let activeFolderName: string;
 	if (activeFolderId !== null && activeFolderId !== 'none') {
-		activeFolderName = foldersMap[activeFolderId]?.name ?? 'Folder';
+		activeFolderName = foldersMap[activeFolderId]?.name ?? t('folder');
 	} else if (activeFolderId === 'none') {
-		activeFolderName = 'No folder';
+		activeFolderName = t('noFolder');
 	} else {
-		activeFolderName = 'My Decks';
+		activeFolderName = t('myDecks');
 	}
 
 	if (!isLoaded) {
@@ -233,10 +235,10 @@ export default function DecksPageClient() {
 					<button
 						className={styles.folderToggle}
 						onClick={() => setSidebarOpen(true)}
-						aria-label="Open folders"
+						aria-label={t('openFolders')}
 					>
 						<FolderIcon size={14} />
-						Folders
+						{t('folders')}
 					</button>
 
 					{activeFolderId !== null && (
@@ -251,29 +253,29 @@ export default function DecksPageClient() {
 						<div className={styles.titleLeft}>
 							<h1 className={styles.title}>{activeFolderName}</h1>
 							<span className={styles.statsLine}>
-								{filteredDecks.length} deck{filteredDecks.length !== 1 ? 's' : ''}
+								{t('deckCount', { count: filteredDecks.length })}
 							</span>
 						</div>
 						<div className={styles.actions}>
 							<Button variant="secondary" onClick={() => setShowImport(true)}>
-								Import
+								{t('import')}
 							</Button>
-							<Button onClick={() => setShowCreate(true)}>New Deck</Button>
+							<Button onClick={() => setShowCreate(true)}>{t('newDeck')}</Button>
 						</div>
 					</div>
 
 					{filteredDecks.length === 0 && visibleFolders.length === 0 && activeFolderId !== null && (
 						<div className={styles.emptyState}>
-							<h2>Empty folder</h2>
-							<p>Drag decks here or create a new one.</p>
-							<Button onClick={() => setShowCreate(true)}>New Deck</Button>
+							<h2>{t('emptyFolder')}</h2>
+							<p>{t('emptyFolderText')}</p>
+							<Button onClick={() => setShowCreate(true)}>{t('newDeck')}</Button>
 						</div>
 					)}
 					{activeFolderId === null && decks.length === 0 && visibleFolders.length === 0 && (
 						<div className={styles.emptyState}>
-							<h2>No decks yet</h2>
-							<p>Create your first deck to start building.</p>
-							<Button onClick={() => setShowCreate(true)}>New Deck</Button>
+							<h2>{t('noDecks')}</h2>
+							<p>{t('noDecksText')}</p>
+							<Button onClick={() => setShowCreate(true)}>{t('newDeck')}</Button>
 						</div>
 					)}
 					{activeFolderId === null &&
@@ -346,8 +348,8 @@ export default function DecksPageClient() {
 
 			{deckToDelete && (
 				<ConfirmModal
-					message="Delete this deck?"
-					confirmLabel="Delete"
+					message={t('deleteDeck')}
+					confirmLabel={t('delete')}
 					onConfirm={() => {
 						deleteDeck(deckToDelete, { deleteCollectionCopies });
 						setDeckToDelete(null);
@@ -364,15 +366,15 @@ export default function DecksPageClient() {
 							checked={deleteCollectionCopies}
 							onChange={(e) => setDeleteCollectionCopies(e.target.checked)}
 						/>
-						Delete the cards from the collection
+						{t('deleteCardsFromCollection')}
 					</label>
 				</ConfirmModal>
 			)}
 
 			{folderToDelete && (
 				<ConfirmModal
-					message="Delete this folder? The decks it contains will be moved to “No folder”."
-					confirmLabel="Delete"
+					message={t('deleteFolder')}
+					confirmLabel={t('delete')}
 					onConfirm={() => {
 						deleteFolder(folderToDelete);
 						setFolderToDelete(null);

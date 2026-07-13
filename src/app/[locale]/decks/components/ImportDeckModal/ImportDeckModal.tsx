@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
@@ -121,11 +122,13 @@ function buildMoxfieldSummary(data: MoxfieldImportData): string {
 	return parts.join(' — ');
 }
 
-function importFailedMessage(err: unknown): string {
-	return `Import failed: ${err instanceof Error ? err.message : 'unknown error'}`;
-}
-
 export function ImportDeckModal({ onClose }: Props) {
+	const t = useTranslations('decks');
+	const importFailedMessage = useCallback(
+		(err: unknown): string =>
+			t('importFailed', { message: err instanceof Error ? err.message : t('unknownError') }),
+		[t]
+	);
 	const { createDeck, bulkAddCardsToDeck } = useDeckContext();
 	const router = useRouter();
 	const { normalize: normalizeSetCodes } = useSetCodeNormalizer();
@@ -198,7 +201,7 @@ export function ImportDeckModal({ onClose }: Props) {
 
 		const publicId = extractMoxfieldId(url);
 		if (!publicId) {
-			setErrors(['Invalid Moxfield URL. Expected: https://moxfield.com/decks/...']);
+			setErrors([t('invalidMoxfieldUrl')]);
 			return;
 		}
 
@@ -211,11 +214,11 @@ export function ImportDeckModal({ onClose }: Props) {
 			if (!nameManuallyEdited.current) setName(data.name);
 			if (!formatManuallyEdited.current) setFormat(data.format ?? '');
 		} catch (err) {
-			setErrors([err instanceof Error ? err.message : 'Failed to fetch deck from Moxfield.']);
+			setErrors([err instanceof Error ? err.message : t('moxfieldFetchFailed')]);
 		} finally {
 			setIsFetching(false);
 		}
-	}, [url]);
+	}, [url, t]);
 
 	// --- Import handlers ---
 
@@ -224,13 +227,7 @@ export function ImportDeckModal({ onClose }: Props) {
 		setErrors([]);
 
 		if (!parsed || parsed.rows.length === 0) {
-			setErrors(
-				parsed && parsed.parseErrors.length > 0
-					? parsed.parseErrors
-					: [
-							'No valid cards found. Paste a deck list with lines like "4 Lightning Bolt" or "4x Lightning Bolt (M11) 149"',
-						]
-			);
+			setErrors(parsed && parsed.parseErrors.length > 0 ? parsed.parseErrors : [t('noValidCards')]);
 			return;
 		}
 
@@ -238,7 +235,7 @@ export function ImportDeckModal({ onClose }: Props) {
 		try {
 			const { cardsToAdd, notFound } = await resolveDeckList(parsed, normalizeSetCodes);
 			if (cardsToAdd.length === 0) {
-				setErrors([`No cards could be resolved. Check card names and try again.`]);
+				setErrors([t('noCardsResolved')]);
 				setStep('input');
 				return;
 			}
@@ -249,14 +246,18 @@ export function ImportDeckModal({ onClose }: Props) {
 			setErrors([importFailedMessage(err)]);
 			setStep('input');
 		}
-	}, [parsed, normalizeSetCodes]);
+	}, [parsed, normalizeSetCodes, t, importFailedMessage]);
 
 	const handleCreateFromPreview = useCallback(
 		(copies: ImportPreviewCopy[]) => {
 			setIsImporting(true);
 			try {
 				const description = mode === 'url' ? (moxfieldData?.description ?? null) : null;
-				const deckId = createDeck(name.trim() || 'Imported Deck', format || null, description);
+				const deckId = createDeck(
+					name.trim() || t('importedDeckDefault'),
+					format || null,
+					description
+				);
 				bulkAddCardsToDeck(deckId, copies);
 				router.push(`/decks/${deckId}`);
 			} catch (err) {
@@ -264,7 +265,17 @@ export function ImportDeckModal({ onClose }: Props) {
 				setIsImporting(false);
 			}
 		},
-		[mode, moxfieldData, name, format, createDeck, bulkAddCardsToDeck, router]
+		[
+			mode,
+			moxfieldData,
+			name,
+			format,
+			createDeck,
+			bulkAddCardsToDeck,
+			router,
+			t,
+			importFailedMessage,
+		]
 	);
 
 	// URL mode resolves the Moxfield scryfall ids into concrete cards, then steps
@@ -276,7 +287,7 @@ export function ImportDeckModal({ onClose }: Props) {
 		try {
 			const { cardsToAdd, notFound } = await resolveCardsByScryfallId(moxfieldData.cards);
 			if (cardsToAdd.length === 0) {
-				setErrors(['No cards could be resolved from this Moxfield deck.']);
+				setErrors([t('noMoxfieldCards')]);
 				setStep('input');
 				return;
 			}
@@ -287,11 +298,11 @@ export function ImportDeckModal({ onClose }: Props) {
 			setErrors([importFailedMessage(err)]);
 			setStep('input');
 		}
-	}, [moxfieldData]);
+	}, [moxfieldData, t, importFailedMessage]);
 
 	// Both paste and URL modes now step through a preview.
 	const handlePrimary = mode === 'paste' ? handleResolvePaste : handleResolveMoxfield;
-	const primaryLabel = 'Preview';
+	const primaryLabel = t('preview');
 
 	const canImport =
 		mode === 'paste'
@@ -308,22 +319,22 @@ export function ImportDeckModal({ onClose }: Props) {
 	const nameFormatFields = (
 		<>
 			<label className={styles.label}>
-				Name
+				{t('nameLabel')}
 				<input
 					type="text"
 					className={styles.input}
 					value={name}
 					onChange={handleNameChange}
-					placeholder="My Imported Deck"
+					placeholder={t('importedDeckPlaceholder')}
 				/>
 			</label>
 
 			<label className={styles.label}>
-				Format
+				{t('format')}
 				<select className={styles.input} value={format} onChange={handleFormatChange}>
 					{FORMATS.map((f) => (
 						<option key={f.value} value={f.value} className={styles.option}>
-							{f.label}
+							{f.value ? f.label : t('noFormatOption')}
 						</option>
 					))}
 				</select>
@@ -334,7 +345,7 @@ export function ImportDeckModal({ onClose }: Props) {
 	function renderInput() {
 		return (
 			<div className={styles.form}>
-				<h2 className={styles.title}>Import a Deck</h2>
+				<h2 className={styles.title}>{t('importDeckTitle2')}</h2>
 
 				<div className={styles.tabs}>
 					<button
@@ -342,21 +353,21 @@ export function ImportDeckModal({ onClose }: Props) {
 						className={`${styles.tab} ${mode === 'paste' ? styles.tabActive : ''}`}
 						onClick={() => handleModeChange('paste')}
 					>
-						Paste list
+						{t('pasteList')}
 					</button>
 					<button
 						type="button"
 						className={`${styles.tab} ${mode === 'url' ? styles.tabActive : ''}`}
 						onClick={() => handleModeChange('url')}
 					>
-						Moxfield URL
+						{t('moxfieldUrl')}
 					</button>
 				</div>
 
 				{mode === 'paste' && (
 					<>
 						<label className={styles.label}>
-							Deck List
+							{t('deckListLabel')}
 							<textarea
 								className={styles.textarea}
 								placeholder={PLACEHOLDER}
@@ -374,7 +385,7 @@ export function ImportDeckModal({ onClose }: Props) {
 				{mode === 'url' && (
 					<>
 						<label className={styles.label}>
-							Moxfield Deck URL
+							{t('moxfieldUrlLabel')}
 							<div className={styles.urlRow}>
 								<input
 									type="url"
@@ -390,7 +401,7 @@ export function ImportDeckModal({ onClose }: Props) {
 									disabled={!url.trim() || isFetching}
 									isLoading={isFetching}
 								>
-									Fetch
+									{t('fetch')}
 								</Button>
 							</div>
 						</label>
@@ -413,7 +424,7 @@ export function ImportDeckModal({ onClose }: Props) {
 
 				<div className={styles.actions}>
 					<Button variant="ghost" type="button" onClick={onClose} disabled={isImporting}>
-						Cancel
+						{t('cancel')}
 					</Button>
 					<Button onClick={handlePrimary} disabled={!canImport} isLoading={isImporting}>
 						{primaryLabel}
@@ -431,20 +442,20 @@ export function ImportDeckModal({ onClose }: Props) {
 				<div className={styles.form}>
 					<div className={styles.loadingScreen}>
 						<Spinner size="md" />
-						<p className={styles.loadingLabel}>Resolving cards…</p>
+						<p className={styles.loadingLabel}>{t('resolvingCards')}</p>
 					</div>
 				</div>
 			)}
 
 			{step === 'preview' && (
 				<div className={styles.previewWrap}>
-					<h2 className={styles.title}>Import a Deck</h2>
+					<h2 className={styles.title}>{t('importDeckTitle2')}</h2>
 					<ImportPreview
 						resolvedRows={resolvedRows}
 						existingOracleIds={EMPTY_ORACLE_IDS}
 						notFound={notFound}
 						hasSections={hasSections}
-						primaryLabel={(n) => `Create deck (${n} card${n === 1 ? '' : 's'})`}
+						primaryLabel={(n) => t('createDeckWithCards', { count: n })}
 						onImport={handleCreateFromPreview}
 						onBack={() => setStep('input')}
 						isSubmitting={isImporting}

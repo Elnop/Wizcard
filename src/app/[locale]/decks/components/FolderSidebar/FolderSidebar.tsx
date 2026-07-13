@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useDroppable } from '@dnd-kit/core';
 import { BooksIcon, FolderSimpleMinusIcon, PlusIcon } from '@phosphor-icons/react';
 import type { FolderMeta } from '@/types/decks';
@@ -28,6 +29,7 @@ export function FolderSidebar({
 	onRenameFolder,
 	onDeleteFolder,
 }: Props) {
+	const t = useTranslations('decks');
 	const [addingFolder, setAddingFolder] = useState(false);
 	const [newFolderName, setNewFolderName] = useState('');
 	const newFolderInputRef = useRef<HTMLInputElement>(null);
@@ -63,16 +65,16 @@ export function FolderSidebar({
 	const unfiledCount = decks.filter((d) => d.folderId === null).length;
 
 	return (
-		<nav className={styles.sidebar} aria-label="Folders">
+		<nav className={styles.sidebar} aria-label={t('folders')}>
 			<div className={styles.section}>
-				<p className={styles.sectionLabel}>Library</p>
+				<p className={styles.sectionLabel}>{t('library')}</p>
 				<button
 					ref={setRootDropRef}
 					className={`${styles.item} ${activeFolderId === null ? styles.active : ''} ${isOverRoot ? styles.dropOver : ''}`}
 					onClick={() => onFolderSelect(null)}
 				>
 					<BooksIcon className={styles.icon} size={16} />
-					<span className={styles.label}>My Decks</span>
+					<span className={styles.label}>{t('myDecks')}</span>
 					<span className={styles.count}>{decks.length}</span>
 				</button>
 				<button
@@ -80,7 +82,7 @@ export function FolderSidebar({
 					onClick={() => onFolderSelect('none')}
 				>
 					<FolderSimpleMinusIcon className={styles.icon} size={16} />
-					<span className={styles.label}>No folder</span>
+					<span className={styles.label}>{t('noFolder')}</span>
 					{unfiledCount > 0 && <span className={styles.count}>{unfiledCount}</span>}
 				</button>
 			</div>
@@ -89,7 +91,7 @@ export function FolderSidebar({
 
 			{tree.length > 0 && (
 				<div className={styles.treeSection}>
-					<p className={styles.sectionLabel}>Folders</p>
+					<p className={styles.sectionLabel}>{t('folders')}</p>
 					{tree.map((node) => (
 						<FolderTreeNode
 							key={node.id}
@@ -111,7 +113,7 @@ export function FolderSidebar({
 				<input
 					ref={newFolderInputRef}
 					className={styles.newFolderInput}
-					placeholder="Folder name"
+					placeholder={t('folderName')}
 					value={newFolderName}
 					onChange={(e) => setNewFolderName(e.target.value)}
 					onBlur={handleNewFolderSubmit}
@@ -126,7 +128,7 @@ export function FolderSidebar({
 			) : (
 				<button className={styles.addFolderBtn} onClick={() => setAddingFolder(true)}>
 					<PlusIcon size={12} />
-					New folder
+					{t('newFolder')}
 				</button>
 			)}
 		</nav>
