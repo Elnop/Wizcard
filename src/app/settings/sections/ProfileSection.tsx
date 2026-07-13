@@ -15,6 +15,7 @@ export function ProfileSection() {
 	const [nickname, setNickname] = useState(profile?.nickname ?? '');
 	const [description, setDescription] = useState(profile?.description ?? '');
 	const [nicknameError, setNicknameError] = useState<string | null>(null);
+	const [avatarError, setAvatarError] = useState<string | null>(null);
 	const [avatarBusy, setAvatarBusy] = useState(false);
 
 	if (!profile || !user) return null;
@@ -49,11 +50,14 @@ export function ProfileSection() {
 	const onAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
+		setAvatarError(null);
 		setAvatarBusy(true);
 		try {
 			const url = await uploadAvatar(user.id, file);
 			markSaving();
 			updateProfile({ avatarUrl: url });
+		} catch {
+			setAvatarError("Échec du téléversement de l'avatar.");
 		} finally {
 			setAvatarBusy(false);
 		}
@@ -99,10 +103,11 @@ export function ProfileSection() {
 					/>
 				)}
 				<label>
-					<span>{avatarBusy ? 'Téléversement…' : 'Changer l’avatar'}</span>
+					<span>{avatarBusy ? 'Téléversement…' : "Changer l'avatar"}</span>
 					<input type="file" accept="image/*" onChange={onAvatarChange} disabled={avatarBusy} />
 				</label>
 			</div>
+			{avatarError && <span style={{ color: '#dc2626', fontSize: '0.85rem' }}>{avatarError}</span>}
 		</SettingsSection>
 	);
 }
