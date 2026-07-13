@@ -105,7 +105,7 @@ function PublicDecksView({ ownerId, handle }: { ownerId: string; handle: string 
 					<div className={styles.titleLeft}>
 						<h1 className={styles.title}>{activeFolderName}</h1>
 						<span className={styles.statsLine}>
-							{filteredDecks.length} deck{filteredDecks.length !== 1 ? 's' : ''}
+							{t('deckCount', { count: filteredDecks.length })}
 						</span>
 					</div>
 				</div>

@@ -62,25 +62,29 @@ const eslintConfig = defineConfig([
 		// Phase 3 : legal, settings, account.
 		// Phase 4 : search, sets.
 		// Phase 5 : card (app/card + lib/card).
+		// NOTE: `[locale]`, `(landing)`, `(legal)` are glob-special (character
+		// class / extglob group) in ESLint flat-config `files:` patterns, so a
+		// literal `src/app/[locale]/...` glob silently matches nothing. Match the
+		// domain segment under any wrapper via `src/app/**/<domain>/**` instead.
 		files: [
 			'src/components/Navbar/**',
 			'src/components/Footer/**',
 			'src/components/ConfirmModal/**',
-			'src/app/[locale]/(landing)/**',
-			'src/app/[locale]/auth/**',
-			'src/app/[locale]/(legal)/**',
-			'src/app/[locale]/settings/**',
-			'src/app/[locale]/account/**',
-			'src/app/[locale]/search/**',
-			'src/app/[locale]/sets/**',
-			'src/app/[locale]/card/**',
+			'src/app/**/(landing)/**',
+			'src/app/**/auth/**',
+			'src/app/**/(legal)/**',
+			'src/app/**/settings/**',
+			'src/app/**/account/**',
+			'src/app/**/search/**',
+			'src/app/**/sets/**',
+			'src/app/**/card/**',
 			'src/lib/card/components/**',
-			'src/app/[locale]/collection/**',
-			'src/app/[locale]/wishlist/**',
+			'src/app/**/collection/**',
+			'src/app/**/wishlist/**',
 			'src/lib/wishlist/**',
-			'src/app/[locale]/users/**',
-			'src/app/[locale]/profile/**',
-			'src/app/[locale]/decks/**',
+			'src/app/**/users/**',
+			'src/app/**/profile/**',
+			'src/app/**/decks/**',
 		],
 		rules: {
 			'i18next/no-literal-string': [
@@ -91,17 +95,31 @@ const eslintConfig = defineConfig([
 					// glyphes / symboles purs (icônes textuelles).
 					words: {
 						exclude: [
-							'^\\s*[✦✎⧉▾▴→←×✕✓✨🗂🛒♡▣+·—\\-–/#()%\\d.,:!?…\\s]*$',
-							'^\\s*(✦\\s*)?Foil\\s*$',
-							'^\\s*Etched\\s*$',
-							'^\\s*(▣\\s*)?Proxy\\s*$',
+							// Symboles / glyphes purs et compteurs numériques (◆ › ⚠ inclus).
+							'^\\s*[✦✎⧉▾▴→←×✕✓✨🗂🛒♡▣◆›⚠⊕+·—\\-–/#()%\\d.,:!?…\\s]*$',
+							// Badge de quantité « x{n} » (le nœud texte JSX est le seul « x »).
+							'^\\s*x\\s*$',
+							// Liste d'extensions de fichiers acceptées (données techniques).
+							'^\\s*\\.\\w+(,\\s*\\.\\w+)*\\s*$',
+							// Nom de marque (identique fr/en).
+							'^\\s*WIZCARD\\s*$',
+							'^\\s*Wizcard\\s*$',
+							// Termes de jeu MTG standard (non traduits, identiques fr/en),
+							// dans leurs casses rencontrées (labels et valeurs d'<option>).
+							'^\\s*(✦\\s*)?[Ff]oil\\s*$',
+							'^\\s*[Ee]tched\\s*$',
+							'^\\s*(▣\\s*)?[Pp]roxy\\s*$',
 							'^\\s*Alter\\s*$',
 							'^\\s*Trade\\s*$',
 							'^\\s*Mainboard\\s*$',
 							'^\\s*Sideboard\\s*$',
 							'^\\s*Maybeboard\\s*$',
 							'^\\s*Commander\\s*$',
+							// Noms de sites / marques tierces (proper nouns, non traduits).
 							'^\\s*Scryfall\\s*$',
+							'^\\s*EDHREC\\s*$',
+							'^\\s*Moxfield(\\s+CSV)?\\s*$',
+							'^\\s*CardNexus(\\s+CSV)?\\s*$',
 						],
 					},
 				},

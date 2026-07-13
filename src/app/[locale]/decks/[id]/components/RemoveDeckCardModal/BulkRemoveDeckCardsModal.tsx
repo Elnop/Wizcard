@@ -77,7 +77,7 @@ export function BulkRemoveDeckCardsModal({
 					size="sm"
 					onClick={() => onConfirm({ alsoRemoveCollection, alsoRemoveWishlist })}
 				>
-					Remove
+					{t('remove')}
 				</Button>
 			</div>
 		</Modal>

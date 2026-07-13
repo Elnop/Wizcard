@@ -294,7 +294,8 @@
 		"viewDetails": "Voir les détails",
 		"addToMyCollection": "Ajouter à ma collection…",
 		"addToMyWishlist": "Ajouter à ma liste de souhaits…",
-		"addToMyDeck": "Ajouter à mon deck…"
+		"addToMyDeck": "Ajouter à mon deck…",
+		"deckCount": "{count, plural, one {# deck} other {# decks}}"
 	},
 	"wishlist": {
 		"title": "Ma liste de souhaits",
@@ -540,7 +541,14 @@
 		"colorBalanceCost": "Coût",
 		"colorBalanceProduction": "Production",
 		"colorBalanceNote": "{color} : {costPct}% des pips, {prodPct}% des sources",
-		"toAddCount": "<strong>{count, plural, one {# carte} other {# cartes}}</strong> à ajouter"
+		"toAddCount": "<strong>{count, plural, one {# carte} other {# cartes}}</strong> à ajouter",
+		"ownedFraction": "({owned} / {total} possédées)",
+		"legalInFormatOnly": "Légal en {format} uniquement",
+		"nextCount": "Suivant ({count})",
+		"cardsCount": "{count} cartes",
+		"landsCount": "{count} terrains",
+		"cmcStat": "{cmc} CMC",
+		"folderCount": "{count, plural, one {# dossier} other {# dossiers}}"
 	},
 	"collection": {
 		"title": "Ma collection",
@@ -614,7 +622,10 @@
 		"dropZone": "Glissez un fichier ici ou cliquez pour parcourir",
 		"analyze": "Analyser",
 		"cardCount": "{count, plural, one {# carte} other {# cartes}}",
-		"noResult": "Aucun résultat"
+		"noResult": "Aucun résultat",
+		"cardsDetected": "{count} cartes détectées",
+		"parseErrors": "{count} erreurs d’analyse",
+		"errorsCount": "{count, plural, one {# erreur} other {# erreurs}}"
 	},
 	"sets": {
 		"title": "Extensions",

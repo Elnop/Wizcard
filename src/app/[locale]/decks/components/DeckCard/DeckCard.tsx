@@ -304,15 +304,19 @@ export function DeckCard({
 						{summary && summary.totalCards > 0 ? (
 							<div className={styles.statsRow}>
 								<span className={styles.stat}>
-									{summary.targetCards !== null
-										? `${summary.totalCards}/${summary.targetCards}`
-										: summary.totalCards}{' '}
-									cards
+									{t('cardsCount', {
+										count:
+											summary.targetCards !== null
+												? `${summary.totalCards}/${summary.targetCards}`
+												: summary.totalCards,
+									})}
 								</span>
 								<span className={styles.statSep}>·</span>
-								<span className={styles.stat}>{summary.landCount} lands</span>
+								<span className={styles.stat}>{t('landsCount', { count: summary.landCount })}</span>
 								<span className={styles.statSep}>·</span>
-								<span className={styles.stat}>{summary.averageCmc.toFixed(1)} CMC</span>
+								<span className={styles.stat}>
+									{t('cmcStat', { cmc: summary.averageCmc.toFixed(1) })}
+								</span>
 							</div>
 						) : (
 							<div />

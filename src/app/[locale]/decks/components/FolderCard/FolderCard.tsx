@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { FolderIcon } from '@phosphor-icons/react';
 import type { FolderMeta, DeckMeta } from '@/types/decks';
@@ -15,6 +16,7 @@ type Props = {
 };
 
 export function FolderCard({ folder, decks, childFolderCount, summaryMap, onClick }: Props) {
+	const t = useTranslations('decks');
 	const { setNodeRef: setDropRef, isOver } = useDroppable({
 		id: `folder-card-${folder.id}`,
 		data: { type: 'folder', folderId: folder.id },
@@ -83,15 +85,11 @@ export function FolderCard({ folder, decks, childFolderCount, summaryMap, onClic
 			{/* ── Body ── */}
 			<div className={styles.body}>
 				<div className={styles.stats}>
-					<span>
-						{decks.length} deck{decks.length !== 1 ? 's' : ''}
-					</span>
+					<span>{t('deckCount', { count: decks.length })}</span>
 					{childFolderCount > 0 && (
 						<>
 							<span className={styles.statSep}>·</span>
-							<span>
-								{childFolderCount} folder{childFolderCount !== 1 ? 's' : ''}
-							</span>
+							<span>{t('folderCount', { count: childFolderCount })}</span>
 						</>
 					)}
 				</div>

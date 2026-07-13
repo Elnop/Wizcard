@@ -142,7 +142,7 @@ export function DeckPdfExportModal({ availableZones, cards, onConfirm, onClose }
 					onClick={() => onConfirm(options)}
 					disabled={filteredCards.length === 0}
 				>
-					Next ({filteredCards.length})
+					{t('nextCount', { count: filteredCards.length })}
 				</Button>
 			</div>
 		</Modal>

@@ -403,7 +403,9 @@ export function CardSearchPanel({
 									onChange={(e) => setLegalOnly(e.target.checked)}
 									className={styles.toggleInput}
 								/>
-								<span className={styles.toggleText}>Legal in {deckFormat} only</span>
+								<span className={styles.toggleText}>
+									{t('legalInFormatOnly', { format: deckFormat })}
+								</span>
 							</label>
 						)}
 						<label className={styles.toggleLabel}>

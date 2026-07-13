@@ -107,7 +107,7 @@ export function AddDeckToCollectionModal({ zoneStats, availableZones, onConfirm,
 								/>
 								{ZONE_LABELS[zone]}
 								<span className={styles.zoneCount}>
-									({stat.owned} / {stat.total} owned)
+									{t('ownedFraction', { owned: stat.owned, total: stat.total })}
 								</span>
 							</label>
 						);

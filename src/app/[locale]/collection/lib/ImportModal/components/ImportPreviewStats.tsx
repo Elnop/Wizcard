@@ -54,20 +54,17 @@ export function ImportPreviewStats({
 
 			<div className={styles.previewStats}>
 				<span className={styles.previewStat}>
-					<span className={styles.previewStatValue}>{preview.parsed.cards.length}</span> cards
-					detected
+					{t('cardsDetected', { count: preview.parsed.cards.length })}
 				</span>
 				{errorCount > 0 && (
-					<span className={styles.previewStat}>
-						<span className={styles.previewStatWarn}>{errorCount}</span> parse errors
-					</span>
+					<span className={styles.previewStat}>{t('parseErrors', { count: errorCount })}</span>
 				)}
 			</div>
 
 			{errorCount > 0 && (
 				<div className={styles.errors}>
 					<button className={styles.errorToggle} onClick={onErrorsToggle}>
-						{errorCount} erreur{errorCount !== 1 ? 's' : ''}
+						{t('errorsCount', { count: errorCount })}
 						{/* eslint-disable-next-line sonarjs/no-nested-conditional -- expand indicator inside button label */}
 						{manyErrors ? (errorsExpanded ? ' ▲' : ' ▼') : ''}
 					</button>

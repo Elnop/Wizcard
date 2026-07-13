@@ -59,7 +59,6 @@ export function Navbar() {
 	return (
 		<>
 			<header className={styles.navbar}>
-				{/* eslint-disable-next-line i18next/no-literal-string -- nom de marque, non traduit */}
 				<Link href="/" className={styles.logo}>
 					Wizcard
 				</Link>

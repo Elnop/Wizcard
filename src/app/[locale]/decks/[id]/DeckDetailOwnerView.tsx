@@ -600,7 +600,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 
 					{isResolving && Object.keys(deckCards).length > 0 && (
 						<div className={styles.resolving}>
-							<Spinner /> Loading card data...
+							<Spinner /> {t('loadingCardData')}
 						</div>
 					)}
 

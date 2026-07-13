@@ -294,7 +294,8 @@
 		"viewDetails": "View details",
 		"addToMyCollection": "Add to my collection…",
 		"addToMyWishlist": "Add to my wishlist…",
-		"addToMyDeck": "Add to my deck…"
+		"addToMyDeck": "Add to my deck…",
+		"deckCount": "{count, plural, one {# deck} other {# decks}}"
 	},
 	"wishlist": {
 		"title": "My Wishlist",
@@ -540,7 +541,14 @@
 		"colorBalanceCost": "Cost",
 		"colorBalanceProduction": "Production",
 		"colorBalanceNote": "{color}: {costPct}% of pips, {prodPct}% of sources",
-		"toAddCount": "<strong>{count, plural, one {# card} other {# cards}}</strong> to add"
+		"toAddCount": "<strong>{count, plural, one {# card} other {# cards}}</strong> to add",
+		"ownedFraction": "({owned} / {total} owned)",
+		"legalInFormatOnly": "Legal in {format} only",
+		"nextCount": "Next ({count})",
+		"cardsCount": "{count} cards",
+		"landsCount": "{count} lands",
+		"cmcStat": "{cmc} CMC",
+		"folderCount": "{count, plural, one {# folder} other {# folders}}"
 	},
 	"collection": {
 		"title": "My Collection",
@@ -614,7 +622,10 @@
 		"dropZone": "Drop a file here or click to browse",
 		"analyze": "Analyze",
 		"cardCount": "{count, plural, one {# card} other {# cards}}",
-		"noResult": "No result"
+		"noResult": "No result",
+		"cardsDetected": "{count} cards detected",
+		"parseErrors": "{count} parse errors",
+		"errorsCount": "{count, plural, one {# error} other {# errors}}"
 	},
 	"sets": {
 		"title": "Sets",

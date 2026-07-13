@@ -40,7 +40,7 @@ export function AddToCollectionButton({ card }: AddToCollectionButtonProps) {
 		return (
 			<div className={styles.container}>
 				<Button variant="primary" onClick={openAdd}>
-					Add to Collection
+					{t('addToCollection')}
 				</Button>
 			</div>
 		);

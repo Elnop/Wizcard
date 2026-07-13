@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { createPortal } from 'react-dom';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import styles from './PrintContextMenu.module.css';
@@ -20,6 +21,7 @@ export function PrintContextMenu({
 	onAddToCollection,
 	onAddToWishlist,
 }: Props) {
+	const t = useTranslations('card');
 	const close = useCallback(() => onClose(), [onClose]);
 
 	useEffect(() => {
@@ -59,7 +61,7 @@ export function PrintContextMenu({
 				}}
 			>
 				<span className={styles.icon}>+</span>
-				Add to collection
+				{t('addToCollection')}
 			</button>
 			<button
 				type="button"
@@ -70,7 +72,7 @@ export function PrintContextMenu({
 				}}
 			>
 				<span className={styles.icon}>♡</span>
-				Add to Wishlist
+				{t('addToWishlist')}
 			</button>
 		</div>,
 		document.body

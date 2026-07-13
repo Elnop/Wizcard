@@ -197,7 +197,6 @@ export function CardImage({
 						aria-hidden="true"
 					/>
 				)}
-				{/* eslint-disable-next-line i18next/no-literal-string -- terme MTG standard */}
 				{isProxy && <span className={styles.proxyBadge}>proxy</span>}
 			</div>
 			{isDoubleFaced && (
