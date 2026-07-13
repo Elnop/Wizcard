@@ -1,0 +1,35 @@
+.section {
+	border: 1px solid var(--border, #e2e2e2);
+	border-radius: 12px;
+	padding: 1.25rem 1.5rem;
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+}
+.title {
+	font-size: 1.1rem;
+	font-weight: 600;
+}
+.body {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+.status {
+	font-size: 0.85rem;
+}
+.saving {
+	opacity: 0.7;
+}
+.saved {
+	color: #16a34a;
+}
+.error {
+	color: #dc2626;
+}
