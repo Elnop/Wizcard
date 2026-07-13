@@ -757,7 +757,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					onClick={() => setSearchPanelOpen(true)}
 				>
 					<PlusIcon weight="bold" />
-					Cards
+					{t('cards')}
 				</Button>
 			)}
 

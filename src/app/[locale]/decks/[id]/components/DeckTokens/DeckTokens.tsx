@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import type { DeckZone } from '@/types/decks';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
@@ -43,6 +44,7 @@ export function DeckTokens({
 	onCardContextMenu,
 	tableColumns,
 }: DeckTokensProps) {
+	const t = useTranslations('decks');
 	const availableZones = ZONE_ORDER.filter((z) => scanZones.includes(z));
 
 	const [selectedZones, setSelectedZones] = useState<Set<DeckZone>>(
@@ -82,7 +84,7 @@ export function DeckTokens({
 	return (
 		<div className={styles.panel}>
 			<div className={styles.header}>
-				<h2 className={styles.title}>Tokens ({tokens.length})</h2>
+				<h2 className={styles.title}>{t('tokensCount', { count: tokens.length })}</h2>
 				<div className={styles.addControl} ref={menuRef}>
 					<button
 						type="button"
@@ -90,13 +92,13 @@ export function DeckTokens({
 						onClick={handleAdd}
 						disabled={isAdding || selectedZones.size === 0}
 					>
-						{isAdding ? <Spinner /> : '+'} Auto-detect tokens
+						{isAdding ? <Spinner /> : '+'} {t('autoDetectTokens')}
 					</button>
 					<button
 						type="button"
 						className={styles.caret}
 						onClick={() => setMenuOpen((v) => !v)}
-						aria-label="Choose zones to scan"
+						aria-label={t('chooseZonesToScan')}
 						aria-expanded={menuOpen}
 						disabled={isAdding}
 					>
@@ -104,7 +106,7 @@ export function DeckTokens({
 					</button>
 					{menuOpen && (
 						<div className={styles.menu}>
-							<div className={styles.menuTitle}>Zones to scan</div>
+							<div className={styles.menuTitle}>{t('zonesToScan')}</div>
 							{availableZones.map((zone) => (
 								<label key={zone} className={styles.menuItem}>
 									<input
@@ -123,9 +125,7 @@ export function DeckTokens({
 			{tokens.length === 0 ? (
 				<div className={styles.emptyRow} style={{ height: CARD_ROW_HEIGHT }}>
 					<span className={styles.emptyText}>
-						{hasScanned || isAdding
-							? 'No tokens needed in this deck'
-							: 'Auto-detect the deck tokens'}
+						{hasScanned || isAdding ? t('noTokensNeeded') : t('autoDetectDeckTokens')}
 					</span>
 				</div>
 			) : (

@@ -161,7 +161,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 								onClick={() => void copyDeck(deck, resolvedCards)}
 								disabled={isCopying || isResolving}
 							>
-								{isCopying ? 'Copying…' : 'Copy to my decks'}
+								{isCopying ? t('copying') : t('copyToMyDecks')}
 							</Button>
 						</div>
 					)}
@@ -177,7 +177,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 
 					{isResolving && (
 						<div className={styles.resolving}>
-							<Spinner /> Loading card data...
+							<Spinner /> {t('loadingCardData')}
 						</div>
 					)}
 
@@ -231,7 +231,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 					items={[
 						{
 							type: 'action',
-							label: 'Add to Collection',
+							label: t('addToCollection'),
 							icon: '+',
 							onClick: () => {
 								openAddCard({

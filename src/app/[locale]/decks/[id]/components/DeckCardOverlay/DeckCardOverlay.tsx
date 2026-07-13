@@ -296,7 +296,7 @@ export function DeckCardOverlay({
 							<span
 								className={`${styles.ownershipTooltipHeader} ${tooltipCopies.length > 0 ? styles.ownershipTooltipHeaderWishlist : ''}`}
 							>
-								Ma wishlist
+								{t('myWishlist')}
 							</span>
 							{wishlistTooltipCopies.map((copy) => (
 								<span key={copy.key} className={styles.ownershipTooltipItem}>

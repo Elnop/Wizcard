@@ -36,13 +36,16 @@ export function SampleHand({ mainboard }: Props) {
 					/>
 					<div className={styles.actions}>
 						<Button variant="secondary" onClick={mulligan}>
-							Mulligan
+							{t('mulligan')}
 						</Button>
 						<Button variant="secondary" onClick={draw} disabled={!canDraw}>
-							Piocher
+							{t('draw')}
 						</Button>
 						<span className={styles.counter}>
-							{hand.length} cartes · bibliothèque : {mainboard.length - hand.length}
+							{t('handLibraryCounter', {
+								hand: hand.length,
+								library: mainboard.length - hand.length,
+							})}
 						</span>
 					</div>
 				</>

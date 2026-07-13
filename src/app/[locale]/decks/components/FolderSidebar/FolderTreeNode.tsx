@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { CaretDownIcon, CaretRightIcon, FolderIcon, FolderOpenIcon } from '@phosphor-icons/react';
 import type { FolderNode } from '@/lib/deck/utils/folder-tree';
@@ -182,6 +183,7 @@ function FolderContextMenu({
 	onRename: () => void;
 	onDelete: () => void;
 }) {
+	const t = useTranslations('decks');
 	const ref = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -202,10 +204,10 @@ function FolderContextMenu({
 	return (
 		<div ref={ref} className={styles.contextMenu} style={{ top: y, left: x }}>
 			<button className={styles.contextItem} onClick={onRename}>
-				Rename
+				{t('rename')}
 			</button>
 			<button className={`${styles.contextItem} ${styles.contextItemDanger}`} onClick={onDelete}>
-				Delete
+				{t('delete')}
 			</button>
 		</div>
 	);

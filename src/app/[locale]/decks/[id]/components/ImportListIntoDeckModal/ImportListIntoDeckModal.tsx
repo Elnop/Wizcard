@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import { Spinner } from '@/components/Spinner/Spinner';
@@ -21,17 +22,6 @@ Sideboard
 
 type Step = 'input' | 'resolving' | 'preview';
 
-function modalTitle(step: Step): string {
-	switch (step) {
-		case 'resolving':
-			return 'Fetching cards…';
-		case 'preview':
-			return 'Import preview';
-		default:
-			return 'Import a list';
-	}
-}
-
 type Props = {
 	deckId: string;
 	existingOracleIds: Set<string>;
@@ -39,10 +29,18 @@ type Props = {
 };
 
 export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: Props) {
+	const t = useTranslations('decks');
 	const { bulkAddCardsToDeck } = useDeckContext();
 	const { normalize: normalizeSetCodes } = useSetCodeNormalizer();
 
 	const [step, setStep] = useState<Step>('input');
+
+	const titleByStep: Record<Step, string> = {
+		input: t('importList'),
+		resolving: t('fetchingCards'),
+		preview: t('importPreview'),
+	};
+	const modalTitle = titleByStep[step];
 
 	const [text, setText] = useState('');
 	const [resolvedRows, setResolvedRows] = useState<ResolvedDeckRow[]>([]);
@@ -61,11 +59,7 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 		setErrors([]);
 
 		if (!parsed || parsed.rows.length === 0) {
-			setErrors(
-				parsed && parsed.parseErrors.length > 0
-					? parsed.parseErrors
-					: ['No valid card. Paste a list like “4 Lightning Bolt”.']
-			);
+			setErrors(parsed && parsed.parseErrors.length > 0 ? parsed.parseErrors : [t('noValidCards')]);
 			return;
 		}
 
@@ -76,10 +70,12 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 			setNotFound(result.notFound);
 			setStep('preview');
 		} catch (err) {
-			setErrors([`Preview failed: ${err instanceof Error ? err.message : 'unknown error'}`]);
+			setErrors([
+				t('previewFailed', { message: err instanceof Error ? err.message : t('unknownError') }),
+			]);
 			setStep('input');
 		}
-	}, [parsed, normalizeSetCodes]);
+	}, [parsed, normalizeSetCodes, t]);
 
 	const backToInput = useCallback(() => {
 		setStep('input');
@@ -97,7 +93,7 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 		return (
 			<div className={styles.form}>
 				<label className={styles.label}>
-					Card list
+					{t('cardList')}
 					<textarea
 						className={styles.textarea}
 						placeholder={PLACEHOLDER}
@@ -120,10 +116,10 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 
 				<div className={styles.actions}>
 					<Button variant="ghost" type="button" onClick={onClose}>
-						Cancel
+						{t('cancel')}
 					</Button>
 					<Button onClick={handleResolve} disabled={!text.trim()}>
-						Preview
+						{t('preview')}
 					</Button>
 				</div>
 			</div>
@@ -134,14 +130,14 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 		return (
 			<div className={styles.loadingScreen}>
 				<Spinner size="md" />
-				<p className={styles.loadingLabel}>Fetching cards…</p>
+				<p className={styles.loadingLabel}>{t('fetchingCards')}</p>
 			</div>
 		);
 	}
 
 	return (
 		<Modal className={`${styles.modal} ${step === 'preview' ? styles.modalWide : ''}`}>
-			<button className={styles.closeIcon} onClick={onClose} aria-label="Close" type="button">
+			<button className={styles.closeIcon} onClick={onClose} aria-label={t('close')} type="button">
 				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 					<path
 						d="M2 2l12 12M14 2L2 14"
@@ -151,7 +147,7 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 					/>
 				</svg>
 			</button>
-			<h2 className={styles.title}>{modalTitle(step)}</h2>
+			<h2 className={styles.title}>{modalTitle}</h2>
 			{step === 'input' && renderInput()}
 			{step === 'resolving' && renderResolving()}
 			{step === 'preview' && (
@@ -160,7 +156,7 @@ export function ImportListIntoDeckModal({ deckId, existingOracleIds, onClose }: 
 					existingOracleIds={existingOracleIds}
 					notFound={notFound}
 					hasSections={hasSections}
-					primaryLabel={(n) => `Add ${n} card${n === 1 ? '' : 's'}`}
+					primaryLabel={(n) => t('addNCards', { count: n })}
 					onImport={handleImport}
 					onBack={backToInput}
 				/>

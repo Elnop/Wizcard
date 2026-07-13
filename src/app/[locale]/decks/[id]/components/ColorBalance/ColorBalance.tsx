@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { ColorIdentityIcons } from '@/lib/scryfall/components/ColorIdentityIcons';
 import styles from './ColorBalance.module.css';
 
@@ -63,6 +64,7 @@ function StackedBar({
 }
 
 export function ColorBalance({ cost, production }: Props) {
+	const t = useTranslations('decks');
 	const costPct = pct(cost, COLOR_ORDER);
 	// Production comparée sur les mêmes 5 couleurs (C exclu de la comparaison pips).
 	const prodPct = pct(production, COLOR_ORDER);
@@ -77,15 +79,18 @@ export function ColorBalance({ cost, production }: Props) {
 
 	return (
 		<div className={styles.container}>
-			<StackedBar label="Cost" values={costPct} keys={COLOR_ORDER} />
-			<StackedBar label="Production" values={prodPct} keys={COLOR_ORDER} />
+			<StackedBar label={t('colorBalanceCost')} values={costPct} keys={COLOR_ORDER} />
+			<StackedBar label={t('colorBalanceProduction')} values={prodPct} keys={COLOR_ORDER} />
 			{notes.length > 0 && (
 				<ul className={styles.notes}>
 					{notes.map(({ k }) => (
 						<li key={k} className={styles.note}>
 							<ColorIdentityIcons colors={[k]} size={14} />
-							{COLOR_LABELS[k] ?? k} : {Math.round(costPct(k))}% des pips, {Math.round(prodPct(k))}%
-							des sources
+							{t('colorBalanceNote', {
+								color: COLOR_LABELS[k] ?? k,
+								costPct: Math.round(costPct(k)),
+								prodPct: Math.round(prodPct(k)),
+							})}
 						</li>
 					))}
 				</ul>

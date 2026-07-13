@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
 import styles from './AddCardToCollectionModal.module.css';
@@ -19,6 +20,7 @@ type Props = {
 };
 
 export function AddCardToCollectionModal({ cardName, unownedRowIds, onConfirm, onClose }: Props) {
+	const t = useTranslations('decks');
 	const hasMultiple = unownedRowIds.length > 1;
 	const [allCopies, setAllCopies] = useState(true);
 	const [asProxy, setAsProxy] = useState(false);
@@ -27,33 +29,33 @@ export function AddCardToCollectionModal({ cardName, unownedRowIds, onConfirm, o
 
 	return (
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
-			<h2 className={styles.title}>Add to collection</h2>
+			<h2 className={styles.title}>{t('addToCollection2')}</h2>
 			<p className={styles.summary}>
-				<strong>{cardName}</strong> —{' '}
-				<strong>
-					{addCount} cop{addCount !== 1 ? 'ies' : 'y'}
-				</strong>{' '}
-				to add
+				{t.rich('copiesToAdd', {
+					name: cardName,
+					count: addCount,
+					strong: (chunks) => <strong>{chunks}</strong>,
+				})}
 			</p>
 
 			{hasMultiple && (
 				<div className={styles.section}>
-					<p className={styles.sectionTitle}>Copies</p>
+					<p className={styles.sectionTitle}>{t('copies2')}</p>
 					<div className={styles.options}>
 						<label className={styles.option}>
 							<input type="radio" checked={allCopies} onChange={() => setAllCopies(true)} />
-							All unowned copies ({unownedRowIds.length})
+							{t('allUnownedCopies', { count: unownedRowIds.length })}
 						</label>
 						<label className={styles.option}>
-							<input type="radio" checked={!allCopies} onChange={() => setAllCopies(false)} />A
-							single copy
+							<input type="radio" checked={!allCopies} onChange={() => setAllCopies(false)} />
+							{t('aSingleCopy')}
 						</label>
 					</div>
 				</div>
 			)}
 
 			<div className={styles.section}>
-				<p className={styles.sectionTitle}>Options</p>
+				<p className={styles.sectionTitle}>{t('options')}</p>
 				<div className={styles.options}>
 					<label className={styles.option}>
 						<input
@@ -61,14 +63,14 @@ export function AddCardToCollectionModal({ cardName, unownedRowIds, onConfirm, o
 							checked={asProxy}
 							onChange={(e) => setAsProxy(e.target.checked)}
 						/>
-						Mark as proxy
+						{t('markAsProxy')}
 					</label>
 				</div>
 			</div>
 
 			<div className={styles.actions}>
 				<Button variant="secondary" size="sm" onClick={onClose}>
-					Cancel
+					{t('cancel')}
 				</Button>
 				<Button
 					variant="primary"
@@ -81,7 +83,7 @@ export function AddCardToCollectionModal({ cardName, unownedRowIds, onConfirm, o
 					}
 					disabled={unownedRowIds.length === 0}
 				>
-					Add
+					{t('add')}
 				</Button>
 			</div>
 		</Modal>

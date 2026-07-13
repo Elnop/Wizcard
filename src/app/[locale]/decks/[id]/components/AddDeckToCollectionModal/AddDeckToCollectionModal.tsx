@@ -87,10 +87,10 @@ export function AddDeckToCollectionModal({ zoneStats, availableZones, onConfirm,
 		<Modal onClose={onClose} className={styles.dialog} zIndex={1100}>
 			<h2 className={styles.title}>{t('addDeckToCollection2')}</h2>
 			<p className={styles.summary}>
-				<strong>
-					{addCount} card{addCount !== 1 ? 's' : ''}
-				</strong>{' '}
-				to add
+				{t.rich('toAddCount', {
+					count: addCount,
+					strong: (chunks) => <strong>{chunks}</strong>,
+				})}
 			</p>
 
 			<div className={styles.section}>

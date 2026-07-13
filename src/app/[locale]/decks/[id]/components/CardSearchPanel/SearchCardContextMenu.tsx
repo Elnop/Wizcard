@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
@@ -32,6 +33,7 @@ export function SearchCardContextMenu({
 	collectionEntries,
 	scryfallIdToOracleId,
 }: Props) {
+	const t = useTranslations('decks');
 	const { addCardToDeck, addCollectionCardToDeck, updateDeck } = useDeckContext();
 	const commanderFormat = isCommanderFormat(format);
 
@@ -100,7 +102,7 @@ export function SearchCardContextMenu({
 		return [
 			{
 				type: 'action',
-				label: 'Add to deck...',
+				label: t('addToDeckMenu'),
 				onClick: () => {
 					onCardClick(card);
 					onClose();
@@ -113,7 +115,7 @@ export function SearchCardContextMenu({
 						{ type: 'divider' as const },
 						{
 							type: 'action' as const,
-							label: 'Set as deck cover',
+							label: t('setAsDeckCover'),
 							icon: '★',
 							onClick: () => {
 								const url = getArtCropUrl(card);
@@ -124,7 +126,7 @@ export function SearchCardContextMenu({
 					]
 				: []),
 		];
-	}, [card, commanderFormat, addWithCollectionAssign, onCardClick, onClose, updateDeck, deckId]);
+	}, [card, commanderFormat, addWithCollectionAssign, onCardClick, onClose, updateDeck, deckId, t]);
 
 	return <ContextMenu items={items} position={position} onClose={onClose} />;
 }

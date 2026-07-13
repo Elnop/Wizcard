@@ -1,4 +1,5 @@
 'use client';
+import { useTranslations } from 'next-intl';
 
 import { useState, useCallback, useMemo } from 'react';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
@@ -57,6 +58,7 @@ export function CardSearchPanel({
 	expanded = false,
 	onToggleExpand,
 }: Props) {
+	const t = useTranslations('decks');
 	const [searchName, setSearchName] = useState('');
 	const [tab, setTab] = useState<PanelTab>('search');
 	const [cardMode, setCardMode] = useState<'cards' | 'token'>('cards');
@@ -306,7 +308,7 @@ export function CardSearchPanel({
 	return (
 		<aside className={`${styles.panel} ${expanded ? styles.panelExpanded : ''}`}>
 			<div className={styles.header}>
-				<span className={styles.title}>Add Cards</span>
+				<span className={styles.title}>{t('addCards')}</span>
 				<div className={styles.headerActions}>
 					{onToggleExpand && (
 						<button
@@ -342,7 +344,7 @@ export function CardSearchPanel({
 						type="button"
 						className={styles.closeBtn}
 						onClick={onClose}
-						aria-label="Close panel"
+						aria-label={t('closePanel')}
 					>
 						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 							<path
@@ -371,12 +373,12 @@ export function CardSearchPanel({
 							<SearchBar
 								value={searchName}
 								onChange={setSearchName}
-								placeholder="Search for a card..."
+								placeholder={t('searchForCard')}
 							/>
 							<CardModeSwitcher value={cardMode} onChange={setCardMode} />
 							<button
 								type="button"
-								aria-label="More filters"
+								aria-label={t('moreFilters')}
 								className={styles.filtersButton}
 								onClick={() => setFilterModalOpen(true)}
 							>
@@ -415,7 +417,7 @@ export function CardSearchPanel({
 								}}
 								className={styles.toggleInput}
 							/>
-							<span className={styles.toggleText}>In collection only</span>
+							<span className={styles.toggleText}>{t('inCollectionOnly')}</span>
 						</label>
 					</div>
 
