@@ -106,6 +106,14 @@ export function ProfileMenu({ onSignOut, onNavigate, inline = false }: ProfileMe
 					>
 						Profile
 					</Link>
+					<Link
+						href="/settings"
+						className={styles.dropdownItem}
+						role="menuitem"
+						onClick={handleProfileClick}
+					>
+						Paramètres
+					</Link>
 					<button
 						type="button"
 						className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}

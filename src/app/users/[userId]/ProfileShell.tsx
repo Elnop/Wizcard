@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { Spinner } from '@/components/Spinner/Spinner';
@@ -16,12 +16,12 @@ import { UserNotFound } from './components/UserNotFound';
  * ProfileView shell (header + tab links) with the active tab's page as
  * `children`. The resolved identity is published via ProfileShellContext so the
  * tab sub-pages don't each re-resolve the nickname. The owner sees their live
- * profile (from ProfileContext) plus an Edit button; visitors see the read-only
- * public profile. Not auth-gated — public sharing is enforced by RLS.
+ * profile (from ProfileContext); visitors see the read-only public profile.
+ * Profile editing lives in /settings (reachable from the profile menu), not on
+ * this page. Not auth-gated — public sharing is enforced by RLS.
  */
 export default function ProfileShell({ children }: { children: React.ReactNode }) {
 	const params = useParams();
-	const router = useRouter();
 	const nickname = params.userId as string;
 	const { user } = useAuth();
 
@@ -54,7 +54,6 @@ export default function ProfileShell({ children }: { children: React.ReactNode }
 			<ProfileView
 				profile={profile}
 				isLoading={isOwner ? ownerCtx.isLoading : false}
-				onEdit={isOwner ? () => router.push('/settings') : undefined}
 				handle={nickname}
 				summary={summary}
 			>
