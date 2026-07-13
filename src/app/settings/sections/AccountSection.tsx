@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { Button } from '@/components/Button/Button';
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
@@ -13,9 +12,6 @@ export function AccountSection() {
 	const router = useRouter();
 	const [emailMsg, setEmailMsg] = useState<string | null>(null);
 	const [emailErr, setEmailErr] = useState<string | null>(null);
-	const [password, setPassword] = useState('');
-	const [passwordConfirm, setPasswordConfirm] = useState('');
-	const [pwMsg, setPwMsg] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
 	const [confirming, setConfirming] = useState(false);
 	const [deleteErr, setDeleteErr] = useState<string | null>(null);
@@ -32,29 +28,6 @@ export function AccountSection() {
 				return;
 			}
 			setEmailMsg('Un e-mail de confirmation a été envoyé à votre adresse actuelle.');
-		} finally {
-			setBusy(false);
-		}
-	};
-
-	const changePassword = async () => {
-		setPwMsg(null);
-		if (password.length < 8) {
-			setPwMsg('Le mot de passe doit contenir au moins 8 caractères.');
-			return;
-		}
-		if (password !== passwordConfirm) {
-			setPwMsg('Les mots de passe ne correspondent pas.');
-			return;
-		}
-		setBusy(true);
-		try {
-			const { error } = await createClient().auth.updateUser({ password });
-			setPwMsg(error ? `Erreur : ${error.message}` : 'Mot de passe mis à jour.');
-			if (!error) {
-				setPassword('');
-				setPasswordConfirm('');
-			}
 		} finally {
 			setBusy(false);
 		}
@@ -89,33 +62,6 @@ export function AccountSection() {
 			</Button>
 			{emailMsg && <span className={s.successText}>{emailMsg}</span>}
 			{emailErr && <span className={s.errorText}>{emailErr}</span>}
-
-			<hr className={s.divider} />
-
-			<div className={s.field}>
-				<span className={s.label}>Nouveau mot de passe</span>
-				<input
-					className={s.input}
-					type="password"
-					value={password}
-					onChange={(e) => setPassword(e.target.value)}
-					disabled={busy}
-				/>
-			</div>
-			<div className={s.field}>
-				<span className={s.label}>Confirmer le mot de passe</span>
-				<input
-					className={s.input}
-					type="password"
-					value={passwordConfirm}
-					onChange={(e) => setPasswordConfirm(e.target.value)}
-					disabled={busy}
-				/>
-			</div>
-			<Button variant="secondary" size="sm" onClick={changePassword} disabled={busy}>
-				Changer le mot de passe
-			</Button>
-			{pwMsg && <span className={s.successText}>{pwMsg}</span>}
 
 			<hr className={s.divider} />
 
