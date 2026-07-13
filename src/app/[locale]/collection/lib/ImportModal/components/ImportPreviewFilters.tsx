@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
 import styles from '../ImportModal.module.css';
 
@@ -22,26 +23,24 @@ export function ImportPreviewFilters({
 	filteredCount,
 	totalCardCount,
 }: ImportPreviewFiltersProps) {
+	const t = useTranslations('collection');
 	return (
 		<>
 			<div className={styles.searchRow}>
 				<SearchBar
 					value={nameFilter}
 					onChange={onNameFilterChange}
-					placeholder="Search by name..."
+					placeholder={t('searchByName')}
 				/>
 				<button className={styles.filterButton} onClick={onOpenFilterModal}>
-					Filtres
+					{t('filters')}
 					{activeFilterCount > 0 && <span className={styles.filterBadge}>{activeFilterCount}</span>}
 				</button>
 			</div>
 
 			{isFiltered && (
 				<span className={styles.resultCount}>
-					{filteredCount > 0
-						? // eslint-disable-next-line sonarjs/no-nested-conditional -- pluralization embedded in label
-							`${filteredCount} card${filteredCount !== 1 ? 's' : ''}`
-						: 'No result'}
+					{filteredCount > 0 ? t('cardCount', { count: filteredCount }) : t('noResult')}
 					{totalCardCount > 0 && ` / ${totalCardCount}`}
 				</span>
 			)}

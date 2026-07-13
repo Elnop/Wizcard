@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 import type { CollectionSortOrder } from '@/lib/card/utils/filterCollectionCards';
@@ -30,6 +31,7 @@ export function CollectionFiltersBar({
 	setsLoading,
 	activeFilterCount,
 }: Props) {
+	const t = useTranslations('collection');
 	const [open, setOpen] = useState(false);
 
 	return (
@@ -38,14 +40,14 @@ export function CollectionFiltersBar({
 				<SearchBar
 					value={filters.name}
 					onChange={(v) => onChange({ ...filters, name: v })}
-					placeholder="Search by name..."
+					placeholder={t('searchByName')}
 				/>
 			</div>
 			<button
 				type="button"
 				className={styles.filterButton}
 				onClick={() => setOpen(true)}
-				aria-label="Filters"
+				aria-label={t('filters')}
 			>
 				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 					<path
@@ -55,7 +57,7 @@ export function CollectionFiltersBar({
 						strokeLinecap="round"
 					/>
 				</svg>
-				Filters
+				{t('filters')}
 				{activeFilterCount > 0 && <span className={styles.badge}>{activeFilterCount}</span>}
 			</button>
 

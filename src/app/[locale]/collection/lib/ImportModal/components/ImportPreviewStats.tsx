@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { ImportFormatId } from '@/lib/import/types';
 import { isBinaryFormat } from '@/lib/import/types';
 import type { ImportPreview } from '@/lib/import/hooks/useImport';
@@ -23,6 +24,7 @@ export function ImportPreviewStats({
 	onChangeFile,
 	onChangeFormat,
 }: ImportPreviewStatsProps) {
+	const t = useTranslations('collection');
 	const errorCount = preview.parsed.parseErrors.length;
 	const manyErrors = errorCount > 5;
 
@@ -31,11 +33,11 @@ export function ImportPreviewStats({
 			<div className={styles.fileInfo} onClick={onChangeFile}>
 				<span className={styles.fileName}>{preview.fileName}</span>
 				<span className={styles.fileSize}>{formatFileSize(preview.fileSize)}</span>
-				<span className={styles.fileInfoOverlay}>Change file</span>
+				<span className={styles.fileInfoOverlay}>{t('changeFile')}</span>
 			</div>
 
 			<div className={styles.formatRow}>
-				<span className={styles.formatLabel}>Format :</span>
+				<span className={styles.formatLabel}>{t('format')}</span>
 				<select
 					className={styles.formatSelect}
 					value={preview.detectedFormat}

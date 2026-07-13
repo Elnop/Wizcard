@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { CardStack } from '@/types/cards';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
@@ -18,11 +19,14 @@ import { ImportModal } from '@/app/[locale]/collection/lib/ImportModal/ImportMod
 import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
+import { useOwnedCardMenuLabels } from '@/lib/card/hooks/useOwnedCardMenuLabels';
 import { useWishlistPdf } from './useWishlistPdf';
 import { useMoveToCollection } from './useMoveToCollection';
 import styles from './page.module.css';
 
 function WishlistPageInner() {
+	const t = useTranslations('wishlist');
+	const menuLabels = useOwnedCardMenuLabels('wishlist');
 	const { entries, isLoaded, clearWishlist, moveToCollection } = useWishlistContext();
 	const { status: importStatus, openModal: openImportModal } = useImportContext();
 
@@ -40,10 +44,10 @@ function WishlistPageInner() {
 	);
 
 	const handleClearWishlist = useCallback(() => {
-		if (confirm('Clear the entire wishlist? This action is irreversible.')) {
+		if (confirm(t('clearConfirm'))) {
 			clearWishlist();
 		}
-	}, [clearWishlist]);
+	}, [clearWishlist, t]);
 
 	const representativeCards = useMemo(
 		() =>
@@ -83,11 +87,11 @@ function WishlistPageInner() {
 				<div className={styles.titleSection}>
 					<div className={styles.titleLeft}>
 						<h1 className={styles.title}>
-							<WishlistIcon size={22} /> My Wishlist
+							<WishlistIcon size={22} /> {t('title')}
 						</h1>
 						{entries.length > 0 && !isHydrating && (
 							<p className={styles.statsLine}>
-								{totalCards} card{totalCards !== 1 ? 's' : ''} &middot; {uniqueCards} unique
+								{t('stats', { cards: totalCards, unique: uniqueCards })}
 							</p>
 						)}
 					</div>
@@ -95,7 +99,7 @@ function WishlistPageInner() {
 						{entries.length > 0 && (
 							<>
 								<Button variant="secondary" onClick={pdf.openModal} disabled={isHydrating}>
-									Generate PDF
+									{t('generatePdf')}
 								</Button>
 								<ExportMenu
 									cards={stacks.flatMap((s) => s.cards)}
@@ -103,7 +107,7 @@ function WishlistPageInner() {
 									disabled={isImporting || isHydrating}
 								/>
 								<Button variant="danger" onClick={handleClearWishlist} disabled={isImporting}>
-									Clear
+									{t('clear')}
 								</Button>
 							</>
 						)}
@@ -112,17 +116,17 @@ function WishlistPageInner() {
 							onClick={() => openImportModal('wishlist')}
 							disabled={isImporting}
 						>
-							{isImporting ? 'Importing…' : 'Import'}
+							{isImporting ? t('importing') : t('import')}
 						</Button>
 					</div>
 				</div>
 
 				{entries.length === 0 ? (
 					<div className={styles.emptyState}>
-						<h2>Your wishlist is empty</h2>
-						<p>Search for cards or browse your decks to add cards you want to acquire.</p>
+						<h2>{t('emptyTitle')}</h2>
+						<p>{t('emptyDescription')}</p>
 						<Link href="/search">
-							<Button variant="primary">Search for cards</Button>
+							<Button variant="primary">{t('searchForCards')}</Button>
 						</Link>
 					</div>
 				) : (
@@ -148,7 +152,8 @@ function WishlistPageInner() {
 											onChangePrint: handleCardClick,
 											onRemove: (rep) => mutations.wishlist.remove(rep.entry.rowId),
 										},
-										close
+										close,
+										menuLabels
 									)
 								: null;
 						}}
@@ -167,31 +172,31 @@ function WishlistPageInner() {
 							);
 						}}
 						tableColumns={[
-							{ key: 'name', label: 'Name' },
+							{ key: 'name', label: t('colName') },
 							{
 								key: 'set',
-								label: 'Set',
+								label: t('colSet'),
 								render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
 							},
 							{
 								key: 'collector_number',
-								label: 'Collector #',
+								label: t('colCollector'),
 								render: (card) =>
 									'collector_number' in card ? (card.collector_number as string) : '—',
 							},
 							{
 								key: 'condition',
-								label: 'Condition',
+								label: t('colCondition'),
 								render: (card) => ('entry' in card ? (card.entry.condition ?? '—') : '—'),
 							},
 							{
 								key: 'foil',
-								label: 'Foil',
+								label: t('colFoil'),
 								render: (card) => ('entry' in card ? (card.entry.foilType ?? '—') : '—'),
 							},
 							{
 								key: 'prices',
-								label: 'Prix USD',
+								label: t('colPriceUsd'),
 								render: (card) =>
 									'prices' in card && card.prices && 'usd' in card.prices
 										? (card.prices.usd ?? '—')

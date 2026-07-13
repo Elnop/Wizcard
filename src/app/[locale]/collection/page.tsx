@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { CardStack } from '@/types/cards';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
@@ -11,12 +12,15 @@ import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
 import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
+import { useOwnedCardMenuLabels } from '@/lib/card/hooks/useOwnedCardMenuLabels';
 import { Button } from '@/components/Button/Button';
 import { ExportMenu } from './ExportMenu/ExportMenu';
 import styles from './page.module.css';
 import { CollectionView } from './lib/CollectionView/CollectionView';
 
 function CollectionPageInner() {
+	const t = useTranslations('collection');
+	const menuLabels = useOwnedCardMenuLabels('collection');
 	const { entries, isLoaded, isFullyLoaded, clearCollection } = useCollectionContext();
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCardsContext();
 	const { status, openModal } = useImportContext();
@@ -28,10 +32,10 @@ function CollectionPageInner() {
 	const openCard = useCallback((stack: CardStack) => openCardModal(stack.cards), [openCardModal]);
 
 	const handleClearCollection = useCallback(() => {
-		if (confirm('Clear the entire collection? This action is irreversible.')) {
+		if (confirm(t('clearConfirm'))) {
 			clearCollection();
 		}
-	}, [clearCollection]);
+	}, [clearCollection, t]);
 
 	if (!isLoaded) {
 		return <div className={styles.page} />;
@@ -47,10 +51,10 @@ function CollectionPageInner() {
 
 	const emptyState = (
 		<div className={styles.emptyState}>
-			<h2>Your collection is empty</h2>
-			<p>Search for cards or import a collection file to get started.</p>
+			<h2>{t('emptyTitle')}</h2>
+			<p>{t('emptyDescription')}</p>
 			<Link href="/search">
-				<Button variant="primary">Search for cards</Button>
+				<Button variant="primary">{t('searchForCards')}</Button>
 			</Link>
 		</div>
 	);
@@ -65,12 +69,12 @@ function CollectionPageInner() {
 						disabled={isBusy || isLoadingCollection}
 					/>
 					<Button variant="danger" onClick={handleClearCollection} disabled={isBusy}>
-						Clear
+						{t('clear')}
 					</Button>
 				</>
 			)}
 			<Button variant="primary" onClick={() => openModal('collection')} disabled={isBusy}>
-				{isBusy ? 'Importing…' : 'Import'}
+				{isBusy ? t('importing') : t('import')}
 			</Button>
 		</>
 	);
@@ -83,7 +87,7 @@ function CollectionPageInner() {
 			totalExpected={totalExpected}
 			isLoaded={isLoaded}
 			isFullyLoaded={isFullyLoaded}
-			title="My Collection"
+			title={t('title')}
 			actions={actions}
 			emptyState={emptyState}
 			onCardClick={openCard}
@@ -100,7 +104,8 @@ function CollectionPageInner() {
 						onChangePrint: openCard,
 						onRemove: (rep) => mutations.collection.remove(rep.id),
 					},
-					close
+					close,
+					menuLabels
 				)
 			}
 			showDeckBadges

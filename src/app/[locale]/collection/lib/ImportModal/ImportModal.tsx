@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ImportStatus } from '@/lib/import/hooks/useImport';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { useImportContext } from '@/lib/import/context/ImportContext';
@@ -21,26 +22,6 @@ import { Spinner } from '@/components/Spinner/Spinner';
 import styles from './ImportModal.module.css';
 import { STATIC_IMPORT_COLUMNS } from './tableColumns';
 
-const TITLE_IMPORT_FILE = 'Import a file';
-const LABEL_FETCHING_CARDS = 'Fetching cards…';
-
-function modalTitle(status: ImportStatus, mergingLabel: string): string {
-	switch (status) {
-		case 'selecting':
-			return TITLE_IMPORT_FILE;
-		case 'parsing':
-			return 'Parsing the file…';
-		case 'previewing':
-			return 'Import preview';
-		case 'fetching':
-			return LABEL_FETCHING_CARDS;
-		case 'merging':
-			return mergingLabel;
-		default:
-			return TITLE_IMPORT_FILE;
-	}
-}
-
 function LoadingScreen({ label, children }: { label: string; children?: ReactNode }) {
 	return (
 		<div className={styles.loadingScreen}>
@@ -57,6 +38,7 @@ function LoadingScreen({ label, children }: { label: string; children?: ReactNod
  * (TTL guard), so consuming it here doesn't trigger an extra network fetch.
  */
 export function ImportModal() {
+	const t = useTranslations('collection');
 	const {
 		status,
 		destination,
@@ -78,11 +60,27 @@ export function ImportModal() {
 		applyToAll: onApplyToAll,
 	} = useImportContext();
 	const { sets, isLoading: setsLoading } = useScryfallSets();
+	const LABEL_FETCHING_CARDS = t('fetchingCards');
 
 	const isOpen = status !== 'idle';
-	const mergingLabel = destination === 'wishlist' ? 'Adding to wishlist…' : 'Adding to collection…';
+	const mergingLabel = destination === 'wishlist' ? t('addingToWishlist') : t('addingToCollection');
 	// "Change file" re-opens the picker for the same destination.
 	const onChangeFile = () => openModal(destination);
+
+	function modalTitle(s: ImportStatus): string {
+		switch (s) {
+			case 'parsing':
+				return t('parsingFile');
+			case 'previewing':
+				return t('importPreview');
+			case 'fetching':
+				return LABEL_FETCHING_CARDS;
+			case 'merging':
+				return mergingLabel;
+			default:
+				return t('importFile');
+		}
+	}
 
 	const state = useImportPreviewState({
 		preview,
@@ -110,7 +108,7 @@ export function ImportModal() {
 	const tableColumns: CardListColumn[] = [
 		{
 			key: 'qty',
-			label: 'Qty',
+			label: t('colQty'),
 			render: (card) => state.getTotalQty((card as AnyCard & { id: string }).id),
 		},
 		...STATIC_IMPORT_COLUMNS,
@@ -122,12 +120,15 @@ export function ImportModal() {
 
 	const previewProgressLabel =
 		previewProgress.total > 0
-			? `Fetching cards… (${previewProgress.current}/${previewProgress.total})`
+			? t('fetchingCardsProgress', {
+					current: previewProgress.current,
+					total: previewProgress.total,
+				})
 			: LABEL_FETCHING_CARDS;
 
 	const fetchProgressLabel =
 		progress.total > 0
-			? `Fetching cards… (${progress.current}/${progress.total})`
+			? t('fetchingCardsProgress', { current: progress.current, total: progress.total })
 			: LABEL_FETCHING_CARDS;
 
 	function renderPreviewBody() {
@@ -135,10 +136,10 @@ export function ImportModal() {
 			return (
 				<LoadingScreen label={previewProgressLabel}>
 					<Button variant="ghost" onClick={onCancel}>
-						Cancel
+						{t('cancel')}
 					</Button>
 					<Button variant="secondary" onClick={onChangeFile}>
-						Change file
+						{t('changeFile')}
 					</Button>
 				</LoadingScreen>
 			);
@@ -166,9 +167,10 @@ export function ImportModal() {
 						<div className={styles.scrollArea}>
 							<div className={styles.notFoundSection}>
 								<p className={styles.notFoundLabel}>
-									{state.uniqueNotFoundCount} print
-									{state.uniqueNotFoundCount > 1 ? 's' : ''} not found on Scryfall (
-									{state.notFound.length} cop{state.notFound.length > 1 ? 'ies' : 'y'})
+									{t('notFoundOnScryfall', {
+										prints: state.uniqueNotFoundCount,
+										copies: state.notFound.length,
+									})}
 								</p>
 								<ImportFallbackTable rows={state.notFound} />
 							</div>
@@ -176,14 +178,14 @@ export function ImportModal() {
 					)}
 					<div className={styles.actions}>
 						<Button variant="ghost" onClick={onCancel}>
-							Cancel
+							{t('cancel')}
 						</Button>
 						<Button
 							variant="primary"
 							onClick={onConfirm}
 							disabled={!resolved || resolved.resolved.length === 0}
 						>
-							Confirm import
+							{t('confirmImport')}
 						</Button>
 					</div>
 				</div>
@@ -243,7 +245,7 @@ export function ImportModal() {
 				/>
 			);
 		}
-		if (status === 'parsing') return <LoadingScreen label="Parsing the file…" />;
+		if (status === 'parsing') return <LoadingScreen label={t('parsingFile')} />;
 		if (status === 'previewing') return renderPreviewBody();
 		if (status === 'fetching') return <LoadingScreen label={fetchProgressLabel} />;
 		if (status === 'merging') return <LoadingScreen label={mergingLabel} />;
@@ -255,7 +257,7 @@ export function ImportModal() {
 			className={`${styles.modal} ${isPreviewWide ? styles.modalWide : ''}`}
 			bodyClassName={styles.modalBody}
 		>
-			<h2 className={styles.title}>{modalTitle(status, mergingLabel)}</h2>
+			<h2 className={styles.title}>{modalTitle(status)}</h2>
 			{renderContent()}
 			<ImportSupportModals state={state} sets={sets} setsLoading={setsLoading} />
 		</Modal>

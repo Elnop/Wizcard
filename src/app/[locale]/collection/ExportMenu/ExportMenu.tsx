@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { Card } from '@/types/cards';
 import { Button } from '@/components/Button/Button';
 import { downloadCSV } from '@/lib/csv/download';
@@ -16,6 +17,7 @@ interface ExportMenuProps {
 }
 
 export function ExportMenu({ cards, filenameBase, disabled }: ExportMenuProps) {
+	const t = useTranslations('collection');
 	const [open, setOpen] = useState(false);
 	const ref = useRef<HTMLDivElement>(null);
 
@@ -41,7 +43,7 @@ export function ExportMenu({ cards, filenameBase, disabled }: ExportMenuProps) {
 	return (
 		<div className={styles.wrapper} ref={ref}>
 			<Button variant="secondary" onClick={() => setOpen((v) => !v)} disabled={disabled}>
-				Export ▾
+				{t('export')} ▾
 			</Button>
 			{open && (
 				<div className={styles.dropdown}>

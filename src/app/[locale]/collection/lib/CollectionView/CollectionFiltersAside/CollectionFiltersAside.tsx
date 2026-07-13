@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ScryfallColor, ScryfallSet } from '@/lib/scryfall/types/scryfall';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
@@ -17,8 +18,6 @@ import { defaultCollectionFilters } from '@/lib/card/utils/filterCollectionCards
 import { MTG_LANGUAGES } from '@/lib/mtg/languages';
 import styles from './CollectionFiltersAside.module.css';
 
-const COLLECTION_EXTRA_SORT_OPTIONS = [{ value: 'language', label: 'Language' }];
-
 export interface CollectionFiltersAsideProps {
 	filters: CollectionFilters;
 	onChange: (filters: CollectionFilters) => void;
@@ -34,8 +33,10 @@ export function CollectionFiltersAside({
 	setsLoading,
 	activeFilterCount,
 }: CollectionFiltersAsideProps) {
+	const t = useTranslations('collection');
 	const symbolMap = useScryfallSymbols();
 	const [mobileOpen, setMobileOpen] = useState(false);
+	const extraSortOptions = [{ value: 'language', label: t('sortLanguage') }];
 
 	function patch<K extends keyof CollectionFilters>(key: K, value: CollectionFilters[K]) {
 		onChange({ ...filters, [key]: value });
@@ -63,7 +64,7 @@ export function CollectionFiltersAside({
 						strokeLinecap="round"
 					/>
 				</svg>
-				Filters
+				{t('filters')}
 				{isFiltered && <span className={styles.badge}>{activeFilterCount}</span>}
 			</button>
 
@@ -74,13 +75,14 @@ export function CollectionFiltersAside({
 			<aside className={`${styles.aside} ${mobileOpen ? styles.mobileVisible : ''}`}>
 				<div className={styles.asideHeader}>
 					<span className={styles.asideTitle}>
-						Filters{isFiltered && <span className={styles.badge}>{activeFilterCount}</span>}
+						{t('filters')}
+						{isFiltered && <span className={styles.badge}>{activeFilterCount}</span>}
 					</span>
 					<button
 						type="button"
 						className={styles.mobileClose}
 						onClick={() => setMobileOpen(false)}
-						aria-label="Close filters"
+						aria-label={t('closeFilters')}
 					>
 						✕
 					</button>
@@ -89,7 +91,7 @@ export function CollectionFiltersAside({
 				<SearchBar
 					value={filters.name}
 					onChange={(v) => patch('name', v)}
-					placeholder="Search by name..."
+					placeholder={t('searchByName')}
 				/>
 
 				<ColorFilter
@@ -125,7 +127,7 @@ export function CollectionFiltersAside({
 
 				<div>
 					<label htmlFor="collection-proxy-filter" className={styles.filterLabel}>
-						Finish
+						{t('finish')}
 					</label>
 					<select
 						id="collection-proxy-filter"
@@ -135,15 +137,15 @@ export function CollectionFiltersAside({
 							patch('proxyFilter', e.target.value as CollectionFilters['proxyFilter'])
 						}
 					>
-						<option value="all">All</option>
-						<option value="official">Official only</option>
-						<option value="proxy">Proxy only</option>
+						<option value="all">{t('finishAll')}</option>
+						<option value="official">{t('finishOfficialOnly')}</option>
+						<option value="proxy">{t('finishProxyOnly')}</option>
 					</select>
 				</div>
 
 				<div>
 					<label htmlFor="collection-foil-filter" className={styles.filterLabel}>
-						Foil
+						{t('foil')}
 					</label>
 					<select
 						id="collection-foil-filter"
@@ -153,16 +155,16 @@ export function CollectionFiltersAside({
 							patch('foilTypeFilter', e.target.value as CollectionFilters['foilTypeFilter'])
 						}
 					>
-						<option value="all">All</option>
-						<option value="none">Non-foil</option>
-						<option value="foil">Foil</option>
-						<option value="etched">Etched</option>
+						<option value="all">{t('foilAll')}</option>
+						<option value="none">{t('foilNone')}</option>
+						<option value="foil">{t('foilFoil')}</option>
+						<option value="etched">{t('foilEtched')}</option>
 					</select>
 				</div>
 
 				<div>
 					<label htmlFor="collection-language-filter" className={styles.filterLabel}>
-						Language
+						{t('language')}
 					</label>
 					<select
 						id="collection-language-filter"
@@ -172,7 +174,7 @@ export function CollectionFiltersAside({
 							patch('languageFilter', e.target.value as CollectionFilters['languageFilter'])
 						}
 					>
-						<option value="all">All</option>
+						<option value="all">{t('languageAll')}</option>
 						{MTG_LANGUAGES.map((lang) => (
 							<option key={lang} value={lang}>
 								{lang}
@@ -183,7 +185,7 @@ export function CollectionFiltersAside({
 
 				<div>
 					<label htmlFor="collection-deck-filter" className={styles.filterLabel}>
-						Deck
+						{t('deck')}
 					</label>
 					<select
 						id="collection-deck-filter"
@@ -193,9 +195,9 @@ export function CollectionFiltersAside({
 							patch('deckAssignment', e.target.value as CollectionFilters['deckAssignment'])
 						}
 					>
-						<option value="all">All</option>
-						<option value="assigned">Assigned to a deck</option>
-						<option value="unassigned">Unassigned</option>
+						<option value="all">{t('deckAll')}</option>
+						<option value="assigned">{t('deckAssigned')}</option>
+						<option value="unassigned">{t('deckUnassigned')}</option>
 					</select>
 				</div>
 
@@ -205,12 +207,12 @@ export function CollectionFiltersAside({
 					dir={filters.dir}
 					onDirChange={(v) => patch('dir', v)}
 					allowAuto={false}
-					extraOptions={COLLECTION_EXTRA_SORT_OPTIONS}
+					extraOptions={extraSortOptions}
 				/>
 
 				{isFiltered && (
 					<button type="button" className={styles.resetButton} onClick={handleReset}>
-						Reset filters
+						{t('resetFilters')}
 					</button>
 				)}
 			</aside>

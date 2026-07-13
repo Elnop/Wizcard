@@ -5,6 +5,7 @@ import { CollectionView } from '@/app/[locale]/collection/lib/CollectionView/Col
 import { ExportMenu } from '@/app/[locale]/collection/ExportMenu/ExportMenu';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
+import { useOwnedCardMenuLabels } from '@/lib/card/hooks/useOwnedCardMenuLabels';
 import { buildViewerCardMenu } from '@/lib/card/viewerCardMenu';
 import { useOwnedCardMenuHandlers } from '@/lib/card/hooks/useOwnedCardMenuHandlers';
 import { useViewerCardMenuHandlers } from '@/lib/card/hooks/useViewerCardMenuHandlers';
@@ -25,6 +26,7 @@ export function PublicCollectionView({
 	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
 	const { openCardModal } = useCardModalContext();
 	const ownerHandlers = useOwnedCardMenuHandlers(stacks, 'collection');
+	const ownerMenuLabels = useOwnedCardMenuLabels('collection');
 	const viewerHandlers = useViewerCardMenuHandlers();
 
 	const isLoadingCollection = !isFullyLoaded || isHydrating;
@@ -61,7 +63,7 @@ export function PublicCollectionView({
 			}
 			buildCardMenuItems={(stack, close) =>
 				isOwner
-					? buildOwnedCardMenu(stack, 'collection', ownerHandlers, close)
+					? buildOwnedCardMenu(stack, 'collection', ownerHandlers, close, ownerMenuLabels)
 					: buildViewerCardMenu(stack.cards[0], viewerHandlers, close)
 			}
 			showDeckBadges={isOwner}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { PendingCard } from '@/lib/import/types';
 import styles from '../ImportModal.module.css';
 
@@ -8,6 +9,7 @@ interface ImportFallbackTableProps {
 }
 
 export function ImportFallbackTable({ rows }: ImportFallbackTableProps) {
+	const t = useTranslations('collection');
 	// Group by name+set+num to show a unique-card list with count
 	const grouped = new Map<string, { card: PendingCard; count: number }>();
 	for (const card of rows) {
@@ -25,10 +27,10 @@ export function ImportFallbackTable({ rows }: ImportFallbackTableProps) {
 			<table className={styles.previewTable}>
 				<thead>
 					<tr>
-						<th>Qty</th>
-						<th>Name</th>
-						<th>Set</th>
-						<th>Collector #</th>
+						<th>{t('colQty')}</th>
+						<th>{t('colName')}</th>
+						<th>{t('colSet')}</th>
+						<th>{t('colCollector')}</th>
 					</tr>
 				</thead>
 				<tbody>

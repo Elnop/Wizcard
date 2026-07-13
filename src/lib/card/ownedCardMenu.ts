@@ -21,23 +21,34 @@ export type OwnedCardMenuHandlers = {
 	onRemove: (rep: Card) => void;
 };
 
-const LABELS = {
-	collection: { move: 'Move to wishlist', remove: 'Remove from collection' },
-	wishlist: { move: 'Move to collection', remove: 'Remove from wishlist' },
-} as const;
-
 const MOVE_ICONS = { collection: '♡', wishlist: '→' } as const;
+
+/** Libellés du menu propriétaire, résolus par l'appelant (useOwnedCardMenuLabels). */
+export type OwnedCardMenuLabels = {
+	viewDetails: string;
+	addCopy: string;
+	removeCopy: string;
+	addToDeck: string;
+	changePrint: string;
+	/** Selon le mode : "Déplacer vers la liste de souhaits" / "…vers la collection". */
+	move: string;
+	/** Selon le mode : "Retirer de la collection" / "…de la liste de souhaits". */
+	remove: string;
+};
 
 /**
  * Builds the right-click menu shared by the collection and wishlist pages. The
  * two are mirror images (7 actions, move/remove targets swapped), so a single
  * `mode`-parameterised builder replaces the two near-identical builders.
+ * Les libellés (dont `move`/`remove` dépendants du mode) sont résolus par
+ * l'appelant et passés dans `labels`.
  */
 export function buildOwnedCardMenu(
 	stack: CardStack,
 	mode: OwnedCardMenuMode,
 	handlers: OwnedCardMenuHandlers,
-	close: () => void
+	close: () => void,
+	labels: OwnedCardMenuLabels
 ): ContextMenuAction[] {
 	const rep = stack.cards[0];
 	if (!rep) return [];
@@ -50,44 +61,44 @@ export function buildOwnedCardMenu(
 	return [
 		{
 			type: 'action',
-			label: 'View details',
+			label: labels.viewDetails,
 			icon: '👁',
 			onClick: run(() => handlers.onViewDetails(stack)),
 		},
 		{
 			type: 'action',
-			label: 'Add a copy',
+			label: labels.addCopy,
 			icon: '+',
 			onClick: run(() => handlers.onAddCopy(rep)),
 		},
 		{
 			type: 'action',
-			label: 'Remove a copy',
+			label: labels.removeCopy,
 			icon: '−',
 			onClick: run(() => handlers.onRemoveCopy(rep)),
 		},
 		{ type: 'divider' },
 		{
 			type: 'action',
-			label: LABELS[mode].move,
+			label: labels.move,
 			icon: MOVE_ICONS[mode],
 			onClick: run(() => handlers.onMove(rep)),
 		},
 		{
 			type: 'action',
-			label: 'Add to deck…',
+			label: labels.addToDeck,
 			icon: '🗂',
 			onClick: run(() => handlers.onAddToDeck(stack)),
 		},
 		{
 			type: 'action',
-			label: 'Change print',
+			label: labels.changePrint,
 			icon: '✎',
 			onClick: run(() => handlers.onChangePrint(stack)),
 		},
 		{
 			type: 'action',
-			label: LABELS[mode].remove,
+			label: labels.remove,
 			icon: '🗑',
 			danger: true,
 			onClick: run(() => handlers.onRemove(rep)),

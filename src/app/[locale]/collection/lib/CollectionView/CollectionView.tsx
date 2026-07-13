@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import type { CardStack } from '@/types/cards';
 import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 import { useCollectionFiltering } from './useCollectionFiltering';
@@ -72,6 +73,7 @@ export function CollectionView({
 	filterLayout = 'aside',
 	children,
 }: Props) {
+	const t = useTranslations('collection');
 	// The collection loads in two stages: entries arrive page by page from
 	// Supabase, then each card is hydrated from Scryfall. We only consider loading
 	// done when BOTH are finished, otherwise the revealed grid keeps pushing cards.
@@ -162,41 +164,41 @@ export function CollectionView({
 				tableColumns={[
 					{
 						key: 'qty',
-						label: 'Qty',
+						label: t('colQty'),
 						render: (card) => stackByCardId.get(card.id)?.cards.length ?? 1,
 					},
-					{ key: 'name', label: 'Name', sortKey: 'name' },
+					{ key: 'name', label: t('colName'), sortKey: 'name' },
 					{
 						key: 'set',
-						label: 'Set',
+						label: t('colSet'),
 						sortKey: 'set',
 						render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
 					},
 					{
 						key: 'collector_number',
-						label: 'Collector #',
+						label: t('colCollector'),
 						render: (card) =>
 							'collector_number' in card ? (card.collector_number as string) : '—',
 					},
 					{
 						key: 'condition',
-						label: 'Condition',
+						label: t('colCondition'),
 						render: (card) => ('entry' in card ? (card.entry.condition ?? '—') : '—'),
 					},
 					{
 						key: 'foil',
-						label: 'Foil',
+						label: t('colFoil'),
 						render: (card) => ('entry' in card ? (card.entry.foilType ?? '—') : '—'),
 					},
 					{
 						key: 'language',
-						label: 'Language',
+						label: t('colLanguage'),
 						sortKey: 'language',
 						render: (card) => ('entry' in card ? (card.entry.language ?? '—') : '—'),
 					},
 					{
 						key: 'prices',
-						label: 'Prix USD',
+						label: t('colPriceUsd'),
 						sortKey: 'usd',
 						render: (card) =>
 							'prices' in card && card.prices && 'usd' in card.prices
@@ -232,9 +234,11 @@ export function CollectionView({
 							<h1 className={styles.title}>{title}</h1>
 							{entryCount > 0 && !isLoadingCollection && (
 								<p className={styles.statsLine}>
-									{stats.totalCards} card{stats.totalCards !== 1 ? 's' : ''} &middot;{' '}
-									{stats.uniqueCards} unique &middot; {stats.setCount} set
-									{stats.setCount !== 1 ? 's' : ''}
+									{t('stats', {
+										cards: stats.totalCards,
+										unique: stats.uniqueCards,
+										sets: stats.setCount,
+									})}
 								</p>
 							)}
 						</div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import type { ImportFormatId } from '@/lib/import/types';
 import type { InputMode } from '../inputMode';
 import { Button } from '@/components/Button/Button';
@@ -39,6 +40,7 @@ export function ImportFileInput({
 	onTextSubmit,
 	onCancel,
 }: ImportFileInputProps) {
+	const t = useTranslations('collection');
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const handleFileChange = useCallback(
@@ -54,7 +56,7 @@ export function ImportFileInput({
 		<>
 			<div className={styles.formatRow}>
 				<label className={styles.formatLabel} htmlFor="format-select">
-					Format :
+					{t('format')}
 				</label>
 				<select
 					id="format-select"
@@ -62,7 +64,7 @@ export function ImportFileInput({
 					value={forcedFormat}
 					onChange={(e) => onForcedFormatChange(e.target.value as ImportFormatId | 'auto')}
 				>
-					<option value="auto">Auto-detect</option>
+					<option value="auto">{t('autoDetect')}</option>
 					{formatRegistry.map((f) => (
 						<option key={f.id} value={f.id}>
 							{f.label}
@@ -76,13 +78,13 @@ export function ImportFileInput({
 					className={`${styles.tab} ${inputMode === 'file' ? styles.tabActive : ''}`}
 					onClick={() => onInputModeChange('file')}
 				>
-					Fichier
+					{t('tabFile')}
 				</button>
 				<button
 					className={`${styles.tab} ${inputMode === 'text' ? styles.tabActive : ''}`}
 					onClick={() => onInputModeChange('text')}
 				>
-					Paste text
+					{t('tabPaste')}
 				</button>
 			</div>
 
@@ -95,9 +97,7 @@ export function ImportFileInput({
 						onDrop={onDrop}
 						onClick={() => fileInputRef.current?.click()}
 					>
-						<span className={styles.dropText}>
-							Glissez un fichier ici ou cliquez pour parcourir
-						</span>
+						<span className={styles.dropText}>{t('dropZone')}</span>
 						<span className={styles.dropHint}>.csv, .txt, .dlens</span>
 					</div>
 					<input
@@ -121,11 +121,11 @@ export function ImportFileInput({
 			<div className={styles.actions}>
 				{inputMode === 'text' && (
 					<Button variant="primary" onClick={onTextSubmit} disabled={!pastedText.trim()}>
-						Analyser
+						{t('analyze')}
 					</Button>
 				)}
 				<Button variant="ghost" onClick={onCancel}>
-					Cancel
+					{t('cancel')}
 				</Button>
 			</div>
 		</>

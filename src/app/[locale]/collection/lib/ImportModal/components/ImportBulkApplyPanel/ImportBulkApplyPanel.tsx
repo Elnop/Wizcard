@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { CardCondition } from '@/types/cards';
 import { MTG_LANGUAGES, type MtgLanguage } from '@/lib/mtg/languages';
 import type { BulkApplyPatch } from '@/lib/import/hooks/useImportBulkApply';
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
+	const t = useTranslations('collection');
 	const [isOpen, setIsOpen] = useState(false);
 
 	const [pendingTags, setPendingTags] = useState<string[]>([]);
@@ -94,7 +96,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 				onClick={() => setIsOpen((v) => !v)}
 				aria-expanded={isOpen}
 			>
-				<span>Apply to all cards</span>
+				<span>{t('applyToAll')}</span>
 				<span className={styles.chevron}>{isOpen ? '▾' : '▸'}</span>
 			</button>
 
@@ -103,7 +105,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 					{/* Tags */}
 					<div className={styles.field}>
 						<label className={styles.label} htmlFor="bulk-tags">
-							Tags (added to cards)
+							{t('tagsAdded')}
 						</label>
 						<div className={styles.tagsField}>
 							{pendingTags.map((tag) => (
@@ -113,7 +115,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 										type="button"
 										className={styles.tagRemove}
 										onClick={() => removeTag(tag)}
-										aria-label={`Remove tag ${tag}`}
+										aria-label={t('removeTag', { tag })}
 									>
 										×
 									</button>
@@ -127,7 +129,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 								onChange={(e) => setTagInput(e.target.value)}
 								onKeyDown={handleTagKeyDown}
 								onBlur={addTag}
-								placeholder={pendingTags.length === 0 ? 'Add tags…' : ''}
+								placeholder={pendingTags.length === 0 ? t('addTags') : ''}
 							/>
 						</div>
 					</div>
@@ -136,7 +138,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 						{/* Condition */}
 						<div className={styles.field}>
 							<label className={styles.label} htmlFor="bulk-condition">
-								Condition
+								{t('conditionLabel')}
 							</label>
 							<select
 								id="bulk-condition"
@@ -144,7 +146,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 								value={condition}
 								onChange={(e) => setCondition(e.target.value as CardCondition | '')}
 							>
-								<option value="">— ne pas toucher —</option>
+								<option value="">{t('leaveUntouched')}</option>
 								{CONDITIONS.map((c) => (
 									<option key={c} value={c}>
 										{c}
@@ -156,7 +158,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 						{/* Language */}
 						<div className={styles.field}>
 							<label className={styles.label} htmlFor="bulk-language">
-								Langue
+								{t('language')}
 							</label>
 							<select
 								id="bulk-language"
@@ -164,7 +166,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 								value={language}
 								onChange={(e) => setLanguage(e.target.value as MtgLanguage | '')}
 							>
-								<option value="">— ne pas toucher —</option>
+								<option value="">{t('leaveUntouched')}</option>
 								{MTG_LANGUAGES.map((lang) => (
 									<option key={lang} value={lang}>
 										{lang}
@@ -176,7 +178,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 						{/* Proxy */}
 						<div className={styles.field}>
 							<label className={styles.label} htmlFor="bulk-proxy">
-								Proxy
+								{t('proxy')}
 							</label>
 							<select
 								id="bulk-proxy"
@@ -184,16 +186,16 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 								value={proxy}
 								onChange={(e) => setProxy(e.target.value as TriState)}
 							>
-								<option value="">— ne pas toucher —</option>
-								<option value="true">Oui</option>
-								<option value="false">Non</option>
+								<option value="">{t('leaveUntouched')}</option>
+								<option value="true">{t('yes')}</option>
+								<option value="false">{t('no')}</option>
 							</select>
 						</div>
 
 						{/* For trade */}
 						<div className={styles.field}>
 							<label className={styles.label} htmlFor="bulk-fortrade">
-								For trade
+								{t('forTrade')}
 							</label>
 							<select
 								id="bulk-fortrade"
@@ -201,16 +203,16 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 								value={forTrade}
 								onChange={(e) => setForTrade(e.target.value as TriState)}
 							>
-								<option value="">— ne pas toucher —</option>
-								<option value="true">Oui</option>
-								<option value="false">Non</option>
+								<option value="">{t('leaveUntouched')}</option>
+								<option value="true">{t('yes')}</option>
+								<option value="false">{t('no')}</option>
 							</select>
 						</div>
 
 						{/* Alter */}
 						<div className={styles.field}>
 							<label className={styles.label} htmlFor="bulk-alter">
-								Altered
+								{t('altered')}
 							</label>
 							<select
 								id="bulk-alter"
@@ -218,16 +220,16 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 								value={alter}
 								onChange={(e) => setAlter(e.target.value as TriState)}
 							>
-								<option value="">— ne pas toucher —</option>
-								<option value="true">Oui</option>
-								<option value="false">Non</option>
+								<option value="">{t('leaveUntouched')}</option>
+								<option value="true">{t('yes')}</option>
+								<option value="false">{t('no')}</option>
 							</select>
 						</div>
 
 						{/* Foil */}
 						<div className={styles.field}>
 							<label className={styles.label} htmlFor="bulk-foil">
-								Foil
+								{t('foil')}
 							</label>
 							<select
 								id="bulk-foil"
@@ -235,9 +237,9 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 								value={foil}
 								onChange={(e) => setFoil(e.target.value as TriState)}
 							>
-								<option value="">— ne pas toucher —</option>
-								<option value="true">Oui</option>
-								<option value="false">Non</option>
+								<option value="">{t('leaveUntouched')}</option>
+								<option value="true">{t('yes')}</option>
+								<option value="false">{t('no')}</option>
 							</select>
 						</div>
 
@@ -245,7 +247,7 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 						{foil === 'true' && (
 							<div className={styles.field}>
 								<label className={styles.label} htmlFor="bulk-foiltype">
-									Type de foil
+									{t('foilType')}
 								</label>
 								<select
 									id="bulk-foiltype"
@@ -267,12 +269,10 @@ export function ImportBulkApplyPanel({ cardCount, onApplyToAll }: Props) {
 							onClick={handleApply}
 							disabled={!canApply}
 						>
-							Appliquer
+							{t('apply')}
 						</button>
 						{appliedCount !== null && (
-							<span className={styles.appliedLabel}>
-								Applied to {appliedCount} card{appliedCount > 1 ? 's' : ''}
-							</span>
+							<span className={styles.appliedLabel}>{t('appliedTo', { count: appliedCount })}</span>
 						)}
 					</div>
 				</div>

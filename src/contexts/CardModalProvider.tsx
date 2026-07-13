@@ -17,7 +17,8 @@ import { putCardsInCache } from '@/lib/scryfall/utils/card-cache';
 import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
 import { deriveCardModalProps } from '@/lib/card/deriveCardModalProps';
 import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
-import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
+import { buildOwnedCardMenu, type OwnedCardMenuLabels } from '@/lib/card/ownedCardMenu';
+import { useOwnedCardMenuLabels } from '@/lib/card/hooks/useOwnedCardMenuLabels';
 import { buildViewerCardMenu } from '@/lib/card/viewerCardMenu';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 
@@ -84,7 +85,8 @@ function buildOwnedImageMenu(
 	stack: CardStack,
 	source: 'collection' | 'wishlist',
 	deps: ImageMenuDeps,
-	closeMenu: () => void
+	closeMenu: () => void,
+	labels: OwnedCardMenuLabels
 ): ContextMenuAction[] {
 	const { mutations } = deps;
 	const isWishlist = source === 'wishlist';
@@ -114,7 +116,8 @@ function buildOwnedImageMenu(
 				deps.closeModal();
 			},
 		},
-		closeMenu
+		closeMenu,
+		labels
 	);
 }
 
@@ -169,6 +172,8 @@ function resolveStackCards(oracleKey: string, entries: StoredCopy[]): Card[] {
  * modals, and CardModal's internal recursive token render.
  */
 export function CardModalProvider({ children }: { children: React.ReactNode }) {
+	const collectionMenuLabels = useOwnedCardMenuLabels('collection');
+	const wishlistMenuLabels = useOwnedCardMenuLabels('wishlist');
 	const collection = useCollectionContext();
 	const wishlist = useWishlistContext();
 	const { openAddToDeck } = useAddToDeckModal();
@@ -348,7 +353,8 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 			if (!rep) return undefined;
 			const stack: CardStack = { oracleId: oracleKeyOf(rep), name: rep.name, cards: stackCards };
 			const source = resolved.source;
-			return (_card, closeMenu) => buildOwnedImageMenu(stack, source, deps, closeMenu);
+			const labels = source === 'wishlist' ? wishlistMenuLabels : collectionMenuLabels;
+			return (_card, closeMenu) => buildOwnedImageMenu(stack, source, deps, closeMenu, labels);
 		}
 
 		return (card, closeMenu) => buildViewerImageMenu(card, deps, closeMenu);
@@ -362,6 +368,8 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 		collection.addCards,
 		wishlist.addToWishlist,
 		close,
+		collectionMenuLabels,
+		wishlistMenuLabels,
 	]);
 
 	const value = useMemo<CardModalContextValue>(

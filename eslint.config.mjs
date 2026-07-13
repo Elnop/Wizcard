@@ -75,6 +75,9 @@ const eslintConfig = defineConfig([
 			'src/app/[locale]/sets/**',
 			'src/app/[locale]/card/**',
 			'src/lib/card/components/**',
+			'src/app/[locale]/collection/**',
+			'src/app/[locale]/wishlist/**',
+			'src/lib/wishlist/**',
 		],
 		rules: {
 			'i18next/no-literal-string': [
