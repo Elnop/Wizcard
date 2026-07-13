@@ -24,6 +24,7 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
 import { buildSearchMenuItems } from './searchCardMenu';
+import { useCardMenuLabels } from '@/lib/card/hooks/useCardMenuLabels';
 import styles from './page.module.css';
 
 function computeCustomFilterCount(
@@ -57,14 +58,7 @@ export default function SearchPage() {
 
 function SearchPageContent() {
 	const t = useTranslations('search');
-	const tMenu = useTranslations('cardMenu');
-	const cardMenuLabels = {
-		viewDetails: tMenu('viewDetails'),
-		openCardPage: tMenu('openCardPage'),
-		addToCollection: tMenu('addToCollection'),
-		addToWishlist: tMenu('addToWishlist'),
-		addToDeck: tMenu('addToDeck'),
-	};
+	const cardMenuLabels = useCardMenuLabels();
 	const { addCards } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();
 	const router = useRouter();
