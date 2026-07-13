@@ -1,0 +1,11 @@
+{
+	"version": 1,
+	"skills": {
+		"internationalization-i18n": {
+			"source": "mindrally/skills",
+			"sourceType": "github",
+			"skillPath": "internationalization-i18n/SKILL.md",
+			"computedHash": "f097fee820dbf765b315932098b068ea19e603008857effd75a558cdaf031afb"
+		}
+	}
+}
