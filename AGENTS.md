@@ -21,6 +21,7 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 - `npm run sb:start` / `sb:stop` — start/stop local Supabase
 - `npm run sb:reset` — **destructive** — drop DB and re-apply all migrations
 - `npm run sb:migrate` — apply pending migrations only
+- `npm run sb:verify` — audit the local DB schema against all migrations (read-only; see § Schema Verification)
 - `npm run sb:studio` — Supabase Studio (port 54323)
 
 ## Architecture
@@ -179,6 +180,40 @@ AuthProvider
 | `alter`          | boolean     | `CardEntry.alter`         |
 | `proxy`          | boolean     | `CardEntry.proxy`         |
 | `tags`           | text[]      | `CardEntry.tags`          |
+
+## Schema Verification
+
+`supabase/verify_schema.sql` is a **read-only** audit that asserts a database's
+schema matches the full set of `supabase/migrations/*` — every table, column
+(name + type), RLS flag, policy (by name), view, function, trigger, storage
+bucket, CHECK constraint, critical index, and the security-sensitive column
+grants (e.g. `anon` must NOT be able to `SELECT cards.purchase_price` nor
+`INSERT cards.created_at`). It creates only a temporary report table and touches
+no business data, so it is safe to run anywhere and re-run at will.
+
+**Reference = the migrations, not `supabase/bootstrap/init_schema.sql`** (the
+bootstrap is a fresh-DB convenience and can lag the migrations). The expected
+column list in `verify_schema.sql` is dumped from a fully-migrated local DB.
+
+Run it in these situations:
+
+- **After any schema change** (new migration, or editing one): `npm run sb:reset`
+  then `npm run sb:verify` — confirms the migrations actually produce the
+  expected schema. Exit code is non-zero if any assertion FAILs, so it also fits
+  a pre-commit hook or CI step.
+- **Before/after a prod deploy**: prod is self-hosted Supabase (Coolify) and can
+  be behind on migrations. `npm run sb:verify` only checks **local**; to audit
+  **prod**, paste the entire `supabase/verify_schema.sql` into the prod SQL
+  editor and run it. The report lists exactly which objects are missing. It does
+  NOT fix anything — remediation follows the usual idempotent-script workflow
+  (`docs/…` / prod migration process): apply only the missing objects, then
+  `insert into supabase_migrations.schema_migrations` for each applied file.
+
+**When you add a migration that creates a new schema object** (table, column,
+policy, function, trigger, index, bucket, or a sensitive grant), add the matching
+assertion to `verify_schema.sql` in the same change — otherwise the audit gives a
+false PASS. Keep the expected-columns block in sync by re-dumping from a
+freshly-reset local DB.
 
 ## Code Style
 

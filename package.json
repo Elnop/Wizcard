@@ -18,6 +18,7 @@
 		"sb:status": "supabase status",
 		"sb:reset": "supabase db reset --local",
 		"sb:migrate": "supabase migration up --local",
+		"sb:verify": "tsx scripts/verify-schema.ts",
 		"sb:studio": "xdg-open http://127.0.0.1:54323",
 		"sb:mail": "xdg-open http://127.0.0.1:54324",
 		"ingest": "NODE_ENV=production systemd-inhibit npx tsx scripts/ingest-mpc-cards.ts",
