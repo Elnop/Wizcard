@@ -123,10 +123,19 @@ au commit reste.
 
 - Le check `isNicknameTaken` porte sur la valeur **normalisée** (évite qu'un double
   espace passe le check puis collisionne après normalisation).
-- `upsertProfile` (dans `db/profiles.ts`) : intercepter l'erreur Postgres unicité
-  (`code === '23505'` sur `profiles_nickname_lower_key`) et la remonter comme un
-  résultat "taken" typé, pour que l'UI affiche `nicknameTaken` même si le check
-  optimiste a raté une course. L'index DB reste l'autorité finale (TOCTOU-safe).
+- L'index unique case-insensitive `profiles_nickname_lower_key` reste l'autorité
+  finale (TOCTOU-safe).
+
+**Note d'architecture (correction post-brainstorm)** : `updateProfile` est
+fire-and-forget — il applique la mise à jour de manière optimiste au store puis
+enfile un op `profile-update` traité en arrière-plan par le worker de la sync-queue
+(`useSyncQueue.ts` → `upsertProfile`). Une violation d'unicité au niveau DB
+remonterait donc dans la sync-queue, **pas** synchroniquement au formulaire. Mapper
+`23505` → `nicknameTaken` dans `upsertProfile` **n'atteindrait pas** le formulaire ;
+c'est écarté du périmètre. Le check pré-soumission `isNicknameTaken` (sur valeur
+normalisée) reste la garde UX ; l'index DB reste le garde-fou dur. Faire remonter
+proprement une erreur de sync asynchrone à l'UI relève du traitement d'erreurs de la
+sync-queue — **hors périmètre** de cette spec.
 
 ### 5. i18n
 
@@ -170,6 +179,5 @@ Pas de framework de test (`project_no_test_framework`). Vérifier via :
 - `src/lib/profile/validation.ts` (nouveau)
 - `supabase/migrations/<ts>_profile_field_constraints.sql` (nouveau)
 - `src/app/[locale]/settings/sections/ProfileSection.tsx`
-- `src/lib/profile/db/profiles.ts` (`upsertProfile`, `isNicknameTaken` sur normalisé)
-- fichiers de messages i18n (toutes locales)
+- `messages/en.json`, `messages/fr.json` (nouvelles clés d'erreur)
 - `src/app/[locale]/users/[userId]/ProfileShell.tsx` — déjà corrigé (decode)
