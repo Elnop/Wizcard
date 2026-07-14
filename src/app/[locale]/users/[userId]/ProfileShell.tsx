@@ -22,7 +22,10 @@ import { UserNotFound } from './components/UserNotFound';
  */
 export default function ProfileShell({ children }: { children: React.ReactNode }) {
 	const params = useParams();
-	const nickname = params.userId as string;
+	// `useParams()` returns the raw, still URL-encoded segment; decode it so a
+	// nickname with spaces/special chars (e.g. "leon le testeur" → "leon%20le%20testeur")
+	// resolves against the DB. Server consumers (page/layout/OG) already decode.
+	const nickname = decodeURIComponent(params.userId as string);
 	const { user } = useAuth();
 
 	const { profile: resolved, status } = useProfileByNickname(nickname);
