@@ -21,8 +21,8 @@
 -- schéma/relation attendu est absent. Aucune transaction englobante : un objet
 -- manquant ne peut pas avorter le rapport entier.
 --
--- RÉFÉRENCE : état attendu = migrations rejouées jusqu'à 20260713120000
--- (add_profile_preferences incluse). Dumpé depuis une DB locale à jour le 2026-07-13.
+-- RÉFÉRENCE : état attendu = migrations rejouées jusqu'à 20260714120000
+-- (profile_field_constraints : nickname/description CHECK, incluse). MàJ 2026-07-14.
 -- =============================================================================
 
 -- Pas de transaction englobante : on veut qu'un objet manquant produise un FAIL,
@@ -398,7 +398,10 @@ with con(t, name) as (
     ('custom_cards','custom_cards_source_type_check'),
     ('profiles','profiles_language_check'),
     ('profiles','profiles_price_currency_check'),
-    ('profiles','profiles_theme_preference_check')
+    ('profiles','profiles_theme_preference_check'),
+    -- 20260714120000_profile_field_constraints : nickname/description
+    ('profiles','profiles_nickname_valid'),
+    ('profiles','profiles_description_len')
 )
 select pg_temp.chk('check', con.t||' :: '||con.name,
   pg_temp.has_check(con.t, con.name), 'contrainte CHECK absente')
