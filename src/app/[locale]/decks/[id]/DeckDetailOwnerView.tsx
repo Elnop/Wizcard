@@ -56,6 +56,7 @@ import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal
 import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
 import { filterCardsForPdf } from '@/lib/pdf/filterCardsForPdf';
 import { resolveLocalizedImageUris } from '@/lib/scryfall/utils/resolveLocalizedImageUri';
+import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
 import { useDeckSort } from './useDeckSort';
 import { useDeckTokens } from './useDeckTokens';
 import { DeckSortBar } from './components/DeckSortBar/DeckSortBar';
@@ -65,6 +66,7 @@ import styles from './page.module.css';
 
 export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const t = useTranslations('decks');
+	const preferredLang = usePreferredCardLang();
 	const {
 		decks: allDecks,
 		updateDeck,
@@ -736,7 +738,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 								// Resolve localized images (cache hit → instant; miss → fetched
 								// via the shared Scryfall throttle, serialized and 429-safe).
 								const resolved = await Promise.all(
-									pdfFilteredCards.map((c) => resolveLocalizedImageUris(c, 'normal'))
+									pdfFilteredCards.map((c) => resolveLocalizedImageUris(c, 'normal', preferredLang))
 								);
 								const imageUrls = resolved.flat().filter((url): url is string => !!url);
 								await generateCardsPdf(imageUrls, settings, `${deck.name}.pdf`);

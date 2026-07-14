@@ -16,8 +16,23 @@
 // (/cards/collection is POST, the rest GET — the path alone classifies them).
 const SLOW_PATHS = /^\/cards\/(search|named|random|collection)\b/u;
 
-export const SLOW_GAP_MS = 550; // < 500ms cap, with margin (~1.8 req/s)
-export const FAST_GAP_MS = 110; // < 100ms cap, with margin (~9 req/s)
+export const SLOW_GAP_MS = 550; // > 500ms cap, with margin (~1.8 req/s)
+// > 100ms cap, with margin (~8 req/s). Deliberately not 110ms: with several
+// requests in flight, a 110ms gap lets a sliding 1s window catch exactly 10
+// starts — the hard cap, with zero margin. A 429 costs 30s of blocked access,
+// so we trade ~10% throughput for headroom.
+export const FAST_GAP_MS = 125;
+
+// Scryfall's limits are a RATE ("10/second"), not a concurrency cap — nothing in
+// the docs requires one request in flight at a time. Spacing request STARTS by
+// the gap already honours the rate; serializing start-to-END on top of it also
+// pays the round-trip latency per request (~200ms), which capped us at ~3 req/s
+// out of the 10 allowed and made localized card images crawl in.
+//
+// Allowing a few requests in flight decouples throughput from latency while the
+// gap keeps the rate under the cap. Kept at 1 by default so Node ingestion (which
+// shares this module) is unchanged; the browser opts in.
+const DEFAULT_MAX_IN_FLIGHT = 1;
 
 function isSlowUrl(url: string): boolean {
 	let path: string;
@@ -61,6 +76,13 @@ interface ThrottleOptions {
 	maxRetries?: number;
 	requestTimeoutMs?: number;
 	userAgent?: string;
+	/**
+	 * Requests allowed in flight at once on the FAST tier (10/s endpoints). The
+	 * gap still paces their starts, so the rate stays under the cap; this only
+	 * stops throughput from being throttled by round-trip latency. Slow-tier
+	 * endpoints (2/s) stay strictly serialized regardless.
+	 */
+	maxInFlight?: number;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -73,13 +95,35 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 	const maxRetries = opts.maxRetries ?? DEFAULT_MAX_RETRIES;
 	const requestTimeoutMs = opts.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
 	const userAgent = opts.userAgent ?? 'Wizcard/1.0 (https://github.com/devinedev/wizcard)';
+	const maxInFlight = Math.max(1, opts.maxInFlight ?? DEFAULT_MAX_IN_FLIGHT);
 
-	// Serializes callers so only one request is in flight and gaps are measured
-	// correctly. Each caller chains onto the previous one's release.
-	let mutex: Promise<void> = Promise.resolve();
-	let lastRequestEndMs = 0;
+	// Gate: callers queue here to claim a start slot. Holding it only while
+	// *scheduling* (not for the whole request) is what lets several fast requests
+	// be in flight at once while their starts stay `gap` apart.
+	let gate: Promise<void> = Promise.resolve();
+	// Timestamp of the last request START (not end): the gap paces starts, which
+	// is what Scryfall's "10/second" actually constrains.
+	let lastRequestStartMs = 0;
 	// Remaining requests over which the post-429 penalty still applies.
 	let penaltyRemaining = 0;
+	// Fast-tier requests currently in flight, and callers waiting for a slot.
+	let inFlight = 0;
+	const waiters: Array<() => void> = [];
+
+	function releaseSlot(): void {
+		inFlight--;
+		waiters.shift()?.();
+	}
+
+	// Wait for a free in-flight slot. After a 429 we collapse to one request at a
+	// time until the penalty decays, so we back off rather than re-saturate.
+	async function acquireSlot(limit: number): Promise<void> {
+		const effectiveLimit = penaltyRemaining > 0 ? 1 : limit;
+		while (inFlight >= effectiveLimit) {
+			await new Promise<void>((resolve) => waiters.push(resolve));
+		}
+		inFlight++;
+	}
 
 	function baseGapFor(url: string): number {
 		return isSlowUrl(url) ? slowGap : fastGap;
@@ -176,32 +220,47 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 	}
 
 	async function throttledFetch(url: string, init?: RequestInit): Promise<Response> {
-		// An already-aborted request must not consume a serialized spacing slot —
-		// reject before queueing so live requests behind it aren't delayed.
+		// An already-aborted request must not consume a spacing slot — reject
+		// before queueing so live requests behind it aren't delayed.
 		if (init?.signal?.aborted) {
 			return Promise.reject(init.signal.reason);
 		}
-		// Acquire the mutex: wait for the previous caller, then hold our own slot.
-		let releaseMutex!: () => void;
-		const acquired = new Promise<void>((resolve) => {
-			releaseMutex = resolve;
+
+		// Slow endpoints (2/s) stay strictly serialized: one in flight, so the next
+		// request only starts once the previous finished. Fast ones (10/s) may
+		// overlap up to maxInFlight while the gap keeps their starts paced.
+		const limit = isSlowUrl(url) ? 1 : maxInFlight;
+
+		// Queue on the gate to claim a start slot, in FIFO order.
+		let openGate!: () => void;
+		const claimed = new Promise<void>((resolve) => {
+			openGate = resolve;
 		});
-		const previousMutex = mutex;
-		mutex = mutex.then(() => acquired);
-		await previousMutex;
+		const previousGate = gate;
+		gate = gate.then(() => claimed);
+		await previousGate;
 
 		try {
-			// Enforce the minimum gap since the last response ended.
-			const gap = Date.now() - lastRequestEndMs;
+			await acquireSlot(limit);
+			// Pace request STARTS by the gap — this is what bounds the rate.
+			const sinceLastStart = Date.now() - lastRequestStartMs;
 			const needed = currentGap(url);
-			if (gap < needed) {
-				await sleep(needed - gap);
+			if (sinceLastStart < needed) {
+				await sleep(needed - sinceLastStart);
 			}
+			lastRequestStartMs = Date.now();
+		} finally {
+			// Release the gate as soon as this request has STARTED: the next caller
+			// can be scheduled while ours is still in flight. On the slow tier the
+			// in-flight limit of 1 keeps the old serialized behaviour anyway.
+			openGate();
+		}
+
+		try {
 			return await doFetch(url, init);
 		} finally {
-			lastRequestEndMs = Date.now();
 			if (penaltyRemaining > 0) penaltyRemaining--;
-			releaseMutex();
+			releaseSlot();
 		}
 	}
 
@@ -209,5 +268,14 @@ export function createScryfallThrottle(opts: ThrottleOptions = {}): ScryfallThro
 }
 
 // Shared throttle instance for ALL Scryfall traffic (browser + Node). One
-// instance = one serialized queue and one shared 429 penalty.
-export const sharedScryfallThrottle = createScryfallThrottle();
+// instance = one queue and one shared 429 penalty.
+//
+// In the browser, card grids (collection, decks, wishlist, search) resolve one
+// localized print per card; serializing those made images trickle in. We allow a
+// few in flight there — the gap still caps the rate — while Node ingestion keeps
+// the strictly serialized behaviour it was tuned for.
+const BROWSER_MAX_IN_FLIGHT = 6;
+
+export const sharedScryfallThrottle = createScryfallThrottle(
+	typeof window !== 'undefined' ? { maxInFlight: BROWSER_MAX_IN_FLIGHT } : {}
+);

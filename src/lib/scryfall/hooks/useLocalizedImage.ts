@@ -7,6 +7,7 @@ import {
 	getLocalizedImageFromCache,
 	putLocalizedImageInCache,
 } from '@/lib/scryfall/utils/card-cache';
+import { useProfileStore } from '@/lib/profile/store/profile-store';
 import type { MtgLanguage } from '@/lib/mtg/languages';
 import type { ScryfallImageUris, ScryfallCardFace } from '@/lib/scryfall/types/scryfall';
 
@@ -26,10 +27,18 @@ export interface LocalizedImageCard {
 // Shared by the hook and the non-hook resolver so a 404 is remembered once.
 const notFound = new Set<string>();
 
-/** Scryfall language code for a card, or undefined when it has no localizable language. */
-function langCodeFor(card: LocalizedImageCard): string | undefined {
+/**
+ * Scryfall language code to display a card in, or undefined when no localized
+ * print should be fetched.
+ *
+ * A card with no recorded language falls back to the user's preferred language
+ * (settings). That print may not exist — Scryfall then 404s and the caller keeps
+ * the card's default (English) image, which is the intended fallback.
+ */
+function langCodeFor(card: LocalizedImageCard, preferredLang?: string): string | undefined {
 	const language = card.entry?.language ?? card.language;
-	return language ? LANGUAGE_TO_SCRYFALL_CODE[language as MtgLanguage] : undefined;
+	if (!language) return preferredLang;
+	return LANGUAGE_TO_SCRYFALL_CODE[language as MtgLanguage];
 }
 
 /** Cache key for a localized image: "set/collector_number/lang". */
@@ -70,9 +79,10 @@ function cachedToResult(cached: {
  */
 export async function fetchLocalizedImage(
 	card: LocalizedImageCard,
-	signal?: AbortSignal
+	signal?: AbortSignal,
+	preferredLang?: string
 ): Promise<LocalizedImageResult | null> {
-	const lang = langCodeFor(card);
+	const lang = langCodeFor(card, preferredLang);
 	if (!needsLocalization(card, lang)) return null;
 
 	const cacheKey = cacheKeyFor(card, lang);
@@ -111,6 +121,19 @@ export async function fetchLocalizedImage(
 	}
 }
 
+/**
+ * The language cards should be displayed in when they carry none of their own:
+ * the user's settings language (`Profile.language` is already a Scryfall code).
+ *
+ * Reads the store rather than useProfileContext, which throws outside
+ * ProfileProvider — this hook also runs in views rendered without it. A missing
+ * profile (logged out, still hydrating) yields undefined: no localized fetch,
+ * so the card keeps its default English image.
+ */
+export function usePreferredCardLang(): string | undefined {
+	return useProfileStore((s) => s.profile?.language);
+}
+
 interface UseLocalizedImageResult {
 	localized: LocalizedImageResult | null;
 	loading: boolean;
@@ -139,7 +162,11 @@ export function useLocalizedImage(
 	const [result, setResult] = useState<{ key: string; data: LocalizedImageResult } | null>(null);
 	const [loadingKey, setLoadingKey] = useState<string | null>(null);
 
-	const lang = langCodeFor(card);
+	// Read the store directly rather than useProfileContext: this hook also runs
+	// in views rendered outside ProfileProvider, where the context would throw.
+	const preferredLang = usePreferredCardLang();
+
+	const lang = langCodeFor(card, preferredLang);
 	const cacheKey = lang ? cacheKeyFor(card, lang) : '';
 	const needsFetch = enabled && needsLocalization(card, lang);
 
@@ -150,7 +177,7 @@ export function useLocalizedImage(
 		(async () => {
 			setLoadingKey(cacheKey);
 			// Shared cache→fetch logic, also used by the PDF export resolver.
-			const localized = await fetchLocalizedImage(card, controller.signal);
+			const localized = await fetchLocalizedImage(card, controller.signal, preferredLang);
 			if (controller.signal.aborted) return;
 			// Tag the result with its cacheKey so a stale image from a previous
 			// print/edition is never surfaced for a different card.
@@ -162,7 +189,7 @@ export function useLocalizedImage(
 			controller.abort();
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- card identity is captured via its set/number/lang (cacheKey)
-	}, [card.set, card.collector_number, lang, needsFetch, cacheKey]);
+	}, [card.set, card.collector_number, lang, needsFetch, cacheKey, preferredLang]);
 
 	// Only surface a localized image / loading state that belongs to the current
 	// card. A result tagged with a previous cacheKey is treated as absent.

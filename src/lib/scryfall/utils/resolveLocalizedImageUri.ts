@@ -11,7 +11,8 @@ type ImageCard = LocalizedImageCard & {
  * Non-hook equivalent of useCardImageUri, returning every face image the card
  * should contribute to the PDF: a single URL for normal cards, or two URLs
  * ([front, back]) for double-faced cards (transform, modal_dfc, double-faced
- * tokens, reversible). Each URL is localized to the card's language when a
+ * tokens, reversible). Each URL is localized to the card's language — or, when
+ * the card has none, to `preferredLang` (the user's settings language) — when a
  * localized print is available, falling back per-URL to the card's default
  * (English) image.
  *
@@ -21,10 +22,11 @@ type ImageCard = LocalizedImageCard & {
  */
 export async function resolveLocalizedImageUris(
 	card: ImageCard,
-	size: 'small' | 'normal' | 'large' = 'normal'
+	size: 'small' | 'normal' | 'large' = 'normal',
+	preferredLang?: string
 ): Promise<string[]> {
 	const fallback = getScryfallCardFaceImageUris(card, size);
-	const localized = await fetchLocalizedImage(card);
+	const localized = await fetchLocalizedImage(card, undefined, preferredLang);
 	if (!localized) return fallback;
 	const localizedUris = getScryfallCardFaceImageUris(localized, size);
 	// Align with the fallback: keep the same number of faces as the source card,
@@ -38,7 +40,8 @@ export async function resolveLocalizedImageUris(
  */
 export async function resolveLocalizedImageUri(
 	card: ImageCard,
-	size: 'small' | 'normal' | 'large' = 'normal'
+	size: 'small' | 'normal' | 'large' = 'normal',
+	preferredLang?: string
 ): Promise<string> {
-	return (await resolveLocalizedImageUris(card, size))[0] ?? '';
+	return (await resolveLocalizedImageUris(card, size, preferredLang))[0] ?? '';
 }
