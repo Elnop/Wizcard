@@ -24,7 +24,7 @@ export const RESERVED_NICKNAMES: ReadonlySet<string> = new Set([
 ]);
 
 /** Unicode letters/digits + dot, underscore, hyphen, space. */
-export const NICKNAME_CHARSET = /^[\p{L}\p{N}. _-]+$/u;
+export const NICKNAME_CHARSET = /^[\p{L}\p{Nd}. _-]+$/u;
 
 export type NicknameErrorCode = 'tooShort' | 'tooLong' | 'invalidChars' | 'reserved';
 export type NicknameValidation = { ok: true } | { ok: false; code: NicknameErrorCode };
