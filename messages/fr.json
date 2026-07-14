@@ -563,6 +563,7 @@
 		"foilEtched": "Etched",
 		"language": "Langue",
 		"languageAll": "Toutes",
+		"languageUndefined": "Non définie",
 		"deck": "Deck",
 		"deckAll": "Tous",
 		"deckAssigned": "Assignées à un deck",

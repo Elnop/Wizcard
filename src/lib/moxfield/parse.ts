@@ -48,8 +48,9 @@ function parseRowFields(
 		tradelistCount: parseInt(get(fields, idx, 'Tradelist Count'), 10) || 0,
 		name: get(fields, idx, 'Name'),
 		edition,
-		condition: get(fields, idx, 'Condition') || 'Near Mint',
-		language: get(fields, idx, 'Language') || 'English',
+		// Empty stays empty — an absent column must not become a default value.
+		condition: get(fields, idx, 'Condition'),
+		language: get(fields, idx, 'Language'),
 		foil: parseFoilType(fields, idx, havesFormat),
 		tags,
 		collectorNumber,

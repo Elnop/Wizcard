@@ -14,7 +14,7 @@ export interface CollectionFilters extends Omit<CardFilters, 'order'> {
 	order: CollectionSortOrder;
 	proxyFilter: 'all' | 'official' | 'proxy';
 	foilTypeFilter: 'none' | 'all' | 'foil' | 'etched';
-	languageFilter: MtgLanguage | 'all';
+	languageFilter: MtgLanguage | 'all' | 'undefined';
 	cardTypeFilter: CardType | 'all';
 	mpcTagsFilter: string[];
 	deckAssignment: 'all' | 'assigned' | 'unassigned';
@@ -170,9 +170,9 @@ function matchesLanguageFilter(
 	languageFilter: CollectionFilters['languageFilter']
 ): boolean {
 	if (languageFilter === 'all') return true;
-	if ('entry' in card && (card as Card).entry.language) {
-		return (card as Card).entry.language === languageFilter;
-	}
+	const entryLanguage = 'entry' in card ? (card as Card).entry.language : undefined;
+	if (languageFilter === 'undefined') return !entryLanguage && !getCardLang(card);
+	if (entryLanguage) return entryLanguage === languageFilter;
 	return getCardLang(card) === languageFilter;
 }
 

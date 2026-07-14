@@ -175,6 +175,7 @@ export function CollectionFiltersAside({
 						}
 					>
 						<option value="all">{t('languageAll')}</option>
+						<option value="undefined">{t('languageUndefined')}</option>
 						{MTG_LANGUAGES.map((lang) => (
 							<option key={lang} value={lang}>
 								{lang}

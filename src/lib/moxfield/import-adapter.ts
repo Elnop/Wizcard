@@ -1,7 +1,6 @@
 import { parseMoxfieldCSV } from './parse';
+import { normalizeMoxfieldCondition, normalizeMoxfieldLanguage } from './mappings';
 import type { ParsedImportResult, PendingCard, ImportFormatDescriptor } from '@/lib/import/types';
-import type { CardCondition } from '@/types/cards';
-import type { MtgLanguage } from '@/lib/mtg/languages';
 
 export function parseMoxfield(text: string): ParsedImportResult {
 	const { rows, parseErrors } = parseMoxfieldCSV(text);
@@ -14,8 +13,8 @@ export function parseMoxfield(text: string): ParsedImportResult {
 			collectorNumber: row.collectorNumber,
 			isFoil: !!row.foil,
 			foilType: row.foil || undefined,
-			condition: row.condition as CardCondition | undefined,
-			language: row.language as MtgLanguage | undefined,
+			condition: normalizeMoxfieldCondition(row.condition),
+			language: normalizeMoxfieldLanguage(row.language),
 			purchasePrice: row.purchasePrice,
 			forTrade: (row.tradelistCount ?? 0) > 0,
 			alter: row.alter,
