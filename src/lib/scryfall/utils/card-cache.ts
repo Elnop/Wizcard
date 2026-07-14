@@ -23,13 +23,26 @@ export interface CachedLocalizedImage {
 	image_uris?: ScryfallImageUris;
 	face_image_uris?: (ScryfallImageUris | undefined)[];
 	cachedAt: number;
+	/**
+	 * True when Scryfall has no print in that language (404). Persisting the
+	 * miss — not just the hit — stops every card that has no localized print
+	 * from being re-fetched (and re-404ing) on each page load.
+	 */
+	missing?: boolean;
 }
 
 const DB_NAME = 'wizcard-cache';
 const STORE_NAME = 'scryfall-cards';
 const COLLECTION_STORE = 'collection-entries';
 const LOCALIZED_IMAGE_STORE = 'localized-images';
-const TTL_MS = 86_400_000; // 24 hours
+const TTL_MS = 86_400_000; // 24 hours — card data (prices change daily)
+
+// Localized images are keyed by set/number/lang and point at a specific print's
+// artwork, which does not change once published. A 24h TTL meant every card in
+// the collection expired daily and had to be re-fetched one request at a time —
+// exactly the traffic Scryfall asks us to avoid. 30 days keeps the fetch a
+// one-off per card while still letting entries eventually refresh.
+const LOCALIZED_IMAGE_TTL_MS = 30 * 86_400_000; // 30 days
 
 // Lazily opened DB promise — only one IDBDatabase instance across the module lifetime
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -235,7 +248,7 @@ export async function getLocalizedImageFromCache(
 				const req = tx.objectStore(LOCALIZED_IMAGE_STORE).get(key);
 				req.onsuccess = () => {
 					const entry = req.result as CachedLocalizedImage | undefined;
-					if (entry && entry.cachedAt >= Date.now() - TTL_MS) {
+					if (entry && entry.cachedAt >= Date.now() - LOCALIZED_IMAGE_TTL_MS) {
 						resolve(entry);
 					} else {
 						resolve(null);

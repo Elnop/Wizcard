@@ -1,7 +1,5 @@
 .page {
-	height: calc(100vh - var(--navbar-height));
 	background: var(--background);
-	overflow: hidden;
 }
 
 /*
@@ -16,7 +14,6 @@
 
 .layout {
 	padding-left: 280px;
-	height: 100%;
 }
 
 /* Modal filter layout has no sidebar — the card list spans full width. */
@@ -27,8 +24,6 @@
 .main {
 	min-width: 0;
 	padding: 32px;
-	height: 100%;
-	overflow-y: auto;
 	overflow-x: hidden;
 }
 

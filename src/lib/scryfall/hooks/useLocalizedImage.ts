@@ -88,9 +88,14 @@ export async function fetchLocalizedImage(
 	const cacheKey = cacheKeyFor(card, lang);
 	if (notFound.has(cacheKey)) return null;
 
-	// 1. IndexedDB cache
+	// 1. IndexedDB cache — a persisted `missing` entry is a remembered 404: the
+	// card has no print in that language, so don't ask Scryfall again.
 	const cached = await getLocalizedImageFromCache(cacheKey);
 	if (signal?.aborted) return null;
+	if (cached?.missing) {
+		notFound.add(cacheKey);
+		return null;
+	}
 	if (cached) return cachedToResult(cached);
 
 	// 2. Fetch from Scryfall (rate-limited by the shared throttle)
@@ -117,6 +122,9 @@ export async function fetchLocalizedImage(
 		// don't blacklist the cache key so the image can be retried next time.
 		if (e instanceof DOMException && e.name === 'AbortError') return null;
 		notFound.add(cacheKey);
+		// Persist the miss too: the in-memory set dies with the page, so without
+		// this every card lacking a localized print re-requests it on each load.
+		void putLocalizedImageInCache({ key: cacheKey, cachedAt: Date.now(), missing: true });
 		return null;
 	}
 }
