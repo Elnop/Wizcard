@@ -785,12 +785,6 @@
 			"title": "Legal Notice",
 			"description": "Legal notice of the Wizcard site."
 		},
-		"deckNotFound": {
-			"title": "Deck not found"
-		},
-		"deckDefaultDescription": {
-			"text": "{format} deck on Wizcard."
-		},
 		"decks": {
 			"title": "My decks"
 		},
@@ -799,6 +793,10 @@
 		},
 		"wishlist": {
 			"title": "My wishlist"
+		},
+		"deck": {
+			"notFoundTitle": "Deck not found",
+			"defaultDescription": "{format} deck on Wizcard."
 		}
 	},
 	"apiErrors": {

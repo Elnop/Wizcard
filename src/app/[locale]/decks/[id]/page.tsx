@@ -11,12 +11,11 @@ interface DeckPageProps {
 
 export async function generateMetadata({ params }: DeckPageProps): Promise<Metadata> {
 	const { locale, id } = await params;
-	const t = await getTranslations({ locale, namespace: 'seo' });
+	const t = await getTranslations({ locale, namespace: 'seo.deck' });
 	const deck = await fetchDeckMetaServer(id);
-	if (!deck) return { title: t('deckNotFound.title'), robots: { index: false, follow: false } };
+	if (!deck) return { title: t('notFoundTitle'), robots: { index: false, follow: false } };
 	const desc =
-		deck.description?.slice(0, 160) ??
-		t('deckDefaultDescription.text', { format: deck.format ?? 'MTG' });
+		deck.description?.slice(0, 160) ?? t('defaultDescription', { format: deck.format ?? 'MTG' });
 	return {
 		title: deck.name,
 		description: desc,
