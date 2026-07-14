@@ -6,8 +6,22 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { isNicknameTaken, uploadAvatar } from '@/lib/profile/db/profiles';
+import {
+	normalizeNickname,
+	validateNickname,
+	NICKNAME_MIN,
+	NICKNAME_MAX,
+	type NicknameErrorCode,
+} from '@/lib/profile/validation';
 import { SettingsSection, settingsStyles as s } from '../components/SettingsSection';
 import { useSaveStatus } from '../useSaveStatus';
+
+const nicknameErrorKey = {
+	tooShort: 'nicknameTooShort',
+	tooLong: 'nicknameTooLong',
+	invalidChars: 'nicknameInvalidChars',
+	reserved: 'nicknameReserved',
+} as const satisfies Record<NicknameErrorCode, string>;
 
 export function ProfileSection() {
 	const t = useTranslations('settings.profile');
@@ -23,14 +37,19 @@ export function ProfileSection() {
 	if (!profile || !user) return null;
 
 	const commitNickname = async () => {
-		const trimmed = nickname.trim();
+		const normalized = normalizeNickname(nickname);
 		setNicknameError(null);
-		if (trimmed === (profile.nickname ?? '')) return;
-		// Only the retired modal's rule: a non-empty, changed nickname must be
-		// free (case-insensitive); an empty nickname is allowed and clears it.
-		if (trimmed) {
+		// Reflect the normalized value back into the field so the user sees what is saved.
+		if (normalized !== nickname) setNickname(normalized);
+		if (normalized === (profile.nickname ?? '')) return;
+		if (normalized) {
+			const v = validateNickname(normalized);
+			if (!v.ok) {
+				setNicknameError(t(nicknameErrorKey[v.code], { min: NICKNAME_MIN, max: NICKNAME_MAX }));
+				return;
+			}
 			try {
-				if (await isNicknameTaken(trimmed, user.id)) {
+				if (await isNicknameTaken(normalized, user.id)) {
 					setNicknameError(t('nicknameTaken'));
 					return;
 				}
@@ -40,7 +59,7 @@ export function ProfileSection() {
 			}
 		}
 		markSaving();
-		updateProfile({ nickname: trimmed || null });
+		updateProfile({ nickname: normalized || null });
 	};
 
 	const commitDescription = () => {
@@ -75,7 +94,7 @@ export function ProfileSection() {
 					onChange={(e) => setNickname(e.target.value)}
 					onBlur={commitNickname}
 					placeholder={t('nicknamePlaceholder')}
-					maxLength={50}
+					maxLength={NICKNAME_MAX}
 				/>
 				{nicknameError && <span className={s.errorText}>{nicknameError}</span>}
 			</div>
