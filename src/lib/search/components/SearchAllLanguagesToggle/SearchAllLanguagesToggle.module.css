@@ -1,35 +1,44 @@
 .toggle {
 	display: inline-flex;
+	flex-shrink: 0;
 	align-items: center;
 	gap: 0.5rem;
-	padding: 0 0.75rem;
+	padding: 0 12px;
 	height: 40px;
-	border: 1px solid var(--border-color, #333);
-	border-radius: 8px;
-	background: var(--surface, #1a1a1a);
-	color: var(--text-secondary, #aaa);
-	font-size: 0.85rem;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: var(--surface);
+	color: var(--text-muted);
+	font-size: var(--text-sm);
+	font-weight: 500;
 	cursor: pointer;
 	white-space: nowrap;
 	user-select: none;
 	transition:
-		border-color 0.15s ease,
-		color 0.15s ease;
+		border-color 0.15s,
+		color 0.15s;
 }
 
 .toggle:hover {
-	border-color: var(--border-hover, #555);
+	border-color: var(--surface-hover);
+	color: var(--foreground);
 }
 
 .toggle.active {
-	border-color: var(--accent, #6c5ce7);
-	color: var(--text-primary, #fff);
+	border-color: var(--primary);
+	color: var(--foreground);
 }
 
 .checkbox {
 	width: 14px;
 	height: 14px;
 	margin: 0;
-	accent-color: var(--accent, #6c5ce7);
+	accent-color: var(--primary);
 	cursor: pointer;
+}
+
+@media (max-width: 768px) {
+	.toggle {
+		font-size: var(--text-xs);
+	}
 }
