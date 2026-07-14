@@ -654,6 +654,8 @@
 	},
 	"search": {
 		"placeholder": "Rechercher des cartes...",
+		"searchAllLanguages": "Toutes les langues",
+		"searchAllLanguagesAria": "Rechercher les noms de cartes dans toutes les langues",
 		"filters": "Filtres",
 		"modeOfficial": "Officiel",
 		"modeCustom": "Custom",

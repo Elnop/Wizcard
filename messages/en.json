@@ -654,6 +654,8 @@
 	},
 	"search": {
 		"placeholder": "Search for cards...",
+		"searchAllLanguages": "All languages",
+		"searchAllLanguagesAria": "Match card names in all languages",
 		"filters": "Filters",
 		"modeOfficial": "Official",
 		"modeCustom": "Custom",
