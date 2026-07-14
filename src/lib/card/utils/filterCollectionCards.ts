@@ -170,10 +170,19 @@ function matchesLanguageFilter(
 	languageFilter: CollectionFilters['languageFilter']
 ): boolean {
 	if (languageFilter === 'all') return true;
-	const entryLanguage = 'entry' in card ? (card as Card).entry.language : undefined;
-	if (languageFilter === 'undefined') return !entryLanguage && !getCardLang(card);
-	if (entryLanguage) return entryLanguage === languageFilter;
-	return getCardLang(card) === languageFilter;
+
+	// For a collection entry, only the language the user recorded counts. The
+	// resolved Scryfall print always carries a `lang`, so falling back to it
+	// would mean no entry is ever "undefined".
+	if ('entry' in card) {
+		const entryLanguage = (card as Card).entry.language;
+		if (languageFilter === 'undefined') return !entryLanguage;
+		return entryLanguage === languageFilter;
+	}
+
+	const cardLang = getCardLang(card);
+	if (languageFilter === 'undefined') return !cardLang;
+	return cardLang === languageFilter;
 }
 
 function matchesCardTypeFilter(

@@ -22,7 +22,10 @@ export async function proxy(request: NextRequest) {
 export const config = {
 	// Exclure api, assets Next/statiques, et les fichiers metadata de la racine
 	// (sitemap/robots) de la gestion de locale.
+	// Les assets servis depuis public/ doivent rester hors du préfixe de locale :
+	// sans `wasm`, /sql-wasm.wasm est redirigé vers /fr/sql-wasm.wasm (404) et
+	// sql.js ne peut plus charger son binaire (import Delver Lens).
 	matcher: [
-		'/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+		'/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|wasm)$).*)',
 	],
 };
