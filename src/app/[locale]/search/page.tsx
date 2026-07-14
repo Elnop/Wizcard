@@ -15,6 +15,7 @@ import { useCollectionContext } from '@/lib/collection/context/CollectionContext
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useCustomCards } from '@/lib/mpc/hooks/useCustomCards';
 import { SearchModeSwitcher } from './components/SearchModeSwitcher/SearchModeSwitcher';
+import { SearchAllLanguagesToggle } from '@/lib/search/components/SearchAllLanguagesToggle/SearchAllLanguagesToggle';
 import { useSearchFiltersFromUrl } from './useSearchFiltersFromUrl';
 import { getCustomCardSourcesWithCount } from '@/lib/mpc/db/custom-cards';
 import type { MpcSourceWithCount } from '@/lib/mpc/db/custom-cards';
@@ -88,6 +89,8 @@ function SearchPageContent() {
 		customSourceId,
 		mpcTags,
 		oracleIdFilter,
+		includeMultilingual,
+		setIncludeMultilingual,
 		applyFilters,
 		activeFilterCount,
 	} = useSearchFiltersFromUrl();
@@ -122,6 +125,7 @@ function SearchPageContent() {
 			cmc,
 			order,
 			dir,
+			includeMultilingual,
 		},
 		{ enabled: mode === 'official' }
 	);
@@ -218,6 +222,10 @@ function SearchPageContent() {
 					<div className={styles.searchRow}>
 						<SearchBar value={name} onChange={setName} placeholder={t('placeholder')} />
 						<SearchModeSwitcher value={mode} onChange={setMode} />
+						<SearchAllLanguagesToggle
+							value={includeMultilingual}
+							onChange={setIncludeMultilingual}
+						/>
 						<button
 							type="button"
 							className={styles.filtersButton}

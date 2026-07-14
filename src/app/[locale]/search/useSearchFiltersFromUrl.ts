@@ -10,6 +10,7 @@ import type { ColorMatch } from '@/lib/search/types';
 import type { SearchMode } from '@/lib/search/types';
 import type { OracleIdFilterValue } from '@/lib/search/components/filters/OracleIdFilter/OracleIdFilter';
 import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
+import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
 
 const VALID_COLORS = new Set(['W', 'U', 'B', 'R', 'G']);
 const VALID_ORDERS = new Set([
@@ -84,6 +85,56 @@ function parseRarities(param: string | null): string[] {
 	return param.split(',').filter((r) => VALID_RARITIES.has(r));
 }
 
+type UrlSyncState = {
+	name: string;
+	colors: ScryfallColor[];
+	colorMatch: 'exact' | 'include' | 'atMost';
+	colorIdentity: ScryfallColor[];
+	colorIdentityMatch: 'atMost' | 'exact';
+	type: string[];
+	set: string;
+	rarities: string[];
+	oracleText: string;
+	cmc: string;
+	order: ScryfallSortOrder;
+	dir: ScryfallSortDir;
+	mode: SearchMode;
+	customSourceId: string | null;
+	mpcTags: MpcTagsFilterValue;
+	oracleIdFilter: OracleIdFilterValue;
+	includeMultilingual: boolean;
+};
+
+/** Builds the `/search` URL query string from current filter state. Extracted
+ * from the sync effect so the effect body stays under the cognitive-complexity
+ * limit; this function's only job is the flat sequence of "set if non-default"
+ * checks. */
+function buildSearchParams(state: UrlSyncState): URLSearchParams {
+	const params = new URLSearchParams();
+	if (state.name) params.set('name', state.name);
+	if (state.colors.length > 0) params.set('colors', state.colors.join(','));
+	if (state.colorMatch !== 'include') params.set('colorMatch', state.colorMatch);
+	if (state.colorIdentity.length > 0) params.set('ci', state.colorIdentity.join(','));
+	if (state.colorIdentityMatch !== 'atMost') params.set('cim', state.colorIdentityMatch);
+	if (state.type.length > 0) params.set('type', state.type.join(','));
+	if (state.set) params.set('set', state.set);
+	if (state.rarities.length > 0) params.set('rarities', state.rarities.join(','));
+	if (state.oracleText) params.set('oracle', state.oracleText);
+	if (state.cmc) params.set('cmc', state.cmc);
+	if (state.order !== 'name') params.set('order', state.order);
+	if (state.dir !== 'auto') params.set('dir', state.dir);
+	if (state.mode !== 'official') params.set('mode', state.mode);
+	if (state.customSourceId) params.set('source', state.customSourceId);
+	if (state.mpcTags.mustHave.length > 0) params.set('mpcMust', state.mpcTags.mustHave.join(','));
+	// Omit mpcNot when it's the default ['NSFW']; use mpcNot= (empty) to signal "cleared by user"
+	const isDefaultMpcNot =
+		state.mpcTags.mustNotHave.length === 1 && state.mpcTags.mustNotHave[0] === 'NSFW';
+	if (!isDefaultMpcNot) params.set('mpcNot', state.mpcTags.mustNotHave.join(','));
+	if (state.oracleIdFilter !== 'all') params.set('oracleId', state.oracleIdFilter);
+	if (state.includeMultilingual) params.set('ml', '1');
+	return params;
+}
+
 export type SearchFilters = {
 	colors: ScryfallColor[];
 	colorMatch: 'exact' | 'include' | 'atMost';
@@ -144,6 +195,15 @@ export function useSearchFiltersFromUrl() {
 		return 'all';
 	});
 
+	const preferredLang = usePreferredCardLang();
+	const [includeMultilingual, setIncludeMultilingual] = useState<boolean>(() => {
+		const raw = searchParams.get('ml');
+		if (raw === '1') return true;
+		if (raw === '0') return false;
+		// Default: on when the user's preferred card language is non-English.
+		return preferredLang !== undefined && preferredLang !== 'en';
+	});
+
 	const isInitialMount = useRef(true);
 
 	useEffect(() => {
@@ -151,26 +211,25 @@ export function useSearchFiltersFromUrl() {
 			isInitialMount.current = false;
 			return;
 		}
-		const params = new URLSearchParams();
-		if (name) params.set('name', name);
-		if (colors.length > 0) params.set('colors', colors.join(','));
-		if (colorMatch !== 'include') params.set('colorMatch', colorMatch);
-		if (colorIdentity.length > 0) params.set('ci', colorIdentity.join(','));
-		if (colorIdentityMatch !== 'atMost') params.set('cim', colorIdentityMatch);
-		if (type.length > 0) params.set('type', type.join(','));
-		if (set) params.set('set', set);
-		if (rarities.length > 0) params.set('rarities', rarities.join(','));
-		if (oracleText) params.set('oracle', oracleText);
-		if (cmc) params.set('cmc', cmc);
-		if (order !== 'name') params.set('order', order);
-		if (dir !== 'auto') params.set('dir', dir);
-		if (mode !== 'official') params.set('mode', mode);
-		if (customSourceId) params.set('source', customSourceId);
-		if (mpcTags.mustHave.length > 0) params.set('mpcMust', mpcTags.mustHave.join(','));
-		// Omit mpcNot when it's the default ['NSFW']; use mpcNot= (empty) to signal "cleared by user"
-		const isDefaultMpcNot = mpcTags.mustNotHave.length === 1 && mpcTags.mustNotHave[0] === 'NSFW';
-		if (!isDefaultMpcNot) params.set('mpcNot', mpcTags.mustNotHave.join(','));
-		if (oracleIdFilter !== 'all') params.set('oracleId', oracleIdFilter);
+		const params = buildSearchParams({
+			name,
+			colors,
+			colorMatch,
+			colorIdentity,
+			colorIdentityMatch,
+			type,
+			set,
+			rarities,
+			oracleText,
+			cmc,
+			order,
+			dir,
+			mode,
+			customSourceId,
+			mpcTags,
+			oracleIdFilter,
+			includeMultilingual,
+		});
 
 		const queryString = params.toString();
 		router.replace(queryString ? `/search?${queryString}` : '/search', { scroll: false });
@@ -191,6 +250,7 @@ export function useSearchFiltersFromUrl() {
 		customSourceId,
 		mpcTags,
 		oracleIdFilter,
+		includeMultilingual,
 		router,
 	]);
 
@@ -248,6 +308,8 @@ export function useSearchFiltersFromUrl() {
 		mpcTags,
 		oracleIdFilter,
 		applyFilters,
+		includeMultilingual,
+		setIncludeMultilingual,
 		activeFilterCount,
 	};
 }
