@@ -26,6 +26,7 @@ export interface SearchFilters {
 	matchNothing?: boolean;
 	order?: ScryfallSortOrder;
 	dir?: ScryfallSortDir;
+	includeMultilingual?: boolean;
 }
 
 interface UseScryfallCardSearchResult {
@@ -71,6 +72,7 @@ export function useScryfallCardSearch(
 
 	const order = filters.order ?? 'name';
 	const dir = filters.dir ?? 'auto';
+	const includeMultilingual = filters.includeMultilingual ?? false;
 
 	// Serialize array deps to strings so useCallback doesn't recreate on every render
 	// when the parent passes a new array reference with the same content.
@@ -151,7 +153,17 @@ export function useScryfallCardSearch(
 				setQueryError(null);
 				setSuggestions([]);
 
-				const result = await searchCards({ q: effectiveQuery, page: pageNum, order, dir }, signal);
+				const multilingual = includeMultilingual && debouncedName.trim().length > 0;
+				const result = await searchCards(
+					{
+						q: effectiveQuery,
+						page: pageNum,
+						order,
+						dir,
+						...(multilingual ? { include_multilingual: true } : {}),
+					},
+					signal
+				);
 
 				if (isNewSearch) {
 					setCards(result.data);
@@ -194,7 +206,7 @@ export function useScryfallCardSearch(
 				setIsLoadingMore(false);
 			}
 		},
-		[order, dir]
+		[order, dir, includeMultilingual, debouncedName]
 	);
 
 	useEffect(() => {
@@ -206,7 +218,8 @@ export function useScryfallCardSearch(
 		}
 		const query = buildQuery(debouncedName);
 		const effectiveQuery = query.trim() || DEFAULT_QUERY;
-		const searchKey = `${effectiveQuery}|${order}|${dir}`;
+		const multilingual = includeMultilingual && debouncedName.trim().length > 0;
+		const searchKey = `${effectiveQuery}|${order}|${dir}|${multilingual}`;
 
 		if (searchKey !== lastSearchKeyRef.current) {
 			lastSearchKeyRef.current = searchKey;
@@ -214,7 +227,7 @@ export function useScryfallCardSearch(
 			setPage(1);
 			fetchCards(query, 1, true);
 		}
-	}, [enabled, debouncedName, buildQuery, fetchCards, order, dir]);
+	}, [enabled, debouncedName, buildQuery, fetchCards, order, dir, includeMultilingual]);
 
 	useEffect(() => {
 		return () => {
