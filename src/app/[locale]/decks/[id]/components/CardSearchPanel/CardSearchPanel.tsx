@@ -3,6 +3,8 @@ import { useTranslations } from 'next-intl';
 
 import { useState, useCallback, useMemo } from 'react';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
+import { SearchAllLanguagesToggle } from '@/lib/search/components/SearchAllLanguagesToggle/SearchAllLanguagesToggle';
+import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { FilterModal } from '@/lib/search/components/FilterModal/FilterModal';
 import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
@@ -60,6 +62,10 @@ export function CardSearchPanel({
 }: Props) {
 	const t = useTranslations('decks');
 	const [searchName, setSearchName] = useState('');
+	const preferredLang = usePreferredCardLang();
+	const [includeMultilingual, setIncludeMultilingual] = useState<boolean>(
+		() => preferredLang !== undefined && preferredLang !== 'en'
+	);
 	const [tab, setTab] = useState<PanelTab>('search');
 	const [cardMode, setCardMode] = useState<'cards' | 'token'>('cards');
 	const [legalOnly, setLegalOnly] = useState(true);
@@ -256,6 +262,7 @@ export function CardSearchPanel({
 		isToken: isTokenMode,
 		order: inCollectionOnly ? 'name' : order,
 		dir: inCollectionOnly ? 'auto' : dir,
+		includeMultilingual: inCollectionOnly ? false : includeMultilingual,
 	};
 
 	const {
@@ -376,6 +383,10 @@ export function CardSearchPanel({
 								placeholder={t('searchForCard')}
 							/>
 							<CardModeSwitcher value={cardMode} onChange={setCardMode} />
+							<SearchAllLanguagesToggle
+								value={includeMultilingual}
+								onChange={setIncludeMultilingual}
+							/>
 							<button
 								type="button"
 								aria-label={t('moreFilters')}
