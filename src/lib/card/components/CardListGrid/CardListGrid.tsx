@@ -7,6 +7,7 @@ import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import { sectionKey } from '@/lib/card/components/CardList/section-key';
+import { cardKey } from '@/lib/card/utils/card-key';
 import type { CardListGridProps } from './CardListGrid.types';
 import styles from './CardListGrid.module.css';
 
@@ -158,7 +159,7 @@ export function CardListGrid({
 		const isPriority = priorityIndex < PRIORITY_CARD_COUNT;
 		return (
 			<div
-				key={c.id}
+				key={cardKey(c)}
 				className={[styles.item, onCardClick ? styles.itemClickable : undefined]
 					.filter(Boolean)
 					.join(' ')}
@@ -308,8 +309,9 @@ export function CardListGrid({
 		parentIsFluid: boolean
 	) {
 		const collapsed = collapsedSections?.has(keyForSection) ?? false;
-		// eslint-disable-next-line sonarjs/slow-regex -- short section label strings, no ReDoS risk
-		const labelMatch = section.label.match(/^(.+?)\s*(\(\d+\))$/);
+		// Labels are built as `${name} (${count})` with a single space, so a greedy
+		// anchored pattern splits them without the super-linear backtracking of `.+?\s*`.
+		const labelMatch = section.label.match(/^(.+) (\(\d+\))$/);
 		const labelName = labelMatch?.[1] ?? section.label;
 		const labelCount = labelMatch?.[2] ?? '';
 

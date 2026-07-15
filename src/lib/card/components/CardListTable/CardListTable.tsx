@@ -1,6 +1,7 @@
 import type { ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import type { CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import { sectionKey } from '@/lib/card/components/CardList/section-key';
+import { cardKey } from '@/lib/card/utils/card-key';
 import type { CardListTableProps } from './CardListTable.types';
 import { Spinner } from '@/components/Spinner/Spinner';
 import styles from './CardListTable.module.css';
@@ -66,7 +67,7 @@ export function CardListTable({
 	function renderCardRows(cardItems: typeof cards) {
 		return cardItems.map((c) => (
 			<tr
-				key={c.id}
+				key={cardKey(c)}
 				className={onCardClick ? styles.clickableRow : undefined}
 				onClick={onCardClick ? () => onCardClick(c) : undefined}
 			>
@@ -85,8 +86,9 @@ export function CardListTable({
 		const key = parentKey ? `${parentKey}::${sectionKey(section)}` : sectionKey(section);
 		const collapsed = collapsedSections?.has(key) ?? false;
 
-		// eslint-disable-next-line sonarjs/slow-regex -- short section label strings, no ReDoS risk
-		const labelMatch = section.label.match(/^(.+?)\s*(\(\d+\))$/);
+		// Labels are built as `${name} (${count})` with a single space, so a greedy
+		// anchored pattern splits them without the super-linear backtracking of `.+?\s*`.
+		const labelMatch = section.label.match(/^(.+) (\(\d+\))$/);
 		const labelName = labelMatch?.[1] ?? section.label;
 		const labelCount = labelMatch?.[2] ?? '';
 

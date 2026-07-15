@@ -22,6 +22,10 @@ const nextConfig: NextConfig = {
 			},
 			{
 				protocol: 'https',
+				hostname: 'svgs.scryfall.io',
+			},
+			{
+				protocol: 'https',
 				hostname: 'drive.google.com',
 			},
 			{
@@ -41,7 +45,7 @@ const nextConfig: NextConfig = {
 			`script-src 'self' 'unsafe-inline' 'unsafe-eval'`,
 			`style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
 			`font-src 'self' https://fonts.gstatic.com`,
-			`img-src 'self' data: blob: https://cards.scryfall.io https://drive.google.com https://drive.usercontent.google.com`,
+			`img-src 'self' data: blob: https://cards.scryfall.io https://svgs.scryfall.io https://drive.google.com https://drive.usercontent.google.com`,
 			`connect-src 'self' ${supabaseUrl} https://api.scryfall.com`,
 			`frame-ancestors 'none'`,
 			`base-uri 'self'`,
