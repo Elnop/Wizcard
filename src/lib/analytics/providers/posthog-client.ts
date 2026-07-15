@@ -18,13 +18,15 @@ function safe(fn: () => void): void {
 export function initPosthog(): void {
 	const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 	if (!key) return;
-	posthog.init(key, {
-		api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? '/tamiyo',
-		ui_host: 'https://eu.posthog.com',
-		persistence: 'memory', // anonymous until consent granted
-		person_profiles: 'identified_only',
-		capture_pageview: false, // handled manually for the App Router
-		defaults: '2026-05-30',
+	safe(() => {
+		posthog.init(key, {
+			api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? '/tamiyo',
+			ui_host: 'https://eu.posthog.com',
+			persistence: 'memory', // anonymous until consent granted
+			person_profiles: 'identified_only',
+			capture_pageview: false, // handled manually for the App Router
+			defaults: '2026-05-30',
+		});
 	});
 }
 
