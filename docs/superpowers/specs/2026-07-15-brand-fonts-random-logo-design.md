@@ -83,11 +83,16 @@ Les fichiers sont extraits puis **rencommés sans espaces** vers `src/fonts/bran
 ### 6. Page brand-test — `src/app/[locale]/brand-test/logo/page.tsx`
 
 - Route `noindex` : `export const metadata = { robots: { index: false, follow: false } }`.
-- Server component simple ; map sur `BRAND_FONTS` ; pour chaque font, rendre un bloc :
-  - le `label` de la font (petit, en font par défaut) ;
-  - « Wizcard » en grand avec `style={{ fontFamily: font.cssVar }}`.
-- Liste verticale lisible, pas de dépendance au provider (affiche les 12 en dur).
+- Server component ; pas de dépendance au `BrandFontProvider` : lit `BRAND_FONTS` directement et affiche les 12 en dur.
 - Non liée dans la navigation.
+- Fichier CSS module dédié `page.module.css` pour les maquettes (autonome, n'importe **aucun** des vrais composants Navbar/Hero — évite de les rendre paramétrables).
+- Pour **chaque** font du registre, une ligne comportant :
+  1. le `label` de la font (petit, en font par défaut, au-dessus de la ligne) ;
+  2. **Mise en situation navbar** : maquette d'une barre horizontale sombre reconstituée (fond, hauteur, padding rappelant la vraie navbar) avec « Wizcard » à gauche dans la font de la ligne + quelques liens factices grisés à droite pour le contexte ;
+  3. **Mise en situation hero** : bloc large sur fond sombre, « WIZCARD » en très grand (taille type titre landing) dans la font de la ligne ;
+  4. **Icône favicon** : petit disque (~40–48px), fond sombre circulaire, glyphe « W » seul en `--gold` (#c9a84c) centré, dans la font de la ligne. Rendu petit pour simuler un favicon.
+- Chaque mise en situation applique `style={{ fontFamily: font.cssVar }}` sur le texte concerné.
+- Layout : les 3 maquettes d'une même font alignées (navbar pleine largeur, puis hero, puis l'icône ; ou hero + icône côte à côte selon la place). Priorité à la lisibilité comparative d'une font à l'autre.
 
 ## Data flow
 
@@ -130,6 +135,7 @@ La page brand-test ne passe **pas** par le provider : elle lit `BRAND_FONTS` dir
 - `src/fonts/brand.ts`
 - `src/contexts/BrandFontProvider.tsx`
 - `src/app/[locale]/brand-test/logo/page.tsx`
+- `src/app/[locale]/brand-test/logo/page.module.css`
 
 **Modifiés**
 
