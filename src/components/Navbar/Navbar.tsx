@@ -12,6 +12,7 @@ import { getQueueLength } from '@/lib/supabase/sync-queue';
 import { SyncIndicator } from '@/lib/supabase/components/SyncIndicator/SyncIndicator';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { ProfileMenu } from './ProfileMenu';
+import { useBrandFont } from '@/contexts/BrandFontProvider';
 import styles from './Navbar.module.css';
 
 const NavbarDrawer = dynamic(() => import('./NavbarDrawer').then((m) => m.NavbarDrawer), {
@@ -26,6 +27,7 @@ export function Navbar() {
 	const { entries: wishlistEntries } = useWishlistContext();
 	const { status } = useImportContext();
 	const { triggerSync } = useSyncQueueContext();
+	const { font } = useBrandFont();
 
 	const totalCollectionCards = entries.length;
 	const totalWishlistCards = wishlistEntries.length;
@@ -59,7 +61,7 @@ export function Navbar() {
 	return (
 		<>
 			<header className={styles.navbar}>
-				<Link href="/" className={styles.logo}>
+				<Link href="/" className={styles.logo} style={{ fontFamily: font?.cssVar }}>
 					Wizcard
 				</Link>
 
