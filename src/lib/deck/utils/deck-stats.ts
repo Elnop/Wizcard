@@ -27,21 +27,19 @@ export interface DeckStats {
 const MANA_COLORS: ManaColor[] = ['W', 'U', 'B', 'R', 'G'];
 
 function emptyBalance(): Record<BalanceKey, number> {
-	return { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0, ANY: 0 };
+	return { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
 }
 
 /**
  * Ajoute les sources de mana d'une carte au tableau de production.
- * Une source qui produit exactement les 5 couleurs (City of Brass, Command
- * Tower...) compte dans ANY, pas +1 sur chaque couleur (ça fausserait l'équilibre).
+ * Une source qui produit les 5 couleurs (City of Brass, Command Tower...) est
+ * ignorée entièrement : elle ne représente aucune couleur en particulier et
+ * fausserait l'équilibre si on la comptait.
  */
 function accumulateProduction(producedMana: readonly string[], into: Record<BalanceKey, number>) {
 	const wubrgProduced = MANA_COLORS.filter((c) => producedMana.includes(c));
-	if (wubrgProduced.length === 5) {
-		into.ANY += 1;
-	} else {
-		for (const c of wubrgProduced) into[c] += 1;
-	}
+	if (wubrgProduced.length === 5) return; // source arc-en-ciel → ignorée
+	for (const c of wubrgProduced) into[c] += 1;
 	if (producedMana.includes('C')) into.C += 1;
 }
 function emptyTypes(): Record<TypeCategory, number> {

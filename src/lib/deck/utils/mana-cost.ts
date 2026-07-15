@@ -2,7 +2,7 @@ import type { ScryfallCard, ScryfallCardFace } from '@/lib/scryfall/types/scryfa
 
 export type ManaColor = 'W' | 'U' | 'B' | 'R' | 'G';
 export type ProdColor = ManaColor | 'C';
-export type BalanceKey = ManaColor | 'C' | 'ANY';
+export type BalanceKey = ManaColor | 'C';
 export type TypeCategory =
 	| 'Creature'
 	| 'Instant'

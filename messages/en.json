@@ -531,7 +531,6 @@
 		"colorBalanceCost": "Cost",
 		"colorBalanceProduction": "Production",
 		"colorBalanceColorless": "Colorless",
-		"colorBalanceAny": "Any Color",
 		"colorBalanceNote": "{color}: {costPct}% of pips, {prodPct}% of sources",
 		"toAddCount": "<strong>{count, plural, one {# card} other {# cards}}</strong> to add",
 		"ownedFraction": "({owned} / {total} owned)",

@@ -5,9 +5,8 @@ import { ColorIdentityIcons } from '@/lib/scryfall/components/ColorIdentityIcons
 import styles from './ColorBalance.module.css';
 
 const COLOR_ORDER = ['W', 'U', 'B', 'R', 'G'] as const;
-// Segments affichés par barre : le coût n'a jamais de "any color" ; les deux ont C.
-const COST_KEYS = ['W', 'U', 'B', 'R', 'G', 'C'] as const;
-const PROD_KEYS = ['W', 'U', 'B', 'R', 'G', 'C', 'ANY'] as const;
+// Segments des barres : WUBRG + incolore {C}. Les sources 5-couleurs sont ignorées.
+const BAR_KEYS = ['W', 'U', 'B', 'R', 'G', 'C'] as const;
 const COLOR_CSS: Record<string, string> = {
 	W: 'var(--mana-white)',
 	U: 'var(--mana-blue)',
@@ -15,7 +14,6 @@ const COLOR_CSS: Record<string, string> = {
 	R: 'var(--mana-red)',
 	G: 'var(--mana-green)',
 	C: 'var(--mana-colorless)',
-	ANY: 'linear-gradient(90deg, var(--mana-white), var(--mana-blue), var(--mana-black), var(--mana-red), var(--mana-green))',
 };
 const COLOR_LABELS: Record<string, string> = {
 	W: 'White',
@@ -73,25 +71,23 @@ function StackedBar({
 export function ColorBalance({ cost, production }: Props) {
 	const t = useTranslations('decks');
 
-	// Libellés de segment : WUBRG statiques, C/ANY traduits.
+	// Libellés de segment : WUBRG statiques, C traduit.
 	const segLabels: Record<string, string> = {
 		...COLOR_LABELS,
 		C: t('colorBalanceColorless'),
-		ANY: t('colorBalanceAny'),
 	};
 
-	// % d'affichage : recalibrés sur l'ensemble des segments de chaque barre
-	// (le coût inclut C ; la production inclut C + ANY).
-	const costPctBar = pct(cost, COST_KEYS);
-	const prodPctBar = pct(production, PROD_KEYS);
+	// % d'affichage : recalibrés sur WUBRG + C (les sources 5-couleurs sont ignorées).
+	const costPctBar = pct(cost, BAR_KEYS);
+	const prodPctBar = pct(production, BAR_KEYS);
 
 	// % des notes : base WUBRG seule, pour une comparaison coût/prod honnête
-	// (dénominateurs identiques, indépendants de C/ANY).
+	// (dénominateurs identiques, indépendants de C).
 	const costPctWubrg = pct(cost, COLOR_ORDER);
 	const prodPctWubrg = pct(production, COLOR_ORDER);
 
-	const hasCost = COST_KEYS.some((k) => (cost[k] ?? 0) > 0);
-	const hasProd = PROD_KEYS.some((k) => (production[k] ?? 0) > 0);
+	const hasCost = BAR_KEYS.some((k) => (cost[k] ?? 0) > 0);
+	const hasProd = BAR_KEYS.some((k) => (production[k] ?? 0) > 0);
 	if (!hasCost && !hasProd) return null;
 
 	const notes = COLOR_ORDER.filter((k) => (cost[k] ?? 0) > 0 || (production[k] ?? 0) > 0)
@@ -103,13 +99,13 @@ export function ColorBalance({ cost, production }: Props) {
 			<StackedBar
 				label={t('colorBalanceCost')}
 				values={costPctBar}
-				keys={COST_KEYS}
+				keys={BAR_KEYS}
 				segLabels={segLabels}
 			/>
 			<StackedBar
 				label={t('colorBalanceProduction')}
 				values={prodPctBar}
-				keys={PROD_KEYS}
+				keys={BAR_KEYS}
 				segLabels={segLabels}
 			/>
 			{notes.length > 0 && (
