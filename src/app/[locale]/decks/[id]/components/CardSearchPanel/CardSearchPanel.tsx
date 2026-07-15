@@ -383,10 +383,12 @@ export function CardSearchPanel({
 								placeholder={t('searchForCard')}
 							/>
 							<CardModeSwitcher value={cardMode} onChange={setCardMode} />
-							<SearchAllLanguagesToggle
-								value={includeMultilingual}
-								onChange={setIncludeMultilingual}
-							/>
+							{!inCollectionOnly && (
+								<SearchAllLanguagesToggle
+									value={includeMultilingual}
+									onChange={setIncludeMultilingual}
+								/>
+							)}
 							<button
 								type="button"
 								aria-label={t('moreFilters')}

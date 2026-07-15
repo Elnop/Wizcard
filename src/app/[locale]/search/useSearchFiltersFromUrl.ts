@@ -103,7 +103,18 @@ type UrlSyncState = {
 	mpcTags: MpcTagsFilterValue;
 	oracleIdFilter: OracleIdFilterValue;
 	includeMultilingual: boolean;
+	// The by-language default for includeMultilingual, so the writer can emit an
+	// explicit ml=0 when the user turns it off against a default of on.
+	multilingualDefaultsOn: boolean;
 };
+
+/** The value to persist for the `ml` param, or null to omit it: emitted only
+ * when the toggle diverges from its by-language default, so English URLs stay
+ * clean while a non-English user's explicit off (ml=0) survives reload. */
+function mlParamValue(state: Pick<UrlSyncState, 'includeMultilingual' | 'multilingualDefaultsOn'>) {
+	if (state.includeMultilingual === state.multilingualDefaultsOn) return null;
+	return state.includeMultilingual ? '1' : '0';
+}
 
 /** Builds the `/search` URL query string from current filter state. Extracted
  * from the sync effect so the effect body stays under the cognitive-complexity
@@ -131,7 +142,8 @@ function buildSearchParams(state: UrlSyncState): URLSearchParams {
 		state.mpcTags.mustNotHave.length === 1 && state.mpcTags.mustNotHave[0] === 'NSFW';
 	if (!isDefaultMpcNot) params.set('mpcNot', state.mpcTags.mustNotHave.join(','));
 	if (state.oracleIdFilter !== 'all') params.set('oracleId', state.oracleIdFilter);
-	if (state.includeMultilingual) params.set('ml', '1');
+	const ml = mlParamValue(state);
+	if (ml !== null) params.set('ml', ml);
 	return params;
 }
 
@@ -196,12 +208,13 @@ export function useSearchFiltersFromUrl() {
 	});
 
 	const preferredLang = usePreferredCardLang();
+	// Default: on when the user's preferred card language is non-English.
+	const multilingualDefaultsOn = preferredLang !== undefined && preferredLang !== 'en';
 	const [includeMultilingual, setIncludeMultilingual] = useState<boolean>(() => {
 		const raw = searchParams.get('ml');
 		if (raw === '1') return true;
 		if (raw === '0') return false;
-		// Default: on when the user's preferred card language is non-English.
-		return preferredLang !== undefined && preferredLang !== 'en';
+		return multilingualDefaultsOn;
 	});
 
 	const isInitialMount = useRef(true);
@@ -229,6 +242,7 @@ export function useSearchFiltersFromUrl() {
 			mpcTags,
 			oracleIdFilter,
 			includeMultilingual,
+			multilingualDefaultsOn,
 		});
 
 		const queryString = params.toString();
@@ -251,6 +265,7 @@ export function useSearchFiltersFromUrl() {
 		mpcTags,
 		oracleIdFilter,
 		includeMultilingual,
+		multilingualDefaultsOn,
 		router,
 	]);
 
