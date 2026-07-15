@@ -1,0 +1,93 @@
+.page {
+	max-width: 960px;
+	margin: 0 auto;
+	padding: 2rem 1.5rem 6rem;
+	display: flex;
+	flex-direction: column;
+	gap: 3rem;
+}
+
+.intro {
+	font-family: var(--font-body);
+	opacity: 0.7;
+}
+
+.row {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	border-top: 1px solid rgba(201, 168, 76, 0.25);
+	padding-top: 1.5rem;
+}
+
+.label {
+	font-family: var(--font-body);
+	font-size: 0.85rem;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	opacity: 0.6;
+}
+
+/* Maquette navbar */
+.navbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: #0d0d10;
+	border: 1px solid rgba(201, 168, 76, 0.2);
+	border-radius: 8px;
+	padding: 0.75rem 1.25rem;
+}
+
+.navbarLogo {
+	font-size: 1.5rem;
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
+	color: var(--gold);
+}
+
+.navbarLinks {
+	display: flex;
+	gap: 1.25rem;
+	font-family: var(--font-body);
+	font-size: 0.9rem;
+	opacity: 0.45;
+}
+
+/* Maquette hero + icône côte à côte */
+.showcase {
+	display: flex;
+	align-items: center;
+	gap: 2rem;
+	flex-wrap: wrap;
+	background: #0d0d10;
+	border: 1px solid rgba(201, 168, 76, 0.2);
+	border-radius: 8px;
+	padding: 2.5rem 1.5rem;
+}
+
+.heroTitle {
+	flex: 1 1 auto;
+	min-width: 0;
+	font-size: clamp(2.5rem, 8vw, 5rem);
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: #e8d5a0;
+	line-height: 1;
+}
+
+/* Icône type favicon : disque sombre, W doré */
+.favicon {
+	flex: 0 0 auto;
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	background: #0d0d10;
+	border: 1px solid rgba(201, 168, 76, 0.35);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.75rem;
+	line-height: 1;
+	color: var(--gold);
+}
