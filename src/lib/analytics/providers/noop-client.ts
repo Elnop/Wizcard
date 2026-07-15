@@ -5,6 +5,7 @@ import type { AnalyticsClient } from '../analytics-client';
 export function createNoopClient(): AnalyticsClient {
 	return {
 		track: () => {},
+		page: () => {},
 		identify: () => {},
 		reset: () => {},
 		setConsent: () => {},

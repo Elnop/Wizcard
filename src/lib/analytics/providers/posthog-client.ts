@@ -33,6 +33,7 @@ export function initPosthog(): void {
 export function createPosthogClient(): AnalyticsClient {
 	return {
 		track: (event) => safe(() => posthog.capture(event.name, event.props)),
+		page: (url) => safe(() => posthog.capture('$pageview', { $current_url: url })),
 		identify: (userId, traits) => safe(() => posthog.identify(userId, traits)),
 		reset: () => safe(() => posthog.reset()),
 		setConsent: (granted) =>

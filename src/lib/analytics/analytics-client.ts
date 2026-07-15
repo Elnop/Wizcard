@@ -5,6 +5,7 @@ import type { AnalyticsEvent } from './analytics-events';
 // vendor SDK; consumers depend only on this interface.
 export interface AnalyticsClient {
 	track<E extends AnalyticsEvent>(event: E): void;
+	page(url: string): void;
 	identify(userId: string, traits?: Record<string, string | number | boolean>): void;
 	reset(): void;
 	setConsent(granted: boolean): void;
