@@ -318,7 +318,11 @@
 	font-family: var(--font-display);
 	font-size: 72px;
 	font-weight: 700;
-	letter-spacing: 0.2em;
+	/* Les fonts brand décoratives débordent de la line-box par défaut ;
+	   line-height généreuse + overflow visible évitent que
+	   background-clip: text ne rogne le haut/bas des glyphes. */
+	line-height: 1.3;
+	overflow: visible;
 	background: linear-gradient(180deg, var(--gold), var(--brass));
 	background-clip: text;
 	-webkit-background-clip: text;
@@ -402,7 +406,6 @@
 @media (max-width: 768px) {
 	.title {
 		font-size: 48px;
-		letter-spacing: 0.12em;
 	}
 
 	.tagline {
@@ -426,7 +429,6 @@
 @media (max-width: 480px) {
 	.title {
 		font-size: 36px;
-		letter-spacing: 0.08em;
 	}
 
 	.cta {

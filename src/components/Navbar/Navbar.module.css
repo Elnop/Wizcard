@@ -17,8 +17,13 @@
 	font-size: var(--text-2xl);
 	font-weight: 700;
 	font-family: var(--font-display);
-	letter-spacing: 0.15em;
 	text-transform: uppercase;
+	/* Les fonts brand décoratives débordent de la line-box par défaut ;
+	   une line-height généreuse + overflow visible évitent que
+	   background-clip: text ne rogne le haut/bas des glyphes. */
+	line-height: 1.4;
+	padding: 0.1em 0;
+	overflow: visible;
 	background: linear-gradient(135deg, var(--gold) 0%, #e8d5a0 50%, var(--gold) 100%);
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;

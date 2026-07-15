@@ -1,20 +1,5 @@
 import localFont from 'next/font/local';
 
-const augusta = localFont({
-	src: './brand/augusta.ttf',
-	variable: '--font-brand-augusta',
-	display: 'swap',
-});
-const beech = localFont({
-	src: './brand/beech.ttf',
-	variable: '--font-brand-beech',
-	display: 'swap',
-});
-const besideHorizon = localFont({
-	src: './brand/beside-horizon.otf',
-	variable: '--font-brand-beside-horizon',
-	display: 'swap',
-});
 const godofwar = localFont({
 	src: './brand/godofwar.ttf',
 	variable: '--font-brand-godofwar',
@@ -45,11 +30,6 @@ const strangerThrough = localFont({
 	variable: '--font-brand-stranger-through',
 	display: 'swap',
 });
-const vampireWars = localFont({
-	src: './brand/vampire-wars.ttf',
-	variable: '--font-brand-vampire-wars',
-	display: 'swap',
-});
 const vengeanceAtSea = localFont({
 	src: './brand/vengeance-at-sea.otf',
 	variable: '--font-brand-vengeance-at-sea',
@@ -66,22 +46,18 @@ export type BrandFont = {
 	id: string;
 	/** Nom lisible pour la page brand-test. */
 	label: string;
-	/** Valeur font-family à appliquer inline, ex. 'var(--font-brand-augusta)'. */
+	/** Valeur font-family à appliquer inline, ex. 'var(--font-brand-godofwar)'. */
 	cssVar: string;
 };
 
 /** Chaque font locale, avec la className variable produite par next/font/local. */
 const FONT_DEFS = [
-	{ id: 'augusta', label: 'Augusta', font: augusta },
-	{ id: 'beech', label: 'Beech', font: beech },
-	{ id: 'beside-horizon', label: 'Beside Horizon', font: besideHorizon },
 	{ id: 'godofwar', label: 'God of War', font: godofwar },
 	{ id: 'one-slice', label: 'One Slice', font: oneSlice },
 	{ id: 'roman-antique', label: 'Roman Antique', font: romanAntique },
 	{ id: 'seagram-tfb', label: 'Seagram tfb', font: seagramTfb },
 	{ id: 'sherwood', label: 'Sherwood', font: sherwood },
 	{ id: 'stranger-through', label: 'Stranger Through', font: strangerThrough },
-	{ id: 'vampire-wars', label: 'Vampire Wars', font: vampireWars },
 	{ id: 'vengeance-at-sea', label: 'Vengeance at Sea', font: vengeanceAtSea },
 	{ id: 'white-on-black', label: 'White on Black', font: whiteOnBlack },
 ] as const;
