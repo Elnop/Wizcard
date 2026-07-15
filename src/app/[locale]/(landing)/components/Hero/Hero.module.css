@@ -57,6 +57,8 @@
 .hero .title {
 	opacity: 1;
 	animation: heroTitle 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+	cursor: pointer;
+	user-select: none;
 }
 
 @keyframes heroTitleRule {
