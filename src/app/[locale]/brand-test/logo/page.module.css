@@ -39,11 +39,17 @@
 	padding: 0.75rem 1.25rem;
 }
 
+/* Reproduit le vrai rendu du logo navbar : dégradé or clippé sur le texte,
+   poids normal, pas de letter-spacing, anti-crop pour les glyphes décoratifs. */
 .navbarLogo {
 	font-size: 1.5rem;
-	letter-spacing: 0.15em;
 	text-transform: uppercase;
-	color: var(--gold);
+	line-height: 1.4;
+	overflow: visible;
+	background: linear-gradient(135deg, var(--gold) 0%, #e8d5a0 50%, var(--gold) 100%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
 }
 
 .navbarLinks {
@@ -66,14 +72,19 @@
 	padding: 2.5rem 1.5rem;
 }
 
+/* Reproduit le vrai rendu du titre hero : dégradé or clippé, poids normal,
+   pas de letter-spacing, anti-crop. */
 .heroTitle {
 	flex: 1 1 auto;
 	min-width: 0;
 	font-size: clamp(2.5rem, 8vw, 5rem);
-	letter-spacing: 0.1em;
 	text-transform: uppercase;
-	color: #e8d5a0;
-	line-height: 1;
+	line-height: 1.3;
+	overflow: visible;
+	background: linear-gradient(180deg, var(--gold), var(--brass));
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
 }
 
 /* Icône type favicon : disque sombre, W doré */

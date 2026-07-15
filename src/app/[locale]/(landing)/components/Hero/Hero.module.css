@@ -317,7 +317,8 @@
 .title {
 	font-family: var(--font-display);
 	font-size: 72px;
-	font-weight: 700;
+	/* <h1> est bold par défaut ; on force normal pour laisser la typo brut. */
+	font-weight: normal;
 	/* Les fonts brand décoratives débordent de la line-box par défaut ;
 	   line-height généreuse + overflow visible évitent que
 	   background-clip: text ne rogne le haut/bas des glyphes. */

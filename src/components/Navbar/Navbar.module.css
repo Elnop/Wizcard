@@ -15,7 +15,6 @@
 
 .logo {
 	font-size: var(--text-2xl);
-	font-weight: 700;
 	font-family: var(--font-display);
 	text-transform: uppercase;
 	/* Les fonts brand décoratives débordent de la line-box par défaut ;
