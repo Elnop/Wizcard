@@ -9,28 +9,31 @@ import { ImportProvider } from '@/lib/import/context/ImportContext';
 import { AddToDeckModalProvider } from '@/contexts/AddToDeckModalProvider';
 import { AddCardModalProvider } from '@/contexts/AddCardModalProvider';
 import { CardModalProvider } from '@/contexts/CardModalProvider';
+import { BrandFontProvider } from '@/contexts/BrandFontProvider';
 import { SyncQueueRunner } from '@/lib/supabase/components/SyncQueueRunner';
 
 export function Providers({ children }: { children: React.ReactNode }) {
 	return (
 		<AuthProvider>
-			<SyncQueueRunner>
-				<ProfileProvider>
-					<CollectionProvider>
-						<WishlistProvider>
-							<DeckProvider>
-								<ImportProvider>
-									<AddToDeckModalProvider>
-										<AddCardModalProvider>
-											<CardModalProvider>{children}</CardModalProvider>
-										</AddCardModalProvider>
-									</AddToDeckModalProvider>
-								</ImportProvider>
-							</DeckProvider>
-						</WishlistProvider>
-					</CollectionProvider>
-				</ProfileProvider>
-			</SyncQueueRunner>
+			<BrandFontProvider>
+				<SyncQueueRunner>
+					<ProfileProvider>
+						<CollectionProvider>
+							<WishlistProvider>
+								<DeckProvider>
+									<ImportProvider>
+										<AddToDeckModalProvider>
+											<AddCardModalProvider>
+												<CardModalProvider>{children}</CardModalProvider>
+											</AddCardModalProvider>
+										</AddToDeckModalProvider>
+									</ImportProvider>
+								</DeckProvider>
+							</WishlistProvider>
+						</CollectionProvider>
+					</ProfileProvider>
+				</SyncQueueRunner>
+			</BrandFontProvider>
 		</AuthProvider>
 	);
 }
