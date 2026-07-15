@@ -130,11 +130,16 @@
 .searchRow {
 	display: flex;
 	align-items: center;
+	flex-wrap: wrap;
 	gap: 8px;
 }
 
 .searchRow > :first-child {
-	flex: 1;
+	/* Grow to fill the row, but never shrink below a usable width: when the
+	   container is too narrow to fit the controls alongside, the search bar
+	   holds this width and the toggles/buttons wrap onto the next line. */
+	flex: 1 1 200px;
+	min-width: 200px;
 }
 
 .filtersButton {
