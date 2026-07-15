@@ -1,10 +1,15 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useSyncExternalStore } from 'react';
 import type { AnalyticsClient } from '../analytics-client';
 import { createNoopClient } from '../providers/noop-client';
 import { createPosthogClient } from '../providers/posthog-client';
-import { getConsent, setConsentState, type ConsentState } from '../consent/consent-store';
+import {
+	getConsent,
+	setConsentState,
+	subscribeConsent,
+	type ConsentState,
+} from '../consent/consent-store';
 
 // Module singleton: the active client is chosen once (posthog if a key exists,
 // noop otherwise) and exposed both via React context (components) and via
@@ -27,26 +32,27 @@ type ConsentContextValue = {
 const ConsentContext = createContext<ConsentContextValue | null>(null);
 
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
-	// Lazy initializer reads persisted consent synchronously during render
-	// (SSR-safe: getConsent() returns 'unknown' server-side, the real value
-	// client-side) instead of via setState-in-effect, which would trigger an
-	// extra cascading render (react-hooks/set-state-in-effect).
-	const [consent, setConsent] = useState<ConsentState>(getConsent);
+	// useSyncExternalStore is hydration-safe: the third argument (server
+	// snapshot) is used for BOTH the server render and the client's hydration
+	// render, so they match ('unknown' either way). React then re-syncs to
+	// the real client value (getConsent(), reading localStorage) right after
+	// hydration commits — no setState-in-effect, no mismatch.
+	const consent = useSyncExternalStore<ConsentState>(subscribeConsent, getConsent, () => 'unknown');
 
-	// Re-apply persisted consent to the client on mount (so a returning
-	// visitor who accepted stays persistent across reloads).
+	// Re-apply persisted consent to the client on mount/whenever it changes
+	// (so a returning visitor who accepted stays persistent across reloads).
+	// This only calls into the external activeClient — no React setState —
+	// so react-hooks/set-state-in-effect does not apply here.
 	useEffect(() => {
 		if (consent === 'granted') activeClient.setConsent(true);
 	}, [consent]);
 
 	const accept = () => {
 		setConsentState('granted');
-		setConsent('granted');
 		activeClient.setConsent(true);
 	};
 	const refuse = () => {
 		setConsentState('denied');
-		setConsent('denied');
 		activeClient.setConsent(false);
 	};
 

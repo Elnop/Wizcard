@@ -21,4 +21,34 @@ export function setConsentState(state: 'granted' | 'denied'): void {
 	} catch {
 		// Storage unavailable (private mode / quota) — analytics stays anonymous.
 	}
+	notifyConsentListeners();
+}
+
+// useSyncExternalStore plumbing: a module-level set of listeners so consent
+// changes (this tab via setConsentState, or another tab via the `storage`
+// event) can trigger a re-render without setState-in-effect.
+const listeners = new Set<() => void>();
+
+function notifyConsentListeners(): void {
+	for (const listener of listeners) listener();
+}
+
+export function subscribeConsent(listener: () => void): () => void {
+	listeners.add(listener);
+
+	// `storage` only fires in OTHER tabs/windows, not the one that wrote the
+	// value — that's why setConsentState() also notifies directly above.
+	const onStorage = (event: StorageEvent) => {
+		if (event.key === CONSENT_STORAGE_KEY) listener();
+	};
+	if (typeof window !== 'undefined') {
+		window.addEventListener('storage', onStorage);
+	}
+
+	return () => {
+		listeners.delete(listener);
+		if (typeof window !== 'undefined') {
+			window.removeEventListener('storage', onStorage);
+		}
+	};
 }
