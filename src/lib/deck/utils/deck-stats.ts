@@ -5,7 +5,7 @@ import {
 	iterateFaces,
 	categorizeType,
 	type ManaColor,
-	type ProdColor,
+	type BalanceKey,
 	type TypeCategory,
 } from './mana-cost';
 
@@ -19,18 +19,30 @@ export interface DeckStats {
 	averageCmc: number;
 	manaCurve: Record<number, number>;
 	colorDistribution: Record<string, number>; // color identity — inchangé
-	colorsCost: Record<ManaColor, number>; // pips requis (hybride 0.5)
-	colorsProduction: Record<ProdColor, number>; // sources de mana (produced_mana)
+	colorsCost: Record<BalanceKey, number>; // pips requis (hybride 0.5, {C} inclus ; ANY toujours 0)
+	colorsProduction: Record<BalanceKey, number>; // sources ({C} séparé, ANY = sources 5-couleurs)
 	typeDistribution: Record<TypeCategory, number>;
 }
 
 const MANA_COLORS: ManaColor[] = ['W', 'U', 'B', 'R', 'G'];
 
-function emptyCost(): Record<ManaColor, number> {
-	return { W: 0, U: 0, B: 0, R: 0, G: 0 };
+function emptyBalance(): Record<BalanceKey, number> {
+	return { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0, ANY: 0 };
 }
-function emptyProduction(): Record<ProdColor, number> {
-	return { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
+
+/**
+ * Ajoute les sources de mana d'une carte au tableau de production.
+ * Une source qui produit exactement les 5 couleurs (City of Brass, Command
+ * Tower...) compte dans ANY, pas +1 sur chaque couleur (ça fausserait l'équilibre).
+ */
+function accumulateProduction(producedMana: readonly string[], into: Record<BalanceKey, number>) {
+	const wubrgProduced = MANA_COLORS.filter((c) => producedMana.includes(c));
+	if (wubrgProduced.length === 5) {
+		into.ANY += 1;
+	} else {
+		for (const c of wubrgProduced) into[c] += 1;
+	}
+	if (producedMana.includes('C')) into.C += 1;
 }
 function emptyTypes(): Record<TypeCategory, number> {
 	return {
@@ -52,8 +64,8 @@ export function computeDeckStats(cards: Array<{ card: ScryfallCard; zone: DeckZo
 	const commander = cards.filter((c) => c.zone === 'commander');
 
 	const manaCurve: Record<number, number> = {};
-	const colorsCost = emptyCost();
-	const colorsProduction = emptyProduction();
+	const colorsCost = emptyBalance();
+	const colorsProduction = emptyBalance();
 	const typeDistribution = emptyTypes();
 	let cmcSum = 0;
 	let cmcCount = 0;
@@ -61,12 +73,8 @@ export function computeDeckStats(cards: Array<{ card: ScryfallCard; zone: DeckZo
 
 	// Distributions par face : mainboard + commander, hors maybeboard/sideboard
 	for (const { card } of [...mainboard, ...commander]) {
-		// Production : au niveau carte (produced_mana absent des faces)
-		for (const color of card.produced_mana ?? []) {
-			if (color in colorsProduction) {
-				colorsProduction[color as ProdColor] += 1;
-			}
-		}
+		// Production : au niveau carte (produced_mana absent des faces).
+		accumulateProduction((card.produced_mana ?? []) as string[], colorsProduction);
 
 		for (const face of iterateFaces(card)) {
 			const category = categorizeType(face.type_line ?? '');
@@ -84,6 +92,7 @@ export function computeDeckStats(cards: Array<{ card: ScryfallCard; zone: DeckZo
 
 			const pips = parseColorPips(face.mana_cost ?? '');
 			for (const c of MANA_COLORS) colorsCost[c] += pips[c];
+			colorsCost.C += pips.C;
 		}
 	}
 

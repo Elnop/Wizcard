@@ -2,6 +2,7 @@ import type { ScryfallCard, ScryfallCardFace } from '@/lib/scryfall/types/scryfa
 
 export type ManaColor = 'W' | 'U' | 'B' | 'R' | 'G';
 export type ProdColor = ManaColor | 'C';
+export type BalanceKey = ManaColor | 'C' | 'ANY';
 export type TypeCategory =
 	| 'Creature'
 	| 'Instant'
@@ -20,27 +21,33 @@ export type FaceLike = {
 
 const COLORS: ManaColor[] = ['W', 'U', 'B', 'R', 'G'];
 
-function emptyPips(): Record<ManaColor, number> {
-	return { W: 0, U: 0, B: 0, R: 0, G: 0 };
+function emptyPips(): Record<ManaColor | 'C', number> {
+	return { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
 }
 
 /**
- * Compte les pips colorés d'un coût de mana Scryfall (ex: "{1}{G}{G}", "{G/U}", "{B/P}").
+ * Compte les pips colorés + incolores d'un coût de mana Scryfall (ex: "{1}{G}{G}", "{G/U}", "{2}{C}{C}").
  * - Mono-couleur ({R})            → +1 pour la couleur
  * - Hybride couleur/couleur ({G/U}) → +0.5 pour chaque couleur
  * - Phyrexian ({G/P})            → +1 pour la couleur
- * - Générique ({2}, {X}), incolore ({C}), snow ({S}) → ignoré
+ * - Incolore pur ({C})           → +1 pour C
+ * - Générique ({2}, {X}), snow ({S}) → ignoré
  */
-export function parseColorPips(manaCost: string): Record<ManaColor, number> {
+export function parseColorPips(manaCost: string): Record<ManaColor | 'C', number> {
 	const pips = emptyPips();
 	if (!manaCost) return pips;
-	// eslint-disable-next-line sonarjs/slow-regex -- safe: negation prevents backtracking
+	// eslint-disable-next-line sonarjs/super-linear-regex -- safe: [^}] negation prevents backtracking
 	const symbols = manaCost.match(/\{[^}]*\}/g) ?? [];
 	for (const raw of symbols) {
-		const inner = raw.slice(1, -1).toUpperCase(); // "G/U", "B/P", "R", "2", "X"
+		const inner = raw.slice(1, -1).toUpperCase(); // "G/U", "B/P", "R", "2", "X", "C"
+		// incolore pur {C} (jamais hybride)
+		if (inner === 'C') {
+			pips.C += 1;
+			continue;
+		}
 		const parts = inner.split('/');
 		const colorParts = parts.filter((p): p is ManaColor => (COLORS as string[]).includes(p));
-		if (colorParts.length === 0) continue; // générique / incolore / X
+		if (colorParts.length === 0) continue; // générique / X / snow
 		if (colorParts.length === 1) {
 			// mono-couleur, ou Phyrexian (couleur + "P"), ou couleur + générique ({2/G})
 			pips[colorParts[0]] += 1;

@@ -11,12 +11,13 @@
 }
 
 .rowLabel {
-	width: 72px;
+	width: 96px;
 	flex-shrink: 0;
 	font-size: var(--text-xs);
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
 	color: var(--text-muted);
+	white-space: nowrap;
 }
 
 .bar {
