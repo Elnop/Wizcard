@@ -12,7 +12,7 @@ export function PrivacySection() {
 	if (!profile) return null;
 
 	return (
-		<SettingsSection title={t('title')} status={status}>
+		<SettingsSection title={t('title')} status={status} comingSoon>
 			<label className={s.checkboxRow}>
 				<input
 					type="checkbox"

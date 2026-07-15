@@ -24,7 +24,7 @@ export function DisplaySection() {
 	];
 
 	return (
-		<SettingsSection title={t('title')} status={status}>
+		<SettingsSection title={t('title')} status={status} comingSoon>
 			<div className={s.field}>
 				<span className={s.label}>{t('theme')}</span>
 				<Select

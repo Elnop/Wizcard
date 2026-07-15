@@ -10,22 +10,31 @@ export { styles as settingsStyles };
 export function SettingsSection({
 	title,
 	status = 'idle',
+	comingSoon = false,
 	children,
 }: {
 	title: string;
 	status?: SaveStatus;
+	/** Disable the section's controls and show a "coming soon" badge. */
+	comingSoon?: boolean;
 	children: React.ReactNode;
 }) {
 	const t = useTranslations('settings.status');
 	return (
-		<section className={styles.section}>
+		<section className={`${styles.section} ${comingSoon ? styles.disabled : ''}`}>
 			<header className={styles.header}>
 				<h2 className={styles.title}>{title}</h2>
-				{status !== 'idle' && (
-					<span className={`${styles.status} ${styles[status]}`}>{t(status)}</span>
+				{comingSoon ? (
+					<span className={styles.comingSoon}>{t('comingSoon')}</span>
+				) : (
+					status !== 'idle' && (
+						<span className={`${styles.status} ${styles[status]}`}>{t(status)}</span>
+					)
 				)}
 			</header>
-			<div className={styles.body}>{children}</div>
+			<div className={styles.body} aria-disabled={comingSoon || undefined}>
+				{children}
+			</div>
 		</section>
 	);
 }

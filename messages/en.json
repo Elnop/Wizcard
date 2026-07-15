@@ -207,7 +207,8 @@
 		"status": {
 			"saving": "Saving…",
 			"saved": "Saved",
-			"error": "Failed to save"
+			"error": "Failed to save",
+			"comingSoon": "Coming soon"
 		},
 		"profile": {
 			"title": "Profile",

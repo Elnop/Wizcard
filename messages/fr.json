@@ -207,7 +207,8 @@
 		"status": {
 			"saving": "Enregistrement…",
 			"saved": "Enregistré",
-			"error": "Échec de l'enregistrement"
+			"error": "Échec de l'enregistrement",
+			"comingSoon": "Bientôt disponible"
 		},
 		"profile": {
 			"title": "Profil",
