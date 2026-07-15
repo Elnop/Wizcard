@@ -268,6 +268,11 @@ export function DeckCard({
 							))}
 						</div>
 					)}
+					{/* Commander name overlaid on the cover (kept off the body so the body
+					    stays compact and never clips its content). */}
+					{summary?.commanderName && (
+						<p className={styles.commanderName}>{summary.commanderName}</p>
+					)}
 					{hasManaCurve && (
 						<div className={styles.curveOverlay}>
 							<MiniManaCurve curve={summary!.manaCurve} />
@@ -277,9 +282,6 @@ export function DeckCard({
 
 				{/* ── Body zone ── */}
 				<div className={styles.body}>
-					{summary?.commanderName && (
-						<p className={styles.commanderName}>{summary.commanderName}</p>
-					)}
 					<div className={styles.metaRow}>
 						{deck.format && <span className={styles.format}>{deck.format}</span>}
 						{summary && deck.format && summary.warningCount > 0 && (
@@ -299,32 +301,9 @@ export function DeckCard({
 							</span>
 						)}
 					</div>
-					{deck.description && <p className={styles.description}>{deck.description}</p>}
-					<div className={styles.footer}>
-						{summary && summary.totalCards > 0 ? (
-							<div className={styles.statsRow}>
-								<span className={styles.stat}>
-									{t('cardsCount', {
-										count:
-											summary.targetCards !== null
-												? `${summary.totalCards}/${summary.targetCards}`
-												: summary.totalCards,
-									})}
-								</span>
-								<span className={styles.statSep}>·</span>
-								<span className={styles.stat}>{t('landsCount', { count: summary.landCount })}</span>
-								<span className={styles.statSep}>·</span>
-								<span className={styles.stat}>
-									{t('cmcStat', { cmc: summary.averageCmc.toFixed(1) })}
-								</span>
-							</div>
-						) : (
-							<div />
-						)}
-						<span className={styles.updatedAt}>
-							{formatRelativeDate(deck.updatedAt, locale, t('justNow'))}
-						</span>
-					</div>
+					<span className={styles.updatedAt}>
+						{formatRelativeDate(deck.updatedAt, locale, t('justNow'))}
+					</span>
 				</div>
 			</div>
 

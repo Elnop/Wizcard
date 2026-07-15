@@ -27,7 +27,13 @@ function buildDeckSummary(
 
 	const stats = computeDeckStats(resolvedCards);
 	const commanderCards = resolvedCards.filter((c) => c.zone === 'commander');
-	const nonCommanderCards = resolvedCards.filter((c) => c.zone !== 'commander');
+	// Match the deck-detail view (DeckDetailOwnerView/ReadOnlyView): tokens are
+	// not part of the validated deck, so exclude them alongside the commander.
+	// Otherwise validateDeck flags every token for legality / color-identity /
+	// copy limits, so the card shows far more warnings than the deck page.
+	const nonCommanderCards = resolvedCards.filter(
+		(c) => c.zone !== 'commander' && c.zone !== 'tokens'
+	);
 	const warnings = validateDeck(format, nonCommanderCards, commanderCards);
 	const rules = format ? getFormatRules(format) : null;
 
