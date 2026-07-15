@@ -7,6 +7,7 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card } from '@/types/cards';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
+import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { CardLightbox } from '@/lib/card/components/CardLightbox/CardLightbox';
 import { type PrintListProps, groupPrintsByLang } from './PrintList.types';
@@ -22,6 +23,8 @@ export function PrintList({
 }: PrintListProps) {
 	const t = useTranslations('card');
 	const { prints, loading, error } = useCardPrints(prints_search_uri);
+	const { profile } = useProfileContext();
+	const preferredLang = profile?.language;
 	const [lightboxCard, setLightboxCard] = useState<Card | ScryfallCard | null>(null);
 
 	function isCurrentPrint(card: ScryfallCard): boolean {
@@ -37,8 +40,8 @@ export function PrintList({
 
 	const sections: CardListSection[] = useMemo(() => {
 		if (loading || error || prints.length === 0) return [];
-		return groupPrintsByLang(prints, currentLang ?? 'en');
-	}, [prints, loading, error, currentLang]);
+		return groupPrintsByLang(prints, currentLang ?? 'en', preferredLang);
+	}, [prints, loading, error, currentLang, preferredLang]);
 
 	function renderOverlay(anyCard: AnyCard): ReactNode {
 		const print = anyCard as ScryfallCard;

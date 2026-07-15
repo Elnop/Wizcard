@@ -5,6 +5,7 @@ import type { CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckZone } from '@/types/decks';
 import { AddCardModal } from '@/lib/card/components/AddCardModal/AddCardModal';
+import { useCloseOnRouteChange } from '@/contexts/useCloseOnRouteChange';
 
 /** Params for opening the add-card modal — mirrors AddCardModal's props minus onClose. */
 export type AddCardModalParams = {
@@ -36,6 +37,7 @@ export function AddCardModalProvider({ children }: { children: React.ReactNode }
 
 	const openAddCard = useCallback((p: AddCardModalParams) => setParams(p), []);
 	const close = useCallback(() => setParams(null), []);
+	useCloseOnRouteChange(close);
 
 	const value = useMemo<AddCardModalContextValue>(
 		() => ({ openAddCard, close }),

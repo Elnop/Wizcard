@@ -13,6 +13,7 @@ import { CardList } from '@/lib/card/components/CardList/CardList';
 import { groupPrintsByLang } from '@/lib/card/components/PrintList/PrintList.types';
 import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
+import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { LocalizedCardThumb } from '../../LocalizedCardThumb';
@@ -54,6 +55,7 @@ export function PrintsTab({ card }: Props) {
 	const { addToWishlist } = useWishlistContext();
 	const { openAddCard } = useAddCardModal();
 	const { openCardModal } = useCardModalContext();
+	const { profile } = useProfileContext();
 
 	const [contextMenuCard, setContextMenuCard] = useState<ScryfallCard | null>(null);
 	const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
@@ -65,7 +67,7 @@ export function PrintsTab({ card }: Props) {
 	if (prints.length > 0) {
 		// groupPrintsByLang drops placeholder-only languages, so byLang may be empty
 		// even when prints exist — omit the official section entirely in that case.
-		const byLang = groupPrintsByLang(prints, currentLang);
+		const byLang = groupPrintsByLang(prints, currentLang, profile?.language);
 		if (byLang.length > 0) {
 			officialSections = hasCustomPrints
 				? [{ label: t('officialPrints'), cards: [], children: byLang }]

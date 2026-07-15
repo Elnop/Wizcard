@@ -7,6 +7,7 @@ import { useCollectionContext } from '@/lib/collection/context/CollectionContext
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { getOracleId } from '@/lib/scryfall/store/cards-store';
 import { deriveDeckTarget, type DeckTarget } from '@/lib/card/deriveDeckTarget';
+import { useCloseOnRouteChange } from '@/contexts/useCloseOnRouteChange';
 
 type AddToDeckModalContextValue = {
 	/** Open the "add to deck" modal for any card; behaviour is derived from its type. */
@@ -37,6 +38,7 @@ export function AddToDeckModalProvider({ children }: { children: React.ReactNode
 	);
 
 	const close = useCallback(() => setTarget(null), []);
+	useCloseOnRouteChange(close);
 
 	const value = useMemo<AddToDeckModalContextValue>(
 		() => ({ openAddToDeck, close }),

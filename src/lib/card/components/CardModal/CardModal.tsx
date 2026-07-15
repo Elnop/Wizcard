@@ -228,12 +228,14 @@ function CardDetailSection({
 	language,
 	isCustom,
 	entry,
+	onClose,
 }: {
 	card: ScryfallCard;
 	symbolMap: Record<string, ScryfallCardSymbol>;
 	language?: string;
 	isCustom?: boolean;
 	entry?: CardEntry;
+	onClose?: () => void;
 }) {
 	const t = useTranslations('card');
 	const { tokens, loading: tokensLoading, hasTokens } = useCardTokens(card);
@@ -337,7 +339,7 @@ function CardDetailSection({
 			)}
 
 			{!isCustom && (
-				<Link href={`/card/${card.id}`} className={styles.moreInfoLink}>
+				<Link href={`/card/${card.id}`} className={styles.moreInfoLink} onClick={onClose}>
 					{t('moreInfo')}
 				</Link>
 			)}
@@ -686,6 +688,7 @@ function CardModalInner({
 							symbolMap={symbolMap}
 							language={selectedCard.entry.language}
 							entry={selectedCard.entry}
+							onClose={onClose}
 						/>
 
 						{/* Copies list */}
@@ -904,7 +907,7 @@ function ScryfallCardModalInner({
 					</div>
 
 					<div className={styles.infoCol}>
-						<CardDetailSection card={card} symbolMap={symbolMap} />
+						<CardDetailSection card={card} symbolMap={symbolMap} onClose={onClose} />
 					</div>
 				</div>
 			</Modal>

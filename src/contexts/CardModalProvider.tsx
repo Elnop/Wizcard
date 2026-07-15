@@ -21,6 +21,7 @@ import { buildOwnedCardMenu, type OwnedCardMenuLabels } from '@/lib/card/ownedCa
 import { useOwnedCardMenuLabels } from '@/lib/card/hooks/useOwnedCardMenuLabels';
 import { buildViewerCardMenu, type ViewerCardMenuLabels } from '@/lib/card/viewerCardMenu';
 import { useViewerCardMenuLabels } from '@/lib/card/hooks/useViewerCardMenuLabels';
+import { useCloseOnRouteChange } from '@/contexts/useCloseOnRouteChange';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
@@ -216,6 +217,7 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 	}, []);
 
 	const close = useCallback(() => setOpen(null), []);
+	useCloseOnRouteChange(close);
 
 	// Re-resolve the displayed cards on every render so they track store mutations
 	// (increment/decrement/change-print) without the modal losing its target.

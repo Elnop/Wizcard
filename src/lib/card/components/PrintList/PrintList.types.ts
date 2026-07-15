@@ -33,7 +33,20 @@ export function getLangLabel(lang: string, count: number): string {
 	return `${name.charAt(0).toUpperCase() + name.slice(1)} (${count})`;
 }
 
-export function groupPrintsByLang(prints: ScryfallCard[], currentLang: string): CardListSection[] {
+/**
+ * Group Scryfall prints into per-language sections.
+ *
+ * Section ordering:
+ *  1. `preferredLang` (the profile's preferred language) always comes first,
+ *     regardless of the card being viewed/edited.
+ *  2. `currentLang` (the language of the card in hand) comes next.
+ *  3. Remaining languages sort alphabetically (fr locale).
+ */
+export function groupPrintsByLang(
+	prints: ScryfallCard[],
+	currentLang: string,
+	preferredLang?: string
+): CardListSection[] {
 	const map = new Map<string, ScryfallCard[]>();
 	for (const print of prints) {
 		// Skip prints with no real scan (Scryfall serves a grey "Localized Image
@@ -45,10 +58,16 @@ export function groupPrintsByLang(prints: ScryfallCard[], currentLang: string): 
 		map.set(print.lang, group);
 	}
 
+	const rank = (lang: string): number => {
+		if (preferredLang && lang === preferredLang) return 0;
+		if (lang === currentLang) return 1;
+		return 2;
+	};
+
 	const entries = [...map.entries()];
 	entries.sort(([a], [b]) => {
-		if (a === currentLang) return -1;
-		if (b === currentLang) return 1;
+		const rankDiff = rank(a) - rank(b);
+		if (rankDiff !== 0) return rankDiff;
 		return getLangLabel(a, 0).localeCompare(getLangLabel(b, 0), 'fr');
 	});
 
