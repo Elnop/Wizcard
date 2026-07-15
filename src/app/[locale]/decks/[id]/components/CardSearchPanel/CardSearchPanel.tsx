@@ -382,13 +382,6 @@ export function CardSearchPanel({
 								onChange={setSearchName}
 								placeholder={t('searchForCard')}
 							/>
-							<CardModeSwitcher value={cardMode} onChange={setCardMode} />
-							{!inCollectionOnly && (
-								<SearchAllLanguagesToggle
-									value={includeMultilingual}
-									onChange={setIncludeMultilingual}
-								/>
-							)}
 							<button
 								type="button"
 								aria-label={t('moreFilters')}
@@ -407,6 +400,13 @@ export function CardSearchPanel({
 									<span className={styles.filterBadge}>{activeFilterCount}</span>
 								)}
 							</button>
+							{!inCollectionOnly && (
+								<SearchAllLanguagesToggle
+									value={includeMultilingual}
+									onChange={setIncludeMultilingual}
+								/>
+							)}
+							<CardModeSwitcher value={cardMode} onChange={setCardMode} />
 						</div>
 						{showLegalToggle && (
 							<label className={styles.toggleLabel}>
