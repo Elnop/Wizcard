@@ -10,6 +10,7 @@ import { fetchFolders } from '../db/folders';
 import { enqueue } from '@/lib/supabase/sync-queue';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
 import { useWishlistStore } from '@/lib/wishlist/store/wishlist-store';
+import { getAnalytics } from '@/lib/analytics/context/AnalyticsContext';
 
 const SYNC_DECK_CARD_INSERT = 'deck-card-insert' as const;
 const SYNC_DECK_CARD_UPDATE = 'deck-card-update' as const;
@@ -322,6 +323,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			updatedAt: now,
 		};
 		set((state) => ({ decks: { ...state.decks, [id]: deck } }));
+		getAnalytics().track({ name: 'deck_created', props: { deckId: id } });
 		enqueue({ type: 'deck-insert', payload: { userId, deck } });
 		triggerSync();
 		return id;
@@ -346,6 +348,7 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			stateUpdate.activeDeckId = null;
 		}
 		set(stateUpdate);
+		getAnalytics().track({ name: 'deck_deleted', props: { deckId } });
 
 		// Sync collection store client-side: remove deckId from freed copies
 		if (!options?.deleteCollectionCopies) {
@@ -388,6 +391,10 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		enqueue({
 			type: SYNC_DECK_CARD_INSERT,
 			payload: { deckId, scryfallId: card.id, entry },
+		});
+		getAnalytics().track({
+			name: 'card_added_to_deck',
+			props: { deckId, scryfallId: card.id },
 		});
 		triggerSync();
 

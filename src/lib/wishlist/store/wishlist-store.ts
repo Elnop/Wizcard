@@ -6,6 +6,7 @@ import type { CardEntry } from '@/types/cards';
 import { fetchWishlistPage } from '../db/wishlist';
 import { enqueue } from '@/lib/supabase/sync-queue';
 import { buildEntriesBatch } from '@/lib/card/entry/buildEntriesBatch';
+import { getAnalytics } from '@/lib/analytics/context/AnalyticsContext';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 export type WishlistData = Record<string, StoredCopy>; // key = rowId
@@ -70,6 +71,10 @@ export const useWishlistStore = create<WishlistState & WishlistActions>()((set, 
 			}
 			return { entries: next };
 		});
+		getAnalytics().track({
+			name: 'wishlist_toggled',
+			props: { scryfallId: card.id, added: true },
+		});
 		if (userId) {
 			enqueue({ type: 'bulk-insert', payload: { userId, rows } });
 			triggerSync();
@@ -78,10 +83,15 @@ export const useWishlistStore = create<WishlistState & WishlistActions>()((set, 
 
 	removeFromWishlist: (rowId, userId, triggerSync) => {
 		const current = get().entries;
-		if (!current[rowId]) return;
+		const copy = current[rowId];
+		if (!copy) return;
 		const next = { ...current };
 		delete next[rowId];
 		set({ entries: next });
+		getAnalytics().track({
+			name: 'wishlist_toggled',
+			props: { scryfallId: copy.scryfallId, added: false },
+		});
 		if (userId) {
 			enqueue({ type: 'delete', payload: { userId, rowId } });
 			triggerSync();
