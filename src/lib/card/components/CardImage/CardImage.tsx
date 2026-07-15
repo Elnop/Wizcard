@@ -5,7 +5,9 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
 import { isScryfallImageUrl, scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
-import { useLocalizedImage } from '@/lib/scryfall/hooks/useLocalizedImage';
+import { useLocalizedImage, useEnglishFallbackImage } from '@/lib/scryfall/hooks/useLocalizedImage';
+import { hasRealScan } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallImageStatus } from '@/lib/scryfall/types/scryfall';
 import { isCustomCard } from '@/lib/mpc/types';
 import type { CustomCard } from '@/lib/mpc/types';
 import styles from './CardImage.module.css';
@@ -16,6 +18,7 @@ type CardImageCard = {
 	collector_number?: string;
 	language?: string;
 	entry?: { language?: string };
+	image_status?: ScryfallImageStatus;
 	image_uris?: { small?: string; normal?: string; large?: string };
 	card_faces?: Array<{
 		name?: string;
@@ -80,11 +83,24 @@ export function CardImage({
 	}, [priority]);
 
 	const isInputCustom = isCustomCard(card as unknown as CustomCard);
+	const visible = !isInputCustom && (priority || isVisible);
 	const { localized, loading: localizedLoading } = useLocalizedImage(
 		card as Parameters<typeof useLocalizedImage>[0],
-		!isInputCustom && (priority || isVisible)
+		visible
 	);
-	const effectiveCard = localized ? { ...card, ...localized } : card;
+
+	// The print this view was handed has no real scan (a Scryfall placeholder) and
+	// no localized print replaced it — fetch the English print's image so the
+	// preview is never imageless. Applies to every CardImage preview (search,
+	// collection, prints list, …).
+	const basePlaceholder = !isInputCustom && !localized && !hasRealScan(card.image_status);
+	const { localized: englishFallback, loading: fallbackLoading } = useEnglishFallbackImage(
+		card as Parameters<typeof useEnglishFallbackImage>[0],
+		visible && basePlaceholder
+	);
+
+	const resolvedOverride = localized ?? englishFallback;
+	const effectiveCard = resolvedOverride ? { ...card, ...resolvedOverride } : card;
 
 	const isCustom = isCustomCard(effectiveCard as unknown as CustomCard);
 	const isDoubleFaced =
@@ -153,9 +169,17 @@ export function CardImage({
 		.filter(Boolean)
 		.join(' ');
 
+	// The base print is a placeholder and neither a localized print nor the
+	// English fallback replaced it — show the name placeholder. While the English
+	// fallback is still loading, keep showing the skeleton (not the name) so a
+	// real image can still arrive.
+	const isPlaceholderImage = basePlaceholder && !resolvedOverride && !fallbackLoading;
+
 	function renderCardImage() {
-		if (localizedLoading) return <div className={styles.localizedPlaceholder} />;
-		if (!error && imageUri) {
+		if (localizedLoading || (basePlaceholder && fallbackLoading)) {
+			return <div className={styles.localizedPlaceholder} />;
+		}
+		if (!error && imageUri && !isPlaceholderImage) {
 			return (
 				<Image
 					src={imageUri}
@@ -190,7 +214,9 @@ export function CardImage({
 				onMouseLeave={disableTilt ? undefined : handleMouseLeave}
 			>
 				{renderCardImage()}
-				{(isLoading || localizedLoading) && !error && <div className={styles.skeleton} />}
+				{(isLoading || localizedLoading) && !error && !isPlaceholderImage && (
+					<div className={styles.skeleton} />
+				)}
 				{isFoil && (
 					<div
 						className={foilType === 'etched' ? styles.etchedOverlay : styles.foilOverlay}

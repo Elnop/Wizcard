@@ -51,9 +51,9 @@ function openDB(): Promise<IDBDatabase> {
 	if (dbPromise) return dbPromise;
 
 	dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
-		const request = indexedDB.open(DB_NAME, 2);
+		const request = indexedDB.open(DB_NAME, 3);
 
-		request.onupgradeneeded = () => {
+		request.onupgradeneeded = (event) => {
 			const db = request.result;
 			if (!db.objectStoreNames.contains(STORE_NAME)) {
 				db.createObjectStore(STORE_NAME, { keyPath: 'id' });
@@ -63,6 +63,12 @@ function openDB(): Promise<IDBDatabase> {
 			}
 			if (!db.objectStoreNames.contains(LOCALIZED_IMAGE_STORE)) {
 				db.createObjectStore(LOCALIZED_IMAGE_STORE, { keyPath: 'key' });
+			} else if (event.oldVersion < 3) {
+				// v3: localized-image entries written before placeholder filtering may
+				// hold a "Localized Image Not Available" placeholder (no image_status
+				// was stored to detect it). Clear the store so they are re-fetched and
+				// re-filtered on next access.
+				request.transaction!.objectStore(LOCALIZED_IMAGE_STORE).clear();
 			}
 		};
 

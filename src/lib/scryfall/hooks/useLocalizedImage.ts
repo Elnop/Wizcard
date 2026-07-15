@@ -108,6 +108,16 @@ export async function fetchLocalizedImage(
 		);
 		if (signal?.aborted) return null;
 
+		// A localized print exists but has no real scan — Scryfall serves a
+		// grey "Localized Image Not Available" placeholder at a valid 200 URL.
+		// Treat it as a miss (same path as a 404) so the card falls back to its
+		// default English image instead of showing the placeholder.
+		if (localized.image_status === 'placeholder' || localized.image_status === 'missing') {
+			notFound.add(cacheKey);
+			void putLocalizedImageInCache({ key: cacheKey, cachedAt: Date.now(), missing: true });
+			return null;
+		}
+
 		// 3. Persist to IndexedDB
 		void putLocalizedImageInCache({
 			key: cacheKey,
@@ -124,6 +134,59 @@ export async function fetchLocalizedImage(
 		notFound.add(cacheKey);
 		// Persist the miss too: the in-memory set dies with the page, so without
 		// this every card lacking a localized print re-requests it on each load.
+		void putLocalizedImageInCache({ key: cacheKey, cachedAt: Date.now(), missing: true });
+		return null;
+	}
+}
+
+/**
+ * Fetches the English print of a card as an image fallback. Used when the print
+ * a view was handed has no real scan (Scryfall's grey "Localized Image Not
+ * Available" placeholder) so a preview never renders imageless — the English
+ * print is the reliably-scanned one.
+ *
+ * Shares the negative cache, IndexedDB cache and throttle with
+ * fetchLocalizedImage. Returns null when the card lacks set/number, the fetch is
+ * aborted, or the English print itself has no real scan (rare).
+ */
+export async function fetchEnglishImage(
+	card: LocalizedImageCard,
+	signal?: AbortSignal
+): Promise<LocalizedImageResult | null> {
+	if (!card.set || !card.collector_number) return null;
+
+	const cacheKey = cacheKeyFor(card, 'en');
+	if (notFound.has(cacheKey)) return null;
+
+	const cached = await getLocalizedImageFromCache(cacheKey);
+	if (signal?.aborted) return null;
+	if (cached?.missing) {
+		notFound.add(cacheKey);
+		return null;
+	}
+	if (cached) return cachedToResult(cached);
+
+	try {
+		const english = await getCardBySetNumberAndLang(card.set, card.collector_number, 'en', signal);
+		if (signal?.aborted) return null;
+
+		if (english.image_status === 'placeholder' || english.image_status === 'missing') {
+			notFound.add(cacheKey);
+			void putLocalizedImageInCache({ key: cacheKey, cachedAt: Date.now(), missing: true });
+			return null;
+		}
+
+		void putLocalizedImageInCache({
+			key: cacheKey,
+			image_uris: english.image_uris,
+			face_image_uris: english.card_faces?.map((f) => f.image_uris),
+			cachedAt: Date.now(),
+		});
+
+		return { image_uris: english.image_uris, card_faces: english.card_faces };
+	} catch (e) {
+		if (e instanceof DOMException && e.name === 'AbortError') return null;
+		notFound.add(cacheKey);
 		void putLocalizedImageInCache({ key: cacheKey, cachedAt: Date.now(), missing: true });
 		return null;
 	}
@@ -204,5 +267,45 @@ export function useLocalizedImage(
 	return {
 		localized: selectLocalized(needsFetch, cacheKey, result),
 		loading: needsFetch && loadingKey === cacheKey,
+	};
+}
+
+/**
+ * Fetches the English print's image as a fallback for a card whose own print has
+ * no real scan (a Scryfall placeholder). Enable it only when the displayed image
+ * is a placeholder; when disabled it does nothing. Tagged by cacheKey like
+ * useLocalizedImage so a stale fallback is never merged onto a different card.
+ */
+export function useEnglishFallbackImage(
+	card: LocalizedImageCard,
+	enabled: boolean
+): UseLocalizedImageResult {
+	const [result, setResult] = useState<{ key: string; data: LocalizedImageResult } | null>(null);
+	const [loadingKey, setLoadingKey] = useState<string | null>(null);
+
+	const canFetch = enabled && !!card.set && !!card.collector_number;
+	const cacheKey = canFetch ? cacheKeyFor(card, 'en') : '';
+
+	useEffect(() => {
+		if (!canFetch) return;
+		const controller = new AbortController();
+
+		(async () => {
+			setLoadingKey(cacheKey);
+			const english = await fetchEnglishImage(card, controller.signal);
+			if (controller.signal.aborted) return;
+			setResult(english ? { key: cacheKey, data: english } : null);
+			setLoadingKey(null);
+		})();
+
+		return () => {
+			controller.abort();
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- card identity is captured via its set/number (cacheKey)
+	}, [card.set, card.collector_number, canFetch, cacheKey]);
+
+	return {
+		localized: selectLocalized(canFetch, cacheKey, result),
+		loading: canFetch && loadingKey === cacheKey,
 	};
 }

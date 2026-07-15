@@ -6,6 +6,8 @@ import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/so
 import { searchCards } from '@/lib/scryfall/endpoints/cards';
 import { buildScryfallQuery } from '@/lib/scryfall/utils/scryfall-query';
 import { ScryfallApiError } from '@/lib/scryfall/utils/errors';
+import { dedupeSearchPrints } from '@/lib/scryfall/utils/dedupeSearchPrints';
+import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
 import { useDebounce } from '@/lib/search/hooks/useDebounce';
 
 export const DEFAULT_QUERY = 'f:edh order:edhrec';
@@ -69,7 +71,12 @@ export function useScryfallCardSearch(
 	const abortControllerRef = useRef<AbortController | null>(null);
 	// Synchronous lock preventing overlapping loadMore() calls (see loadMore below).
 	const loadingMoreRef = useRef(false);
+	// Raw prints accumulated across pages in multilingual mode (unique=prints).
+	// `cards` is derived from this by collapsing to one print per logical card,
+	// so a real English scan can win over a placeholder-only localized print.
+	const rawPrintsRef = useRef<ScryfallCard[]>([]);
 
+	const preferredLang = usePreferredCardLang();
 	const order = filters.order ?? 'name';
 	const dir = filters.dir ?? 'auto';
 	const includeMultilingual = filters.includeMultilingual ?? false;
@@ -160,19 +167,35 @@ export function useScryfallCardSearch(
 						page: pageNum,
 						order,
 						dir,
-						...(multilingual ? { include_multilingual: true } : {}),
+						// Multilingual: fetch every print (unique=prints) so we can pick the
+						// display print ourselves — a real scan over a placeholder-only
+						// localized print — instead of Scryfall's per-card dedupe, which can
+						// surface a placeholder and drop the English scan entirely.
+						...(multilingual ? { include_multilingual: true, unique: 'prints' as const } : {}),
 					},
 					signal
 				);
 
-				if (isNewSearch) {
-					setCards(result.data);
+				if (multilingual) {
+					rawPrintsRef.current = isNewSearch
+						? result.data
+						: [...rawPrintsRef.current, ...result.data];
+					const deduped = dedupeSearchPrints(rawPrintsRef.current, preferredLang);
+					setCards(deduped);
+					setHasMore(result.has_more);
+					// Scryfall's total counts prints, not logical cards; show the number of
+					// distinct cards resolved so far so "X of Y" stays coherent.
+					setTotalCards(deduped.length);
 				} else {
-					setCards((prev) => [...prev, ...result.data]);
+					if (isNewSearch) {
+						rawPrintsRef.current = [];
+						setCards(result.data);
+					} else {
+						setCards((prev) => [...prev, ...result.data]);
+					}
+					setHasMore(result.has_more);
+					setTotalCards(result.total_cards ?? result.data.length);
 				}
-
-				setHasMore(result.has_more);
-				setTotalCards(result.total_cards ?? result.data.length);
 			} catch (err) {
 				if (err instanceof DOMException && err.name === 'AbortError') return;
 				if (err instanceof ScryfallApiError && err.status === 404) {
@@ -206,7 +229,7 @@ export function useScryfallCardSearch(
 				setIsLoadingMore(false);
 			}
 		},
-		[order, dir, includeMultilingual, debouncedName]
+		[order, dir, includeMultilingual, debouncedName, preferredLang]
 	);
 
 	useEffect(() => {
@@ -219,7 +242,9 @@ export function useScryfallCardSearch(
 		const query = buildQuery(debouncedName);
 		const effectiveQuery = query.trim() || DEFAULT_QUERY;
 		const multilingual = includeMultilingual && debouncedName.trim().length > 0;
-		const searchKey = `${effectiveQuery}|${order}|${dir}|${multilingual}`;
+		// preferredLang affects the multilingual dedupe tie-break, so a language
+		// change must re-run the search rather than reuse the previous result.
+		const searchKey = `${effectiveQuery}|${order}|${dir}|${multilingual}|${multilingual ? preferredLang : ''}`;
 
 		if (searchKey !== lastSearchKeyRef.current) {
 			lastSearchKeyRef.current = searchKey;
@@ -227,7 +252,16 @@ export function useScryfallCardSearch(
 			setPage(1);
 			fetchCards(query, 1, true);
 		}
-	}, [enabled, debouncedName, buildQuery, fetchCards, order, dir, includeMultilingual]);
+	}, [
+		enabled,
+		debouncedName,
+		buildQuery,
+		fetchCards,
+		order,
+		dir,
+		includeMultilingual,
+		preferredLang,
+	]);
 
 	useEffect(() => {
 		return () => {
@@ -264,6 +298,7 @@ export function useScryfallCardSearch(
 		setQueryError(null);
 		setSuggestions([]);
 		lastQueryRef.current = '';
+		rawPrintsRef.current = [];
 	}, []);
 
 	return {

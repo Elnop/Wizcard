@@ -1,4 +1,5 @@
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import { hasRealScan } from '@/lib/scryfall/types/scryfall';
 import type { CardListSection, AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { Card } from '@/types/cards';
 
@@ -35,6 +36,10 @@ export function getLangLabel(lang: string, count: number): string {
 export function groupPrintsByLang(prints: ScryfallCard[], currentLang: string): CardListSection[] {
 	const map = new Map<string, ScryfallCard[]>();
 	for (const print of prints) {
+		// Skip prints with no real scan (Scryfall serves a grey "Localized Image
+		// Not Available" placeholder). A language whose prints are all placeholders
+		// contributes no group, so its section drops out entirely.
+		if (!hasRealScan(print.image_status)) continue;
 		const group = map.get(print.lang) ?? [];
 		group.push(print);
 		map.set(print.lang, group);

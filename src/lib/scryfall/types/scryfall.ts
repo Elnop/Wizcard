@@ -53,6 +53,15 @@ export type ScryfallFrame = '1993' | '1997' | '2003' | '2015' | 'future';
 export type ScryfallSecurityStamp = 'oval' | 'triangle' | 'acorn' | 'arena' | 'heart' | 'circle';
 export type ScryfallBorderColor = 'black' | 'white' | 'borderless' | 'silver' | 'gold' | 'yellow';
 export type ScryfallImageStatus = 'missing' | 'placeholder' | 'lowres' | 'highres_scan';
+
+/**
+ * Whether a card's image is a real scan worth displaying. A `placeholder` is the
+ * grey "Localized Image Not Available" stand-in Scryfall serves at a valid 200
+ * URL; `missing` has no image at all. Both should be hidden, not shown.
+ */
+export function hasRealScan(status: ScryfallImageStatus | undefined): boolean {
+	return status !== 'placeholder' && status !== 'missing';
+}
 export type ScryfallLegality = 'legal' | 'not_legal' | 'restricted' | 'banned';
 export type ScryfallGame = 'paper' | 'arena' | 'mtgo' | 'astral' | 'sega';
 export type ScryfallFormat =

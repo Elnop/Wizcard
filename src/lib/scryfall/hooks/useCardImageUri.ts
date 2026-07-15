@@ -22,10 +22,10 @@ export function useCardImageUri(
 	card: ImageCard,
 	size: 'small' | 'normal' | 'large' | 'art_crop',
 	enabled: boolean
-): { uri: string; loading: boolean } {
+): { uri: string; loading: boolean; localized: boolean } {
 	const { localized, loading } = useLocalizedImage(card, enabled);
 	const effectiveCard = localized ? { ...card, ...localized } : card;
-	return { uri: resolveUri(effectiveCard, size), loading };
+	return { uri: resolveUri(effectiveCard, size), loading, localized: !!localized };
 }
 
 /**

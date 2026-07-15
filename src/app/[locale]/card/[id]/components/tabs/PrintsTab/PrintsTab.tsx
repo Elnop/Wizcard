@@ -63,10 +63,14 @@ export function PrintsTab({ card }: Props) {
 
 	let officialSections: CardListSection[] = [];
 	if (prints.length > 0) {
+		// groupPrintsByLang drops placeholder-only languages, so byLang may be empty
+		// even when prints exist — omit the official section entirely in that case.
 		const byLang = groupPrintsByLang(prints, currentLang);
-		officialSections = hasCustomPrints
-			? [{ label: t('officialPrints'), cards: [], children: byLang }]
-			: byLang;
+		if (byLang.length > 0) {
+			officialSections = hasCustomPrints
+				? [{ label: t('officialPrints'), cards: [], children: byLang }]
+				: byLang;
+		}
 	}
 
 	const customSection: CardListSection | null =
