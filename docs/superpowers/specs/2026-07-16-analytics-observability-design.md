@@ -127,7 +127,7 @@ Delegates to the adapter (does **not** import PostHog directly, to preserve the 
 
 ```
 posthog.init(token, {
-  api_host: '/relay-xY7',              // reverse proxy (see Infra)
+  api_host: '/tamiyo',                 // reverse proxy (see Infra)
   ui_host: 'https://eu.posthog.com',
   persistence: 'memory',                // ANONYMOUS by default
   person_profiles: 'identified_only',   // no person profile until identify()
@@ -208,13 +208,13 @@ type ConsentState = 'unknown' | 'granted' | 'denied';
 
 ### Reverse proxy (rewrites in `next.config.ts`, inside the `withNextIntl`-wrapped object)
 
-Non-obvious path to evade ad-blockers (not `/analytics`, `/posthog`, `/tracking`):
+Non-obvious path (`/tamiyo`) to evade ad-blockers (not `/analytics`, `/posthog`, `/tracking`):
 
 ```ts
 async rewrites() {
   return [
-    { source: '/relay-xY7/static/:path*', destination: 'https://eu-assets.i.posthog.com/static/:path*' },
-    { source: '/relay-xY7/:path*',        destination: 'https://eu.i.posthog.com/:path*' },
+    { source: '/tamiyo/static/:path*', destination: 'https://eu-assets.i.posthog.com/static/:path*' },
+    { source: '/tamiyo/:path*',        destination: 'https://eu.i.posthog.com/:path*' },
   ];
 },
 skipTrailingSlashRedirect: true,   // else Next breaks PostHog endpoints like /e/
@@ -222,11 +222,11 @@ skipTrailingSlashRedirect: true,   // else Next breaks PostHog endpoints like /e
 
 ### `next-intl` matcher interaction (a real pitfall in this repo)
 
-`src/proxy.ts` runs `next-intl` first, which prefixes paths with a locale. `/relay-xY7` **must not** be locale-prefixed (else `/fr/relay-xY7` → 404). Add `relay-xY7` to the `proxy.ts` matcher exclusion — exactly as `wasm` had to be excluded for sql.js. Documented here so the plan doesn't miss it.
+`src/proxy.ts` runs `next-intl` first, which prefixes paths with a locale. `/tamiyo` **must not** be locale-prefixed (else `/fr/tamiyo` → 404). Add `tamiyo` to the `proxy.ts` matcher exclusion — exactly as `wasm` had to be excluded for sql.js. Documented here so the plan doesn't miss it.
 
 ### CSP
 
-Current `Content-Security-Policy-Report-Only` has `connect-src 'self' <supabase> https://api.scryfall.com`. Because all PostHog traffic transits through `/relay-xY7` (same origin), `connect-src 'self'` **already covers events** — no `connect-src` change needed. Adjustments:
+Current `Content-Security-Policy-Report-Only` has `connect-src 'self' <supabase> https://api.scryfall.com`. Because all PostHog traffic transits through `/tamiyo` (same origin), `connect-src 'self'` **already covers events** — no `connect-src` change needed. Adjustments:
 
 - Add `worker-src 'self' blob:` (PostHog uses a web worker for the recorder).
 - `blob:` is already present in `img-src`; verify remaining directives when session replay is later enabled.
@@ -237,7 +237,7 @@ CSP stays **Report-Only** at launch (per decision) — observe violations before
 
 ```
 NEXT_PUBLIC_POSTHOG_KEY=phc_xxx          # project token (public, client-safe)
-NEXT_PUBLIC_POSTHOG_HOST=/relay-xY7      # relative proxy path
+NEXT_PUBLIC_POSTHOG_HOST=/tamiyo         # relative proxy path
 POSTHOG_SERVER_KEY=phc_xxx               # same token, server-side use
 ```
 
@@ -279,7 +279,7 @@ No test framework exists (`project_no_test_framework`); verify via `npm run chec
 **Modified:**
 
 - `next.config.ts` — rewrites + `skipTrailingSlashRedirect` + CSP `worker-src`
-- `src/proxy.ts` — matcher exclusion for `relay-xY7`
+- `src/proxy.ts` — matcher exclusion for `tamiyo`
 - `src/contexts/Providers.tsx` — mount `AnalyticsProvider` (above `AuthProvider`) + `useAnalyticsAuthSync` inside the auth tree + `ConsentBanner` + `AnalyticsPageView`
 - `src/lib/collection/store/collection-store.ts`, `src/lib/deck/store/*`, import/search/wishlist hooks — `getAnalytics().track(...)` at mutation points
 - `eslint` config — `no-restricted-imports` boundary rule
