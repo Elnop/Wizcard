@@ -15,6 +15,7 @@ interface Props {
 	currentSet?: string;
 	currentCollectorNumber?: string;
 	currentLang?: string;
+	oracleId?: string;
 	onSelect: (print: ScryfallCard) => void;
 	onClose: () => void;
 }
@@ -25,6 +26,7 @@ export function CardPrintPickerModal({
 	currentSet,
 	currentCollectorNumber,
 	currentLang,
+	oracleId,
 	onSelect,
 	onClose,
 }: Props) {
@@ -56,6 +58,7 @@ export function CardPrintPickerModal({
 					currentSet={currentSet}
 					currentCollectorNumber={currentCollectorNumber}
 					currentLang={currentLang}
+					oracleId={oracleId}
 					onSelect={(print) => {
 						onSelect(print);
 						onClose();

@@ -23,6 +23,8 @@ export interface PrintListProps {
 	currentSet?: string;
 	currentCollectorNumber?: string;
 	currentLang?: string;
+	/** Oracle id of the card whose prints are listed; enables the Custom section. */
+	oracleId?: string;
 	onSelect: (print: ScryfallCard) => void;
 }
 
