@@ -1,10 +1,13 @@
 import type { CardType, MpcCard, MpcSource } from '@/lib/mpc/types';
+import { toCustomCard } from '@/lib/mpc/adapter';
+import type { CustomCard } from '@/lib/mpc/types';
 import {
 	type CustomCardRow,
 	type CustomCardSourceRow,
 	type CustomCardQueryFilters,
 	fetchCustomCardSourceRows,
 	fetchCustomCardSourceRowsWithCounts,
+	fetchCustomCardRowsByIds,
 	queryCustomCardRows,
 } from '@/lib/supabase/queries/custom-cards';
 
@@ -74,6 +77,32 @@ export async function getCustomCardSourcesWithCount(): Promise<MpcSourceWithCoun
 	return sources
 		.map((row) => ({ ...rowToMpcSource(row), cardCount: countBySource.get(row.id) ?? 0 }))
 		.filter((s) => s.cardCount > 0);
+}
+
+// Placeholder source for copy hydration: the exact source is not needed to
+// display a stored copy (same pattern as useCustomCardPrints).
+const UNKNOWN_SOURCE: MpcSource = {
+	id: 'unknown',
+	name: 'Custom',
+	isBuiltIn: false,
+	tags: [],
+	driveFolderId: null,
+};
+
+/**
+ * Resolve stored custom-card copy IDs (`mpc:<uuid>`) into CustomCards.
+ * Accepts prefixed or raw UUIDs; the returned Map is keyed by the PREFIXED id
+ * so callers can look up with the exact id they stored.
+ */
+export async function getCustomCardsByIds(ids: string[]): Promise<Map<string, CustomCard>> {
+	const rawIds = [...new Set(ids.map((id) => (id.startsWith('mpc:') ? id.slice(4) : id)))];
+	const rows = await fetchCustomCardRowsByIds(rawIds);
+	const result = new Map<string, CustomCard>();
+	for (const row of rows) {
+		const card = toCustomCard(rowToMpcCard(row), UNKNOWN_SOURCE);
+		result.set(card.id, card); // card.id is `mpc:<uuid>` via toCustomCard
+	}
+	return result;
 }
 
 export interface CustomCardQuery {

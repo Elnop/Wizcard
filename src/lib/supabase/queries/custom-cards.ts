@@ -111,6 +111,21 @@ export async function fetchCustomCardSourceRowsWithCounts(): Promise<{
 	return { sources: sourcesResult.data as CustomCardSourceRow[], countBySource };
 }
 
+/** Batch by-id fetch for hydration of stored custom-card copies. `ids` are raw
+ *  UUIDs (no `mpc:` prefix). Only public cards resolve — a private/deleted card
+ *  is simply absent from the result, mirroring Scryfall's unresolved-id behavior. */
+export async function fetchCustomCardRowsByIds(ids: string[]): Promise<CustomCardRow[]> {
+	if (ids.length === 0) return [];
+	const client = createClient();
+	const { data, error } = await client
+		.from('custom_cards')
+		.select(CUSTOM_CARD_SELECT)
+		.in('id', ids)
+		.eq('is_public', true);
+	if (error) throw new Error(`Failed to load custom cards by ids: ${error.message}`);
+	return data as CustomCardRow[];
+}
+
 function parseCmcClause(raw: string): { op: string; value: number } | null {
 	if (!raw) return null;
 	const match = raw.match(/^(>=|<=|>|<|:)?(\d+)$/);
