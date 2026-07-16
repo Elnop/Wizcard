@@ -95,8 +95,9 @@ const UNKNOWN_SOURCE: MpcSource = {
  * so callers can look up with the exact id they stored.
  */
 export async function getCustomCardsByIds(ids: string[]): Promise<Map<string, CustomCard>> {
-	const rawIds = [...new Set(ids.map((id) => (id.startsWith('mpc:') ? id.slice(4) : id)))];
-	const rows = await fetchCustomCardRowsByIds(rawIds);
+	// custom_cards.id is stored WITH the `mpc:` prefix — normalize inputs to that form.
+	const dbIds = [...new Set(ids.map((id) => (id.startsWith('mpc:') ? id : `mpc:${id}`)))];
+	const rows = await fetchCustomCardRowsByIds(dbIds);
 	const result = new Map<string, CustomCard>();
 	for (const row of rows) {
 		const card = toCustomCard(rowToMpcCard(row), UNKNOWN_SOURCE);
