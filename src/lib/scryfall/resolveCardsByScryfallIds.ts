@@ -2,6 +2,7 @@ import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { BATCH_SIZE } from '@/lib/scryfall/constants';
 import { getCardsFromCache, putCardsInCache } from '@/lib/scryfall/utils/card-cache';
 import { putCards } from '@/lib/scryfall/store/cards-store';
+import { getCustomCardsByIds } from '@/lib/mpc/db/custom-cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
 export interface ResolveProgress {
@@ -25,6 +26,27 @@ export interface ResolveOptions {
 }
 
 /**
+ * Resolve `mpc:<uuid>` custom-card copy ids into the `resolved` map in place.
+ * Custom cards NEVER enter the Scryfall IndexedDB cache — only mirrored into
+ * the in-memory store, same as a Scryfall cache hit.
+ */
+async function resolveCustomCards(
+	customIds: string[],
+	resolved: Map<string, ScryfallCard>
+): Promise<void> {
+	if (customIds.length === 0) return;
+	try {
+		const customCards = await getCustomCardsByIds(customIds);
+		for (const [id, card] of customCards) {
+			resolved.set(id, card as unknown as ScryfallCard);
+		}
+		putCards([...customCards.values()] as unknown as ScryfallCard[]);
+	} catch (err) {
+		console.error('[resolveCardsByScryfallIds] custom-card batch failed:', err);
+	}
+}
+
+/**
  * Resolve a set of Scryfall print IDs into `ScryfallCard` objects.
  *
  * Pipeline: dedupe ids → read IndexedDB cache → batch-fetch the misses in
@@ -37,8 +59,19 @@ export async function resolveCardsByScryfallIds(
 	options: ResolveOptions = {}
 ): Promise<Map<string, ScryfallCard>> {
 	const { isCancelled, onProgress, skipCache = false } = options;
-	const uniqueIds = [...new Set(ids)];
+	const allIds = [...new Set(ids)];
 	const resolved = new Map<string, ScryfallCard>();
+
+	if (allIds.length === 0) return resolved;
+
+	// Custom-card copies are stored with an `mpc:<uuid>` id in the same column
+	// as Scryfall ids. Route them to the custom_cards table; everything else
+	// follows the Scryfall cache+API path unchanged.
+	const customIds = allIds.filter((id) => id.startsWith('mpc:'));
+	const uniqueIds = allIds.filter((id) => !id.startsWith('mpc:'));
+
+	await resolveCustomCards(customIds, resolved);
+	if (isCancelled?.()) return resolved;
 
 	if (uniqueIds.length === 0) return resolved;
 
