@@ -83,7 +83,7 @@ interface Props {
 	/**
 	 * Right-click menu for the main card image. Owner vs viewer variant is decided
 	 * by the caller (CardModalProvider) from the open-state; returns null to show
-	 * no menu (e.g. custom cards).
+	 * no menu.
 	 */
 	buildImageMenuItems?: (card: AnyCard, close: () => void) => ContextMenuAction[] | null;
 }
