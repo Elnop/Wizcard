@@ -12,8 +12,9 @@ import { useCollectionContext } from '@/lib/collection/context/CollectionContext
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
 import { useAddCardModal } from '@/contexts/AddCardModalProvider';
-import { getCard } from '@/lib/scryfall/store/cards-store';
+import { getCard, putCards } from '@/lib/scryfall/store/cards-store';
 import { putCardsInCache } from '@/lib/scryfall/utils/card-cache';
+import { isCustomCard } from '@/lib/mpc/types';
 import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
 import { deriveCardModalProps } from '@/lib/card/deriveCardModalProps';
 import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
@@ -251,7 +252,13 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 	// stack to the new print's oracle key so the modal keeps showing it.
 	const handleChangePrint = useCallback(
 		(rowId: string, newCard: ScryfallCard, source: 'collection' | 'wishlist') => {
-			void putCardsInCache([newCard]);
+			if (isCustomCard(newCard as ScryfallCard | CustomCard)) {
+				// Custom prints never enter the Scryfall IndexedDB cache; mirror them
+				// into the in-memory store so the reopened stack resolves synchronously.
+				putCards([newCard]);
+			} else {
+				void putCardsInCache([newCard]);
+			}
 			const language = newCard.lang ? SCRYFALL_CODE_TO_LANGUAGE[newCard.lang] : undefined;
 			if (source === 'wishlist') {
 				wishlist.changePrint(rowId, newCard.id);
