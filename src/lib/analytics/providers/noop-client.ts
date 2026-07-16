@@ -9,5 +9,6 @@ export function createNoopClient(): AnalyticsClient {
 		identify: () => {},
 		reset: () => {},
 		setConsent: () => {},
+		captureException: () => {},
 	};
 }

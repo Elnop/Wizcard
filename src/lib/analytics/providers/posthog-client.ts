@@ -26,6 +26,7 @@ export function initPosthog(): void {
 			person_profiles: 'identified_only',
 			capture_pageview: false, // handled manually for the App Router
 			defaults: '2026-05-30',
+			capture_exceptions: true,
 		});
 	});
 }
@@ -38,5 +39,6 @@ export function createPosthogClient(): AnalyticsClient {
 		reset: () => safe(() => posthog.reset()),
 		setConsent: (granted) =>
 			safe(() => posthog.set_config({ persistence: granted ? 'localStorage+cookie' : 'memory' })),
+		captureException: (error, context) => safe(() => posthog.captureException(error, context)),
 	};
 }

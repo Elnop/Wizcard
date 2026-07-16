@@ -9,4 +9,5 @@ export interface AnalyticsClient {
 	identify(userId: string, traits?: Record<string, string | number | boolean>): void;
 	reset(): void;
 	setConsent(granted: boolean): void;
+	captureException(error: Error, context?: Record<string, unknown>): void;
 }
