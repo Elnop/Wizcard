@@ -76,7 +76,7 @@ export function CardPageHeader({ card }: Props) {
 						</div>
 					)}
 
-					{!custom && <AddToCollectionButton card={card as ScryfallCard} />}
+					<AddToCollectionButton card={card as ScryfallCard} />
 
 					<div className={styles.externalLinks}>
 						{custom ? (
