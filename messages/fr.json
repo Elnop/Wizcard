@@ -3,6 +3,16 @@
 		"confirm": "Confirmer",
 		"cancel": "Annuler"
 	},
+	"error": {
+		"title": "Une erreur est survenue",
+		"description": "Une erreur inattendue s'est produite. Vous pouvez réessayer.",
+		"retry": "Réessayer"
+	},
+	"consent": {
+		"message": "Nous utilisons des statistiques respectueuses de la vie privée pour comprendre l'usage de Wizcard. Tant que vous n'acceptez pas, les données restent anonymes.",
+		"accept": "Accepter",
+		"refuse": "Refuser"
+	},
 	"cardMenu": {
 		"viewDetails": "Voir les détails",
 		"openCardPage": "Ouvrir la page de la carte",

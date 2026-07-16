@@ -12,6 +12,7 @@ import {
 	putCollectionEntriesInCache,
 	clearCollectionCache,
 } from '@/lib/scryfall/utils/card-cache';
+import { getAnalytics } from '@/lib/analytics/context/AnalyticsContext';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 
@@ -147,6 +148,10 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 		set((state) => ({
 			entries: { [newRowId]: { scryfallId: card.id, entry }, ...state.entries },
 		}));
+		getAnalytics().track({
+			name: 'card_added',
+			props: { scryfallId: card.id, isFoil: !!entryPatch?.isFoil, source: 'manual' },
+		});
 		if (userId) {
 			enqueue({
 				type: 'insert',
@@ -253,10 +258,12 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 
 	removeEntry: (rowId, userId, triggerSync) => {
 		const current = get().entries;
-		if (!current[rowId]) return;
+		const copy = current[rowId];
+		if (!copy) return;
 		const next = { ...current };
 		delete next[rowId];
 		set({ entries: next });
+		getAnalytics().track({ name: 'card_removed', props: { scryfallId: copy.scryfallId } });
 		if (userId) {
 			enqueue({ type: 'delete', payload: { userId, rowId } });
 			triggerSync();
@@ -266,6 +273,10 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 	clearCollection: (userId, triggerSync) => {
 		const current = get().entries;
 		set({ entries: {} });
+		getAnalytics().track({
+			name: 'collection_cleared',
+			props: { count: Object.keys(current).length },
+		});
 		if (!userId) return;
 
 		// A card may live in the collection AND a deck (one row, owner_id + deck_id).

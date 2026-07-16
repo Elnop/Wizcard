@@ -133,6 +133,31 @@ const eslintConfig = defineConfig([
 			'sonarjs/no-empty-test-file': 'off',
 		},
 	},
+	{
+		// Vendor-decoupling boundary: PostHog SDKs may only be imported by the
+		// adapter layer. Everything else depends on the AnalyticsClient port.
+		// Replacing PostHog = rewriting providers/*, nothing else.
+		ignores: ['src/lib/analytics/providers/**'],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					paths: [
+						{
+							name: 'posthog-js',
+							message:
+								'Import PostHog only inside src/lib/analytics/providers/. Use useAnalytics()/getAnalytics() elsewhere.',
+						},
+						{
+							name: 'posthog-node',
+							message:
+								'Import PostHog only inside src/lib/analytics/providers/. Use trackServer() elsewhere.',
+						},
+					],
+				},
+			],
+		},
+	},
 	globalIgnores([
 		'.next/**',
 		'.claude/worktrees/**',

@@ -9,6 +9,7 @@ import { ScryfallApiError } from '@/lib/scryfall/utils/errors';
 import { dedupeSearchPrints } from '@/lib/scryfall/utils/dedupeSearchPrints';
 import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
 import { useDebounce } from '@/lib/search/hooks/useDebounce';
+import { getAnalytics } from '@/lib/analytics/context/AnalyticsContext';
 
 export const DEFAULT_QUERY = 'f:edh order:edhrec';
 
@@ -150,6 +151,22 @@ export function useScryfallCardSearch(
 				return;
 			}
 
+			if (isNewSearch) {
+				const hasFilters = Boolean(
+					debouncedName.trim() ||
+					colorsKey ||
+					colorIdentityKey ||
+					raritiesKey ||
+					typeKey ||
+					filters.set ||
+					filters.cmc ||
+					filters.oracleText?.trim() ||
+					filters.legal ||
+					filters.isToken
+				);
+				getAnalytics().track({ name: 'search_performed', props: { hasFilters } });
+			}
+
 			try {
 				if (isNewSearch) {
 					setIsLoading(true);
@@ -229,7 +246,22 @@ export function useScryfallCardSearch(
 				setIsLoadingMore(false);
 			}
 		},
-		[order, dir, includeMultilingual, debouncedName, preferredLang]
+		[
+			order,
+			dir,
+			includeMultilingual,
+			debouncedName,
+			preferredLang,
+			colorsKey,
+			colorIdentityKey,
+			raritiesKey,
+			typeKey,
+			filters.set,
+			filters.cmc,
+			filters.oracleText,
+			filters.legal,
+			filters.isToken,
+		]
 	);
 
 	useEffect(() => {

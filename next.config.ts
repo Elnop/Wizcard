@@ -14,6 +14,16 @@ const nextConfig: NextConfig = {
 	reactCompiler: false,
 	// eslint-disable-next-line sonarjs/no-hardcoded-ip -- local dev network IP for Next.js hot-reload access
 	allowedDevOrigins: ['192.168.1.25'],
+	skipTrailingSlashRedirect: true,
+	async rewrites() {
+		return [
+			{
+				source: '/tamiyo/static/:path*',
+				destination: 'https://eu-assets.i.posthog.com/static/:path*',
+			},
+			{ source: '/tamiyo/:path*', destination: 'https://eu.i.posthog.com/:path*' },
+		];
+	},
 	images: {
 		remotePatterns: [
 			{
@@ -47,6 +57,7 @@ const nextConfig: NextConfig = {
 			`font-src 'self' https://fonts.gstatic.com`,
 			`img-src 'self' data: blob: https://cards.scryfall.io https://svgs.scryfall.io https://drive.google.com https://drive.usercontent.google.com`,
 			`connect-src 'self' ${supabaseUrl} https://api.scryfall.com`,
+			`worker-src 'self' blob:`,
 			`frame-ancestors 'none'`,
 			`base-uri 'self'`,
 			`form-action 'self'`,

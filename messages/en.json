@@ -3,6 +3,16 @@
 		"confirm": "Confirm",
 		"cancel": "Cancel"
 	},
+	"error": {
+		"title": "Something went wrong",
+		"description": "An unexpected error occurred. You can try again.",
+		"retry": "Try again"
+	},
+	"consent": {
+		"message": "We use privacy-friendly analytics to understand how Wizcard is used. Until you accept, data stays anonymous.",
+		"accept": "Accept",
+		"refuse": "Refuse"
+	},
 	"cardMenu": {
 		"viewDetails": "View details",
 		"openCardPage": "Open card page",

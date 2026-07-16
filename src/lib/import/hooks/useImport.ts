@@ -13,14 +13,7 @@ import { useSetCodeNormalizer } from '@/lib/import/hooks/useSetCodeNormalizer';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 
 export type ImportStatus =
-	| 'idle'
-	| 'selecting'
-	| 'parsing'
-	| 'previewing'
-	| 'fetching'
-	| 'merging'
-	| 'done'
-	| 'error';
+	'idle' | 'selecting' | 'parsing' | 'previewing' | 'fetching' | 'merging' | 'done' | 'error';
 
 export interface ImportProgress {
 	current: number;
@@ -82,6 +75,7 @@ export function useImport(importers: Record<ImportDestination, ImportCards>) {
 		setResult,
 		importCards: importers[destination],
 		currentCollectionCount: entries.length,
+		format: preview?.detectedFormat ?? 'unknown',
 	});
 
 	const { updateCard, removeCard } = useImportRowEditing({ setResolved });

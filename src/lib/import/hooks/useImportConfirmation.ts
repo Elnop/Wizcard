@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import type { ResolvedImportResult, ImportResult } from '@/lib/import/types';
 import type { CardEntry } from '@/types/cards';
 import type { ImportStatus, ImportProgress } from '@/lib/import/hooks/useImport';
+import { getAnalytics } from '@/lib/analytics/context/AnalyticsContext';
 
 export function useImportConfirmation(deps: {
 	resolved: ResolvedImportResult | null;
@@ -12,11 +13,22 @@ export function useImportConfirmation(deps: {
 	setResult: (r: ImportResult) => void;
 	importCards: (cards: Array<{ scryfallId: string; entry: CardEntry }>) => void;
 	currentCollectionCount: number;
+	format: string;
 }) {
-	const { resolved, setStatus, setProgress, setResult, importCards, currentCollectionCount } = deps;
+	const {
+		resolved,
+		setStatus,
+		setProgress,
+		setResult,
+		importCards,
+		currentCollectionCount,
+		format,
+	} = deps;
 
 	const confirm = useCallback(async () => {
 		if (!resolved) return;
+
+		getAnalytics().track({ name: 'import_started', props: { format } });
 
 		const COLLECTION_CAP = 250000;
 		const incoming = resolved.resolved.length;
@@ -29,6 +41,10 @@ export function useImportConfirmation(deps: {
 				],
 			});
 			setStatus('error');
+			getAnalytics().track({
+				name: 'import_failed',
+				props: { format, reason: 'collection_cap_exceeded' },
+			});
 			return;
 		}
 
@@ -53,6 +69,10 @@ export function useImportConfirmation(deps: {
 				errors: [],
 			});
 			setStatus('done');
+			getAnalytics().track({
+				name: 'import_completed',
+				props: { format, cardCount: cardsToImport.length },
+			});
 		} catch (err) {
 			console.error('[Import] unexpected error during import:', err);
 			setResult({
@@ -61,8 +81,12 @@ export function useImportConfirmation(deps: {
 				errors: [err instanceof Error ? err.message : 'Unknown error'],
 			});
 			setStatus('error');
+			getAnalytics().track({
+				name: 'import_failed',
+				props: { format, reason: err instanceof Error ? err.message : 'Unknown error' },
+			});
 		}
-	}, [resolved, setStatus, setProgress, setResult, importCards, currentCollectionCount]);
+	}, [resolved, setStatus, setProgress, setResult, importCards, currentCollectionCount, format]);
 
 	return { confirm };
 }
