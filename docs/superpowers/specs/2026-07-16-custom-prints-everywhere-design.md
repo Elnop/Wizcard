@@ -83,16 +83,17 @@ sections de langue officielles. Sélectionner un print custom appelle le même
 `PrintsTab` continue de fonctionner (déjà OK) ; on factorise si pertinent, sans
 régression.
 
-### 3. `onSelect` / `onChangePrint` acceptent `CustomCard`
+### 3. `onSelect` / `onChangePrint` acceptent un print custom
 
-Élargir le contrat `ScryfallCard` → `ScryfallCard | CustomCard` sur la chaîne :
-`PrintList.onSelect`, `CardPrintPickerModal.onSelect`, `EditCardModal.onChangePrint`,
-`CardModal.onChangePrint`, `useCardEntryForm.selectPrint/selectedPrint`.
+Plutôt qu'élargir chaque signature en union `ScryfallCard | CustomCard` (~15 call
+sites, churn massif, contagion de types), on suit le **pattern cast déjà établi**
+dans le codebase (`CardModal.tsx`, `CardImage.tsx`, `PrintsTab.tsx`) : le custom
+circule casté `as unknown as ScryfallCard` dans les pipes typées `ScryfallCard`,
+avec garde `isCustomCard` partout où le comportement diffère.
 
 Le `changePrint` du store écrit alors `scryfallId = 'mpc:<id>'`. **Aucune migration.**
 
-Surveiller **TS2589** sur `CustomCard = Omit<Partial<ScryfallCard>, 'object'> & …`
-(pas de builder Supabase chaîné ici, risque faible, mais à valider au `npm run build`).
+Surveiller **TS2589** au `npm run build` (seule gate fiable, mémoire projet).
 
 ### 4. Ajout initial avec un print custom (`useCardEntryForm`)
 
