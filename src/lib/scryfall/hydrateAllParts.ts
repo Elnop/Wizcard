@@ -1,6 +1,7 @@
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { BATCH_SIZE } from '@/lib/scryfall/constants';
 import { putCardsInCache } from '@/lib/scryfall/utils/card-cache';
+import { isCustomCard, type CustomCard } from '@/lib/mpc/types';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
 /**
@@ -20,7 +21,13 @@ export async function hydrateAllParts(
 	const fetchByOracleIds = deps.fetchByOracleIds ?? defaultFetchByOracleIds;
 
 	const needsHydration = cards.filter(
-		(c) => c.lang !== 'en' && !c.all_parts && Boolean(c.oracle_id)
+		// Custom cards must never enter the Scryfall IndexedDB cache and never need
+		// Scryfall all_parts hydration (token discovery works from the official card).
+		(c) =>
+			!isCustomCard(c as ScryfallCard | CustomCard) &&
+			c.lang !== 'en' &&
+			!c.all_parts &&
+			Boolean(c.oracle_id)
 	);
 	if (needsHydration.length === 0) return cards;
 
@@ -40,6 +47,10 @@ export async function hydrateAllParts(
 	}
 
 	return cards.map((c) => {
+		// Mirrors the needsHydration guard above: a custom card must never be
+		// grafted with Scryfall all_parts, even if it shares an oracle_id with an
+		// official card that was fetched in this batch.
+		if (isCustomCard(c as ScryfallCard | CustomCard)) return c;
 		if (c.lang === 'en' || c.all_parts || !c.oracle_id) return c;
 		const parts = partsByOracle.get(c.oracle_id);
 		return parts ? { ...c, all_parts: parts } : c;
