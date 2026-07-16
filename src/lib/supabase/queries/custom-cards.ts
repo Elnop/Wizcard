@@ -128,9 +128,10 @@ export async function queryCustomCardRows(
 	let q = client
 		.from('custom_cards')
 		.select(CUSTOM_CARD_SELECT, { count: 'exact' })
-		.eq('is_public', true)
-		// Hard invariant: unmatched custom cards (no official match) are never listed.
-		.not('oracle_id', 'is', null);
+		.eq('is_public', true);
+
+	// Hard invariant: unmatched custom cards (no official match) are never listed.
+	q = q.not('oracle_id', 'is', null);
 
 	if (sourceId) q = q.eq('source_id', sourceId);
 	if (filters.name) q = q.ilike('name', `%${filters.name}%`);
