@@ -2,6 +2,7 @@
 
 import type { AuthError } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
+import { getAnalytics } from '@/lib/analytics/context/AnalyticsContext';
 
 export async function signInWithEmailOtp(
 	email: string,
@@ -18,6 +19,9 @@ export async function verifyEmailOtpClient(
 ): Promise<{ error: AuthError | null }> {
 	const supabase = createClient();
 	const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+	if (!error) {
+		getAnalytics().track({ name: 'login', props: { method: 'email' } });
+	}
 	return { error };
 }
 
