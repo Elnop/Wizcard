@@ -1,6 +1,5 @@
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
-import { isCustomCard } from '@/lib/mpc/types';
 
 export type SearchCardMenuHandlers = {
 	onViewDetails: (card: AnyCard) => void;
@@ -36,12 +35,6 @@ export function buildSearchMenuItems(
 			},
 		},
 	];
-
-	// Custom cards / cardbacks have no Scryfall page and aren't tracked in
-	// the collection or wishlist — only "view details" applies.
-	if (isCustomCard(card)) {
-		return items;
-	}
 
 	items.push(
 		{

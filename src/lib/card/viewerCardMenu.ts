@@ -1,6 +1,5 @@
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
-import { isCustomCard } from '@/lib/mpc/types';
 
 /**
  * Handlers for the "viewer" card menu — the menu shown on ANOTHER user's public
@@ -25,7 +24,7 @@ export type ViewerCardMenuLabels = {
 
 /**
  * Builds the right-click menu for cards on someone else's profile. Custom cards
- * / cardbacks aren't Scryfall-tracked, so only "View details" applies to them.
+ * get the same actions — a matched custom print is a persistable copy.
  */
 export function buildViewerCardMenu(
 	card: AnyCard,
@@ -46,10 +45,6 @@ export function buildViewerCardMenu(
 			onClick: run(() => handlers.onViewDetails(card)),
 		},
 	];
-
-	if (isCustomCard(card)) {
-		return items;
-	}
 
 	items.push(
 		{ type: 'divider' },
