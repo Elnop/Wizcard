@@ -12,6 +12,8 @@ export async function fetchCustomCardRowById(id: string): Promise<CustomCardRow 
 		.from('custom_cards')
 		.select(CUSTOM_CARD_SELECT)
 		.eq('id', id)
+		// Unmatched custom cards 404 even via direct URL, consistent with never being listed.
+		.not('oracle_id', 'is', null)
 		.single();
 	if (error || !data) return null;
 	return data as CustomCardRow;

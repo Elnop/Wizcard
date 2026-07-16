@@ -94,7 +94,11 @@ export async function fetchCustomCardSourceRowsWithCounts(): Promise<{
 	const client = createClient();
 	const [sourcesResult, cardsResult] = await Promise.all([
 		client.from('custom_card_sources').select(CUSTOM_CARD_SOURCE_SELECT).order('name'),
-		client.from('custom_cards').select('source_id').eq('is_public', true),
+		client
+			.from('custom_cards')
+			.select('source_id')
+			.eq('is_public', true)
+			.not('oracle_id', 'is', null),
 	]);
 	if (sourcesResult.error)
 		throw new Error(`Failed to load custom card sources: ${sourcesResult.error.message}`);
@@ -125,7 +129,9 @@ export async function queryCustomCardRows(
 	let q = client
 		.from('custom_cards')
 		.select(CUSTOM_CARD_SELECT, { count: 'exact' })
-		.eq('is_public', true);
+		.eq('is_public', true)
+		// Hard invariant: unmatched custom cards (no official match) are never listed.
+		.not('oracle_id', 'is', null);
 
 	if (sourceId) q = q.eq('source_id', sourceId);
 	if (filters.name) q = q.ilike('name', `%${filters.name}%`);
