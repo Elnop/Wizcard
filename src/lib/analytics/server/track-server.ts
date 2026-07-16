@@ -3,16 +3,40 @@ import { createServerClient } from '../providers/posthog-server';
 
 // Emit a business event from a Server Action / route handler. No-op when no key
 // is configured. Never throws — analytics must not break a server request.
-export async function trackServer(event: AnalyticsEvent, distinctId: string): Promise<void> {
+// When distinctId is omitted, a throwaway anonymous id is used — the event is
+// counted but never linked to a person (used when no PostHog cookie is present).
+export async function trackServer(event: AnalyticsEvent, distinctId?: string): Promise<void> {
 	const client = createServerClient();
 	if (!client) return;
 	try {
-		client.capture({ distinctId, event: event.name, properties: event.props });
+		client.capture({
+			distinctId: distinctId ?? crypto.randomUUID(),
+			event: event.name,
+			properties: event.props,
+		});
 		await client.shutdown();
 	} catch (error) {
 		if (process.env.NODE_ENV === 'development') {
 			console.debug('[analytics] server track failed', error);
 		}
+	}
+}
+
+// Extracts the PostHog browser distinct_id from the request Cookie header, so a
+// server-emitted event can be attributed to the same person the browser is. The
+// cookie is named `ph_phc_<token>_posthog` and its value is URL-encoded JSON
+// containing `distinct_id`. Returns undefined when absent/unreadable (e.g. the
+// user hasn't consented → PostHog is in-memory, no cookie). Never throws.
+export function getPosthogDistinctId(cookieHeader: string | null): string | undefined {
+	if (!cookieHeader) return undefined;
+	const match = cookieHeader.match(/ph_phc_.*?_posthog=([^;]+)/);
+	if (!match) return undefined;
+	try {
+		const parsed = JSON.parse(decodeURIComponent(match[1]));
+		const id = parsed?.distinct_id;
+		return typeof id === 'string' && id.length > 0 ? id : undefined;
+	} catch {
+		return undefined;
 	}
 }
 

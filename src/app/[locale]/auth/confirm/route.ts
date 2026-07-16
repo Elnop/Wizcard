@@ -1,6 +1,7 @@
 import { type EmailOtpType } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForSession, verifyEmailOtp } from '@/lib/supabase/auth/auth-server';
+import { trackServer, getPosthogDistinctId } from '@/lib/analytics/server/track-server';
 
 export async function GET(
 	request: NextRequest,
@@ -16,6 +17,10 @@ export async function GET(
 	if (code) {
 		const { error } = await exchangeCodeForSession(code);
 		if (!error) {
+			await trackServer(
+				{ name: 'login', props: { method: 'email' } },
+				getPosthogDistinctId(request.headers.get('cookie'))
+			);
 			return NextResponse.redirect(new URL(`/${locale}/collection`, request.url));
 		}
 	}
@@ -24,6 +29,10 @@ export async function GET(
 	if (token_hash && type) {
 		const { error } = await verifyEmailOtp({ type, token_hash });
 		if (!error) {
+			await trackServer(
+				{ name: 'login', props: { method: 'email' } },
+				getPosthogDistinctId(request.headers.get('cookie'))
+			);
 			return NextResponse.redirect(new URL(`/${locale}/collection`, request.url));
 		}
 	}
