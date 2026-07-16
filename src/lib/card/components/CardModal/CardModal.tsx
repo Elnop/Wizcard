@@ -852,6 +852,7 @@ function ScryfallCardModalInner({
 	const [addingCard, setAddingCard] = useState(false);
 	const [addingToWishlist, setAddingToWishlist] = useState(false);
 	const symbolMap = useScryfallSymbols();
+	const isCustom = isCustomCard(card as ScryfallCard | CustomCard);
 
 	return (
 		<>
@@ -907,7 +908,21 @@ function ScryfallCardModalInner({
 					</div>
 
 					<div className={styles.infoCol}>
-						<CardDetailSection card={card} symbolMap={symbolMap} onClose={onClose} />
+						<CardDetailSection
+							card={card}
+							symbolMap={symbolMap}
+							isCustom={isCustom}
+							onClose={onClose}
+						/>
+
+						{isCustom && (
+							<>
+								<Link href={`/card/${card.id}`} className={styles.moreInfoLink} onClick={onClose}>
+									{t('moreInfo')}
+								</Link>
+								<CustomCardSection card={card as unknown as CustomCard} />
+							</>
+						)}
 					</div>
 				</div>
 			</Modal>
@@ -935,56 +950,6 @@ function ScryfallCardModalInner({
 					}}
 					onClose={() => setAddingToWishlist(false)}
 				/>
-			)}
-		</>
-	);
-}
-
-function CustomCardModalInner({ card, onClose }: { card: CustomCard; onClose: () => void }) {
-	const t = useTranslations('card');
-	const [lightbox, setLightbox] = useState(false);
-	const symbolMap = useScryfallSymbols();
-
-	return (
-		<>
-			<Modal onClose={onClose} className={styles.modal}>
-				<button
-					className={styles.closeIcon}
-					onClick={onClose}
-					aria-label={t('close')}
-					type="button"
-				>
-					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-						<path
-							d="M2 2l12 12M14 2L2 14"
-							stroke="currentColor"
-							strokeWidth="1.8"
-							strokeLinecap="round"
-						/>
-					</svg>
-				</button>
-
-				<div className={styles.layout}>
-					<div className={styles.imageCol}>
-						<CardImage card={card} size="large" priority onClick={() => setLightbox(true)} />
-					</div>
-
-					<div className={styles.infoCol}>
-						<CardDetailSection
-							card={card as unknown as ScryfallCard}
-							symbolMap={symbolMap}
-							isCustom
-						/>
-						<Link href={`/card/${card.id}`} className={styles.moreInfoLink}>
-							{t('moreInfo')}
-						</Link>
-						<CustomCardSection card={card} />
-					</div>
-				</div>
-			</Modal>
-
-			{lightbox && (
-				<CardLightbox card={card as unknown as ScryfallCard} onClose={() => setLightbox(false)} />
 			)}
 		</>
 	);
@@ -1026,11 +991,6 @@ export function CardModal({
 	if (normalizedCards.length === 0) return null;
 
 	const first = normalizedCards[0];
-
-	// Custom card path — must come before isCollectionCard check
-	if (isCustomCard(first as ScryfallCard | CustomCard)) {
-		return <CustomCardModalInner key={first.id} card={first as CustomCard} onClose={onClose} />;
-	}
 
 	if (!isCollectionCard(first as Card | ScryfallCard)) {
 		return (
