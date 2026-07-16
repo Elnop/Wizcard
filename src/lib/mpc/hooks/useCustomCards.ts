@@ -10,7 +10,6 @@ import type { CardFilters } from '@/lib/search/types';
 export interface UseCustomCardsFilters extends CardFilters {
 	mpcTagsMustHave: string[];
 	mpcTagsMustNotHave: string[];
-	oracleIdFilter?: 'all' | 'defined' | 'undefined';
 	cardTypes?: CardType[];
 }
 
@@ -67,7 +66,6 @@ export function useCustomCards(
 	const raritiesKey = filters.rarities.join(',');
 	const mustHaveKey = filters.mpcTagsMustHave.join(',');
 	const mustNotHaveKey = filters.mpcTagsMustNotHave.join(',');
-	const oracleIdFilter = filters.oracleIdFilter ?? 'all';
 	const cardTypesKey = (filters.cardTypes ?? []).join(',');
 
 	const filterKey = [
@@ -84,7 +82,6 @@ export function useCustomCards(
 		filters.dir,
 		mustHaveKey,
 		mustNotHaveKey,
-		oracleIdFilter,
 		cardTypesKey,
 	].join('|');
 
@@ -117,7 +114,6 @@ export function useCustomCards(
 							oracleText: debouncedOracleText || undefined,
 							mpcTagsMustHave: mustHaveKey ? mustHaveKey.split(',') : undefined,
 							mpcTagsMustNotHave: mustNotHaveKey ? mustNotHaveKey.split(',') : undefined,
-							oracleIdFilter: oracleIdFilter !== 'all' ? oracleIdFilter : undefined,
 							cardTypes: cardTypesKey ? (cardTypesKey.split(',') as CardType[]) : undefined,
 							order: filters.order,
 							dir: filters.dir,
@@ -171,13 +167,13 @@ export function useCustomCards(
 			filters.dir,
 			mustHaveKey,
 			mustNotHaveKey,
-			oracleIdFilter,
 			cardTypesKey,
 		]
 	);
 
 	useEffect(() => {
 		if (sourceId === undefined) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect -- resets to empty when source becomes undefined; pre-existing, unrelated to this task's changes
 			setCards([]);
 			setHasMore(false);
 			setTotal(0);

@@ -20,8 +20,6 @@ import { CustomSourceFilter } from '@/lib/search/components/filters/CustomSource
 import { CardTypeFilter } from '@/lib/search/components/filters/CardTypeFilter/CardTypeFilter';
 import { MpcTagsFilter } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
 import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
-import { OracleIdFilter } from '@/lib/search/components/filters/OracleIdFilter/OracleIdFilter';
-import type { OracleIdFilterValue } from '@/lib/search/components/filters/OracleIdFilter/OracleIdFilter';
 import styles from './FilterModal.module.css';
 
 const DEFAULT_MPC_TAGS: MpcTagsFilterValue = { mustHave: [], mustNotHave: ['NSFW'] };
@@ -47,7 +45,6 @@ interface FilterModalProps {
 	customSourceId?: string | null;
 	cardTypeFilter?: CardType | 'all';
 	mpcTags?: MpcTagsFilterValue;
-	oracleIdFilter?: OracleIdFilterValue;
 	variant?: FilterModalVariant;
 	onApply: (filters: {
 		colors: ScryfallColor[];
@@ -64,7 +61,6 @@ interface FilterModalProps {
 		customSourceId: string | null;
 		cardTypeFilter: CardType | 'all';
 		mpcTags: MpcTagsFilterValue;
-		oracleIdFilter: OracleIdFilterValue;
 	}) => void;
 	onClose: () => void;
 }
@@ -87,7 +83,6 @@ interface FilterModalContentProps {
 	initialCustomSourceId: string | null;
 	initialCardTypeFilter: CardType | 'all';
 	initialMpcTags: MpcTagsFilterValue;
-	initialOracleIdFilter: OracleIdFilterValue;
 	variant: FilterModalVariant;
 	onApply: FilterModalProps['onApply'];
 	onClose: () => void;
@@ -111,7 +106,6 @@ function FilterModalContent({
 	initialCustomSourceId,
 	initialCardTypeFilter,
 	initialMpcTags,
-	initialOracleIdFilter,
 	variant,
 	onApply,
 	onClose,
@@ -140,8 +134,6 @@ function FilterModalContent({
 		initialCardTypeFilter
 	);
 	const [draftMpcTags, setDraftMpcTags] = useState<MpcTagsFilterValue>(initialMpcTags);
-	const [draftOracleIdFilter, setDraftOracleIdFilter] =
-		useState<OracleIdFilterValue>(initialOracleIdFilter);
 
 	// Hidden sections' drafts are emitted unchanged on purpose: filters set in another
 	// variant survive in the URL, and the consumer neutralizes them at query time.
@@ -161,7 +153,6 @@ function FilterModalContent({
 			customSourceId: draftCustomSourceId,
 			cardTypeFilter: draftCardTypeFilter,
 			mpcTags: draftMpcTags,
-			oracleIdFilter: draftOracleIdFilter,
 		});
 		onClose();
 	};
@@ -179,7 +170,6 @@ function FilterModalContent({
 			setDraftCmc('');
 			setDraftOrder('name');
 			setDraftDir('auto');
-			setDraftOracleIdFilter('all');
 		}
 		if (variant === 'default') {
 			setDraftCardTypeFilter('all');
@@ -253,9 +243,6 @@ function FilterModalContent({
 							onChange={setDraftCustomSourceId}
 						/>
 						<MpcTagsFilter value={draftMpcTags} onChange={setDraftMpcTags} />
-						{variant !== 'backs' && (
-							<OracleIdFilter value={draftOracleIdFilter} onChange={setDraftOracleIdFilter} />
-						)}
 					</>
 				)}
 			</div>
@@ -291,7 +278,6 @@ export function FilterModal({
 	customSourceId = null,
 	cardTypeFilter = 'all',
 	mpcTags = DEFAULT_MPC_TAGS,
-	oracleIdFilter = 'all',
 	variant = 'default',
 	onApply,
 	onClose,
@@ -319,7 +305,6 @@ export function FilterModal({
 				initialCustomSourceId={customSourceId}
 				initialCardTypeFilter={cardTypeFilter}
 				initialMpcTags={mpcTags}
-				initialOracleIdFilter={oracleIdFilter}
 				variant={variant}
 				onApply={onApply}
 				onClose={onClose}

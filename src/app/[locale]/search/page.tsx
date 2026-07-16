@@ -88,7 +88,6 @@ function SearchPageContent() {
 		setMode,
 		customSourceId,
 		mpcTags,
-		oracleIdFilter,
 		includeMultilingual,
 		setIncludeMultilingual,
 		applyFilters,
@@ -153,7 +152,6 @@ function SearchPageContent() {
 		dir,
 		mpcTagsMustHave: mpcTags.mustHave,
 		mpcTagsMustNotHave: mpcTags.mustNotHave,
-		oracleIdFilter: isBacks ? 'all' : oracleIdFilter,
 		cardTypes: isBacks ? ['cardback'] : ['card', 'token'],
 	});
 
@@ -186,10 +184,9 @@ function SearchPageContent() {
 
 	const customFilterCount = computeCustomFilterCount(customSourceId, mpcTags);
 
-	const oracleIdFilterCount = oracleIdFilter !== 'all' ? 1 : 0;
 	const totalActiveFilterCount = isBacks
 		? customFilterCount
-		: activeFilterCount + customFilterCount + oracleIdFilterCount;
+		: activeFilterCount + customFilterCount;
 
 	// Cardbacks have no set, type, CMC or price: only the name column makes sense.
 	const tableColumns = isBacks
@@ -266,7 +263,6 @@ function SearchPageContent() {
 					customSources={customSources}
 					customSourceId={customSourceId}
 					mpcTags={mpcTags}
-					oracleIdFilter={oracleIdFilter}
 					onApply={applyFilters}
 					onClose={() => setIsModalOpen(false)}
 				/>

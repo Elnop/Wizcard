@@ -8,7 +8,6 @@ import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/so
 import { countActiveFilters } from '@/lib/search/types';
 import type { ColorMatch } from '@/lib/search/types';
 import type { SearchMode } from '@/lib/search/types';
-import type { OracleIdFilterValue } from '@/lib/search/components/filters/OracleIdFilter/OracleIdFilter';
 import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
 import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
 
@@ -101,7 +100,6 @@ type UrlSyncState = {
 	mode: SearchMode;
 	customSourceId: string | null;
 	mpcTags: MpcTagsFilterValue;
-	oracleIdFilter: OracleIdFilterValue;
 	includeMultilingual: boolean;
 	// The by-language default for includeMultilingual, so the writer can emit an
 	// explicit ml=0 when the user turns it off against a default of on.
@@ -141,7 +139,6 @@ function buildSearchParams(state: UrlSyncState): URLSearchParams {
 	const isDefaultMpcNot =
 		state.mpcTags.mustNotHave.length === 1 && state.mpcTags.mustNotHave[0] === 'NSFW';
 	if (!isDefaultMpcNot) params.set('mpcNot', state.mpcTags.mustNotHave.join(','));
-	if (state.oracleIdFilter !== 'all') params.set('oracleId', state.oracleIdFilter);
 	const ml = mlParamValue(state);
 	if (ml !== null) params.set('ml', ml);
 	return params;
@@ -161,7 +158,6 @@ export type SearchFilters = {
 	dir: ScryfallSortDir;
 	customSourceId: string | null;
 	mpcTags: MpcTagsFilterValue;
-	oracleIdFilter: OracleIdFilterValue;
 };
 
 export function useSearchFiltersFromUrl() {
@@ -201,12 +197,6 @@ export function useSearchFiltersFromUrl() {
 	const [mpcTags, setMpcTags] = useState<MpcTagsFilterValue>(() =>
 		parseMpcTags(searchParams.get('mpcMust'), searchParams.get('mpcNot'))
 	);
-	const [oracleIdFilter, setOracleIdFilter] = useState<OracleIdFilterValue>(() => {
-		const raw = searchParams.get('oracleId');
-		if (raw === 'defined' || raw === 'undefined') return raw;
-		return 'all';
-	});
-
 	const preferredLang = usePreferredCardLang();
 	// Default: on when the user's preferred card language is non-English.
 	const multilingualDefaultsOn = preferredLang !== undefined && preferredLang !== 'en';
@@ -240,7 +230,6 @@ export function useSearchFiltersFromUrl() {
 			mode,
 			customSourceId,
 			mpcTags,
-			oracleIdFilter,
 			includeMultilingual,
 			multilingualDefaultsOn,
 		});
@@ -263,7 +252,6 @@ export function useSearchFiltersFromUrl() {
 		mode,
 		customSourceId,
 		mpcTags,
-		oracleIdFilter,
 		includeMultilingual,
 		multilingualDefaultsOn,
 		router,
@@ -283,7 +271,6 @@ export function useSearchFiltersFromUrl() {
 		setDir(filters.dir);
 		setCustomSourceId(filters.customSourceId);
 		setMpcTags(filters.mpcTags);
-		setOracleIdFilter(filters.oracleIdFilter);
 	};
 
 	const activeFilterCount = countActiveFilters({
@@ -321,7 +308,6 @@ export function useSearchFiltersFromUrl() {
 		setMode,
 		customSourceId,
 		mpcTags,
-		oracleIdFilter,
 		applyFilters,
 		includeMultilingual,
 		setIncludeMultilingual,

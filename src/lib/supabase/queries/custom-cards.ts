@@ -63,7 +63,6 @@ export interface CustomCardQueryFilters {
 	oracleText?: string;
 	mpcTagsMustHave?: string[];
 	mpcTagsMustNotHave?: string[];
-	oracleIdFilter?: 'all' | 'defined' | 'undefined';
 	oracleId?: string;
 	cardTypes?: CardType[];
 	order?: string;
@@ -145,8 +144,6 @@ export async function queryCustomCardRows(
 	if (filters.mpcTagsMustHave?.length) q = q.overlaps('tags', filters.mpcTagsMustHave);
 	if (filters.mpcTagsMustNotHave?.length)
 		q = filters.mpcTagsMustNotHave.reduce((acc, tag) => acc.not('tags', 'cs', `{${tag}}`), q);
-	if (filters.oracleIdFilter === 'defined') q = q.not('oracle_id', 'is', null);
-	else if (filters.oracleIdFilter === 'undefined') q = q.is('oracle_id', null);
 	if (filters.oracleId) q = q.eq('oracle_id', filters.oracleId);
 	if (filters.colors?.length && filters.colorMatch === 'include')
 		q = q.overlaps('colors', filters.colors);
