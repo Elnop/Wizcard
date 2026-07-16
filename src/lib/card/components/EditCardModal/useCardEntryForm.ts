@@ -5,6 +5,8 @@ import type { CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
 import { getCardBySetNumberAndLang } from '@/lib/scryfall/endpoints/cards';
+import { isCustomCard } from '@/lib/mpc/types';
+import type { CustomCard } from '@/lib/mpc/types';
 import { resolveLanguageChange } from './resolveLanguageChange';
 
 /**
@@ -28,6 +30,13 @@ export function useCardEntryForm(initialDraft: Partial<CardEntry>, initialPrint:
 	async function handleLanguageChange(value: string) {
 		const language = (value as CardEntry['language']) || undefined;
 		save({ language });
+
+		// A custom print has no Scryfall-localized variants — keep its image as-is.
+		if (isCustomCard(selectedPrint as ScryfallCard | CustomCard)) {
+			setLangInfoMessage(null);
+			langFetchAbort.current?.abort();
+			return;
+		}
 
 		const action = resolveLanguageChange(language, selectedPrint);
 		if (action.kind === 'skip') {
@@ -83,8 +92,10 @@ export function useCardEntryForm(initialDraft: Partial<CardEntry>, initialPrint:
 
 	function selectPrint(print: ScryfallCard) {
 		setSelectedPrint(print);
-		const lang = print.lang ? SCRYFALL_CODE_TO_LANGUAGE[print.lang] : undefined;
-		save({ language: lang });
+		if (!isCustomCard(print as ScryfallCard | CustomCard)) {
+			const lang = print.lang ? SCRYFALL_CODE_TO_LANGUAGE[print.lang] : undefined;
+			save({ language: lang });
+		}
 		setLangInfoMessage(null);
 		setShowPrintPicker(false);
 	}

@@ -33,6 +33,14 @@ export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: 
 	const { draftEntry: entry, selectedPrint } = form;
 	const isFoil = entry.isFoil ?? false;
 
+	// A custom print has no prints_search_uri; fall back to an oracle_id search
+	// so the picker still lists the official prints (same as PrintsTab).
+	const printsSearchUri =
+		selectedPrint.prints_search_uri ??
+		(selectedPrint.oracle_id
+			? `https://api.scryfall.com/cards/search?q=oracle_id%3A${selectedPrint.oracle_id}&unique=prints&order=released`
+			: undefined);
+
 	return (
 		<>
 			<Modal onClose={onClose} className={styles.modal} zIndex={1100}>
@@ -199,13 +207,14 @@ export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: 
 				</div>
 			</Modal>
 
-			{form.showPrintPicker && selectedPrint.prints_search_uri && (
+			{form.showPrintPicker && printsSearchUri && (
 				<CardPrintPickerModal
-					prints_search_uri={selectedPrint.prints_search_uri}
+					prints_search_uri={printsSearchUri}
 					currentCardId={selectedPrint.id}
 					currentSet={selectedPrint.set}
 					currentCollectorNumber={selectedPrint.collector_number}
 					currentLang={form.entryLangCode}
+					oracleId={selectedPrint.oracle_id}
 					onSelect={form.selectPrint}
 					onClose={() => form.setShowPrintPicker(false)}
 				/>
