@@ -6,5 +6,9 @@ import styles from './CustomCardBadge.module.css';
 export function CustomCardBadge({ card }: { card: AnyCard }) {
 	const t = useTranslations('card');
 	if (!isCustomCard(card)) return null;
-	return <div className={styles.badge} aria-label={t('customBadge')} />;
+	return (
+		<span className={styles.badge} aria-label={t('customBadge')}>
+			{t('custom')}
+		</span>
+	);
 }
