@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card } from '@/types/cards';
-import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
 import { useCustomCardPrints } from '@/lib/mpc/hooks/useCustomCardPrints';
 import { isCustomCard } from '@/lib/mpc/types';
@@ -13,7 +13,8 @@ import type { CustomCard } from '@/lib/mpc/types';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { CardLightbox } from '@/lib/card/components/CardLightbox/CardLightbox';
-import { type PrintListProps, groupPrintsByLang } from './PrintList.types';
+import type { PrintListProps } from './PrintList.types';
+import { buildPrintSections } from './buildPrintSections';
 import styles from './PrintList.module.css';
 
 export function PrintList({
@@ -50,26 +51,19 @@ export function PrintList({
 		return false;
 	}
 
-	const sections: CardListSection[] = useMemo(() => {
-		if (loading || error) return [];
-		const hasCustom = customPrints.length > 0;
-
-		let officialSections: CardListSection[] = [];
-		if (prints.length > 0) {
-			const byLang = groupPrintsByLang(prints, currentLang ?? 'en', preferredLang);
-			if (byLang.length > 0) {
-				officialSections = hasCustom
-					? [{ label: t('officialPrints'), cards: [], children: byLang }]
-					: byLang;
-			}
-		}
-
-		const customSection: CardListSection | null = hasCustom
-			? { label: t('customCards'), cards: customPrints as unknown as AnyCard[] }
-			: null;
-
-		return [...officialSections, ...(customSection ? [customSection] : [])];
-	}, [prints, loading, error, currentLang, preferredLang, customPrints, t]);
+	const { sections, fullyEmpty } = useMemo(
+		() =>
+			buildPrintSections({
+				prints,
+				officialLoading: loading,
+				officialError: error,
+				customPrints,
+				currentLang: currentLang ?? 'en',
+				preferredLang,
+				label: { officialPrints: t('officialPrints'), customCards: t('customCards') },
+			}),
+		[prints, loading, error, currentLang, preferredLang, customPrints, t]
+	);
 
 	function renderOverlay(anyCard: AnyCard): ReactNode {
 		const print = anyCard as ScryfallCard;
@@ -117,9 +111,14 @@ export function PrintList({
 		},
 	];
 
-	if (loading || customLoading) return <p className={styles.status}>{t('loadingPrints')}</p>;
-	if (error) return <p className={styles.statusError}>{error}</p>;
-	if (sections.length === 0) return <p className={styles.status}>{t('noPrintFound')}</p>;
+	// Only block the whole picker while there is genuinely nothing to show yet.
+	// Once custom prints are ready they render immediately, even while the official
+	// Scryfall fetch is still paginating (basic lands return thousands of prints).
+	if (fullyEmpty && (loading || customLoading)) {
+		return <p className={styles.status}>{t('loadingPrints')}</p>;
+	}
+	if (fullyEmpty && error) return <p className={styles.statusError}>{error}</p>;
+	if (fullyEmpty) return <p className={styles.status}>{t('noPrintFound')}</p>;
 
 	return (
 		<>
