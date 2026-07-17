@@ -46,10 +46,7 @@ export function PrintsTab({ card }: Props) {
 			: undefined);
 
 	const { prints, loading } = useCardPrints(printsUri);
-	const { prints: customPrints, loading: customLoading } = useCustomCardPrints(
-		card.oracle_id,
-		card.id
-	);
+	const { prints: customPrints, loading: customLoading } = useCustomCardPrints(card.oracle_id);
 
 	const { addCards } = useCollectionContext();
 	const { addToWishlist } = useWishlistContext();

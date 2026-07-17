@@ -10,10 +10,7 @@ interface UseCustomCardPrintsResult {
 	loading: boolean;
 }
 
-export function useCustomCardPrints(
-	oracleId: string | undefined,
-	excludeId: string
-): UseCustomCardPrintsResult {
+export function useCustomCardPrints(oracleId: string | undefined): UseCustomCardPrintsResult {
 	const [state, setState] = useState<UseCustomCardPrintsResult>({
 		prints: [],
 		loading: false,
@@ -46,9 +43,11 @@ export function useCustomCardPrints(
 					driveFolderId: null,
 				};
 
-				const cards = result.cards
-					.filter((c) => `mpc:${c.id}` !== excludeId && c.id !== excludeId)
-					.map((c) => toCustomCard(c, unknownSource));
+				// The current print is kept in the list — the caller marks it as
+				// "selected"/"shown" (see PrintList.isCurrentPrint / PrintsTab). A custom
+				// current print lives only in this section, so excluding it here would
+				// make it vanish entirely from the picker and the card page.
+				const cards = result.cards.map((c) => toCustomCard(c, unknownSource));
 
 				setState({ prints: cards, loading: false });
 			} catch {
@@ -60,7 +59,7 @@ export function useCustomCardPrints(
 		return () => {
 			cancelled = true;
 		};
-	}, [oracleId, excludeId]);
+	}, [oracleId]);
 
 	return state;
 }

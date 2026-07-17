@@ -28,10 +28,7 @@ export function PrintList({
 }: PrintListProps) {
 	const t = useTranslations('card');
 	const { prints, loading, error } = useCardPrints(prints_search_uri);
-	const { prints: customPrints, loading: customLoading } = useCustomCardPrints(
-		oracleId,
-		currentCardId
-	);
+	const { prints: customPrints, loading: customLoading } = useCustomCardPrints(oracleId);
 	const { profile } = useProfileContext();
 	const preferredLang = profile?.language;
 	const [lightboxCard, setLightboxCard] = useState<Card | ScryfallCard | null>(null);
