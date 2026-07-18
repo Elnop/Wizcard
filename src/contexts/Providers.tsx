@@ -10,7 +10,6 @@ import { ImportProvider } from '@/lib/import/context/ImportContext';
 import { AddToDeckModalProvider } from '@/contexts/AddToDeckModalProvider';
 import { AddCardModalProvider } from '@/contexts/AddCardModalProvider';
 import { CardModalProvider } from '@/contexts/CardModalProvider';
-import { BrandFontProvider } from '@/contexts/BrandFontProvider';
 import { SyncQueueRunner } from '@/lib/supabase/components/SyncQueueRunner';
 import { AnalyticsProvider } from '@/lib/analytics/context/AnalyticsContext';
 import { useAnalyticsAuthSync } from '@/lib/analytics/hooks/useAnalyticsAuthSync';
@@ -31,25 +30,23 @@ export function Providers({ children }: { children: React.ReactNode }) {
 				<Suspense fallback={null}>
 					<AnalyticsPageView />
 				</Suspense>
-				<BrandFontProvider>
-					<SyncQueueRunner>
-						<ProfileProvider>
-							<CollectionProvider>
-								<WishlistProvider>
-									<DeckProvider>
-										<ImportProvider>
-											<AddToDeckModalProvider>
-												<AddCardModalProvider>
-													<CardModalProvider>{children}</CardModalProvider>
-												</AddCardModalProvider>
-											</AddToDeckModalProvider>
-										</ImportProvider>
-									</DeckProvider>
-								</WishlistProvider>
-							</CollectionProvider>
-						</ProfileProvider>
-					</SyncQueueRunner>
-				</BrandFontProvider>
+				<SyncQueueRunner>
+					<ProfileProvider>
+						<CollectionProvider>
+							<WishlistProvider>
+								<DeckProvider>
+									<ImportProvider>
+										<AddToDeckModalProvider>
+											<AddCardModalProvider>
+												<CardModalProvider>{children}</CardModalProvider>
+											</AddCardModalProvider>
+										</AddToDeckModalProvider>
+									</ImportProvider>
+								</DeckProvider>
+							</WishlistProvider>
+						</CollectionProvider>
+					</ProfileProvider>
+				</SyncQueueRunner>
 				<ConsentBanner />
 			</AuthProvider>
 		</AnalyticsProvider>

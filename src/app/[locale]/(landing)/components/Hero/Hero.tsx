@@ -1,16 +1,14 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/Button/Button';
-import { useBrandFont } from '@/contexts/BrandFontProvider';
+import { BRAND_FONT_FAMILY } from '@/fonts/brand';
 import { RandomBackdrop } from './backdrops/RandomBackdrop';
 import styles from './Hero.module.css';
 
 export function Hero() {
 	const t = useTranslations('landing.hero');
-	const { font, reroll } = useBrandFont();
 	return (
 		<section className={styles.hero}>
 			<div className={styles.background}>
@@ -30,33 +28,8 @@ export function Hero() {
 				<RandomBackdrop />
 
 				<div className={styles.textBlock}>
-					{/*
-					 * Logo de l'app, identique à celui de l'écran de consentement OAuth,
-					 * pour que la vérification de marque Google reconnaisse l'app sur sa
-					 * home. Décoratif : le nom est énoncé par le wordmark et la tagline.
-					 */}
-					<Image
-						src="/logo.png"
-						alt=""
-						aria-hidden="true"
-						width={72}
-						height={72}
-						className={styles.brandMark}
-						priority
-					/>
-					<h1
-						className={styles.title}
-						style={{ fontFamily: font?.cssVar }}
-						role="button"
-						tabIndex={0}
-						onClick={reroll}
-						onKeyDown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') {
-								e.preventDefault();
-								reroll();
-							}
-						}}
-					>
+					<div className={styles.diamondOrnament} />
+					<h1 className={styles.title} style={{ fontFamily: BRAND_FONT_FAMILY }}>
 						{/*
 						 * Wordmark décoratif : font brand aléatoire + dégradé en
 						 * background-clip, donc illisible comme texte pour un relecteur.

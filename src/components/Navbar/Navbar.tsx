@@ -1,7 +1,6 @@
 'use client';
 
 import { Link, usePathname } from '@/i18n/navigation';
-import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
@@ -13,7 +12,7 @@ import { getQueueLength } from '@/lib/supabase/sync-queue';
 import { SyncIndicator } from '@/lib/supabase/components/SyncIndicator/SyncIndicator';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { ProfileMenu } from './ProfileMenu';
-import { useBrandFont } from '@/contexts/BrandFontProvider';
+import { BRAND_FONT_FAMILY } from '@/fonts/brand';
 import styles from './Navbar.module.css';
 
 const NavbarDrawer = dynamic(() => import('./NavbarDrawer').then((m) => m.NavbarDrawer), {
@@ -28,7 +27,6 @@ export function Navbar() {
 	const { entries: wishlistEntries } = useWishlistContext();
 	const { status } = useImportContext();
 	const { triggerSync } = useSyncQueueContext();
-	const { font } = useBrandFont();
 
 	const totalCollectionCards = entries.length;
 	const totalWishlistCards = wishlistEntries.length;
@@ -62,24 +60,8 @@ export function Navbar() {
 	return (
 		<>
 			<header className={styles.navbar}>
-				<Link href="/" className={styles.brand}>
-					{/*
-					 * Marque de l'app, identique au logo de l'écran de consentement OAuth :
-					 * la vérification Google veut pouvoir reconnaître l'app sur la home.
-					 * Décoratif ici — le nom est déjà porté par le wordmark à côté.
-					 */}
-					<Image
-						src="/logo.png"
-						alt=""
-						aria-hidden="true"
-						width={32}
-						height={32}
-						className={styles.brandMark}
-						priority
-					/>
-					<span className={styles.logo} style={{ fontFamily: font?.cssVar }}>
-						Wizcard
-					</span>
+				<Link href="/" className={styles.logo} style={{ fontFamily: BRAND_FONT_FAMILY }}>
+					Wizcard
 				</Link>
 
 				{/* Desktop nav */}

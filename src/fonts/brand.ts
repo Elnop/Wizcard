@@ -71,6 +71,9 @@ export const BRAND_FONTS: BrandFont[] = FONT_DEFS.map(({ id, label }) => ({
 /** À concaténer dans le className du <body> pour exposer toutes les variables CSS. */
 export const BRAND_FONT_VARIABLES: string = FONT_DEFS.map(({ font }) => font.variable).join(' ');
 
-export function getBrandFontById(id: string): BrandFont | undefined {
-	return BRAND_FONTS.find((f) => f.id === id);
-}
+/**
+ * Font de marque de l'app (landing + navbar). Figée sur White on Black : le
+ * tirage aléatoire faisait varier l'identité visuelle d'une visite à l'autre.
+ * Les autres fonts restent chargées pour la page de comparaison /brand-test/logo.
+ */
+export const BRAND_FONT_FAMILY = 'var(--font-brand-white-on-black)';
