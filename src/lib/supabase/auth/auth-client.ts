@@ -13,6 +13,24 @@ export async function signInWithEmailOtp(
 	return { error };
 }
 
+/** OAuth providers wired for sign-in. Extend the union to add more. */
+export type OAuthProvider = 'google';
+
+/**
+ * Start an OAuth sign-in. On success the browser is redirected to the provider
+ * and this promise never resolves in-page; only failures return an error.
+ * `provider` is echoed back via the redirect URL so /auth/confirm can attribute
+ * the login analytics event to the right method.
+ */
+export async function signInWithOAuth(
+	provider: OAuthProvider
+): Promise<{ error: AuthError | null }> {
+	const supabase = createClient();
+	const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm?provider=${provider}`;
+	const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
+	return { error };
+}
+
 export async function verifyEmailOtpClient(
 	email: string,
 	token: string

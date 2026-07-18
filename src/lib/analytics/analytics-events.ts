@@ -28,7 +28,7 @@ export type AnalyticsEvent =
 	| { name: 'search_performed'; props: { hasFilters: boolean } }
 	| { name: 'filter_applied'; props: { filterType: string } }
 	| { name: 'signup'; props: { method: 'email' } }
-	| { name: 'login'; props: { method: 'email' } }
+	| { name: 'login'; props: { method: 'email' | 'google' | 'oauth' } }
 	| { name: 'profile_viewed'; props: { isOwnProfile: boolean } };
 
 export type EventName = AnalyticsEvent['name'];

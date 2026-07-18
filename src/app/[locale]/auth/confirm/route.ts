@@ -12,13 +12,15 @@ export async function GET(
 	const token_hash = searchParams.get('token_hash');
 	const type = searchParams.get('type') as EmailOtpType | null;
 	const code = searchParams.get('code');
+	const provider = searchParams.get('provider');
+	const loginMethod = provider === 'google' ? provider : 'oauth';
 
 	// PKCE flow (Supabase local / newer versions)
 	if (code) {
 		const { error } = await exchangeCodeForSession(code);
 		if (!error) {
 			await trackServer(
-				{ name: 'login', props: { method: 'email' } },
+				{ name: 'login', props: { method: loginMethod } },
 				getPosthogDistinctId(request.headers.get('cookie'))
 			);
 			return NextResponse.redirect(new URL(`/${locale}/collection`, request.url));
