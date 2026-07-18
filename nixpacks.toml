@@ -1,0 +1,37 @@
+# Build config Nixpacks (Coolify). Versionné dans le repo plutôt qu'en variable
+# d'env Coolify : reproductible, et survit à une recréation du service.
+#
+# POURQUOI `npm install` ET PAS `npm ci` (le défaut de Nixpacks) :
+#
+# `npm ci` exige que package.json et package-lock.json soient parfaitement
+# synchronisés, et échoue en EUSAGE avec :
+#   Missing: @emnapi/runtime@1.11.2, @emnapi/core@1.11.2, @swc/helpers@0.5.23
+#
+# Ces paquets viennent d'une devDependency ESLint :
+#   eslint-config-next -> eslint-import-resolver-typescript -> unrs-resolver
+#     -> @unrs/resolver-binding-wasm32-wasi (optional, plateforme wasm32)
+# qui épingle @emnapi/core "1.10.0" exactement. Le container résout une version
+# différente de ce binding optionnel (les optional deps spécifiques à une
+# plateforme ne sont pas verrouillées de façon déterministe entre la machine de
+# dev linux-x64 et l'image de build) -> npm ci considère le lock désynchronisé.
+#
+# Vérifié empiriquement (nixpacks 1.41.0, même version que le serveur) — ces
+# pistes NE corrigent PAS le problème, ne pas les retenter :
+#   - NIXPACKS_NPM_VERSION=11 en variable d'env       -> npm reste 10.9.3
+#   - [variables] NIXPACKS_NPM_VERSION dans ce fichier -> lu, mais sans effet
+#   - nixPkgs = [..., "npm-11_x"]                      -> npm 11 installé mais
+#                                                        npm 10.9.3 s'exécute (PATH)
+#   - `npm i -g npm@11 && npm ci`                      -> même EUSAGE
+#   - `npm ci --no-optional`                           -> le lock est validé AVANT
+#                                                        le filtrage des optional
+#   - régénérer package-lock.json                      -> supprime 1090 lignes
+#                                                        d'entrées multi-plateformes
+#
+# Ne PAS éditer package-lock.json à la main (deps optionnelles WASM).
+#
+# `npm install` tolère cette dérive et réinstalle le graphe correct pour la
+# plateforme de build. Build validé de bout en bout sur un clone git propre :
+# 534 paquets installés, compilation OK, 43 pages statiques générées.
+
+[phases.install]
+cmds = ["npm install --no-audit --no-fund"]
