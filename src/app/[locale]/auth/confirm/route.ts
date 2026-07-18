@@ -3,12 +3,38 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForSession, verifyEmailOtp } from '@/lib/supabase/auth/auth-server';
 import { trackServer, getPosthogDistinctId } from '@/lib/analytics/server/track-server';
 
+/**
+ * Base absolue à utiliser pour les redirections de ce route handler.
+ *
+ * `request.url` ne convient pas seul : derrière le reverse-proxy (Coolify), la
+ * requête arrive sur le port interne du container et `request.url` vaut
+ * `http://localhost:3000/...`. Une redirection construite dessus renvoie donc
+ * l'utilisateur sur localhost au lieu du domaine public.
+ *
+ * Ordre de préférence : NEXT_PUBLIC_SITE_URL (valeur canonique configurée) →
+ * headers X-Forwarded-* posés par le proxy → `request.url` (dev local, où il
+ * est déjà correct).
+ */
+function resolveOrigin(request: NextRequest): string {
+	const configured = process.env.NEXT_PUBLIC_SITE_URL;
+	if (configured) return configured;
+
+	const forwardedHost = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
+	if (forwardedHost) {
+		const proto = request.headers.get('x-forwarded-proto') ?? 'https';
+		return `${proto}://${forwardedHost}`;
+	}
+
+	return new URL(request.url).origin;
+}
+
 export async function GET(
 	request: NextRequest,
 	{ params }: { params: Promise<{ locale: string }> }
 ) {
 	const { locale } = await params;
 	const { searchParams } = new URL(request.url);
+	const origin = resolveOrigin(request);
 	const token_hash = searchParams.get('token_hash');
 	const type = searchParams.get('type') as EmailOtpType | null;
 	const code = searchParams.get('code');
@@ -23,7 +49,7 @@ export async function GET(
 				{ name: 'login', props: { method: loginMethod } },
 				getPosthogDistinctId(request.headers.get('cookie'))
 			);
-			return NextResponse.redirect(new URL(`/${locale}/collection`, request.url));
+			return NextResponse.redirect(new URL(`/${locale}/collection`, origin));
 		}
 	}
 
@@ -35,11 +61,11 @@ export async function GET(
 				{ name: 'login', props: { method: 'email' } },
 				getPosthogDistinctId(request.headers.get('cookie'))
 			);
-			return NextResponse.redirect(new URL(`/${locale}/collection`, request.url));
+			return NextResponse.redirect(new URL(`/${locale}/collection`, origin));
 		}
 	}
 
 	return NextResponse.redirect(
-		new URL(`/${locale}/auth/error?error_code=confirmation_failed`, request.url)
+		new URL(`/${locale}/auth/error?error_code=confirmation_failed`, origin)
 	);
 }
