@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { LOGO_BG, LOGO_GOLD, WHITE_ON_BLACK_FAMILY, loadWhiteOnBlack } from './_brand/logo-assets';
 
 export const size = { width: 180, height: 180 };
 export const contentType = 'image/png';
@@ -12,14 +13,14 @@ export default function AppleIcon() {
 				display: 'flex',
 				alignItems: 'center',
 				justifyContent: 'center',
-				background: '#0a0a0a',
-				color: '#c9a84c',
+				background: LOGO_BG,
+				color: LOGO_GOLD,
+				fontFamily: WHITE_ON_BLACK_FAMILY,
 				fontSize: 120,
-				fontWeight: 700,
 			}}
 		>
 			W
 		</div>,
-		size
+		{ ...size, fonts: [loadWhiteOnBlack()] }
 	);
 }
