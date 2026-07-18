@@ -3,7 +3,9 @@
 -- trigger stays the single, atomic profile-creation path. Falls back to
 -- wizard_<hex> when no usable name is present. Idempotent.
 
-create extension if not exists unaccent;
+-- Pin to public so normalize_oauth_nickname's `search_path = public` always
+-- resolves unaccent(), regardless of platform extension-schema conventions.
+create extension if not exists unaccent with schema public;
 
 -- Normalize a raw display name into a nickname candidate that satisfies the
 -- profiles_nickname_valid CHECK (posix alnum + dot/underscore/hyphen/space,

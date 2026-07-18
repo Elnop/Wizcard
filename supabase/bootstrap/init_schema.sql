@@ -157,15 +157,88 @@ begin
 end;
 $$;
 
+-- ASCII-fold + charset-filter an OAuth display name into a CHECK-valid nickname
+-- candidate, or null when nothing usable remains. STABLE (unaccent is STABLE).
+create extension if not exists unaccent with schema public;
+
+create function public.normalize_oauth_nickname(raw text)
+  returns text
+  language plpgsql
+  stable
+as $$
+declare
+  candidate text;
+begin
+  if raw is null then
+    return null;
+  end if;
+  candidate := unaccent(raw);
+  candidate := regexp_replace(candidate, '[^[:alnum:]._ -]', '', 'g');
+  candidate := btrim(regexp_replace(candidate, '\s+', ' ', 'g'));
+  candidate := btrim(substr(candidate, 1, 30));
+  if char_length(candidate) < 3 then
+    return null;
+  end if;
+  if lower(candidate) in (
+    'admin','api','settings','login','logout','signup','users','wizard','null','undefined'
+  ) then
+    return null;
+  end if;
+  return candidate;
+end;
+$$;
+
+-- Collision-safe generator from an arbitrary text base: base as-is if free,
+-- else _2, _3, ... (length-capped at 30 including suffix).
+create function public.generate_unique_nickname(base text)
+  returns text
+  language plpgsql
+  security definer
+  set search_path = public
+as $$
+declare
+  candidate text := base;
+  n int := 2;
+  suffix text;
+begin
+  loop
+    exit when not exists (
+      select 1 from public.profiles where lower(nickname) = lower(candidate)
+    );
+    suffix := '_' || n::text;
+    candidate := substr(base, 1, 30 - char_length(suffix)) || suffix;
+    n := n + 1;
+    if n > 10000 then
+      candidate := 'wizard_' || substr(md5(random()::text || clock_timestamp()::text), 1, 8);
+      exit when not exists (
+        select 1 from public.profiles where lower(nickname) = lower(candidate)
+      );
+    end if;
+  end loop;
+  return candidate;
+end;
+$$;
+
 create function public.handle_new_user()
   returns trigger
   language plpgsql
   security definer
   set search_path = public
 as $$
+declare
+  base text;
 begin
+  base := public.normalize_oauth_nickname(coalesce(
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'name',
+    split_part(coalesce(new.email, ''), '@', 1)
+  ));
+  if base is null then
+    base := public.default_nickname_base(new.id);
+  end if;
+
   insert into public.profiles (id, nickname)
-    values (new.id, public.generate_unique_nickname(new.id))
+    values (new.id, public.generate_unique_nickname(base))
     on conflict (id) do nothing;
   return new;
 end;

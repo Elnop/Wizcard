@@ -355,6 +355,8 @@ with fn(name, args) as (
   values
     ('default_nickname_base','uid uuid'),
     ('generate_unique_nickname','uid uuid'),
+    ('generate_unique_nickname','base text'),
+    ('normalize_oauth_nickname','raw text'),
     ('handle_new_user',''),
     ('count_distinct_public_cards','owner uuid'),
     ('recompute_user_usage','uid uuid'),
