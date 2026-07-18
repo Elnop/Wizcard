@@ -146,6 +146,7 @@
 	},
 	"landing": {
 		"hero": {
+			"brandStatement": "Wizcard — Votre compagnon Magic: The Gathering complet",
 			"tagline": "Votre compagnon Magic: The Gathering complet",
 			"description": "Recherchez, collectionnez et gérez toutes les cartes Magic jamais imprimées. Filtres puissants, synchronisation hors ligne et import en masse — le tout au même endroit.",
 			"startSearching": "Commencer la recherche",

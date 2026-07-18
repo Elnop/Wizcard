@@ -43,7 +43,16 @@ export function Hero() {
 							}
 						}}
 					>
-						WIZCARD
+						{/*
+						 * Le wordmark reste le visuel de marque (aria-hidden : il est
+						 * décoratif, la vraie valeur textuelle est le brandStatement).
+						 * Le H1 doit énoncer le nom EXACT de l'app ("Wizcard", même casse
+						 * que l'écran de consentement OAuth) et son objectif : la
+						 * vérification Google Cloud lit ce H1 et refusait la marque tant
+						 * qu'il ne contenait que "WIZCARD" en capitales, sans finalité.
+						 */}
+						<span aria-hidden="true">WIZCARD</span>{' '}
+						<span className={styles.brandStatement}>{t('brandStatement')}</span>
 					</h1>
 					<div className={styles.titleRule} />
 					<p className={styles.tagline}>{t('tagline')}</p>

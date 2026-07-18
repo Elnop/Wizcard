@@ -146,6 +146,7 @@
 	},
 	"landing": {
 		"hero": {
+			"brandStatement": "Wizcard — Your complete Magic: The Gathering companion",
 			"tagline": "Your complete Magic: The Gathering companion",
 			"description": "Search, collect, and manage every Magic card ever printed. Powerful filters, offline sync, and bulk import — all in one place.",
 			"startSearching": "Start Searching",
