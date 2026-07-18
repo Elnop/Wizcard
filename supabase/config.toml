@@ -226,6 +226,17 @@ otp_expiry = 3600
 # admin_email = "noreply@wizcard.xyz"
 # sender_name = "Wizcard"
 
+# Custom email templates. Both include {{ .Token }} (the 6-digit code) so the
+# code-entry login flow works, plus {{ .ConfirmationURL }} as a fallback link.
+# magic_link = returning (confirmed) users; confirmation = new-user signup.
+[auth.email.template.magic_link]
+subject = "Your Wizcard sign-in code"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.confirmation]
+subject = "Confirm your email address - Wizcard"
+content_path = "./supabase/templates/confirmation.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
