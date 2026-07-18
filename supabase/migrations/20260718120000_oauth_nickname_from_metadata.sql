@@ -11,7 +11,11 @@ create extension if not exists unaccent;
 create or replace function public.normalize_oauth_nickname(raw text)
   returns text
   language plpgsql
-  immutable
+  -- STABLE (not IMMUTABLE): unaccent() is only STABLE in stock Postgres, and its
+  -- result can change if the unaccent dictionary is reconfigured per session.
+  -- Only ever called inside the handle_new_user trigger body — never in an index
+  -- or generated column — so STABLE is correct and sufficient.
+  stable
 as $$
 declare
   candidate text;
