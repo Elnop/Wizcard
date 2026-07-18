@@ -1,6 +1,7 @@
 'use client';
 
 import { Link, usePathname } from '@/i18n/navigation';
+import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
@@ -61,8 +62,24 @@ export function Navbar() {
 	return (
 		<>
 			<header className={styles.navbar}>
-				<Link href="/" className={styles.logo} style={{ fontFamily: font?.cssVar }}>
-					Wizcard
+				<Link href="/" className={styles.brand}>
+					{/*
+					 * Marque de l'app, identique au logo de l'écran de consentement OAuth :
+					 * la vérification Google veut pouvoir reconnaître l'app sur la home.
+					 * Décoratif ici — le nom est déjà porté par le wordmark à côté.
+					 */}
+					<Image
+						src="/logo.png"
+						alt=""
+						aria-hidden="true"
+						width={32}
+						height={32}
+						className={styles.brandMark}
+						priority
+					/>
+					<span className={styles.logo} style={{ fontFamily: font?.cssVar }}>
+						Wizcard
+					</span>
 				</Link>
 
 				{/* Desktop nav */}

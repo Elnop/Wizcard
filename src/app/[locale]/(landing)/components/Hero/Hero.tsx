@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/Button/Button';
 import { useBrandFont } from '@/contexts/BrandFontProvider';
@@ -29,7 +30,20 @@ export function Hero() {
 				<RandomBackdrop />
 
 				<div className={styles.textBlock}>
-					<div className={styles.diamondOrnament} />
+					{/*
+					 * Logo de l'app, identique à celui de l'écran de consentement OAuth,
+					 * pour que la vérification de marque Google reconnaisse l'app sur sa
+					 * home. Décoratif : le nom est énoncé par le wordmark et la tagline.
+					 */}
+					<Image
+						src="/logo.png"
+						alt=""
+						aria-hidden="true"
+						width={72}
+						height={72}
+						className={styles.brandMark}
+						priority
+					/>
 					<h1
 						className={styles.title}
 						style={{ fontFamily: font?.cssVar }}
