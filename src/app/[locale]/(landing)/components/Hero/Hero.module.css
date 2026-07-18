@@ -338,13 +338,18 @@
 	margin-bottom: 16px;
 }
 
+/*
+ * Porte le nom exact de l'app + son objectif, en clair et à l'écran (exigence
+ * de vérification de marque Google Cloud). Pas d'uppercase ici : le nom doit
+ * se lire "Wizcard" comme sur l'écran de consentement, pas "WIZCARD".
+ */
 .tagline {
 	font-family: var(--font-display);
 	font-size: var(--text-lg);
 	font-weight: 400;
 	color: var(--gold);
-	text-transform: uppercase;
-	letter-spacing: 0.3em;
+	letter-spacing: 0.08em;
+	max-width: 520px;
 	margin-bottom: 24px;
 }
 
@@ -440,22 +445,4 @@
 	.cta a {
 		width: 100%;
 	}
-}
-
-/*
- * Énoncé de marque dans le H1 : nom exact + objectif de l'app, lu par les
- * lecteurs d'écran et par la vérification de marque Google Cloud (qui exige
- * que la home affiche le nom exact de l'écran de consentement et explique
- * l'objectif). Masqué visuellement — le wordmark WIZCARD reste le visuel.
- */
-.brandStatement {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	padding: 0;
-	margin: -1px;
-	overflow: hidden;
-	clip: rect(0, 0, 0, 0);
-	white-space: nowrap;
-	border: 0;
 }
