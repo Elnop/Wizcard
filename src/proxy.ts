@@ -26,6 +26,6 @@ export const config = {
 	// sans `wasm`, /sql-wasm.wasm est redirigé vers /fr/sql-wasm.wasm (404) et
 	// sql.js ne peut plus charger son binaire (import Delver Lens).
 	matcher: [
-		'/((?!api|tamiyo|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|wasm)$).*)',
+		'/((?!api|tamiyo|email-templates|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|wasm)$).*)',
 	],
 };
