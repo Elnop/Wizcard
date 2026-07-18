@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
-import { signInWithEmailOtp, verifyEmailOtpClient } from '@/lib/supabase/auth/auth-client';
+import {
+	signInWithEmailOtp,
+	verifyEmailOtpClient,
+	signInWithOAuth,
+} from '@/lib/supabase/auth/auth-client';
 import styles from './page.module.css';
 
 export function LoginForm() {
@@ -52,29 +56,51 @@ export function LoginForm() {
 		router.refresh();
 	}
 
+	async function handleGoogle() {
+		setError(null);
+		setIsLoading(true);
+		const { error } = await signInWithOAuth('google');
+		// On success the browser redirects away; only reached on error.
+		if (error) {
+			setError(error.message);
+			setIsLoading(false);
+		}
+	}
+
 	if (!sent) {
 		return (
-			<form className={styles.form} onSubmit={handleSubmitEmail}>
-				<div className={styles.field}>
-					<label className={styles.label} htmlFor="email">
-						{t('email')}
-					</label>
-					<input
-						id="email"
-						type="email"
-						className={styles.input}
-						value={email}
-						onChange={(e) => setEmail(e.target.value)}
-						required
-						autoComplete="email"
-						placeholder={t('emailPlaceholder')}
-					/>
-				</div>
-				{error && <p className={styles.error}>{error}</p>}
-				<button type="submit" className={styles.submitBtn} disabled={isLoading}>
-					{isLoading ? t('sending') : t('sendLink')}
+			<div className={styles.loginOptions}>
+				<button
+					type="button"
+					className={styles.googleBtn}
+					onClick={handleGoogle}
+					disabled={isLoading}
+				>
+					{t('continueWithGoogle')}
 				</button>
-			</form>
+				<div className={styles.divider}>{t('orDivider')}</div>
+				<form className={styles.form} onSubmit={handleSubmitEmail}>
+					<div className={styles.field}>
+						<label className={styles.label} htmlFor="email">
+							{t('email')}
+						</label>
+						<input
+							id="email"
+							type="email"
+							className={styles.input}
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
+							required
+							autoComplete="email"
+							placeholder={t('emailPlaceholder')}
+						/>
+					</div>
+					{error && <p className={styles.error}>{error}</p>}
+					<button type="submit" className={styles.submitBtn} disabled={isLoading}>
+						{isLoading ? t('sending') : t('sendLink')}
+					</button>
+				</form>
+			</div>
 		);
 	}
 

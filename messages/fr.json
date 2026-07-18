@@ -198,7 +198,9 @@
 			"otpLabel": "Code à 6 chiffres",
 			"verifying": "Vérification…",
 			"signIn": "Se connecter",
-			"changeAddress": "← Changer d'adresse"
+			"changeAddress": "← Changer d'adresse",
+			"continueWithGoogle": "Continuer avec Google",
+			"orDivider": "ou"
 		},
 		"error": {
 			"confirmationFailedTitle": "Lien invalide",
