@@ -736,6 +736,21 @@ git commit -m "feat(search): deck search query and hook"
 
 ## Task 7: DeckFilterModal component
 
+> **⚠️ COURSE CORRECTION 2 (2026-07-19): card-in-board AND Commander filters are DEFERRED (YAGNI).**
+> Reason: `cards` stores only `scryfall_id` (a specific printing), no `oracle_id`,
+> so a correct "card in deck" match needs oracle→all-printings resolution +
+> autocomplete — out of scope for V1.
+> **The modal exposes ONLY three filters: Deck Name, Format, Author.**
+>
+> - Do NOT render the `cardInBoard` input.
+> - Do NOT render the conditional Commander input, and do NOT import/use
+>   `COMMANDER_FORMATS` in the modal (remove `showCommander`, the commander
+>   `<label>`, and the commander-cleanup line in `apply`).
+> - Keep the `DeckSearchFilters` type unchanged (its `cardInBoard`/`commander`
+>   fields simply stay `''`). `onApply` still passes a full `DeckSearchFilters`.
+> - Skip the i18n keys `deckCardInBoardLabel` and `deckCommanderLabel` (not used).
+>   Everything else in this task proceeds as written.
+
 **Files:**
 
 - Create: `src/lib/search/components/DeckFilterModal/DeckFilterModal.tsx`

@@ -17,6 +17,14 @@ toggle de la Section 5 sont **abandonnés**. Le toggle « Profil public » exist
 déjà dans les Settings. La recherche de decks s'appuie sur la policy existante
 `"Public can view all decks"` (qui filtre déjà aux profils publics).
 
+**Correction 2** : la table `cards` ne stocke qu'un `scryfall_id` (édition
+précise), pas d'`oracle_id`. Un filtre « carte dans le deck » correct
+nécessiterait une résolution nom → toutes les éditions + autocomplete. Décision :
+**filtres Card-in-Board ET Commander reportés (YAGNI)**. La modale Decks V1
+n'expose que **Deck Name, Format, Author**. Les champs `cardInBoard`/`commander`
+restent dans le type `DeckSearchFilters` (valeur `''`, jamais activés) ; la
+logique de résolution dans `searchDecks` reste dormante.
+
 ## Objectif
 
 Faire évoluer la page `/search` (aujourd'hui limitée à la recherche de cartes) pour
