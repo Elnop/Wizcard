@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
+import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { validateDeck } from '@/lib/deck/utils/format-rules';
@@ -81,6 +82,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		getDeckCards,
 		replaceDeckCardWithCollectionCopy,
 	} = useDeckContext();
+	const { profile } = useProfileContext();
 	const deckCards = getDeckCards(deckId);
 	const analytics = useAnalytics();
 	const { deck, cardsByZone, resolvedCards, stats, coverArtUrl, isLoading, isResolving } =
@@ -591,6 +593,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					<DeckHeader
 						deck={deck}
 						onUpdate={(updates) => updateDeck(deckId, updates)}
+						onVisibilityChange={(isPublic) => updateDeck(deckId, { isPublic })}
+						profileIsPublic={profile?.isPublic ?? true}
 						onAssignAllFromCollection={handleAssignAllFromCollection}
 						onAddAllToCollection={() => setAddToCollectionModalOpen(true)}
 						onImportList={() => setImportListOpen(true)}

@@ -223,3 +223,25 @@
 		padding: 6px 8px;
 	}
 }
+
+.visibilityRow {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.visibilityToggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	cursor: pointer;
+	font-size: 0.85rem;
+}
+
+/* Shown when the deck is public but the owner's profile is not: without this
+   the user believes the deck is shared when the profile gate still hides it. */
+.visibilityHint {
+	margin: 0;
+	font-size: 0.75rem;
+	opacity: 0.75;
+}

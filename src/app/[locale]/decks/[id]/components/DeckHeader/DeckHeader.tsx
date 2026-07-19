@@ -19,6 +19,9 @@ type Props = {
 	onToggleSelectMode?: () => void;
 	/** Read-only (public) view: hides editing, keeps export/copy actions. */
 	readOnly?: boolean;
+	onVisibilityChange?: (isPublic: boolean) => void;
+	/** Owner's profile visibility — a public deck under a private profile stays hidden. */
+	profileIsPublic?: boolean;
 };
 
 export function DeckHeader({
@@ -32,6 +35,8 @@ export function DeckHeader({
 	selectMode = false,
 	onToggleSelectMode,
 	readOnly = false,
+	onVisibilityChange,
+	profileIsPublic = true,
 }: Props) {
 	const t = useTranslations('decks');
 	const [isEditing, setIsEditing] = useState(false);
@@ -121,6 +126,21 @@ export function DeckHeader({
 						<EditIcon />
 						<span>{t('headerEdit')}</span>
 					</button>
+				)}
+				{onVisibilityChange && (
+					<div className={styles.visibilityRow}>
+						<label className={styles.visibilityToggle}>
+							<input
+								type="checkbox"
+								checked={deck.isPublic}
+								onChange={(e) => onVisibilityChange(e.target.checked)}
+							/>
+							<span>{t('publicDeckLabel')}</span>
+						</label>
+						{deck.isPublic && !profileIsPublic && (
+							<p className={styles.visibilityHint}>{t('publicDeckPrivateProfileHint')}</p>
+						)}
+					</div>
 				)}
 				{onExportText && (
 					<button type="button" className={styles.actionBtn} onClick={() => onExportText()}>

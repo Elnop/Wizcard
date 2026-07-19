@@ -450,6 +450,8 @@
 		"notInMyCollection": "Not in my collection",
 		"headerEdit": "Edit",
 		"headerExport": "Export",
+		"publicDeckLabel": "Public deck",
+		"publicDeckPrivateProfileHint": "Your profile is private: this deck stays hidden from others until the profile is public.",
 		"generatePdf": "Generate PDF",
 		"more": "More",
 		"sampleHand": "Sample hand",

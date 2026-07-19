@@ -37,7 +37,7 @@ type DeckContextValue = {
 	) => string;
 	updateDeck: (
 		deckId: string,
-		updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description' | 'coverArtUrl'>>
+		updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description' | 'coverArtUrl' | 'isPublic'>>
 	) => void;
 	deleteDeck: (deckId: string, options?: { deleteCollectionCopies?: boolean }) => void;
 
@@ -162,7 +162,9 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	const updateDeck = useCallback(
 		(
 			deckId: string,
-			updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description' | 'coverArtUrl'>>
+			updates: Partial<
+				Pick<DeckMeta, 'name' | 'format' | 'description' | 'coverArtUrl' | 'isPublic'>
+			>
 		) => {
 			if (!userId) return;
 			store.updateDeck(deckId, updates, userId, triggerSync);

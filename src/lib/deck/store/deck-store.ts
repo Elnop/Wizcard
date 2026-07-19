@@ -112,7 +112,9 @@ type DeckActions = {
 	) => string;
 	updateDeck: (
 		deckId: string,
-		updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description' | 'coverArtUrl'>>,
+		updates: Partial<
+			Pick<DeckMeta, 'name' | 'format' | 'description' | 'coverArtUrl' | 'isPublic'>
+		>,
 		userId: string,
 		triggerSync: () => void
 	) => void;
