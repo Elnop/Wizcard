@@ -48,14 +48,20 @@ export function removeDeckZoneTags(tags: string[] | undefined): string[] {
 	return (tags ?? []).filter((t) => !t.startsWith(DECK_ZONE_PREFIX));
 }
 
+/** Where a deck came from. 'mtgjson' decks are imported precons with no owner. */
+export type DeckSource = 'user' | 'mtgjson';
+
 export interface DeckMeta {
 	id: string;
-	ownerId: string;
+	/** NULL for preconstructed decks, which belong to no user. */
+	ownerId: string | null;
 	name: string;
 	format: DeckFormat | null;
 	description: string | null;
 	folderId: string | null;
 	coverArtUrl: string | null;
+	source: DeckSource;
+	isPublic: boolean;
 	createdAt: string;
 	updatedAt: string;
 }

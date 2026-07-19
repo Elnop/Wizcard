@@ -319,6 +319,8 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 			description,
 			folderId: folderId ?? null,
 			coverArtUrl: null,
+			source: 'user',
+			isPublic: true,
 			createdAt: now,
 			updatedAt: now,
 		};

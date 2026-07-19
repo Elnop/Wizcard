@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import type { DeckMeta } from '@/types/decks';
+import type { DeckMeta, DeckSource } from '@/types/decks';
 import type { DeckSearchFilters } from '@/lib/search/types';
 import { COMMANDER_FORMATS } from '@/lib/search/types';
 
@@ -62,12 +62,14 @@ function rowToResult(row: Record<string, unknown>, author: ProfileMini | null): 
 	return {
 		deck: {
 			id: row.id as string,
-			ownerId: row.owner_id as string,
+			ownerId: (row.owner_id as string | null) ?? null,
 			name: row.name as string,
 			format: (row.format as DeckMeta['format']) ?? null,
 			description: (row.description as string | null) ?? null,
 			folderId: (row.folder_id as string | null) ?? null,
 			coverArtUrl: (row.cover_art_url as string | null) ?? null,
+			source: (row.source === 'mtgjson' ? 'mtgjson' : 'user') as DeckSource,
+			isPublic: (row.is_public as boolean | undefined) ?? true,
 			createdAt: row.created_at as string,
 			updatedAt: row.updated_at as string,
 		},
@@ -126,10 +128,17 @@ export async function searchDecks(
 	const { data, error, count } = await q;
 	if (error) throw new Error(`[searchDecks] ${error.message}`);
 	const rows = data ?? [];
-	const ownerIds = Array.from(new Set(rows.map((r) => r.owner_id as string)));
-	const authorsById = await resolveAuthorsById(ownerIds);
-	const decks = rows.map((r) =>
-		rowToResult(r as Record<string, unknown>, authorsById.get(r.owner_id as string) ?? null)
+	// Precon decks (source: 'mtgjson') have owner_id null and no author to resolve.
+	const ownerIds = Array.from(
+		new Set(rows.map((r) => r.owner_id as string | null).filter((id): id is string => id !== null))
 	);
+	const authorsById = await resolveAuthorsById(ownerIds);
+	const decks = rows.map((r) => {
+		const ownerId = r.owner_id as string | null;
+		return rowToResult(
+			r as Record<string, unknown>,
+			ownerId !== null ? (authorsById.get(ownerId) ?? null) : null
+		);
+	});
 	return { decks, total: count ?? decks.length };
 }

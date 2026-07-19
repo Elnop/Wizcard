@@ -9,12 +9,14 @@ import type { CardDbRow } from '@/lib/card/db/cardRow';
 
 export type DeckDbRow = {
 	id: string;
-	owner_id: string;
+	owner_id: string | null;
 	name: string;
 	format: string | null;
 	description: string | null;
 	folder_id: string | null;
 	cover_art_url: string | null;
+	source: string;
+	is_public: boolean;
 	created_at: string;
 	updated_at: string;
 };
@@ -67,6 +69,20 @@ export async function updateDeckRow(
 		.eq('owner_id', ownerId)
 		.eq('id', deckId);
 	if (error) throw new Error(`[queries/decks] updateDeckRow error: ${error.message}`);
+}
+
+export async function updateDeckVisibility(
+	ownerId: string,
+	deckId: string,
+	isPublic: boolean
+): Promise<void> {
+	const supabase = createClient();
+	const { error } = await supabase
+		.from('decks')
+		.update({ is_public: isPublic, updated_at: new Date().toISOString() })
+		.eq('owner_id', ownerId)
+		.eq('id', deckId);
+	if (error) throw new Error(`[queries/decks] updateDeckVisibility error: ${error.message}`);
 }
 
 export async function deleteDeckRow(ownerId: string, deckId: string): Promise<void> {

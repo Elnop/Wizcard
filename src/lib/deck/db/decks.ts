@@ -1,5 +1,5 @@
 import type { CardEntry } from '@/types/cards';
-import type { DeckMeta } from '@/types/decks';
+import type { DeckMeta, DeckSource } from '@/types/decks';
 import { type CardDbRow, rowToCardEntry, cardEntryToRow } from '@/lib/card/db/cardRow';
 import {
 	type DeckDbRow,
@@ -25,6 +25,8 @@ function rowToDeckMeta(row: DeckDbRow): DeckMeta {
 		description: row.description,
 		folderId: row.folder_id ?? null,
 		coverArtUrl: row.cover_art_url ?? null,
+		source: (row.source === 'mtgjson' ? 'mtgjson' : 'user') as DeckSource,
+		isPublic: row.is_public ?? true,
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,
 	};
@@ -62,13 +64,14 @@ export async function insertDeck(userId: string, deck: DeckMeta): Promise<void> 
 export async function updateDeckMeta(
 	userId: string,
 	deckId: string,
-	updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description' | 'coverArtUrl'>>
+	updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description' | 'coverArtUrl' | 'isPublic'>>
 ): Promise<void> {
 	const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
 	if (updates.name !== undefined) payload.name = updates.name;
 	if (updates.format !== undefined) payload.format = updates.format;
 	if (updates.description !== undefined) payload.description = updates.description;
 	if (updates.coverArtUrl !== undefined) payload.cover_art_url = updates.coverArtUrl;
+	if (updates.isPublic !== undefined) payload.is_public = updates.isPublic;
 	await updateDeckRow(userId, deckId, payload);
 }
 
