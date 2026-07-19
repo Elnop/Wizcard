@@ -10,10 +10,16 @@ const assetsManifest = JSON.parse(
 );
 
 const failures = [];
-if (templatesManifest.templates.length !== 376)
-	failures.push(`expected 376 templates, found ${templatesManifest.templates.length}`);
-if (assetsManifest.assets.length < 34_800)
-	failures.push(`expected at least 34,800 assets, found ${assetsManifest.assets.length}`);
+if (templatesManifest.templates.length !== 382)
+	failures.push(`expected 382 templates, found ${templatesManifest.templates.length}`);
+if (assetsManifest.assets.length < 35_000)
+	failures.push(`expected at least 35,000 assets, found ${assetsManifest.assets.length}`);
+
+const accurateTemplates = templatesManifest.templates.filter(
+	(template) => template.source === 'cardconjurer' && template.quality === 'accurate'
+);
+if (accurateTemplates.length !== 6)
+	failures.push(`expected 6 CardConjurer Accurate templates, found ${accurateTemplates.length}`);
 
 for (const template of templatesManifest.templates) {
 	try {
@@ -26,6 +32,13 @@ for (const template of templatesManifest.templates) {
 			await fs.access(path.join(PUBLIC_ROOT, template.samplePath));
 		} catch {
 			failures.push(`missing sample: ${template.samplePath}`);
+		}
+	}
+	for (const framePath of Object.values(template.framePaths ?? {})) {
+		try {
+			await fs.access(path.join(PUBLIC_ROOT, framePath));
+		} catch {
+			failures.push(`missing frame: ${framePath}`);
 		}
 	}
 }

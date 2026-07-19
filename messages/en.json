@@ -239,17 +239,23 @@
 		},
 		"mseLibrary": {
 			"title": "Magic frame library",
-			"count": "{count} layouts from the complete pack",
-			"loading": "Loading the MSE library…",
+			"count": "{count} render-ready layouts",
+			"loading": "Loading high-definition frames…",
 			"error": "The frame library could not be loaded. Wizcard frames remain available.",
+			"sourceBadge": "HD",
+			"sourceFilterLabel": "Frame source",
 			"searchLabel": "Search frames",
-			"searchPlaceholder": "M15, old frame, token…",
+			"searchPlaceholder": "M15, full art, snow…",
 			"filtersLabel": "Filter layouts",
 			"results": "{count, plural, =0 {No results} one {# layout} other {# layouts}}",
 			"empty": "No frame matches this search.",
 			"loadMore": "Show {count} more layouts",
 			"renderReady": "HD frame",
 			"previewMode": "MSE preview",
+			"sources": {
+				"accurate": "Accurate — recommended",
+				"legacy": "MSE archive"
+			},
 			"filters": {
 				"all": "All",
 				"card": "Cards",

@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CardFaceDraft, CardLayoutId, FrameStyleId } from './types';
 import { getManaSymbols } from './text-layout';
 
-const TEMPLATE_MANIFEST_URL = '/card-assets/manifests/templates.json?v=bcdf4190b4bf-text-colors-v1';
+const TEMPLATE_MANIFEST_URL =
+	'/card-assets/manifests/templates.json?v=2fcddba89661-cardconjurer-accurate-v1';
+
+export type MseFrameKey = Exclude<FrameStyleId, 'auto'> | 'land';
 
 export type MseTemplateKind =
 	'card' | 'token' | 'planeswalker' | 'saga' | 'split' | 'double-faced' | 'oversized' | 'packaging';
@@ -23,11 +26,14 @@ export interface MseTemplate {
 	installerGroup: string | null;
 	dependencies: string[];
 	assetCount: number;
-	framePaths: Partial<Record<Exclude<FrameStyleId, 'auto'>, string>>;
-	frameTextColors?: Partial<Record<Exclude<FrameStyleId, 'auto'>, MseTextColors>>;
+	framePaths: Partial<Record<MseFrameKey, string>>;
+	frameTextColors?: Partial<Record<MseFrameKey, MseTextColors>>;
 	sampleTextColors?: MseTextColors | null;
 	renderMode: 'frame' | 'sample';
 	version: string | null;
+	source?: 'cardconjurer' | 'mse';
+	quality?: 'accurate' | 'legacy';
+	layoutId?: CardLayoutId;
 }
 
 export interface MseTextColors {
@@ -95,7 +101,7 @@ export function useMseTemplateCatalog(): MseCatalogState {
 	return state;
 }
 
-function resolveAutomaticFrame(face: CardFaceDraft): Exclude<FrameStyleId, 'auto'> {
+function resolveAutomaticFrame(face: CardFaceDraft): MseFrameKey {
 	const symbols = getManaSymbols(face.manaCost).join('');
 	const colors = ['W', 'U', 'B', 'R', 'G'].filter((color) => symbols.includes(color));
 	if (colors.length > 1) return 'prismatic';
@@ -108,11 +114,11 @@ function resolveAutomaticFrame(face: CardFaceDraft): Exclude<FrameStyleId, 'auto
 	};
 	if (colors[0]) return frameByColor[colors[0]];
 	if (symbols.includes('C')) return 'artifact';
-	if (/\b(land|terrain)\b/i.test(face.typeLine)) return 'prismatic';
+	if (/\b(land|terrain)\b/i.test(face.typeLine)) return 'land';
 	return 'light';
 }
 
-function resolveFrameStyle(face: CardFaceDraft): Exclude<FrameStyleId, 'auto'> {
+function resolveFrameStyle(face: CardFaceDraft): MseFrameKey {
 	return face.frameStyle === 'auto' ? resolveAutomaticFrame(face) : face.frameStyle;
 }
 
@@ -123,7 +129,7 @@ export function resolveMseFramePath(
 	if (!template) return null;
 	const frame = resolveFrameStyle(face);
 	const path = template.framePaths[frame] ?? Object.values(template.framePaths)[0];
-	return cardAssetUrl(path ?? template.samplePath);
+	return cardAssetUrl(path);
 }
 
 export function resolveMseTextColors(
@@ -136,6 +142,7 @@ export function resolveMseTextColors(
 }
 
 export function layoutForMseTemplate(template: MseTemplate): CardLayoutId {
+	if (template.layoutId) return template.layoutId;
 	if (template.kind === 'token') return 'token';
 	if (template.kind === 'planeswalker') return 'planeswalker';
 	if (template.kind === 'saga') return 'saga';

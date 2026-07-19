@@ -1,15 +1,24 @@
 {
   "schemaVersion": 1,
-  "assetVersion": "bcdf4190b4bf",
-  "generatedAt": "2026-07-19T00:55:12.769Z",
+  "assetVersion": "bcdf4190b4bf+2fcddba89661",
+  "generatedAt": "2026-07-19T01:47:46.294Z",
   "upstream": {
-    "repository": "https://github.com/MagicSetEditorPacks/Full-Magic-Pack",
-    "commit": "bcdf4190b4bf"
+    "repositories": [
+      {
+        "repository": "https://github.com/MagicSetEditorPacks/Full-Magic-Pack",
+        "commit": "bcdf4190b4bf"
+      },
+      {
+        "repository": "https://github.com/Investigamer/cardconjurer",
+        "commit": "2fcddba89661",
+        "selection": "Accurate Frames"
+      }
+    ]
   },
   "stats": {
-    "templates": 376,
+    "templates": 382,
     "byKind": {
-      "card": 262,
+      "card": 268,
       "token": 22,
       "packaging": 5,
       "planeswalker": 35,
@@ -20,6 +29,539 @@
     }
   },
   "templates": [
+    {
+      "id": "cardconjurer-m15-regular",
+      "name": "M15 — Accurate",
+      "shortName": "M15 — Accurate",
+      "directory": "img/frames/m15/new",
+      "stylePath": "card-assets/v/2fcddba89661/cardconjurer/js/frames/groupAccurate.js",
+      "samplePath": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/wThumb.png",
+      "iconPath": null,
+      "kind": "card",
+      "orientation": "portrait",
+      "dimensions": {
+        "width": 2010,
+        "height": 2814,
+        "dpi": 600
+      },
+      "installerGroup": "Accurate Frames",
+      "dependencies": [],
+      "assetCount": 50,
+      "framePaths": {
+        "light": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/w.png",
+        "tide": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/u.png",
+        "void": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/b.png",
+        "ember": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/r.png",
+        "grove": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/g.png",
+        "prismatic": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/m.png",
+        "artifact": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/a.png",
+        "land": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/l.png"
+      },
+      "frameTextColors": {
+        "light": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "tide": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "void": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "ember": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "grove": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "prismatic": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "artifact": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "land": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        }
+      },
+      "sampleTextColors": {
+        "title": "#17140d",
+        "type": "#17140d",
+        "rules": "#17140d",
+        "footer": "#f6f1e6"
+      },
+      "renderMode": "frame",
+      "version": "2fcddba89661",
+      "source": "cardconjurer",
+      "quality": "accurate",
+      "layoutId": "arcana"
+    },
+    {
+      "id": "cardconjurer-m15-extended",
+      "name": "M15 — Extended Art",
+      "shortName": "M15 — Extended Art",
+      "directory": "img/frames/m15/new/extended",
+      "stylePath": "card-assets/v/2fcddba89661/cardconjurer/js/frames/groupAccurate.js",
+      "samplePath": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/extended/wThumb.png",
+      "iconPath": null,
+      "kind": "card",
+      "orientation": "portrait",
+      "dimensions": {
+        "width": 2010,
+        "height": 2814,
+        "dpi": 600
+      },
+      "installerGroup": "Accurate Frames",
+      "dependencies": [],
+      "assetCount": 34,
+      "framePaths": {
+        "light": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/extended/w.png",
+        "tide": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/extended/u.png",
+        "void": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/extended/b.png",
+        "ember": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/extended/r.png",
+        "grove": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/extended/g.png",
+        "prismatic": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/extended/m.png",
+        "artifact": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/extended/a.png",
+        "land": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/extended/l.png"
+      },
+      "frameTextColors": {
+        "light": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "tide": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "void": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "ember": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "grove": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "prismatic": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "artifact": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "land": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        }
+      },
+      "sampleTextColors": {
+        "title": "#17140d",
+        "type": "#f6f1e6",
+        "rules": "#17140d",
+        "footer": "#f6f1e6"
+      },
+      "renderMode": "frame",
+      "version": "2fcddba89661",
+      "source": "cardconjurer",
+      "quality": "accurate",
+      "layoutId": "modern"
+    },
+    {
+      "id": "cardconjurer-m15-fullart",
+      "name": "M15 — Full Art",
+      "shortName": "M15 — Full Art",
+      "directory": "img/frames/m15/new/fullart",
+      "stylePath": "card-assets/v/2fcddba89661/cardconjurer/js/frames/groupAccurate.js",
+      "samplePath": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/fullart/wThumb.png",
+      "iconPath": null,
+      "kind": "card",
+      "orientation": "portrait",
+      "dimensions": {
+        "width": 2010,
+        "height": 2814,
+        "dpi": 600
+      },
+      "installerGroup": "Accurate Frames",
+      "dependencies": [],
+      "assetCount": 30,
+      "framePaths": {
+        "light": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/fullart/w.png",
+        "tide": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/fullart/u.png",
+        "void": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/fullart/b.png",
+        "ember": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/fullart/r.png",
+        "grove": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/fullart/g.png",
+        "prismatic": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/fullart/m.png",
+        "artifact": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/fullart/a.png",
+        "land": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/fullart/l.png"
+      },
+      "frameTextColors": {
+        "light": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#f6f1e6",
+          "footer": "#f6f1e6"
+        },
+        "tide": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#f6f1e6",
+          "footer": "#f6f1e6"
+        },
+        "void": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#f6f1e6",
+          "footer": "#f6f1e6"
+        },
+        "ember": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#f6f1e6",
+          "footer": "#f6f1e6"
+        },
+        "grove": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#f6f1e6",
+          "footer": "#f6f1e6"
+        },
+        "prismatic": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#f6f1e6",
+          "footer": "#f6f1e6"
+        },
+        "artifact": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#f6f1e6",
+          "footer": "#f6f1e6"
+        },
+        "land": {
+          "title": "#17140d",
+          "type": "#f6f1e6",
+          "rules": "#f6f1e6",
+          "footer": "#f6f1e6"
+        }
+      },
+      "sampleTextColors": {
+        "title": "#17140d",
+        "type": "#f6f1e6",
+        "rules": "#f6f1e6",
+        "footer": "#f6f1e6"
+      },
+      "renderMode": "frame",
+      "version": "2fcddba89661",
+      "source": "cardconjurer",
+      "quality": "accurate",
+      "layoutId": "full-art"
+    },
+    {
+      "id": "cardconjurer-m15-snow",
+      "name": "Kaldheim — Snow",
+      "shortName": "Kaldheim — Snow",
+      "directory": "img/frames/m15/new/snow",
+      "stylePath": "card-assets/v/2fcddba89661/cardconjurer/js/frames/groupAccurate.js",
+      "samplePath": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/snow/wThumb.png",
+      "iconPath": null,
+      "kind": "card",
+      "orientation": "portrait",
+      "dimensions": {
+        "width": 2010,
+        "height": 2814,
+        "dpi": 600
+      },
+      "installerGroup": "Accurate Frames",
+      "dependencies": [],
+      "assetCount": 28,
+      "framePaths": {
+        "light": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/snow/w.png",
+        "tide": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/snow/u.png",
+        "void": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/snow/b.png",
+        "ember": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/snow/r.png",
+        "grove": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/snow/g.png",
+        "prismatic": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/snow/m.png",
+        "artifact": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/snow/a.png",
+        "land": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/snow/l.png"
+      },
+      "frameTextColors": {
+        "light": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "tide": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "void": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "ember": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "grove": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "prismatic": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "artifact": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "land": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        }
+      },
+      "sampleTextColors": {
+        "title": "#17140d",
+        "type": "#17140d",
+        "rules": "#17140d",
+        "footer": "#f6f1e6"
+      },
+      "renderMode": "frame",
+      "version": "2fcddba89661",
+      "source": "cardconjurer",
+      "quality": "accurate",
+      "layoutId": "arcana"
+    },
+    {
+      "id": "cardconjurer-m15-nyx",
+      "name": "Theros — Nyx",
+      "shortName": "Theros — Nyx",
+      "directory": "img/frames/m15/new/nyx",
+      "stylePath": "card-assets/v/2fcddba89661/cardconjurer/js/frames/groupAccurate.js",
+      "samplePath": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/nyx/wThumb.png",
+      "iconPath": null,
+      "kind": "card",
+      "orientation": "portrait",
+      "dimensions": {
+        "width": 2010,
+        "height": 2814,
+        "dpi": 600
+      },
+      "installerGroup": "Accurate Frames",
+      "dependencies": [],
+      "assetCount": 14,
+      "framePaths": {
+        "light": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/nyx/w.png",
+        "tide": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/nyx/u.png",
+        "void": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/nyx/b.png",
+        "ember": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/nyx/r.png",
+        "grove": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/nyx/g.png",
+        "prismatic": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/nyx/m.png",
+        "artifact": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/nyx/a.png"
+      },
+      "frameTextColors": {
+        "light": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "tide": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "void": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "ember": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "grove": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "prismatic": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "artifact": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        }
+      },
+      "sampleTextColors": {
+        "title": "#17140d",
+        "type": "#17140d",
+        "rules": "#17140d",
+        "footer": "#f6f1e6"
+      },
+      "renderMode": "frame",
+      "version": "2fcddba89661",
+      "source": "cardconjurer",
+      "quality": "accurate",
+      "layoutId": "arcana"
+    },
+    {
+      "id": "cardconjurer-m15-ub",
+      "name": "Universes Beyond",
+      "shortName": "Universes Beyond",
+      "directory": "img/frames/m15/new/ub",
+      "stylePath": "card-assets/v/2fcddba89661/cardconjurer/js/frames/groupAccurate.js",
+      "samplePath": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/ub/wThumb.png",
+      "iconPath": null,
+      "kind": "card",
+      "orientation": "portrait",
+      "dimensions": {
+        "width": 2010,
+        "height": 2814,
+        "dpi": 600
+      },
+      "installerGroup": "Accurate Frames",
+      "dependencies": [],
+      "assetCount": 31,
+      "framePaths": {
+        "light": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/ub/w.png",
+        "tide": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/ub/u.png",
+        "void": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/ub/b.png",
+        "ember": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/ub/r.png",
+        "grove": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/ub/g.png",
+        "prismatic": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/ub/m.png",
+        "artifact": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/ub/a.png",
+        "land": "card-assets/v/2fcddba89661/cardconjurer/img/frames/m15/new/ub/l.png"
+      },
+      "frameTextColors": {
+        "light": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "tide": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "void": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "ember": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "grove": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "prismatic": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "artifact": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        },
+        "land": {
+          "title": "#17140d",
+          "type": "#17140d",
+          "rules": "#17140d",
+          "footer": "#f6f1e6"
+        }
+      },
+      "sampleTextColors": {
+        "title": "#17140d",
+        "type": "#17140d",
+        "rules": "#17140d",
+        "footer": "#f6f1e6"
+      },
+      "renderMode": "frame",
+      "version": "2fcddba89661",
+      "source": "cardconjurer",
+      "quality": "accurate",
+      "layoutId": "arcana"
+    },
     {
       "id": "archenemy-standard",
       "name": "Standard",
@@ -51,7 +593,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2010-05-20"
+      "version": "2010-05-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "herospath-creature",
@@ -93,7 +637,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2014-01-21"
+      "version": "2014-01-21",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "herospath-heroes",
@@ -143,7 +689,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2014-01-20"
+      "version": "2014-01-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "herospath-spell",
@@ -184,7 +732,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2014-01-20"
+      "version": "2014-01-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-agclassic-snow",
@@ -272,7 +822,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-agclassic-token-snow",
@@ -359,7 +911,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-agclassic-token",
@@ -445,7 +999,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-agclassic",
@@ -532,7 +1088,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-archenemy",
@@ -568,7 +1126,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-b1234",
@@ -653,7 +1213,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-baseball-1980-topps",
@@ -687,7 +1249,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-booster-mini",
@@ -718,7 +1282,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2021-03-09"
+      "version": "2021-03-09",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-booster",
@@ -749,7 +1315,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2021-03-09"
+      "version": "2021-03-09",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-cartoon",
@@ -831,7 +1399,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-cbg-planeswalker",
@@ -916,7 +1486,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-checklist",
@@ -1001,7 +1573,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2025-07-29"
+      "version": "2025-07-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-classicshifted-artbg",
@@ -1088,7 +1662,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-classicshifted-duplex",
@@ -1174,7 +1750,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-classicshifted-flip",
@@ -1261,7 +1839,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-classicshifted-leveler",
@@ -1347,7 +1927,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-classicshifted-split",
@@ -1433,7 +2015,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-classicshifted",
@@ -1519,7 +2103,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-comic",
@@ -1604,7 +2190,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-comicbookguy",
@@ -1686,7 +2274,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-contraption",
@@ -1771,7 +2361,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-counter-m15",
@@ -1804,7 +2396,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2017-05-03"
+      "version": "2017-05-03",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-counter-mbs",
@@ -1837,7 +2431,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2014-06-20"
+      "version": "2014-06-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-counter-nph",
@@ -1870,7 +2466,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2014-06-20"
+      "version": "2014-06-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-counter-sheet_744",
@@ -1905,7 +2503,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-20"
+      "version": "2024-05-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-counter",
@@ -1938,7 +2538,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2014-06-20"
+      "version": "2014-06-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-crystal-cave",
@@ -1973,7 +2575,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-crystal",
@@ -2055,7 +2659,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-DayNight",
@@ -2141,7 +2747,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-deckbox",
@@ -2172,7 +2780,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2021-09-06"
+      "version": "2021-09-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-doomtown",
@@ -2206,7 +2816,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-dox-sokrates_750",
@@ -2240,7 +2852,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-08-01"
+      "version": "2024-08-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-duplex",
@@ -2275,7 +2889,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-dynamic",
@@ -2361,7 +2977,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-echotemplate",
@@ -2447,7 +3065,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-etherium",
@@ -2481,7 +3101,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-expedition-33",
@@ -2516,7 +3138,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-extended-art",
@@ -2602,7 +3226,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-fallout",
@@ -2636,7 +3262,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-firepenguinmaster-flip",
@@ -2722,7 +3350,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-firepenguinmaster-planeswalker",
@@ -2808,7 +3438,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-firepenguinmaster-promo",
@@ -2894,7 +3526,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-firepenguinmaster-split",
@@ -2980,7 +3614,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-firepenguinmaster-token",
@@ -3066,7 +3702,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-firepenguinmaster",
@@ -3152,7 +3790,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-fkih",
@@ -3237,7 +3877,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-fullart",
@@ -3269,7 +3911,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-future-artbg",
@@ -3304,7 +3948,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-future-clear",
@@ -3339,7 +3985,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-future-flip",
@@ -3425,7 +4073,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-future-mirrored",
@@ -3511,7 +4161,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-future-planeswalker-horizontal",
@@ -3597,7 +4249,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-future-planeswalker",
@@ -3684,7 +4338,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-future-promo",
@@ -3771,7 +4427,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-future-split-facing",
@@ -3857,7 +4515,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-future-split",
@@ -3943,7 +4603,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-future-textless-clear",
@@ -3977,7 +4639,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-future-textless",
@@ -4062,7 +4726,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-future",
@@ -4148,7 +4814,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-genevensis-00-main",
@@ -4185,7 +4853,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2022-02-22"
+      "version": "2022-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-genevensis-01-planeswalker",
@@ -4224,7 +4894,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2022-02-22"
+      "version": "2022-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-genevensis-02-leveler",
@@ -4262,7 +4934,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2022-02-22"
+      "version": "2022-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-genevensis-03-adventure",
@@ -4300,7 +4974,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2022-02-22"
+      "version": "2022-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-genevensis-10-saga",
@@ -4338,7 +5014,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2022-02-22"
+      "version": "2022-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-genevensis-11-class",
@@ -4377,7 +5055,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2022-02-22"
+      "version": "2022-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-genevensis-20-battle",
@@ -4416,7 +5096,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2022-02-22"
+      "version": "2022-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-genevensis-70-token",
@@ -4454,7 +5136,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2022-02-22"
+      "version": "2022-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-genevensis-80-planechase",
@@ -4493,7 +5177,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2022-02-22"
+      "version": "2022-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-genevensis-90-counter",
@@ -4531,7 +5217,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2022-02-22"
+      "version": "2022-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-hecatomb",
@@ -4564,7 +5252,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-heroes",
@@ -4649,7 +5339,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-horror-planeswalker",
@@ -4736,7 +5428,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-horror",
@@ -4821,7 +5515,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-intense-horizontal",
@@ -4903,7 +5599,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-jumpstart-front",
@@ -4936,7 +5634,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-kasu-eldrazi_750",
@@ -4970,7 +5670,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-08-01"
+      "version": "2024-08-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-kasu-legend_750",
@@ -5004,7 +5706,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-08-01"
+      "version": "2024-08-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-l5r",
@@ -5081,7 +5785,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2014-02-22"
+      "version": "2014-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-adventure",
@@ -5168,7 +5874,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2026-03-04"
+      "version": "2026-03-04",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-aetherdrift-full-art-basics",
@@ -5203,7 +5911,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-20"
+      "version": "2024-05-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-aftermath",
@@ -5290,7 +6000,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-27"
+      "version": "2024-05-27",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-altered",
@@ -5378,7 +6090,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2025-10-05"
+      "version": "2025-10-05",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-art-lair",
@@ -5410,7 +6124,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-26"
+      "version": "2024-05-26",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-attractions",
@@ -5445,7 +6161,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-20"
+      "version": "2024-05-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-bigtext",
@@ -5531,7 +6249,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2025-10-08"
+      "version": "2025-10-08",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-black",
@@ -5617,7 +6337,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-27"
+      "version": "2024-05-27",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-classicshifted",
@@ -5703,7 +6425,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-27"
+      "version": "2024-05-27",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-clear-color",
@@ -5788,7 +6512,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-clearartifact",
@@ -5822,7 +6548,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-commander",
@@ -5908,7 +6636,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-compleated-planeswalkers",
@@ -5943,7 +6673,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-20"
+      "version": "2024-09-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-conspiracy",
@@ -5977,7 +6709,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-contraption",
@@ -6011,7 +6745,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-devoid",
@@ -6098,7 +6834,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-dungeons",
@@ -6183,7 +6921,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-duplex",
@@ -6269,7 +7009,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-emblem-acorntail",
@@ -6303,7 +7045,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-emblem-cajun",
@@ -6337,7 +7081,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-emblem-name-cut",
@@ -6371,7 +7117,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-emblem-udelude",
@@ -6404,7 +7152,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-emblem",
@@ -6438,7 +7188,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-expedition",
@@ -6472,7 +7224,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-extra-udelude",
@@ -6559,7 +7313,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-extra",
@@ -6646,7 +7402,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-flip",
@@ -6732,7 +7490,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-forgotten-realms-full-art-basics",
@@ -6767,7 +7527,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-20"
+      "version": "2024-05-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-full-art-basic-land-symbol",
@@ -6804,7 +7566,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2023-08-15"
+      "version": "2023-08-15",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-future-clear",
@@ -6839,7 +7603,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-future-planeswalker",
@@ -6926,7 +7692,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-future",
@@ -7013,7 +7781,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-godzilla-planeswalker",
@@ -7098,7 +7868,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-godzilla",
@@ -7185,7 +7957,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-GoodBad",
@@ -7271,7 +8045,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-grayscale",
@@ -7357,7 +8133,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-imageupload",
@@ -7390,7 +8168,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-06-06"
+      "version": "2024-06-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-invocation",
@@ -7477,7 +8257,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-ixalan-full-art-basics",
@@ -7512,7 +8294,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-20"
+      "version": "2024-05-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-jinx",
@@ -7598,7 +8382,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-Kaladesh",
@@ -7684,7 +8470,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-kamigawa-full-art-basics",
@@ -7719,7 +8507,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-20"
+      "version": "2024-05-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-keyword",
@@ -7805,7 +8595,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-leveler",
@@ -7891,7 +8683,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-loyalty",
@@ -7977,7 +8771,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-mainframe-battles",
@@ -8063,7 +8859,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2025-01-21"
+      "version": "2025-01-21",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-mainframe-dfc",
@@ -8151,7 +8949,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-09-06"
+      "version": "2024-09-06",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-mainframe-planes-mini",
@@ -8185,7 +8985,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2024-09-23"
+      "version": "2024-09-23",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-mainframe-planes",
@@ -8219,7 +9021,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2024-09-23"
+      "version": "2024-09-23",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-mainframe-planeswalker",
@@ -8255,7 +9059,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-mainframe-tokens",
@@ -8341,7 +9147,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2025-01-11"
+      "version": "2025-01-11",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-meld-3in1",
@@ -8427,7 +9235,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-nameonright",
@@ -8513,7 +9323,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-nonbasic-lands",
@@ -8548,7 +9360,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-outlaws-planeswalker",
@@ -8634,7 +9448,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-outlaws-tokens",
@@ -8720,7 +9536,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-outlaws",
@@ -8806,7 +9624,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-paradox",
@@ -8893,7 +9713,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-phyrexia-full-art-basics",
@@ -8928,7 +9750,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-20"
+      "version": "2024-05-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-planeshifted-duplex",
@@ -9013,7 +9837,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-planeshifted-planeswalker",
@@ -9098,7 +9924,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-planeshifted-split",
@@ -9183,7 +10011,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-planeswalker-extra-purple",
@@ -9269,7 +10099,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-planeswalker-grayscale",
@@ -9355,7 +10187,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-planeswalker-pokemon",
@@ -9440,7 +10274,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-planeswalker-promo-black",
@@ -9474,7 +10310,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-planeswalker",
@@ -9559,7 +10397,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-pokemon",
@@ -9645,7 +10485,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-punk-show",
@@ -9681,7 +10523,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-28"
+      "version": "2024-09-28",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-saga",
@@ -9767,7 +10611,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-23"
+      "version": "2024-09-23",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-scroll-demon-planeswalker",
@@ -9854,7 +10700,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-scroll-demon",
@@ -9941,7 +10789,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-scroll",
@@ -10028,7 +10878,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-secret-lair-arcade",
@@ -10063,7 +10915,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-secret-lair-gatewatch",
@@ -10101,7 +10955,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-aetherdrift-first-place-walker",
@@ -10136,7 +10992,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-aetherdrift-first-place",
@@ -10171,7 +11029,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-assassins-creed-memory-corridor",
@@ -10206,7 +11066,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-avatar-elemental",
@@ -10241,7 +11103,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-bloomburrow-borderless-anime",
@@ -10276,7 +11140,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-bloomburrow-woodland",
@@ -10311,7 +11177,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-capenna-art-deco-walker",
@@ -10346,7 +11214,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-capenna-art-deco",
@@ -10381,7 +11251,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-capenna-golden-age",
@@ -10416,7 +11288,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-capenna-skyscraper",
@@ -10451,7 +11325,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-doctor-who-tardis",
@@ -10486,7 +11362,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-dominaria-stained-glass",
@@ -10521,7 +11399,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-dungeon-module",
@@ -10608,7 +11488,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-26"
+      "version": "2024-05-26",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-duskmourn-paranormal",
@@ -10643,7 +11525,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-eldraine-tales",
@@ -10678,7 +11562,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-etched-foil",
@@ -10765,7 +11651,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-eternities-stellar-sights-poster",
@@ -10800,7 +11688,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-eternities-stellar-sights",
@@ -10835,7 +11725,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-fallout-pipboy",
@@ -10870,7 +11762,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-ikoria-crystal",
@@ -10905,7 +11799,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-innistrad-double-feature-walker",
@@ -10940,7 +11836,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-innistrad-double-feature",
@@ -10975,7 +11873,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-innistrad-mid",
@@ -11010,7 +11910,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-innistrad-vow",
@@ -11045,7 +11947,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-ixalan-caverns",
@@ -11080,7 +11984,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-ixalan-legends",
@@ -11115,7 +12021,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-ixalan-treasure",
@@ -11150,7 +12058,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-kaldheim-dfc",
@@ -11237,7 +12147,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-kaldheim",
@@ -11324,7 +12236,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-kamigawa-neon",
@@ -11359,7 +12273,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-19"
+      "version": "2024-09-19",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-kamigawa-ninja",
@@ -11394,7 +12310,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-19"
+      "version": "2024-09-19",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-kamigawa-samurai",
@@ -11429,7 +12347,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-19"
+      "version": "2024-09-19",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-lorwyn-fable",
@@ -11464,7 +12384,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-lotr-scroll-saga",
@@ -11499,7 +12421,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-lotr-scroll",
@@ -11534,7 +12458,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-lotr",
@@ -11569,7 +12495,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-monster-manual",
@@ -11605,7 +12533,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-praetor",
@@ -11692,7 +12622,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-ravnica-city-mural",
@@ -11727,7 +12659,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-ravnica-dossier",
@@ -11763,7 +12697,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-ravnica-magnified",
@@ -11798,7 +12734,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-spiderman-panel",
@@ -11833,7 +12771,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-spiderman-web-slinger",
@@ -11868,7 +12808,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-strixhaven-jp",
@@ -11904,7 +12846,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-strixhaven",
@@ -11939,7 +12883,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-tarkir-draconic-adventure",
@@ -11974,7 +12920,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-tarkir-draconic",
@@ -12009,7 +12957,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-tarkir-dragon-wing",
@@ -12044,7 +12994,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-tarkir-ghostfire-walker",
@@ -12079,7 +13031,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-tarkir-ghostfire",
@@ -12114,7 +13068,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-theros-constellation",
@@ -12149,7 +13105,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-19"
+      "version": "2024-09-19",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-thunder-junction-breaking-news",
@@ -12184,7 +13142,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-thunder-junction-vault",
@@ -12219,7 +13179,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-thunder-junction-wanted-poster",
@@ -12254,7 +13216,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-tmnt-pixel",
@@ -12289,7 +13253,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-tmnt-sewer",
@@ -12324,7 +13290,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-unfinity",
@@ -12359,7 +13327,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-showcase-zendikar",
@@ -12446,7 +13416,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-sketch",
@@ -12532,7 +13504,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-snow",
@@ -12618,7 +13592,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-spellbook",
@@ -12705,7 +13681,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-split-fusable",
@@ -12741,7 +13719,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-03"
+      "version": "2024-09-03",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-tapped-FULLART",
@@ -12827,7 +13807,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-tapped",
@@ -12913,7 +13895,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-textless-land",
@@ -12946,7 +13930,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-textless",
@@ -13032,7 +14018,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-token-invention",
@@ -13118,7 +14106,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-06-07"
+      "version": "2024-06-07",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-token",
@@ -13203,7 +14193,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2015-12-20"
+      "version": "2015-12-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-treasure-maps",
@@ -13288,7 +14280,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-ttk-frames",
@@ -13374,7 +14368,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-01-28"
+      "version": "2024-01-28",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-unfinity-full-art-basics",
@@ -13409,7 +14405,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-20"
+      "version": "2024-05-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-unstable-basics",
@@ -13496,7 +14494,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-26"
+      "version": "2024-05-26",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-vanguard",
@@ -13531,7 +14531,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15-youtube",
@@ -13618,7 +14620,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-09-01"
+      "version": "2024-09-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15",
@@ -13704,7 +14708,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-26"
+      "version": "2024-05-26",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15classic-hires",
@@ -13790,7 +14796,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-27"
+      "version": "2024-05-27",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15classic-nyx",
@@ -13876,7 +14884,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-27"
+      "version": "2024-05-27",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-m15classic-walker",
@@ -13961,7 +14971,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-27"
+      "version": "2024-05-27",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-megaman",
@@ -14043,7 +15055,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-monarch-emblem-with-name",
@@ -14076,7 +15090,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-monarch-emblem",
@@ -14109,7 +15125,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-mtgscommunity-1",
@@ -14195,7 +15213,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-mtgscommunity-2",
@@ -14281,7 +15301,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-music",
@@ -14366,7 +15388,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-artbg",
@@ -14453,7 +15477,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-clear",
@@ -14488,7 +15514,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-conspiracy",
@@ -14522,7 +15550,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-curse",
@@ -14608,7 +15638,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-doublefaced-sacrificer",
@@ -14695,7 +15727,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-doublefaced-sparker",
@@ -14782,7 +15816,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-doublefaced",
@@ -14868,7 +15904,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-duplex",
@@ -14954,7 +15992,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-emblem",
@@ -14989,7 +16029,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-extra",
@@ -15081,7 +16123,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-flip-clear",
@@ -15116,7 +16160,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-flip",
@@ -15202,7 +16248,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-fulltext",
@@ -15287,7 +16335,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-god-black",
@@ -15374,7 +16424,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-god-clear",
@@ -15409,7 +16461,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-god",
@@ -15496,7 +16550,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-harvester",
@@ -15582,7 +16638,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-japanese",
@@ -15668,7 +16726,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-leveler-clear",
@@ -15703,7 +16763,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-leveler-gradiented",
@@ -15789,7 +16851,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-leveler",
@@ -15875,7 +16939,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-maro",
@@ -15961,7 +17027,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-miracle",
@@ -16047,7 +17115,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-omega-doublefaced",
@@ -16133,7 +17203,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-omega-leveler",
@@ -16220,7 +17292,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-omega",
@@ -16305,7 +17379,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-phyrexian",
@@ -16394,7 +17470,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-plague",
@@ -16480,7 +17558,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-planeswalker-4abil-clear",
@@ -16515,7 +17595,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-planeswalker-4abil-scrunched",
@@ -16602,7 +17684,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-planeswalker-4abil",
@@ -16688,7 +17772,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-planeswalker-artbg",
@@ -16774,7 +17860,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-planeswalker-basic",
@@ -16861,7 +17949,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-planeswalker-clear",
@@ -16896,7 +17986,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-planeswalker-doublefaced",
@@ -16982,7 +18074,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-planeswalker-flip",
@@ -17069,7 +18163,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-planeswalker-pokemon",
@@ -17155,7 +18251,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-planeswalker-promo-black",
@@ -17189,7 +18287,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-planeswalker",
@@ -17275,7 +18375,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-pokemon",
@@ -17361,7 +18463,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-promo-black",
@@ -17395,7 +18499,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-promo-clear",
@@ -17430,7 +18536,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-promo-dka",
@@ -17516,7 +18624,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-promo",
@@ -17602,7 +18712,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-russian",
@@ -17688,7 +18800,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-split-clear",
@@ -17775,7 +18889,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-split-fuse",
@@ -17810,7 +18926,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-split-promo",
@@ -17897,7 +19015,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-split",
@@ -17983,7 +19103,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-tapped",
@@ -18069,7 +19191,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-textless-artifact-narb777",
@@ -18103,7 +19227,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-textless-land",
@@ -18136,7 +19262,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-textless",
@@ -18221,7 +19349,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-token-artbg",
@@ -18257,7 +19387,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-token-clear",
@@ -18292,7 +19424,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-token-nyx",
@@ -18327,7 +19461,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-token",
@@ -18362,7 +19498,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-tome",
@@ -18448,7 +19586,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-unland",
@@ -18481,7 +19621,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-unset-gmorph",
@@ -18568,7 +19710,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new-unset",
@@ -18656,7 +19800,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-new",
@@ -18742,7 +19888,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-nokiou",
@@ -18827,7 +19975,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-nostalgic-planeswalker",
@@ -18913,7 +20063,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-nostalgic",
@@ -18999,7 +20151,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-nouveau_duels",
@@ -19085,7 +20239,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-nouveau",
@@ -19171,7 +20327,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-abu-split",
@@ -19256,7 +20414,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-abu",
@@ -19340,7 +20500,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-artbg",
@@ -19425,7 +20587,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-clear",
@@ -19458,7 +20622,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-duplex",
@@ -19543,7 +20709,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-flip-clear",
@@ -19576,7 +20744,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-flip",
@@ -19660,7 +20830,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-planeswalker",
@@ -19744,7 +20916,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-portal",
@@ -19829,7 +21003,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-promo-clear",
@@ -19862,7 +21038,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-promo",
@@ -19946,7 +21124,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-saga",
@@ -19980,7 +21160,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2025-05-12"
+      "version": "2025-05-12",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-split-clear",
@@ -20064,7 +21246,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-split",
@@ -20148,7 +21332,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-textless-clear",
@@ -20181,7 +21367,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-textless",
@@ -20265,7 +21453,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-token-clear",
@@ -20298,7 +21488,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-token",
@@ -20382,7 +21574,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old-unland",
@@ -20465,7 +21659,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-old",
@@ -20549,7 +21745,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2025-10-20"
+      "version": "2025-10-20",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-piet",
@@ -20635,7 +21833,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-planeshifted-artbg",
@@ -20722,7 +21922,9 @@
         "footer": "#17140d"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-planeshifted-duplex",
@@ -20808,7 +22010,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-planeshifted-flip",
@@ -20895,7 +22099,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-planeshifted-leveler",
@@ -20981,7 +22187,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-planeshifted-planeswalker",
@@ -21067,7 +22275,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-planeshifted-split",
@@ -21152,7 +22362,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-planeshifted",
@@ -21237,7 +22449,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-playtest",
@@ -21268,7 +22482,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2018-02-22"
+      "version": "2018-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-proplayers-2005",
@@ -21300,7 +22516,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2014-02-22"
+      "version": "2014-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-rule-card",
@@ -21335,7 +22553,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-rulestip",
@@ -21368,7 +22588,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-scifi",
@@ -21454,7 +22676,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-scroll",
@@ -21488,7 +22712,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-sevenhalf",
@@ -21568,7 +22794,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-small-plain-flip",
@@ -21600,7 +22828,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2014-02-22"
+      "version": "2014-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-small-plain",
@@ -21632,7 +22862,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2014-02-22"
+      "version": "2014-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-space-xerent",
@@ -21711,7 +22943,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-starwars",
@@ -21745,7 +22979,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2014-02-22"
+      "version": "2014-02-22",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-symbol-display",
@@ -21776,7 +23012,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2020-06-01"
+      "version": "2020-06-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-sync",
@@ -21862,7 +23100,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-tenth",
@@ -21948,7 +23188,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-testprint-8th",
@@ -22034,7 +23276,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-textless",
@@ -22119,7 +23363,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-the-ring-rule-card_744",
@@ -22154,7 +23400,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-10-01"
+      "version": "2024-10-01",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-urban",
@@ -22188,7 +23436,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-veryold",
@@ -22272,7 +23522,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-29"
+      "version": "2024-05-29",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-vs",
@@ -22359,7 +23611,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-willow-minimalist-god",
@@ -22445,7 +23699,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-willow-minimalist",
@@ -22531,7 +23787,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "magic-windy-ultima",
@@ -22617,7 +23875,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2024-05-30"
+      "version": "2024-05-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "planechase-cbg",
@@ -22649,7 +23909,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2010-01-23"
+      "version": "2010-01-23",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "planechase-fullart-horizontal",
@@ -22681,7 +23943,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2014-02-04"
+      "version": "2014-02-04",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "planechase-fullart",
@@ -22713,7 +23977,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2014-02-04"
+      "version": "2014-02-04",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "planechase-mainframe",
@@ -22745,7 +24011,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2018-06-02"
+      "version": "2018-06-02",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "planechase-mini",
@@ -22777,7 +24045,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2018-06-02"
+      "version": "2018-06-02",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "planechase-phenomenon",
@@ -22810,7 +24080,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2014-01-21"
+      "version": "2014-01-21",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "planechase-standard-divided",
@@ -22845,7 +24117,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2014-01-21"
+      "version": "2014-01-21",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "planechase-standard-gradiented",
@@ -22878,7 +24152,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2014-01-21"
+      "version": "2014-01-21",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "planechase-standard-small",
@@ -22912,7 +24188,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2009-12-18"
+      "version": "2009-12-18",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "planechase-standard",
@@ -22945,7 +24223,9 @@
         "footer": "#17140d"
       },
       "renderMode": "sample",
-      "version": "2010-05-18"
+      "version": "2010-05-18",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "saga-standard",
@@ -22978,7 +24258,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2010-04-24"
+      "version": "2010-04-24",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "space-standard",
@@ -23062,7 +24344,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2008-08-08"
+      "version": "2008-08-08",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "space-xerent",
@@ -23138,7 +24422,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "frame",
-      "version": "2014-01-25"
+      "version": "2014-01-25",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "vanguard-fkih",
@@ -23171,7 +24457,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2008-06-30"
+      "version": "2008-06-30",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "vanguard-mtgo",
@@ -23203,7 +24491,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2008-08-08"
+      "version": "2008-08-08",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "vanguard-silvercut",
@@ -23235,7 +24525,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2010-03-25"
+      "version": "2010-03-25",
+      "source": "mse",
+      "quality": "legacy"
     },
     {
       "id": "vanguard-standard",
@@ -23267,7 +24559,9 @@
         "footer": "#f6f1e6"
       },
       "renderMode": "sample",
-      "version": "2010-03-22"
+      "version": "2010-03-22",
+      "source": "mse",
+      "quality": "legacy"
     }
   ]
 }

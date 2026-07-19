@@ -4,8 +4,11 @@ import sharp from 'sharp';
 
 const ASSET_VERSION = 'bcdf4190b4bf';
 const SNAPSHOT_ROOT = `card-assets/v/${ASSET_VERSION}/full-magic-pack`;
+const CARD_CONJURER_VERSION = '2fcddba89661';
+const CARD_CONJURER_ROOT = `card-assets/v/${CARD_CONJURER_VERSION}/cardconjurer`;
 const PUBLIC_ROOT = path.resolve('public');
 const DATA_ROOT = path.join(PUBLIC_ROOT, SNAPSHOT_ROOT, 'data');
+const CARD_CONJURER_PUBLIC_ROOT = path.join(PUBLIC_ROOT, CARD_CONJURER_ROOT);
 const MANIFEST_ROOT = path.join(PUBLIC_ROOT, 'card-assets', 'manifests');
 const IMAGE_EXTENSIONS = new Set(['.avif', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp']);
 const FRAME_FILE_STEMS = {
@@ -18,6 +21,15 @@ const FRAME_FILE_STEMS = {
 	artifact: ['acard', 'ccard', 'artifactcard', 'colorlesscard', 'aframe', 'cframe'],
 };
 const frameColorCache = new Map();
+
+const CARD_CONJURER_TEMPLATES = [
+	{ id: 'regular', name: 'M15 — Accurate', directory: '', layoutId: 'arcana' },
+	{ id: 'extended', name: 'M15 — Extended Art', directory: 'extended', layoutId: 'modern' },
+	{ id: 'fullart', name: 'M15 — Full Art', directory: 'fullart', layoutId: 'full-art' },
+	{ id: 'snow', name: 'Kaldheim — Snow', directory: 'snow', layoutId: 'arcana' },
+	{ id: 'nyx', name: 'Theros — Nyx', directory: 'nyx', layoutId: 'arcana' },
+	{ id: 'ub', name: 'Universes Beyond', directory: 'ub', layoutId: 'arcana' },
+];
 
 const normalize = (value) => value.split(path.sep).join('/');
 
@@ -199,6 +211,62 @@ async function buildTemplate(styleDirectory) {
 		sampleTextColors,
 		renderMode: Object.keys(framePaths).length >= 3 ? 'frame' : 'sample',
 		version: topLevelValue(source, 'version'),
+		source: 'mse',
+		quality: 'legacy',
+	};
+}
+
+async function buildCardConjurerTemplate(definition) {
+	const relativeDirectory = path.posix.join('img/frames/m15/new', definition.directory);
+	const absoluteDirectory = path.join(CARD_CONJURER_PUBLIC_ROOT, relativeDirectory);
+	const frameFiles = {
+		light: 'w.png',
+		tide: 'u.png',
+		void: 'b.png',
+		ember: 'r.png',
+		grove: 'g.png',
+		prismatic: 'm.png',
+		artifact: 'a.png',
+		land: 'l.png',
+	};
+	const availableFiles = new Set(await fs.readdir(absoluteDirectory));
+	const framePaths = Object.fromEntries(
+		Object.entries(frameFiles)
+			.filter(([, file]) => availableFiles.has(file))
+			.map(([frame, file]) => [frame, path.posix.join(CARD_CONJURER_ROOT, relativeDirectory, file)])
+	);
+	const frameTextColors = Object.fromEntries(
+		await Promise.all(
+			Object.entries(framePaths).map(async ([frame, framePath]) => [
+				frame,
+				await analyzeTextColors(path.join(PUBLIC_ROOT, framePath)),
+			])
+		)
+	);
+	const thumbnail = availableFiles.has('wThumb.png') ? 'wThumb.png' : 'w.png';
+
+	return {
+		id: `cardconjurer-m15-${definition.id}`,
+		name: definition.name,
+		shortName: definition.name,
+		directory: relativeDirectory,
+		stylePath: `${CARD_CONJURER_ROOT}/js/frames/groupAccurate.js`,
+		samplePath: path.posix.join(CARD_CONJURER_ROOT, relativeDirectory, thumbnail),
+		iconPath: null,
+		kind: 'card',
+		orientation: 'portrait',
+		dimensions: { width: 2010, height: 2814, dpi: 600 },
+		installerGroup: 'Accurate Frames',
+		dependencies: [],
+		assetCount: availableFiles.size,
+		framePaths,
+		frameTextColors,
+		sampleTextColors: frameTextColors.light ?? null,
+		renderMode: 'frame',
+		version: CARD_CONJURER_VERSION,
+		source: 'cardconjurer',
+		quality: 'accurate',
+		layoutId: definition.layoutId,
 	};
 }
 
@@ -210,10 +278,19 @@ const styleDirectories = dataEntries
 	.map((entry) => path.join(DATA_ROOT, entry.name))
 	.sort((left, right) => left.localeCompare(right));
 
-const templates = await mapWithConcurrency(styleDirectories, 8, buildTemplate);
-const allFiles = (await walk(path.join(PUBLIC_ROOT, SNAPSHOT_ROOT))).sort((left, right) =>
-	left.localeCompare(right)
+const mseTemplates = await mapWithConcurrency(styleDirectories, 8, buildTemplate);
+const cardConjurerTemplates = await Promise.all(
+	CARD_CONJURER_TEMPLATES.map(buildCardConjurerTemplate)
 );
+const templates = [...cardConjurerTemplates, ...mseTemplates];
+const allFiles = (
+	await Promise.all([
+		walk(path.join(PUBLIC_ROOT, SNAPSHOT_ROOT)),
+		walk(path.join(PUBLIC_ROOT, CARD_CONJURER_ROOT)),
+	])
+)
+	.flat()
+	.sort((left, right) => left.localeCompare(right));
 const assets = await Promise.all(
 	allFiles.map(async (file) => {
 		const stats = await fs.stat(file);
@@ -231,11 +308,20 @@ const byKind = Object.fromEntries(
 );
 const shared = {
 	schemaVersion: 1,
-	assetVersion: ASSET_VERSION,
+	assetVersion: `${ASSET_VERSION}+${CARD_CONJURER_VERSION}`,
 	generatedAt,
 	upstream: {
-		repository: 'https://github.com/MagicSetEditorPacks/Full-Magic-Pack',
-		commit: ASSET_VERSION,
+		repositories: [
+			{
+				repository: 'https://github.com/MagicSetEditorPacks/Full-Magic-Pack',
+				commit: ASSET_VERSION,
+			},
+			{
+				repository: 'https://github.com/Investigamer/cardconjurer',
+				commit: CARD_CONJURER_VERSION,
+				selection: 'Accurate Frames',
+			},
+		],
 	},
 };
 

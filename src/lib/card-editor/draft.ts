@@ -1,4 +1,10 @@
-import type { CardEditorPayload, CardFaceDraft, CardLayoutId, CustomCardDraft } from './types';
+import {
+	DEFAULT_FRAME_TEMPLATE_ID,
+	type CardEditorPayload,
+	type CardFaceDraft,
+	type CardLayoutId,
+	type CustomCardDraft,
+} from './types';
 import { getManaSymbols } from './text-layout';
 
 export const CARD_EDITOR_AUTOSAVE_KEY = 'wizcard-custom-card-draft-v2';
@@ -31,7 +37,7 @@ export function createInitialCardDraft(language = 'en'): CustomCardDraft {
 	return {
 		version: 1,
 		layoutId: 'arcana',
-		mseTemplateId: 'magic-m15',
+		mseTemplateId: DEFAULT_FRAME_TEMPLATE_ID,
 		faces: [createEmptyFace()],
 		activeFace: 0,
 		rarity: 'rare',

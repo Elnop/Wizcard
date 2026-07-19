@@ -7,11 +7,12 @@ import {
 	createInitialCardDraft,
 	getActiveFace,
 } from '@/lib/card-editor/draft';
-import type {
-	CardArtworkDraft,
-	CardFaceDraft,
-	CustomCardDraft,
-	EditableCardField,
+import {
+	DEFAULT_FRAME_TEMPLATE_ID,
+	type CardArtworkDraft,
+	type CardFaceDraft,
+	type CustomCardDraft,
+	type EditableCardField,
 } from '@/lib/card-editor/types';
 
 const MAX_HISTORY = 30;
@@ -47,7 +48,7 @@ export function useCardEditor(language: string) {
 						const migratedDraft = {
 							...parsed,
 							layoutId: parsed.layoutId === 'landscape' ? ('arcana' as const) : parsed.layoutId,
-							mseTemplateId: parsed.mseTemplateId ?? 'magic-m15',
+							mseTemplateId: parsed.mseTemplateId ?? DEFAULT_FRAME_TEMPLATE_ID,
 						};
 						setState({ draft: migratedDraft, past: [], future: [] });
 					}

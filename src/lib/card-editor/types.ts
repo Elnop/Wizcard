@@ -1,3 +1,5 @@
+export const DEFAULT_FRAME_TEMPLATE_ID = 'cardconjurer-m15-regular';
+
 export const CARD_LAYOUT_IDS = [
 	'arcana',
 	'modern',

@@ -239,17 +239,23 @@
 		},
 		"mseLibrary": {
 			"title": "Bibliothèque de cadres Magic",
-			"count": "{count} layouts du pack complet",
-			"loading": "Chargement de la bibliothèque MSE…",
+			"count": "{count} layouts prêts à rendre",
+			"loading": "Chargement des cadres haute définition…",
 			"error": "La bibliothèque de cadres n'a pas pu être chargée. Les cadres Wizcard restent disponibles.",
+			"sourceBadge": "HD",
+			"sourceFilterLabel": "Source des cadres",
 			"searchLabel": "Rechercher un cadre",
-			"searchPlaceholder": "M15, old frame, token…",
+			"searchPlaceholder": "M15, full art, snow…",
 			"filtersLabel": "Filtrer les layouts",
 			"results": "{count, plural, =0 {Aucun résultat} one {# layout} other {# layouts}}",
 			"empty": "Aucun cadre ne correspond à cette recherche.",
 			"loadMore": "Afficher {count} layouts de plus",
 			"renderReady": "cadre HD",
 			"previewMode": "aperçu MSE",
+			"sources": {
+				"accurate": "Accurate — recommandé",
+				"legacy": "Archives MSE"
+			},
 			"filters": {
 				"all": "Tous",
 				"card": "Cartes",

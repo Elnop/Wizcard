@@ -15,7 +15,11 @@ import {
 	useSelectedMseTemplate,
 } from '@/lib/card-editor/mse-assets';
 import { validateCardDraft } from '@/lib/card-editor/draft';
-import type { CardCanvasLabels, EditableCardField } from '@/lib/card-editor/types';
+import {
+	DEFAULT_FRAME_TEMPLATE_ID,
+	type CardCanvasLabels,
+	type EditableCardField,
+} from '@/lib/card-editor/types';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useCardEditor } from '../../useCardEditor';
 import { EditorSidebar, type EditorPanel } from '../EditorSidebar/EditorSidebar';
@@ -48,6 +52,19 @@ export function CardEditorStudio() {
 	const activeSvg = useRef<SVGSVGElement>(null);
 	const frontSvg = useRef<SVGSVGElement>(null);
 	const backSvg = useRef<SVGSVGElement>(null);
+
+	useEffect(() => {
+		if (mseCatalog.isLoading || mseCatalog.error) return;
+		if (selectedMseTemplate?.renderMode === 'frame') return;
+		const fallback = mseCatalog.templates.find(
+			(template) => template.id === DEFAULT_FRAME_TEMPLATE_ID
+		);
+		if (!fallback) return;
+		editor.updateDraft({
+			mseTemplateId: fallback.id,
+			layoutId: fallback.layoutId ?? 'arcana',
+		});
+	}, [editor, mseCatalog.error, mseCatalog.isLoading, mseCatalog.templates, selectedMseTemplate]);
 
 	const labels = useMemo<CardCanvasLabels>(
 		() => ({

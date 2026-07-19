@@ -9,6 +9,7 @@ import styles from './MseTemplatePicker.module.css';
 const PAGE_SIZE = 30;
 const PRIMARY_KINDS = ['card', 'token', 'planeswalker', 'double-faced'] as const;
 type FilterKind = 'all' | (typeof PRIMARY_KINDS)[number] | 'other';
+type LibrarySource = 'accurate' | 'legacy';
 
 interface MseTemplatePickerProps {
 	templates: MseTemplate[];
@@ -35,11 +36,18 @@ export function MseTemplatePicker({
 	const t = useTranslations('cardEditor.mseLibrary');
 	const [query, setQuery] = useState('');
 	const [kind, setKind] = useState<FilterKind>('all');
+	const [source, setSource] = useState<LibrarySource>('accurate');
 	const [limit, setLimit] = useState(PAGE_SIZE);
+	const renderableTemplates = useMemo(
+		() => templates.filter((template) => template.renderMode === 'frame'),
+		[templates]
+	);
 	const filtered = useMemo(() => {
 		const normalizedQuery = query.trim().toLocaleLowerCase();
-		return templates
+		return renderableTemplates
 			.filter((template) => {
+				const isAccurate = template.source === 'cardconjurer';
+				if (source === 'accurate' ? !isAccurate : isAccurate) return false;
 				if (!matchesKind(template, kind)) return false;
 				if (!normalizedQuery) return true;
 				return [template.name, template.shortName, template.id]
@@ -54,7 +62,7 @@ export function MseTemplatePicker({
 				if (leftStarts !== rightStarts) return leftStarts ? -1 : 1;
 				return left.name.localeCompare(right.name);
 			});
-	}, [kind, query, selectedId, templates]);
+	}, [kind, query, renderableTemplates, selectedId, source]);
 	const visible = filtered.slice(0, limit);
 
 	if (isLoading) {
@@ -75,9 +83,25 @@ export function MseTemplatePicker({
 			<div className={styles.libraryHeader}>
 				<div>
 					<strong>{t('title')}</strong>
-					<span>{t('count', { count: templates.length })}</span>
+					<span>{t('count', { count: renderableTemplates.length })}</span>
 				</div>
-				<span className={styles.sourceBadge}>MSE</span>
+				<span className={styles.sourceBadge}>{t('sourceBadge')}</span>
+			</div>
+			<div className={styles.sourceFilters} aria-label={t('sourceFilterLabel')}>
+				{(['accurate', 'legacy'] as LibrarySource[]).map((filter) => (
+					<button
+						key={filter}
+						type="button"
+						aria-pressed={source === filter}
+						onClick={() => {
+							setSource(filter);
+							setKind('all');
+							setLimit(PAGE_SIZE);
+						}}
+					>
+						{t(`sources.${filter}`)}
+					</button>
+				))}
 			</div>
 			<label className={styles.search}>
 				<MagnifyingGlass size={17} aria-hidden />
@@ -144,8 +168,8 @@ export function MseTemplatePicker({
 								<span className={styles.templateCopy}>
 									<strong title={template.name}>{template.name}</strong>
 									<small>
-										{t(`kinds.${template.kind}`)} ·{' '}
-										{template.renderMode === 'frame' ? t('renderReady') : t('previewMode')}
+										{template.source === 'cardconjurer' ? 'CardConjurer' : 'MSE'} ·{' '}
+										{t(`kinds.${template.kind}`)} · {t('renderReady')}
 									</small>
 								</span>
 							</button>
