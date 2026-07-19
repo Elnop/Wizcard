@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
 import { isScryfallImageUrl, scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
 import { useLocalizedImage, useEnglishFallbackImage } from '@/lib/scryfall/hooks/useLocalizedImage';
+import { useCustomFallbackPrint } from '@/lib/scryfall/hooks/useCustomFallbackPrint';
 import { hasRealScan } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallImageStatus } from '@/lib/scryfall/types/scryfall';
 import { isCustomCard } from '@/lib/mpc/types';
@@ -18,6 +19,7 @@ type CardImageCard = {
 	name: string;
 	set?: string;
 	collector_number?: string;
+	oracle_id?: string;
 	language?: string;
 	entry?: { language?: string };
 	image_status?: ScryfallImageStatus;
@@ -82,6 +84,30 @@ function shouldFallbackFromCustomCard(args: {
 	return args.isTagIgnored || didCustomImageError(args.customImageUri, args.erroredUri);
 }
 
+/** A non-custom card with 2+ faces that carry image_uris renders a flippable front/back. */
+function computeIsDoubleFaced(card: CardImageCard, isCustom: boolean): boolean {
+	return Boolean(
+		!isCustom && card.card_faces && card.card_faces.length > 1 && card.card_faces[0].image_uris
+	);
+}
+
+/** Pick the image URL for the effective card: custom image, current DFC face, or scryfall image. */
+function resolveImageUri(args: {
+	card: CardImageCard;
+	isCustom: boolean;
+	isDoubleFaced: boolean;
+	currentFace: number;
+	size: 'small' | 'normal' | 'large';
+}): string {
+	const { card, isCustom, isDoubleFaced, currentFace, size } = args;
+	if (isCustom) return (card as unknown as CustomCard).custom.image_url;
+	if (isDoubleFaced) return card.card_faces![currentFace].image_uris?.[size] ?? '';
+	return getScryfallCardImageUriBySize(
+		{ image_uris: card.image_uris, card_faces: card.card_faces },
+		size
+	);
+}
+
 export function CardImage({
 	card,
 	size = 'normal',
@@ -134,8 +160,25 @@ export function CardImage({
 	// A normal (non-custom) card, OR a custom we must fall back away from,
 	// is eligible for localized/official image resolution.
 	const visible = (!isInputCustom || shouldFallbackFromCustom) && (priority || isVisible);
+
+	// A custom card carries only its custom image (and usually just an oracle_id —
+	// no set/collector), so the localized/English hooks below can't resolve
+	// anything for it directly. When we must fall back from a custom, resolve the
+	// oracle's default official print first; that print HAS set/collector/image,
+	// so it becomes the base the localized → English chain then runs on.
+	const customOracleId = isInputCustom ? card.oracle_id : undefined;
+	const { print: fallbackPrint, loading: fallbackPrintLoading } = useCustomFallbackPrint(
+		customOracleId,
+		visible && shouldFallbackFromCustom
+	);
+
+	// The base card the image chain resolves from: for a falling-back custom, the
+	// resolved official print (once loaded); otherwise the card as handed in.
+	const baseCard =
+		shouldFallbackFromCustom && fallbackPrint ? (fallbackPrint as unknown as typeof card) : card;
+
 	const { localized, loading: localizedLoading } = useLocalizedImage(
-		card as Parameters<typeof useLocalizedImage>[0],
+		baseCard as Parameters<typeof useLocalizedImage>[0],
 		visible
 	);
 
@@ -144,39 +187,30 @@ export function CardImage({
 	// preview is never imageless. Applies to every CardImage preview (search,
 	// collection, prints list, …).
 	const basePlaceholder =
-		(!isInputCustom || shouldFallbackFromCustom) && !localized && !hasRealScan(card.image_status);
+		(!isInputCustom || shouldFallbackFromCustom) &&
+		!localized &&
+		!hasRealScan(baseCard.image_status);
 	const { localized: englishFallback, loading: fallbackLoading } = useEnglishFallbackImage(
-		card as Parameters<typeof useEnglishFallbackImage>[0],
+		baseCard as Parameters<typeof useEnglishFallbackImage>[0],
 		visible && basePlaceholder
 	);
 
 	const resolvedOverride = localized ?? englishFallback;
-	const effectiveCard = resolvedOverride ? { ...card, ...resolvedOverride } : card;
+	const effectiveCard = resolvedOverride ? { ...baseCard, ...resolvedOverride } : baseCard;
 
 	// When falling back from a custom (ignored or failed-to-load), do NOT treat it
 	// as custom for image selection — use the resolved official/localized print.
 	const isCustom =
 		isCustomCard(effectiveCard as unknown as CustomCard) && !shouldFallbackFromCustom;
-	const isDoubleFaced =
-		!isCustom &&
-		effectiveCard.card_faces &&
-		effectiveCard.card_faces.length > 1 &&
-		effectiveCard.card_faces[0].image_uris;
+	const isDoubleFaced = computeIsDoubleFaced(effectiveCard, isCustom);
 
-	let imageUri = '';
-	if (isCustom) {
-		imageUri = (effectiveCard as unknown as CustomCard).custom.image_url;
-	} else if (isDoubleFaced) {
-		imageUri = effectiveCard.card_faces![currentFace].image_uris?.[size] ?? '';
-	} else {
-		imageUri = getScryfallCardImageUriBySize(
-			{
-				image_uris: effectiveCard.image_uris,
-				card_faces: effectiveCard.card_faces,
-			},
-			size
-		);
-	}
+	const imageUri = resolveImageUri({
+		card: effectiveCard,
+		isCustom,
+		isDoubleFaced,
+		currentFace,
+		size,
+	});
 
 	const { width, height } = sizeMap[size];
 
@@ -237,13 +271,14 @@ export function CardImage({
 		.join(' ');
 
 	// The base print is a placeholder and neither a localized print nor the
-	// English fallback replaced it — show the name placeholder. While the English
-	// fallback is still loading, keep showing the skeleton (not the name) so a
-	// real image can still arrive.
-	const isPlaceholderImage = basePlaceholder && !resolvedOverride && !fallbackLoading;
+	// English fallback replaced it — show the name placeholder. While the oracle
+	// fallback print or the English fallback is still loading, keep showing the
+	// skeleton (not the name) so a real image can still arrive.
+	const isPlaceholderImage =
+		basePlaceholder && !resolvedOverride && !fallbackLoading && !fallbackPrintLoading;
 
 	function renderCardImage() {
-		if (localizedLoading || (basePlaceholder && fallbackLoading)) {
+		if (fallbackPrintLoading || localizedLoading || (basePlaceholder && fallbackLoading)) {
 			return <div className={styles.localizedPlaceholder} />;
 		}
 		if (!error && imageUri && !isPlaceholderImage) {
