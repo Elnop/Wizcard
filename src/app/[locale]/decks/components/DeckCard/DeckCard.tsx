@@ -6,6 +6,7 @@ import { useDraggable } from '@dnd-kit/core';
 import type { ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
 import type { DeckMeta, FolderMeta } from '@/types/decks';
 import type { DeckSummary } from '../../useDeckSummaries';
+import { Link } from '@/i18n/navigation';
 import { ManaSymbol } from '@/lib/scryfall/components/ManaSymbol/ManaSymbol';
 import { Modal } from '@/components/Modal/Modal';
 import { Button } from '@/components/Button/Button';
@@ -262,8 +263,22 @@ export function DeckCard({
 							<div className={styles.artOverlay} />
 						</>
 					)}
-					{/* Author nickname overlaid top-left on the cover (deck search). */}
-					{authorNickname && <span className={styles.author}>{authorNickname}</span>}
+					{/* Author nickname overlaid top-left on the cover (deck search),
+					    linking to the author's profile. stopPropagation so clicking the
+					    name opens the profile, not the deck. A dark scrim behind it keeps
+					    the name legible over bright art. */}
+					{authorNickname && (
+						<>
+							<div className={styles.authorScrim} />
+							<Link
+								href={`/users/${encodeURIComponent(authorNickname)}`}
+								className={styles.author}
+								onClick={(e) => e.stopPropagation()}
+							>
+								{authorNickname}
+							</Link>
+						</>
+					)}
 					{/* Color pips overlaid on the cover (moved off the header row to save
 					    space there). */}
 					{colors && colors.length > 0 && (
