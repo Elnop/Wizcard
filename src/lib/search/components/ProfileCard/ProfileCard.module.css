@@ -3,7 +3,10 @@
 	display: flex;
 	flex-direction: column;
 	/* Fixed height so the framed image and the content zone below it have a
-	   stable split (image = everything above the bottom content zone). */
+	   stable split. --content-h is the reserved bottom zone: nickname + a
+	   two-line description + the stats/actions row + padding. The image fills
+	   everything above it. */
+	--content-h: 132px;
 	height: 340px;
 	overflow: hidden;
 	border-radius: 16px;
@@ -34,7 +37,7 @@
 	left: 8px;
 	right: 8px;
 	/* Height of the framed image at rest (card height minus the content zone). */
-	bottom: 96px;
+	bottom: var(--content-h);
 	overflow: hidden;
 	border-radius: 12px;
 	background: var(--surface);
@@ -71,7 +74,7 @@
 
 /* Reserves the framed-image height in normal flow so .content lands below it. */
 .spacer {
-	height: calc(100% - 96px);
+	height: calc(100% - var(--content-h));
 	flex-shrink: 0;
 }
 
@@ -124,8 +127,9 @@
 	-webkit-line-clamp: 2;
 	-webkit-box-orient: vertical;
 	overflow: hidden;
-	/* Reserve two lines so cards with/without a description stay aligned. */
-	min-height: calc(1.45em * 2);
+	/* Lock to exactly two lines so a long description is clamped and a short one
+	   still reserves the space — the content zone height never changes. */
+	height: calc(1.45em * 2);
 	transition: color 0.2s ease;
 }
 

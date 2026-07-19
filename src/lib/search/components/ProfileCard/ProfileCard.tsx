@@ -69,7 +69,9 @@ export function ProfileCard({ profile, stats }: Props) {
 				<div className={styles.scrim} />
 				<div className={styles.contentInner}>
 					<span className={styles.nickname}>{profile.nickname ?? '—'}</span>
-					{profile.description && <p className={styles.description}>{profile.description}</p>}
+					{/* Always rendered (fixed 2-line height) so cards align whether or
+					    not the profile has a description. */}
+					<p className={styles.description}>{profile.description ?? ''}</p>
 
 					<div className={styles.footer}>
 						{stats && (
