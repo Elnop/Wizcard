@@ -24,23 +24,30 @@
 
 .hero {
 	position: relative;
-	/* Flush to the top and sides of the card. Height shrinks on hover. */
+	/* Fixed height so the body below never shifts. Only the IMAGE inside
+	   shrinks on hover, retracting toward the top; the nickname/scrim stay
+	   pinned to the bottom of this fixed-height zone. */
 	height: 260px;
 	overflow: hidden;
 	border-radius: 16px 16px 0 0;
 	background: var(--surface);
-	transition: height 0.25s ease;
 }
 
-.card:hover .hero {
-	height: 220px;
-}
-
-.heroImg {
-	width: 100%;
+.heroImg,
+.heroInitial {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
 	height: 100%;
 	object-fit: cover;
 	display: block;
+	transition: height 0.25s ease;
+}
+
+.card:hover .heroImg,
+.card:hover .heroInitial {
+	height: 82%;
 }
 
 .heroInitial {
@@ -48,7 +55,6 @@
 	align-items: center;
 	justify-content: center;
 	width: 100%;
-	height: 100%;
 	background: linear-gradient(145deg, var(--surface-hover) 0%, var(--surface) 100%);
 	color: var(--gold);
 	font-size: 4rem;
