@@ -1,0 +1,45 @@
+.switcher {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 3px;
+	gap: 2px;
+}
+
+.option {
+	padding: 6px 14px;
+	background: transparent;
+	border: none;
+	border-radius: 8px;
+	color: var(--text-muted);
+	font-size: var(--text-sm);
+	font-weight: 500;
+	cursor: pointer;
+	white-space: nowrap;
+	transition:
+		background 0.15s,
+		color 0.15s;
+}
+
+.option:hover {
+	color: var(--foreground);
+}
+
+.active {
+	background: var(--primary);
+	color: var(--primary-text);
+}
+
+.active:hover {
+	color: var(--primary-text);
+}
+
+@media (max-width: 768px) {
+	.option {
+		padding: 6px 10px;
+		font-size: var(--text-xs);
+	}
+}
