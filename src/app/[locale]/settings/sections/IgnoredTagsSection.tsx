@@ -37,6 +37,8 @@ export function IgnoredTagsSection() {
 				onRemove={remove}
 				removeLabel={t('removeLabel')}
 				placeholder={t('placeholder')}
+				emptyLabel={t('noTagFound')}
+				addLabel={(q) => t('addTag', { query: q })}
 			/>
 			{ignoredTags.length === 0 && <p className={s.hint}>{t('empty')}</p>}
 		</SettingsSection>

@@ -10,7 +10,7 @@ import { hasRealScan } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallImageStatus } from '@/lib/scryfall/types/scryfall';
 import { isCustomCard } from '@/lib/mpc/types';
 import type { CustomCard } from '@/lib/mpc/types';
-import { useProfileContext } from '@/lib/profile/context/ProfileContext';
+import { useProfileStore } from '@/lib/profile/store/profile-store';
 import { getEffectiveIgnoredTags, isIgnored } from '@/lib/mpc/ignored-tags';
 import styles from './CardImage.module.css';
 
@@ -100,7 +100,7 @@ export function CardImage({
 
 	const isInputCustom = isCustomCard(card as unknown as CustomCard);
 	const customImageUri = isInputCustom ? (card as unknown as CustomCard).custom.image_url : null;
-	const { profile } = useProfileContext();
+	const profile = useProfileStore((s) => s.profile);
 	const ignoredTags = getEffectiveIgnoredTags(profile);
 	const isIgnoredCustom = isInputCustom && isIgnored(card as unknown as CustomCard, ignoredTags);
 	const shouldFallbackFromCustom =

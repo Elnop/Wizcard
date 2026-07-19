@@ -263,7 +263,9 @@
 			"description": "Custom prints tagged with any of these are hidden everywhere, and replaced by an official print. NSFW is hidden by default.",
 			"placeholder": "Add a tag (e.g. nsfw, gore)…",
 			"removeLabel": "Remove",
-			"empty": "No ignored tags — sensitive custom prints will be shown."
+			"empty": "No ignored tags — sensitive custom prints will be shown.",
+			"noTagFound": "No tag found",
+			"addTag": "Add \"{query}\""
 		},
 		"privacy": {
 			"title": "Privacy",

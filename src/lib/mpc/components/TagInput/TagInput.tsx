@@ -36,6 +36,8 @@ export interface TagInputProps {
 	allowFreeText?: boolean;
 	removeLabel: string;
 	variant?: 'include' | 'exclude' | 'neutral';
+	emptyLabel?: string;
+	addLabel?: (query: string) => string;
 }
 
 export function TagInput({
@@ -47,6 +49,8 @@ export function TagInput({
 	allowFreeText = false,
 	removeLabel,
 	variant = 'neutral',
+	emptyLabel = 'No tag found',
+	addLabel = (q) => `Add "${q}"`,
 }: TagInputProps) {
 	const [query, setQuery] = useState('');
 	const [open, setOpen] = useState(false);
@@ -146,11 +150,11 @@ export function TagInput({
 						handleAdd(query);
 					}}
 				>
-					{`Add "${query.trim()}"`}
+					{addLabel(query.trim())}
 				</div>
 			);
 		}
-		return <div className={styles.dropdownEmpty}>No tag found</div>;
+		return <div className={styles.dropdownEmpty}>{emptyLabel}</div>;
 	}
 
 	return (

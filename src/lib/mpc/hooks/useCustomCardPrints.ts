@@ -49,13 +49,15 @@ export function useCustomCardPrints(oracleId: string | undefined): UseCustomCard
 					driveFolderId: null,
 				};
 
+				const ignoredTagsForFilter = ignoredKey ? ignoredKey.split(',') : [];
+
 				// The current print is kept in the list — the caller marks it as
 				// "selected"/"shown" (see PrintList.isCurrentPrint / PrintsTab). A custom
 				// current print lives only in this section, so excluding it here would
 				// make it vanish entirely from the picker and the card page.
 				const cards = result.cards
 					.map((c) => toCustomCard(c, unknownSource))
-					.filter((c) => !isIgnored(c, ignoredTags));
+					.filter((c) => !isIgnored(c, ignoredTagsForFilter));
 
 				setState({ prints: cards, loading: false });
 			} catch {
@@ -67,7 +69,7 @@ export function useCustomCardPrints(oracleId: string | undefined): UseCustomCard
 		return () => {
 			cancelled = true;
 		};
-	}, [oracleId, ignoredKey]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [oracleId, ignoredKey]);
 
 	return state;
 }
