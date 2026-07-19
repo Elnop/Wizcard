@@ -711,7 +711,8 @@
 		"colFormat": "Format",
 		"colUpdated": "Updated",
 		"statDecks": "{count, plural, one {# deck} other {# decks}}",
-		"statCards": "{count, plural, one {# card} other {# cards}}"
+		"statCards": "{count, plural, one {# card} other {# cards}}",
+		"viewProfile": "View profile"
 	},
 	"legal": {
 		"lastUpdated": "Last updated: {date}",

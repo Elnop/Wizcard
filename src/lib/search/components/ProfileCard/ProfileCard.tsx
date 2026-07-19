@@ -9,41 +9,76 @@ import styles from './ProfileCard.module.css';
 type Props = { profile: ProfileSearchResult; stats?: ProfileStats };
 
 /**
- * Vertical result card for a profile search hit. Links to `/users/[nickname]`
- * (the route segment is named `[userId]` but resolves by nickname — see
- * `useProfileByNickname`). A profile without a nickname has no public URL, so
- * the card renders non-clickable in that case.
+ * Profile search hit rendered as a "hero" card: a large avatar image on top,
+ * then nickname, description and a footer with deck/card stats plus a
+ * "view profile" affordance. Links to `/users/[nickname]` (the route segment
+ * is named `[userId]` but resolves by nickname — see `useProfileByNickname`).
+ * A profile without a nickname has no public URL, so it renders non-clickable.
  *
  * Avatars are served from Supabase storage (a different host than the scryfall
  * image hosts whitelisted in `next.config.ts` `images.remotePatterns` and CSP
- * `img-src`), so a plain `<img>` is used here instead of `next/image`.
+ * `img-src`), so a plain `<img>` is used instead of `next/image`. When there is
+ * no avatar, the hero becomes a gradient with the nickname's initial.
  */
+function DeckIcon() {
+	return (
+		<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+			<rect x="2.5" y="2" width="8" height="11" rx="1" stroke="currentColor" strokeWidth="1.3" />
+			<path
+				d="M5.5 4.5h4M13 4.5v9a1 1 0 0 1-1 1H6"
+				stroke="currentColor"
+				strokeWidth="1.3"
+				strokeLinecap="round"
+			/>
+		</svg>
+	);
+}
+
+function CardsIcon() {
+	return (
+		<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+			<rect x="2" y="3" width="9" height="10" rx="1" stroke="currentColor" strokeWidth="1.3" />
+			<path d="M5 5.5h3M5 8h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+		</svg>
+	);
+}
+
 export function ProfileCard({ profile, stats }: Props) {
 	const t = useTranslations('search');
 
 	const content = (
 		<>
-			<div className={styles.avatar}>
+			<div className={styles.hero}>
 				{profile.avatarUrl ? (
 					// eslint-disable-next-line @next/next/no-img-element -- Supabase storage host isn't whitelisted for next/image
-					<img src={profile.avatarUrl} alt="" className={styles.avatarImg} />
+					<img src={profile.avatarUrl} alt="" className={styles.heroImg} />
 				) : (
-					<span className={styles.avatarFallback}>
+					<span className={styles.heroInitial}>
 						{(profile.nickname ?? '?').charAt(0).toUpperCase()}
 					</span>
 				)}
 			</div>
-			<span className={styles.nickname}>{profile.nickname ?? '—'}</span>
-			{profile.description && <p className={styles.description}>{profile.description}</p>}
-			{stats && (
-				<div className={styles.stats}>
-					<span>{t('statDecks', { count: stats.deckCount })}</span>
-					<span className={styles.statDot} aria-hidden="true">
-						·
-					</span>
-					<span>{t('statCards', { count: stats.cardCount })}</span>
+
+			<div className={styles.body}>
+				<span className={styles.nickname}>{profile.nickname ?? '—'}</span>
+				{profile.description && <p className={styles.description}>{profile.description}</p>}
+
+				<div className={styles.footer}>
+					{stats && (
+						<div className={styles.stats}>
+							<span className={styles.stat}>
+								<DeckIcon />
+								{stats.deckCount}
+							</span>
+							<span className={styles.stat}>
+								<CardsIcon />
+								{stats.cardCount}
+							</span>
+						</div>
+					)}
+					{profile.nickname && <span className={styles.viewBtn}>{t('viewProfile')}</span>}
 				</div>
-			)}
+			</div>
 		</>
 	);
 
