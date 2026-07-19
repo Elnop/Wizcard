@@ -196,10 +196,12 @@
 	min-height: 80px;
 }
 
+/* Match the /decks grid so DeckCard keeps its intended ratio (the card has a
+   fixed height; a too-narrow column squashes it). */
 .deckGrid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-	gap: 20px;
+	grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+	gap: 16px;
 }
 
 .profileGrid {
@@ -251,6 +253,18 @@
 	}
 
 	.searchRow {
+		gap: 8px;
+	}
+
+	.deckGrid {
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+		gap: 10px;
+	}
+}
+
+@media (max-width: 480px) {
+	.deckGrid {
+		grid-template-columns: repeat(2, 1fr);
 		gap: 8px;
 	}
 }
