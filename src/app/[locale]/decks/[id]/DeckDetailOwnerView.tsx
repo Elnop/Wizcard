@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
@@ -57,6 +57,7 @@ import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
 import { filterCardsForPdf } from '@/lib/pdf/filterCardsForPdf';
 import { resolveLocalizedImageUris } from '@/lib/scryfall/utils/resolveLocalizedImageUri';
 import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
+import { useAnalytics } from '@/lib/analytics/context/AnalyticsContext';
 import { useDeckSort } from './useDeckSort';
 import { useDeckTokens } from './useDeckTokens';
 import { DeckSortBar } from './components/DeckSortBar/DeckSortBar';
@@ -81,8 +82,16 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		replaceDeckCardWithCollectionCopy,
 	} = useDeckContext();
 	const deckCards = getDeckCards(deckId);
+	const analytics = useAnalytics();
 	const { deck, cardsByZone, resolvedCards, stats, coverArtUrl, isLoading, isResolving } =
 		useDeckDetail(deckId);
+
+	// One "stats viewed" per deck opened. The stats panel always renders at the
+	// bottom of the detail page, so fire once when the deck resolves (guarded on
+	// deckId) rather than on every render — avoids doubling with $pageview noise.
+	useEffect(() => {
+		if (deck) analytics.track({ name: 'deck_stats_viewed', props: { deckId } });
+	}, [deck, deckId, analytics]);
 
 	const [searchPanelOpen, setSearchPanelOpen] = useState(false);
 	const [searchPanelExpanded, setSearchPanelExpanded] = useState(false);
@@ -632,7 +641,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					/>
 
 					<DeckStats stats={stats} warnings={warnings} />
-					<SampleHand mainboard={cardsByZone.mainboard} />
+					<SampleHand deckId={deckId} mainboard={cardsByZone.mainboard} />
 				</div>
 
 				{searchPanelOpen && (
@@ -742,6 +751,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 								);
 								const imageUrls = resolved.flat().filter((url): url is string => !!url);
 								await generateCardsPdf(imageUrls, settings, `${deck.name}.pdf`);
+								analytics.track({ name: 'deck_exported', props: { deckId, format: 'pdf' } });
 								setPdfSettingsModalOpen(false);
 							} finally {
 								setPdfGenerating(false);

@@ -231,6 +231,7 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 		if (!copy) return;
 		const updatedEntry: CardEntry = { ...copy.entry, ...updates };
 		set({ entries: { ...current, [rowId]: { ...copy, entry: updatedEntry } } });
+		getAnalytics().track({ name: 'card_edited', props: { rowId, fields: Object.keys(updates) } });
 		if (userId) {
 			enqueue({ type: 'update', payload: { userId, rowId, entry: updatedEntry } });
 			triggerSync();
@@ -247,6 +248,7 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 		const updatedEntry: CardEntry = { ...copy.entry, ...entryPatch };
 		const updatedCopy: StoredCopy = { scryfallId: newScryfallId, entry: updatedEntry };
 		set({ entries: { ...current, [rowId]: updatedCopy } });
+		getAnalytics().track({ name: 'print_changed', props: { rowId, scryfallId: newScryfallId } });
 		if (userId) {
 			enqueue({
 				type: 'update',

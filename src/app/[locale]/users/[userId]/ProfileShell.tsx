@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
+import { useAnalytics } from '@/lib/analytics/context/AnalyticsContext';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { useProfileByNickname } from './useProfileByNickname';
 import { useProfileSummary } from './useProfileSummary';
@@ -31,6 +33,15 @@ export default function ProfileShell({ children }: { children: React.ReactNode }
 	const { profile: resolved, status } = useProfileByNickname(nickname);
 	const ownerCtx = useProfileContext();
 	const summary = useProfileSummary(resolved?.id ?? '');
+	const analytics = useAnalytics();
+
+	// One `profile_viewed` per resolved profile. Guarded on the resolved id so
+	// re-renders (and tab navigation within the same profile) don't re-fire.
+	const resolvedId = resolved?.id;
+	const isOwnProfile = !!user && !!resolvedId && user.id === resolvedId;
+	useEffect(() => {
+		if (resolvedId) analytics.track({ name: 'profile_viewed', props: { isOwnProfile } });
+	}, [resolvedId, isOwnProfile, analytics]);
 
 	if (status === 'loading') {
 		return (
@@ -43,7 +54,7 @@ export default function ProfileShell({ children }: { children: React.ReactNode }
 		return <UserNotFound />;
 	}
 
-	const isOwner = !!user && user.id === resolved.id;
+	const isOwner = isOwnProfile;
 	// The owner's live profile (reflects unsaved edits) comes from context; a
 	// visitor sees the resolved public profile.
 	const profile = isOwner ? ownerCtx.profile : resolved;

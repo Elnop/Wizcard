@@ -27,6 +27,14 @@ export function initPosthog(): void {
 			capture_pageview: false, // handled manually for the App Router
 			defaults: '2026-05-30',
 			capture_exceptions: true,
+			// Session replay is consent-gated: never record in the anonymous memory
+			// phase. setConsent(true) starts it; setConsent(false) stops it. Inputs
+			// are masked by default to keep PII (emails, tokens) out of recordings.
+			disable_session_recording: true,
+			session_recording: {
+				maskAllInputs: true,
+				maskTextSelector: '[data-ph-mask]',
+			},
 		});
 	});
 }
@@ -38,7 +46,12 @@ export function createPosthogClient(): AnalyticsClient {
 		identify: (userId, traits) => safe(() => posthog.identify(userId, traits)),
 		reset: () => safe(() => posthog.reset()),
 		setConsent: (granted) =>
-			safe(() => posthog.set_config({ persistence: granted ? 'localStorage+cookie' : 'memory' })),
+			safe(() => {
+				posthog.set_config({ persistence: granted ? 'localStorage+cookie' : 'memory' });
+				// Session replay follows consent: only record once the visitor accepts.
+				if (granted) posthog.startSessionRecording();
+				else posthog.stopSessionRecording();
+			}),
 		captureException: (error, context) => safe(() => posthog.captureException(error, context)),
 	};
 }
