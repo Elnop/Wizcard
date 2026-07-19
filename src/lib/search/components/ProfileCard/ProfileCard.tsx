@@ -17,10 +17,8 @@ type Props = { profile: ProfileSearchResult };
  * and CSP `img-src`), so a plain `<img>` is used here instead of `next/image`.
  */
 export function ProfileCard({ profile }: Props) {
-	const href = profile.nickname ? `/users/${encodeURIComponent(profile.nickname)}` : '#';
-
-	return (
-		<Link href={href} className={styles.card} aria-disabled={!profile.nickname}>
+	const content = (
+		<>
 			<div className={styles.avatar}>
 				{profile.avatarUrl ? (
 					// eslint-disable-next-line @next/next/no-img-element -- Supabase storage host isn't whitelisted for next/image
@@ -35,6 +33,16 @@ export function ProfileCard({ profile }: Props) {
 				<span className={styles.nickname}>{profile.nickname ?? '—'}</span>
 				{profile.description && <span className={styles.description}>{profile.description}</span>}
 			</div>
+		</>
+	);
+
+	if (!profile.nickname) {
+		return <div className={styles.card}>{content}</div>;
+	}
+
+	return (
+		<Link href={`/users/${encodeURIComponent(profile.nickname)}`} className={styles.card}>
+			{content}
 		</Link>
 	);
 }
