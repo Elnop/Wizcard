@@ -62,21 +62,24 @@ function didCustomImageError(customImageUri: string | null, erroredUri: string |
 /**
  * Decide whether a custom card must be rendered via the official/localized print
  * instead of its own custom image. Two independent triggers:
- *  - ignored tag, but ONLY for a selected entry print (deck/collection/wishlist,
- *    which carries `.entry` and has a real official print to resolve). A bare
- *    ignored custom card is filtered out upstream and must never reach here.
+ *  - ignored tag: any custom card that reaches CardImage tagged with an ignored
+ *    tag falls back. List contexts (search, print lists) filter ignored cards out
+ *    upstream, so a card that reaches here is a single-view render (card page,
+ *    or a selected entry print in deck/collection/wishlist) — all of which must
+ *    hide the ignored image. Resolution keys on the official print when possible;
+ *    when it can't resolve (custom cards often have only an oracle_id, no
+ *    set/collector), the render falls through to the name placeholder — never the
+ *    ignored image, and never a hanging skeleton (see the isLoading guard below).
  *  - the custom image URL failed to load (a broken URL — independent of tags).
  */
 function shouldFallbackFromCustomCard(args: {
 	isInputCustom: boolean;
-	isEntryPrint: boolean;
 	isTagIgnored: boolean;
 	customImageUri: string | null;
 	erroredUri: string | null;
 }): boolean {
 	if (!args.isInputCustom) return false;
-	const ignored = args.isEntryPrint && args.isTagIgnored;
-	return ignored || didCustomImageError(args.customImageUri, args.erroredUri);
+	return args.isTagIgnored || didCustomImageError(args.customImageUri, args.erroredUri);
 }
 
 export function CardImage({
@@ -124,9 +127,6 @@ export function CardImage({
 	const ignoredTags = getEffectiveIgnoredTags(profile);
 	const shouldFallbackFromCustom = shouldFallbackFromCustomCard({
 		isInputCustom,
-		// Entry prints (deck/collection/wishlist copies) carry `.entry`; only those
-		// get the ignored-tag → official-print fallback. See the helper's doc.
-		isEntryPrint: Boolean(card.entry),
 		isTagIgnored: isInputCustom && isIgnored(card as unknown as CustomCard, ignoredTags),
 		customImageUri,
 		erroredUri,
