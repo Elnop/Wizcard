@@ -219,7 +219,6 @@ export function CardImage({
 		if (!error && imageUri && !isPlaceholderImage) {
 			return (
 				<Image
-					key={imageUri}
 					src={imageUri}
 					alt={card.name}
 					width={width}
