@@ -8,6 +8,21 @@
 
 **Tech Stack:** Next.js App Router (client components), TypeScript, Supabase (Postgres + RLS), next-intl (locales `en`/`fr`), CSS Modules.
 
+> **⚠️ COURSE CORRECTION (2026-07-19): Tasks 1, 2, 3 are DROPPED.**
+> Decks/cards are ALREADY publicly readable, gated by the OWNER'S PROFILE
+> `is_public` via `profile_is_public()` (migrations `20260616000000_public_read_sharing`,
+> `20260713130000_privacy_gate_public_reads`). There is NO per-deck privacy and
+> we are NOT adding one. Consequences:
+>
+> - **No migration** (`is_public` on decks is NOT added). Skip Task 1.
+> - **`DeckMeta` gets NO `isPublic` field.** Skip Tasks 2 and 3.
+> - **Task 6 `searchDecks`**: needs NO new RLS — the existing `"Public can view
+all decks"` policy already restricts results to public-profile decks. In
+>   `rowToResult`, do NOT set `isPublic` (the field does not exist). The
+>   `profiles!decks_owner_id_fkey` embed still works because public profiles are
+>   readable.
+> - Everything else (Tasks 4-12) proceeds as written, minus any `isPublic` ref.
+
 ## Global Constraints
 
 - **No test framework** (no vitest/jest). Each task verifies via `npx eslint <changed files>` + `npx tsc --noEmit` (or `npm run check`) + runtime validation (dev server / Supabase Studio / `sb:verify`). Gate = **no NEW eslint/tsc problems** vs the pre-existing red baseline (~60 problems in unrelated files) — check changed files only with `npx eslint`.
@@ -568,7 +583,6 @@ function rowToResult(row: Record<string, unknown>): DeckSearchResult {
 			description: (row.description as string | null) ?? null,
 			folderId: (row.folder_id as string | null) ?? null,
 			coverArtUrl: (row.cover_art_url as string | null) ?? null,
-			isPublic: (row.is_public as boolean) ?? true,
 			createdAt: row.created_at as string,
 			updatedAt: row.updated_at as string,
 		},

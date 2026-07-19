@@ -1,7 +1,21 @@
 # Recherche multi-entités (Cartes / Decks / Profils)
 
 **Date**: 2026-07-19
-**Statut**: Design validé, prêt pour plan d'implémentation
+**Statut**: Design validé — CORRIGÉ 2026-07-19 après découverte du modèle de visibilité pré-existant (voir « Correction »)
+
+## Correction (2026-07-19)
+
+Découverte pendant l'implémentation : les decks/cards sont **déjà publiquement
+lisibles**, gouvernés par le flag `is_public` du **profil du propriétaire** via
+`profile_is_public()` (migrations `20260616000000_public_read_sharing` →
+`20260713130000_privacy_gate_public_reads`). Il n'existe **aucune** visibilité
+par-deck. Le design initial supposait à tort des decks owner-only.
+
+**Décision** : réutiliser la visibilité profil existante. **Pas de migration,
+pas de colonne `decks.is_public`, pas de toggle par-deck.** La Section 2 et le
+toggle de la Section 5 sont **abandonnés**. Le toggle « Profil public » existe
+déjà dans les Settings. La recherche de decks s'appuie sur la policy existante
+`"Public can view all decks"` (qui filtre déjà aux profils publics).
 
 ## Objectif
 
