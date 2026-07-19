@@ -25,6 +25,11 @@ export function initPosthog(): void {
 			persistence: 'memory', // anonymous until consent granted
 			person_profiles: 'identified_only',
 			capture_pageview: false, // handled manually for the App Router
+			// $pageleave IS auto-captured (not manual): PostHog pairs it with the
+			// preceding $pageview via the browser's pagehide/visibilitychange, which
+			// the App Router pageview effect can't observe. Required for time-on-page,
+			// session duration, and bounce rate in Web Analytics.
+			capture_pageleave: true,
 			defaults: '2026-05-30',
 			capture_exceptions: true,
 			// Session replay is consent-gated: never record in the anonymous memory
