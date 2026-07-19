@@ -43,7 +43,8 @@ export function createPosthogClient(): AnalyticsClient {
 	return {
 		track: (event) => safe(() => posthog.capture(event.name, event.props)),
 		page: (url) => safe(() => posthog.capture('$pageview', { $current_url: url })),
-		identify: (userId, traits) => safe(() => posthog.identify(userId, traits)),
+		identify: (userId, traits, traitsOnce) =>
+			safe(() => posthog.identify(userId, traits, traitsOnce)),
 		reset: () => safe(() => posthog.reset()),
 		setConsent: (granted) =>
 			safe(() => {

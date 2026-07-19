@@ -16,7 +16,8 @@ import { useAnalyticsAuthSync } from '@/lib/analytics/hooks/useAnalyticsAuthSync
 import { AnalyticsPageView } from '@/lib/analytics/components/AnalyticsPageView';
 import { ConsentBanner } from '@/lib/analytics/components/ConsentBanner/ConsentBanner';
 
-// Mounted inside the auth tree so it can read useAuth(); emits identify/reset.
+// Mounted inside the auth AND profile tree so it can read useAuth() +
+// useProfileContext(); emits identify (with person properties) / reset.
 function AnalyticsAuthBridge() {
 	useAnalyticsAuthSync();
 	return null;
@@ -26,12 +27,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
 	return (
 		<AnalyticsProvider>
 			<AuthProvider>
-				<AnalyticsAuthBridge />
 				<Suspense fallback={null}>
 					<AnalyticsPageView />
 				</Suspense>
 				<SyncQueueRunner>
 					<ProfileProvider>
+						{/* Inside ProfileProvider so identify() can enrich the person
+						    profile with nickname/language/etc. once it hydrates. */}
+						<AnalyticsAuthBridge />
 						<CollectionProvider>
 							<WishlistProvider>
 								<DeckProvider>
