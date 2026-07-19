@@ -65,16 +65,15 @@ export function DeckSearchView({ filters, onFiltersChange }: Props) {
 			) : (
 				<div className={styles.deckGrid}>
 					{decks.map(({ deck, authorNickname }) => (
-						<div key={deck.id} className={styles.deckGridItem}>
-							<DeckCard
-								deck={deck}
-								summary={summaryMap[deck.id]}
-								symbolMap={symbolMap}
-								readOnly
-								onClick={() => router.push(`/decks/${deck.id}`)}
-							/>
-							{authorNickname && <span className={styles.deckAuthor}>{authorNickname}</span>}
-						</div>
+						<DeckCard
+							key={deck.id}
+							deck={deck}
+							summary={summaryMap[deck.id]}
+							symbolMap={symbolMap}
+							authorNickname={authorNickname}
+							readOnly
+							onClick={() => router.push(`/decks/${deck.id}`)}
+						/>
 					))}
 				</div>
 			)}

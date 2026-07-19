@@ -73,6 +73,25 @@
 	backdrop-filter: blur(2px);
 }
 
+.author {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	z-index: 2;
+	max-width: calc(100% - 16px);
+	padding: 3px 8px;
+	background: rgba(0, 0, 0, 0.45);
+	border-radius: 999px;
+	backdrop-filter: blur(2px);
+	color: #fff;
+	font-size: var(--text-xs);
+	font-weight: 500;
+	line-height: 1.4;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .deleteBtn {
 	width: 24px;
 	height: 24px;

@@ -202,18 +202,6 @@
 	gap: 20px;
 }
 
-.deckGridItem {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-}
-
-.deckAuthor {
-	font-size: var(--text-sm);
-	color: var(--text-muted);
-	padding: 0 4px;
-}
-
 .profileGrid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

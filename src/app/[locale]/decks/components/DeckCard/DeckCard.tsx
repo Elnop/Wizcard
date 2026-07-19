@@ -24,6 +24,8 @@ type Props = {
 	onCreateFolderAndMove?: (name: string) => void;
 	/** Read-only (public) view: hides delete, disables drag and the move menu. */
 	readOnly?: boolean;
+	/** Author nickname, overlaid top-left on the cover (used by deck search). */
+	authorNickname?: string | null;
 };
 
 /**
@@ -192,6 +194,7 @@ export function DeckCard({
 	onMove,
 	onCreateFolderAndMove,
 	readOnly = false,
+	authorNickname,
 }: Props) {
 	const t = useTranslations('decks');
 	const locale = useLocale();
@@ -259,6 +262,8 @@ export function DeckCard({
 							<div className={styles.artOverlay} />
 						</>
 					)}
+					{/* Author nickname overlaid top-left on the cover (deck search). */}
+					{authorNickname && <span className={styles.author}>{authorNickname}</span>}
 					{/* Color pips overlaid on the cover (moved off the header row to save
 					    space there). */}
 					{colors && colors.length > 0 && (
