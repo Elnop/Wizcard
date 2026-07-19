@@ -127,9 +127,13 @@ calqué structurellement sur `FilterModal`.
 - `searchDecks(filters, { limit, offset })` sur `decks` (RLS restreint déjà au
   public), `name ilike`, `format in`, `owner_id` résolu depuis nickname author.
 - Card in Board / Commander : résoudre d'abord les `deck_id` matchant la carte
-  via `cards` (`scryfall_id = …` [`and zone='commander'`]), puis filtrer les
-  decks sur ces `deck_id`. ⚠️ **TS2589** : utiliser des réassignations
-  `q = q.eq(...)` plutôt qu'un chaînage dans l'initialiseur `let q = client.from()...`.
+  via `cards` (`scryfall_id = …`, et pour Commander `tags @> '{deck:commander}'`
+  via `.contains('tags', ['deck:commander'])`), puis filtrer les decks sur ces
+  `deck_id`. ⚠️ **La zone d'un deck est stockée dans `cards.tags`** (ex.
+  `deck:commander`), PAS dans la colonne `cards.zone` — c'est la colonne `tags`
+  qui fait foi côté application (cf. `fetchDeckCardTagRows`, `getDeckZone`).
+  ⚠️ **TS2589** : utiliser des réassignations `q = q.eq(...)` plutôt qu'un
+  chaînage dans l'initialiseur `let q = client.from()...`.
 - Auteur : `select('*, profiles!decks_owner_id_fkey(nickname, avatar_url)')`.
 
 **Profils** — `src/lib/search/db/searchProfiles.ts` :
