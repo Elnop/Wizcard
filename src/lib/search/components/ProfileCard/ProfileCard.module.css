@@ -1,0 +1,70 @@
+.card {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	border-radius: 8px;
+	text-decoration: none;
+	color: inherit;
+	transition:
+		background 0.15s,
+		border-color 0.15s;
+	border: 1px solid transparent;
+}
+
+.card:hover {
+	background: var(--surface);
+	border-color: var(--border);
+}
+
+.avatar {
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	overflow: hidden;
+	flex-shrink: 0;
+	border: 1px solid var(--border);
+}
+
+.avatarImg {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.avatarFallback {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	background: var(--surface);
+	color: var(--primary);
+	font-size: var(--text-xl);
+	font-weight: 700;
+}
+
+.body {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.nickname {
+	font-weight: 600;
+	color: var(--foreground);
+	font-size: var(--text-base);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.description {
+	color: var(--text-muted);
+	font-size: var(--text-sm);
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
