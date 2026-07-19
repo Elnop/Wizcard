@@ -258,6 +258,13 @@
 			"currencyEur": "€ EUR (Cardmarket)",
 			"currencyUsd": "$ USD (TCGplayer)"
 		},
+		"ignoredTags": {
+			"title": "Tags ignorés",
+			"description": "Les prints custom portant l'un de ces tags sont masqués partout et remplacés par un print officiel. Le NSFW est masqué par défaut.",
+			"placeholder": "Ajouter un tag (ex. nsfw, gore)…",
+			"removeLabel": "Retirer",
+			"empty": "Aucun tag ignoré — les prints custom sensibles seront affichés."
+		},
 		"privacy": {
 			"title": "Confidentialité",
 			"publicProfile": "Profil public",
