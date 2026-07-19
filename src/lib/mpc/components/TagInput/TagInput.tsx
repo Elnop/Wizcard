@@ -190,7 +190,7 @@ export function TagInput({
 					autoComplete="off"
 				/>
 
-				{open && (suggestions.length > 0 || (allowFreeText && query.trim())) && (
+				{open && (
 					<div className={styles.dropdown} role="listbox">
 						{suggestions.length === 0
 							? renderEmptyState()
