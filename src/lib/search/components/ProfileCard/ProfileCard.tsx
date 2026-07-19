@@ -57,10 +57,11 @@ export function ProfileCard({ profile, stats }: Props) {
 						{(profile.nickname ?? '?').charAt(0).toUpperCase()}
 					</span>
 				)}
+				<div className={styles.heroScrim} />
+				<span className={styles.nickname}>{profile.nickname ?? '—'}</span>
 			</div>
 
 			<div className={styles.body}>
-				<span className={styles.nickname}>{profile.nickname ?? '—'}</span>
 				{profile.description && <p className={styles.description}>{profile.description}</p>}
 
 				<div className={styles.footer}>

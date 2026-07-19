@@ -24,11 +24,16 @@
 
 .hero {
 	position: relative;
-	aspect-ratio: 1 / 1;
+	/* Flush to the top and sides of the card. Height shrinks on hover. */
+	height: 260px;
 	overflow: hidden;
-	border-radius: 12px;
-	margin: 8px 8px 0;
+	border-radius: 16px 16px 0 0;
 	background: var(--surface);
+	transition: height 0.25s ease;
+}
+
+.card:hover .hero {
+	height: 220px;
 }
 
 .heroImg {
@@ -36,14 +41,6 @@
 	height: 100%;
 	object-fit: cover;
 	display: block;
-}
-
-.card:hover .heroImg {
-	transform: scale(1.03);
-}
-
-.heroImg {
-	transition: transform 0.3s ease;
 }
 
 .heroInitial {
@@ -58,6 +55,17 @@
 	font-weight: 700;
 }
 
+/* Dark gradient under the nickname so it stays legible over any art. */
+.heroScrim {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 55%;
+	background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, transparent 100%);
+	pointer-events: none;
+}
+
 /* ── Body ── */
 
 .body {
@@ -68,12 +76,24 @@
 }
 
 .nickname {
+	position: absolute;
+	left: 16px;
+	right: 16px;
+	bottom: 12px;
+	z-index: 1;
 	font-weight: 700;
-	color: var(--foreground);
+	color: #fff;
 	font-size: var(--text-xl);
+	text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	transform-origin: left bottom;
+	transition: transform 0.25s ease;
+}
+
+.card:hover .nickname {
+	transform: scale(1.08);
 }
 
 .description {
