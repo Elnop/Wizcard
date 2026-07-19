@@ -551,7 +551,8 @@
 		"cardsCount": "{count} cards",
 		"landsCount": "{count} lands",
 		"cmcStat": "{cmc} CMC",
-		"folderCount": "{count, plural, one {# folder} other {# folders}}"
+		"folderCount": "{count, plural, one {# folder} other {# folders}}",
+		"byAuthor": "by <author></author>"
 	},
 	"collection": {
 		"title": "My Collection",

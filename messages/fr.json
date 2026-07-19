@@ -551,7 +551,8 @@
 		"cardsCount": "{count} cartes",
 		"landsCount": "{count} terrains",
 		"cmcStat": "{cmc} CMC",
-		"folderCount": "{count, plural, one {# dossier} other {# dossiers}}"
+		"folderCount": "{count, plural, one {# dossier} other {# dossiers}}",
+		"byAuthor": "par <author></author>"
 	},
 	"collection": {
 		"title": "Ma collection",

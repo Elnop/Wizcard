@@ -270,13 +270,19 @@ export function DeckCard({
 					{authorNickname && (
 						<>
 							<div className={styles.authorScrim} />
-							<Link
-								href={`/users/${encodeURIComponent(authorNickname)}`}
-								className={styles.author}
-								onClick={(e) => e.stopPropagation()}
-							>
-								{authorNickname}
-							</Link>
+							<span className={styles.author}>
+								{t.rich('byAuthor', {
+									author: () => (
+										<Link
+											href={`/users/${encodeURIComponent(authorNickname)}`}
+											className={styles.authorLink}
+											onClick={(e) => e.stopPropagation()}
+										>
+											{authorNickname}
+										</Link>
+									),
+								})}
+							</span>
 						</>
 					)}
 					{/* Color pips overlaid on the cover (moved off the header row to save
