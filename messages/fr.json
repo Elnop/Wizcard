@@ -476,6 +476,15 @@
 			"currencyEur": "€ EUR (Cardmarket)",
 			"currencyUsd": "$ USD (TCGplayer)"
 		},
+		"ignoredTags": {
+			"title": "Tags ignorés",
+			"description": "Les prints custom portant l'un de ces tags sont masqués partout et remplacés par un print officiel. Le NSFW est masqué par défaut.",
+			"placeholder": "Ajouter un tag (ex. nsfw, gore)…",
+			"removeLabel": "Retirer",
+			"empty": "Aucun tag ignoré — les prints custom sensibles seront affichés.",
+			"noTagFound": "Aucun tag trouvé",
+			"addTag": "Ajouter « {query} »"
+		},
 		"privacy": {
 			"title": "Confidentialité",
 			"publicProfile": "Profil public",
@@ -769,7 +778,8 @@
 		"cardsCount": "{count} cartes",
 		"landsCount": "{count} terrains",
 		"cmcStat": "{cmc} CMC",
-		"folderCount": "{count, plural, one {# dossier} other {# dossiers}}"
+		"folderCount": "{count, plural, one {# dossier} other {# dossiers}}",
+		"byAuthor": "par <author></author>"
 	},
 	"collection": {
 		"title": "Ma collection",
@@ -906,7 +916,31 @@
 		"customError": "Échec du chargement des cartes personnalisées.",
 		"noResults": "Aucune carte trouvée",
 		"didYouMean": "Vouliez-vous dire :",
-		"adjustSearch": "Essayez d'ajuster votre recherche ou vos filtres."
+		"adjustSearch": "Essayez d'ajuster votre recherche ou vos filtres.",
+		"entityCards": "Cartes",
+		"entityDecks": "Decks",
+		"entityProfiles": "Profils",
+		"entityAriaLabel": "Type de recherche",
+		"deckNameLabel": "Nom du deck",
+		"deckFormatLabel": "Format",
+		"deckAuthorLabel": "Auteur",
+		"deckAuthorPlaceholder": "Pseudo",
+		"deckSearchPlaceholder": "Rechercher des decks…",
+		"profileSearchPlaceholder": "Rechercher des profils…",
+		"deckResultsCount": "{count, plural, one {# deck} other {# decks}}",
+		"profileResultsCount": "{count, plural, one {# profil} other {# profils}}",
+		"loadMore": "Charger plus",
+		"apply": "Appliquer",
+		"reset": "Réinitialiser",
+		"viewGrid": "Grille",
+		"viewList": "Liste",
+		"colAuthor": "Auteur",
+		"colFormat": "Format",
+		"colUpdated": "Mis à jour",
+		"statDecks": "{count, plural, one {# deck} other {# decks}}",
+		"statCards": "{count, plural, one {# carte} other {# cartes}}",
+		"viewProfile": "Voir le profil",
+		"profileTypeLine": "Planeswalker — Joueur"
 	},
 	"legal": {
 		"lastUpdated": "Dernière mise à jour : {date}",

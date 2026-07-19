@@ -11,7 +11,7 @@ export async function fetchProfileByNickname(nickname: string): Promise<Profile 
 	const { data, error } = await supabase
 		.from('profiles')
 		.select(
-			'id, nickname, description, avatar_url, language, price_currency, show_prices, theme_preference, is_public, created_at, updated_at'
+			'id, nickname, description, avatar_url, language, price_currency, show_prices, theme_preference, is_public, ignored_tags, created_at, updated_at'
 		)
 		.eq('nickname', nickname)
 		.maybeSingle();
@@ -26,6 +26,7 @@ export async function fetchProfileByNickname(nickname: string): Promise<Profile 
 		showPrices: (data.show_prices as boolean) ?? true,
 		themePreference: ((data.theme_preference as string) ?? 'system') as Profile['themePreference'],
 		isPublic: (data.is_public as boolean) ?? true,
+		ignoredTags: (data.ignored_tags as string[]) ?? ['nsfw'],
 		createdAt: data.created_at as string,
 		updatedAt: data.updated_at as string,
 	};

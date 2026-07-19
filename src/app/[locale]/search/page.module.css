@@ -4,9 +4,9 @@
 }
 
 .main {
-	max-width: 1400px;
+	max-width: 1760px;
 	margin: 0 auto;
-	padding: 32px;
+	padding: 20px 12px;
 }
 
 .searchSection {
@@ -71,6 +71,12 @@
 	margin-bottom: 16px;
 	font-size: var(--text-base);
 	color: var(--text-muted);
+}
+
+/* Deck/Profile views place the search bar directly above the result count
+   (no .searchSection wrapper, unlike the Cards view), so add the gap here. */
+.entitySearchRow {
+	margin-bottom: 20px;
 }
 
 .loading {
@@ -196,9 +202,57 @@
 	min-height: 80px;
 }
 
+/* Match the /decks grid so DeckCard keeps its intended ratio (the card has a
+   fixed height; a too-narrow column squashes it). */
+.deckGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+	gap: 16px;
+}
+
+/* Match the card search grid (CardListGrid: 200px cells, 24px gap) so profile
+   cards render at exactly the same dimensions as the card list. */
+.profileGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 24px;
+}
+
+.loadMore {
+	display: flex;
+	justify-content: center;
+	padding: 24px 0;
+}
+
+.loadMore button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 140px;
+	padding: 10px 20px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	color: var(--foreground);
+	cursor: pointer;
+	font-size: var(--text-base);
+	transition:
+		border-color 0.2s,
+		background-color 0.2s;
+}
+
+.loadMore button:hover:not(:disabled) {
+	border-color: var(--primary);
+}
+
+.loadMore button:disabled {
+	cursor: default;
+	opacity: 0.7;
+}
+
 @media (max-width: 768px) {
 	.main {
-		padding: 20px 16px;
+		padding: 16px 8px;
 	}
 
 	.searchSection {
@@ -208,5 +262,25 @@
 
 	.searchRow {
 		gap: 8px;
+	}
+
+	.deckGrid {
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+		gap: 10px;
+	}
+
+	.profileGrid {
+		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	}
+}
+
+@media (max-width: 480px) {
+	.deckGrid {
+		grid-template-columns: repeat(2, 1fr);
+		gap: 8px;
+	}
+
+	.profileGrid {
+		grid-template-columns: repeat(2, 1fr);
 	}
 }

@@ -25,8 +25,21 @@ export function initPosthog(): void {
 			persistence: 'memory', // anonymous until consent granted
 			person_profiles: 'identified_only',
 			capture_pageview: false, // handled manually for the App Router
+			// $pageleave IS auto-captured (not manual): PostHog pairs it with the
+			// preceding $pageview via the browser's pagehide/visibilitychange, which
+			// the App Router pageview effect can't observe. Required for time-on-page,
+			// session duration, and bounce rate in Web Analytics.
+			capture_pageleave: true,
 			defaults: '2026-05-30',
 			capture_exceptions: true,
+			// Session replay is consent-gated: never record in the anonymous memory
+			// phase. setConsent(true) starts it; setConsent(false) stops it. Inputs
+			// are masked by default to keep PII (emails, tokens) out of recordings.
+			disable_session_recording: true,
+			session_recording: {
+				maskAllInputs: true,
+				maskTextSelector: '[data-ph-mask]',
+			},
 		});
 	});
 }
@@ -35,10 +48,16 @@ export function createPosthogClient(): AnalyticsClient {
 	return {
 		track: (event) => safe(() => posthog.capture(event.name, event.props)),
 		page: (url) => safe(() => posthog.capture('$pageview', { $current_url: url })),
-		identify: (userId, traits) => safe(() => posthog.identify(userId, traits)),
+		identify: (userId, traits, traitsOnce) =>
+			safe(() => posthog.identify(userId, traits, traitsOnce)),
 		reset: () => safe(() => posthog.reset()),
 		setConsent: (granted) =>
-			safe(() => posthog.set_config({ persistence: granted ? 'localStorage+cookie' : 'memory' })),
+			safe(() => {
+				posthog.set_config({ persistence: granted ? 'localStorage+cookie' : 'memory' });
+				// Session replay follows consent: only record once the visitor accepts.
+				if (granted) posthog.startSessionRecording();
+				else posthog.stopSessionRecording();
+			}),
 		captureException: (error, context) => safe(() => posthog.captureException(error, context)),
 	};
 }

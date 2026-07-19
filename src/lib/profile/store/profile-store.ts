@@ -34,6 +34,7 @@ export const useProfileStore = create<ProfileState & ProfileActions>()((set, get
 					showPrices: true,
 					themePreference: 'system',
 					isPublic: true,
+					ignoredTags: ['nsfw'],
 					createdAt: '',
 					updatedAt: '',
 				},

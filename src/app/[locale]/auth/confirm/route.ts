@@ -1,6 +1,6 @@
 import { type EmailOtpType } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
-import { exchangeCodeForSession, verifyEmailOtp } from '@/lib/supabase/auth/auth-server';
+import { exchangeCodeForSession, verifyEmailOtp, isNewUser } from '@/lib/supabase/auth/auth-server';
 import { trackServer, getPosthogDistinctId } from '@/lib/analytics/server/track-server';
 
 /**
@@ -43,24 +43,26 @@ export async function GET(
 
 	// PKCE flow (Supabase local / newer versions)
 	if (code) {
-		const { error } = await exchangeCodeForSession(code);
+		const { error, user } = await exchangeCodeForSession(code);
 		if (!error) {
-			await trackServer(
-				{ name: 'login', props: { method: loginMethod } },
-				getPosthogDistinctId(request.headers.get('cookie'))
-			);
+			const distinctId = getPosthogDistinctId(request.headers.get('cookie'));
+			if (isNewUser(user)) {
+				await trackServer({ name: 'signup', props: { method: loginMethod } }, distinctId);
+			}
+			await trackServer({ name: 'login', props: { method: loginMethod } }, distinctId);
 			return NextResponse.redirect(new URL(`/${locale}/collection`, origin));
 		}
 	}
 
 	// OTP flow (token_hash)
 	if (token_hash && type) {
-		const { error } = await verifyEmailOtp({ type, token_hash });
+		const { error, user } = await verifyEmailOtp({ type, token_hash });
 		if (!error) {
-			await trackServer(
-				{ name: 'login', props: { method: 'email' } },
-				getPosthogDistinctId(request.headers.get('cookie'))
-			);
+			const distinctId = getPosthogDistinctId(request.headers.get('cookie'));
+			if (isNewUser(user)) {
+				await trackServer({ name: 'signup', props: { method: 'email' } }, distinctId);
+			}
+			await trackServer({ name: 'login', props: { method: 'email' } }, distinctId);
 			return NextResponse.redirect(new URL(`/${locale}/collection`, origin));
 		}
 	}

@@ -6,16 +6,20 @@ import Image from 'next/image';
 import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
 import { isScryfallImageUrl, scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
 import { useLocalizedImage, useEnglishFallbackImage } from '@/lib/scryfall/hooks/useLocalizedImage';
+import { useCustomFallbackPrint } from '@/lib/scryfall/hooks/useCustomFallbackPrint';
 import { hasRealScan } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallImageStatus } from '@/lib/scryfall/types/scryfall';
 import { isCustomCard } from '@/lib/mpc/types';
 import type { CustomCard } from '@/lib/mpc/types';
+import { useProfileStore } from '@/lib/profile/store/profile-store';
+import { getEffectiveIgnoredTags, isIgnored } from '@/lib/mpc/ignored-tags';
 import styles from './CardImage.module.css';
 
 type CardImageCard = {
 	name: string;
 	set?: string;
 	collector_number?: string;
+	oracle_id?: string;
 	language?: string;
 	entry?: { language?: string };
 	image_status?: ScryfallImageStatus;
@@ -46,31 +50,66 @@ const sizeMap = {
 	large: { width: 672, height: 936 },
 };
 
-type CardImageSize = keyof typeof sizeMap;
+const TILT_MAX_DEG = 10;
 
-function resolveVisibleImageUri(
-	card: CardImageCard,
-	isCustom: boolean,
-	isDoubleFaced: boolean,
-	currentFace: number,
-	size: CardImageSize,
-	customBackImage: string | null | undefined
-): string {
+// True when the custom image itself (identified by its own URL, not
+// whatever `imageUri` currently resolves to) has errored. Comparing by URL
+// (rather than a plain boolean) means this stays true only for the custom
+// source, so it can't be confused with a later error on the fallback
+// official image.
+function didCustomImageError(customImageUri: string | null, erroredUri: string | null): boolean {
+	return customImageUri !== null && erroredUri === customImageUri;
+}
+
+/**
+ * Decide whether a custom card must be rendered via the official/localized print
+ * instead of its own custom image. Two independent triggers:
+ *  - ignored tag: any custom card that reaches CardImage tagged with an ignored
+ *    tag falls back. List contexts (search, print lists) filter ignored cards out
+ *    upstream, so a card that reaches here is a single-view render (card page,
+ *    or a selected entry print in deck/collection/wishlist) — all of which must
+ *    hide the ignored image. Resolution keys on the official print when possible;
+ *    when it can't resolve (custom cards often have only an oracle_id, no
+ *    set/collector), the render falls through to the name placeholder — never the
+ *    ignored image, and never a hanging skeleton (see the isLoading guard below).
+ *  - the custom image URL failed to load (a broken URL — independent of tags).
+ */
+function shouldFallbackFromCustomCard(args: {
+	isInputCustom: boolean;
+	isTagIgnored: boolean;
+	customImageUri: string | null;
+	erroredUri: string | null;
+}): boolean {
+	if (!args.isInputCustom) return false;
+	return args.isTagIgnored || didCustomImageError(args.customImageUri, args.erroredUri);
+}
+
+/** Official and custom double-faced cards render a flippable front/back. */
+function computeIsDoubleFaced(card: CardImageCard, isCustom: boolean): boolean {
+	if (isCustom) return Boolean(card.custom?.back_image_url);
+	return Boolean(card.card_faces && card.card_faces.length > 1 && card.card_faces[0].image_uris);
+}
+
+/** Pick the image URL for the effective card: custom image, current DFC face, or scryfall image. */
+function resolveImageUri(args: {
+	card: CardImageCard;
+	isCustom: boolean;
+	isDoubleFaced: boolean;
+	currentFace: number;
+	size: 'small' | 'normal' | 'large';
+}): string {
+	const { card, isCustom, isDoubleFaced, currentFace, size } = args;
 	if (isCustom) {
-		if (currentFace === 1 && customBackImage) return customBackImage;
+		const custom = card.custom;
+		if (currentFace === 1 && custom?.back_image_url) return custom.back_image_url;
 		return (card as unknown as CustomCard).custom.image_url;
 	}
-	if (isDoubleFaced) return card.card_faces?.[currentFace].image_uris?.[size] ?? '';
+	if (isDoubleFaced) return card.card_faces![currentFace].image_uris?.[size] ?? '';
 	return getScryfallCardImageUriBySize(
-		{
-			image_uris: card.image_uris,
-			card_faces: card.card_faces,
-		},
+		{ image_uris: card.image_uris, card_faces: card.card_faces },
 		size
 	);
 }
-
-const TILT_MAX_DEG = 10;
 
 export function CardImage({
 	card,
@@ -85,8 +124,13 @@ export function CardImage({
 }: CardImageProps) {
 	const t = useTranslations('card');
 	const [currentFace, setCurrentFace] = useState(0);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState(false);
+	// Keyed by the image source (`imageUri`) rather than a plain boolean, so a
+	// source change (e.g. custom image fails → falls back to the resolved
+	// official/localized `imageUri`) naturally gets a fresh load/error state
+	// without any reset step: `error`/`isLoading` below are derived by
+	// comparing these to the *current* `imageUri` once it's computed.
+	const [loadedUri, setLoadedUri] = useState<string | null>(null);
+	const [erroredUri, setErroredUri] = useState<string | null>(null);
 	const [isVisible, setIsVisible] = useState(priority);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
@@ -107,9 +151,37 @@ export function CardImage({
 	}, [priority]);
 
 	const isInputCustom = isCustomCard(card as unknown as CustomCard);
-	const visible = !isInputCustom && (priority || isVisible);
+	const customImageUri = isInputCustom ? (card as unknown as CustomCard).custom.image_url : null;
+	const profile = useProfileStore((s) => s.profile);
+	const ignoredTags = getEffectiveIgnoredTags(profile);
+	const shouldFallbackFromCustom = shouldFallbackFromCustomCard({
+		isInputCustom,
+		isTagIgnored: isInputCustom && isIgnored(card as unknown as CustomCard, ignoredTags),
+		customImageUri,
+		erroredUri,
+	});
+	// A normal (non-custom) card, OR a custom we must fall back away from,
+	// is eligible for localized/official image resolution.
+	const visible = (!isInputCustom || shouldFallbackFromCustom) && (priority || isVisible);
+
+	// A custom card carries only its custom image (and usually just an oracle_id —
+	// no set/collector), so the localized/English hooks below can't resolve
+	// anything for it directly. When we must fall back from a custom, resolve the
+	// oracle's default official print first; that print HAS set/collector/image,
+	// so it becomes the base the localized → English chain then runs on.
+	const customOracleId = isInputCustom ? card.oracle_id : undefined;
+	const { print: fallbackPrint, loading: fallbackPrintLoading } = useCustomFallbackPrint(
+		customOracleId,
+		visible && shouldFallbackFromCustom
+	);
+
+	// The base card the image chain resolves from: for a falling-back custom, the
+	// resolved official print (once loaded); otherwise the card as handed in.
+	const baseCard =
+		shouldFallbackFromCustom && fallbackPrint ? (fallbackPrint as unknown as typeof card) : card;
+
 	const { localized, loading: localizedLoading } = useLocalizedImage(
-		card as Parameters<typeof useLocalizedImage>[0],
+		baseCard as Parameters<typeof useLocalizedImage>[0],
 		visible
 	);
 
@@ -117,37 +189,46 @@ export function CardImage({
 	// no localized print replaced it — fetch the English print's image so the
 	// preview is never imageless. Applies to every CardImage preview (search,
 	// collection, prints list, …).
-	const basePlaceholder = !isInputCustom && !localized && !hasRealScan(card.image_status);
+	const basePlaceholder =
+		(!isInputCustom || shouldFallbackFromCustom) &&
+		!localized &&
+		!hasRealScan(baseCard.image_status);
 	const { localized: englishFallback, loading: fallbackLoading } = useEnglishFallbackImage(
-		card as Parameters<typeof useEnglishFallbackImage>[0],
+		baseCard as Parameters<typeof useEnglishFallbackImage>[0],
 		visible && basePlaceholder
 	);
 
 	const resolvedOverride = localized ?? englishFallback;
-	const effectiveCard = resolvedOverride ? { ...card, ...resolvedOverride } : card;
+	const effectiveCard = resolvedOverride ? { ...baseCard, ...resolvedOverride } : baseCard;
 
-	const isCustom = isCustomCard(effectiveCard as unknown as CustomCard);
-	const customBackImage = isCustom
-		? (effectiveCard as unknown as CustomCard).custom.back_image_url
-		: null;
-	const isDoubleFaced = isCustom
-		? Boolean(customBackImage)
-		: Boolean(
-				effectiveCard.card_faces &&
-				effectiveCard.card_faces.length > 1 &&
-				effectiveCard.card_faces[0].image_uris
-			);
+	// When falling back from a custom (ignored or failed-to-load), do NOT treat it
+	// as custom for image selection — use the resolved official/localized print.
+	const isCustom =
+		isCustomCard(effectiveCard as unknown as CustomCard) && !shouldFallbackFromCustom;
+	const isDoubleFaced = computeIsDoubleFaced(effectiveCard, isCustom);
 
-	const imageUri = resolveVisibleImageUri(
-		effectiveCard,
+	const imageUri = resolveImageUri({
+		card: effectiveCard,
 		isCustom,
 		isDoubleFaced,
 		currentFace,
 		size,
-		customBackImage
-	);
+	});
 
 	const { width, height } = sizeMap[size];
+
+	// Derived from the URL-keyed state above: `error`/`isLoading` describe the
+	// *current* `imageUri` only. If `imageUri` just switched sources (e.g.
+	// custom → official fallback after the custom image's onError), neither
+	// `erroredUri` nor `loadedUri` matches it yet, so `error` is false and
+	// `isLoading` is true for the new source automatically — no reset step,
+	// no effect, no ref-during-render needed.
+	const error = erroredUri === imageUri;
+	// Only "loading" when there is actually an image URL to wait for. If `imageUri`
+	// is empty (no custom image, no resolved official/localized print — e.g. a
+	// custom card with no fallback available), there is nothing to load, so we must
+	// NOT show a skeleton forever — fall through to the name placeholder instead.
+	const isLoading = imageUri !== '' && loadedUri !== imageUri;
 
 	const handleFlip = (e: React.MouseEvent) => {
 		e.stopPropagation();
@@ -193,13 +274,14 @@ export function CardImage({
 		.join(' ');
 
 	// The base print is a placeholder and neither a localized print nor the
-	// English fallback replaced it — show the name placeholder. While the English
-	// fallback is still loading, keep showing the skeleton (not the name) so a
-	// real image can still arrive.
-	const isPlaceholderImage = basePlaceholder && !resolvedOverride && !fallbackLoading;
+	// English fallback replaced it — show the name placeholder. While the oracle
+	// fallback print or the English fallback is still loading, keep showing the
+	// skeleton (not the name) so a real image can still arrive.
+	const isPlaceholderImage =
+		basePlaceholder && !resolvedOverride && !fallbackLoading && !fallbackPrintLoading;
 
 	function renderCardImage() {
-		if (localizedLoading || (basePlaceholder && fallbackLoading)) {
+		if (fallbackPrintLoading || localizedLoading || (basePlaceholder && fallbackLoading)) {
 			return <div className={styles.localizedPlaceholder} />;
 		}
 		if (!error && imageUri && !isPlaceholderImage) {
@@ -213,8 +295,8 @@ export function CardImage({
 					unoptimized={isScryfallImageUrl(imageUri)}
 					priority={priority}
 					className={[styles.image, isLoading ? styles.loading : ''].filter(Boolean).join(' ')}
-					onLoad={() => setIsLoading(false)}
-					onError={() => setError(true)}
+					onLoad={() => setLoadedUri(imageUri)}
+					onError={() => setErroredUri(imageUri)}
 				/>
 			);
 		}

@@ -9,7 +9,7 @@ export type AnalyticsEvent =
 	  }
 	| { name: 'card_removed'; props: { scryfallId: string } }
 	| { name: 'card_edited'; props: { rowId: string; fields: string[] } }
-	| { name: 'print_changed'; props: { oracleId: string } }
+	| { name: 'print_changed'; props: { rowId: string; scryfallId: string } }
 	| { name: 'collection_cleared'; props: { count: number } }
 	// Decks
 	| { name: 'deck_created'; props: { deckId: string } }
@@ -27,7 +27,7 @@ export type AnalyticsEvent =
 	// Search / Auth / Nav
 	| { name: 'search_performed'; props: { hasFilters: boolean } }
 	| { name: 'filter_applied'; props: { filterType: string } }
-	| { name: 'signup'; props: { method: 'email' } }
+	| { name: 'signup'; props: { method: 'email' | 'google' | 'oauth' } }
 	| { name: 'login'; props: { method: 'email' | 'google' | 'oauth' } }
 	| { name: 'profile_viewed'; props: { isOwnProfile: boolean } };
 

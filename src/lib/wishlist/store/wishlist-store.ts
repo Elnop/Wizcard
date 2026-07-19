@@ -126,6 +126,7 @@ export const useWishlistStore = create<WishlistState & WishlistActions>()((set, 
 		// longer be recognised as wishlisted).
 		const updatedCopy: StoredCopy = { scryfallId: newScryfallId, entry: copy.entry };
 		set({ entries: { ...current, [rowId]: updatedCopy } });
+		getAnalytics().track({ name: 'print_changed', props: { rowId, scryfallId: newScryfallId } });
 		if (!userId) return;
 		// A wishlisted deck card has no owner_id, so the owner-filtered collection
 		// `update` op would not match it. Persist via `deck-card-update` (matches on

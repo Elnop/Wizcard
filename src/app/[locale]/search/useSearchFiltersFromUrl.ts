@@ -5,9 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import type { ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
-import { countActiveFilters } from '@/lib/search/types';
+import { countActiveFilters, DEFAULT_DECK_FILTERS } from '@/lib/search/types';
 import type { ColorMatch } from '@/lib/search/types';
 import type { SearchMode } from '@/lib/search/types';
+import type { SearchEntity, DeckSearchFilters } from '@/lib/search/types';
 import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
 import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
 
@@ -34,10 +35,16 @@ const VALID_COLOR_MATCHES = new Set(['exact', 'include', 'atMost']);
 const VALID_COLOR_IDENTITY_MATCHES = new Set(['atMost', 'exact']);
 const VALID_RARITIES = new Set(['common', 'uncommon', 'rare', 'mythic']);
 const VALID_MODES = new Set(['official', 'custom', 'backs']);
+const VALID_ENTITIES = new Set(['cards', 'decks', 'profiles']);
 
 function parseMode(param: string | null): SearchMode {
 	if (param && VALID_MODES.has(param)) return param as SearchMode;
 	return 'official';
+}
+
+function parseEntity(param: string | null): SearchEntity {
+	if (param && VALID_ENTITIES.has(param)) return param as SearchEntity;
+	return 'cards';
 }
 
 function parseTags(param: string | null): string[] {
@@ -50,7 +57,9 @@ function parseMpcTags(
 	mustNotHaveParam: string | null
 ): MpcTagsFilterValue {
 	const mustHave = parseTags(mustHaveParam);
-	const mustNotHave = mustNotHaveParam !== null ? parseTags(mustNotHaveParam) : ['NSFW'];
+	// NSFW is no longer excluded by default here — sensitive content is filtered
+	// globally by the profile's Ignored Tags setting. Default is now no exclusion.
+	const mustNotHave = parseTags(mustNotHaveParam);
 	return { mustHave, mustNotHave };
 }
 
@@ -104,6 +113,9 @@ type UrlSyncState = {
 	// The by-language default for includeMultilingual, so the writer can emit an
 	// explicit ml=0 when the user turns it off against a default of on.
 	multilingualDefaultsOn: boolean;
+	entity: SearchEntity;
+	profileTerm: string;
+	deckFilters: DeckSearchFilters;
 };
 
 /** The value to persist for the `ml` param, or null to omit it: emitted only
@@ -112,6 +124,17 @@ type UrlSyncState = {
 function mlParamValue(state: Pick<UrlSyncState, 'includeMultilingual' | 'multilingualDefaultsOn'>) {
 	if (state.includeMultilingual === state.multilingualDefaultsOn) return null;
 	return state.includeMultilingual ? '1' : '0';
+}
+
+/** Appends the deck-search params (`dname`/`dformats`/`dauthor`/`dcard`/`dcmd`),
+ * each emitted only when non-default. Split out of `buildSearchParams` to keep
+ * that function's cognitive complexity under the lint limit. */
+function appendDeckFilterParams(params: URLSearchParams, deckFilters: DeckSearchFilters): void {
+	if (deckFilters.name) params.set('dname', deckFilters.name);
+	if (deckFilters.formats.length > 0) params.set('dformats', deckFilters.formats.join(','));
+	if (deckFilters.authorNickname) params.set('dauthor', deckFilters.authorNickname);
+	if (deckFilters.cardInBoard) params.set('dcard', deckFilters.cardInBoard);
+	if (deckFilters.commander) params.set('dcmd', deckFilters.commander);
 }
 
 /** Builds the `/search` URL query string from current filter state. Extracted
@@ -135,12 +158,15 @@ function buildSearchParams(state: UrlSyncState): URLSearchParams {
 	if (state.mode !== 'official') params.set('mode', state.mode);
 	if (state.customSourceId) params.set('source', state.customSourceId);
 	if (state.mpcTags.mustHave.length > 0) params.set('mpcMust', state.mpcTags.mustHave.join(','));
-	// Omit mpcNot when it's the default ['NSFW']; use mpcNot= (empty) to signal "cleared by user"
-	const isDefaultMpcNot =
-		state.mpcTags.mustNotHave.length === 1 && state.mpcTags.mustNotHave[0] === 'NSFW';
-	if (!isDefaultMpcNot) params.set('mpcNot', state.mpcTags.mustNotHave.join(','));
+	// Default mustNotHave is now empty (NSFW handled by profile Ignored Tags); only
+	// serialize when the user has actually added exclusions.
+	if (state.mpcTags.mustNotHave.length > 0)
+		params.set('mpcNot', state.mpcTags.mustNotHave.join(','));
 	const ml = mlParamValue(state);
 	if (ml !== null) params.set('ml', ml);
+	if (state.entity !== 'cards') params.set('entity', state.entity);
+	if (state.profileTerm) params.set('pq', state.profileTerm);
+	appendDeckFilterParams(params, state.deckFilters);
 	return params;
 }
 
@@ -206,6 +232,16 @@ export function useSearchFiltersFromUrl() {
 		if (raw === '0') return false;
 		return multilingualDefaultsOn;
 	});
+	const [entity, setEntity] = useState<SearchEntity>(() => parseEntity(searchParams.get('entity')));
+	const [profileTerm, setProfileTerm] = useState(() => searchParams.get('pq') ?? '');
+	const [deckFilters, setDeckFilters] = useState<DeckSearchFilters>(() => ({
+		name: searchParams.get('dname') ?? DEFAULT_DECK_FILTERS.name,
+		formats: (searchParams.get('dformats')?.split(',').filter(Boolean) ??
+			DEFAULT_DECK_FILTERS.formats) as DeckSearchFilters['formats'],
+		authorNickname: searchParams.get('dauthor') ?? DEFAULT_DECK_FILTERS.authorNickname,
+		cardInBoard: searchParams.get('dcard') ?? DEFAULT_DECK_FILTERS.cardInBoard,
+		commander: searchParams.get('dcmd') ?? DEFAULT_DECK_FILTERS.commander,
+	}));
 
 	const isInitialMount = useRef(true);
 
@@ -232,6 +268,9 @@ export function useSearchFiltersFromUrl() {
 			mpcTags,
 			includeMultilingual,
 			multilingualDefaultsOn,
+			entity,
+			profileTerm,
+			deckFilters,
 		});
 
 		const queryString = params.toString();
@@ -254,6 +293,9 @@ export function useSearchFiltersFromUrl() {
 		mpcTags,
 		includeMultilingual,
 		multilingualDefaultsOn,
+		entity,
+		profileTerm,
+		deckFilters,
 		router,
 	]);
 
@@ -312,5 +354,11 @@ export function useSearchFiltersFromUrl() {
 		includeMultilingual,
 		setIncludeMultilingual,
 		activeFilterCount,
+		entity,
+		setEntity,
+		profileTerm,
+		setProfileTerm,
+		deckFilters,
+		setDeckFilters,
 	};
 }

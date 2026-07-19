@@ -11,6 +11,7 @@ type ProfileRow = {
 	show_prices: boolean;
 	theme_preference: string;
 	is_public: boolean;
+	ignored_tags: string[];
 	created_at: string;
 	updated_at: string;
 };
@@ -26,6 +27,7 @@ function rowToProfile(row: ProfileRow): Profile {
 		showPrices: row.show_prices ?? true,
 		themePreference: (row.theme_preference as Profile['themePreference']) ?? 'system',
 		isPublic: row.is_public ?? true,
+		ignoredTags: row.ignored_tags ?? ['nsfw'],
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,
 	};
@@ -36,7 +38,7 @@ export async function fetchProfile(userId: string): Promise<Profile | null> {
 	const { data, error } = await supabase
 		.from('profiles')
 		.select(
-			'id, nickname, description, avatar_url, language, price_currency, show_prices, theme_preference, is_public, created_at, updated_at'
+			'id, nickname, description, avatar_url, language, price_currency, show_prices, theme_preference, is_public, ignored_tags, created_at, updated_at'
 		)
 		.eq('id', userId)
 		.maybeSingle();
@@ -54,7 +56,7 @@ export async function fetchProfileByNickname(nickname: string): Promise<Profile 
 	const { data, error } = await supabase
 		.from('profiles')
 		.select(
-			'id, nickname, description, avatar_url, language, price_currency, show_prices, theme_preference, is_public, created_at, updated_at'
+			'id, nickname, description, avatar_url, language, price_currency, show_prices, theme_preference, is_public, ignored_tags, created_at, updated_at'
 		)
 		.ilike('nickname', escaped)
 		.maybeSingle();
@@ -95,6 +97,7 @@ export async function upsertProfile(userId: string, updates: ProfileUpdate): Pro
 	if (updates.showPrices !== undefined) cols.show_prices = updates.showPrices;
 	if (updates.themePreference !== undefined) cols.theme_preference = updates.themePreference;
 	if (updates.isPublic !== undefined) cols.is_public = updates.isPublic;
+	if (updates.ignoredTags !== undefined) cols.ignored_tags = updates.ignoredTags;
 	const { error } = await supabase.from('profiles').upsert(cols);
 	if (error) throw error;
 }

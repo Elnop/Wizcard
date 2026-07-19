@@ -5,6 +5,7 @@ import { useProfileContext } from '@/lib/profile/context/ProfileContext';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { AccountSection } from './sections/AccountSection';
 import { DisplaySection } from './sections/DisplaySection';
+import { IgnoredTagsSection } from './sections/IgnoredTagsSection';
 import { LanguageSection } from './sections/LanguageSection';
 import { PrivacySection } from './sections/PrivacySection';
 import { ProfileSection } from './sections/ProfileSection';
@@ -28,6 +29,7 @@ export default function SettingsView() {
 			<ProfileSection />
 			<LanguageSection />
 			<DisplaySection />
+			<IgnoredTagsSection />
 			<PrivacySection />
 			<AccountSection />
 		</main>

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { queryCustomCards } from '@/lib/mpc/db/custom-cards';
 import { toCustomCard } from '@/lib/mpc/adapter';
 import type { CustomCard, MpcSource } from '@/lib/mpc/types';
+import { useProfileContext } from '@/lib/profile/context/ProfileContext';
+import { getEffectiveIgnoredTags, isIgnored } from '@/lib/mpc/ignored-tags';
 
 interface UseCustomCardPrintsResult {
 	prints: CustomCard[];
@@ -15,6 +17,10 @@ export function useCustomCardPrints(oracleId: string | undefined): UseCustomCard
 		prints: [],
 		loading: false,
 	});
+
+	const { profile } = useProfileContext();
+	const ignoredTags = getEffectiveIgnoredTags(profile);
+	const ignoredKey = ignoredTags.join(',');
 
 	useEffect(() => {
 		if (!oracleId) {
@@ -43,11 +49,15 @@ export function useCustomCardPrints(oracleId: string | undefined): UseCustomCard
 					driveFolderId: null,
 				};
 
+				const ignoredTagsForFilter = ignoredKey ? ignoredKey.split(',') : [];
+
 				// The current print is kept in the list — the caller marks it as
 				// "selected"/"shown" (see PrintList.isCurrentPrint / PrintsTab). A custom
 				// current print lives only in this section, so excluding it here would
 				// make it vanish entirely from the picker and the card page.
-				const cards = result.cards.map((c) => toCustomCard(c, unknownSource));
+				const cards = result.cards
+					.map((c) => toCustomCard(c, unknownSource))
+					.filter((c) => !isIgnored(c, ignoredTagsForFilter));
 
 				setState({ prints: cards, loading: false });
 			} catch {
@@ -59,7 +69,7 @@ export function useCustomCardPrints(oracleId: string | undefined): UseCustomCard
 		return () => {
 			cancelled = true;
 		};
-	}, [oracleId]);
+	}, [oracleId, ignoredKey]);
 
 	return state;
 }

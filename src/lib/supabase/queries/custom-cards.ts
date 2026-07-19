@@ -68,6 +68,12 @@ export interface CustomCardQueryFilters {
 	oracleText?: string;
 	mpcTagsMustHave?: string[];
 	mpcTagsMustNotHave?: string[];
+	/**
+	 * Tags hidden by the viewer's profile (Ignored Tags setting). Cards carrying
+	 * any of these are excluded at the DB level so they never enter the result
+	 * set (no count skew, no client render). Lowercase, matching stored tags.
+	 */
+	ignoredTags?: string[];
 	oracleId?: string;
 	cardTypes?: CardType[];
 	order?: string;
@@ -166,6 +172,15 @@ export async function queryCustomCardRows(
 	if (filters.mpcTagsMustHave?.length) q = q.overlaps('tags', filters.mpcTagsMustHave);
 	if (filters.mpcTagsMustNotHave?.length)
 		q = filters.mpcTagsMustNotHave.reduce((acc, tag) => acc.not('tags', 'cs', `{${tag}}`), q);
+	// Profile-level ignored tags: exclude any card whose tags contain an ignored
+	// tag, case-insensitively. Stored tags carry meaningful casing (usernames,
+	// taxonomy), so we match against the generated lowercase mirror `tags_lower`
+	// (see migration 20260719130000) with each ignored tag lowercased.
+	if (filters.ignoredTags?.length)
+		q = filters.ignoredTags.reduce(
+			(acc, tag) => acc.not('tags_lower', 'cs', `{${tag.toLowerCase()}}`),
+			q
+		);
 	if (filters.oracleId) q = q.eq('oracle_id', filters.oracleId);
 	if (filters.colors?.length && filters.colorMatch === 'include')
 		q = q.overlaps('colors', filters.colors);

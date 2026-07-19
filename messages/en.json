@@ -473,6 +473,15 @@
 			"currencyEur": "€ EUR (Cardmarket)",
 			"currencyUsd": "$ USD (TCGplayer)"
 		},
+		"ignoredTags": {
+			"title": "Ignored tags",
+			"description": "Custom prints tagged with any of these are hidden everywhere, and replaced by an official print. NSFW is hidden by default.",
+			"placeholder": "Add a tag (e.g. nsfw, gore)…",
+			"removeLabel": "Remove",
+			"empty": "No ignored tags — sensitive custom prints will be shown.",
+			"noTagFound": "No tag found",
+			"addTag": "Add \"{query}\""
+		},
 		"privacy": {
 			"title": "Privacy",
 			"publicProfile": "Public profile",
@@ -766,7 +775,8 @@
 		"cardsCount": "{count} cards",
 		"landsCount": "{count} lands",
 		"cmcStat": "{cmc} CMC",
-		"folderCount": "{count, plural, one {# folder} other {# folders}}"
+		"folderCount": "{count, plural, one {# folder} other {# folders}}",
+		"byAuthor": "by <author></author>"
 	},
 	"collection": {
 		"title": "My Collection",
@@ -903,7 +913,31 @@
 		"customError": "Failed to load custom cards.",
 		"noResults": "No cards found",
 		"didYouMean": "Did you mean:",
-		"adjustSearch": "Try adjusting your search or filters."
+		"adjustSearch": "Try adjusting your search or filters.",
+		"entityCards": "Cards",
+		"entityDecks": "Decks",
+		"entityProfiles": "Profiles",
+		"entityAriaLabel": "Search type",
+		"deckNameLabel": "Deck name",
+		"deckFormatLabel": "Format",
+		"deckAuthorLabel": "Author",
+		"deckAuthorPlaceholder": "Nickname",
+		"deckSearchPlaceholder": "Search decks…",
+		"profileSearchPlaceholder": "Search profiles…",
+		"deckResultsCount": "{count, plural, one {# deck} other {# decks}}",
+		"profileResultsCount": "{count, plural, one {# profile} other {# profiles}}",
+		"loadMore": "Load more",
+		"apply": "Apply",
+		"reset": "Reset",
+		"viewGrid": "Grid",
+		"viewList": "List",
+		"colAuthor": "Author",
+		"colFormat": "Format",
+		"colUpdated": "Updated",
+		"statDecks": "{count, plural, one {# deck} other {# decks}}",
+		"statCards": "{count, plural, one {# card} other {# cards}}",
+		"viewProfile": "View profile",
+		"profileTypeLine": "Planeswalker — Player"
 	},
 	"legal": {
 		"lastUpdated": "Last updated: {date}",

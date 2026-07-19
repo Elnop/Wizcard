@@ -1,5 +1,6 @@
 import type { ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
+import type { DeckFormat } from '@/types/decks';
 
 export type ColorMatch = 'exact' | 'include' | 'atMost';
 
@@ -62,5 +63,41 @@ export function countActiveFilters(
 		('foilTypeFilter' in filters && filters.foilTypeFilter !== 'all' ? 1 : 0) +
 		('languageFilter' in filters && filters.languageFilter !== 'all' ? 1 : 0) +
 		('deckAssignment' in filters && filters.deckAssignment !== 'all' ? 1 : 0)
+	);
+}
+
+export type SearchEntity = 'cards' | 'decks' | 'profiles';
+
+/** Formats that require a commander → surface the conditional Commander input. */
+export const COMMANDER_FORMATS: DeckFormat[] = ['commander', 'brawl', 'oathbreaker'];
+
+export interface DeckSearchFilters {
+	name: string;
+	formats: DeckFormat[];
+	authorNickname: string;
+	// DEFERRED (see plan COURSE CORRECTION 2): the DeckFilterModal exposes no input for these;
+	// they stay '' and the resolution paths below are dormant. cards has no oracle_id, so a
+	// correct card-in-deck match needs oracle→all-printings resolution — out of scope for V1.
+	cardInBoard: string;
+	commander: string;
+}
+
+export const DEFAULT_DECK_FILTERS: DeckSearchFilters = {
+	name: '',
+	formats: [],
+	authorNickname: '',
+	cardInBoard: '',
+	commander: '',
+};
+
+export function countActiveDeckFilters(f: DeckSearchFilters): number {
+	// commanderActive is always 0 today: no UI ever sets f.commander (see plan COURSE CORRECTION 2).
+	const commanderActive = f.formats.some((fmt) => COMMANDER_FORMATS.includes(fmt)) && !!f.commander;
+	return (
+		(f.name ? 1 : 0) +
+		(f.formats.length > 0 ? 1 : 0) +
+		(f.authorNickname ? 1 : 0) +
+		(f.cardInBoard ? 1 : 0) +
+		(commanderActive ? 1 : 0)
 	);
 }

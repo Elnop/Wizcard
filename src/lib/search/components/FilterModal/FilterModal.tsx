@@ -7,6 +7,7 @@ import type { ColorMatch } from '@/lib/search/types';
 import type { MpcSourceWithCount } from '@/lib/mpc/db/custom-cards';
 import type { CardType } from '@/lib/mpc/types';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
+import { useAnalytics } from '@/lib/analytics/context/AnalyticsContext';
 import { Modal } from '@/components/Modal/Modal';
 import { ColorFilter } from '@/lib/search/components/filters/ColorFilter/ColorFilter';
 import { ColorIdentityFilter } from '@/lib/search/components/filters/ColorIdentityFilter/ColorIdentityFilter';
@@ -22,7 +23,9 @@ import { MpcTagsFilter } from '@/lib/search/components/filters/MpcTagsFilter/Mpc
 import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
 import styles from './FilterModal.module.css';
 
-const DEFAULT_MPC_TAGS: MpcTagsFilterValue = { mustHave: [], mustNotHave: ['NSFW'] };
+// NSFW is filtered globally via the profile's Ignored Tags setting, so the search
+// filter no longer excludes it by default.
+const DEFAULT_MPC_TAGS: MpcTagsFilterValue = { mustHave: [], mustNotHave: [] };
 
 export type FilterModalVariant = 'default' | 'search' | 'backs';
 
@@ -111,6 +114,7 @@ function FilterModalContent({
 	onClose,
 }: FilterModalContentProps) {
 	const symbolMap = useScryfallSymbols();
+	const analytics = useAnalytics();
 	const [draftColors, setDraftColors] = useState<ScryfallColor[]>(initialColors);
 	const [draftColorMatch, setDraftColorMatch] = useState<'exact' | 'include' | 'atMost'>(
 		initialColorMatch
@@ -138,6 +142,21 @@ function FilterModalContent({
 	// Hidden sections' drafts are emitted unchanged on purpose: filters set in another
 	// variant survive in the URL, and the consumer neutralizes them at query time.
 	const handleApply = () => {
+		// Emit one event per active (non-default) filter type so breakdowns show
+		// which filters users actually reach for. Empty apply = no events.
+		const activeFilters: string[] = [];
+		if (draftColors.length > 0) activeFilters.push('colors');
+		if (draftColorIdentity.length > 0) activeFilters.push('colorIdentity');
+		if (draftType.length > 0) activeFilters.push('type');
+		if (draftSet) activeFilters.push('set');
+		if (draftRarities.length > 0) activeFilters.push('rarities');
+		if (draftOracleText) activeFilters.push('oracleText');
+		if (draftCmc) activeFilters.push('cmc');
+		if (draftCustomSourceId) activeFilters.push('customSource');
+		if (draftCardTypeFilter !== 'all') activeFilters.push('cardType');
+		for (const filterType of activeFilters) {
+			analytics.track({ name: 'filter_applied', props: { filterType } });
+		}
 		onApply({
 			colors: draftColors,
 			colorMatch: draftColorMatch,

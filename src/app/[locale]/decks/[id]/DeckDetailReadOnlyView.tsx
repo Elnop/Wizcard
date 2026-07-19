@@ -206,7 +206,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 					)}
 
 					<DeckStats stats={stats} warnings={warnings} />
-					<SampleHand mainboard={cardsByZone.mainboard} />
+					<SampleHand deckId={deckId} mainboard={cardsByZone.mainboard} />
 				</div>
 			</div>
 

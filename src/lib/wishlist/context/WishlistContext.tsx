@@ -11,6 +11,7 @@ import type { WishlistData } from '../store/wishlist-store';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
 import { useDeckStore, getLoadedDeckCard, patchLoadedDeckCard } from '@/lib/deck/store/deck-store';
 import { enqueue } from '@/lib/supabase/sync-queue';
+import { getAnalytics } from '@/lib/analytics/context/AnalyticsContext';
 
 type WishlistContextValue = {
 	wishlist: WishlistData;
@@ -202,6 +203,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
 			useWishlistStore.setState({ entries: nextWishlist });
 			useCollectionStore.setState({ entries: nextCollection });
+			getAnalytics().track({ name: 'wishlist_moved_to_collection', props: { scryfallId } });
 			if (userId) triggerSync();
 		},
 		[userId, triggerSync]

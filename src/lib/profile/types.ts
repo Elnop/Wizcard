@@ -12,6 +12,7 @@ export type Profile = {
 	showPrices: boolean;
 	themePreference: ThemePreference;
 	isPublic: boolean;
+	ignoredTags: string[];
 	createdAt: string;
 	updatedAt: string;
 };
@@ -27,5 +28,6 @@ export type ProfileUpdate = Partial<
 		| 'showPrices'
 		| 'themePreference'
 		| 'isPublic'
+		| 'ignoredTags'
 	>
 >;
