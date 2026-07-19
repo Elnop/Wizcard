@@ -712,7 +712,8 @@
 		"colUpdated": "Mis à jour",
 		"statDecks": "{count, plural, one {# deck} other {# decks}}",
 		"statCards": "{count, plural, one {# carte} other {# cartes}}",
-		"viewProfile": "Voir le profil"
+		"viewProfile": "Voir le profil",
+		"profileTypeLine": "Planeswalker — Joueur"
 	},
 	"legal": {
 		"lastUpdated": "Dernière mise à jour : {date}",

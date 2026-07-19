@@ -712,7 +712,8 @@
 		"colUpdated": "Updated",
 		"statDecks": "{count, plural, one {# deck} other {# decks}}",
 		"statCards": "{count, plural, one {# card} other {# cards}}",
-		"viewProfile": "View profile"
+		"viewProfile": "View profile",
+		"profileTypeLine": "Planeswalker — Player"
 	},
 	"legal": {
 		"lastUpdated": "Last updated: {date}",
