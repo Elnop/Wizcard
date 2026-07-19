@@ -1,6 +1,10 @@
 .card {
+	position: relative;
 	display: flex;
 	flex-direction: column;
+	/* Fixed height so the framed image and the content zone below it have a
+	   stable split (image = everything above the bottom content zone). */
+	height: 340px;
 	overflow: hidden;
 	border-radius: 16px;
 	text-decoration: none;
@@ -9,9 +13,9 @@
 	border: 1px solid var(--glass-border);
 	backdrop-filter: blur(var(--glass-blur));
 	transition:
-		border-color 0.15s,
-		transform 0.15s,
-		box-shadow 0.15s;
+		border-color 0.2s,
+		transform 0.2s,
+		box-shadow 0.2s;
 }
 
 .card:hover {
@@ -20,23 +24,31 @@
 	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
-/* ── Hero image ── */
-
-.hero {
-	position: relative;
-	height: 260px;
+/* ── Image layer ──
+   At rest: inset from the card edges (framed) with its own rounded corners,
+   occupying the top zone. On hover: expands to cover the whole card
+   (full-bleed) so the foreground content sits over the image. */
+.imgLayer {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	right: 8px;
+	/* Height of the framed image at rest (card height minus the content zone). */
+	bottom: 96px;
 	overflow: hidden;
-	border-radius: 16px 16px 0 0;
+	border-radius: 12px;
 	background: var(--surface);
-	/* Scale down as a whole on hover. transform doesn't affect layout flow,
-	   so the body below stays fixed. Anchored at the top so it shrinks
-	   downward from the card's top edge. */
-	transform-origin: top center;
-	transition: transform 0.25s ease;
+	transition:
+		inset 0.3s ease,
+		border-radius 0.3s ease;
 }
 
-.card:hover .hero {
-	transform: scale(0.94);
+.card:hover .imgLayer {
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	border-radius: 16px;
 }
 
 .heroImg,
@@ -57,20 +69,36 @@
 	font-weight: 700;
 }
 
-/* Dark gradient under the nickname so it stays legible over any art. */
-.heroScrim {
+/* Reserves the framed-image height in normal flow so .content lands below it. */
+.spacer {
+	height: calc(100% - 96px);
+	flex-shrink: 0;
+}
+
+/* ── Foreground content ── */
+.content {
+	position: relative;
+	z-index: 1;
+	margin-top: auto;
+}
+
+/* Dark scrim behind the content, invisible at rest (content is on the card
+   background), fading in on hover once the image expands underneath. */
+.scrim {
 	position: absolute;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	height: 55%;
-	background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, transparent 100%);
+	inset: 0;
+	background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 20%, rgba(0, 0, 0, 0) 100%);
+	opacity: 0;
+	transition: opacity 0.3s ease;
 	pointer-events: none;
 }
 
-/* ── Body ── */
+.card:hover .scrim {
+	opacity: 1;
+}
 
-.body {
+.contentInner {
+	position: relative;
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
@@ -78,24 +106,13 @@
 }
 
 .nickname {
-	position: absolute;
-	left: 16px;
-	right: 16px;
-	bottom: 12px;
-	z-index: 1;
 	font-weight: 700;
-	color: #fff;
 	font-size: var(--text-xl);
-	text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+	color: var(--foreground);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	transform-origin: left bottom;
-	transition: transform 0.25s ease;
-}
-
-.card:hover .nickname {
-	transform: scale(1.08);
+	transition: color 0.2s ease;
 }
 
 .description {
@@ -109,6 +126,7 @@
 	overflow: hidden;
 	/* Reserve two lines so cards with/without a description stay aligned. */
 	min-height: calc(1.45em * 2);
+	transition: color 0.2s ease;
 }
 
 .footer {
@@ -126,12 +144,23 @@
 	color: var(--text-muted);
 	font-size: var(--text-sm);
 	font-weight: 600;
+	transition: color 0.2s ease;
 }
 
 .stat {
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
+}
+
+/* On hover the content sits over the image → switch text to light. */
+.card:hover .nickname {
+	color: #fff;
+}
+
+.card:hover .description,
+.card:hover .stats {
+	color: rgba(255, 255, 255, 0.85);
 }
 
 .viewBtn {
@@ -144,9 +173,9 @@
 	font-size: var(--text-sm);
 	font-weight: 600;
 	transition:
-		background 0.15s,
-		border-color 0.15s,
-		color 0.15s;
+		background 0.2s,
+		border-color 0.2s,
+		color 0.2s;
 }
 
 .card:hover .viewBtn {

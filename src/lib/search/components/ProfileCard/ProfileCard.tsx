@@ -48,7 +48,8 @@ export function ProfileCard({ profile, stats }: Props) {
 
 	const content = (
 		<>
-			<div className={styles.hero}>
+			{/* Image layer: framed (inset) at rest, expands to full-bleed on hover. */}
+			<div className={styles.imgLayer}>
 				{profile.avatarUrl ? (
 					// eslint-disable-next-line @next/next/no-img-element -- Supabase storage host isn't whitelisted for next/image
 					<img src={profile.avatarUrl} alt="" className={styles.heroImg} />
@@ -57,27 +58,34 @@ export function ProfileCard({ profile, stats }: Props) {
 						{(profile.nickname ?? '?').charAt(0).toUpperCase()}
 					</span>
 				)}
-				<div className={styles.heroScrim} />
-				<span className={styles.nickname}>{profile.nickname ?? '—'}</span>
 			</div>
 
-			<div className={styles.body}>
-				{profile.description && <p className={styles.description}>{profile.description}</p>}
+			{/* Spacer that reserves the image height, pushing content to the bottom. */}
+			<div className={styles.spacer} />
 
-				<div className={styles.footer}>
-					{stats && (
-						<div className={styles.stats}>
-							<span className={styles.stat}>
-								<DeckIcon />
-								{stats.deckCount}
-							</span>
-							<span className={styles.stat}>
-								<CardsIcon />
-								{stats.cardCount}
-							</span>
-						</div>
-					)}
-					{profile.nickname && <span className={styles.viewBtn}>{t('viewProfile')}</span>}
+			{/* Foreground content. A scrim behind it fades in on hover so the text
+			    stays legible once the image expands underneath. */}
+			<div className={styles.content}>
+				<div className={styles.scrim} />
+				<div className={styles.contentInner}>
+					<span className={styles.nickname}>{profile.nickname ?? '—'}</span>
+					{profile.description && <p className={styles.description}>{profile.description}</p>}
+
+					<div className={styles.footer}>
+						{stats && (
+							<div className={styles.stats}>
+								<span className={styles.stat}>
+									<DeckIcon />
+									{stats.deckCount}
+								</span>
+								<span className={styles.stat}>
+									<CardsIcon />
+									{stats.cardCount}
+								</span>
+							</div>
+						)}
+						{profile.nickname && <span className={styles.viewBtn}>{t('viewProfile')}</span>}
+					</div>
 				</div>
 			</div>
 		</>
