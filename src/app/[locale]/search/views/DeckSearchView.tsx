@@ -1,0 +1,84 @@
+'use client';
+
+import { useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
+import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
+import { DeckFilterModal } from '@/lib/search/components/DeckFilterModal/DeckFilterModal';
+import { useDeckSearch } from '@/lib/search/hooks/useDeckSearch';
+import { countActiveDeckFilters, type DeckSearchFilters } from '@/lib/search/types';
+import { DeckCard } from '@/app/[locale]/decks/components/DeckCard/DeckCard';
+import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
+import { Spinner } from '@/components/Spinner/Spinner';
+import styles from '../page.module.css';
+
+type Props = {
+	filters: DeckSearchFilters;
+	onFiltersChange: (f: DeckSearchFilters) => void;
+};
+
+export function DeckSearchView({ filters, onFiltersChange }: Props) {
+	const t = useTranslations('search');
+	const router = useRouter();
+	const [modalOpen, setModalOpen] = useState(false);
+	const symbolMap = useScryfallSymbols();
+	const { decks, isLoading, isLoadingMore, hasMore, total, loadMore } = useDeckSearch(filters);
+	const activeCount = countActiveDeckFilters(filters);
+
+	return (
+		<>
+			<div className={styles.searchRow}>
+				<SearchBar
+					value={filters.name}
+					onChange={(v) => onFiltersChange({ ...filters, name: v })}
+					placeholder={t('deckSearchPlaceholder')}
+				/>
+				<button type="button" className={styles.filtersButton} onClick={() => setModalOpen(true)}>
+					{t('filters')}
+					{activeCount > 0 && <span className={styles.filterBadge}>{activeCount}</span>}
+				</button>
+			</div>
+
+			<DeckFilterModal
+				isOpen={modalOpen}
+				filters={filters}
+				onApply={onFiltersChange}
+				onClose={() => setModalOpen(false)}
+			/>
+
+			{!isLoading && decks.length > 0 && (
+				<div className={styles.resultInfo}>
+					<span>{t('deckResultsCount', { count: total })}</span>
+				</div>
+			)}
+
+			{isLoading ? (
+				<div className={styles.loading}>
+					<Spinner size="lg" />
+				</div>
+			) : (
+				<div className={styles.deckGrid}>
+					{decks.map(({ deck, authorNickname }) => (
+						<div key={deck.id} className={styles.deckGridItem}>
+							<DeckCard
+								deck={deck}
+								symbolMap={symbolMap}
+								readOnly
+								onClick={() => router.push(`/decks/${deck.id}`)}
+							/>
+							{authorNickname && <span className={styles.deckAuthor}>{authorNickname}</span>}
+						</div>
+					))}
+				</div>
+			)}
+
+			{hasMore && !isLoading && (
+				<div className={styles.loadMore}>
+					<button type="button" onClick={loadMore} disabled={isLoadingMore}>
+						{isLoadingMore ? <Spinner size="sm" /> : t('loadMore')}
+					</button>
+				</div>
+			)}
+		</>
+	);
+}

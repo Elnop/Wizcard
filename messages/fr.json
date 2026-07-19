@@ -701,6 +701,7 @@
 		"profileSearchPlaceholder": "Rechercher des profils…",
 		"deckResultsCount": "{count, plural, one {# deck} other {# decks}}",
 		"profileResultsCount": "{count, plural, one {# profil} other {# profils}}",
+		"loadMore": "Charger plus",
 		"apply": "Appliquer",
 		"reset": "Réinitialiser",
 		"viewGrid": "Grille",

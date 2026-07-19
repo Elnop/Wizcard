@@ -196,6 +196,62 @@
 	min-height: 80px;
 }
 
+.deckGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 20px;
+}
+
+.deckGridItem {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.deckAuthor {
+	font-size: var(--text-sm);
+	color: var(--text-muted);
+	padding: 0 4px;
+}
+
+.profileGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 20px;
+}
+
+.loadMore {
+	display: flex;
+	justify-content: center;
+	padding: 24px 0;
+}
+
+.loadMore button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 140px;
+	padding: 10px 20px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	color: var(--foreground);
+	cursor: pointer;
+	font-size: var(--text-base);
+	transition:
+		border-color 0.2s,
+		background-color 0.2s;
+}
+
+.loadMore button:hover:not(:disabled) {
+	border-color: var(--primary);
+}
+
+.loadMore button:disabled {
+	cursor: default;
+	opacity: 0.7;
+}
+
 @media (max-width: 768px) {
 	.main {
 		padding: 20px 16px;
