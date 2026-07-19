@@ -151,7 +151,7 @@ with expected(t, col, typ) as (
     ('profiles','updated_at','timestamp with time zone'),
     ('profiles','language','text'),('profiles','price_currency','text'),
     ('profiles','show_prices','boolean'),('profiles','theme_preference','text'),
-    ('profiles','is_public','boolean'),
+    ('profiles','is_public','boolean'),('profiles','ignored_tags','ARRAY'),
     -- user_usage
     ('user_usage','owner_id','uuid'),('user_usage','deck_count','integer'),('user_usage','card_count','integer'),
     -- custom_card_sources
