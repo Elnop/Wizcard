@@ -75,6 +75,9 @@ export interface DeckSearchFilters {
 	name: string;
 	formats: DeckFormat[];
 	authorNickname: string;
+	// DEFERRED (see plan COURSE CORRECTION 2): the DeckFilterModal exposes no input for these;
+	// they stay '' and the resolution paths below are dormant. cards has no oracle_id, so a
+	// correct card-in-deck match needs oracle→all-printings resolution — out of scope for V1.
 	cardInBoard: string;
 	commander: string;
 }
@@ -88,6 +91,7 @@ export const DEFAULT_DECK_FILTERS: DeckSearchFilters = {
 };
 
 export function countActiveDeckFilters(f: DeckSearchFilters): number {
+	// commanderActive is always 0 today: no UI ever sets f.commander (see plan COURSE CORRECTION 2).
 	const commanderActive = f.formats.some((fmt) => COMMANDER_FORMATS.includes(fmt)) && !!f.commander;
 	return (
 		(f.name ? 1 : 0) +

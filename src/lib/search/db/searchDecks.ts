@@ -95,9 +95,11 @@ export async function searchDecks(
 		filters.formats.some((f) => COMMANDER_FORMATS.includes(f)) && !!filters.commander.trim();
 
 	let deckIdConstraint: string[] | null = null;
+	// DORMANT: never reached today — cardInBoard/commander are never populated by the UI (see plan COURSE CORRECTION 2).
 	if (filters.cardInBoard.trim()) {
 		deckIdConstraint = await resolveDeckIdsWithCard(filters.cardInBoard.trim(), false);
 	}
+	// DORMANT: never reached today — cardInBoard/commander are never populated by the UI (see plan COURSE CORRECTION 2).
 	if (commanderActive) {
 		const cmdIds = await resolveDeckIdsWithCard(filters.commander.trim(), true);
 		deckIdConstraint =
@@ -115,6 +117,8 @@ export async function searchDecks(
 	if (filters.name.trim()) q = q.ilike('name', `%${filters.name.trim()}%`);
 	if (filters.formats.length > 0) q = q.in('format', filters.formats);
 	if (authorIds !== null) q = q.in('owner_id', authorIds);
+	// NOTE: if this path is ever revived, a card in thousands of decks would overflow the URL —
+	// switch to a server-side join / RPC instead of a client-side .in().
 	if (deckIdConstraint !== null) q = q.in('id', deckIdConstraint);
 	q = q.order('updated_at', { ascending: false });
 	q = q.range(offset, offset + limit - 1);
