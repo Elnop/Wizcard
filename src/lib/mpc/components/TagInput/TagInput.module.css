@@ -1,0 +1,141 @@
+.root {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+/* Selected chips above input */
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	height: 22px;
+	padding: 0 6px 0 8px;
+	font-size: var(--text-2xs);
+	border-radius: 2px;
+	cursor: default;
+}
+
+.chipInclude {
+	background: rgba(74, 140, 111, 0.15);
+	border: 1px solid rgba(74, 140, 111, 0.4);
+	color: var(--jade);
+}
+
+.chipExclude {
+	background: rgba(192, 57, 43, 0.12);
+	border: 1px solid rgba(192, 57, 43, 0.35);
+	color: var(--error);
+}
+
+.chipNeutral {
+	background: rgba(192, 57, 43, 0.12);
+	border: 1px solid rgba(192, 57, 43, 0.35);
+	color: var(--error);
+}
+
+.chipRemove {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	height: 14px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0;
+	color: inherit;
+	opacity: 0.6;
+	line-height: 1;
+	font-size: 11px;
+	transition: opacity 0.1s;
+}
+
+.chipRemove:hover {
+	opacity: 1;
+}
+
+/* Input + dropdown wrapper */
+.inputWrap {
+	position: relative;
+}
+
+.input {
+	width: 100%;
+	padding: 10px 12px;
+	font-size: var(--text-base);
+	font-family: inherit;
+	color: var(--foreground);
+	background: var(--background);
+	border: 1px solid var(--border);
+	border-radius: 2px;
+	outline: none;
+	box-sizing: border-box;
+	transition: border-color 0.15s;
+}
+
+.input:focus {
+	border-color: var(--gold);
+}
+
+.inputInclude:focus {
+	border-color: var(--jade);
+	box-shadow: 0 0 0 2px rgba(74, 140, 111, 0.15);
+}
+
+.inputExclude:focus {
+	border-color: var(--error);
+	box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.12);
+}
+
+.dropdown {
+	position: absolute;
+	top: calc(100% + 2px);
+	left: 0;
+	right: 0;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 2px;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+	z-index: 200;
+	max-height: 200px;
+	overflow-y: auto;
+}
+
+.dropdownItem {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 6px 10px;
+	font-size: var(--text-sm);
+	color: var(--foreground);
+	cursor: pointer;
+	transition: background 0.1s;
+}
+
+.dropdownItem:hover,
+.dropdownItemFocused {
+	background: var(--surface-hover);
+}
+
+.dropdownItemGroup {
+	font-size: var(--text-2xs);
+	color: var(--text-muted);
+	padding: 2px 10px 0;
+	font-family: var(--font-display);
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+
+.dropdownEmpty {
+	padding: 10px;
+	font-size: var(--text-sm);
+	color: var(--text-muted);
+	text-align: center;
+}
