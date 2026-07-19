@@ -31,11 +31,7 @@ function computeCustomFilterCount(
 	customSourceId: string | null,
 	mpcTags: MpcTagsFilterValue
 ): number {
-	return (
-		(customSourceId !== null ? 1 : 0) +
-		mpcTags.mustHave.length +
-		(mpcTags.mustNotHave.join(',') !== 'NSFW' ? mpcTags.mustNotHave.length : 0)
-	);
+	return (customSourceId !== null ? 1 : 0) + mpcTags.mustHave.length + mpcTags.mustNotHave.length;
 }
 
 type CardSearchViewProps = {

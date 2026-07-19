@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { queryCustomCards, getCustomCardSources } from '@/lib/mpc/db/custom-cards';
 import { toCustomCard } from '../adapter';
+import { getEffectiveIgnoredTags, isIgnored } from '@/lib/mpc/ignored-tags';
+import { useProfileStore } from '@/lib/profile/store/profile-store';
 import { useDebounce } from '@/lib/search/hooks/useDebounce';
-import type { CustomCard, CardType } from '../types';
+import type { CustomCard, CardType, MpcCard, MpcSource } from '../types';
 import type { CardFilters } from '@/lib/search/types';
 
 export interface UseCustomCardsFilters extends CardFilters {
@@ -24,6 +26,36 @@ interface UseCustomCardsResult {
 }
 
 const PAGE_SIZE = 48;
+
+/** Split the stable ignored-tags key back into an array (empty key → []). */
+function splitIgnoredKey(key: string): string[] {
+	return key ? key.split(',') : [];
+}
+
+/**
+ * Convert raw MPC cards to display CustomCards, resolving each card's source and
+ * dropping any card carrying an ignored tag (safety net over the DB filter — an
+ * ignored card must never surface in a list).
+ */
+function toDisplayCards(
+	cards: MpcCard[],
+	sources: MpcSource[],
+	ignoredTags: string[]
+): CustomCard[] {
+	const sourceMap = new Map(sources.map((s) => [s.id, s]));
+	const result: CustomCard[] = [];
+	for (const card of cards) {
+		const source = (card.sourceId ? sourceMap.get(card.sourceId) : undefined) ?? {
+			id: card.sourceId ?? 'user',
+			name: card.sourceId ?? 'My Cards',
+			isBuiltIn: false,
+			tags: [],
+		};
+		const converted = toCustomCard(card, source);
+		if (!isIgnored(converted, ignoredTags)) result.push(converted);
+	}
+	return result;
+}
 
 export function useCustomCards(
 	sourceId: string | null | undefined,
@@ -62,6 +94,12 @@ export function useCustomCards(
 	const debouncedOracleText = useDebounce(filters.oracleText, 300);
 	const debouncedCmc = useDebounce(filters.cmc, 300);
 
+	// Profile-level ignored tags (Ignored Tags setting). Guest → ['nsfw']. Keyed as
+	// a stable string so effects/callbacks re-run when the setting changes.
+	const profile = useProfileStore((s) => s.profile);
+	const ignoredTags = getEffectiveIgnoredTags(profile);
+	const ignoredKey = ignoredTags.join(',');
+
 	const colorsKey = filters.colors.join(',');
 	const raritiesKey = filters.rarities.join(',');
 	const mustHaveKey = filters.mpcTagsMustHave.join(',');
@@ -83,6 +121,7 @@ export function useCustomCards(
 		mustHaveKey,
 		mustNotHaveKey,
 		cardTypesKey,
+		ignoredKey,
 	].join('|');
 
 	const fetchPage = useCallback(
@@ -96,6 +135,9 @@ export function useCustomCards(
 			if (isNewSearch) setIsLoading(true);
 			else setIsLoadingMore(true);
 			setError(null);
+
+			// Derived from the stable key so the callback depends only on `ignoredKey`.
+			const ignoredTagsForQuery = splitIgnoredKey(ignoredKey);
 
 			try {
 				const [mpcCards, sources] = await Promise.all([
@@ -114,6 +156,7 @@ export function useCustomCards(
 							oracleText: debouncedOracleText || undefined,
 							mpcTagsMustHave: mustHaveKey ? mustHaveKey.split(',') : undefined,
 							mpcTagsMustNotHave: mustNotHaveKey ? mustNotHaveKey.split(',') : undefined,
+							ignoredTags: ignoredTagsForQuery.length ? ignoredTagsForQuery : undefined,
 							cardTypes: cardTypesKey ? (cardTypesKey.split(',') as CardType[]) : undefined,
 							order: filters.order,
 							dir: filters.dir,
@@ -125,16 +168,7 @@ export function useCustomCards(
 				if (controller.signal.aborted) return;
 
 				sourcesRef.current = sources;
-				const sourceMap = new Map(sources.map((s) => [s.id, s]));
-				const converted = mpcCards.cards.map((card) => {
-					const source = (card.sourceId ? sourceMap.get(card.sourceId) : undefined) ?? {
-						id: card.sourceId ?? 'user',
-						name: card.sourceId ?? 'My Cards',
-						isBuiltIn: false,
-						tags: [],
-					};
-					return toCustomCard(card, source);
-				});
+				const converted = toDisplayCards(mpcCards.cards, sources, ignoredTagsForQuery);
 
 				if (isNewSearch) {
 					setCards(converted);
@@ -168,6 +202,7 @@ export function useCustomCards(
 			mustHaveKey,
 			mustNotHaveKey,
 			cardTypesKey,
+			ignoredKey,
 		]
 	);
 

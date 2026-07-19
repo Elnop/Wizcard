@@ -59,6 +59,26 @@ function didCustomImageError(customImageUri: string | null, erroredUri: string |
 	return customImageUri !== null && erroredUri === customImageUri;
 }
 
+/**
+ * Decide whether a custom card must be rendered via the official/localized print
+ * instead of its own custom image. Two independent triggers:
+ *  - ignored tag, but ONLY for a selected entry print (deck/collection/wishlist,
+ *    which carries `.entry` and has a real official print to resolve). A bare
+ *    ignored custom card is filtered out upstream and must never reach here.
+ *  - the custom image URL failed to load (a broken URL — independent of tags).
+ */
+function shouldFallbackFromCustomCard(args: {
+	isInputCustom: boolean;
+	isEntryPrint: boolean;
+	isTagIgnored: boolean;
+	customImageUri: string | null;
+	erroredUri: string | null;
+}): boolean {
+	if (!args.isInputCustom) return false;
+	const ignored = args.isEntryPrint && args.isTagIgnored;
+	return ignored || didCustomImageError(args.customImageUri, args.erroredUri);
+}
+
 export function CardImage({
 	card,
 	size = 'normal',
@@ -102,9 +122,15 @@ export function CardImage({
 	const customImageUri = isInputCustom ? (card as unknown as CustomCard).custom.image_url : null;
 	const profile = useProfileStore((s) => s.profile);
 	const ignoredTags = getEffectiveIgnoredTags(profile);
-	const isIgnoredCustom = isInputCustom && isIgnored(card as unknown as CustomCard, ignoredTags);
-	const shouldFallbackFromCustom =
-		isInputCustom && (isIgnoredCustom || didCustomImageError(customImageUri, erroredUri));
+	const shouldFallbackFromCustom = shouldFallbackFromCustomCard({
+		isInputCustom,
+		// Entry prints (deck/collection/wishlist copies) carry `.entry`; only those
+		// get the ignored-tag → official-print fallback. See the helper's doc.
+		isEntryPrint: Boolean(card.entry),
+		isTagIgnored: isInputCustom && isIgnored(card as unknown as CustomCard, ignoredTags),
+		customImageUri,
+		erroredUri,
+	});
 	// A normal (non-custom) card, OR a custom we must fall back away from,
 	// is eligible for localized/official image resolution.
 	const visible = (!isInputCustom || shouldFallbackFromCustom) && (priority || isVisible);
@@ -161,7 +187,11 @@ export function CardImage({
 	// `isLoading` is true for the new source automatically — no reset step,
 	// no effect, no ref-during-render needed.
 	const error = erroredUri === imageUri;
-	const isLoading = loadedUri !== imageUri;
+	// Only "loading" when there is actually an image URL to wait for. If `imageUri`
+	// is empty (no custom image, no resolved official/localized print — e.g. a
+	// custom card with no fallback available), there is nothing to load, so we must
+	// NOT show a skeleton forever — fall through to the name placeholder instead.
+	const isLoading = imageUri !== '' && loadedUri !== imageUri;
 
 	const handleFlip = (e: React.MouseEvent) => {
 		e.stopPropagation();

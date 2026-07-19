@@ -165,7 +165,8 @@ with expected(t, col, typ) as (
     ('custom_cards','id','text'),('custom_cards','source_id','text'),('custom_cards','name','text'),
     ('custom_cards','raw_name','text'),('custom_cards','image_storage_path','text'),
     ('custom_cards','image_drive_url','text'),('custom_cards','artist','text'),
-    ('custom_cards','tags','ARRAY'),('custom_cards','is_public','boolean'),
+    ('custom_cards','tags','ARRAY'),('custom_cards','tags_lower','ARRAY'),
+    ('custom_cards','is_public','boolean'),
     ('custom_cards','created_by','uuid'),('custom_cards','created_at','timestamp with time zone'),
     ('custom_cards','oracle_id','text'),('custom_cards','enriched_at','timestamp with time zone'),
     ('custom_cards','set_code','text'),('custom_cards','collector_number','text'),
@@ -359,6 +360,7 @@ with fn(name, args) as (
     ('normalize_oauth_nickname','raw text'),
     ('handle_new_user',''),
     ('count_distinct_public_cards','owner uuid'),
+    ('lower_tags','t text[]'),
     ('recompute_user_usage','uid uuid'),
     ('trg_decks_usage',''),('trg_cards_usage',''),
     ('trg_decks_limit',''),('trg_cards_limit','')

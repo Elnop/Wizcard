@@ -57,7 +57,9 @@ function parseMpcTags(
 	mustNotHaveParam: string | null
 ): MpcTagsFilterValue {
 	const mustHave = parseTags(mustHaveParam);
-	const mustNotHave = mustNotHaveParam !== null ? parseTags(mustNotHaveParam) : ['NSFW'];
+	// NSFW is no longer excluded by default here — sensitive content is filtered
+	// globally by the profile's Ignored Tags setting. Default is now no exclusion.
+	const mustNotHave = parseTags(mustNotHaveParam);
 	return { mustHave, mustNotHave };
 }
 
@@ -156,10 +158,10 @@ function buildSearchParams(state: UrlSyncState): URLSearchParams {
 	if (state.mode !== 'official') params.set('mode', state.mode);
 	if (state.customSourceId) params.set('source', state.customSourceId);
 	if (state.mpcTags.mustHave.length > 0) params.set('mpcMust', state.mpcTags.mustHave.join(','));
-	// Omit mpcNot when it's the default ['NSFW']; use mpcNot= (empty) to signal "cleared by user"
-	const isDefaultMpcNot =
-		state.mpcTags.mustNotHave.length === 1 && state.mpcTags.mustNotHave[0] === 'NSFW';
-	if (!isDefaultMpcNot) params.set('mpcNot', state.mpcTags.mustNotHave.join(','));
+	// Default mustNotHave is now empty (NSFW handled by profile Ignored Tags); only
+	// serialize when the user has actually added exclusions.
+	if (state.mpcTags.mustNotHave.length > 0)
+		params.set('mpcNot', state.mpcTags.mustNotHave.join(','));
 	const ml = mlParamValue(state);
 	if (ml !== null) params.set('ml', ml);
 	if (state.entity !== 'cards') params.set('entity', state.entity);

@@ -23,7 +23,9 @@ import { MpcTagsFilter } from '@/lib/search/components/filters/MpcTagsFilter/Mpc
 import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
 import styles from './FilterModal.module.css';
 
-const DEFAULT_MPC_TAGS: MpcTagsFilterValue = { mustHave: [], mustNotHave: ['NSFW'] };
+// NSFW is filtered globally via the profile's Ignored Tags setting, so the search
+// filter no longer excludes it by default.
+const DEFAULT_MPC_TAGS: MpcTagsFilterValue = { mustHave: [], mustNotHave: [] };
 
 export type FilterModalVariant = 'default' | 'search' | 'backs';
 
