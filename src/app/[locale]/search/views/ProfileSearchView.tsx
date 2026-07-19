@@ -1,9 +1,11 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
 import { ProfileCard } from '@/lib/search/components/ProfileCard/ProfileCard';
 import { useProfileSearch } from '@/lib/search/hooks/useProfileSearch';
+import { useProfileStats } from '@/lib/search/hooks/useProfileStats';
 import { Spinner } from '@/components/Spinner/Spinner';
 import styles from '../page.module.css';
 
@@ -12,6 +14,8 @@ type Props = { term: string; onTermChange: (t: string) => void };
 export function ProfileSearchView({ term, onTermChange }: Props) {
 	const t = useTranslations('search');
 	const { profiles, isLoading, isLoadingMore, hasMore, total, loadMore } = useProfileSearch(term);
+	const ownerIds = useMemo(() => profiles.map((p) => p.id), [profiles]);
+	const statsMap = useProfileStats(ownerIds);
 
 	return (
 		<>
@@ -36,7 +40,7 @@ export function ProfileSearchView({ term, onTermChange }: Props) {
 			) : (
 				<div className={styles.profileGrid}>
 					{profiles.map((p) => (
-						<ProfileCard key={p.id} profile={p} />
+						<ProfileCard key={p.id} profile={p} stats={statsMap[p.id]} />
 					))}
 				</div>
 			)}

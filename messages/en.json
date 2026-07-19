@@ -709,7 +709,9 @@
 		"viewList": "List",
 		"colAuthor": "Author",
 		"colFormat": "Format",
-		"colUpdated": "Updated"
+		"colUpdated": "Updated",
+		"statDecks": "{count, plural, one {# deck} other {# decks}}",
+		"statCards": "{count, plural, one {# card} other {# cards}}"
 	},
 	"legal": {
 		"lastUpdated": "Last updated: {date}",
