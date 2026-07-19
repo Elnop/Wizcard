@@ -50,6 +50,15 @@ const sizeMap = {
 
 const TILT_MAX_DEG = 10;
 
+// True when the custom image itself (identified by its own URL, not
+// whatever `imageUri` currently resolves to) has errored. Comparing by URL
+// (rather than a plain boolean) means this stays true only for the custom
+// source, so it can't be confused with a later error on the fallback
+// official image.
+function didCustomImageError(customImageUri: string | null, erroredUri: string | null): boolean {
+	return customImageUri !== null && erroredUri === customImageUri;
+}
+
 export function CardImage({
 	card,
 	size = 'normal',
@@ -63,8 +72,13 @@ export function CardImage({
 }: CardImageProps) {
 	const t = useTranslations('card');
 	const [currentFace, setCurrentFace] = useState(0);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState(false);
+	// Keyed by the image source (`imageUri`) rather than a plain boolean, so a
+	// source change (e.g. custom image fails → falls back to the resolved
+	// official/localized `imageUri`) naturally gets a fresh load/error state
+	// without any reset step: `error`/`isLoading` below are derived by
+	// comparing these to the *current* `imageUri` once it's computed.
+	const [loadedUri, setLoadedUri] = useState<string | null>(null);
+	const [erroredUri, setErroredUri] = useState<string | null>(null);
 	const [isVisible, setIsVisible] = useState(priority);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
@@ -85,11 +99,12 @@ export function CardImage({
 	}, [priority]);
 
 	const isInputCustom = isCustomCard(card as unknown as CustomCard);
+	const customImageUri = isInputCustom ? (card as unknown as CustomCard).custom.image_url : null;
 	const { profile } = useProfileContext();
 	const ignoredTags = getEffectiveIgnoredTags(profile);
 	const isIgnoredCustom = isInputCustom && isIgnored(card as unknown as CustomCard, ignoredTags);
-	// `error` is set when the custom image fails to load (onError below).
-	const shouldFallbackFromCustom = isInputCustom && (isIgnoredCustom || error);
+	const shouldFallbackFromCustom =
+		isInputCustom && (isIgnoredCustom || didCustomImageError(customImageUri, erroredUri));
 	// A normal (non-custom) card, OR a custom we must fall back away from,
 	// is eligible for localized/official image resolution.
 	const visible = (!isInputCustom || shouldFallbackFromCustom) && (priority || isVisible);
@@ -138,6 +153,15 @@ export function CardImage({
 	}
 
 	const { width, height } = sizeMap[size];
+
+	// Derived from the URL-keyed state above: `error`/`isLoading` describe the
+	// *current* `imageUri` only. If `imageUri` just switched sources (e.g.
+	// custom → official fallback after the custom image's onError), neither
+	// `erroredUri` nor `loadedUri` matches it yet, so `error` is false and
+	// `isLoading` is true for the new source automatically — no reset step,
+	// no effect, no ref-during-render needed.
+	const error = erroredUri === imageUri;
+	const isLoading = loadedUri !== imageUri;
 
 	const handleFlip = (e: React.MouseEvent) => {
 		e.stopPropagation();
@@ -195,6 +219,7 @@ export function CardImage({
 		if (!error && imageUri && !isPlaceholderImage) {
 			return (
 				<Image
+					key={imageUri}
 					src={imageUri}
 					alt={card.name}
 					width={width}
@@ -203,8 +228,8 @@ export function CardImage({
 					unoptimized={isScryfallImageUrl(imageUri)}
 					priority={priority}
 					className={[styles.image, isLoading ? styles.loading : ''].filter(Boolean).join(' ')}
-					onLoad={() => setIsLoading(false)}
-					onError={() => setError(true)}
+					onLoad={() => setLoadedUri(imageUri)}
+					onError={() => setErroredUri(imageUri)}
 				/>
 			);
 		}
