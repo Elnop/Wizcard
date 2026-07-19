@@ -26,6 +26,8 @@ export interface CustomCardRow {
 	display_name: string | null;
 	image_drive_url: string | null;
 	image_storage_path: string | null;
+	art_storage_path: string | null;
+	back_image_storage_path: string | null;
 	oracle_id: string | null;
 	source_type: CardSourceType;
 	is_public: boolean;
@@ -45,12 +47,15 @@ export interface CustomCardRow {
 	set_name: string | null;
 	artist: string | null;
 	drive_folder_path: string | null;
+	layout: string | null;
+	editor_payload: Record<string, unknown> | null;
+	updated_at: string;
 }
 
 export const CUSTOM_CARD_SOURCE_SELECT = 'id, name, description, drive_folder_id, tags';
 
 export const CUSTOM_CARD_SELECT =
-	'id, source_id, name, raw_name, display_name, image_drive_url, image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, set_code, collector_number, colors, color_identity, cmc, type_line, mana_cost, oracle_text, rarity, set_name, artist, drive_folder_path';
+	'id, source_id, name, raw_name, display_name, image_drive_url, image_storage_path, art_storage_path, back_image_storage_path, oracle_id, source_type, is_public, created_by, card_type, language, tags, set_code, collector_number, colors, color_identity, cmc, type_line, mana_cost, oracle_text, rarity, set_name, artist, drive_folder_path, layout, editor_payload, updated_at';
 
 export interface CustomCardQueryFilters {
 	name?: string;

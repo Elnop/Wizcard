@@ -25,7 +25,7 @@ type CardImageCard = {
 		image_uris?: { small?: string; normal?: string; large?: string };
 	}>;
 	object?: string;
-	custom?: { image_url: string };
+	custom?: { image_url: string; back_image_url?: string | null };
 };
 
 export interface CardImageProps {
@@ -45,6 +45,30 @@ const sizeMap = {
 	normal: { width: 488, height: 680 },
 	large: { width: 672, height: 936 },
 };
+
+type CardImageSize = keyof typeof sizeMap;
+
+function resolveVisibleImageUri(
+	card: CardImageCard,
+	isCustom: boolean,
+	isDoubleFaced: boolean,
+	currentFace: number,
+	size: CardImageSize,
+	customBackImage: string | null | undefined
+): string {
+	if (isCustom) {
+		if (currentFace === 1 && customBackImage) return customBackImage;
+		return (card as unknown as CustomCard).custom.image_url;
+	}
+	if (isDoubleFaced) return card.card_faces?.[currentFace].image_uris?.[size] ?? '';
+	return getScryfallCardImageUriBySize(
+		{
+			image_uris: card.image_uris,
+			card_faces: card.card_faces,
+		},
+		size
+	);
+}
 
 const TILT_MAX_DEG = 10;
 
@@ -103,26 +127,25 @@ export function CardImage({
 	const effectiveCard = resolvedOverride ? { ...card, ...resolvedOverride } : card;
 
 	const isCustom = isCustomCard(effectiveCard as unknown as CustomCard);
-	const isDoubleFaced =
-		!isCustom &&
-		effectiveCard.card_faces &&
-		effectiveCard.card_faces.length > 1 &&
-		effectiveCard.card_faces[0].image_uris;
+	const customBackImage = isCustom
+		? (effectiveCard as unknown as CustomCard).custom.back_image_url
+		: null;
+	const isDoubleFaced = isCustom
+		? Boolean(customBackImage)
+		: Boolean(
+				effectiveCard.card_faces &&
+				effectiveCard.card_faces.length > 1 &&
+				effectiveCard.card_faces[0].image_uris
+			);
 
-	let imageUri = '';
-	if (isCustom) {
-		imageUri = (effectiveCard as unknown as CustomCard).custom.image_url;
-	} else if (isDoubleFaced) {
-		imageUri = effectiveCard.card_faces![currentFace].image_uris?.[size] ?? '';
-	} else {
-		imageUri = getScryfallCardImageUriBySize(
-			{
-				image_uris: effectiveCard.image_uris,
-				card_faces: effectiveCard.card_faces,
-			},
-			size
-		);
-	}
+	const imageUri = resolveVisibleImageUri(
+		effectiveCard,
+		isCustom,
+		isDoubleFaced,
+		currentFace,
+		size,
+		customBackImage
+	);
 
 	const { width, height } = sizeMap[size];
 

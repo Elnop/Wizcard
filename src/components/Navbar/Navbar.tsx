@@ -73,6 +73,12 @@ export function Navbar() {
 						{t('search')}
 					</Link>
 					<Link
+						href="/studio"
+						className={`${styles.navLink} ${pathname === '/studio' ? styles.navLinkActive : ''}`}
+					>
+						{t('studio')}
+					</Link>
+					<Link
 						href="/sets"
 						className={`${styles.navLink} ${pathname === '/sets' ? styles.navLinkActive : ''}`}
 					>

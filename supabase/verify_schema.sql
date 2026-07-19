@@ -21,8 +21,8 @@
 -- schéma/relation attendu est absent. Aucune transaction englobante : un objet
 -- manquant ne peut pas avorter le rapport entier.
 --
--- RÉFÉRENCE : état attendu = migrations rejouées jusqu'à 20260714120000
--- (profile_field_constraints : nickname/description CHECK, incluse). MàJ 2026-07-14.
+-- RÉFÉRENCE : état attendu = migrations rejouées jusqu'à 20260719120000
+-- (éditeur de cartes custom et bucket d'illustrations privé inclus). MàJ 2026-07-19.
 -- =============================================================================
 
 -- Pas de transaction englobante : on veut qu'un objet manquant produise un FAIL,
@@ -176,6 +176,9 @@ with expected(t, col, typ) as (
     ('custom_cards','oracle_text','text'),('custom_cards','rarity','text'),
     ('custom_cards','set_name','text'),('custom_cards','display_name','text'),
     ('custom_cards','image_hash','text'),('custom_cards','drive_folder_path','text'),
+    ('custom_cards','layout','text'),('custom_cards','editor_payload','jsonb'),
+    ('custom_cards','art_storage_path','text'),('custom_cards','back_image_storage_path','text'),
+    ('custom_cards','updated_at','timestamp with time zone'),
     -- email_change_requests
     ('email_change_requests','id','uuid'),('email_change_requests','user_id','uuid'),
     ('email_change_requests','token_hash','text'),('email_change_requests','expires_at','timestamp with time zone'),
@@ -255,7 +258,8 @@ select pg_temp.chk('policy', 'storage.objects :: '||p, pg_temp.has_policy('stora
 from unnest(array[
   'public read avatars bucket','users write own avatar',
   'public read custom-cards bucket','service role write custom-cards bucket',
-  'user manage own storage objects','user upload to own folder'
+  'user manage own storage objects','user upload to own folder',
+  'user upload own custom-card-art','user manage own custom-card-art'
 ]) p;
 
 -- SÉCURITÉ : "Public can view collection cards" a été RÉINTRODUITE (20260713130000)
@@ -386,7 +390,31 @@ from tg;
 -- 8. STORAGE BUCKETS
 -- =============================================================================
 select pg_temp.chk('bucket', b, pg_temp.has_bucket(b), 'bucket absent')
-from unnest(array['avatars','custom-cards']) b;
+from unnest(array['avatars','custom-cards','custom-card-art']) b;
+
+select pg_temp.chk('bucket', 'custom-cards :: 15 MB limit',
+  exists (
+    select 1 from storage.buckets
+    where id = 'custom-cards' and file_size_limit = 15728640
+  ), 'limite de fichier custom-cards incorrecte');
+
+select pg_temp.chk('bucket', 'custom-cards :: image MIME types',
+  exists (
+    select 1 from storage.buckets
+    where id = 'custom-cards'
+      and allowed_mime_types @> array['image/jpeg','image/png','image/webp','image/avif']
+      and cardinality(allowed_mime_types) = 4
+  ), 'types MIME custom-cards incorrects');
+
+select pg_temp.chk('bucket', 'custom-card-art :: private + 15 MB images',
+  exists (
+    select 1 from storage.buckets
+    where id = 'custom-card-art'
+      and public = false
+      and file_size_limit = 15728640
+      and allowed_mime_types @> array['image/jpeg','image/png','image/webp','image/avif']
+      and cardinality(allowed_mime_types) = 4
+  ), 'configuration custom-card-art incorrecte');
 
 -- =============================================================================
 -- 9. CHECK CONSTRAINTS (valeurs autorisées : format, condition, foil, etc.)
@@ -398,6 +426,8 @@ with con(t, name) as (
     ('cards','cards_owner_or_deck'),
     ('custom_cards','custom_cards_card_type_check'),
     ('custom_cards','custom_cards_source_type_check'),
+    ('custom_cards','custom_cards_layout_check'),
+    ('custom_cards','custom_cards_editor_payload_object'),
     ('profiles','profiles_language_check'),
     ('profiles','profiles_price_currency_check'),
     ('profiles','profiles_theme_preference_check'),
@@ -422,7 +452,8 @@ with idx(t, name) as (
     ('profiles','profiles_nickname_lower_key'),
     ('user_usage','user_usage_pkey'),
     ('custom_cards','custom_cards_source_id_idx'),('custom_cards','custom_cards_name_idx'),
-    ('custom_cards','custom_cards_image_hash_source_idx')
+    ('custom_cards','custom_cards_image_hash_source_idx'),
+    ('custom_cards','custom_cards_creator_updated_idx')
 )
 select pg_temp.chk('index', idx.t||' :: '||idx.name,
   pg_temp.has_index(idx.t, idx.name), 'index absent')

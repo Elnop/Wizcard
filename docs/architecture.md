@@ -86,6 +86,13 @@ src/
 │   │   └── components/
 │   │       └── CustomProxiesSection/ # Source tabs + card grid for custom proxies
 │   │
+│   ├── card-editor/            # Custom card domain, SVG renderer, export and persistence mapping
+│   │   ├── components/         # Reusable CardCanvas renderer
+│   │   ├── db/                 # Editor domain ↔ Supabase row/storage boundary
+│   │   ├── draft.ts            # Draft defaults, validation and serialisation
+│   │   ├── layout-registry.ts  # Data-driven frame geometry
+│   │   └── types.ts            # Editor, face, artwork and layout types
+│   │
 │   ├── moxfield/               # Moxfield format (parse, serialize, import-adapter)
 │   ├── cardnexus/              # CardNexus format (parse, serialize, import-adapter)
 │   ├── delver-lens/            # Delver Lens SQLite format (parse, sql-loader, import-adapter)
@@ -157,6 +164,7 @@ Shared collection code (used by ≥2 pages, providers, or sync) stays in `src/li
 | `/sets`                      | Client    | Set catalog                       |
 | `/sets/[code]`               | Client    | Set detail + collection progress  |
 | `/wishlist`                  | Client    | Wishlist management               |
+| `/studio`                    | Client    | Custom card editor                |
 | `/card/[id]`                 | Server    | Card detail page (SEO-friendly)   |
 | `/users/[userId]/collection` | Client    | Public collection view            |
 | `/users/[userId]/decks`      | Client    | Public deck list                  |
@@ -165,6 +173,17 @@ Shared collection code (used by ≥2 pages, providers, or sync) stays in `src/li
 | `/auth/error`                | Server    | Auth error display                |
 
 ## Data Flow
+
+### Custom card studio
+
+```
+/studio page
+    → useCardEditor() (undo/redo + local draft autosave)
+    → CardCanvas (SVG preview + direct text/art editing)
+    → export.ts → local high-resolution PNG
+    → db/custom-card-editor.ts → rendered faces + source art in Storage
+    → supabase/queries/custom-card-editor.ts → public.custom_cards
+```
 
 ### Search
 

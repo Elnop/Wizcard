@@ -19,6 +19,7 @@ export interface MpcCard {
 	displayName: string | null;
 	sourceId: string | null;
 	imageUrl: string;
+	backImageUrl?: string;
 	isCustom: true;
 	oracleId?: string;
 	sourceType: CardSourceType;
@@ -40,6 +41,7 @@ export interface MpcCard {
 	rarity?: string;
 	setName?: string;
 	artist?: string;
+	editorLayout?: string;
 }
 
 export interface CustomCardMeta {
@@ -50,6 +52,8 @@ export interface CustomCardMeta {
 	card_type: CardType;
 	drive_folder_path: string | null;
 	image_url: string;
+	back_image_url: string | null;
+	editor_layout: string | null;
 	lang: string | null;
 	tags: string[];
 	set_code: string | null;
