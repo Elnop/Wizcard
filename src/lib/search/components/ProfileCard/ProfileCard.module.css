@@ -52,7 +52,7 @@
 /* ── Art window: dominant, encased directly in the frame ── */
 .art {
 	position: relative;
-	flex: 0 0 58%;
+	flex: 0 0 48%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -92,29 +92,32 @@
 
 /* ── Text box: fills the remaining height down to the bottom edge ── */
 .textBox {
-	position: relative;
+	display: flex;
+	flex-direction: column;
 	flex: 1;
 	min-height: 0;
-	padding: 8px 10px 10px;
+	padding: 8px 10px 8px;
 	background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.4));
 }
 
 .description {
 	margin: 0;
+	flex: 1;
+	min-height: 0;
 	color: var(--text-muted);
 	font-size: var(--text-xs);
 	line-height: 1.45;
 	display: -webkit-box;
-	-webkit-line-clamp: 2;
+	-webkit-line-clamp: 4;
 	-webkit-box-orient: vertical;
 	overflow: hidden;
 }
 
-/* Power/toughness-style badge, tucked into the bottom-right corner. */
+/* Power/toughness-style badge on its own row at the bottom of the text box, so
+   the description (above it) can never overlap the stats. */
 .ptBadge {
-	position: absolute;
-	right: 6px;
-	bottom: 6px;
+	align-self: flex-end;
+	margin-top: 6px;
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
