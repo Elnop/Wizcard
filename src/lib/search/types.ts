@@ -71,6 +71,9 @@ export type SearchEntity = 'cards' | 'decks' | 'profiles';
 /** Formats that require a commander → surface the conditional Commander input. */
 export const COMMANDER_FORMATS: DeckFormat[] = ['commander', 'brawl', 'oathbreaker'];
 
+/** Tri-state precon filter: show everything, only precons, or hide precons. */
+export type PreconFilter = 'all' | 'only' | 'exclude';
+
 export interface DeckSearchFilters {
 	name: string;
 	formats: DeckFormat[];
@@ -80,6 +83,7 @@ export interface DeckSearchFilters {
 	// correct card-in-deck match needs oracle→all-printings resolution — out of scope for V1.
 	cardInBoard: string;
 	commander: string;
+	precon: PreconFilter;
 }
 
 export const DEFAULT_DECK_FILTERS: DeckSearchFilters = {
@@ -88,6 +92,7 @@ export const DEFAULT_DECK_FILTERS: DeckSearchFilters = {
 	authorNickname: '',
 	cardInBoard: '',
 	commander: '',
+	precon: 'all',
 };
 
 export function countActiveDeckFilters(f: DeckSearchFilters): number {
@@ -98,6 +103,7 @@ export function countActiveDeckFilters(f: DeckSearchFilters): number {
 		(f.formats.length > 0 ? 1 : 0) +
 		(f.authorNickname ? 1 : 0) +
 		(f.cardInBoard ? 1 : 0) +
-		(commanderActive ? 1 : 0)
+		(commanderActive ? 1 : 0) +
+		(f.precon !== 'all' ? 1 : 0)
 	);
 }

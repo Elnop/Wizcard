@@ -59,6 +59,7 @@ async function resolveAuthorsById(ownerIds: string[]): Promise<Map<string, Profi
 }
 
 function rowToResult(row: Record<string, unknown>, author: ProfileMini | null): DeckSearchResult {
+	const source = (row.source === 'mtgjson' ? 'mtgjson' : 'user') as DeckSource;
 	return {
 		deck: {
 			id: row.id as string,
@@ -68,13 +69,14 @@ function rowToResult(row: Record<string, unknown>, author: ProfileMini | null): 
 			description: (row.description as string | null) ?? null,
 			folderId: (row.folder_id as string | null) ?? null,
 			coverArtUrl: (row.cover_art_url as string | null) ?? null,
-			source: (row.source === 'mtgjson' ? 'mtgjson' : 'user') as DeckSource,
+			source,
 			isPublic: (row.is_public as boolean | undefined) ?? true,
 			createdAt: row.created_at as string,
 			updatedAt: row.updated_at as string,
 		},
-		authorNickname: author?.nickname ?? null,
-		authorAvatarUrl: author?.avatar_url ?? null,
+		// Precons have no owner: the card shows a "Precon" badge instead of an author.
+		authorNickname: source === 'mtgjson' ? null : (author?.nickname ?? null),
+		authorAvatarUrl: source === 'mtgjson' ? null : (author?.avatar_url ?? null),
 	};
 }
 
@@ -118,6 +120,8 @@ export async function searchDecks(
 	let q = supabase.from('decks').select('*', { count: 'exact' });
 	if (filters.name.trim()) q = q.ilike('name', `%${filters.name.trim()}%`);
 	if (filters.formats.length > 0) q = q.in('format', filters.formats);
+	if (filters.precon === 'only') q = q.eq('source', 'mtgjson');
+	if (filters.precon === 'exclude') q = q.eq('source', 'user');
 	if (authorIds !== null) q = q.in('owner_id', authorIds);
 	// NOTE: if this path is ever revived, a card in thousands of decks would overflow the URL —
 	// switch to a server-side join / RPC instead of a client-side .in().

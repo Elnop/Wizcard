@@ -96,6 +96,23 @@ function DeckFilterModalContent({ initialFilters, onApply, onClose }: DeckFilter
 						onChange={(e) => setDraft((d) => ({ ...d, authorNickname: e.target.value }))}
 					/>
 				</label>
+
+				<fieldset className={styles.field}>
+					<legend>{t('preconFilterLabel')}</legend>
+					<div className={styles.formatGrid}>
+						{(['all', 'only', 'exclude'] as const).map((value) => (
+							<button
+								key={value}
+								type="button"
+								className={`${styles.chip} ${draft.precon === value ? styles.chipActive : ''}`}
+								aria-pressed={draft.precon === value}
+								onClick={() => setDraft((d) => ({ ...d, precon: value }))}
+							>
+								{t(`preconFilter_${value}`)}
+							</button>
+						))}
+					</div>
+				</fieldset>
 			</div>
 
 			<div className={styles.footer}>

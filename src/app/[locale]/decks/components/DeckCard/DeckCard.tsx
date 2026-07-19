@@ -27,6 +27,8 @@ type Props = {
 	readOnly?: boolean;
 	/** Author nickname, overlaid top-left on the cover (used by deck search). */
 	authorNickname?: string | null;
+	/** Marks a preconstructed (MTGJSON) deck: shows a "Precon" badge instead of an author. */
+	isPrecon?: boolean;
 };
 
 /**
@@ -196,6 +198,7 @@ export function DeckCard({
 	onCreateFolderAndMove,
 	readOnly = false,
 	authorNickname,
+	isPrecon = false,
 }: Props) {
 	const t = useTranslations('decks');
 	const locale = useLocale();
@@ -263,6 +266,7 @@ export function DeckCard({
 							<div className={styles.artOverlay} />
 						</>
 					)}
+					{isPrecon && <span className={styles.preconBadge}>{t('preconBadge')}</span>}
 					{/* Author nickname overlaid top-left on the cover (deck search),
 					    linking to the author's profile. stopPropagation so clicking the
 					    name opens the profile, not the deck. A dark scrim behind it keeps

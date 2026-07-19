@@ -8,7 +8,7 @@ import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/so
 import { countActiveFilters, DEFAULT_DECK_FILTERS } from '@/lib/search/types';
 import type { ColorMatch } from '@/lib/search/types';
 import type { SearchMode } from '@/lib/search/types';
-import type { SearchEntity, DeckSearchFilters } from '@/lib/search/types';
+import type { SearchEntity, DeckSearchFilters, PreconFilter } from '@/lib/search/types';
 import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
 import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
 
@@ -36,6 +36,7 @@ const VALID_COLOR_IDENTITY_MATCHES = new Set(['atMost', 'exact']);
 const VALID_RARITIES = new Set(['common', 'uncommon', 'rare', 'mythic']);
 const VALID_MODES = new Set(['official', 'custom', 'backs']);
 const VALID_ENTITIES = new Set(['cards', 'decks', 'profiles']);
+const VALID_PRECON_FILTERS = new Set(['all', 'only', 'exclude']);
 
 function parseMode(param: string | null): SearchMode {
 	if (param && VALID_MODES.has(param)) return param as SearchMode;
@@ -45,6 +46,11 @@ function parseMode(param: string | null): SearchMode {
 function parseEntity(param: string | null): SearchEntity {
 	if (param && VALID_ENTITIES.has(param)) return param as SearchEntity;
 	return 'cards';
+}
+
+function parsePreconFilter(param: string | null): PreconFilter {
+	if (param && VALID_PRECON_FILTERS.has(param)) return param as PreconFilter;
+	return 'all';
 }
 
 function parseTags(param: string | null): string[] {
@@ -135,6 +141,7 @@ function appendDeckFilterParams(params: URLSearchParams, deckFilters: DeckSearch
 	if (deckFilters.authorNickname) params.set('dauthor', deckFilters.authorNickname);
 	if (deckFilters.cardInBoard) params.set('dcard', deckFilters.cardInBoard);
 	if (deckFilters.commander) params.set('dcmd', deckFilters.commander);
+	if (deckFilters.precon !== 'all') params.set('dprecon', deckFilters.precon);
 }
 
 /** Builds the `/search` URL query string from current filter state. Extracted
@@ -241,6 +248,7 @@ export function useSearchFiltersFromUrl() {
 		authorNickname: searchParams.get('dauthor') ?? DEFAULT_DECK_FILTERS.authorNickname,
 		cardInBoard: searchParams.get('dcard') ?? DEFAULT_DECK_FILTERS.cardInBoard,
 		commander: searchParams.get('dcmd') ?? DEFAULT_DECK_FILTERS.commander,
+		precon: parsePreconFilter(searchParams.get('dprecon')),
 	}));
 
 	const isInitialMount = useRef(true);

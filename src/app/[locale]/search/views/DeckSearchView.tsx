@@ -71,6 +71,7 @@ export function DeckSearchView({ filters, onFiltersChange }: Props) {
 							summary={summaryMap[deck.id]}
 							symbolMap={symbolMap}
 							authorNickname={authorNickname}
+							isPrecon={deck.source === 'mtgjson'}
 							readOnly
 							onClick={() => router.push(`/decks/${deck.id}`)}
 						/>

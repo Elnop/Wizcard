@@ -388,6 +388,23 @@
 	gap: 10px;
 }
 
+/* "Precon" badge, top-left on the cover art. Occupies the same slot the author
+   name uses for user decks — precons never render an author, so they can't collide. */
+.preconBadge {
+	position: absolute;
+	top: 0.5rem;
+	left: 0.5rem;
+	z-index: 2;
+	padding: 0.15rem 0.45rem;
+	border-radius: 0.25rem;
+	background: rgb(0 0 0 / 0.65);
+	color: #fff;
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
 @media (max-width: 480px) {
 	.card {
 		height: 300px;
