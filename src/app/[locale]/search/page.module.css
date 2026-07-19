@@ -4,9 +4,9 @@
 }
 
 .main {
-	max-width: 1400px;
+	max-width: 1760px;
 	margin: 0 auto;
-	padding: 32px;
+	padding: 20px 12px;
 }
 
 .searchSection {
@@ -210,9 +210,11 @@
 	gap: 16px;
 }
 
+/* Match the card search grid (CardListGrid: 200px cells, 24px gap) so profile
+   cards render at exactly the same dimensions as the card list. */
 .profileGrid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 	gap: 24px;
 }
 
@@ -250,7 +252,7 @@
 
 @media (max-width: 768px) {
 	.main {
-		padding: 20px 16px;
+		padding: 16px 8px;
 	}
 
 	.searchSection {
@@ -266,11 +268,19 @@
 		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 		gap: 10px;
 	}
+
+	.profileGrid {
+		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	}
 }
 
 @media (max-width: 480px) {
 	.deckGrid {
 		grid-template-columns: repeat(2, 1fr);
 		gap: 8px;
+	}
+
+	.profileGrid {
+		grid-template-columns: repeat(2, 1fr);
 	}
 }

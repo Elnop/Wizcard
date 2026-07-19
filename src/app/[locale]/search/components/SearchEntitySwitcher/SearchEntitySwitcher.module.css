@@ -1,45 +1,83 @@
 .switcher {
 	display: flex;
 	flex-shrink: 0;
-	align-items: center;
-	background: var(--surface);
-	border: 1px solid var(--border);
-	border-radius: 10px;
-	padding: 3px;
-	gap: 2px;
+	align-items: stretch;
+	gap: 4px;
+	/* Hairline baseline the active underline sits on, so inactive tabs read as
+	   sitting on the same rail rather than floating. */
+	border-bottom: 1px solid var(--border);
 }
 
 .option {
-	padding: 6px 14px;
+	position: relative;
+	padding: 10px 4px;
+	margin: 0 12px;
 	background: transparent;
 	border: none;
-	border-radius: 8px;
 	color: var(--text-muted);
-	font-size: var(--text-sm);
+	font-size: var(--text-base);
 	font-weight: 500;
 	cursor: pointer;
 	white-space: nowrap;
-	transition:
-		background 0.15s,
-		color 0.15s;
+	transition: color 0.18s ease;
+}
+
+.option:first-child {
+	margin-left: 0;
+}
+
+/* Sliding underline: each tab owns its bar, scaled to 0 while inactive so the
+   width always matches the label — no JS measurement of variable-width tabs. */
+.option::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: -1px;
+	height: 2px;
+	border-radius: 2px 2px 0 0;
+	background: var(--primary);
+	transform: scaleX(0);
+	transform-origin: center;
+	transition: transform 0.22s ease;
 }
 
 .option:hover {
 	color: var(--foreground);
 }
 
-.active {
-	background: var(--primary);
-	color: var(--primary-text);
+.option:hover::after {
+	transform: scaleX(0.5);
+	background: var(--border);
 }
 
+.option:focus-visible {
+	outline: none;
+	color: var(--foreground);
+}
+
+.option:focus-visible::after {
+	transform: scaleX(1);
+	background: var(--text-muted);
+}
+
+.active,
 .active:hover {
-	color: var(--primary-text);
+	color: var(--primary);
+	font-weight: 600;
+}
+
+.active::after,
+.active:hover::after,
+.active:focus-visible::after {
+	transform: scaleX(1);
+	background: var(--primary);
 }
 
 @media (max-width: 768px) {
 	.option {
-		padding: 6px 10px;
-		font-size: var(--text-xs);
+		padding: 8px 2px;
+		margin: 0 8px;
+		font-size: var(--text-sm);
 	}
 }
