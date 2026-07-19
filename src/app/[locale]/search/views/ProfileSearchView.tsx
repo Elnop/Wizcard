@@ -15,7 +15,7 @@ export function ProfileSearchView({ term, onTermChange }: Props) {
 
 	return (
 		<>
-			<div className={styles.searchRow}>
+			<div className={`${styles.searchRow} ${styles.entitySearchRow}`}>
 				<SearchBar
 					value={term}
 					onChange={onTermChange}

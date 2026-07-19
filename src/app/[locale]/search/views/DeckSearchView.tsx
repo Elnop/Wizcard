@@ -33,7 +33,7 @@ export function DeckSearchView({ filters, onFiltersChange }: Props) {
 
 	return (
 		<>
-			<div className={styles.searchRow}>
+			<div className={`${styles.searchRow} ${styles.entitySearchRow}`}>
 				<SearchBar
 					value={filters.name}
 					onChange={(v) => onFiltersChange({ ...filters, name: v })}

@@ -73,6 +73,12 @@
 	color: var(--text-muted);
 }
 
+/* Deck/Profile views place the search bar directly above the result count
+   (no .searchSection wrapper, unlike the Cards view), so add the gap here. */
+.entitySearchRow {
+	margin-bottom: 20px;
+}
+
 .loading {
 	display: flex;
 	justify-content: center;
