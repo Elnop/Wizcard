@@ -6,7 +6,7 @@
 	   stable split. --content-h is the reserved bottom zone: nickname + a
 	   two-line description + the stats/actions row + padding. The image fills
 	   everything above it. */
-	--content-h: 132px;
+	--content-h: 144px;
 	height: 340px;
 	overflow: hidden;
 	border-radius: 16px;
@@ -97,8 +97,13 @@
 
 .contentInner {
 	position: relative;
+	box-sizing: border-box;
+	/* Pinned to exactly the reserved zone so the content can never overflow the
+	   card's bottom edge, whatever the font metrics. */
+	height: var(--content-h);
 	display: flex;
 	flex-direction: column;
+	justify-content: flex-end;
 	gap: 6px;
 	padding: 14px 16px 16px;
 }
