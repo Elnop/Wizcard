@@ -10,6 +10,8 @@ import { hasRealScan } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallImageStatus } from '@/lib/scryfall/types/scryfall';
 import { isCustomCard } from '@/lib/mpc/types';
 import type { CustomCard } from '@/lib/mpc/types';
+import { useProfileContext } from '@/lib/profile/context/ProfileContext';
+import { getEffectiveIgnoredTags, isIgnored } from '@/lib/mpc/ignored-tags';
 import styles from './CardImage.module.css';
 
 type CardImageCard = {
@@ -83,7 +85,14 @@ export function CardImage({
 	}, [priority]);
 
 	const isInputCustom = isCustomCard(card as unknown as CustomCard);
-	const visible = !isInputCustom && (priority || isVisible);
+	const { profile } = useProfileContext();
+	const ignoredTags = getEffectiveIgnoredTags(profile);
+	const isIgnoredCustom = isInputCustom && isIgnored(card as unknown as CustomCard, ignoredTags);
+	// `error` is set when the custom image fails to load (onError below).
+	const shouldFallbackFromCustom = isInputCustom && (isIgnoredCustom || error);
+	// A normal (non-custom) card, OR a custom we must fall back away from,
+	// is eligible for localized/official image resolution.
+	const visible = (!isInputCustom || shouldFallbackFromCustom) && (priority || isVisible);
 	const { localized, loading: localizedLoading } = useLocalizedImage(
 		card as Parameters<typeof useLocalizedImage>[0],
 		visible
@@ -93,7 +102,8 @@ export function CardImage({
 	// no localized print replaced it — fetch the English print's image so the
 	// preview is never imageless. Applies to every CardImage preview (search,
 	// collection, prints list, …).
-	const basePlaceholder = !isInputCustom && !localized && !hasRealScan(card.image_status);
+	const basePlaceholder =
+		(!isInputCustom || shouldFallbackFromCustom) && !localized && !hasRealScan(card.image_status);
 	const { localized: englishFallback, loading: fallbackLoading } = useEnglishFallbackImage(
 		card as Parameters<typeof useEnglishFallbackImage>[0],
 		visible && basePlaceholder
@@ -102,7 +112,10 @@ export function CardImage({
 	const resolvedOverride = localized ?? englishFallback;
 	const effectiveCard = resolvedOverride ? { ...card, ...resolvedOverride } : card;
 
-	const isCustom = isCustomCard(effectiveCard as unknown as CustomCard);
+	// When falling back from a custom (ignored or failed-to-load), do NOT treat it
+	// as custom for image selection — use the resolved official/localized print.
+	const isCustom =
+		isCustomCard(effectiveCard as unknown as CustomCard) && !shouldFallbackFromCustom;
 	const isDoubleFaced =
 		!isCustom &&
 		effectiveCard.card_faces &&
