@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
@@ -8,6 +8,7 @@ import { DeckFilterModal } from '@/lib/search/components/DeckFilterModal/DeckFil
 import { useDeckSearch } from '@/lib/search/hooks/useDeckSearch';
 import { countActiveDeckFilters, type DeckSearchFilters } from '@/lib/search/types';
 import { DeckCard } from '@/app/[locale]/decks/components/DeckCard/DeckCard';
+import { useDeckSummaries } from '@/app/[locale]/decks/useDeckSummaries';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { Spinner } from '@/components/Spinner/Spinner';
 import styles from '../page.module.css';
@@ -24,6 +25,11 @@ export function DeckSearchView({ filters, onFiltersChange }: Props) {
 	const symbolMap = useScryfallSymbols();
 	const { decks, isLoading, isLoadingMore, hasMore, total, loadMore } = useDeckSearch(filters);
 	const activeCount = countActiveDeckFilters(filters);
+
+	// Deck cards of public decks are readable via RLS, so summaries (cover art,
+	// commander name, mana curve) resolve for search results just like on /decks.
+	const deckMetas = useMemo(() => decks.map((d) => d.deck), [decks]);
+	const summaryMap = useDeckSummaries(deckMetas);
 
 	return (
 		<>
@@ -62,6 +68,7 @@ export function DeckSearchView({ filters, onFiltersChange }: Props) {
 						<div key={deck.id} className={styles.deckGridItem}>
 							<DeckCard
 								deck={deck}
+								summary={summaryMap[deck.id]}
 								symbolMap={symbolMap}
 								readOnly
 								onClick={() => router.push(`/decks/${deck.id}`)}
