@@ -1,5 +1,6 @@
 import type { ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
+import type { DeckFormat } from '@/types/decks';
 
 export type ColorMatch = 'exact' | 'include' | 'atMost';
 
@@ -62,5 +63,37 @@ export function countActiveFilters(
 		('foilTypeFilter' in filters && filters.foilTypeFilter !== 'all' ? 1 : 0) +
 		('languageFilter' in filters && filters.languageFilter !== 'all' ? 1 : 0) +
 		('deckAssignment' in filters && filters.deckAssignment !== 'all' ? 1 : 0)
+	);
+}
+
+export type SearchEntity = 'cards' | 'decks' | 'profiles';
+
+/** Formats that require a commander → surface the conditional Commander input. */
+export const COMMANDER_FORMATS: DeckFormat[] = ['commander', 'brawl', 'oathbreaker'];
+
+export interface DeckSearchFilters {
+	name: string;
+	formats: DeckFormat[];
+	authorNickname: string;
+	cardInBoard: string;
+	commander: string;
+}
+
+export const DEFAULT_DECK_FILTERS: DeckSearchFilters = {
+	name: '',
+	formats: [],
+	authorNickname: '',
+	cardInBoard: '',
+	commander: '',
+};
+
+export function countActiveDeckFilters(f: DeckSearchFilters): number {
+	const commanderActive = f.formats.some((fmt) => COMMANDER_FORMATS.includes(fmt)) && !!f.commander;
+	return (
+		(f.name ? 1 : 0) +
+		(f.formats.length > 0 ? 1 : 0) +
+		(f.authorNickname ? 1 : 0) +
+		(f.cardInBoard ? 1 : 0) +
+		(commanderActive ? 1 : 0)
 	);
 }
