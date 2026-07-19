@@ -21,8 +21,8 @@
 -- schéma/relation attendu est absent. Aucune transaction englobante : un objet
 -- manquant ne peut pas avorter le rapport entier.
 --
--- RÉFÉRENCE : état attendu = migrations rejouées jusqu'à 20260714120000
--- (profile_field_constraints : nickname/description CHECK, incluse). MàJ 2026-07-14.
+-- RÉFÉRENCE : état attendu = migrations rejouées jusqu'à 20260719130000
+-- (custom_cards_tags_lower : colonne générée tags_lower + GIN, incluse). MàJ 2026-07-19.
 -- =============================================================================
 
 -- Pas de transaction englobante : on veut qu'un objet manquant produise un FAIL,
@@ -200,7 +200,9 @@ with expected_default(t, col, dflt) as (
     ('profiles','price_currency','''eur''::text'),
     ('profiles','show_prices','true'),
     ('profiles','theme_preference','''system''::text'),
-    ('profiles','is_public','true')
+    ('profiles','is_public','true'),
+    -- 20260719120000_add_profile_ignored_tags : NSFW caché par défaut.
+    ('profiles','ignored_tags','''{nsfw}''::text[]')
 )
 select pg_temp.chk(
   'column-default', e.t||'.'||e.col,
@@ -369,6 +371,14 @@ select pg_temp.chk('function', fn.name||'('||fn.args||')',
   pg_temp.has_func(fn.name, fn.args), 'fonction absente')
 from fn;
 
+-- normalize_oauth_nickname a `search_path = public` et appelle unaccent() : sans
+-- l'extension unaccent installée DANS public, chaque signup OAuth échouerait
+-- (20260718120000). On vérifie l'installation *et* le schéma public.
+select pg_temp.chk('function', 'extension unaccent in schema public',
+  exists (select 1 from pg_extension e join pg_namespace n on n.oid=e.extnamespace
+          where e.extname='unaccent' and n.nspname='public'),
+  'extension unaccent absente ou hors du schéma public → signup OAuth casse');
+
 -- =============================================================================
 -- 7. TRIGGERS
 -- =============================================================================
@@ -424,7 +434,9 @@ with idx(t, name) as (
     ('profiles','profiles_nickname_lower_key'),
     ('user_usage','user_usage_pkey'),
     ('custom_cards','custom_cards_source_id_idx'),('custom_cards','custom_cards_name_idx'),
-    ('custom_cards','custom_cards_image_hash_source_idx')
+    ('custom_cards','custom_cards_image_hash_source_idx'),
+    -- 20260719130000_custom_cards_tags_lower : filtre ignored-tags case-insensitive.
+    ('custom_cards','custom_cards_tags_lower_gin_idx')
 )
 select pg_temp.chk('index', idx.t||' :: '||idx.name,
   pg_temp.has_index(idx.t, idx.name), 'index absent')
