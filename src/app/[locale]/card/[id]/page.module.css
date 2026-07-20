@@ -1,4 +1,4 @@
 .page {
 	min-height: 100vh;
-	background: var(--background);
+	/* Fond transparent : laisse transparaître le motif global (body::before). */
 }

@@ -1,29 +1,10 @@
 .page {
-	position: relative;
 	min-height: 100vh;
-	background: var(--background);
-}
-
-/* Fond fixe des pages de recherche (landing + /search/cards|decks|profiles, qui
-   partagent tous .page) : croisillons or vif sur un halo or natif doux (variante
-   #38 de /brand-test/background). Posé sur un ::before position:fixed pour rester
-   immobile au scroll — le shorthand `background` réinitialiserait
-   background-attachment, un calque fixe l'évite. Contenu au-dessus via z-index. */
-.page::before {
-	content: '';
-	position: fixed;
-	inset: 0;
-	z-index: 0;
-	pointer-events: none;
-	background:
-		repeating-linear-gradient(45deg, rgba(201, 168, 76, 0.06) 0 1px, transparent 1px 9px),
-		repeating-linear-gradient(-45deg, rgba(201, 168, 76, 0.05) 0 1px, transparent 1px 9px),
-		radial-gradient(120% 100% at 50% 0%, rgba(201, 168, 76, 0.14) 0%, transparent 55%);
+	/* Pas de fond opaque ici : le motif global (body::before) doit transparaître.
+	   Un `background: var(--background)` masquerait le fond du site sur /search. */
 }
 
 .main {
-	position: relative;
-	z-index: 1;
 	max-width: 1760px;
 	margin: 0 auto;
 	padding: 20px 12px;

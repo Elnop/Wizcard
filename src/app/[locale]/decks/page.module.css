@@ -1,5 +1,5 @@
 .page {
-	background: var(--background);
+	/* Fond transparent : laisse transparaître le motif global (body::before). */
 	display: flex;
 	min-height: calc(100vh - var(--navbar-height));
 }

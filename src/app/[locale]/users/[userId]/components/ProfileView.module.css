@@ -1,5 +1,5 @@
 .container {
-	background: var(--background);
+	/* Fond transparent : laisse transparaître le motif global (body::before). */
 	min-height: calc(100vh - var(--navbar-height));
 	margin: 0 auto;
 	padding: 40px 24px;
