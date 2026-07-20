@@ -25,38 +25,22 @@ export async function searchProfiles(
 	const supabase = createClient();
 	const trimmed = term.trim();
 
-	// No term → default ranking from the view (already ordered
-	// public_deck_count DESC, nickname ASC). With a term, alphabetical nickname
-	// order still makes sense for a filtered `ilike` match, so keep the table path.
-	// Each branch is built as its own flat statement (not nested inside a ternary
-	// initializer) to avoid deepening the Supabase builder generic past TS's
-	// instantiation limit (TS2589) — see project memory `supabase_builder_ts2589`.
+	// No term → default ranking from the `profiles_by_public_deck_count` view,
+	// already ordered public_deck_count DESC, nickname ASC, and exposing only
+	// non-null nicknames — so skip order()/not() there (order() would override
+	// the view's ranking). With a term, query `profiles` directly with an
+	// `ilike` match, filtering out null nicknames and sorting alphabetically.
+	let q = trimmed
+		? supabase.from('profiles').select('id, nickname, description, avatar_url', { count: 'exact' })
+		: supabase
+				.from('profiles_by_public_deck_count')
+				.select('id, nickname, description, avatar_url', { count: 'exact' });
+
 	if (trimmed) {
-		let q = supabase
-			.from('profiles')
-			.select('id, nickname, description, avatar_url', { count: 'exact' });
 		q = q.ilike('nickname', `%${trimmed}%`).not('nickname', 'is', null).order('nickname', {
 			ascending: true,
 		});
-		q = q.range(offset, offset + limit - 1);
-
-		const { data, error, count } = await q;
-		if (error) throw new Error(`[searchProfiles] ${error.message}`);
-		const profiles = (data ?? []).map((r) => ({
-			id: r.id as string,
-			nickname: r.nickname as string | null,
-			description: r.description as string | null,
-			avatarUrl: r.avatar_url as string | null,
-		}));
-		return { profiles, total: count ?? profiles.length };
 	}
-
-	// Empty term: the view is already ordered and only exposes non-null
-	// nicknames, so no extra order()/not() — applying them would be redundant
-	// and, for order(), would override the view's ranking.
-	let q = supabase
-		.from('profiles_by_public_deck_count')
-		.select('id, nickname, description, avatar_url', { count: 'exact' });
 	q = q.range(offset, offset + limit - 1);
 
 	const { data, error, count } = await q;
