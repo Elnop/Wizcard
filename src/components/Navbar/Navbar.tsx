@@ -68,7 +68,7 @@ export function Navbar() {
 				<nav className={styles.nav}>
 					<Link
 						href="/search"
-						className={`${styles.navLink} ${pathname === '/search' ? styles.navLinkActive : ''}`}
+						className={`${styles.navLink} ${pathname.startsWith('/search') ? styles.navLinkActive : ''}`}
 					>
 						{t('search')}
 					</Link>

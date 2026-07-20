@@ -84,7 +84,7 @@ export function NavbarDrawer() {
 			<nav className={`${styles.drawer} ${drawerOpen ? styles.drawerOpen : ''}`}>
 				<Link
 					href="/search"
-					className={`${styles.drawerLink} ${pathname === '/search' ? styles.drawerLinkActive : ''}`}
+					className={`${styles.drawerLink} ${pathname.startsWith('/search') ? styles.drawerLinkActive : ''}`}
 					onClick={closeDrawer}
 				>
 					{t('search')}
