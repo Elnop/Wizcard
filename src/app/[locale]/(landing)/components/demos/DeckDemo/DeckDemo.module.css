@@ -3,50 +3,87 @@
 	inset: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 1.5rem;
+	gap: 1.25rem;
 	justify-content: center;
 	align-items: center;
 }
-/* Échelle : le cadre .demo fait ~520px de haut. Courbe + anneau occupent la moitié
-   haute, la main de départ la moitié basse — sinon tout paraît minuscule et perdu. */
-.chart {
+
+/* The stage holds the dealt cards and the curve bars stacked in the same box,
+   so the bars appear to grow up out of the card spread. ~520px .demo frame. */
+.stage {
+	position: relative;
+	width: 100%;
+	height: 240px;
 	display: flex;
-	gap: 3rem;
-	align-items: flex-end;
 	justify-content: center;
-}
-.bars {
-	display: flex;
 	align-items: flex-end;
-	gap: 10px;
-	height: 190px;
 }
-.bar {
-	width: 26px;
-	background: rgba(201, 168, 76, 0.85);
-	border-radius: 4px 4px 0 0;
-	transition: height 0.1s linear;
-}
-.ring {
-	width: 160px;
-	height: 160px;
-	border-radius: 50%;
-	mask: radial-gradient(transparent 52%, #000 53%);
-	-webkit-mask: radial-gradient(transparent 52%, #000 53%);
-}
+
 .hand {
+	position: absolute;
+	inset: 0;
 	display: flex;
 	justify-content: center;
 	align-items: flex-end;
-	height: 190px;
+	transition: opacity 0.15s linear;
 }
 .handCard {
 	margin: 0 -22px;
 	transform-origin: bottom center;
+	will-change: transform, opacity;
 }
 .handCard :global(img) {
 	width: 96px;
 	height: auto;
 	border-radius: 5px;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Bars sit in front of the receding cards, anchored to the same baseline. */
+.bars {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: flex-end;
+	gap: 10px;
+	height: 190px;
+	transition: opacity 0.15s linear;
+}
+.bar {
+	width: 26px;
+	border-radius: 4px 4px 0 0;
+	transition: height 0.1s linear;
+}
+
+.ring {
+	width: 150px;
+	height: 150px;
+	border-radius: 50%;
+	mask: radial-gradient(transparent 52%, #000 53%);
+	-webkit-mask: radial-gradient(transparent 52%, #000 53%);
+	transition: opacity 0.15s linear;
+}
+
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	justify-content: center;
+	transition: opacity 0.15s linear;
+}
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.3rem 0.7rem;
+	border-radius: 999px;
+	font-size: 0.8rem;
+	letter-spacing: 0.02em;
+	color: rgba(255, 255, 255, 0.82);
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(201, 168, 76, 0.35);
+}
+.chip b {
+	font-weight: 700;
+	color: rgba(201, 168, 76, 0.95);
 }
