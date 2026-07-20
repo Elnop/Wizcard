@@ -22,10 +22,17 @@ export default function BrandTestBackgroundPage() {
 	const variant = BACKGROUNDS[active];
 
 	return (
-		<div
-			className={styles.stage}
-			style={{ background: variant.background, backgroundSize: variant.backgroundSize }}
-		>
+		<div className={styles.stage}>
+			{/* Couche de fond fixe : ancrée au viewport, ne défile pas avec le contenu.
+			    Un calque dédié (plutôt que background-attachment) évite que le
+			    shorthand `background` ne réinitialise l'attachement, et se transpose
+			    tel quel sur les vraies pages /search. */}
+			<div
+				className={styles.backdrop}
+				style={{ background: variant.background, backgroundSize: variant.backgroundSize }}
+				aria-hidden
+			/>
+
 			{/* Sélecteur */}
 			<nav className={styles.selector} aria-label="Choix du fond">
 				{BACKGROUNDS.map((b, i) => (

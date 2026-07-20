@@ -1,12 +1,26 @@
 .stage {
+	position: relative;
 	min-height: 100vh;
-	background-attachment: fixed;
 	background-color: var(--background);
 	color: var(--foreground);
 	padding: 1.25rem;
 	display: flex;
 	flex-direction: column;
 	gap: 1.5rem;
+}
+
+/* Calque de fond fixe : couvre le viewport et reste immobile au scroll. Le
+   contenu (position:relative sur .stage + z-index naturel) passe au-dessus. */
+.backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+}
+
+.stage > :not(.backdrop) {
+	position: relative;
+	z-index: 1;
 }
 
 /* --- Sélecteur de fond ---------------------------------------------------- */
