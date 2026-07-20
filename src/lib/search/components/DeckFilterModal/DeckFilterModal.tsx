@@ -20,6 +20,11 @@ const ALL_FORMATS: DeckFormat[] = [
 	'limited',
 	'oathbreaker',
 	'brawl',
+	// Carried by the MTGJSON precon catalogue (570 / 12 / 8 decks respectively),
+	// so they are filterable even though deck creation does not offer them.
+	'jumpstart',
+	'planechase',
+	'archenemy',
 ];
 
 interface DeckFilterModalContentProps {

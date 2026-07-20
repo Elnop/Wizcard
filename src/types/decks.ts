@@ -11,7 +11,13 @@ export type DeckFormat =
 	| 'draft'
 	| 'limited'
 	| 'oathbreaker'
-	| 'brawl';
+	| 'brawl'
+	// Formats that arrived with the MTGJSON precon catalogue. Jumpstart decks
+	// are 20-card halves meant to be paired; Planechase and Archenemy are
+	// casual variants played alongside a normal deck.
+	| 'jumpstart'
+	| 'planechase'
+	| 'archenemy';
 
 export type DeckZone = 'mainboard' | 'sideboard' | 'maybeboard' | 'commander' | 'tokens';
 

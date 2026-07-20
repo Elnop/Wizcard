@@ -78,6 +78,12 @@ const TYPE_TO_FORMAT: Record<string, DeckFormat> = {
 	'Oathbreaker Deck': 'oathbreaker',
 	'Draft Set': 'draft',
 
+	// Real formats added to decks_format_check in 20260720150000 — these were
+	// previously forced to null purely because the constraint lacked them.
+	Jumpstart: 'jumpstart',
+	'Planechase Deck': 'planechase',
+	'Archenemy Deck': 'archenemy',
+
 	// Pioneer
 	'Pioneer Challenger Deck': 'pioneer',
 

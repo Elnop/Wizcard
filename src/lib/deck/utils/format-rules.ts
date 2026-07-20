@@ -80,6 +80,25 @@ const FORMAT_RULES: Record<DeckFormat, FormatRules> = {
 		commanderCount: 0,
 		allowedZones: ['mainboard', 'sideboard', 'maybeboard'],
 	},
+	// A Jumpstart pack is a fixed 20-card half-deck: two are shuffled together
+	// to make a 40-card game deck. Duplicates are expected (a pack can carry
+	// several copies of a card) and there is no sideboard.
+	jumpstart: {
+		minMainboard: 20,
+		maxMainboard: 20,
+		maxCopies: null,
+		maxSideboard: null,
+		singleton: false,
+		requiresCommander: false,
+		commanderCount: 0,
+		allowedZones: ['mainboard', 'maybeboard'],
+	},
+	// Planechase and Archenemy are casual variants played WITH an ordinary
+	// constructed deck, alongside a separate oversized-card deck (planes /
+	// schemes) that this app does not model. Fall back to constructed rules
+	// rather than invent constraints.
+	planechase: { ...CONSTRUCTED_RULES },
+	archenemy: { ...CONSTRUCTED_RULES },
 };
 
 export function getFormatRules(format: DeckFormat): FormatRules {
@@ -323,8 +342,20 @@ function checkLegality(
 	format: DeckFormat,
 	cards: Array<{ card: ScryfallCard; zone: DeckZone }>
 ): ValidationWarning[] {
-	const legalityKey = format === 'draft' || format === 'limited' ? null : format;
-	if (!legalityKey) return [];
+	// Scryfall publishes no legality field for these: draft/limited are sealed
+	// formats, and jumpstart/planechase/archenemy are product lines or casual
+	// variants with no maintained banlist. Skip the check rather than warn on
+	// every card for a format nobody adjudicates. Written as a narrowing union
+	// so `legalityKey` is provably a key of ScryfallLegalities below.
+	type UnadjudicatedFormat = 'draft' | 'limited' | 'jumpstart' | 'planechase' | 'archenemy';
+	const isUnadjudicated = (f: DeckFormat): f is UnadjudicatedFormat =>
+		f === 'draft' ||
+		f === 'limited' ||
+		f === 'jumpstart' ||
+		f === 'planechase' ||
+		f === 'archenemy';
+	if (isUnadjudicated(format)) return [];
+	const legalityKey = format;
 	const warnings: ValidationWarning[] = [];
 	for (const { card, zone } of cards) {
 		if (zone === 'maybeboard') continue;
