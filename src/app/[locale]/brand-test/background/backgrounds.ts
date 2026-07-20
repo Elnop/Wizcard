@@ -312,4 +312,52 @@ export const BACKGROUNDS: BackgroundVariant[] = [
 		)}, radial-gradient(130% 120% at 50% 45%, transparent 45%, #060609 100%), ${NIGHT}`,
 		backgroundSize: '180px 180px, cover, cover',
 	},
+
+	// --- Croisillons (déclinaisons) -------------------------------------------
+	{
+		id: 'crosshatch-wide',
+		label: '25 — Croisillons larges',
+		note: 'Même trame croisée que #18 mais mailles espacées : plus aérée.',
+		background: `repeating-linear-gradient(45deg, rgba(181,160,108,0.045) 0 1px, transparent 1px 18px), repeating-linear-gradient(-45deg, rgba(181,160,108,0.035) 0 1px, transparent 1px 18px), ${NIGHT}`,
+	},
+	{
+		id: 'crosshatch-ortho',
+		label: '26 — Croisillons droits',
+		note: 'Croisillons horizontaux/verticaux (0°/90°) plutôt qu’en biais.',
+		background: `repeating-linear-gradient(0deg, rgba(181,160,108,0.045) 0 1px, transparent 1px 12px), repeating-linear-gradient(90deg, rgba(181,160,108,0.035) 0 1px, transparent 1px 12px), ${NIGHT}`,
+	},
+	{
+		id: 'crosshatch-bold',
+		label: '27 — Croisillons épais',
+		note: 'Traits plus épais et plus contrastés : trame affirmée.',
+		background: `repeating-linear-gradient(45deg, rgba(201,168,76,0.07) 0 2px, transparent 2px 16px), repeating-linear-gradient(-45deg, rgba(201,168,76,0.055) 0 2px, transparent 2px 16px), ${NIGHT}`,
+	},
+	{
+		id: 'crosshatch-gold',
+		label: '28 — Croisillons or vif',
+		note: 'Trame fine mais teintée or franc (au lieu du laiton), sur navy.',
+		background: `repeating-linear-gradient(45deg, rgba(201,168,76,0.06) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(201,168,76,0.05) 0 1px, transparent 1px 9px), radial-gradient(120% 100% at 50% 0%, ${NAVY} 0%, ${NIGHT} 68%)`,
+	},
+	{
+		id: 'crosshatch-dense',
+		label: '29 — Croisillons serrés',
+		note: 'Mailles très rapprochées : aspect tissu / lin dense.',
+		background: `repeating-linear-gradient(45deg, rgba(181,160,108,0.05) 0 1px, transparent 1px 4px), repeating-linear-gradient(-45deg, rgba(181,160,108,0.04) 0 1px, transparent 1px 4px), ${NIGHT}`,
+	},
+	{
+		id: 'crosshatch-triple',
+		label: '30 — Croisillons triple',
+		note: 'Trois familles de lignes (0°, 60°, 120°) : trame en losanges triangulés.',
+		background: `repeating-linear-gradient(0deg, rgba(181,160,108,0.04) 0 1px, transparent 1px 16px), repeating-linear-gradient(60deg, rgba(181,160,108,0.04) 0 1px, transparent 1px 16px), repeating-linear-gradient(120deg, rgba(181,160,108,0.04) 0 1px, transparent 1px 16px), ${NIGHT}`,
+	},
+	{
+		id: 'crosshatch-dotted',
+		label: '31 — Croisillons pointés',
+		note: 'Trame croisée avec un point doré à chaque intersection.',
+		background: `${tile(
+			16,
+			pip(0, 0, 1, GOLD, 0.14)
+		)}, repeating-linear-gradient(45deg, rgba(181,160,108,0.04) 0 1px, transparent 1px 16px), repeating-linear-gradient(-45deg, rgba(181,160,108,0.03) 0 1px, transparent 1px 16px), ${NIGHT}`,
+		backgroundSize: '11.31px 11.31px, cover, cover, cover',
+	},
 ];
