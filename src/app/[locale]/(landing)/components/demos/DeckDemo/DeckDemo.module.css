@@ -3,61 +3,58 @@
 	inset: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 1.25rem;
+	gap: 1rem;
 	justify-content: center;
 	align-items: center;
 }
 
-/* The stage holds the dealt cards and the curve bars stacked in the same box,
-   so the bars appear to grow up out of the card spread. ~520px .demo frame. */
-.stage {
-	position: relative;
-	width: 100%;
-	height: 240px;
-	display: flex;
-	justify-content: center;
-	align-items: flex-end;
-}
-
+/* The fanned cards you just "built" sit up top. They fan DOWN from a top pivot
+   so the spread never reaches into the stats band below it. */
 .hand {
-	position: absolute;
-	inset: 0;
+	position: relative;
+	height: 150px;
 	display: flex;
 	justify-content: center;
-	align-items: flex-end;
+	align-items: flex-start;
 	transition: opacity 0.15s linear;
 }
 .handCard {
-	margin: 0 -22px;
-	transform-origin: bottom center;
+	margin: 0 -24px;
+	transform-origin: top center;
 	will-change: transform, opacity;
 }
 .handCard :global(img) {
-	width: 96px;
+	width: 88px;
 	height: auto;
 	border-radius: 5px;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55);
 }
 
-/* Bars sit in front of the receding cards, anchored to the same baseline. */
-.bars {
-	position: relative;
-	z-index: 1;
+/* Stats resolve out of the deck, in their own band beneath the fan. */
+.stats {
 	display: flex;
 	align-items: flex-end;
-	gap: 10px;
-	height: 190px;
+	justify-content: center;
+	gap: 2.5rem;
+}
+
+/* Mana curve — bars grow up from their own baseline, clear of the cards. */
+.bars {
+	display: flex;
+	align-items: flex-end;
+	gap: 9px;
+	height: 130px;
 	transition: opacity 0.15s linear;
 }
 .bar {
-	width: 26px;
-	border-radius: 4px 4px 0 0;
+	width: 22px;
+	border-radius: 3px 3px 0 0;
 	transition: height 0.1s linear;
 }
 
 .ring {
-	width: 150px;
-	height: 150px;
+	width: 130px;
+	height: 130px;
 	border-radius: 50%;
 	mask: radial-gradient(transparent 52%, #000 53%);
 	-webkit-mask: radial-gradient(transparent 52%, #000 53%);
