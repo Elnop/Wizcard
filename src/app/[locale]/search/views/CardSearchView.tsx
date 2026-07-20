@@ -15,7 +15,7 @@ import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useCustomCards } from '@/lib/mpc/hooks/useCustomCards';
 import { SearchModeSwitcher } from '../components/SearchModeSwitcher/SearchModeSwitcher';
 import { SearchAllLanguagesToggle } from '@/lib/search/components/SearchAllLanguagesToggle/SearchAllLanguagesToggle';
-import type { useSearchFiltersFromUrl } from '../useSearchFiltersFromUrl';
+import type { useCardSearchUrlState } from '../cards/useCardSearchUrlState';
 import { getCustomCardSourcesWithCount } from '@/lib/mpc/db/custom-cards';
 import type { MpcSourceWithCount } from '@/lib/mpc/db/custom-cards';
 import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
@@ -35,7 +35,7 @@ function computeCustomFilterCount(
 }
 
 type CardSearchViewProps = {
-	cardState: ReturnType<typeof useSearchFiltersFromUrl>;
+	cardState: ReturnType<typeof useCardSearchUrlState>;
 };
 
 export function CardSearchView({ cardState }: CardSearchViewProps) {
