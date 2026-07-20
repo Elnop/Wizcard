@@ -47,11 +47,9 @@ export default function SearchLandingPage() {
 function SearchLandingContent() {
 	const t = useTranslations('search');
 	const { term, setTerm } = useLandingSearchUrlState();
-	// `useScryfallCardSearch` débounce `filters.name` en interne (300 ms), mais pas
-	// `useDeckSearch` / `useProfileSearch`. On débounce donc ici pour ces deux-là et
-	// on passe `term` brut à la section cartes, sinon le délai s'applique deux fois.
+	// `useScryfallCardSearch` débounce `filters.name` en interne ; on débounce ici
+	// pour les deux autres sections. Les résultats par défaut s'affichent term vide.
 	const debounced = useDebounce(term, 300);
-	const hasTerm = debounced.trim().length > 0;
 
 	return (
 		<div className={styles.page}>
@@ -61,12 +59,9 @@ function SearchLandingContent() {
 				</div>
 
 				<div className={landing.sections}>
-					{/* La section cartes reçoit `term` brut : son hook débounce lui-même.
-					    Le `enabled` reste calculé sur la valeur débouncée pour que les
-					    trois sections basculent ensemble entre pitch et résultats. */}
-					<CardsSection term={term} enabled={hasTerm} />
-					<DecksSection term={debounced} enabled={hasTerm} />
-					<ProfilesSection term={debounced} enabled={hasTerm} />
+					<CardsSection term={term} />
+					<DecksSection term={debounced} />
+					<ProfilesSection term={debounced} />
 				</div>
 			</main>
 		</div>
@@ -87,7 +82,7 @@ function SectionHeader({ title, href }: { title: string; href: string }) {
 	);
 }
 
-function CardsSection({ term, enabled }: { term: string; enabled: boolean }) {
+function CardsSection({ term }: { term: string }) {
 	const t = useTranslations('search');
 
 	// Filtres neutres : la landing ne fait qu'une recherche par nom, les filtres
@@ -105,18 +100,16 @@ function CardsSection({ term, enabled }: { term: string; enabled: boolean }) {
 		[term]
 	);
 
-	const { cards, isLoading } = useScryfallCardSearch(filters, { enabled });
+	// enabled: true en permanence → term vide affiche le défaut du hook
+	// (f:edh order:edhrec). Plus de garde `enabled ? … : []` : on ne repasse
+	// jamais à enabled=false, donc les résultats ne sont jamais périmés.
+	const { cards, isLoading } = useScryfallCardSearch(filters, { enabled: true });
 
-	const href = `/search/cards?name=${encodeURIComponent(term)}`;
-	// `useScryfallCardSearch` CONSERVE ses derniers `cards` quand `enabled` repasse
-	// à false (documenté dans le hook) : sans ce garde, vider le champ laisserait
-	// les résultats précédents affichés à la place du pitch.
-	const shown = useMemo(() => (enabled ? cards.slice(0, CARD_LIMIT) : []), [cards, enabled]);
+	const shown = useMemo(() => cards.slice(0, CARD_LIMIT), [cards]);
+	const href = term ? `/search/cards?name=${encodeURIComponent(term)}` : '/search/cards';
 
 	let body: ReactNode;
-	if (!enabled) {
-		body = <p className={`${landing.pitch} ${landing.sectionEmpty}`}>{t('landingCardsPitch')}</p>;
-	} else if (isLoading) {
+	if (isLoading) {
 		body = (
 			<div className={styles.loading}>
 				<Spinner size="md" />
@@ -130,30 +123,30 @@ function CardsSection({ term, enabled }: { term: string; enabled: boolean }) {
 
 	return (
 		<section className={landing.section}>
-			<SectionHeader title={t('landingCardsTitle')} href={enabled ? href : '/search/cards'} />
+			<SectionHeader title={t('landingCardsTitle')} href={href} />
 			{body}
 		</section>
 	);
 }
 
-function DecksSection({ term, enabled }: { term: string; enabled: boolean }) {
+function DecksSection({ term }: { term: string }) {
 	const t = useTranslations('search');
 	const router = useRouter();
 	const symbolMap = useScryfallSymbols();
 
 	const filters = useMemo(() => ({ ...DEFAULT_DECK_FILTERS, name: term }), [term]);
-	const { decks, isLoading } = useDeckSearch(filters, enabled);
+	// enabled: true → term vide affiche les decks publics récents (searchDecks
+	// trie created_at DESC à vide).
+	const { decks, isLoading } = useDeckSearch(filters, true);
 
 	const shown = useMemo(() => decks.slice(0, DECK_LIMIT), [decks]);
 	const deckMetas = useMemo(() => shown.map((d) => d.deck), [shown]);
 	const summaryMap = useDeckSummaries(deckMetas);
 
-	const href = `/search/decks?name=${encodeURIComponent(term)}`;
+	const href = term ? `/search/decks?name=${encodeURIComponent(term)}` : '/search/decks';
 
 	let body: ReactNode;
-	if (!enabled) {
-		body = <p className={`${landing.pitch} ${landing.sectionEmpty}`}>{t('landingDecksPitch')}</p>;
-	} else if (isLoading) {
+	if (isLoading) {
 		body = (
 			<div className={styles.loading}>
 				<Spinner size="md" />
@@ -182,28 +175,26 @@ function DecksSection({ term, enabled }: { term: string; enabled: boolean }) {
 
 	return (
 		<section className={landing.section}>
-			<SectionHeader title={t('landingDecksTitle')} href={enabled ? href : '/search/decks'} />
+			<SectionHeader title={t('landingDecksTitle')} href={href} />
 			{body}
 		</section>
 	);
 }
 
-function ProfilesSection({ term, enabled }: { term: string; enabled: boolean }) {
+function ProfilesSection({ term }: { term: string }) {
 	const t = useTranslations('search');
-	const { profiles, isLoading } = useProfileSearch(term, enabled);
+	// enabled: true → term vide affiche le classement par nombre de decks publics
+	// (searchProfiles interroge la vue profiles_by_public_deck_count à vide).
+	const { profiles, isLoading } = useProfileSearch(term, true);
 
 	const shown = useMemo(() => profiles.slice(0, PROFILE_LIMIT), [profiles]);
 	const ownerIds = useMemo(() => shown.map((p) => p.id), [shown]);
 	const statsMap = useProfileStats(ownerIds);
 
-	const href = `/search/profiles?q=${encodeURIComponent(term)}`;
+	const href = term ? `/search/profiles?q=${encodeURIComponent(term)}` : '/search/profiles';
 
 	let body: ReactNode;
-	if (!enabled) {
-		body = (
-			<p className={`${landing.pitch} ${landing.sectionEmpty}`}>{t('landingProfilesPitch')}</p>
-		);
-	} else if (isLoading) {
+	if (isLoading) {
 		body = (
 			<div className={styles.loading}>
 				<Spinner size="md" />
@@ -223,7 +214,7 @@ function ProfilesSection({ term, enabled }: { term: string; enabled: boolean }) 
 
 	return (
 		<section className={landing.section}>
-			<SectionHeader title={t('landingProfilesTitle')} href={enabled ? href : '/search/profiles'} />
+			<SectionHeader title={t('landingProfilesTitle')} href={href} />
 			{body}
 		</section>
 	);
