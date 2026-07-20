@@ -172,8 +172,8 @@
 			},
 			"collection": {
 				"label": "Collection",
-				"title": "Votre collection vous suit partout",
-				"description": "Suivez chaque carte, votre wishlist et vos exports. Synchronisation cloud sur tous vos appareils."
+				"title": "Retrouvez n'importe quelle carte dans votre collection",
+				"description": "Filtrez ce que vous possédez par couleur, type, coût ou set, et retombez sur la bonne carte en quelques secondes."
 			},
 			"deck": {
 				"label": "Deckbuilding",
