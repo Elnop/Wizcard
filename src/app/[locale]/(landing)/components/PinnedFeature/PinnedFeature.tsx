@@ -33,7 +33,12 @@ export function PinnedFeature({
 	const sectionRef = useRef<HTMLElement>(null);
 	const reduced = useReducedMotion();
 	const mobile = useIsMobile();
-	const scrolled = useScrollProgress(sectionRef);
+	// La 1re section suit le hero : sans amorce, elle reste figée à l'état 0 le
+	// temps qu'elle monte à l'écran, et l'animation semble « sautée » au premier
+	// coup de molette. Les suivantes sont précédées d'une section épinglée, donc
+	// elles entrent déjà en position — pas besoin d'amorce.
+	const leadIn = index === 1 ? 600 : 0;
+	const scrolled = useScrollProgress(sectionRef, leadIn);
 	const isStatic = reduced || mobile;
 	const progress = isStatic ? 1 : scrolled;
 

@@ -1,5 +1,9 @@
+/* Budget de scroll par section. À 260vh la course utile ne faisait que
+   (260vh - 100vh) = 160vh ≈ 1440px pour 4 beats d'animation : un seul cran de
+   molette (~600px) avalait plus de 40 % de la démo, qui paraissait « sautée ».
+   À 360vh la course passe à 260vh ≈ 2340px, soit ~585px par beat. */
 .section {
-	min-height: 260vh;
+	min-height: 360vh;
 	position: relative;
 }
 .static {
