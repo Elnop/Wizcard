@@ -171,7 +171,11 @@ export function useDeckSummaries(decks: DeckMeta[]): Record<string, DeckSummary>
 				);
 			}
 
-			setSummaries(result);
+			// Merge, never replace. Infinite scroll re-runs this for the whole
+			// grown list, so replacing wholesale made every already-resolved cover
+			// blink out and re-resolve on each page. Merging keeps visible covers
+			// stable and only fills in the newly-loaded decks.
+			setSummaries((prev) => ({ ...prev, ...result }));
 		}
 
 		void resolve();

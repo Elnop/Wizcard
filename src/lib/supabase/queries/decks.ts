@@ -94,12 +94,29 @@ export async function fetchDeckCardTagRows(
 ): Promise<Array<{ deck_id: string; scryfall_id: string; tags: string[] | null }>> {
 	if (deckIds.length === 0) return [];
 	const supabase = createClient();
-	const { data, error } = await supabase
-		.from('cards')
-		.select('deck_id, scryfall_id, tags')
-		.in('deck_id', deckIds);
-	if (error) throw new Error(`[queries/decks] fetchDeckCardTagRows error: ${error.message}`);
-	return data as Array<{ deck_id: string; scryfall_id: string; tags: string[] | null }>;
+	type TagRow = { deck_id: string; scryfall_id: string; tags: string[] | null };
+	const rows: TagRow[] = [];
+
+	// MUST paginate. PostgREST caps a response at max_rows (1000, see
+	// supabase/config.toml) and truncates SILENTLY — no error, no indication.
+	// The deck list asks for every card of every visible deck at once, so as
+	// infinite scroll grows the list past ~1000 cards total, an arbitrary subset
+	// of decks came back with no cards and lost their cover art. Which decks were
+	// dropped shifted per request, so covers appeared and then vanished at random
+	// as the caller replaced its whole summary state.
+	const PAGE = 1000;
+	for (let offset = 0; ; offset += PAGE) {
+		const { data, error } = await supabase
+			.from('cards')
+			.select('deck_id, scryfall_id, tags')
+			.in('deck_id', deckIds)
+			.range(offset, offset + PAGE - 1);
+		if (error) throw new Error(`[queries/decks] fetchDeckCardTagRows error: ${error.message}`);
+		const page = (data ?? []) as TagRow[];
+		rows.push(...page);
+		if (page.length < PAGE) break;
+	}
+	return rows;
 }
 
 export async function fetchDeckCardRows(deckId: string): Promise<CardDbRow[]> {
