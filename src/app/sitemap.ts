@@ -40,6 +40,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const staticRoutes: MetadataRoute.Sitemap = [
 		...localizedEntries('', { changeFrequency: 'weekly', priority: 1 }),
 		...localizedEntries('search', { changeFrequency: 'weekly', priority: 0.8 }),
+		...localizedEntries('search/cards', { changeFrequency: 'weekly', priority: 0.8 }),
+		...localizedEntries('search/decks', { changeFrequency: 'weekly', priority: 0.7 }),
+		...localizedEntries('search/profiles', { changeFrequency: 'weekly', priority: 0.7 }),
 		...localizedEntries('sets', { changeFrequency: 'monthly', priority: 0.6 }),
 		...localizedEntries('mentions-legales', { changeFrequency: 'yearly', priority: 0.2 }),
 		...localizedEntries('confidentialite', { changeFrequency: 'yearly', priority: 0.2 }),
