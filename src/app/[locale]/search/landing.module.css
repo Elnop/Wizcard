@@ -1,0 +1,49 @@
+.sections {
+	display: flex;
+	flex-direction: column;
+	gap: 2.5rem;
+	margin-top: 2rem;
+}
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.sectionHeader {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+	border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+	padding-bottom: 0.5rem;
+}
+
+.sectionTitle {
+	font-size: 1.25rem;
+	font-weight: 600;
+	margin: 0;
+}
+
+.seeMore {
+	font-size: 0.875rem;
+	white-space: nowrap;
+	text-decoration: none;
+	opacity: 0.85;
+}
+
+.seeMore:hover {
+	opacity: 1;
+	text-decoration: underline;
+}
+
+.pitch {
+	margin: 0;
+	opacity: 0.7;
+	line-height: 1.5;
+}
+
+.sectionEmpty {
+	padding: 0.5rem 0 1rem;
+}
