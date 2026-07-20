@@ -66,8 +66,6 @@ export function countActiveFilters(
 	);
 }
 
-export type SearchEntity = 'cards' | 'decks' | 'profiles';
-
 /** Formats that require a commander → surface the conditional Commander input. */
 export const COMMANDER_FORMATS: DeckFormat[] = ['commander', 'brawl', 'oathbreaker'];
 
