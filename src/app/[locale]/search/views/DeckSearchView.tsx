@@ -10,6 +10,7 @@ import { countActiveDeckFilters, type DeckSearchFilters } from '@/lib/search/typ
 import { DeckCard } from '@/app/[locale]/decks/components/DeckCard/DeckCard';
 import { useDeckSummaries } from '@/app/[locale]/decks/useDeckSummaries';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
+import { useInfiniteScroll } from '@/lib/card/components/CardList/useInfiniteScroll';
 import { Spinner } from '@/components/Spinner/Spinner';
 import styles from '../page.module.css';
 
@@ -30,6 +31,16 @@ export function DeckSearchView({ filters, onFiltersChange }: Props) {
 	// commander name, mana curve) resolve for search results just like on /decks.
 	const deckMetas = useMemo(() => decks.map((d) => d.deck), [decks]);
 	const summaryMap = useDeckSummaries(deckMetas);
+
+	// isLoadingMore (not isLoading) gates the observer: isLoading is only true on
+	// the initial/filter-changed fetch, when the sentinel isn't rendered anyway.
+	// Passing isLoadingMore is what stops a visible sentinel from firing loadMore
+	// repeatedly while a page is already in flight.
+	const { sentinelRef } = useInfiniteScroll({
+		onLoadMore: loadMore,
+		hasMore,
+		isLoading: isLoadingMore,
+	});
 
 	return (
 		<>
@@ -79,12 +90,16 @@ export function DeckSearchView({ filters, onFiltersChange }: Props) {
 				</div>
 			)}
 
+			{/* Infinite scroll, same mechanism as the card search: an observed
+			    sentinel below the grid triggers the next page as it comes into
+			    view, instead of a "load more" button. */}
 			{hasMore && !isLoading && (
-				<div className={styles.loadMore}>
-					<button type="button" onClick={loadMore} disabled={isLoadingMore}>
-						{isLoadingMore ? <Spinner size="sm" /> : t('loadMore')}
-					</button>
-				</div>
+				<>
+					<div ref={sentinelRef} />
+					<div className={styles.sentinel}>
+						<Spinner size="md" />
+					</div>
+				</>
 			)}
 		</>
 	);
