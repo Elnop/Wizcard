@@ -3,19 +3,25 @@
 	inset: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 1.25rem;
+	gap: 1rem;
 	justify-content: center;
 	align-items: center;
+	/* La feuille se plie en perspective : sans cette marge le coin bas sort du cadre. */
+	padding: 1rem 0;
+	overflow: hidden;
 }
+/* La planche doit tenir DANS le cadre .demo (520px max). On borne sa largeur et on
+   laisse la grille se dimensionner dessus, sinon les 3 rangées débordent en bas. */
 .sheet {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
-	gap: 6px;
-	padding: 12px;
+	gap: 5px;
+	padding: 10px;
+	width: min(100%, 300px);
 	background: #f4f1e8;
 	border-radius: 6px;
 	box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
-	transform-origin: center bottom;
+	transform-origin: center center;
 	transition: transform 0.1s linear;
 }
 .cell :global(img) {

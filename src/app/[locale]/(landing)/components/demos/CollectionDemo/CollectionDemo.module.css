@@ -8,16 +8,19 @@
 	align-items: center;
 }
 .counter {
-	font-size: 2rem;
+	font-size: 2.4rem;
 	font-variant-numeric: tabular-nums;
 	color: rgba(201, 168, 76, 1);
+	line-height: 1.1;
 }
+/* 260px : laisse respirer le compteur au-dessus et le picto de synchro en dessous
+   dans le cadre de 520px (à 300px la grille mangeait toute la hauteur). */
 .grid {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
-	gap: 0.5rem;
+	gap: 0.45rem;
 	width: 100%;
-	max-width: 300px;
+	max-width: 260px;
 }
 .cell {
 	position: relative;
@@ -38,17 +41,25 @@
 	font-size: 1.5rem;
 	border-radius: 5px;
 }
+/* Picto de synchro : les glyphes doivent être assez gros pour se lire comme
+   « téléphone ↔ laptop », sinon le beat final passe pour un artefact graphique. */
 .sync {
 	display: flex;
 	align-items: center;
-	gap: 0.5rem;
+	justify-content: center;
+	gap: 0.9rem;
+	margin-top: 0.25rem;
 }
 .wire {
-	width: 40px;
-	height: 2px;
+	width: 72px;
+	height: 3px;
+	border-radius: 2px;
 	background: rgba(201, 168, 76, 1);
 	transform-origin: left;
+	box-shadow: 0 0 10px rgba(201, 168, 76, 0.6);
 }
 .device {
-	font-size: 1.5rem;
+	font-size: 2.6rem;
+	line-height: 1;
+	color: rgba(201, 168, 76, 0.95);
 }
