@@ -732,11 +732,8 @@
 		"profileTypeLine": "Planeswalker — Joueur",
 		"landingPlaceholder": "Rechercher des cartes, des decks, des joueurs…",
 		"landingCardsTitle": "Cartes",
-		"landingCardsPitch": "Filtrez toutes les cartes Magic par couleur, type, coût de mana, édition et rareté.",
 		"landingDecksTitle": "Decks",
-		"landingDecksPitch": "Parcourez les decks publics par format, commandant, auteur ou carte jouée.",
 		"landingProfilesTitle": "Joueurs",
-		"landingProfilesPitch": "Trouvez un joueur par son pseudo et explorez ses decks et sa collection.",
 		"landingSeeMore": "Voir plus",
 		"landingNoResults": "Aucun résultat"
 	},
