@@ -134,6 +134,9 @@ with expected(t, col, typ) as (
     ('decks','format','text'),('decks','description','text'),
     ('decks','created_at','timestamp with time zone'),('decks','updated_at','timestamp with time zone'),
     ('decks','folder_id','uuid'),('decks','cover_art_url','text'),
+    -- 20260720120000 : visibilité par deck + import des precons MTGJSON.
+    ('decks','is_public','boolean'),('decks','source','text'),
+    ('decks','source_deck_id','text'),('decks','source_version','text'),
     -- cards
     ('cards','id','uuid'),('cards','owner_id','uuid'),('cards','scryfall_id','text'),
     ('cards','date_added','timestamp with time zone'),('cards','is_foil','boolean'),
@@ -430,6 +433,10 @@ with idx(t, name) as (
     ('cards','cards_deck_id_idx'),            -- deck cards
     ('cards','collections_pkey'),
     ('decks','decks_owner_id_idx'),('decks','decks_folder_id_idx'),
+    -- 20260720120000 + 20260720130000 : clé d'upsert du sync precon. L'index
+    -- DOIT être total, pas partiel — Postgres refuse un index partiel comme
+    -- arbitre ON CONFLICT, ce qui faisait échouer chaque upsert.
+    ('decks','decks_source_deck_key'),('decks','decks_source_idx'),
     ('deck_folders','deck_folders_owner_id_idx'),('deck_folders','deck_folders_parent_id_idx'),
     ('profiles','profiles_nickname_lower_key'),
     ('user_usage','user_usage_pkey'),
@@ -468,6 +475,61 @@ select pg_temp.chk('security', 'authenticated cannot INSERT cards.created_at',
 select pg_temp.chk('security', 'authenticated CAN SELECT cards.purchase_price',
   pg_temp.has_col_grant('cards','authenticated','SELECT','purchase_price'),
   'owner ne peut plus lire ses propres prix (grant trop restreint)');
+
+-- =============================================================================
+-- PRECONS MTGJSON + VISIBILITÉ PAR DECK (20260720120000 → 20260720150000)
+-- =============================================================================
+-- Ces assertions vont au-delà de « l'objet existe » : elles vérifient la NATURE
+-- des objets, car chacune de ces propriétés a déjà été un bug réel.
+
+-- L'index d'upsert doit être UNIQUE et TOTAL. En partiel (`where source_deck_id
+-- is not null`, état initial de 20260720120000), Postgres refuse de l'utiliser
+-- comme arbitre ON CONFLICT et chaque upsert du sync échoue.
+select pg_temp.chk('precons', 'decks_source_deck_key is UNIQUE and NOT partial',
+  exists (
+    select 1 from pg_indexes
+    where schemaname='public' and tablename='decks' and indexname='decks_source_deck_key'
+      and indexdef like '%UNIQUE%' and indexdef not like '%WHERE%'
+  ),
+  'index partiel ou non unique → ON CONFLICT (source,source_deck_id) échouera');
+
+-- owner_id doit être NULLABLE : un precon n'appartient à personne.
+select pg_temp.chk('precons', 'decks.owner_id is nullable',
+  exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='decks'
+      and column_name='owner_id' and is_nullable='YES'
+  ),
+  'owner_id NOT NULL → impossible d''insérer un precon');
+
+-- Cohérence source/owner : deck user ⇒ owner présent ; precon ⇒ owner absent.
+select pg_temp.chk('precons', 'constraint decks_owner_matches_source',
+  exists (select 1 from pg_constraint
+          where conrelid='public.decks'::regclass and conname='decks_owner_matches_source'),
+  'contrainte absente → un precon pourrait porter un owner, ou l''inverse');
+
+select pg_temp.chk('precons', 'constraint decks_source_check',
+  exists (select 1 from pg_constraint
+          where conrelid='public.decks'::regclass and conname='decks_source_check'),
+  'contrainte absente → source accepterait n''importe quelle valeur');
+
+-- decks_format_check doit inclure les formats ajoutés par 20260720150000,
+-- sinon le sync repasse ces 590+ decks à format NULL.
+select pg_temp.chk('precons', 'decks_format_check accepts jumpstart/planechase/archenemy',
+  (select pg_get_constraintdef(oid) from pg_constraint
+   where conrelid='public.decks'::regclass and conname='decks_format_check')
+   like '%jumpstart%',
+  'contrainte de format non élargie → jumpstart/planechase/archenemy rejetés');
+
+-- SÉCURITÉ (20260720140000). La policy « collection cards » doit être bornée à
+-- deck_id IS NULL. Sans cela, les policies étant OR'ées, les cartes d'un deck
+-- marqué PRIVÉ restent lisibles par anon dès que le profil du propriétaire est
+-- public — la decklist entière fuite. Bug réel, reproduit avant correction.
+select pg_temp.chk('security', 'collection-cards policy is scoped to deck_id IS NULL',
+  (select qual::text from pg_policies
+   where schemaname='public' and tablename='cards'
+     and policyname='Public can view collection cards') like '%deck_id IS NULL%',
+  'FUITE : les cartes d''un deck privé sont lisibles par anon');
 
 -- =============================================================================
 -- RÉSUMÉ + RAPPORT
