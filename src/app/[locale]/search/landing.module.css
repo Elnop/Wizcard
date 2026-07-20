@@ -1,3 +1,10 @@
+/* Landing only: extra breathing room above the unified search bar. Applied via
+   the landing module (not the shared .main padding) so the dedicated
+   /search/cards|decks|profiles routes, which reuse .main, are unaffected. */
+.searchRow {
+	margin-top: 24px;
+}
+
 .sections {
 	display: flex;
 	flex-direction: column;

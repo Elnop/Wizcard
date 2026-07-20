@@ -54,7 +54,7 @@ function SearchLandingContent() {
 	return (
 		<div className={styles.page}>
 			<main className={styles.main}>
-				<div className={styles.searchRow}>
+				<div className={`${styles.searchRow} ${landing.searchRow}`}>
 					<SearchBar value={term} onChange={setTerm} placeholder={t('landingPlaceholder')} />
 				</div>
 
