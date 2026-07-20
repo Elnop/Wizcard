@@ -12,6 +12,7 @@
 import { flags, log } from './precons/config';
 import { fetchMeta, fetchDeckList, fetchDeck } from './precons/mtgjson-client';
 import { fetchSyncedVersions, upsertPrecon } from './precons/db-writer';
+import { isImportableDeck } from './precons/deck-filter';
 
 async function main(): Promise<void> {
 	const started = Date.now();
@@ -20,9 +21,18 @@ async function main(): Promise<void> {
 	log(`ℹ MTGJSON version ${meta.version} (${meta.date})`);
 
 	const all = await fetchDeckList();
-	const list = flags.deckFile ? all.filter((d) => d.fileName === flags.deckFile) : all;
+
+	// MTGJSON lists PRODUCTS, not decks: Secret Lair drops, set redemptions,
+	// land packs and booster contents are card bundles with no decklist meaning.
+	// Filter before anything else so they are never fetched or written.
+	const decksOnly = all.filter((d) => isImportableDeck(d.type, d.name));
+	log(
+		`ℹ ${all.length} MTGJSON entries, ${decksOnly.length} are decks (${all.length - decksOnly.length} product SKUs skipped)`
+	);
+
+	const list = flags.deckFile ? decksOnly.filter((d) => d.fileName === flags.deckFile) : decksOnly;
 	if (flags.deckFile && list.length === 0) {
-		log(`✖ no deck with fileName "${flags.deckFile}"`);
+		log(`✖ no importable deck with fileName "${flags.deckFile}"`);
 		process.exit(1);
 	}
 	const targets = flags.limit > 0 ? list.slice(0, flags.limit) : list;
