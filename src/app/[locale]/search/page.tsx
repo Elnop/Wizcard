@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
+import { SearchEntitySwitcher } from './components/SearchEntitySwitcher/SearchEntitySwitcher';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { DeckCard } from '@/app/[locale]/decks/components/DeckCard/DeckCard';
 import { ProfileCard } from '@/lib/search/components/ProfileCard/ProfileCard';
@@ -54,8 +55,14 @@ function SearchLandingContent() {
 	return (
 		<div className={styles.page}>
 			<main className={styles.main}>
-				<div className={`${styles.searchRow} ${landing.searchRow}`}>
-					<SearchBar value={term} onChange={setTerm} placeholder={t('landingPlaceholder')} />
+				{/* Switcher présent sur la landing pour une navigation cohérente avec
+				    les trois routes dédiées ; aucun onglet n'est actif ici (pathname
+				    `/search` ne matche aucun href de mode). */}
+				<div className={`${styles.searchSection} ${landing.searchSection}`}>
+					<SearchEntitySwitcher />
+					<div className={styles.searchRow}>
+						<SearchBar value={term} onChange={setTerm} placeholder={t('landingPlaceholder')} />
+					</div>
 				</div>
 
 				<div className={landing.sections}>
