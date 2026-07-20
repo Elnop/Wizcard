@@ -96,10 +96,10 @@ export function DeckHeader({
 		);
 	}
 
-	// On mobile "Generate PDF" moves into the More menu (see the mobileOnly item
-	// below), so the menu must render whenever there's a PDF action too.
+	// Export lives in the More menu on every viewport, and on mobile "Generate
+	// PDF" moves into it too, so the menu must render whenever either exists.
 	const hasDesktopMoreActions = Boolean(
-		onAssignAllFromCollection || onAddAllToCollection || onImportList
+		onExportText || onAssignAllFromCollection || onAddAllToCollection || onImportList
 	);
 	const hasMoreActions = hasDesktopMoreActions || Boolean(onGeneratePdf);
 	// When the only reason the menu exists is the mobile PDF item, hide the whole
@@ -129,24 +129,19 @@ export function DeckHeader({
 				)}
 				{onVisibilityChange && (
 					<div className={styles.visibilityRow}>
-						<label className={styles.visibilityToggle}>
-							<input
-								type="checkbox"
-								checked={deck.isPublic}
-								onChange={(e) => onVisibilityChange(e.target.checked)}
-							/>
-							<span>{t('publicDeckLabel')}</span>
-						</label>
+						<button
+							type="button"
+							className={`${styles.actionBtn} ${deck.isPublic ? styles.actionBtnActive : ''}`}
+							onClick={() => onVisibilityChange(!deck.isPublic)}
+							aria-pressed={deck.isPublic}
+						>
+							<VisibilityIcon isPublic={deck.isPublic} />
+							<span>{deck.isPublic ? t('publicDeckLabel') : t('privateDeckLabel')}</span>
+						</button>
 						{deck.isPublic && !profileIsPublic && (
 							<p className={styles.visibilityHint}>{t('publicDeckPrivateProfileHint')}</p>
 						)}
 					</div>
-				)}
-				{onExportText && (
-					<button type="button" className={styles.actionBtn} onClick={() => onExportText()}>
-						<ExportIcon />
-						<span>{t('headerExport')}</span>
-					</button>
 				)}
 				{onGeneratePdf && (
 					<button
@@ -186,60 +181,82 @@ export function DeckHeader({
 							<span>{t('more')}</span>
 						</button>
 						{menuOpen && (
-							<div className={styles.dropdown} role="menu">
-								{onGeneratePdf && (
-									<button
-										type="button"
-										className={`${styles.dropdownItem} ${styles.mobileOnly}`}
-										role="menuitem"
-										onClick={() => {
-											setMenuOpen(false);
-											onGeneratePdf();
-										}}
-									>
-										⊕ {t('generatePdf')}
-									</button>
-								)}
-								{onAssignAllFromCollection && (
-									<button
-										type="button"
-										className={styles.dropdownItem}
-										role="menuitem"
-										onClick={() => {
-											setMenuOpen(false);
-											onAssignAllFromCollection();
-										}}
-									>
-										⊕ {t('assignAllFromCollection')}
-									</button>
-								)}
-								{onAddAllToCollection && (
-									<button
-										type="button"
-										className={styles.dropdownItem}
-										role="menuitem"
-										onClick={() => {
-											setMenuOpen(false);
-											onAddAllToCollection();
-										}}
-									>
-										⊕ {t('addAllToCollection')}
-									</button>
-								)}
-								{onImportList && (
-									<button
-										type="button"
-										className={styles.dropdownItem}
-										role="menuitem"
-										onClick={() => {
-											setMenuOpen(false);
-											onImportList();
-										}}
-									>
-										⊕ {t('importList')}
-									</button>
-								)}
-							</div>
+							<>
+								{/* Mobile: dim + tap-to-close backdrop behind the bottom sheet.
+								    The wrapper stops click propagation, so close explicitly here. */}
+								<div
+									className={styles.backdrop}
+									aria-hidden="true"
+									onClick={() => setMenuOpen(false)}
+								/>
+								<div className={styles.dropdown} role="menu">
+									{onExportText && (
+										<button
+											type="button"
+											className={styles.dropdownItem}
+											role="menuitem"
+											onClick={() => {
+												setMenuOpen(false);
+												onExportText();
+											}}
+										>
+											⊕ {t('headerExport')}
+										</button>
+									)}
+									{onGeneratePdf && (
+										<button
+											type="button"
+											className={`${styles.dropdownItem} ${styles.mobileOnly}`}
+											role="menuitem"
+											onClick={() => {
+												setMenuOpen(false);
+												onGeneratePdf();
+											}}
+										>
+											⊕ {t('generatePdf')}
+										</button>
+									)}
+									{onAssignAllFromCollection && (
+										<button
+											type="button"
+											className={styles.dropdownItem}
+											role="menuitem"
+											onClick={() => {
+												setMenuOpen(false);
+												onAssignAllFromCollection();
+											}}
+										>
+											⊕ {t('assignAllFromCollection')}
+										</button>
+									)}
+									{onAddAllToCollection && (
+										<button
+											type="button"
+											className={styles.dropdownItem}
+											role="menuitem"
+											onClick={() => {
+												setMenuOpen(false);
+												onAddAllToCollection();
+											}}
+										>
+											⊕ {t('addAllToCollection')}
+										</button>
+									)}
+									{onImportList && (
+										<button
+											type="button"
+											className={styles.dropdownItem}
+											role="menuitem"
+											onClick={() => {
+												setMenuOpen(false);
+												onImportList();
+											}}
+										>
+											⊕ {t('importList')}
+										</button>
+									)}
+								</div>
+							</>
 						)}
 					</div>
 				)}
@@ -262,16 +279,20 @@ function EditIcon() {
 	);
 }
 
-function ExportIcon() {
+function VisibilityIcon({ isPublic }: { isPublic: boolean }) {
 	return (
 		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 			<path
-				d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"
+				d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
 				stroke="currentColor"
 				strokeWidth="1.8"
 				strokeLinecap="round"
 				strokeLinejoin="round"
 			/>
+			<circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+			{!isPublic && (
+				<path d="M4 4l16 16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+			)}
 		</svg>
 	);
 }

@@ -466,6 +466,7 @@
 		"headerEdit": "Edit",
 		"headerExport": "Export",
 		"publicDeckLabel": "Public deck",
+		"privateDeckLabel": "Private deck",
 		"publicDeckPrivateProfileHint": "Your profile is private: this deck stays hidden from others until the profile is public.",
 		"generatePdf": "Generate PDF",
 		"more": "More",

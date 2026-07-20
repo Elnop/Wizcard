@@ -164,6 +164,12 @@
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
+/* Backdrop is mobile-only (see media query); hidden on desktop where the
+   dropdown anchors under its trigger. */
+.backdrop {
+	display: none;
+}
+
 .dropdownItem {
 	display: flex;
 	align-items: center;
@@ -222,26 +228,52 @@
 		gap: 5px;
 		padding: 6px 8px;
 	}
+
+	/*
+	 * The action row is `overflow-x: auto`, which clips any absolutely-positioned
+	 * child. So on mobile the More menu escapes the row entirely: the backdrop and
+	 * dropdown become `fixed` (positioned against the viewport, not the scroll
+	 * container) and the dropdown docks to the bottom as a full-width sheet.
+	 */
+	.backdrop {
+		display: block;
+		position: fixed;
+		inset: 0;
+		z-index: 300;
+		background: rgba(0, 0, 0, 0.5);
+	}
+
+	.dropdown {
+		position: fixed;
+		inset: auto 0 0 0;
+		top: auto;
+		z-index: 301;
+		min-width: 0;
+		border-radius: 12px 12px 0 0;
+		border-bottom: none;
+		padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+		box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+	}
+
+	.dropdownItem {
+		padding: 12px 16px;
+		font-size: var(--text-base);
+	}
 }
 
+/* Wraps the visibility toggle button so its private-profile hint can sit
+   directly beneath it without breaking the horizontal action bar. */
 .visibilityRow {
-	display: flex;
+	display: inline-flex;
 	flex-direction: column;
 	gap: 0.25rem;
-}
-
-.visibilityToggle {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.4rem;
-	cursor: pointer;
-	font-size: 0.85rem;
 }
 
 /* Shown when the deck is public but the owner's profile is not: without this
    the user believes the deck is shared when the profile gate still hides it. */
 .visibilityHint {
 	margin: 0;
+	padding: 0 12px;
 	font-size: 0.75rem;
 	opacity: 0.75;
 }
