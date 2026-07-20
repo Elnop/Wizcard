@@ -360,4 +360,22 @@ export const BACKGROUNDS: BackgroundVariant[] = [
 		)}, repeating-linear-gradient(45deg, rgba(181,160,108,0.04) 0 1px, transparent 1px 16px), repeating-linear-gradient(-45deg, rgba(181,160,108,0.03) 0 1px, transparent 1px 16px), ${NIGHT}`,
 		backgroundSize: '11.31px 11.31px, cover, cover, cover',
 	},
+
+	// --- Déclinaisons du #28 : mêmes croisillons or, dégradé de fond recoloré --
+	...(
+		[
+			['crosshatch-jade', '32 — …dégradé jade', 'Halo jade profond', '#12312a'],
+			['crosshatch-warm', '33 — …dégradé or chaud', 'Halo doré chaud', '#241d0f'],
+			['crosshatch-plum', '34 — …dégradé prune', 'Halo prune arcanique', '#1e1330'],
+			['crosshatch-ember', '35 — …dégradé braise', 'Halo rouge braise (mana R)', '#2a1211'],
+			['crosshatch-teal', '36 — …dégradé sarcelle', 'Halo bleu sarcelle (mana U)', '#0c2230'],
+			['crosshatch-ink', '37 — …dégradé encre', 'Halo quasi noir, très sobre', '#101015'],
+		] as const
+	).map(([id, label, note, top]) => ({
+		id,
+		label,
+		note: `${note} sous les croisillons or du #28.`,
+		// Croisillons identiques au #28 ; seule la couleur haute du radial change.
+		background: `repeating-linear-gradient(45deg, rgba(201,168,76,0.06) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(201,168,76,0.05) 0 1px, transparent 1px 9px), radial-gradient(120% 100% at 50% 0%, ${top} 0%, ${NIGHT} 68%)`,
+	})),
 ];
