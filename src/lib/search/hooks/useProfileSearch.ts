@@ -5,7 +5,7 @@ import { searchProfiles, type ProfileSearchResult } from '@/lib/search/db/search
 
 const PAGE = 24;
 
-export function useProfileSearch(term: string) {
+export function useProfileSearch(term: string, enabled = true) {
 	const [profiles, setProfiles] = useState<ProfileSearchResult[]>([]);
 	const [total, setTotal] = useState(0);
 	const [isLoading, setIsLoading] = useState(false);
@@ -13,8 +13,16 @@ export function useProfileSearch(term: string) {
 	const offsetRef = useRef(0);
 
 	useEffect(() => {
+		// Voir useDeckSearch : la landing sans terme ne doit émettre aucune requête.
+		if (!enabled) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect -- clears state when disabled
+			setProfiles([]);
+			setTotal(0);
+			offsetRef.current = 0;
+			return;
+		}
 		let cancelled = false;
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- initializes loading state for async search
+
 		setIsLoading(true);
 		offsetRef.current = 0;
 		searchProfiles(term, { limit: PAGE, offset: 0 })
@@ -36,7 +44,7 @@ export function useProfileSearch(term: string) {
 		return () => {
 			cancelled = true;
 		};
-	}, [term]);
+	}, [term, enabled]);
 
 	const loadMore = useCallback(() => {
 		if (isLoadingMore || profiles.length >= total) return;

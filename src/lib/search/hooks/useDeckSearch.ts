@@ -6,7 +6,7 @@ import type { DeckSearchFilters } from '@/lib/search/types';
 
 const PAGE = 24;
 
-export function useDeckSearch(filters: DeckSearchFilters) {
+export function useDeckSearch(filters: DeckSearchFilters, enabled = true) {
 	const [decks, setDecks] = useState<DeckSearchResult[]>([]);
 	const [total, setTotal] = useState(0);
 	const [isLoading, setIsLoading] = useState(false);
@@ -15,8 +15,18 @@ export function useDeckSearch(filters: DeckSearchFilters) {
 	const key = JSON.stringify(filters);
 
 	useEffect(() => {
+		// La landing monte ce hook sans terme de recherche : sans ce court-circuit
+		// elle émettrait une requête pour une section qui n'affiche que du texte
+		// de présentation.
+		if (!enabled) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect -- clears state when disabled
+			setDecks([]);
+			setTotal(0);
+			offsetRef.current = 0;
+			return;
+		}
 		let cancelled = false;
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- initializes loading state for async search
+
 		setIsLoading(true);
 		offsetRef.current = 0;
 		searchDecks(filters, { limit: PAGE, offset: 0 })
@@ -39,7 +49,7 @@ export function useDeckSearch(filters: DeckSearchFilters) {
 			cancelled = true;
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [key]);
+	}, [key, enabled]);
 
 	const loadMore = useCallback(() => {
 		if (isLoadingMore || decks.length >= total) return;
