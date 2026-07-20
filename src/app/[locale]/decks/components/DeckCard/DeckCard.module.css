@@ -405,6 +405,32 @@
 	text-transform: uppercase;
 }
 
+/* Public/Private tag, top-left on the cover (owner list). Shares the precon
+   badge's slot; the two never render together. Private is the neutral dark
+   pill; public gets a gold-tinted treatment to read as "shared". */
+.visibilityTag {
+	position: absolute;
+	top: 0.5rem;
+	left: 0.5rem;
+	z-index: 2;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.15rem 0.45rem;
+	border-radius: 0.25rem;
+	background: rgb(0 0 0 / 0.65);
+	color: rgba(255, 255, 255, 0.85);
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.visibilityTagPublic {
+	background: rgb(201 168 76 / 0.9);
+	color: #1a1408;
+}
+
 @media (max-width: 480px) {
 	.card {
 		height: 300px;

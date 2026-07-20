@@ -29,6 +29,9 @@ type Props = {
 	authorNickname?: string | null;
 	/** Marks a preconstructed (MTGJSON) deck: shows a "Precon" badge instead of an author. */
 	isPrecon?: boolean;
+	/** Owner list: overlay a Public/Private tag top-left on the cover. Suppressed
+	    when an author name or precon badge already occupies that slot. */
+	showVisibilityTag?: boolean;
 };
 
 /**
@@ -53,6 +56,25 @@ function formatRelativeDate(iso: string, locale: string, justNow: string): strin
 }
 
 type ContextMenuState = { x: number; y: number } | null;
+
+/** Eye (public) / eye-off (private) glyph for the visibility tag. */
+function VisibilityIcon({ isPublic }: { isPublic: boolean }) {
+	return (
+		<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+			<path
+				d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+			{!isPublic && (
+				<path d="M4 4l16 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+			)}
+		</svg>
+	);
+}
 
 function NewFolderModal({
 	onSubmit,
@@ -199,6 +221,7 @@ export function DeckCard({
 	readOnly = false,
 	authorNickname,
 	isPrecon = false,
+	showVisibilityTag = false,
 }: Props) {
 	const t = useTranslations('decks');
 	const locale = useLocale();
@@ -267,6 +290,16 @@ export function DeckCard({
 						</>
 					)}
 					{isPrecon && <span className={styles.preconBadge}>{t('preconBadge')}</span>}
+					{/* Public/Private tag, top-left. Only in the owner list, and never when
+					    the author name or precon badge already sits in that slot. */}
+					{showVisibilityTag && !authorNickname && !isPrecon && (
+						<span
+							className={`${styles.visibilityTag} ${deck.isPublic ? styles.visibilityTagPublic : ''}`}
+						>
+							<VisibilityIcon isPublic={deck.isPublic} />
+							{deck.isPublic ? t('publicTag') : t('privateTag')}
+						</span>
+					)}
 					{/* Author nickname overlaid top-left on the cover (deck search),
 					    linking to the author's profile. stopPropagation so clicking the
 					    name opens the profile, not the deck. A dark scrim behind it keeps

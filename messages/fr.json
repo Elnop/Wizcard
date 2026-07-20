@@ -406,6 +406,8 @@
 		"newFolder": "Nouveau dossier",
 		"deleteDeckAria": "Supprimer le deck",
 		"preconBadge": "Precon",
+		"publicTag": "Public",
+		"privateTag": "Privé",
 		"warningCount": "{count, plural, one {# avertissement} other {# avertissements}}",
 		"removeFromFolder": "Retirer du dossier",
 		"newFolderPlus": "+ Nouveau dossier",

@@ -191,6 +191,7 @@ export default function DecksPageClient() {
 					summary={summaryMap[deck.id]}
 					symbolMap={symbolMap}
 					folders={folders}
+					showVisibilityTag
 					onClick={() => router.push(`/decks/${deck.id}`)}
 					onDelete={() => setDeckToDelete(deck.id)}
 					onMove={(folderId) => moveDeckToFolder(deck.id, folderId)}
