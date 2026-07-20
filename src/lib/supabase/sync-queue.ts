@@ -61,7 +61,9 @@ export type SyncOp =
 			payload: {
 				userId: string;
 				deckId: string;
-				updates: Partial<Pick<DeckMeta, 'name' | 'format' | 'description' | 'coverArtUrl'>>;
+				updates: Partial<
+					Pick<DeckMeta, 'name' | 'format' | 'description' | 'coverArtUrl' | 'isPublic'>
+				>;
 			};
 			retries: number;
 			createdAt: string;

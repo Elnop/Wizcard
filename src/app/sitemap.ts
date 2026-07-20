@@ -48,8 +48,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
 	try {
 		const supabase = await createClient();
+		// Only user decks belong in the sitemap. Importing ~3000 MTGJSON precons
+		// made this query — which has no limit — return PostgREST's max_rows page
+		// (1000, see supabase/config.toml) in arbitrary order, so precons crowded
+		// out every real user deck and sitemap membership churned between builds.
+		// Filtering to source='user' keeps the sitemap about user-generated content;
+		// the explicit order + limit make it deterministic and bounded as that set
+		// grows.
 		const [decks, profiles] = await Promise.all([
-			supabase.from('decks').select('id, updated_at'),
+			supabase
+				.from('decks')
+				.select('id, updated_at')
+				.eq('source', 'user')
+				.eq('is_public', true)
+				.order('updated_at', { ascending: false })
+				.limit(1000),
 			supabase.from('profiles').select('nickname, updated_at'),
 		]);
 

@@ -51,13 +51,32 @@ export interface Flags {
 }
 
 function parseFlags(argv: string[]): Flags {
-	const get = (prefix: string): string | undefined =>
-		argv.find((a) => a.startsWith(prefix))?.split('=')[1];
+	// slice, not split('='): a value may legitimately contain '=' and splitting
+	// would truncate it at the first one.
+	const get = (prefix: string): string | undefined => {
+		const arg = argv.find((a) => a.startsWith(prefix));
+		return arg === undefined ? undefined : arg.slice(prefix.length);
+	};
+
+	// Fail loudly on an unparseable --limit. parseInt('1O') is NaN, and since
+	// `NaN > 0` is false the caller's `limit > 0` guard would fall through to
+	// "no limit" — turning a typo'd smoke test into a full ~3000-deck write,
+	// potentially against prod via .env.ingest.
+	const rawLimit = get('--limit=');
+	let limit = 0;
+	if (rawLimit !== undefined) {
+		limit = Number(rawLimit);
+		if (!Number.isInteger(limit) || limit < 0) {
+			console.error(`Invalid --limit=${rawLimit} — expected a non-negative integer`);
+			process.exit(1);
+		}
+	}
+
 	return {
 		force: argv.includes('--force'),
 		dryRun: argv.includes('--dry-run'),
 		deckFile: get('--deck='),
-		limit: parseInt(get('--limit=') ?? '0', 10),
+		limit,
 	};
 }
 

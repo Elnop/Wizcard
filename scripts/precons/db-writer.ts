@@ -6,17 +6,31 @@ import { mapDeckFormat } from './format-map';
 import type { MtgJsonDeck, MtgJsonCard } from './mtgjson-client';
 import { setDeckZone, type DeckZone } from '../../src/types/decks';
 
-/** Existing precons as source_deck_id → source_version, for the skip check. */
+/**
+ * Existing precons as source_deck_id → source_version, for the skip check.
+ *
+ * MUST paginate: PostgREST caps a select at `max_rows` (1000 in
+ * supabase/config.toml) and returns the first page SILENTLY, with no error. An
+ * unpaginated read saw only 1000 of ~3000 precons, so every re-run re-imported
+ * the other ~2000 it believed were missing — observed as "1988 imported, 1000
+ * up-to-date" on a run that should have skipped everything.
+ */
 export async function fetchSyncedVersions(): Promise<Map<string, string>> {
 	const map = new Map<string, string>();
-	const { data, error } = await supabase
-		.from('decks')
-		.select('source_deck_id, source_version')
-		.eq('source', 'mtgjson');
-	if (error) throw new Error(`[precons/db] fetchSyncedVersions: ${error.message}`);
-	for (const row of data ?? []) {
-		const key = row.source_deck_id as string | null;
-		if (key) map.set(key, (row.source_version as string | null) ?? '');
+	const PAGE = 1000;
+	for (let offset = 0; ; offset += PAGE) {
+		const { data, error } = await supabase
+			.from('decks')
+			.select('source_deck_id, source_version')
+			.eq('source', 'mtgjson')
+			.range(offset, offset + PAGE - 1);
+		if (error) throw new Error(`[precons/db] fetchSyncedVersions: ${error.message}`);
+		const rows = data ?? [];
+		for (const row of rows) {
+			const key = row.source_deck_id as string | null;
+			if (key) map.set(key, (row.source_version as string | null) ?? '');
+		}
+		if (rows.length < PAGE) break;
 	}
 	return map;
 }
