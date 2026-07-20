@@ -1,34 +1,36 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { Link, usePathname } from '@/i18n/navigation';
 import styles from './SearchEntitySwitcher.module.css';
-import type { SearchEntity } from '@/lib/search/types';
 
-const ENTITY_KEYS = {
-	cards: 'entityCards',
-	decks: 'entityDecks',
-	profiles: 'entityProfiles',
-} as const;
+/** Les trois modes de recherche, dans l'ordre d'affichage. `href` est le chemin
+ * SANS préfixe de locale — `Link` de `@/i18n/navigation` l'ajoute. */
+const ENTITIES = [
+	{ href: '/search/cards', labelKey: 'entityCards' },
+	{ href: '/search/decks', labelKey: 'entityDecks' },
+	{ href: '/search/profiles', labelKey: 'entityProfiles' },
+] as const;
 
-const ENTITIES: SearchEntity[] = ['cards', 'decks', 'profiles'];
-
-type Props = { value: SearchEntity; onChange: (e: SearchEntity) => void };
-
-export function SearchEntitySwitcher({ value, onChange }: Props) {
+export function SearchEntitySwitcher() {
 	const t = useTranslations('search');
+	const pathname = usePathname();
+
 	return (
-		<div className={styles.switcher} role="group" aria-label={t('entityAriaLabel')}>
-			{ENTITIES.map((entity) => (
-				<button
-					key={entity}
-					type="button"
-					className={`${styles.option} ${value === entity ? styles.active : ''}`}
-					onClick={() => onChange(entity)}
-					aria-pressed={value === entity}
-				>
-					{t(ENTITY_KEYS[entity])}
-				</button>
-			))}
-		</div>
+		<nav className={styles.switcher} aria-label={t('entityAriaLabel')}>
+			{ENTITIES.map(({ href, labelKey }) => {
+				const isActive = pathname === href;
+				return (
+					<Link
+						key={href}
+						href={href}
+						className={`${styles.option} ${isActive ? styles.active : ''}`}
+						aria-current={isActive ? 'page' : undefined}
+					>
+						{t(labelKey)}
+					</Link>
+				);
+			})}
+		</nav>
 	);
 }
