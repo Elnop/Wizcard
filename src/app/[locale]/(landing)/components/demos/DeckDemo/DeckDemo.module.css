@@ -1,0 +1,49 @@
+.wrap {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+	justify-content: center;
+	align-items: center;
+}
+.chart {
+	display: flex;
+	gap: 2rem;
+	align-items: flex-end;
+}
+.bars {
+	display: flex;
+	align-items: flex-end;
+	gap: 6px;
+	height: 120px;
+}
+.bar {
+	width: 16px;
+	background: rgba(201, 168, 76, 0.85);
+	border-radius: 3px 3px 0 0;
+	transition: height 0.1s linear;
+}
+.ring {
+	width: 96px;
+	height: 96px;
+	border-radius: 50%;
+	mask: radial-gradient(transparent 52%, #000 53%);
+	-webkit-mask: radial-gradient(transparent 52%, #000 53%);
+}
+.hand {
+	display: flex;
+	justify-content: center;
+	align-items: flex-end;
+	height: 150px;
+}
+.handCard {
+	margin: 0 -18px;
+	transform-origin: bottom center;
+}
+.handCard :global(img) {
+	width: 70px;
+	height: auto;
+	border-radius: 5px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
