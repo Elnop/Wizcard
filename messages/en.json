@@ -149,6 +149,7 @@
 			"tagline": "Your complete Magic: The Gathering companion.",
 			"description": "Search, collect, and build — every card ever printed, all in one place.",
 			"explore": "Explore",
+			"startSearching": "Start Searching",
 			"myCollection": "My Collection"
 		},
 		"discover": "Discover",

@@ -33,26 +33,6 @@
 		opacity: 0;
 	}
 }
-.filters {
-	display: flex;
-	gap: 0.5rem;
-}
-.chip {
-	width: 28px;
-	height: 28px;
-	display: grid;
-	place-items: center;
-	border-radius: 50%;
-	border: 1px solid var(--border, #2a2d36);
-	opacity: 0.4;
-	transition: all 0.3s;
-}
-.chipOn {
-	opacity: 1;
-	background: #d33;
-	color: #fff;
-	border-color: #d33;
-}
 .results {
 	position: relative;
 	display: flex;

@@ -10,7 +10,6 @@ const QUERY = 'Lightning Bolt';
 
 export function SearchDemo({ progress }: { progress: number }) {
 	const typed = seg(progress, 0, 0.3);
-	const filterOn = progress >= 0.35;
 	const cardsIn = seg(progress, 0.4, 0.7);
 	const lift = seg(progress, 0.7, 1);
 	const shown = QUERY.slice(0, Math.round(QUERY.length * typed));
@@ -21,9 +20,6 @@ export function SearchDemo({ progress }: { progress: number }) {
 				<span className={styles.icon}>{'⌕'}</span>
 				<span className={styles.query}>{shown}</span>
 				<span className={styles.caret} />
-			</div>
-			<div className={styles.filters}>
-				<span className={`${styles.chip} ${filterOn ? styles.chipOn : ''}`}>{'R'}</span>
 			</div>
 			<div className={styles.results}>
 				{SEARCH_CARDS.map((card, i) => {

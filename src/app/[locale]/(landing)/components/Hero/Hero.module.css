@@ -1,87 +1,446 @@
 .hero {
 	position: relative;
 	min-height: calc(100vh - var(--navbar-height));
-	display: grid;
-	place-items: center;
-	text-align: center;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	overflow: hidden;
 }
-/* Dim the global fixed crosshatch behind the hero so the wordmark breathes. */
-.veil {
+
+/* === Entrance animations (CSS-first: visible even without JS) === */
+@keyframes heroRise {
+	from {
+		opacity: 0;
+		transform: translateY(30px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.hero .content {
+	/* Final state is visible; the animation only eases it in. No dependency on
+	   a JS-added .visible class, so the LCP text paints on first render. */
+	opacity: 1;
+	animation: heroRise 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Staggered text elements */
+@keyframes heroDiamond {
+	from {
+		opacity: 0;
+		transform: rotate(45deg) scale(0);
+	}
+	to {
+		opacity: 1;
+		transform: rotate(45deg) scale(1);
+	}
+}
+
+.hero .diamondOrnament {
+	opacity: 1;
+	animation: heroDiamond 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+
+@keyframes heroTitle {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.hero .title {
+	opacity: 1;
+	animation: heroTitle 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+}
+
+@keyframes heroTitleRule {
+	from {
+		transform: scaleX(0);
+	}
+	to {
+		transform: scaleX(1);
+	}
+}
+
+.hero .titleRule {
+	animation: heroTitleRule 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both;
+}
+
+@keyframes heroFade {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.hero .tagline {
+	opacity: 1;
+	animation: heroFade 0.8s ease 0.8s both;
+}
+
+@keyframes heroDescription {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.hero .description {
+	opacity: 1;
+	animation: heroDescription 0.8s ease 0.9s both;
+}
+
+@keyframes heroCta {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.hero .cta {
+	opacity: 1;
+	animation: heroCta 0.8s ease 1.1s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hero .content,
+	.hero .diamondOrnament,
+	.hero .title,
+	.hero .titleRule,
+	.hero .tagline,
+	.hero .description,
+	.hero .cta,
+	.frameTL,
+	.frameTR,
+	.frameBL,
+	.frameBR {
+		animation: none;
+	}
+}
+
+/* Corner frames slide in */
+@keyframes frameTLIn {
+	from {
+		opacity: 0;
+		transform: translate(-20px, -20px);
+	}
+	to {
+		opacity: 1;
+		transform: translate(0, 0);
+	}
+}
+
+@keyframes frameTRIn {
+	from {
+		opacity: 0;
+		transform: translate(20px, -20px);
+	}
+	to {
+		opacity: 1;
+		transform: translate(0, 0);
+	}
+}
+
+@keyframes frameBLIn {
+	from {
+		opacity: 0;
+		transform: translate(-20px, 20px);
+	}
+	to {
+		opacity: 1;
+		transform: translate(0, 0);
+	}
+}
+
+@keyframes frameBRIn {
+	from {
+		opacity: 0;
+		transform: translate(20px, 20px);
+	}
+	to {
+		opacity: 1;
+		transform: translate(0, 0);
+	}
+}
+
+.frameTL,
+.frameTR,
+.frameBL,
+.frameBR {
+	position: absolute;
+	width: 80px;
+	height: 80px;
+	z-index: 3;
+	pointer-events: none;
+	opacity: 1;
+}
+
+.frameTL {
+	top: 32px;
+	left: 32px;
+	border-top: 2px solid var(--gold);
+	border-left: 2px solid var(--gold);
+	animation: frameTLIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
+}
+
+.frameTR {
+	top: 32px;
+	right: 32px;
+	border-top: 2px solid var(--gold);
+	border-right: 2px solid var(--gold);
+	animation: frameTRIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
+}
+
+.frameBL {
+	bottom: 32px;
+	left: 32px;
+	border-bottom: 2px solid var(--gold);
+	border-left: 2px solid var(--gold);
+	animation: frameBLIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
+}
+
+.frameBR {
+	bottom: 32px;
+	right: 32px;
+	border-bottom: 2px solid var(--gold);
+	border-right: 2px solid var(--gold);
+	animation: frameBRIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
+}
+
+/* Background */
+.background {
 	position: absolute;
 	inset: 0;
-	background: radial-gradient(120% 90% at 50% 40%, rgba(11, 12, 16, 0.9) 0%, transparent 70%);
-	pointer-events: none;
+	z-index: 0;
 }
+
+.gradient {
+	position: absolute;
+	inset: 0;
+	background:
+		radial-gradient(ellipse at 50% 40%, rgba(201, 168, 76, 0.1) 0%, transparent 60%),
+		radial-gradient(ellipse at 50% 80%, rgba(181, 160, 108, 0.05) 0%, transparent 50%);
+}
+
+.decoLines {
+	position: absolute;
+	inset: 0;
+	background:
+		repeating-linear-gradient(
+			90deg,
+			transparent,
+			transparent 119px,
+			rgba(201, 168, 76, 0.04) 119px,
+			rgba(201, 168, 76, 0.04) 120px
+		),
+		repeating-linear-gradient(
+			0deg,
+			transparent,
+			transparent 119px,
+			rgba(201, 168, 76, 0.03) 119px,
+			rgba(201, 168, 76, 0.03) 120px
+		);
+	mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+}
+
+/* Sweeping shimmer effect */
+.shimmer {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		105deg,
+		transparent 40%,
+		rgba(201, 168, 76, 0.04) 45%,
+		rgba(201, 168, 76, 0.08) 50%,
+		rgba(201, 168, 76, 0.04) 55%,
+		transparent 60%
+	);
+	background-size: 200% 100%;
+	animation: shimmerSweep 6s ease-in-out infinite;
+}
+
+@keyframes shimmerSweep {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
+}
+
+/* Content */
 .content {
 	position: relative;
+	z-index: 1;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 1rem;
-	padding: 2rem;
+	text-align: center;
+	padding: 80px 48px;
 }
-.mark {
+
+/* Text block on top of backdrop */
+.textBlock {
+	position: relative;
+	z-index: 2;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 0.5rem;
-	will-change: transform;
 }
-.wGlyph {
-	font-size: clamp(5rem, 16vw, 11rem);
-	line-height: 0.8;
-	color: rgba(201, 168, 76, 1);
+
+.diamondOrnament {
+	width: 12px;
+	height: 12px;
+	border: 2px solid var(--gold);
+	transform: rotate(45deg);
+	margin-bottom: 32px;
 }
-.wordmark {
-	font-size: clamp(1.5rem, 5vw, 3rem);
-	letter-spacing: 0.3em;
-	color: var(--foreground);
+
+.title {
+	font-family: var(--font-display);
+	font-size: 72px;
+	/* <h1> est bold par défaut ; on force normal pour laisser la typo brut. */
+	font-weight: normal;
+	/* Les fonts brand décoratives débordent de la line-box par défaut ;
+	   line-height généreuse + overflow visible évitent que
+	   background-clip: text ne rogne le haut/bas des glyphes. */
+	line-height: 1.3;
+	overflow: visible;
+	background: linear-gradient(180deg, var(--gold), var(--brass));
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	margin-bottom: 16px;
 }
+
 .titleRule {
 	width: 120px;
 	height: 1px;
-	background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.8), transparent);
+	background: linear-gradient(90deg, transparent, var(--gold), transparent);
+	margin-bottom: 16px;
 }
+
+/*
+ * Porte le nom exact de l'app + son objectif, en clair et à l'écran (exigence
+ * de vérification de marque Google Cloud). Pas d'uppercase ici : le nom doit
+ * se lire "Wizcard" comme sur l'écran de consentement, pas "WIZCARD".
+ */
 .tagline {
-	font-size: clamp(1.1rem, 2.4vw, 1.6rem);
-	max-width: 40ch;
+	font-family: var(--font-display);
+	font-size: var(--text-lg);
+	font-weight: 400;
+	color: var(--gold);
+	letter-spacing: 0.08em;
+	max-width: 520px;
+	margin-bottom: 24px;
 }
+
 .description {
-	color: var(--text-muted, #b9bcc4);
-	max-width: 46ch;
-	line-height: 1.6;
+	font-size: var(--text-lg);
+	color: var(--text-muted);
+	line-height: 1.7;
+	max-width: 480px;
+	margin-bottom: 40px;
 }
+
 .cta {
 	display: flex;
-	gap: 1rem;
-	margin-top: 1rem;
-	flex-wrap: wrap;
-	justify-content: center;
+	gap: 16px;
 }
-.scrollHint {
+
+.cta a {
+	display: inline-block;
+}
+
+/* Scroll indicator */
+.scrollIndicator {
 	position: absolute;
-	bottom: 2rem;
-	left: 50%;
-	transform: translateX(-50%);
+	bottom: -60px;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
+	animation: scrollBounce 2s ease-in-out infinite;
 }
+
 .scrollDiamond {
 	width: 8px;
 	height: 8px;
-	background: rgba(201, 168, 76, 1);
+	border: 1.5px solid var(--gold);
 	transform: rotate(45deg);
+	opacity: 0.5;
 }
+
 .scrollLine {
 	width: 1px;
-	height: 40px;
-	background: linear-gradient(rgba(201, 168, 76, 0.8), transparent);
+	height: 32px;
+	background: linear-gradient(to bottom, var(--gold), transparent);
+	opacity: 0.4;
 }
-@media (prefers-reduced-motion: reduce) {
-	.mark {
-		transform: none !important;
+
+@keyframes scrollBounce {
+	0%,
+	100% {
+		transform: translateY(0);
+		opacity: 0.6;
+	}
+	50% {
+		transform: translateY(8px);
+		opacity: 1;
+	}
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+	.title {
+		font-size: 48px;
+	}
+
+	.tagline {
+		letter-spacing: 0.15em;
+		font-size: var(--text-base);
+	}
+
+	.frameTL,
+	.frameTR,
+	.frameBL,
+	.frameBR {
+		width: 48px;
+		height: 48px;
+	}
+
+	.content {
+		padding: 60px 24px;
+	}
+}
+
+@media (max-width: 480px) {
+	.title {
+		font-size: 36px;
+	}
+
+	.cta {
+		flex-direction: column;
+		width: 100%;
+	}
+
+	.cta a {
+		width: 100%;
 	}
 }
