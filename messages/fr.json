@@ -729,7 +729,16 @@
 		"statDecks": "{count, plural, one {# deck} other {# decks}}",
 		"statCards": "{count, plural, one {# carte} other {# cartes}}",
 		"viewProfile": "Voir le profil",
-		"profileTypeLine": "Planeswalker — Joueur"
+		"profileTypeLine": "Planeswalker — Joueur",
+		"landingPlaceholder": "Rechercher des cartes, des decks, des joueurs…",
+		"landingCardsTitle": "Cartes",
+		"landingCardsPitch": "Filtrez toutes les cartes Magic par couleur, type, coût de mana, édition et rareté.",
+		"landingDecksTitle": "Decks",
+		"landingDecksPitch": "Parcourez les decks publics par format, commandant, auteur ou carte jouée.",
+		"landingProfilesTitle": "Joueurs",
+		"landingProfilesPitch": "Trouvez un joueur par son pseudo et explorez ses decks et sa collection.",
+		"landingSeeMore": "Voir plus",
+		"landingNoResults": "Aucun résultat"
 	},
 	"legal": {
 		"lastUpdated": "Dernière mise à jour : {date}",
@@ -816,8 +825,20 @@
 			"title": "Paramètres"
 		},
 		"search": {
+			"title": "Recherche",
+			"description": "Recherchez des cartes Magic: The Gathering, des decks publics et des joueurs, au même endroit."
+		},
+		"searchCards": {
 			"title": "Recherche de cartes",
-			"description": "Recherchez toutes les cartes Magic: The Gathering par nom, couleur, type et extension."
+			"description": "Recherchez toutes les cartes Magic: The Gathering par nom, couleur, type et édition."
+		},
+		"searchDecks": {
+			"title": "Recherche de decks",
+			"description": "Parcourez les decks Magic: The Gathering publics par format, commandant et auteur."
+		},
+		"searchProfiles": {
+			"title": "Recherche de joueurs",
+			"description": "Trouvez des joueurs Magic: The Gathering et explorez leurs decks et collections publics."
 		},
 		"sets": {
 			"title": "Extensions"

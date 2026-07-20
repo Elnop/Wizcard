@@ -729,7 +729,16 @@
 		"statDecks": "{count, plural, one {# deck} other {# decks}}",
 		"statCards": "{count, plural, one {# card} other {# cards}}",
 		"viewProfile": "View profile",
-		"profileTypeLine": "Planeswalker — Player"
+		"profileTypeLine": "Planeswalker — Player",
+		"landingPlaceholder": "Search cards, decks, and players…",
+		"landingCardsTitle": "Cards",
+		"landingCardsPitch": "Filter every Magic card by color, type, mana cost, set, and rarity.",
+		"landingDecksTitle": "Decks",
+		"landingDecksPitch": "Browse public decks by format, commander, author, or a card they run.",
+		"landingProfilesTitle": "Players",
+		"landingProfilesPitch": "Find a player by nickname and explore their decks and collection.",
+		"landingSeeMore": "See more",
+		"landingNoResults": "No results"
 	},
 	"legal": {
 		"lastUpdated": "Last updated: {date}",
@@ -816,8 +825,20 @@
 			"title": "Settings"
 		},
 		"search": {
+			"title": "Search",
+			"description": "Search Magic: The Gathering cards, public decks, and players — all from one place."
+		},
+		"searchCards": {
 			"title": "Card Search",
 			"description": "Search every Magic: The Gathering card by name, color, type, and set."
+		},
+		"searchDecks": {
+			"title": "Deck Search",
+			"description": "Browse public Magic: The Gathering decks by format, commander, and author."
+		},
+		"searchProfiles": {
+			"title": "Player Search",
+			"description": "Find Magic: The Gathering players and explore their public decks and collections."
 		},
 		"sets": {
 			"title": "Sets"
