@@ -12,12 +12,12 @@ export function DeckDemo({ progress }: { progress: number }) {
 	const fan = seg(progress, 0.75, 1);
 	const maxBar = Math.max(...MANA_CURVE);
 
-	// Build a conic-gradient string filled up to `ring` of the circle.
+	// Build a conic-gradient string whose colored arc sweeps in as `ring` goes 0 -> 1.
 	const stops = COLOR_SLICES.reduce<{ text: string[]; acc: number }>(
 		(state, s) => {
 			const start = state.acc;
 			const end = start + s.pct;
-			return { text: [...state.text, `${s.color} ${start}% ${end}%`], acc: end };
+			return { text: [...state.text, `${s.color} ${start * ring}% ${end * ring}%`], acc: end };
 		},
 		{ text: [], acc: 0 }
 	).text.join(', ');
