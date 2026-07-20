@@ -126,7 +126,15 @@ export async function searchDecks(
 	// NOTE: if this path is ever revived, a card in thousands of decks would overflow the URL —
 	// switch to a server-side join / RPC instead of a client-side .in().
 	if (deckIdConstraint !== null) q = q.in('id', deckIdConstraint);
-	q = q.order('updated_at', { ascending: false });
+	// Order by created_at, not updated_at: for a precon created_at holds the
+	// product's RELEASE date (see scripts/precons/db-writer.ts), so precons sort
+	// as a real catalogue instead of clumping at whatever minute the sync ran and
+	// burying every user deck. User decks keep their true creation date, so one
+	// made today still outranks an older precon. id breaks ties deterministically
+	// — same-day releases would otherwise shuffle between pages and duplicate or
+	// skip rows across the offset pagination.
+	q = q.order('created_at', { ascending: false });
+	q = q.order('id', { ascending: false });
 	q = q.range(offset, offset + limit - 1);
 
 	const { data, error, count } = await q;

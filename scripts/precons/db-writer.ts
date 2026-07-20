@@ -103,6 +103,12 @@ export async function upsertPrecon(
 	deck: MtgJsonDeck,
 	version: string
 ): Promise<{ deckId: string; cardCount: number }> {
+	// created_at carries the product's RELEASE date, not the sync time. Every
+	// MTGJSON deck has a releaseDate, and the deck search orders by created_at:
+	// without this, all ~3000 precons would share the sync minute, arrive as one
+	// undifferentiated block, and bury every user deck. Dating them by release
+	// orders the catalogue like real products and lets a deck a user made today
+	// outrank a 2015 precon.
 	const payload = {
 		name: deck.name,
 		format: mapDeckFormat(deck.type),
@@ -111,6 +117,7 @@ export async function upsertPrecon(
 		source_version: version,
 		owner_id: null,
 		is_public: true,
+		created_at: deck.releaseDate ? `${deck.releaseDate}T00:00:00Z` : new Date().toISOString(),
 		updated_at: new Date().toISOString(),
 	};
 
