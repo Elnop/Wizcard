@@ -1,5 +1,6 @@
 .page {
-	background: var(--background);
+	/* Fond transparent : laisse transparaître le motif global (body::before), en
+	   page collection comme dans l'onglet collection d'un profil. */
 }
 
 /*

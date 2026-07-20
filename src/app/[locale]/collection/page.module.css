@@ -1,8 +1,6 @@
 .page {
 	height: calc(100vh - var(--navbar-height));
-	/* Fond opaque : masque volontairement le motif global (body::before) sur la
-	   collection. */
-	background: var(--background);
+	/* Fond transparent : laisse transparaître le motif global (body::before). */
 	overflow: hidden;
 }
 
