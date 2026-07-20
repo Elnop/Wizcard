@@ -146,8 +146,8 @@
 	},
 	"landing": {
 		"hero": {
-			"tagline": "Your complete Magic: The Gathering companion.",
-			"description": "Search, collect, and build — every card ever printed, all in one place.",
+			"tagline": "Every Magic card ever printed, in one place.",
+			"description": "Look up any card, grow your collection, and test your decks without leaving the browser.",
 			"explore": "Explore",
 			"startSearching": "Start Searching",
 			"myCollection": "My Collection"
@@ -167,7 +167,7 @@
 		"features": {
 			"search": {
 				"label": "Search",
-				"title": "Cards, decks and players — one bar",
+				"title": "One bar for cards, decks and players",
 				"description": "Instant multi-entity search with advanced Scryfall filters: colors, types, mana cost."
 			},
 			"collection": {
@@ -177,8 +177,8 @@
 			},
 			"deck": {
 				"label": "Deckbuilding",
-				"title": "Build, analyze, test",
-				"description": "Mana curve, manabase, type distribution and opening hand — everything to refine your decks."
+				"title": "Build a deck, then look under the hood",
+				"description": "Mana curve, manabase, type distribution, opening hand. Enough to refine every list."
 			},
 			"import": {
 				"label": "Import",
@@ -193,7 +193,7 @@
 			"editor": {
 				"label": "Card editor",
 				"title": "Create your own cards",
-				"description": "A custom card editor is coming soon. Stay tuned."
+				"description": "A custom card editor is coming soon."
 			}
 		},
 		"finalCta": {

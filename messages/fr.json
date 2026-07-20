@@ -146,8 +146,8 @@
 	},
 	"landing": {
 		"hero": {
-			"tagline": "Votre compagnon complet pour Magic: The Gathering.",
-			"description": "Cherchez, collectionnez et construisez — chaque carte jamais imprimée, au même endroit.",
+			"tagline": "Chaque carte Magic jamais imprimée, au même endroit.",
+			"description": "Cherchez une carte, montez votre collection, testez vos decks sans quitter le navigateur.",
 			"explore": "Explorer",
 			"startSearching": "Commencer la recherche",
 			"myCollection": "Ma collection"
@@ -167,7 +167,7 @@
 		"features": {
 			"search": {
 				"label": "Recherche",
-				"title": "Cartes, decks et joueurs — une seule barre",
+				"title": "Une seule barre pour les cartes, les decks et les joueurs",
 				"description": "Une recherche multi-entités instantanée, avec des filtres Scryfall avancés : couleurs, types, coût de mana."
 			},
 			"collection": {
@@ -177,8 +177,8 @@
 			},
 			"deck": {
 				"label": "Deckbuilding",
-				"title": "Construisez, analysez, testez",
-				"description": "Courbe de mana, manabase, distribution des types et main de départ — tout pour affiner vos decks."
+				"title": "Construisez un deck, puis regardez-le sous le capot",
+				"description": "Courbe de mana, manabase, distribution des types, main de départ. De quoi affiner chaque liste."
 			},
 			"import": {
 				"label": "Import",
@@ -193,7 +193,7 @@
 			"editor": {
 				"label": "Éditeur de cartes",
 				"title": "Créez vos propres cartes",
-				"description": "Un éditeur de cartes personnalisées arrive bientôt. Restez à l'affût."
+				"description": "Un éditeur de cartes personnalisées arrive bientôt."
 			}
 		},
 		"finalCta": {
