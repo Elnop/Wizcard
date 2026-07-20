@@ -378,4 +378,20 @@ export const BACKGROUNDS: BackgroundVariant[] = [
 		// Croisillons identiques au #28 ; seule la couleur haute du radial change.
 		background: `repeating-linear-gradient(45deg, rgba(201,168,76,0.06) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(201,168,76,0.05) 0 1px, transparent 1px 9px), radial-gradient(120% 100% at 50% 0%, ${top} 0%, ${NIGHT} 68%)`,
 	})),
+
+	{
+		id: 'crosshatch-gold-native',
+		label: '38 — …dégradé or natif (doux)',
+		note: `Or natif du thème (${GOLD}) en halo atténué, sous les croisillons or du #28.`,
+		// L'or natif est clair : mis à ~14% d'opacité par-dessus la nuit, il donne un
+		// halo doré visible mais qui reste un fond. Croisillons identiques au #28.
+		background: `repeating-linear-gradient(45deg, rgba(201,168,76,0.06) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(201,168,76,0.05) 0 1px, transparent 1px 9px), radial-gradient(120% 100% at 50% 0%, rgba(201,168,76,0.14) 0%, transparent 55%), ${NIGHT}`,
+	},
+	{
+		id: 'crosshatch-gold-native-strong',
+		label: '39 — …dégradé or natif (plein)',
+		note: `Or natif ${GOLD} en stop plein (halo franc, plus lumineux), croisillons or du #28.`,
+		// Version à pleine couleur pour comparer : le premier stop est l'or opaque.
+		background: `repeating-linear-gradient(45deg, rgba(201,168,76,0.06) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(201,168,76,0.05) 0 1px, transparent 1px 9px), radial-gradient(120% 100% at 50% 0%, ${GOLD} 0%, ${NIGHT} 60%)`,
+	},
 ];
