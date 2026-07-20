@@ -58,7 +58,7 @@ function SearchLandingContent() {
 				{/* Switcher présent sur la landing pour une navigation cohérente avec
 				    les trois routes dédiées ; aucun onglet n'est actif ici (pathname
 				    `/search` ne matche aucun href de mode). */}
-				<div className={`${styles.searchSection} ${landing.searchSection}`}>
+				<div className={styles.searchSection}>
 					<SearchEntitySwitcher />
 					<div className={styles.searchRow}>
 						<SearchBar value={term} onChange={setTerm} placeholder={t('landingPlaceholder')} />
