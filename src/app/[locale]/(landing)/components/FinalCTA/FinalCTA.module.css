@@ -1,0 +1,32 @@
+.section {
+	position: relative;
+	min-height: 90vh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 1.5rem;
+	text-align: center;
+	padding: 4rem 2rem;
+}
+.w {
+	font-size: clamp(3rem, 10vw, 6rem);
+	color: rgba(201, 168, 76, 0.9);
+	line-height: 0.8;
+}
+.diamond {
+	width: 10px;
+	height: 10px;
+	background: rgba(201, 168, 76, 1);
+	transform: rotate(45deg);
+}
+.title {
+	font-size: clamp(1.8rem, 5vw, 3rem);
+	max-width: 20ch;
+}
+.cta {
+	display: flex;
+	gap: 1rem;
+	flex-wrap: wrap;
+	justify-content: center;
+}
