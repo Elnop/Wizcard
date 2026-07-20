@@ -120,14 +120,37 @@ const TYPE_TO_FORMAT: Record<string, DeckFormat> = {
 };
 
 /**
- * Map an MTGJSON deck type to a DeckFormat, or null when there is no
- * equivalent in decks_format_check (Secret Lair Drop, Jumpstart, MTGO
- * Redemption, Planechase, Archenemy, Guild Kit...). Matching is exact
- * first, then falls back to "contains Commander" / "contains Brawl"
- * heuristics since MTGJSON has introduced variants like
- * "Commander Deck (Display)" that would otherwise miss the exact table.
+ * Beginner Box products ship as Jumpstart half-decks but MTGJSON files them
+ * under the generic type "Box Set", so the type alone maps them to null.
+ *
+ * Wizards' own contents announcements describe them as "ten themed Jumpstart
+ * half-decks, each including 20 cards", shuffled two-at-a-time into a 40-card
+ * deck — the Jumpstart format exactly. Verified against the live feed: all 20
+ * such decks (Marvel Super Heroes MSH and Avatar TLA) are 20 mainboard / 0
+ * sideboard / 0 commander, matching real Jumpstart entries.
+ *
+ * Matching on the NAME is deliberate and must stay narrow: "Box Set" also
+ * covers Commander Collections (8 cards) and Collectors' Edition (363), which
+ * are emphatically not Jumpstart.
  */
-export function mapDeckFormat(mtgjsonType: string): DeckFormat | null {
+function isBeginnerBoxJumpstart(name: string): boolean {
+	return /^Beginner Box\b/i.test(name);
+}
+
+/**
+ * Map an MTGJSON deck to a DeckFormat, or null when there is no equivalent in
+ * decks_format_check (Secret Lair Drop, MTGO Redemption, Guild Kit...).
+ *
+ * Resolution order: the name-based Beginner Box special case, then the exact
+ * type table, then "contains Commander" / "contains Brawl" fallbacks (MTGJSON
+ * has introduced variants like "Commander Deck (Display)" that would otherwise
+ * miss the exact table).
+ *
+ * `name` is optional so existing callers that only have a type still compile;
+ * omitting it just skips the Beginner Box case.
+ */
+export function mapDeckFormat(mtgjsonType: string, name?: string): DeckFormat | null {
+	if (name && isBeginnerBoxJumpstart(name)) return 'jumpstart';
 	const exact = TYPE_TO_FORMAT[mtgjsonType];
 	if (exact) return exact;
 	if (mtgjsonType.includes('Commander')) return 'commander';

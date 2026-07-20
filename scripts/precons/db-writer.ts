@@ -125,7 +125,7 @@ export async function upsertPrecon(
 	// outrank a 2015 precon.
 	const payload = {
 		name: deck.name,
-		format: mapDeckFormat(deck.type),
+		format: mapDeckFormat(deck.type, deck.name),
 		source: 'mtgjson',
 		source_deck_id: fileName,
 		source_version: version,
