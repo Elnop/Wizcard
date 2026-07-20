@@ -1,0 +1,33 @@
+.wrap {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+	justify-content: center;
+	align-items: center;
+}
+.sheet {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 6px;
+	padding: 12px;
+	background: #f4f1e8;
+	border-radius: 6px;
+	box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+	transform-origin: center bottom;
+	transition: transform 0.1s linear;
+}
+.cell :global(img) {
+	width: 100%;
+	height: auto;
+	border-radius: 3px;
+	display: block;
+}
+.badge {
+	padding: 0.4rem 0.9rem;
+	border: 1px solid rgba(201, 168, 76, 0.6);
+	border-radius: 999px;
+	font-size: 0.8rem;
+	color: rgba(201, 168, 76, 1);
+}
