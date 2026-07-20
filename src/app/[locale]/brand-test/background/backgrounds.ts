@@ -46,6 +46,21 @@ const ring = (cx: number, cy: number, r: number, stroke: string, op: number, sw 
 const pip = (cx: number, cy: number, r: number, fill: string, op: number) =>
 	`<circle cx='${cx}' cy='${cy}' r='${r}' fill='${fill}' fill-opacity='${op}'/>`;
 
+/**
+ * Grain procédural : un tile SVG rempli de bruit `feTurbulence` fractal. `freq`
+ * pilote la finesse (haut = plus fin), `op` l'intensité. C'est le vrai grain
+ * (pas un semis de points), tileable et sans image externe.
+ */
+const noise = (size: number, freq: number, op: number, seed = 3) =>
+	svg(
+		`<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'>` +
+			`<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='${freq}' numOctaves='2' seed='${seed}' stitchTiles='stitch'/>` +
+			`<feColorMatrix type='saturate' values='0'/></filter>` +
+			// `#n` en clair : encodeURIComponent le transforme en %23 une seule fois
+			// (un %23 déjà encodé ici deviendrait %2523 et casserait la référence).
+			`<rect width='100%' height='100%' filter='url(#n)' opacity='${op}'/></svg>`
+	);
+
 export const BACKGROUNDS: BackgroundVariant[] = [
 	{
 		id: 'plain',
@@ -194,5 +209,107 @@ export const BACKGROUNDS: BackgroundVariant[] = [
 		label: '13 — Grain sombre + fibres',
 		note: 'Texture fibreuse fine (comme un vélin sombre), or minimal.',
 		background: `repeating-linear-gradient(0deg, rgba(201,168,76,0.03) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(181,160,108,0.025) 0 1px, transparent 1px 5px), ${NAVY}`,
+	},
+
+	// --- Cadriages / quadrillages ---------------------------------------------
+	{
+		id: 'plaid-gold',
+		label: '14 — Tartan doré',
+		note: 'Bandes croisées d’épaisseurs variables (tartan), or discret.',
+		background: `repeating-linear-gradient(0deg, rgba(201,168,76,0.05) 0 2px, transparent 2px 22px, rgba(181,160,108,0.035) 22px 23px, transparent 23px 44px), repeating-linear-gradient(90deg, rgba(201,168,76,0.05) 0 2px, transparent 2px 22px, rgba(181,160,108,0.035) 22px 23px, transparent 23px 44px), ${NIGHT}`,
+	},
+	{
+		id: 'grid-double',
+		label: '15 — Quadrillage double',
+		note: 'Grille fine imbriquée dans une grille large, façon papier millimétré.',
+		background: `linear-gradient(rgba(201,168,76,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.06) 1px, transparent 1px), linear-gradient(rgba(181,160,108,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(181,160,108,0.03) 1px, transparent 1px), ${NAVY}`,
+		backgroundSize: '80px 80px, 80px 80px, 16px 16px, 16px 16px, cover',
+	},
+	{
+		id: 'grid-diamond',
+		label: '16 — Cadriage losange',
+		note: 'Quadrillage tourné à 45° : trame en losanges, ton or.',
+		background: `repeating-linear-gradient(45deg, rgba(201,168,76,0.05) 0 1px, transparent 1px 26px), repeating-linear-gradient(-45deg, rgba(201,168,76,0.05) 0 1px, transparent 1px 26px), ${NIGHT}`,
+	},
+	{
+		id: 'cartouche-grid',
+		label: '17 — Cartouches',
+		note: 'Cadres rectangulaires dorés espacés, comme des cartouches de grimoire.',
+		background: `${tile(
+			140,
+			`<rect x='16' y='16' width='108' height='108' rx='6' fill='none' stroke='${GOLD}' stroke-opacity='0.06' stroke-width='1'/>` +
+				`<rect x='24' y='24' width='92' height='92' rx='3' fill='none' stroke='${GOLD}' stroke-opacity='0.035' stroke-width='1'/>` +
+				pip(70, 16, 1.6, GOLD, 0.1) +
+				pip(70, 124, 1.6, GOLD, 0.1)
+		)}, ${NIGHT}`,
+		backgroundSize: '140px 140px',
+	},
+	{
+		id: 'crosshatch-fine',
+		label: '18 — Croisillons fins',
+		note: 'Fines hachures croisées serrées, texture tissée laiton.',
+		background: `repeating-linear-gradient(45deg, rgba(181,160,108,0.04) 0 1px, transparent 1px 7px), repeating-linear-gradient(-45deg, rgba(181,160,108,0.03) 0 1px, transparent 1px 7px), ${NIGHT}`,
+	},
+	{
+		id: 'grid-plus',
+		label: '19 — Grille à croix',
+		note: 'Petites croix (+) aux intersections d’une grille invisible.',
+		background: `${tile(
+			44,
+			`<path d='M22 16 v12 M16 22 h12' stroke='${GOLD}' stroke-opacity='0.09' stroke-width='1'/>`
+		)}, ${NIGHT}`,
+		backgroundSize: '44px 44px',
+	},
+
+	// --- Grains / bruits -------------------------------------------------------
+	{
+		id: 'grain-fine',
+		label: '20 — Grain fin',
+		note: 'Bruit procédural fin (feTurbulence) très léger sur la nuit.',
+		background: `${noise(160, 0.9, 0.04)}, ${NIGHT}`,
+		backgroundSize: '160px 160px, cover',
+	},
+	{
+		id: 'grain-coarse-navy',
+		label: '21 — Grain épais + navy',
+		note: 'Grain plus gros sur un dégradé navy, effet matière / photo argentique.',
+		background: `${noise(200, 0.55, 0.06, 7)}, radial-gradient(120% 90% at 50% -10%, ${NAVY} 0%, ${NIGHT} 62%)`,
+		backgroundSize: '200px 200px, cover',
+	},
+	{
+		id: 'grain-gold-halo',
+		label: '22 — Grain + halo doré',
+		note: 'Grain fin combiné à un halo doré haut : matière + chaleur.',
+		background: `${noise(
+			160,
+			0.85,
+			0.045,
+			11
+		)}, radial-gradient(80% 55% at 50% -6%, rgba(201,168,76,0.10) 0%, transparent 55%), ${NIGHT}`,
+		backgroundSize: '160px 160px, cover, cover',
+	},
+	{
+		id: 'grain-grid',
+		label: '23 — Grain + quadrillage',
+		note: 'Grain fin par-dessus une grille dorée subtile : matière + structure.',
+		background: `${noise(
+			160,
+			0.9,
+			0.035,
+			5
+		)}, linear-gradient(rgba(201,168,76,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.05) 1px, transparent 1px), ${NIGHT}`,
+		backgroundSize: '160px 160px, 40px 40px, 40px 40px, cover',
+	},
+	{
+		id: 'grain-vignette',
+		label: '24 — Grain + vignette',
+		note: 'Grain fin avec une vignette sombre marquée aux bords : profondeur.',
+		background: `${noise(
+			180,
+			0.8,
+			0.05,
+			2
+		)}, radial-gradient(130% 120% at 50% 45%, transparent 45%, #060609 100%), ${NIGHT}`,
+		backgroundSize: '180px 180px, cover, cover',
 	},
 ];
