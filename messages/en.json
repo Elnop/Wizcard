@@ -146,44 +146,59 @@
 	},
 	"landing": {
 		"hero": {
-			"tagline": "Wizcard is your complete Magic: The Gathering companion.",
-			"description": "Search, collect, and manage every Magic card ever printed. Powerful filters, offline sync, and bulk import — all in one place.",
-			"startSearching": "Start Searching",
+			"tagline": "Your complete Magic: The Gathering companion.",
+			"description": "Search, collect, and build — every card ever printed, all in one place.",
+			"explore": "Explore",
 			"myCollection": "My Collection"
 		},
-		"features": {
-			"heading": "Everything You Need",
-			"instantSearch": {
-				"title": "Instant Search",
-				"description": "Find any card as you type. Scryfall-powered autocomplete with real-time results across every set ever printed."
+		"discover": "Discover",
+		"badge": {
+			"soon": "Coming soon"
+		},
+		"demo": {
+			"import": {
+				"recognized": "{count} cards recognized"
 			},
-			"advancedFilters": {
-				"title": "Advanced Filters",
-				"description": "Filter by color identity, card type, set, mana cost, rarity, and oracle text. Combine filters freely."
-			},
-			"collectionManagement": {
-				"title": "Collection Management",
-				"description": "Track conditions, foil status, language, purchase price, and more for every card in your collection."
-			},
-			"importAnywhere": {
-				"title": "Import from Anywhere",
-				"description": "Import your collection from Moxfield or MTG Arena export format. Bulk import hundreds of cards at once."
-			},
-			"cloudSync": {
-				"title": "Cloud Sync",
-				"description": "Sign in to sync your collection across devices. Works offline and syncs automatically when you reconnect."
+			"pdf": {
+				"ready": "PDF · print-ready"
 			}
 		},
-		"showcase": {
-			"heading": "Explore Iconic Cards",
-			"subheading": "From the Power Nine to modern staples — every card at your fingertips.",
-			"legendaryStaples": "Legendary Staples ({count})",
-			"modernClassics": "Modern Classics ({count})"
+		"features": {
+			"search": {
+				"label": "Search",
+				"title": "Cards, decks and players — one bar",
+				"description": "Instant multi-entity search with advanced Scryfall filters: colors, types, mana cost."
+			},
+			"collection": {
+				"label": "Collection",
+				"title": "Your collection follows you everywhere",
+				"description": "Track every card, your wishlist and exports. Cloud sync across all your devices."
+			},
+			"deck": {
+				"label": "Deckbuilding",
+				"title": "Build, analyze, test",
+				"description": "Mana curve, manabase, type distribution and opening hand — everything to refine your decks."
+			},
+			"import": {
+				"label": "Import",
+				"title": "Bring what you already have",
+				"description": "Import from Moxfield, MTG Arena, CardNexus or Delver Lens in a single paste."
+			},
+			"pdf": {
+				"label": "PDF export",
+				"title": "Your cards as print-ready sheets",
+				"description": "Generate clean, print-ready proxy sheets in a few clicks."
+			},
+			"editor": {
+				"label": "Card editor",
+				"title": "Create your own cards",
+				"description": "A custom card editor is coming soon. Stay tuned."
+			}
 		},
-		"cta": {
-			"title": "Ready to Explore?",
-			"description": "Search through over 80,000 unique Magic: The Gathering cards. Build and manage your collection with ease.",
-			"startSearching": "Start Searching"
+		"finalCta": {
+			"title": "Ready to explore?",
+			"start": "Get started",
+			"publicDecks": "Browse public decks"
 		}
 	},
 	"auth": {
