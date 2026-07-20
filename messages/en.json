@@ -146,8 +146,8 @@
 	},
 	"landing": {
 		"hero": {
-			"tagline": "Every Magic card ever printed, in one place.",
-			"description": "Look up any card, grow your collection, and test your decks without leaving the browser.",
+			"tagline": "The complete companion for Magic players and collectors.",
+			"description": "Search, collect, build. In active development.",
 			"explore": "Explore",
 			"startSearching": "Start Searching",
 			"myCollection": "My Collection"

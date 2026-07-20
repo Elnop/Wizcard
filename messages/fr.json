@@ -146,8 +146,8 @@
 	},
 	"landing": {
 		"hero": {
-			"tagline": "Chaque carte Magic jamais imprimée, au même endroit.",
-			"description": "Cherchez une carte, montez votre collection, testez vos decks sans quitter le navigateur.",
+			"tagline": "Le compagnon complet des joueurs et collectionneurs Magic.",
+			"description": "Cherchez, collectionnez, construisez. En développement continu.",
 			"explore": "Explorer",
 			"startSearching": "Commencer la recherche",
 			"myCollection": "Ma collection"
