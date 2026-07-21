@@ -19,10 +19,6 @@ export function LoginForm() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [sent, setSent] = useState(false);
 
-	// The mail server is under maintenance, so magic-link / OTP emails cannot be
-	// delivered. Disable email sign-in until it is back; Google OAuth still works.
-	const emailComingSoon = true;
-
 	async function handleSubmitEmail(e: React.FormEvent) {
 		e.preventDefault();
 		setError(null);
@@ -94,19 +90,13 @@ export function LoginForm() {
 							className={styles.input}
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
-							required={!emailComingSoon}
-							disabled={emailComingSoon}
+							required
 							autoComplete="email"
 							placeholder={t('emailPlaceholder')}
 						/>
 					</div>
-					{emailComingSoon && <p className={styles.comingSoon}>{t('emailComingSoon')}</p>}
 					{error && <p className={styles.error}>{error}</p>}
-					<button
-						type="submit"
-						className={styles.submitBtn}
-						disabled={isLoading || emailComingSoon}
-					>
+					<button type="submit" className={styles.submitBtn} disabled={isLoading}>
 						{isLoading ? t('sending') : t('sendLink')}
 					</button>
 				</form>
