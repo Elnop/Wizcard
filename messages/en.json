@@ -147,8 +147,8 @@
 	},
 	"landing": {
 		"hero": {
-			"tagline": "The complete companion for Magic players and collectors.",
-			"description": "Search, collect, build. In active development.",
+			"tagline": "Every card, deck and collection in one place, for Magic players and collectors.",
+			"description": "Search cards, build decks, track what you own. Still being built.",
 			"explore": "Explore",
 			"startSearching": "Start Searching",
 			"myCollection": "My Collection"
@@ -173,8 +173,8 @@
 			},
 			"collection": {
 				"label": "Collection",
-				"title": "Your collection follows you everywhere",
-				"description": "Track every card, your wishlist and exports. Cloud sync across all your devices."
+				"title": "Find any card in your collection",
+				"description": "Filter what you own by color, type, cost or set, and land on the right card in seconds. Synced across your devices."
 			},
 			"deck": {
 				"label": "Deckbuilding",
@@ -198,7 +198,7 @@
 			}
 		},
 		"finalCta": {
-			"title": "Ready to explore?",
+			"title": "Start with a search.",
 			"start": "Get started",
 			"publicDecks": "Browse public decks"
 		}
@@ -837,7 +837,7 @@
 	"seo": {
 		"home": {
 			"title": "Wizcard — Magic: The Gathering Card Search",
-			"description": "Your HQ for Magic: The Gathering. Search, build, analyze, collect, and share — one tool for your whole game."
+			"description": "Search any Magic: The Gathering card, build decks with real stats, and track your collection across devices."
 		},
 		"login": {
 			"title": "Sign in"

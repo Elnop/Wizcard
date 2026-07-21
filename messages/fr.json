@@ -147,8 +147,8 @@
 	},
 	"landing": {
 		"hero": {
-			"tagline": "Le compagnon complet des joueurs et collectionneurs Magic.",
-			"description": "Cherchez, collectionnez, construisez. En développement continu.",
+			"tagline": "Vos cartes, vos decks et votre collection au même endroit, pour les joueurs et collectionneurs Magic.",
+			"description": "Cherchez des cartes, construisez des decks, suivez ce que vous possédez. Encore en construction.",
 			"explore": "Explorer",
 			"startSearching": "Commencer la recherche",
 			"myCollection": "Ma collection"
@@ -198,7 +198,7 @@
 			}
 		},
 		"finalCta": {
-			"title": "Prêt à explorer ?",
+			"title": "Commencez par une recherche.",
 			"start": "Commencer",
 			"publicDecks": "Voir les decks publics"
 		}
@@ -837,7 +837,7 @@
 	"seo": {
 		"home": {
 			"title": "Wizcard — Recherche de cartes Magic: The Gathering",
-			"description": "Votre QG pour Magic: The Gathering. Cherchez, construisez, analysez, collectionnez et partagez — un seul outil pour tout votre jeu."
+			"description": "Cherchez n'importe quelle carte Magic: The Gathering, construisez des decks avec de vraies stats, et suivez votre collection sur tous vos appareils."
 		},
 		"login": {
 			"title": "Se connecter"
