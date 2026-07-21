@@ -101,6 +101,17 @@
 	margin-left: 8px;
 }
 
+/*
+ * Switcher de langue de la navbar. Le libellé n'est qu'un code court (FR/EN) :
+ * on écrase le `min-width` du Select (dimensionné pour des champs de
+ * formulaire) pour un trigger compact. La prop `className` du Select est posée
+ * DIRECTEMENT sur le bouton `.trigger`, donc cette classe le cible ; le panneau
+ * déroulant hérite ensuite de la largeur réduite (minWidth = largeur trigger).
+ */
+.langSwitcher {
+	min-width: 0;
+}
+
 .profileMenu {
 	position: relative;
 	display: inline-block;
@@ -367,10 +378,11 @@
 		font-size: var(--text-xl);
 	}
 
-	/* Hide desktop nav & auth on mobile */
+	/* Hide desktop nav, auth & language switcher on mobile (drawer has its own) */
 	.nav,
 	.authSection,
-	.syncSection {
+	.syncSection,
+	.langSwitcher {
 		display: none;
 	}
 

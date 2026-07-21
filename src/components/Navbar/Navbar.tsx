@@ -107,7 +107,7 @@ export function Navbar() {
 				<div className={styles.syncSection}>
 					<SyncIndicator />
 				</div>
-				<LanguageSwitcher />
+				<LanguageSwitcher className={styles.langSwitcher} />
 				<div className={styles.authSection}>{authNode}</div>
 
 				{/* Hamburger + drawer — client only, no SSR to avoid hydration mismatch */}
