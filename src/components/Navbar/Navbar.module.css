@@ -107,8 +107,13 @@
  * formulaire) pour un trigger compact. La prop `className` du Select est posée
  * DIRECTEMENT sur le bouton `.trigger`, donc cette classe le cible ; le panneau
  * déroulant hérite ensuite de la largeur réduite (minWidth = largeur trigger).
+ *
+ * Classe doublée (`.langSwitcher.langSwitcher`) pour hausser la spécificité
+ * (0,2,0) au-dessus de `.trigger` (0,1,0) : les deux ont la même spécificité
+ * de base, et l'ordre d'injection des CSS Modules ne garantit pas que la nôtre
+ * gagne. Doubler évite ce couplage à l'ordre du bundle sans `!important`.
  */
-.langSwitcher {
+.langSwitcher.langSwitcher {
 	min-width: 0;
 	/*
 	 * `justify-content: space-between` (défaut du Select) étirerait le trigger ;
@@ -387,11 +392,13 @@
 		font-size: var(--text-xl);
 	}
 
-	/* Hide desktop nav, auth & language switcher on mobile (drawer has its own) */
+	/* Hide desktop nav, auth & language switcher on mobile (drawer has its own).
+	   `.langSwitcher` est doublé pour battre la règle compacte hors media query
+	   (elle-même doublée à 0,2,0), sinon le switcher desktop resterait visible. */
 	.nav,
 	.authSection,
 	.syncSection,
-	.langSwitcher {
+	.langSwitcher.langSwitcher {
 		display: none;
 	}
 
