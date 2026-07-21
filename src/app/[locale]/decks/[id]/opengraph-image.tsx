@@ -87,14 +87,28 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
 				/>
 			) : null}
 
-			{/* Dark gradient for text legibility (stronger toward the bottom) */}
+			{/* Uniform base scrim so text stays legible over any cover — including
+			    bright, high-contrast art. */}
+			{cover ? (
+				<div
+					style={{
+						position: 'absolute',
+						inset: 0,
+						display: 'flex',
+						background: 'rgba(10,10,10,0.45)',
+					}}
+				/>
+			) : null}
+
+			{/* Vertical gradient reinforcing the top (brand + badge) and bottom
+			    (name, owner, description) where the text actually sits. */}
 			<div
 				style={{
 					position: 'absolute',
 					inset: 0,
 					display: 'flex',
 					background: cover
-						? 'linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 35%, rgba(10,10,10,0.85) 100%)'
+						? 'linear-gradient(180deg, rgba(10,10,10,0.75) 0%, rgba(10,10,10,0.25) 32%, rgba(10,10,10,0.3) 55%, rgba(10,10,10,0.92) 100%)'
 						: BG,
 				}}
 			/>
