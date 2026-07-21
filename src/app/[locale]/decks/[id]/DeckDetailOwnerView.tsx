@@ -650,16 +650,19 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 
 				{searchPanelOpen && (
 					<CardSearchPanel
-						deckId={deckId}
-						onCardClick={setPanelSelectedCard}
+						mode={{
+							kind: 'deck',
+							deckId,
+							deckFormat: deck.format,
+							commanderColorIdentity,
+							commanderName,
+							onCardClick: setPanelSelectedCard,
+							onCollectionModeChange: setPanelInCollectionOnly,
+						}}
 						onClose={() => {
 							setSearchPanelOpen(false);
 							setSearchPanelExpanded(false);
 						}}
-						deckFormat={deck.format}
-						commanderColorIdentity={commanderColorIdentity}
-						commanderName={commanderName}
-						onCollectionModeChange={setPanelInCollectionOnly}
 						expanded={searchPanelExpanded}
 						onToggleExpand={() => setSearchPanelExpanded((v) => !v)}
 					/>
