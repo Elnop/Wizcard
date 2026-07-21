@@ -173,3 +173,43 @@ export const IMPORT_SOURCES: string[] = ['Moxfield', 'MTG Arena', 'CardNexus', '
 
 export const COLLECTION_TARGET = 1248;
 export const IMPORT_RECOGNIZED = 60;
+
+// ── Deck search results (landing SearchDemo, Decks beat) ──────────────────
+// art_crop variants of IDs already verified above (same host/path, /art_crop/).
+export interface DemoDeckResult {
+	name: string;
+	format: string; // shown in the format pill
+	artCropSrc: string;
+	colors: string[]; // WUBRG letters → color pips
+}
+
+export const SEARCH_DECKS: DemoDeckResult[] = [
+	{
+		name: 'Gruul Aggro',
+		format: 'Modern',
+		artCropSrc:
+			'https://cards.scryfall.io/art_crop/front/e/2/e2f12f6f-9383-47e6-a44f-2834ad130e51.jpg',
+		colors: ['R', 'G'],
+	},
+	{
+		name: 'Mono-Red Burn',
+		format: 'Pioneer',
+		artCropSrc:
+			'https://cards.scryfall.io/art_crop/front/0/6/06f90d62-6d21-47b1-a427-eb25a42f4dcb.jpg',
+		colors: ['R'],
+	},
+];
+
+// ── Profile search results (landing SearchDemo, Profiles beat) ────────────
+// No real user avatars to embed → both render the ghost silhouette fallback.
+export interface DemoProfileResult {
+	nickname: string;
+	avatarSrc?: string; // omitted → ghost silhouette
+	deckCount: number;
+	cardCount: number;
+}
+
+export const SEARCH_PROFILES: DemoProfileResult[] = [
+	{ nickname: 'planeswalker42', deckCount: 12, cardCount: 1840 },
+	{ nickname: 'goblin_king', deckCount: 5, cardCount: 623 },
+];
