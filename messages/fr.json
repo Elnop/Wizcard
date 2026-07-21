@@ -481,6 +481,8 @@
 		"options": "Options",
 		"addCards": "Ajouter des cartes",
 		"inCollectionOnly": "Uniquement en collection",
+		"noCardsFound": "Aucune carte trouvée",
+		"noCollectionMatch": "Aucune carte de votre collection ne correspond à ces filtres",
 		"yes": "Oui",
 		"group": "Grouper",
 		"sort": "Trier",
