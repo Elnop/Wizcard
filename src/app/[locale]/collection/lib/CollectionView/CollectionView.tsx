@@ -46,6 +46,8 @@ type Props = {
 	 * narrow embeds like the profile tabs.
 	 */
 	filterLayout?: 'aside' | 'modal';
+	/** Reflow the grid to make room for the fixed side search panel (desktop). */
+	panelOpen?: boolean;
 	/** Modal(s) rendered as a sibling of the layout (owner edit / read-only view). */
 	children?: ReactNode;
 };
@@ -71,6 +73,7 @@ export function CollectionView({
 	buildCardMenuItems,
 	showDeckBadges = false,
 	filterLayout = 'aside',
+	panelOpen = false,
 	children,
 }: Props) {
 	const t = useTranslations('collection');
@@ -213,7 +216,9 @@ export function CollectionView({
 	const isModal = filterLayout === 'modal';
 	const pageClass = [styles.page, isModal && styles.pageModal].filter(Boolean).join(' ');
 	const layoutClass = [styles.layout, isModal && styles.layoutModal].filter(Boolean).join(' ');
-	const mainClass = [styles.main, isModal && styles.mainModal].filter(Boolean).join(' ');
+	const mainClass = [styles.main, isModal && styles.mainModal, panelOpen && styles.mainWithPanel]
+		.filter(Boolean)
+		.join(' ');
 
 	return (
 		<div className={pageClass}>

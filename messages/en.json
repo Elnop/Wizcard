@@ -591,6 +591,7 @@
 		"title": "My Collection",
 		"emptyTitle": "Your collection is empty",
 		"emptyDescription": "Search for cards or import a collection file to get started.",
+		"addCards": "Add cards",
 		"searchForCards": "Search for cards",
 		"clear": "Clear",
 		"clearConfirm": "Clear the entire collection? This action is irreversible.",

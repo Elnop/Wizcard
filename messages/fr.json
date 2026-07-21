@@ -591,6 +591,7 @@
 		"title": "Ma collection",
 		"emptyTitle": "Votre collection est vide",
 		"emptyDescription": "Recherchez des cartes ou importez un fichier de collection pour commencer.",
+		"addCards": "Ajouter des cartes",
 		"searchForCards": "Rechercher des cartes",
 		"clear": "Vider",
 		"clearConfirm": "Vider toute la collection ? Cette action est irréversible.",

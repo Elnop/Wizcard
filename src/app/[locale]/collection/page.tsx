@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { CardStack } from '@/types/cards';
@@ -17,6 +17,7 @@ import { Button } from '@/components/Button/Button';
 import { ExportMenu } from './ExportMenu/ExportMenu';
 import styles from './page.module.css';
 import { CollectionView } from './lib/CollectionView/CollectionView';
+import { CollectionSearchPanel } from './lib/CollectionSearchPanel';
 
 function CollectionPageInner() {
 	const t = useTranslations('collection');
@@ -28,6 +29,13 @@ function CollectionPageInner() {
 	const { openAddToDeck } = useAddToDeckModal();
 	const { openCardModal } = useCardModalContext();
 	const mutations = useCardMutations();
+
+	const [panelOpen, setPanelOpen] = useState(false);
+	const [panelExpanded, setPanelExpanded] = useState(false);
+	const closePanel = useCallback(() => {
+		setPanelOpen(false);
+		setPanelExpanded(false);
+	}, []);
 
 	const openCard = useCallback((stack: CardStack) => openCardModal(stack.cards), [openCardModal]);
 
@@ -73,6 +81,9 @@ function CollectionPageInner() {
 					</Button>
 				</>
 			)}
+			<Button variant="secondary" onClick={() => setPanelOpen(true)} disabled={isBusy}>
+				{t('addCards')}
+			</Button>
 			<Button variant="primary" onClick={() => openModal('collection')} disabled={isBusy}>
 				{isBusy ? t('importing') : t('import')}
 			</Button>
@@ -109,8 +120,16 @@ function CollectionPageInner() {
 				)
 			}
 			showDeckBadges
+			panelOpen={panelOpen && !panelExpanded}
 		>
 			<ImportModal />
+			{panelOpen && (
+				<CollectionSearchPanel
+					expanded={panelExpanded}
+					onToggleExpand={() => setPanelExpanded((v) => !v)}
+					onClose={closePanel}
+				/>
+			)}
 		</CollectionView>
 	);
 }

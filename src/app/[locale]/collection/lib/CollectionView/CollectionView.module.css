@@ -34,6 +34,11 @@
 	overflow: visible;
 }
 
+/* Reserve room for the fixed 480px search panel when it's open (desktop). */
+.mainWithPanel {
+	padding-right: calc(480px + 36px);
+}
+
 .titleSection {
 	display: flex;
 	align-items: flex-start;
@@ -95,6 +100,11 @@
 
 	.main {
 		padding: 16px 12px 80px;
+	}
+
+	/* On mobile the panel is fullscreen, so no reflow. */
+	.mainWithPanel {
+		padding-right: 12px;
 	}
 
 	.titleSection {
