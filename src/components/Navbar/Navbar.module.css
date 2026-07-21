@@ -110,6 +110,15 @@
  */
 .langSwitcher {
 	min-width: 0;
+	/*
+	 * `justify-content: space-between` (défaut du Select) étirerait le trigger ;
+	 * ici on veut qu'il colle au contenu (code + chevron), d'où `flex-start`.
+	 * `width: fit-content` neutralise tout étirement imposé par le parent flex.
+	 */
+	width: fit-content;
+	justify-content: flex-start;
+	gap: 4px;
+	padding: 6px 8px;
 }
 
 .profileMenu {
