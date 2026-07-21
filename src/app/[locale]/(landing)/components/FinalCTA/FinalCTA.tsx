@@ -19,7 +19,7 @@ export function FinalCTA() {
 				<Link href="/search">
 					<Button size="lg">{t('start')}</Button>
 				</Link>
-				<Link href="/decks">
+				<Link href="/search/decks">
 					<Button variant="ghost" size="lg">
 						{t('publicDecks')}
 					</Button>
