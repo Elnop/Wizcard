@@ -48,6 +48,7 @@
 }
 .bar {
 	width: 22px;
+	background: rgba(201, 168, 76, 0.9);
 	border-radius: 3px 3px 0 0;
 	transition: height 0.1s linear;
 }

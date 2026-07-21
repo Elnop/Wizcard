@@ -51,19 +51,38 @@ export interface DemoDeckCard extends DemoCard {
 	type: 'Creature' | 'Instant' | 'Sorcery' | 'Artifact' | 'Land' | 'Enchantment' | 'Planeswalker';
 }
 
-// Gruul (red-green) aggro sample. Real MTG values so every derived stat is the
-// deck's own. Verified against the Scryfall API on 2026-07-21.
+// Gruul (red-green) aggro sample, ordered low -> high CMC so the fan and curve
+// read left-to-right. Real MTG values so every derived stat is the deck's own.
+// Verified against the Scryfall API on 2026-07-21. Curve: [0,2,3,2,1,1,0].
 export const DECK_SAMPLE: DemoDeckCard[] = [
-	{ ...LLANOWAR_ELVES, cmc: 1, colors: ['G'], type: 'Creature' },
-	{ ...BIRDS_OF_PARADISE, cmc: 1, colors: ['G'], type: 'Creature' },
 	{ ...GOBLIN_GUIDE, cmc: 1, colors: ['R'], type: 'Creature' },
-	{ ...MONASTERY_SWIFTSPEAR, cmc: 1, colors: ['R'], type: 'Creature' },
-	{ ...LIGHTNING_BOLT, cmc: 1, colors: ['R'], type: 'Instant' },
+	{ ...LLANOWAR_ELVES, cmc: 1, colors: ['G'], type: 'Creature' },
 	{
 		name: 'Burning-Tree Emissary',
 		src: 'https://cards.scryfall.io/normal/front/b/a/ba327a5e-bd57-4e24-b4b4-062202df30e1.jpg',
 		cmc: 2,
 		colors: ['G', 'R'],
+		type: 'Creature',
+	},
+	{
+		name: 'Zhur-Taa Goblin',
+		src: 'https://cards.scryfall.io/normal/front/1/3/13070db2-cf89-4552-8b6c-76426274321a.jpg',
+		cmc: 2,
+		colors: ['G', 'R'],
+		type: 'Creature',
+	},
+	{
+		name: 'Wren and Six',
+		src: 'https://cards.scryfall.io/normal/front/5/b/5bd498cc-a609-4457-9325-6888d59ca36f.jpg',
+		cmc: 2,
+		colors: ['G', 'R'],
+		type: 'Planeswalker',
+	},
+	{
+		name: 'Bonecrusher Giant',
+		src: 'https://cards.scryfall.io/normal/front/b/5/b5b71cd2-de35-451f-b16e-2e3936169407.jpg',
+		cmc: 3,
+		colors: ['R'],
 		type: 'Creature',
 	},
 	{
@@ -133,27 +152,6 @@ export function deckTypeCounts(deck: DemoDeckCard[]): { type: string; count: num
 	return order
 		.map((type) => ({ type, count: counts.get(type) ?? 0 }))
 		.sort((a, b) => b.count - a.count);
-}
-
-// Dominant color among cards in a cmc bucket, as a hex tint. Tie -> red (lead
-// color of the Gruul archetype). Empty column -> null.
-export function columnTint(deck: DemoDeckCard[], cmc: number): string | null {
-	const pips = new Map<string, number>();
-	for (const c of deck) {
-		if (Math.min(c.cmc, 6) !== cmc) continue;
-		for (const col of c.colors) pips.set(col, (pips.get(col) ?? 0) + 1);
-	}
-	if (pips.size === 0) return null;
-	let best = 'R';
-	let bestN = -1;
-	for (const col of WUBRG) {
-		const n = pips.get(col) ?? 0;
-		if (n > bestN) {
-			bestN = n;
-			best = col;
-		}
-	}
-	return COLOR_HEX[best];
 }
 
 export const SEARCH_CARDS: DemoCard[] = [LIGHTNING_BOLT, GOBLIN_GUIDE, MONASTERY_SWIFTSPEAR];

@@ -7,7 +7,6 @@ import {
 	deckColorSlices,
 	deckCurve,
 	deckTypeCounts,
-	columnTint,
 } from '@/app/[locale]/(landing)/data/demoContent';
 import { seg } from '@/app/[locale]/(landing)/utils/seg';
 import styles from './DeckDemo.module.css';
@@ -81,15 +80,11 @@ export function DeckDemo({ progress }: { progress: number }) {
 				<div className={styles.bars} style={{ opacity: bars }}>
 					{CURVE.map((v, i) => {
 						const local = Math.min(1, Math.max(0, bars * CURVE.length - i));
-						const tint = columnTint(DECK_SAMPLE, i);
 						return (
 							<span
 								key={i}
 								className={styles.bar}
-								style={{
-									height: `${MAX_BAR ? (v / MAX_BAR) * 100 * local : 0}%`,
-									background: tint ?? 'rgba(201, 168, 76, 0.85)',
-								}}
+								style={{ height: `${MAX_BAR ? (v / MAX_BAR) * 100 * local : 0}%` }}
 							/>
 						);
 					})}
