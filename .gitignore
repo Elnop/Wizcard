@@ -53,3 +53,6 @@ cosmos-export
 
 # Superpowers brainstorming companion
 .superpowers/
+
+# share kit (marketing drafts, not versioned)
+/share-kit/
