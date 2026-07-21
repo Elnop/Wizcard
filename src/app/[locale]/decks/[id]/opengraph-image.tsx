@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { fetchDeckMetaServer } from '@/lib/deck/db/deck.server';
+import { fetchDeckMetaServer, fetchDeckCoverArtServer } from '@/lib/deck/db/deck.server';
 import { fetchNicknameById } from '@/lib/profile/db/profiles.server';
 
 export const size = { width: 1200, height: 630 };
@@ -46,8 +46,13 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
 	const format = deck?.format ? deck.format[0].toUpperCase() + deck.format.slice(1) : null;
 	const description = deck?.description?.slice(0, 140) ?? null;
 
+	// The site derives a cover from the deck's cards when none is explicitly set
+	// (usePublicDeckDetail → pickCoverArt). Mirror that server-side so the OG
+	// image is never blank for a deck that shows a cover on the site.
+	const coverUrl = deck?.coverArtUrl ?? (deck ? await fetchDeckCoverArtServer(id) : null);
+
 	const [cover, ownerNickname] = await Promise.all([
-		fetchCoverDataUri(deck?.coverArtUrl ?? null),
+		fetchCoverDataUri(coverUrl),
 		deck?.ownerId ? fetchNicknameById(deck.ownerId).catch(() => null) : Promise.resolve(null),
 	]);
 
