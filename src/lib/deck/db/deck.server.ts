@@ -27,33 +27,33 @@ function artCropOf(card: ScryfallCoverCard): string | null {
  */
 export async function fetchDeckCoverArtServer(deckId: string): Promise<string | null> {
 	const supabase = await createClient();
+	// Match the site's card ordering exactly: fetchDeckCardRows selects with
+	// `.order('date_added', { ascending: true })`, and usePublicDeckDetail feeds
+	// those (non-deduped) copies to pickCoverArt. Ordering at the DB with the
+	// same key means tied `date_added` rows come back in the same physical order
+	// on both paths, so the winning card is identical.
 	const { data, error } = await supabase
 		.from('cards')
 		.select('scryfall_id, tags')
-		.eq('deck_id', deckId);
+		.eq('deck_id', deckId)
+		.order('date_added', { ascending: true });
 	if (error || !data || data.length === 0) return null;
 
-	// Dedupe ids (a deck can hold multiple copies) while remembering which ids
-	// are tagged as the commander, so we can prioritise its art.
-	const commanderIds = new Set<string>();
-	const seen = new Set<string>();
-	const ids: string[] = [];
-	for (const row of data) {
-		const id = row.scryfall_id as string | null;
-		if (!id) continue;
-		const tags = (row.tags as string[] | null) ?? [];
-		if (tags.includes('deck:commander')) commanderIds.add(id);
-		if (!seen.has(id)) {
-			seen.add(id);
-			ids.push(id);
-		}
-	}
-	// Scryfall's /cards/collection accepts at most 75 identifiers per request;
-	// the first batch is plenty to pick a cover from.
-	const batch = ids.slice(0, 75);
-	if (batch.length === 0) return null;
+	const copies = data
+		.map((row) => ({
+			id: (row.scryfall_id ?? null) as string | null,
+			tags: (row.tags as string[] | null) ?? [],
+		}))
+		.filter((c): c is { id: string; tags: string[] } => c.id !== null);
+	if (copies.length === 0) return null;
 
-	let cards: ScryfallCoverCard[];
+	// Fetch card data for the unique ids (Scryfall's /cards/collection caps at
+	// 75 identifiers). Dedup is only to shrink the request; selection below runs
+	// over the ordered copies, keyed into this map — so response order is moot.
+	const uniqueIds = [...new Set(copies.map((c) => c.id))].slice(0, 75);
+	if (uniqueIds.length === 0) return null;
+
+	let byId: Map<string, ScryfallCoverCard>;
 	try {
 		const res = await fetch('https://api.scryfall.com/cards/collection', {
 			method: 'POST',
@@ -62,7 +62,7 @@ export async function fetchDeckCoverArtServer(deckId: string): Promise<string | 
 				Accept: 'application/json',
 				'User-Agent': 'Mozilla/5.0 (compatible; WizcardBot/1.0; +https://wizcard.xyz)',
 			},
-			body: JSON.stringify({ identifiers: batch.map((id) => ({ id })) }),
+			body: JSON.stringify({ identifiers: uniqueIds.map((id) => ({ id })) }),
 			signal: AbortSignal.timeout(4000),
 		});
 		if (!res.ok) {
@@ -70,23 +70,27 @@ export async function fetchDeckCoverArtServer(deckId: string): Promise<string | 
 			return null;
 		}
 		const json = (await res.json()) as { data?: ScryfallCoverCard[] };
-		cards = json.data ?? [];
+		byId = new Map((json.data ?? []).map((c) => [c.id, c]));
 	} catch {
 		return null;
 	}
-	if (cards.length === 0) return null;
+	if (byId.size === 0) return null;
 
-	// Same priority order as pickCoverArt: commander > non-land > any card.
+	// Same priority order as pickCoverArt (commander > non-land > any), applied
+	// over the date-sorted copies so the first match matches the site's choice.
 	const isLand = (c: ScryfallCoverCard) => (c.type_line ?? '').toLowerCase().includes('land');
-	const predicates: Array<(c: ScryfallCoverCard) => boolean> = [
-		(c) => commanderIds.has(c.id),
-		(c) => !isLand(c),
+	const predicates: Array<(copy: (typeof copies)[number], card: ScryfallCoverCard) => boolean> = [
+		(copy) => copy.tags.includes('deck:commander'),
+		(_copy, card) => !isLand(card),
 		() => true,
 	];
 	for (const predicate of predicates) {
-		const match = cards.find(predicate);
-		const url = match ? artCropOf(match) : null;
-		if (url) return url;
+		for (const copy of copies) {
+			const card = byId.get(copy.id);
+			if (!card || !predicate(copy, card)) continue;
+			const url = artCropOf(card);
+			if (url) return url;
+		}
 	}
 	return null;
 }
