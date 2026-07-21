@@ -16,6 +16,9 @@ export async function generateMetadata({ params }: DeckPageProps): Promise<Metad
 	if (!deck) return { title: t('notFoundTitle'), robots: { index: false, follow: false } };
 	const desc =
 		deck.description?.slice(0, 160) ?? t('defaultDescription', { format: deck.format ?? 'MTG' });
+	// Next.js auto-detects opengraph-image.tsx and injects the og:image/twitter
+	// image tags for both openGraph and twitter, so we only set the text fields
+	// here and let the generated card supply the image.
 	return {
 		title: deck.name,
 		description: desc,
@@ -23,7 +26,18 @@ export async function generateMetadata({ params }: DeckPageProps): Promise<Metad
 		// decks/layout.tsx sets noindex for the owner-only /decks list).
 		robots: { index: true, follow: true },
 		alternates: buildAlternates(locale, `decks/${deck.id}`),
-		openGraph: { title: deck.name, description: desc, url: `/${locale}/decks/${deck.id}` },
+		openGraph: {
+			type: 'website',
+			title: deck.name,
+			description: desc,
+			url: `/${locale}/decks/${deck.id}`,
+			siteName: 'Wizcard',
+		},
+		twitter: {
+			card: 'summary_large_image',
+			title: deck.name,
+			description: desc,
+		},
 	};
 }
 
