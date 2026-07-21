@@ -56,3 +56,6 @@ cosmos-export
 
 # share kit (marketing drafts, not versioned)
 /share-kit/
+
+# ops docs containing secrets (Resend API key, etc.)
+/docs/resend-otp-setup.md

@@ -814,26 +814,33 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				onAddToWishlist={(card, entry) => {
 					addToWishlist(card, entry);
 				}}
-				onAddToCollection={(card, entry) => {
+				onAddToCollection={(card, entry, count) => {
 					const zone = getDeckZone(entry.tags);
+					const copies = Math.max(1, count);
 					if (panelInCollectionOnly) {
-						const copy = findFreeCollectionCopy(
-							card.id,
-							card.oracle_id ?? '',
-							entries,
-							panelScryfallIdToOracleId
-						);
-						if (copy) {
+						// Assign up to `copies` DISTINCT free collection rows. `entries` is a
+						// stale snapshot that isn't re-read between iterations, so we track the
+						// rows we've already claimed and exclude them from the next lookup.
+						const claimed = new Set<string>();
+						for (let i = 0; i < copies; i++) {
+							const copy = findFreeCollectionCopy(
+								card.id,
+								card.oracle_id ?? '',
+								entries,
+								panelScryfallIdToOracleId,
+								claimed
+							);
+							// No more free collection copies — stop rather than add ghost cards.
+							if (!copy) break;
+							claimed.add(copy.rowId);
 							addCollectionCardToDeck(deckId, copy.rowId, zone);
-						} else {
-							// No free collection copy available — don't add a ghost deck card
-							setPanelSelectedCard(null);
-							return;
 						}
 						setPanelSelectedCard(null);
 						return;
 					}
-					addCardToDeck(deckId, card, zone);
+					for (let i = 0; i < copies; i++) {
+						addCardToDeck(deckId, card, zone);
+					}
 					setPanelSelectedCard(null);
 				}}
 			/>

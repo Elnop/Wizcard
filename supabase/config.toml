@@ -216,13 +216,16 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Production SMTP (OVH Zimbra Starter)
+# Production SMTP (Resend — transactional). L'ancien OVH Zimbra a été révoqué ;
+# Cloudflare Email Routing gère l'inbound (contact@wizcard.xyz) mais N'ENVOIE PAS,
+# donc l'envoi OTP passe par Resend. admin_email n'a pas besoin d'être une vraie
+# boîte : c'est le From, autorisé par le SPF/DKIM du domaine vérifié dans Resend.
 # [auth.email.smtp]
 # enabled = true
-# host = "ssl0.ovh.net"
-# port = 587
-# user = "noreply@wizcard.xyz"
-# pass = "env(SMTP_PASS)"
+# host = "smtp.resend.com"
+# port = 465
+# user = "resend"
+# pass = "env(SMTP_PASS)"   # clé API Resend (re_...)
 # admin_email = "noreply@wizcard.xyz"
 # sender_name = "Wizcard"
 
