@@ -15,13 +15,12 @@ import type { Language } from '@/lib/profile/types';
  */
 export function LanguageSwitcher({ className }: { className?: string }) {
 	const t = useTranslations('nav');
-	const tLang = useTranslations('settings.language');
 	const { locale, switchLocale } = useLanguageSwitch();
 
-	// Endonymes (identiques fr/en dans le catalogue).
+	// Diminutifs des codes de locale (FR / EN) — universels, pas de traduction.
 	const options: { value: Language; label: string }[] = [
-		{ value: 'fr', label: tLang('french') },
-		{ value: 'en', label: tLang('english') },
+		{ value: 'fr', label: 'FR' },
+		{ value: 'en', label: 'EN' },
 	];
 
 	return (
