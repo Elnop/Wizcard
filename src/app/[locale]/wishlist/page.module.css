@@ -3,6 +3,11 @@
 	padding: 32px;
 }
 
+/* Reserve room for the fixed 480px search panel when it's open (desktop). */
+.withPanel {
+	padding-right: calc(480px + 36px);
+}
+
 .main {
 	flex: 1;
 	min-width: 0;
@@ -86,6 +91,11 @@
 @media (max-width: 768px) {
 	.page {
 		padding: 16px 12px 80px;
+	}
+
+	/* On mobile the panel is fullscreen, so no reflow. */
+	.withPanel {
+		padding-right: 12px;
 	}
 
 	.titleSection {

@@ -345,6 +345,7 @@
 		"clearConfirm": "Clear the entire wishlist? This action is irreversible.",
 		"emptyTitle": "Your wishlist is empty",
 		"emptyDescription": "Search for cards or browse your decks to add cards you want to acquire.",
+		"addCards": "Add cards",
 		"clear": "Clear",
 		"import": "Import",
 		"importing": "Importing…",

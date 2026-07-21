@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { CardStack } from '@/types/cards';
@@ -22,6 +22,7 @@ import { buildOwnedCardMenu } from '@/lib/card/ownedCardMenu';
 import { useOwnedCardMenuLabels } from '@/lib/card/hooks/useOwnedCardMenuLabels';
 import { useWishlistPdf } from './useWishlistPdf';
 import { useMoveToCollection } from './useMoveToCollection';
+import { WishlistSearchPanel } from './WishlistSearchPanel';
 import styles from './page.module.css';
 
 function WishlistPageInner() {
@@ -37,6 +38,13 @@ function WishlistPageInner() {
 	const pdf = useWishlistPdf(stacks);
 	const move = useMoveToCollection(stacks, moveToCollection, closeCardModal);
 	const mutations = useCardMutations();
+
+	const [panelOpen, setPanelOpen] = useState(false);
+	const [panelExpanded, setPanelExpanded] = useState(false);
+	const closePanel = useCallback(() => {
+		setPanelOpen(false);
+		setPanelExpanded(false);
+	}, []);
 
 	const handleCardClick = useCallback(
 		(stack: CardStack) => openCardModal(stack.cards),
@@ -82,7 +90,7 @@ function WishlistPageInner() {
 	}
 
 	return (
-		<div className={styles.page}>
+		<div className={`${styles.page} ${panelOpen && !panelExpanded ? styles.withPanel : ''}`.trim()}>
 			<main className={styles.main}>
 				<div className={styles.titleSection}>
 					<div className={styles.titleLeft}>
@@ -111,6 +119,9 @@ function WishlistPageInner() {
 								</Button>
 							</>
 						)}
+						<Button variant="secondary" onClick={() => setPanelOpen(true)} disabled={isImporting}>
+							{t('addCards')}
+						</Button>
 						<Button
 							variant="primary"
 							onClick={() => openImportModal('wishlist')}
@@ -217,6 +228,14 @@ function WishlistPageInner() {
 			)}
 
 			<ImportModal />
+
+			{panelOpen && (
+				<WishlistSearchPanel
+					expanded={panelExpanded}
+					onToggleExpand={() => setPanelExpanded((v) => !v)}
+					onClose={closePanel}
+				/>
+			)}
 		</div>
 	);
 }

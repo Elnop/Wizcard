@@ -345,6 +345,7 @@
 		"clearConfirm": "Vider toute la liste de souhaits ? Cette action est irréversible.",
 		"emptyTitle": "Votre liste de souhaits est vide",
 		"emptyDescription": "Recherchez des cartes ou parcourez vos decks pour ajouter celles que vous souhaitez acquérir.",
+		"addCards": "Ajouter des cartes",
 		"clear": "Vider",
 		"import": "Importer",
 		"importing": "Import…",
