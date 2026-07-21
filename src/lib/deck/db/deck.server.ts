@@ -47,52 +47,86 @@ export async function fetchDeckCoverArtServer(deckId: string): Promise<string | 
 		.filter((c): c is { id: string; tags: string[] } => c.id !== null);
 	if (copies.length === 0) return null;
 
-	// Fetch card data for the unique ids (Scryfall's /cards/collection caps at
-	// 75 identifiers). Dedup is only to shrink the request; selection below runs
-	// over the ordered copies, keyed into this map — so response order is moot.
-	const uniqueIds = [...new Set(copies.map((c) => c.id))].slice(0, 75);
-	if (uniqueIds.length === 0) return null;
-
-	let byId: Map<string, ScryfallCoverCard>;
-	try {
-		const res = await fetch('https://api.scryfall.com/cards/collection', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Accept: 'application/json',
-				'User-Agent': 'Mozilla/5.0 (compatible; WizcardBot/1.0; +https://wizcard.xyz)',
-			},
-			body: JSON.stringify({ identifiers: uniqueIds.map((id) => ({ id })) }),
-			signal: AbortSignal.timeout(4000),
-		});
-		if (!res.ok) {
-			await res.body?.cancel();
-			return null;
+	// Priority 1 — the commander. It's pickCoverArt's top choice, so resolve
+	// ONLY the commander ids first (usually one): a tiny request that also lets
+	// us skip fetching the whole deck. The commander can sit anywhere in the
+	// list, so it must not be lost to a truncated batch (the earlier bug).
+	const commanderIds = [
+		...new Set(copies.filter((c) => c.tags.includes('deck:commander')).map((c) => c.id)),
+	];
+	if (commanderIds.length > 0) {
+		const cmdrById = await resolveScryfallCards(commanderIds);
+		for (const copy of copies) {
+			if (!copy.tags.includes('deck:commander')) continue;
+			const url = artCropOf(cmdrById.get(copy.id) ?? ({} as ScryfallCoverCard));
+			if (url) return url;
 		}
-		const json = (await res.json()) as { data?: ScryfallCoverCard[] };
-		byId = new Map((json.data ?? []).map((c) => [c.id, c]));
-	} catch {
-		return null;
 	}
+
+	// Priority 2 & 3 — first non-land, else any card. Resolve every unique id
+	// (batched, never truncated) so the pick matches the site's over the full
+	// date-ordered deck.
+	const byId = await resolveScryfallCards([...new Set(copies.map((c) => c.id))]);
 	if (byId.size === 0) return null;
 
-	// Same priority order as pickCoverArt (commander > non-land > any), applied
-	// over the date-sorted copies so the first match matches the site's choice.
 	const isLand = (c: ScryfallCoverCard) => (c.type_line ?? '').toLowerCase().includes('land');
-	const predicates: Array<(copy: (typeof copies)[number], card: ScryfallCoverCard) => boolean> = [
-		(copy) => copy.tags.includes('deck:commander'),
-		(_copy, card) => !isLand(card),
-		() => true,
-	];
-	for (const predicate of predicates) {
-		for (const copy of copies) {
-			const card = byId.get(copy.id);
-			if (!card || !predicate(copy, card)) continue;
+	return (
+		firstArt(copies, byId, (card) => !isLand(card)) ?? firstArt(copies, byId, () => true) ?? null
+	);
+}
+
+/**
+ * Walk the ordered copies and return the art_crop of the first card that both
+ * resolved and satisfies `predicate` — mirroring pickCoverArt's `Array.find`
+ * over the date-ordered card list.
+ */
+function firstArt(
+	copies: Array<{ id: string }>,
+	byId: Map<string, ScryfallCoverCard>,
+	predicate: (card: ScryfallCoverCard) => boolean
+): string | null {
+	for (const copy of copies) {
+		const card = byId.get(copy.id);
+		if (card && predicate(card)) {
 			const url = artCropOf(card);
 			if (url) return url;
 		}
 	}
 	return null;
+}
+
+/**
+ * Resolve Scryfall print ids to card objects via `/cards/collection`, batched
+ * in chunks of 75 (the endpoint's per-request cap). Sends a real User-Agent
+ * (Cloudflare rejects default library UAs). Best-effort: failed batches are
+ * skipped, and whatever resolved is returned.
+ */
+async function resolveScryfallCards(ids: string[]): Promise<Map<string, ScryfallCoverCard>> {
+	const byId = new Map<string, ScryfallCoverCard>();
+	try {
+		for (let i = 0; i < ids.length; i += 75) {
+			const batch = ids.slice(i, i + 75);
+			const res = await fetch('https://api.scryfall.com/cards/collection', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+					'User-Agent': 'Mozilla/5.0 (compatible; WizcardBot/1.0; +https://wizcard.xyz)',
+				},
+				body: JSON.stringify({ identifiers: batch.map((id) => ({ id })) }),
+				signal: AbortSignal.timeout(5000),
+			});
+			if (!res.ok) {
+				await res.body?.cancel();
+				continue;
+			}
+			const json = (await res.json()) as { data?: ScryfallCoverCard[] };
+			for (const card of json.data ?? []) byId.set(card.id, card);
+		}
+	} catch {
+		// Fall through with whatever resolved so far.
+	}
+	return byId;
 }
 
 /**
