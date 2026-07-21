@@ -11,6 +11,7 @@ import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { getQueueLength } from '@/lib/supabase/sync-queue';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { ProfileMenu } from './ProfileMenu';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import styles from './Navbar.module.css';
 
 export function NavbarDrawer() {
@@ -123,6 +124,8 @@ export function NavbarDrawer() {
 				</Link>
 
 				<div className={styles.drawerDivider} />
+
+				<LanguageSwitcher />
 
 				{authNode}
 			</nav>

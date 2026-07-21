@@ -12,6 +12,7 @@ import { getQueueLength } from '@/lib/supabase/sync-queue';
 import { SyncIndicator } from '@/lib/supabase/components/SyncIndicator/SyncIndicator';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { ProfileMenu } from './ProfileMenu';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { BRAND_FONT_FAMILY } from '@/fonts/brand';
 import styles from './Navbar.module.css';
 
@@ -106,6 +107,7 @@ export function Navbar() {
 				<div className={styles.syncSection}>
 					<SyncIndicator />
 				</div>
+				<LanguageSwitcher />
 				<div className={styles.authSection}>{authNode}</div>
 
 				{/* Hamburger + drawer — client only, no SSR to avoid hydration mismatch */}
