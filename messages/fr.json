@@ -217,7 +217,8 @@
 			"signIn": "Se connecter",
 			"changeAddress": "← Changer d'adresse",
 			"continueWithGoogle": "Continuer avec Google",
-			"orDivider": "ou"
+			"orDivider": "ou",
+			"emailComingSoon": "📪 La connexion par e-mail est momentanément indisponible — bientôt de retour. (Serveur mail en maintenance.)"
 		},
 		"error": {
 			"confirmationFailedTitle": "Lien invalide",

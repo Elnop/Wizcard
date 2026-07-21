@@ -217,7 +217,8 @@
 			"signIn": "Sign in",
 			"changeAddress": "← Change address",
 			"continueWithGoogle": "Continue with Google",
-			"orDivider": "or"
+			"orDivider": "or",
+			"emailComingSoon": "📪 Email sign-in is temporarily unavailable — back soon. (Mail server under maintenance.)"
 		},
 		"error": {
 			"confirmationFailedTitle": "Invalid link",
