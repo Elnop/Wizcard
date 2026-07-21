@@ -16,7 +16,7 @@ interface PinnedFeatureProps {
 	linkLabel?: string;
 	badge?: string;
 	side: 'left' | 'right';
-	renderDemo: (progress: number) => ReactNode;
+	renderDemo: (progress: number, isStatic: boolean) => ReactNode;
 }
 
 export function PinnedFeature({
@@ -64,7 +64,7 @@ export function PinnedFeature({
 						</Link>
 					) : null}
 				</div>
-				<div className={styles.demo}>{renderDemo(progress)}</div>
+				<div className={styles.demo}>{renderDemo(progress, isStatic)}</div>
 			</div>
 		</section>
 	);

@@ -15,6 +15,7 @@ const EditorDemo = dynamic(() => import('./demos/EditorDemo/EditorDemo').then((m
 
 export function FeatureSections() {
 	const t = useTranslations('landing');
+	const ts = useTranslations('search');
 	const discover = t('discover');
 
 	return (
@@ -27,7 +28,18 @@ export function FeatureSections() {
 				description={t('features.search.description')}
 				href="/search"
 				linkLabel={discover}
-				renderDemo={(p) => <SearchDemo progress={p} />}
+				renderDemo={(p, isStatic) => (
+					<SearchDemo
+						progress={p}
+						isStatic={isStatic}
+						labels={{
+							cards: ts('entityCards'),
+							decks: ts('entityDecks'),
+							profiles: ts('entityProfiles'),
+							profileType: ts('profileTypeLine'),
+						}}
+					/>
+				)}
 			/>
 			<PinnedFeature
 				index={2}
