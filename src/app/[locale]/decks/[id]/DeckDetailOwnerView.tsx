@@ -29,7 +29,7 @@ import { SampleHand } from './components/SampleHand/SampleHand';
 import { DeckCardOverlay } from './components/DeckCardOverlay/DeckCardOverlay';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import { DeckFooter } from './components/DeckFooter/DeckFooter';
-import { CardSearchPanel } from './components/CardSearchPanel/CardSearchPanel';
+import { CardSearchPanel } from '@/lib/search/components/CardSearchPanel/CardSearchPanel';
 import { Button } from '@/components/Button/Button';
 import { PlusIcon } from '@phosphor-icons/react';
 import { useAddDeckToCollection } from './useAddDeckToCollection';
