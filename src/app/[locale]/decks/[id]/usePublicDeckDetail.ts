@@ -40,7 +40,11 @@ export function usePublicDeckDetail(deckId: string) {
 				]);
 				if (cancelled) return;
 				setDeck(meta);
-				setDeckCards(cards);
+				// Le flag `proxy` est une info privée de l'owner (statut physique de
+				// SA collection). Un visiteur non-owner ne doit pas le voir → on le
+				// neutralise à la source, ce qui couvre d'un coup le badge grille, le
+				// badge modal et l'image du modal, tous en aval de `entry.proxy`.
+				setDeckCards(cards.map((c) => ({ ...c, entry: { ...c.entry, proxy: false } })));
 			} finally {
 				if (!cancelled) setIsLoading(false);
 			}
