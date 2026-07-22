@@ -48,17 +48,11 @@ import {
 } from './components/DeckBulkEditModal/DeckBulkEditModal';
 import { useDeckBulkSelection } from './useDeckBulkSelection';
 import { type CollectionAddRequest } from './collectionAddRequest';
-import { DeckPdfExportModal } from './components/DeckPdfExportModal/DeckPdfExportModal';
 import { DeckTextExportModal } from './components/DeckTextExportModal/DeckTextExportModal';
 import { ImportListIntoDeckModal } from './components/ImportListIntoDeckModal/ImportListIntoDeckModal';
 import { serializeDecklist } from '@/lib/deck/utils/serialize-decklist';
-import type { DeckPdfExportOptions } from '@/lib/pdf/types';
-import { PdfSettingsModal } from '@/components/PdfSettingsModal/PdfSettingsModal';
-import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
-import { filterCardsForPdf } from '@/lib/pdf/filterCardsForPdf';
-import { resolveLocalizedImageUris } from '@/lib/scryfall/utils/resolveLocalizedImageUri';
-import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
 import { useAnalytics } from '@/lib/analytics/context/AnalyticsContext';
+import { useDeckPdfExport } from './useDeckPdfExport';
 import { useDeckSort } from './useDeckSort';
 import { useDeckTokens } from './useDeckTokens';
 import { DeckSortBar } from './components/DeckSortBar/DeckSortBar';
@@ -68,7 +62,6 @@ import styles from './page.module.css';
 
 export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const t = useTranslations('decks');
-	const preferredLang = usePreferredCardLang();
 	const {
 		decks: allDecks,
 		updateDeck,
@@ -117,19 +110,11 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		null
 	);
 	const [addToCollectionModalOpen, setAddToCollectionModalOpen] = useState(false);
-	const [pdfExportModalOpen, setPdfExportModalOpen] = useState(false);
-	const [pdfSettingsModalOpen, setPdfSettingsModalOpen] = useState(false);
-	const [pdfExportOptions, setPdfExportOptions] = useState<DeckPdfExportOptions | null>(null);
-	const [pdfGenerating, setPdfGenerating] = useState(false);
 	const [textExportModalOpen, setTextExportModalOpen] = useState(false);
 	const [importListOpen, setImportListOpen] = useState(false);
 	const existingOracleIds = useMemo(
 		() => new Set(resolvedCards.map((c) => c.oracle_id ?? c.id)),
 		[resolvedCards]
-	);
-	const pdfFilteredCards = useMemo(
-		() => (pdfExportOptions ? filterCardsForPdf(resolvedCards, pdfExportOptions) : []),
-		[resolvedCards, pdfExportOptions]
 	);
 	const decklistText = useMemo(() => serializeDecklist(cardsByZone), [cardsByZone]);
 
@@ -146,10 +131,13 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		[showCommander]
 	);
 
-	const pdfZones: DeckZone[] = useMemo(
-		() => (cardsByZone.tokens.length > 0 ? [...zones, 'tokens'] : zones),
-		[zones, cardsByZone.tokens]
-	);
+	const { openPdfExport, pdfModals } = useDeckPdfExport({
+		resolvedCards,
+		cardsByZone,
+		zones,
+		deckName: deck?.name ?? '',
+		deckId,
+	});
 
 	const { sections, groupByCardId } = useDeckCardSections(
 		cardsByZone,
@@ -598,7 +586,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 						onAssignAllFromCollection={handleAssignAllFromCollection}
 						onAddAllToCollection={() => setAddToCollectionModalOpen(true)}
 						onImportList={() => setImportListOpen(true)}
-						onGeneratePdf={() => setPdfExportModalOpen(true)}
+						onGeneratePdf={openPdfExport}
 						onExportText={() => setTextExportModalOpen(true)}
 						selectMode={bulk.selectMode}
 						onToggleSelectMode={bulk.toggleMode}
@@ -714,18 +702,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				/>
 			)}
 
-			{pdfExportModalOpen && (
-				<DeckPdfExportModal
-					availableZones={pdfZones}
-					cards={resolvedCards}
-					onConfirm={(options) => {
-						setPdfExportOptions(options);
-						setPdfExportModalOpen(false);
-						setPdfSettingsModalOpen(true);
-					}}
-					onClose={() => setPdfExportModalOpen(false)}
-				/>
-			)}
+			{pdfModals}
 
 			{textExportModalOpen && (
 				<DeckTextExportModal
@@ -740,32 +717,6 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					deckId={deckId}
 					existingOracleIds={existingOracleIds}
 					onClose={() => setImportListOpen(false)}
-				/>
-			)}
-
-			{pdfSettingsModalOpen && pdfExportOptions && (
-				<PdfSettingsModal
-					cards={pdfFilteredCards}
-					generating={pdfGenerating}
-					onConfirm={(settings) => {
-						void (async () => {
-							setPdfGenerating(true);
-							try {
-								// Resolve localized images (cache hit → instant; miss → fetched
-								// via the shared Scryfall throttle, serialized and 429-safe).
-								const resolved = await Promise.all(
-									pdfFilteredCards.map((c) => resolveLocalizedImageUris(c, 'normal', preferredLang))
-								);
-								const imageUrls = resolved.flat().filter((url): url is string => !!url);
-								await generateCardsPdf(imageUrls, settings, `${deck.name}.pdf`);
-								analytics.track({ name: 'deck_exported', props: { deckId, format: 'pdf' } });
-								setPdfSettingsModalOpen(false);
-							} finally {
-								setPdfGenerating(false);
-							}
-						})();
-					}}
-					onClose={() => setPdfSettingsModalOpen(false)}
 				/>
 			)}
 

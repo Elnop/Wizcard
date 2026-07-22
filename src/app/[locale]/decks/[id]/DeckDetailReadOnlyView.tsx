@@ -22,6 +22,7 @@ import type { ResolvedDeckCard } from './useDeckDetail';
 import { useDeckCardSections, dedupeByOracle, type DeckGroupBy } from './useDeckCardSections';
 import { useDeckSort } from './useDeckSort';
 import { useCopyDeckToMyCollection } from './useCopyDeckToMyCollection';
+import { useDeckPdfExport } from './useDeckPdfExport';
 import { DeckHeader } from './components/DeckHeader/DeckHeader';
 import { DeckStats } from './components/DeckStats/DeckStats';
 import { SampleHand } from './components/SampleHand/SampleHand';
@@ -96,6 +97,14 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 
 	const { copyDeck, isCopying } = useCopyDeckToMyCollection();
 
+	const { openPdfExport, pdfModals } = useDeckPdfExport({
+		resolvedCards,
+		cardsByZone,
+		zones,
+		deckName: deck?.name ?? '',
+		deckId,
+	});
+
 	const handleCardClick = useCallback(
 		(card: AnyCard) => {
 			const c = card as ResolvedDeckCard;
@@ -158,6 +167,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 						deck={deck}
 						readOnly
 						ownerNickname={ownerNickname}
+						onGeneratePdf={openPdfExport}
 						onExportText={() => setTextExportModalOpen(true)}
 					/>
 
@@ -223,6 +233,8 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 					onClose={() => setTextExportModalOpen(false)}
 				/>
 			)}
+
+			{pdfModals}
 
 			<DeckFooter stats={stats} format={deck.format} warnings={warnings} />
 
