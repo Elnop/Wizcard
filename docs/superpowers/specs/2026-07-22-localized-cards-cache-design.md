@@ -83,22 +83,31 @@ script npm sur la machine dev                 useCollectionCards → CardStack[]
 
 ### 1. Table `localized_cards` (migration Supabase)
 
-Clé primaire composite `(set, collector_number, lang)` — c'est la clé de cache déjà utilisée
-côté client (`set/collector_number/lang`).
+**Clé primaire composite `(set, collector_number, lang)`** — c'est la clé de cache déjà utilisée
+côté client (`set/collector_number/lang`), et **la seule que le client possède au moment de lire**.
+Le client ne connaît PAS l'UUID du print _localisé_ (il détient l'UUID du print de collection, souvent
+une autre langue/édition) : c'est justement ce qu'il vient chercher. La lecture batch se fait donc par
+le triplet, jamais par UUID. `scryfall_id` est stocké pour la **traçabilité/l'unicité**, pas comme clé
+d'accès.
 
 Colonnes, **nommées exactement comme Scryfall** :
 
 | Colonne            | Type        | Notes                                                                                                                                                                                                                   |
 | ------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `set`              | text        | partie 1 de la clé                                                                                                                                                                                                      |
-| `collector_number` | text        | partie 2 de la clé                                                                                                                                                                                                      |
-| `lang`             | text        | partie 3 de la clé ; toujours ≠ `en`                                                                                                                                                                                    |
+| `set`              | text        | partie 1 de la PK                                                                                                                                                                                                       |
+| `collector_number` | text        | partie 2 de la PK                                                                                                                                                                                                       |
+| `lang`             | text        | partie 3 de la PK ; toujours ≠ `en`                                                                                                                                                                                     |
+| `scryfall_id`      | uuid        | `UNIQUE NOT NULL` — UUID du **print localisé** exact (le `id` Scryfall de cette impression FR/etc.). Traçabilité « d'où vient cette ligne » + clé stable de Scryfall. **Pas** la clé de lecture (voir ci-dessus).       |
+| `oracle_id`        | uuid        | Identité **gameplay** de la carte (partagée par tous prints/langues). Liaison vers les autres data « carte », cross-édition/langue. Indexé.                                                                             |
 | `card_faces`       | jsonb       | **Toujours** un tableau de **1 ou 2 entrées** (Option 1, jamais NULL). Chaque entrée : `{ image_uris, printed_name, printed_type_line, printed_text }` — noms Scryfall. Mono-face = 1 entrée ; transform/modal_dfc = 2. |
 | `updated_at`       | timestamptz | date du dernier upsert                                                                                                                                                                                                  |
 
 `image_uris` d'une entrée = `{ small, normal, large, png, art_crop, border_crop }` (objet Scryfall).
 Aucune colonne racine `image_uris` / `printed_*` séparée — tout passe par `card_faces` (voir
 « Faces normalisées » en § Périmètre).
+
+Le seed extrait `scryfall_id` (le `id` de l'objet Scryfall) et `oracle_id` (son `oracle_id`) en même
+temps que les faces. Ces deux ids n'entrent PAS dans la clé de lecture : le client lit par triplet.
 
 - **RLS** : `SELECT` autorisé à tous, **y compris `anon`** (un deck public doit être consultable
   sans login ; ce sont des URLs d'images publiques, pas de données privées). **Aucune policy
@@ -123,6 +132,7 @@ prod self-hosted Coolify — la même que pour appliquer les migrations idempote
    - ignorer si `lang === 'en'`.
    - ignorer si pas de scan réel (`image_status` placeholder/missing) — sauf DFC dont au moins
      une face a un scan réel.
+   - extraire `scryfall_id` (le `id` de l'objet) et `oracle_id` (son `oracle_id`).
    - **normaliser en `card_faces`** (Option 1) : si l'objet Scryfall a `image_uris`/`printed_*` à
      la racine (mono-face, ou split/flip/adventure à image unique) → produire **1 entrée**
      `{ image_uris, printed_name, printed_type_line, printed_text }`. S'il a des `card_faces` avec
