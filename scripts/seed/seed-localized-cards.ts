@@ -31,9 +31,15 @@ if (!SUPABASE_SERVICE_ROLE_KEY && !dryRun) {
 	process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-	auth: { persistSession: false },
-});
+let _supabase: ReturnType<typeof createClient> | null = null;
+function getSupabase() {
+	if (!_supabase) {
+		_supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+			auth: { persistSession: false },
+		});
+	}
+	return _supabase;
+}
 
 async function bulkUrl(): Promise<string> {
 	const res = await fetch(BULK_META_URL, {
@@ -54,7 +60,7 @@ async function bulkUrl(): Promise<string> {
 
 async function flush(rows: LocalizedCardRow[]): Promise<void> {
 	if (rows.length === 0 || dryRun) return;
-	const { error } = await supabase
+	const { error } = await getSupabase()
 		.from('localized_cards')
 		.upsert(rows, { onConflict: 'set,collector_number,lang' });
 	if (error) throw new Error(`upsert failed: ${error.message}`);
