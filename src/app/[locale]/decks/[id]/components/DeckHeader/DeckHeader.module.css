@@ -64,6 +64,22 @@
 	margin: 0;
 }
 
+.byline {
+	font-size: var(--text-sm);
+	color: var(--text-muted);
+	margin: 0;
+}
+
+.bylineLink {
+	color: var(--gold);
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.bylineLink:hover {
+	text-decoration: underline;
+}
+
 .nameInput {
 	padding: 8px 12px;
 	background: rgba(255, 255, 255, 0.04);

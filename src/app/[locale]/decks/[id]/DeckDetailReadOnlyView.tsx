@@ -41,6 +41,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 	const { user } = useAuth();
 	const {
 		deck,
+		ownerNickname,
 		cardsByZone,
 		resolvedCards,
 		stats,
@@ -153,7 +154,12 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 			</div>
 			<div className={styles.layout}>
 				<div className={styles.content}>
-					<DeckHeader deck={deck} readOnly onExportText={() => setTextExportModalOpen(true)} />
+					<DeckHeader
+						deck={deck}
+						readOnly
+						ownerNickname={ownerNickname}
+						onExportText={() => setTextExportModalOpen(true)}
+					/>
 
 					{user && (
 						<div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>

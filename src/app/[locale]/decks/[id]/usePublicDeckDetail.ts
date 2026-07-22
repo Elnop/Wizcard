@@ -6,6 +6,7 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckMeta, DeckZone } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { fetchDeckMetaById, fetchDeckCards } from '@/lib/deck/db/decks';
+import { fetchProfile } from '@/lib/profile/db/profiles';
 import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
 import { computeDeckStats, type DeckStats } from '@/lib/deck/utils/deck-stats';
 import { pickCoverArt } from '@/lib/deck/utils/pick-cover-art';
@@ -21,6 +22,7 @@ type DeckCard = { scryfallId: string; entry: CardEntry };
  */
 export function usePublicDeckDetail(deckId: string) {
 	const [deck, setDeck] = useState<DeckMeta | null>(null);
+	const [ownerNickname, setOwnerNickname] = useState<string | null>(null);
 	const [deckCards, setDeckCards] = useState<DeckCard[]>([]);
 	const [scryfallCards, setScryfallCards] = useState<Record<string, ScryfallCard>>({});
 	const resolvedIdsRef = useRef<Set<string>>(new Set());
@@ -54,6 +56,30 @@ export function usePublicDeckDetail(deckId: string) {
 			cancelled = true;
 		};
 	}, [deckId]);
+
+	// Resolve the owner's public nickname for the "by <author>" byline / profile
+	// link. Precons (source 'mtgjson') have no owner → ownerId is null → no byline.
+	// The deck is only visible to a non-owner when the owner's profile is public,
+	// so linking to /users/<nickname> here is always safe.
+	useEffect(() => {
+		const ownerId = deck?.ownerId;
+		let cancelled = false;
+		// No owner (precon) resolves to a null nickname via the same async path, so
+		// the reset never runs synchronously in the effect body.
+		const resolve = ownerId
+			? fetchProfile(ownerId).then((profile) => profile?.nickname ?? null)
+			: Promise.resolve<string | null>(null);
+		void resolve
+			.then((nickname) => {
+				if (!cancelled) setOwnerNickname(nickname);
+			})
+			.catch(() => {
+				if (!cancelled) setOwnerNickname(null);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [deck?.ownerId]);
 
 	// Resolve Scryfall data for all unique scryfall IDs
 	useEffect(() => {
@@ -142,6 +168,7 @@ export function usePublicDeckDetail(deckId: string) {
 
 	return {
 		deck,
+		ownerNickname,
 		cardsByZone,
 		resolvedCards,
 		stats,

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { DeckMeta } from '@/types/decks';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/Button/Button';
+import { Link } from '@/i18n/navigation';
 import styles from './DeckHeader.module.css';
 
 type Props = {
@@ -22,6 +23,12 @@ type Props = {
 	onVisibilityChange?: (isPublic: boolean) => void;
 	/** Owner's profile visibility — a public deck under a private profile stays hidden. */
 	profileIsPublic?: boolean;
+	/**
+	 * Owner's public nickname, shown as a "by <nickname>" byline linking to their
+	 * profile. Only supplied by the read-only (visitor) view; null for precons or
+	 * when the owner has no nickname.
+	 */
+	ownerNickname?: string | null;
 };
 
 export function DeckHeader({
@@ -37,6 +44,7 @@ export function DeckHeader({
 	readOnly = false,
 	onVisibilityChange,
 	profileIsPublic = true,
+	ownerNickname,
 }: Props) {
 	const t = useTranslations('decks');
 	const [isEditing, setIsEditing] = useState(false);
@@ -115,6 +123,20 @@ export function DeckHeader({
 				</span>
 				<h1 className={styles.name}>{deck.name}</h1>
 			</div>
+			{ownerNickname && (
+				<p className={styles.byline}>
+					{t.rich('byAuthor', {
+						author: () => (
+							<Link
+								href={`/users/${encodeURIComponent(ownerNickname)}`}
+								className={styles.bylineLink}
+							>
+								{ownerNickname}
+							</Link>
+						),
+					})}
+				</p>
+			)}
 			<div className={styles.rule} aria-hidden="true">
 				<span className={styles.ruleDiamond}>◆</span>
 			</div>
