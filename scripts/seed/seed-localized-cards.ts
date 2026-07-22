@@ -12,7 +12,7 @@
 // En prod : renseigner SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY de la prod avant de lancer.
 
 import { createInterface } from 'node:readline';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { toLocalizedCardRow, type LocalizedCardRow } from './normalize-localized-card';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
@@ -31,7 +31,7 @@ if (!SUPABASE_SERVICE_ROLE_KEY && !dryRun) {
 	process.exit(1);
 }
 
-let _supabase: ReturnType<typeof createClient> | null = null;
+let _supabase: SupabaseClient | null = null;
 function getSupabase() {
 	if (!_supabase) {
 		_supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
