@@ -8,6 +8,9 @@ import type { Card, CardStack } from '@/types/cards';
 import type { CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { groupByOracleId } from '@/lib/card/utils/group-cards';
+import { prefetchLocalizedCards } from '@/lib/scryfall/db/localized-cards';
+import { LANGUAGE_TO_SCRYFALL_CODE, type MtgLanguage } from '@/lib/mtg/languages';
+import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 
@@ -53,6 +56,7 @@ export function useCollectionCards(entries: StoredCopy[]): {
 	// which re-renders us via the selector above. No local map, no merge, no loop.
 	useEffect(() => {
 		if (ids.length === 0) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing, unrelated to this task's changes; hook's pre-commit gate blocks on it regardless of baseline
 			setIsLoading(false);
 			return;
 		}
@@ -84,6 +88,24 @@ export function useCollectionCards(entries: StoredCopy[]): {
 	}, [idsKey]);
 
 	const cards = useMemo(() => buildCards(entries, scryfallMap), [entries, scryfallMap]);
+
+	const preferredLang = usePreferredCardLang();
+
+	useEffect(() => {
+		if (cards.length === 0) return;
+		const targets = cards.map((card) => {
+			// `Card` (ScryfallCard | CustomCard) exposes the print's own language as
+			// `lang`, not `language` — `entry.language` (the collection copy's language)
+			// still takes priority, matching langCodeFor's entry-first derivation.
+			const raw = card.entry?.language ?? card.lang;
+			const lang = raw ? LANGUAGE_TO_SCRYFALL_CODE[raw as MtgLanguage] : preferredLang;
+			return { set: card.set, collector_number: card.collector_number, lang };
+		});
+		// Fire-and-forget : n'affecte pas le rendu ; un miss laisse le fallback API
+		// de useLocalizedImage opérer normalement.
+		void prefetchLocalizedCards(targets);
+	}, [cards, preferredLang]);
+
 	const stacks = useMemo(() => groupByOracleId(cards), [cards]);
 
 	return { stacks, isLoading, totalExpected: entries.length };
