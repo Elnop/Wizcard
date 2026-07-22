@@ -10,6 +10,7 @@ import {
 import { useProfileStore } from '@/lib/profile/store/profile-store';
 import type { MtgLanguage } from '@/lib/mtg/languages';
 import type { ScryfallImageUris, ScryfallCardFace } from '@/lib/scryfall/types/scryfall';
+import type { CachedLocalizedImage } from '@/lib/scryfall/utils/card-cache';
 
 export interface LocalizedImageResult {
 	image_uris?: ScryfallImageUris;
@@ -52,20 +53,61 @@ function needsLocalization(card: LocalizedImageCard, lang: string | undefined): 
 }
 
 function cachedToResult(cached: {
-	image_uris?: ScryfallImageUris;
-	face_image_uris?: (ScryfallImageUris | undefined)[];
+	card_faces?: Array<{
+		image_uris?: ScryfallImageUris;
+		printed_name?: string;
+		printed_type_line?: string;
+		printed_text?: string;
+	}>;
 }): LocalizedImageResult {
+	const faces = cached.card_faces ?? [];
+	// 1 face → image_uris racine (mono-face : ce que resolveImageUri lit par défaut).
+	// 2+ faces → card_faces (DFC : computeIsDoubleFaced + resolveImageUri lisent card_faces).
+	if (faces.length <= 1) {
+		return { image_uris: faces[0]?.image_uris };
+	}
 	return {
-		image_uris: cached.image_uris,
-		card_faces: cached.face_image_uris
-			? cached.face_image_uris.map((uris) => ({
-					object: 'card_face' as const,
-					mana_cost: '',
-					name: '',
-					image_uris: uris,
-				}))
-			: undefined,
+		card_faces: faces.map((f) => ({
+			object: 'card_face' as const,
+			mana_cost: '',
+			name: '',
+			image_uris: f.image_uris,
+			printed_name: f.printed_name,
+			printed_type_line: f.printed_type_line,
+			printed_text: f.printed_text,
+		})),
 	};
+}
+
+/** Normalise un ScryfallCard en tableau card_faces uniforme (Option 1) pour le cache. */
+function toCachedFaces(card: {
+	image_uris?: ScryfallImageUris;
+	printed_name?: string;
+	printed_type_line?: string;
+	printed_text?: string;
+	card_faces?: ScryfallCardFace[];
+}): CachedLocalizedImage['card_faces'] {
+	if (card.image_uris) {
+		return [
+			{
+				image_uris: card.image_uris,
+				printed_name: card.printed_name,
+				printed_type_line: card.printed_type_line,
+				printed_text: card.printed_text,
+			},
+		];
+	}
+	if (card.card_faces?.some((f) => f.image_uris)) {
+		return card.card_faces
+			.filter((f) => f.image_uris)
+			.map((f) => ({
+				image_uris: f.image_uris,
+				printed_name: f.printed_name,
+				printed_type_line: f.printed_type_line,
+				printed_text: f.printed_text,
+			}));
+	}
+	return [];
 }
 
 /**
@@ -118,11 +160,10 @@ export async function fetchLocalizedImage(
 			return null;
 		}
 
-		// 3. Persist to IndexedDB
+		// 3. Persist to IndexedDB (format card_faces uniforme)
 		void putLocalizedImageInCache({
 			key: cacheKey,
-			image_uris: localized.image_uris,
-			face_image_uris: localized.card_faces?.map((f) => f.image_uris),
+			card_faces: toCachedFaces(localized),
 			cachedAt: Date.now(),
 		});
 
@@ -178,8 +219,7 @@ export async function fetchEnglishImage(
 
 		void putLocalizedImageInCache({
 			key: cacheKey,
-			image_uris: english.image_uris,
-			face_image_uris: english.card_faces?.map((f) => f.image_uris),
+			card_faces: toCachedFaces(english),
 			cachedAt: Date.now(),
 		});
 

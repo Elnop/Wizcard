@@ -20,8 +20,14 @@ interface CachedCollectionEntry {
 /** Cached localized image URIs, keyed by "set/collector_number/lang". */
 export interface CachedLocalizedImage {
 	key: string; // keyPath — "set/collector_number/lang"
-	image_uris?: ScryfallImageUris;
-	face_image_uris?: (ScryfallImageUris | undefined)[];
+	// Faces normalisées (Option 1) : toujours 1 ou 2 entrées quand la carte a un
+	// scan localisé. Absent pour une entrée `missing`. Noms Scryfall.
+	card_faces?: Array<{
+		image_uris?: ScryfallImageUris;
+		printed_name?: string;
+		printed_type_line?: string;
+		printed_text?: string;
+	}>;
 	cachedAt: number;
 	/**
 	 * True when Scryfall has no print in that language (404). Persisting the
@@ -51,7 +57,7 @@ function openDB(): Promise<IDBDatabase> {
 	if (dbPromise) return dbPromise;
 
 	dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
-		const request = indexedDB.open(DB_NAME, 3);
+		const request = indexedDB.open(DB_NAME, 4);
 
 		request.onupgradeneeded = (event) => {
 			const db = request.result;
@@ -63,11 +69,10 @@ function openDB(): Promise<IDBDatabase> {
 			}
 			if (!db.objectStoreNames.contains(LOCALIZED_IMAGE_STORE)) {
 				db.createObjectStore(LOCALIZED_IMAGE_STORE, { keyPath: 'key' });
-			} else if (event.oldVersion < 3) {
-				// v3: localized-image entries written before placeholder filtering may
-				// hold a "Localized Image Not Available" placeholder (no image_status
-				// was stored to detect it). Clear the store so they are re-fetched and
-				// re-filtered on next access.
+			} else if (event.oldVersion < 4) {
+				// v4: le format d'une entrée localisée passe de `face_image_uris` (nom
+				// non-Scryfall) à `card_faces` uniforme. Purge l'ancien format ; le cache
+				// se re-remplit au prochain accès (seed serveur ou fallback API).
 				request.transaction!.objectStore(LOCALIZED_IMAGE_STORE).clear();
 			}
 		};
