@@ -32,6 +32,8 @@ create index if not exists localized_cards_oracle_id_idx
 -- lang est toujours non-anglais dans cette table (l'anglais ne déclenche jamais de
 -- localisation côté client).
 alter table public.localized_cards
+  drop constraint if exists localized_cards_lang_not_en;
+alter table public.localized_cards
   add constraint localized_cards_lang_not_en check (lang <> 'en');
 
 -- Lecture publique : un deck public doit être consultable sans login ; ce sont des
