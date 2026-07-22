@@ -55,6 +55,23 @@ sur les trous (éditions très récentes, gap entre deux seeds). **Aucun nouveau
   besoin, se lit sans branche, garde des noms Scryfall (`card_faces`, `image_uris`, `printed_*`),
   et concentre la seule complexité (racine → face unique) dans le seed, pas dans les lecteurs.
 
+- **Qualité d'image `image_status` (amendement post-livraison).** Scryfall expose sur chaque
+  carte un `image_status` (`missing`/`placeholder`/`lowres`/`highres_scan`) : la **qualité** du
+  scan, et le marqueur qui distingue une vraie image d'un placeholder gris (« Localized Image Not
+  Available ») servi à une URL 200 valide. Deux exigences :
+  - **Filtrage placeholder — corrigé pour les DFC.** Le seed rejette déjà les placeholders à la
+    racine via `hasRealScan(card.image_status)`. Les DFC se fiaient à tort à la seule présence de
+    `image_uris` par face (un placeholder DFC a une URL valide → passait le filtre). Comme
+    `image_status` est au **niveau carte** chez Scryfall (pas par face), on gate les faces DFC avec
+    le **même** `hasRealScan(card.image_status)` que la racine.
+  - **`image_status` sauvegardé et propagé (Usage B, transport seul).** La qualité est une donnée
+    utile (préférer/re-seeder les scans HD, décider d'un fallback anglais HD quand la localisation
+    est `lowres`). On la stocke (colonne `image_status not null` — en pratique `lowres`/`highres_scan`
+    puisque `missing`/`placeholder` sont filtrés) et on la propage sur **tout** le chemin :
+    table → query → cache IndexedDB → `LocalizedImageResult`, de sorte qu'elle soit **disponible au
+    rendu**. On NE modifie PAS encore la logique de fallback de `CardImage` dans ce chantier
+    (transport seul, zéro régression) — le branchement effectif (préférer HD) est un follow-up.
+
 ### Hors scope (follow-ups)
 
 - Rendu progressif de la grille (`isFullyLoaded` dans `collection-store`) — chantier orthogonal.
@@ -62,6 +79,13 @@ sur les trous (éditions très récentes, gap entre deux seeds). **Aucun nouveau
 - Réchauffage du cache via le fallback client (« A' ») — rendu inutile par le seed bulk.
 - **Unification globale du nommage Scryfall à l'échelle du codebase** — chantier de refactoring
   dédié, à brainstormer séparément. Ce spec unifie _uniquement_ le chemin des données localisées.
+- **Brancher `CardImage` sur le `image_status` localisé** — utiliser la qualité désormais
+  transportée pour préférer un fallback anglais HD quand la localisation affichée est `lowres`
+  (aujourd'hui `CardImage` teste le `image_status` du print de base, pas celui de la localisation).
+  Follow-up dédié : touche la logique de rendu, à tester pour non-régression.
+- **Cross-product non borné de `fetchLocalizedCardRows`** — le `.in(set).in(lang)` peut dépasser
+  les limites d'URL PostgREST sur une grosse collection (→ prefetch no-op silencieux). Chunker
+  par set ou filtre `or=(and(...))` par lots. Follow-up (dégrade proprement, non bloquant).
 
 ## Flux
 
