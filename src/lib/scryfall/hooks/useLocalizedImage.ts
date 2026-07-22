@@ -36,7 +36,7 @@ const notFound = new Set<string>();
  * (settings). That print may not exist — Scryfall then 404s and the caller keeps
  * the card's default (English) image, which is the intended fallback.
  */
-function langCodeFor(card: LocalizedImageCard, preferredLang?: string): string | undefined {
+export function langCodeFor(card: LocalizedImageCard, preferredLang?: string): string | undefined {
 	const language = card.entry?.language ?? card.language;
 	if (!language) return preferredLang;
 	return LANGUAGE_TO_SCRYFALL_CODE[language as MtgLanguage];

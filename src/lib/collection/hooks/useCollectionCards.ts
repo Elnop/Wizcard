@@ -9,8 +9,7 @@ import type { CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { groupByOracleId } from '@/lib/card/utils/group-cards';
 import { prefetchLocalizedCards } from '@/lib/scryfall/db/localized-cards';
-import { LANGUAGE_TO_SCRYFALL_CODE, type MtgLanguage } from '@/lib/mtg/languages';
-import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
+import { usePreferredCardLang, langCodeFor } from '@/lib/scryfall/hooks/useLocalizedImage';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 
@@ -94,11 +93,11 @@ export function useCollectionCards(entries: StoredCopy[]): {
 	useEffect(() => {
 		if (cards.length === 0) return;
 		const targets = cards.map((card) => {
-			// `Card` (ScryfallCard | CustomCard) exposes the print's own language as
-			// `lang`, not `language` — `entry.language` (the collection copy's language)
-			// still takes priority, matching langCodeFor's entry-first derivation.
-			const raw = card.entry?.language ?? card.lang;
-			const lang = raw ? LANGUAGE_TO_SCRYFALL_CODE[raw as MtgLanguage] : preferredLang;
+			// Single source of truth shared with useLocalizedImage's display path:
+			// entry.language (display name) → mapped code; else the profile's
+			// preferred language. `card.lang` (the print's own Scryfall code) is
+			// intentionally never fed to this derivation — see langCodeFor.
+			const lang = langCodeFor(card, preferredLang);
 			return { set: card.set, collector_number: card.collector_number, lang };
 		});
 		// Fire-and-forget : n'affecte pas le rendu ; un miss laisse le fallback API
