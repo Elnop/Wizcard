@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import type { ScryfallImageUris } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallImageUris, ScryfallImageStatus } from '@/lib/scryfall/types/scryfall';
 
 /**
  * Raw Supabase access for `localized_cards`. Ce fichier est le SEUL endroit qui
@@ -23,6 +23,7 @@ export interface LocalizedCardDbRow {
 	lang: string;
 	scryfall_id: string;
 	oracle_id: string | null;
+	image_status: ScryfallImageStatus;
 	card_faces: LocalizedFaceRow[];
 }
 
@@ -42,7 +43,7 @@ export async function fetchLocalizedCardRows(
 
 	const { data, error } = await supabase
 		.from('localized_cards')
-		.select('set, collector_number, lang, scryfall_id, oracle_id, card_faces')
+		.select('set, collector_number, lang, scryfall_id, oracle_id, image_status, card_faces')
 		.in('set', sets)
 		.in('lang', langs);
 

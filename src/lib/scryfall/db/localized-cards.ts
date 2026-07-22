@@ -55,6 +55,7 @@ export async function prefetchLocalizedCards(cards: PrefetchCard[]): Promise<voi
 			putLocalizedImageInCache({
 				key: `${r.set}/${r.collector_number}/${r.lang}`,
 				card_faces: r.card_faces,
+				image_status: r.image_status,
 				cachedAt: Date.now(),
 			})
 		)

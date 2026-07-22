@@ -9,12 +9,17 @@ import {
 } from '@/lib/scryfall/utils/card-cache';
 import { useProfileStore } from '@/lib/profile/store/profile-store';
 import type { MtgLanguage } from '@/lib/mtg/languages';
-import type { ScryfallImageUris, ScryfallCardFace } from '@/lib/scryfall/types/scryfall';
+import type {
+	ScryfallImageUris,
+	ScryfallCardFace,
+	ScryfallImageStatus,
+} from '@/lib/scryfall/types/scryfall';
 import type { CachedLocalizedImage } from '@/lib/scryfall/utils/card-cache';
 
 export interface LocalizedImageResult {
 	image_uris?: ScryfallImageUris;
 	card_faces?: ScryfallCardFace[];
+	image_status?: ScryfallImageStatus;
 }
 
 export interface LocalizedImageCard {
@@ -59,14 +64,16 @@ function cachedToResult(cached: {
 		printed_type_line?: string;
 		printed_text?: string;
 	}>;
+	image_status?: ScryfallImageStatus;
 }): LocalizedImageResult {
 	const faces = cached.card_faces ?? [];
 	// 1 face → image_uris racine (mono-face : ce que resolveImageUri lit par défaut).
 	// 2+ faces → card_faces (DFC : computeIsDoubleFaced + resolveImageUri lisent card_faces).
 	if (faces.length <= 1) {
-		return { image_uris: faces[0]?.image_uris };
+		return { image_uris: faces[0]?.image_uris, image_status: cached.image_status };
 	}
 	return {
+		image_status: cached.image_status,
 		card_faces: faces.map((f) => ({
 			object: 'card_face' as const,
 			mana_cost: '',
@@ -164,10 +171,15 @@ export async function fetchLocalizedImage(
 		void putLocalizedImageInCache({
 			key: cacheKey,
 			card_faces: toCachedFaces(localized),
+			image_status: localized.image_status,
 			cachedAt: Date.now(),
 		});
 
-		return { image_uris: localized.image_uris, card_faces: localized.card_faces };
+		return {
+			image_uris: localized.image_uris,
+			card_faces: localized.card_faces,
+			image_status: localized.image_status,
+		};
 	} catch (e) {
 		// Aborted requests (card left viewport, component unmounted) are not errors —
 		// don't blacklist the cache key so the image can be retried next time.
@@ -220,10 +232,15 @@ export async function fetchEnglishImage(
 		void putLocalizedImageInCache({
 			key: cacheKey,
 			card_faces: toCachedFaces(english),
+			image_status: english.image_status,
 			cachedAt: Date.now(),
 		});
 
-		return { image_uris: english.image_uris, card_faces: english.card_faces };
+		return {
+			image_uris: english.image_uris,
+			card_faces: english.card_faces,
+			image_status: english.image_status,
+		};
 	} catch (e) {
 		if (e instanceof DOMException && e.name === 'AbortError') return null;
 		notFound.add(cacheKey);
