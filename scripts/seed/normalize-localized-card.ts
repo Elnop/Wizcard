@@ -3,7 +3,11 @@
 // Toute la logique de discrimination (racine vs faces, selon le layout Scryfall)
 // vit ICI — les lecteurs itèrent card_faces sans jamais tester "racine ou faces".
 
-import type { ScryfallCard, ScryfallImageUris } from '@/lib/scryfall/types/scryfall';
+import type {
+	ScryfallCard,
+	ScryfallImageUris,
+	ScryfallImageStatus,
+} from '@/lib/scryfall/types/scryfall';
 import { hasRealScan } from '@/lib/scryfall/types/scryfall';
 
 export interface LocalizedFace {
@@ -19,6 +23,7 @@ export interface LocalizedCardRow {
 	lang: string;
 	scryfall_id: string;
 	oracle_id: string | null;
+	image_status: ScryfallImageStatus;
 	card_faces: LocalizedFace[];
 }
 
@@ -48,9 +53,15 @@ export function toLocalizedCardRow(card: ScryfallCard): LocalizedCardRow | null 
 				printed_text: card.printed_text,
 			});
 		}
-	} else if (card.card_faces && card.card_faces.some((f) => f.image_uris)) {
-		// Faces : deux images physiques (transform, modal_dfc). On ne garde que les
-		// faces qui portent réellement une image.
+	} else if (
+		hasRealScan(card.image_status) &&
+		card.card_faces &&
+		card.card_faces.some((f) => f.image_uris)
+	) {
+		// Faces : deux images physiques (transform, modal_dfc). image_status est au
+		// niveau CARTE chez Scryfall (pas par face) → on gate ici avec le MÊME
+		// hasRealScan(card.image_status) que la racine, sinon un placeholder DFC
+		// (servi à une URL 200 valide) passerait le filtre.
 		for (const f of card.card_faces) {
 			if (!f.image_uris) continue;
 			faces.push({
@@ -60,8 +71,6 @@ export function toLocalizedCardRow(card: ScryfallCard): LocalizedCardRow | null 
 				printed_text: f.printed_text,
 			});
 		}
-		// card_faces sans image_status propre : on se fie à la présence d'image_uris
-		// (un placeholder par face n'expose pas d'URL réelle dans le bulk).
 	}
 
 	if (faces.length === 0) return null;
@@ -72,6 +81,7 @@ export function toLocalizedCardRow(card: ScryfallCard): LocalizedCardRow | null 
 		lang: card.lang,
 		scryfall_id: card.id,
 		oracle_id: card.oracle_id ?? null,
+		image_status: card.image_status,
 		card_faces: faces,
 	};
 }

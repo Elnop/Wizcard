@@ -12,12 +12,16 @@
 -- de colonne racine image_uris/printed_* séparée). Mono-face = 1 entrée ; carte à deux
 -- images physiques (transform, modal_dfc) = 2 entrées. Chaque entrée porte
 -- { image_uris, printed_name, printed_type_line, printed_text } (noms Scryfall).
+--
+-- image_status : qualité du scan Scryfall (niveau carte). Jamais missing/placeholder
+-- (filtrés au seed) → en pratique 'lowres' ou 'highres_scan'. not null.
 create table if not exists public.localized_cards (
   set text not null,
   collector_number text not null,
   lang text not null,
   scryfall_id uuid not null,
   oracle_id uuid,
+  image_status text not null,
   card_faces jsonb not null,
   updated_at timestamptz not null default now(),
   primary key (set, collector_number, lang)
@@ -48,3 +52,11 @@ create policy localized_cards_select_all
   using (true);
 
 grant select on public.localized_cards to anon, authenticated;
+
+-- Écriture : service_role BYPASS la RLS mais Postgres exige quand même un GRANT de
+-- table (rolbypassrls ne dispense pas des privilèges ACL). Sans ce grant, le seed
+-- (upsert via service-role key) échoue avec "permission denied for table
+-- localized_cards" — constaté en local, cf. le même trou pré-existant sur
+-- custom_cards. select est nécessaire pour la résolution on-conflict de l'upsert.
+-- Seul service_role écrit (aucune policy insert/update/delete).
+grant select, insert, update on public.localized_cards to service_role;
