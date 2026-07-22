@@ -41,6 +41,19 @@ sur les trous (éditions très récentes, gap entre deux seeds). **Aucun nouveau
 - **Noms de champs = noms Scryfall à l'identique**, sur tout le chemin des données localisées
   (table → seed → lecture → cache client → consommation). Inclut le renommage du cache client
   existant `face_image_uris → card_faces`.
+- **Faces normalisées (Option 1)** : les images/textes vivent **toujours** dans un unique tableau
+  `card_faces` de **1 ou 2 entrées**, jamais dans des champs racine séparés. Une carte mono-face
+  = 1 entrée ; une carte à deux images physiques (transform, modal_dfc) = 2 entrées. Le seed
+  normalise à l'écriture ; tout lecteur itère `card_faces` sans jamais tester « racine ou faces ».
+
+  **Pourquoi pas le miroir Scryfall strict.** Chez Scryfall, la place des `image_uris` dépend du
+  `layout` : à la racine pour split/flip/adventure (une image physique) et mono-face ; **dans
+  `card_faces[]`** pour transform/modal_dfc (deux images physiques). Reproduire ça imposerait à
+  chaque lecteur de refaire la logique `layout` et laisserait une colonne systématiquement NULL.
+  Le cache localisé n'est pas un miroir de Scryfall (exclu — cf. follow-up « objet complet ») :
+  son job est de fournir les **faces à afficher**. Un `card_faces` uniforme sert exactement ce
+  besoin, se lit sans branche, garde des noms Scryfall (`card_faces`, `image_uris`, `printed_*`),
+  et concentre la seule complexité (racine → face unique) dans le seed, pas dans les lecteurs.
 
 ### Hors scope (follow-ups)
 
@@ -60,8 +73,8 @@ script npm sur la machine dev                 useCollectionCards → CardStack[]
   └─ download all_cards .jsonl.gz (scryfall.io)  └─ 1 requête batch → localized_cards
   └─ stream ligne par ligne (jamais tout en RAM) └─ injecte les hits dans le cache IndexedDB
   └─ filtre lang≠en + scan réel (hasRealScan)       (store `localized-images`, format Scryfall)
-  └─ extrait set/number/lang → image_uris,        └─ useLocalizedImage lit le cache chaud
-     printed_*, card_faces                              → 0 fetch api.scryfall.com
+  └─ normalise en card_faces (1 ou 2 entrées)     └─ useLocalizedImage lit le cache chaud
+     { image_uris, printed_* } par face                → 0 fetch api.scryfall.com
   └─ UPSERT idempotent en prod (batch)            miss → fallback API actuel (INCHANGÉ)
      ON CONFLICT (set, collector_number, lang)
 ```
@@ -75,17 +88,17 @@ côté client (`set/collector_number/lang`).
 
 Colonnes, **nommées exactement comme Scryfall** :
 
-| Colonne             | Type        | Notes                                                                                                                                                   |
-| ------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `set`               | text        | partie 1 de la clé                                                                                                                                      |
-| `collector_number`  | text        | partie 2 de la clé                                                                                                                                      |
-| `lang`              | text        | partie 3 de la clé ; toujours ≠ `en`                                                                                                                    |
-| `image_uris`        | jsonb       | `{ small, normal, large, png, art_crop, border_crop }` (Scryfall). NULL pour les DFC.                                                                   |
-| `printed_name`      | text        | NULL pour les DFC (le texte vit dans `card_faces`)                                                                                                      |
-| `printed_type_line` | text        | idem                                                                                                                                                    |
-| `printed_text`      | text        | idem                                                                                                                                                    |
-| `card_faces`        | jsonb       | DFC uniquement : `[{ image_uris, printed_name, printed_type_line, printed_text }, …]` — structure Scryfall exacte (B1). NULL pour les cartes mono-face. |
-| `updated_at`        | timestamptz | date du dernier upsert                                                                                                                                  |
+| Colonne            | Type        | Notes                                                                                                                                                                                                                   |
+| ------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `set`              | text        | partie 1 de la clé                                                                                                                                                                                                      |
+| `collector_number` | text        | partie 2 de la clé                                                                                                                                                                                                      |
+| `lang`             | text        | partie 3 de la clé ; toujours ≠ `en`                                                                                                                                                                                    |
+| `card_faces`       | jsonb       | **Toujours** un tableau de **1 ou 2 entrées** (Option 1, jamais NULL). Chaque entrée : `{ image_uris, printed_name, printed_type_line, printed_text }` — noms Scryfall. Mono-face = 1 entrée ; transform/modal_dfc = 2. |
+| `updated_at`       | timestamptz | date du dernier upsert                                                                                                                                                                                                  |
+
+`image_uris` d'une entrée = `{ small, normal, large, png, art_crop, border_crop }` (objet Scryfall).
+Aucune colonne racine `image_uris` / `printed_*` séparée — tout passe par `card_faces` (voir
+« Faces normalisées » en § Périmètre).
 
 - **RLS** : `SELECT` autorisé à tous, **y compris `anon`** (un deck public doit être consultable
   sans login ; ce sont des URLs d'images publiques, pas de données privées). **Aucune policy
@@ -110,8 +123,11 @@ prod self-hosted Coolify — la même que pour appliquer les migrations idempote
    - ignorer si `lang === 'en'`.
    - ignorer si pas de scan réel (`image_status` placeholder/missing) — sauf DFC dont au moins
      une face a un scan réel.
-   - extraire `set`, `collector_number`, `lang`, `image_uris`, `printed_name`,
-     `printed_type_line`, `printed_text`, et `card_faces` (sous-ensemble des champs ci-dessus).
+   - **normaliser en `card_faces`** (Option 1) : si l'objet Scryfall a `image_uris`/`printed_*` à
+     la racine (mono-face, ou split/flip/adventure à image unique) → produire **1 entrée**
+     `{ image_uris, printed_name, printed_type_line, printed_text }`. S'il a des `card_faces` avec
+     `image_uris` par face (transform, modal_dfc) → produire **2 entrées**, en reprenant les
+     `image_uris` + `printed_*` de chaque face. La logique de discrimination vit **ici seulement**.
 4. **UPSERT par batch** (`INSERT … ON CONFLICT (set, collector_number, lang) DO UPDATE SET …`).
    Idempotent : ré-exécutable sans doublon ni corruption.
 
@@ -149,12 +165,23 @@ Aujourd'hui le cache client utilise un nom **non-Scryfall** : `face_image_uris`
 et le cache parlent tous Scryfall :
 
 - Renommer `face_image_uris` → **`card_faces`** dans `CachedLocalizedImage` et tout le code qui
-  le lit/écrit, en adoptant la structure Scryfall (tableau de faces portant `image_uris` +
-  `printed_*`).
+  le lit/écrit, en adoptant le format **uniforme Option 1** (tableau de 1-2 faces portant
+  `image_uris` + `printed_*`).
+- **Point d'attention — les consommateurs actuels lisent un `image_uris` racine** :
+  `cachedToResult` reconstruit aujourd'hui un `LocalizedImageResult` avec `image_uris` (mono-face)
+  OU `card_faces` (DFC), et `useLocalizedImage`/`CardImage` fusionnent ça sur la carte de base via
+  `{ ...card, ...localized }` (le rendu lit alors `card.image_uris` pour une mono-face,
+  `card.card_faces[i].image_uris` pour une DFC — cf. `resolveImageUri` / `computeIsDoubleFaced`).
+  L'uniformisation ne doit **pas** casser ce rendu : `cachedToResult` (ou son remplaçant) mappe le
+  `card_faces` uniforme du cache vers la forme attendue par le merge — **1 face → `image_uris`
+  racine** de l'override, **2 faces → `card_faces`** de l'override. La normalisation « tout en
+  `card_faces` » est le format de **stockage** (table + store IndexedDB) ; la **projection** vers
+  ce que `CardImage` consomme reste faite au point de lecture, sans toucher `CardImage`.
 - **Bumper la version de la DB IndexedDB** (`wizcard-cache`, actuellement v3) → v4, avec un
   `clear()` du store `localized-images` dans `onupgradeneeded` (comme le précédent v3 l'a fait) :
   purge l'ancien format, le cache se re-remplit naturellement. Aucune migration de données à écrire.
-- Aligner `cachedToResult` / le type `LocalizedImageResult` sur `card_faces`.
+- Aligner le type `CachedLocalizedImage` sur `card_faces` uniforme ; `LocalizedImageResult` reste
+  la forme projetée que consomme `CardImage` (inchangée).
 
 ## Stratégie de test
 
