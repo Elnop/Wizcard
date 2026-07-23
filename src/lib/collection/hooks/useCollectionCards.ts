@@ -8,8 +8,6 @@ import type { Card, CardStack } from '@/types/cards';
 import type { CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { groupByOracleId } from '@/lib/card/utils/group-cards';
-import { prefetchLocalizedCards } from '@/lib/scryfall/db/localized-cards';
-import { usePreferredCardLang, langCodeFor } from '@/lib/scryfall/hooks/useLocalizedImage';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 
@@ -87,23 +85,6 @@ export function useCollectionCards(entries: StoredCopy[]): {
 	}, [idsKey]);
 
 	const cards = useMemo(() => buildCards(entries, scryfallMap), [entries, scryfallMap]);
-
-	const preferredLang = usePreferredCardLang();
-
-	useEffect(() => {
-		if (cards.length === 0) return;
-		const targets = cards.map((card) => {
-			// Single source of truth shared with useLocalizedImage's display path:
-			// entry.language (display name) → mapped code; else the profile's
-			// preferred language. `card.lang` (the print's own Scryfall code) is
-			// intentionally never fed to this derivation — see langCodeFor.
-			const lang = langCodeFor(card, preferredLang);
-			return { set: card.set, collector_number: card.collector_number, lang };
-		});
-		// Fire-and-forget : n'affecte pas le rendu ; un miss laisse le fallback API
-		// de useLocalizedImage opérer normalement.
-		void prefetchLocalizedCards(targets);
-	}, [cards, preferredLang]);
 
 	const stacks = useMemo(() => groupByOracleId(cards), [cards]);
 
