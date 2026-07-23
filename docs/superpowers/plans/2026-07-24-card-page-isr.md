@@ -4,7 +4,7 @@
 
 **Goal:** Make the public card page ISR (statically generated on demand, cached 7 days) by giving `catalog-db` a cookieless anon Supabase client (so the official-card render path stops reading cookies and can be statically cached), and adding ISR config to the card page.
 
-**Architecture:** New `createCatalogClient()` (anon, no `next/headers`) replaces the cookie server client in `catalog-db`'s 7 read sites — safe because the catalog is public-read. The card page gets `revalidate = 604800`, `dynamicParams = true`, `generateStaticParams → []`. The `mpc:` branch keeps reading cookies (owner-gated), so those specific renders stay dynamic; the official (cookieless) path caches.
+**Architecture:** New `createCatalogClient()` (anon, no `next/headers`) replaces the cookie server client in `catalog-db`'s 7 read sites AND in the custom-card read path — safe because both are read under public-read RLS. The card page then reads NO cookies on any branch (official cards via catalog-db; public custom cards via the same cookieless client, with private ones filtered out by RLS when `auth.uid()` is null → `notFound`). It gets `revalidate = 604800`, `dynamicParams = true`, `generateStaticParams → []`, so the whole route is ISR.
 
 **Tech Stack:** Next.js 16 (App Router, ISR), TypeScript, `@supabase/supabase-js` (anon client). No test framework — verify via `npm run check` + build/runtime.
 
