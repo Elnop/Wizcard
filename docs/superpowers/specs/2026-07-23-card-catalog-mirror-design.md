@@ -43,7 +43,8 @@ definition (gameplay identity — the "concept" of a card)
         │  released_at · finishes · image_status · image_uris · printed_* (localized)
         │  → 1 definition has N prints (each reprint × each language).
         │
-        └─ faces (0..2) — per-face name/text/image for DFC, split, adventure…
+        └─ faces (0..2) split by nature: gameplay in card_definition_faces
+           (per oracle, invariant), visual+localized in card_print_faces (per print)
 
 parts — all_parts relations, modeled oracle → oracle (token / meld_part /
         meld_result / combo_piece). A token is itself a full definition+print;
@@ -81,7 +82,7 @@ differs between the EN and FR print rows is only edition/localization data: the 
 (`image_uris`, localized per language), `image_status`, and the printed_* strings.
 `localized_cards` (the previous localized-image cache) is therefore **absorbed** into
 this model — an FR localization is just a `card_prints` row with `lang='fr'` plus its
-`card_faces`.
+`card_definition_faces` + `card_print_faces`.
 
 ## Tables
 
@@ -150,21 +151,25 @@ PK `id` (Scryfall print id, distinct per language). FK `oracle_id → card_defin
 
 Indexes: `(oracle_id)`, unique `(set, collector_number, lang)`.
 
-### `card_faces` — faces 0..2 of a print (per language via print_id)
+### Faces: `card_definition_faces` + `card_print_faces`
 
-PK `(print_id, face_index)`. FK `print_id → card_prints`.
+Scryfall's Card Face object mixes three natures (verified against the official docs):
+gameplay (`name`, `type_line`, `oracle_text`, `mana_cost`, `colors`,
+`power/toughness/loyalty`), print-visual (`artist`, `illustration_id`, `image_uris`),
+and localization (`printed_*`). The gameplay fields are **invariant across a card's
+prints and languages** (a face's name/oracle_text/power is the same in every edition and
+every language). Storing all of it per-print — which mirroring the Card Face object 1:1
+would do — duplicates the gameplay data once per print: a card with N reprints stores its
+faces' gameplay N times (~45% duplication measured on the initial single-table seed).
 
-Scryfall classifies `card_faces` as a **Gameplay field**, but the Card Face object
-itself mixes three natures (verified against the official docs): gameplay (`name`,
-`type_line`, `oracle_text`, `mana_cost`, `colors`, `power/toughness/loyalty`), print
-(`artist`, `illustration_id`, `image_uris`), and localization (`printed_*`). Our table
-mirrors the Card Face object faithfully, and the FK is on `print_id` (not `oracle_id`)
-because `image_uris` and `printed_*` vary per print/language — a face row belongs to a
-specific EN or FR print.
+So faces are split by nature into two tables:
+
+**`card_definition_faces`** — gameplay per face, one row per (oracle, face). PK
+`(oracle_id, face_index)`, FK `oracle_id → card_definitions`.
 
 | column                    | type     | note                                               |
 | ------------------------- | -------- | -------------------------------------------------- |
-| print_id                  | uuid     | FK → card_prints(id) ON DELETE CASCADE             |
+| oracle_id                 | uuid     | FK → card_definitions(oracle_id) ON DELETE CASCADE |
 | face_index                | smallint | 0 = front, 1 = back                                |
 | name                      | text     | face oracle name                                   |
 | type_line                 | text     |                                                    |
@@ -172,19 +177,33 @@ specific EN or FR print.
 | mana_cost                 | text     |                                                    |
 | colors                    | text[]   |                                                    |
 | power, toughness, loyalty | text     |                                                    |
-| artist                    | text     |                                                    |
-| illustration_id           | uuid     |                                                    |
-| image_uris                | jsonb    | {small,normal,large} if the face has its own image |
-| printed_name              | text     | localized                                          |
-| printed_type_line         | text     | localized                                          |
-| printed_text              | text     | localized                                          |
-|                           |          | PRIMARY KEY (print_id, face_index)                 |
+|                           |          | PRIMARY KEY (oracle_id, face_index)                |
 
-Only present for multi-face layouts. Discriminating "how many physical images" vs "how
-many textual sub-faces" (split/adventure/flip = 2 sub-faces, 1 image) is handled in the
-seed normalization; readers should distinguish flippable-DFC (each face has its own
-`image_uris`) from shared-image splits (only face 0 has `image_uris`, or image is on the
-print root).
+**`card_print_faces`** — print-visual + localized per face, one row per (print, face). PK
+`(print_id, face_index)`, FK `print_id → card_prints`. These fields legitimately vary by
+print/language (`image_uris`, `printed_*`).
+
+| column            | type     | note                                               |
+| ----------------- | -------- | -------------------------------------------------- |
+| print_id          | uuid     | FK → card_prints(id) ON DELETE CASCADE             |
+| face_index        | smallint | 0 = front, 1 = back                                |
+| artist            | text     |                                                    |
+| illustration_id   | uuid     |                                                    |
+| image_uris        | jsonb    | {small,normal,large} if the face has its own image |
+| printed_name      | text     | localized                                          |
+| printed_type_line | text     | localized                                          |
+| printed_text      | text     | localized                                          |
+|                   |          | PRIMARY KEY (print_id, face_index)                 |
+
+**Reading a print's full face:** join `card_print_faces pf` → `card_prints p` (for its
+`oracle_id`) → `card_definition_faces df ON df.oracle_id = p.oracle_id AND df.face_index =
+pf.face_index`. The gameplay comes from `df`, the visual/localized from `pf`.
+
+Both are only populated for multi-face layouts. Discriminating "how many physical images"
+vs "how many textual sub-faces" (split/adventure/flip = 2 sub-faces, 1 image) is handled
+in the seed: `card_print_faces.image_uris` is null for a shared-image split's faces (the
+image is on the print root), non-null per face for a flippable DFC. `defense` is kept only
+on `card_definitions` (root), not on the faces, matching the initial model.
 
 ### `card_parts` — all_parts relations (oracle → oracle)
 
@@ -231,7 +250,7 @@ Upsert on the composite PK dedupes edges contributed by multiple prints of the s
 ### `localized_cards` — removed / migrated
 
 Its role (localized image + printed_* by (set, collector_number, lang≠en)) is now a
-`card_prints` row with `lang='fr'` plus its `card_faces`. The table and its readers
+`card_prints` row with `lang='fr'` plus its `card_print_faces`/`card_definition_faces`. The table and its readers
 (`src/lib/supabase/queries/localized-cards.ts`, `src/lib/scryfall/db/localized-cards.ts`,
 the prefetch path) are retired or repointed in the implementation plan. The image-loss
 bug on split/adventure/flip (printed_* pulled from the null top-level) is fixed here by
@@ -281,9 +300,11 @@ ids, not oracle ids):
 
 - **Pass 1 — cards, prints, faces.** For each kept bulk row:
   - upsert `card_definitions` on `oracle_id` (idempotent — many prints share one oracle),
+  - upsert `card_definition_faces` on `(oracle_id, face_index)` (idempotent per oracle,
+    deduped per batch like `card_definitions` — many prints emit identical face gameplay),
   - upsert `card_prints` on `id` (arbiter `(set, collector_number, lang)` also unique),
-  - replace `card_faces` for that print (delete-then-insert or upsert on
-    `(print_id, face_index)`).
+  - replace `card_print_faces` for that print (delete-then-insert on `(print_id,
+face_index)`, chunked delete like the other per-print replacements).
     After pass 1 the DB holds a complete `print_id → oracle_id` mapping.
 - **Pass 2 — parts.** Re-stream the bulk (or a retained id list), and for each card's
   `all_parts`: resolve each `related_print_id → related_oracle_id` via the pass-1 mapping,
@@ -302,7 +323,7 @@ ids, not oracle ids):
 
 - Rename `cards → card_entries` (migration + call sites + RLS/FK/constraints),
   as the first isolated, verified step.
-- Create `card_definitions`, `card_prints`, `card_faces`, `card_parts`.
+- Create `card_definitions`, `card_definition_faces`, `card_prints`, `card_print_faces`, `card_parts`.
 - Retire/migrate `localized_cards`.
 - Seed script from `all_cards` (EN + FR, paper). `default_cards` is English-only for cards that have an English print, so it cannot supply FR prints — `all_cards` is required.
 - RLS: public read (these are public card data, like `localized_cards`), service_role
@@ -319,7 +340,7 @@ ids, not oracle ids):
   `card_prices` table/flow if ever needed, not in the catalog).
 - `flavor_name`, `flavor_text` — not stored. Both are Print fields (and `flavor_text`
   is localizable), but no current consumer displays them (YAGNI). Add to `card_prints` /
-  `card_faces` alongside `printed_*` if a future view needs printed flavor text.
+  `card_print_faces` alongside `printed_*` if a future view needs printed flavor text.
 
 ## Verification
 
