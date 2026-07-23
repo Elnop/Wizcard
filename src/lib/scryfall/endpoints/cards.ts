@@ -61,9 +61,10 @@ export async function randomCard(query?: string): Promise<ScryfallCard> {
 }
 
 export async function getCardCollection(
-	identifiers: ScryfallCardIdentifier[]
+	identifiers: ScryfallCardIdentifier[],
+	signal?: AbortSignal
 ): Promise<ScryfallList<ScryfallCard>> {
-	return scryfallPost<ScryfallList<ScryfallCard>>('/cards/collection', { identifiers });
+	return scryfallPost<ScryfallList<ScryfallCard>>('/cards/collection', { identifiers }, signal);
 }
 
 export async function getCardById(id: ScryfallUUID): Promise<ScryfallCard> {

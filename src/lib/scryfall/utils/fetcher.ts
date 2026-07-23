@@ -156,7 +156,11 @@ async function scryfallGetInner<T>(url: string, externalSignal?: AbortSignal): P
 }
 
 // eslint-disable-next-line sonarjs/cognitive-complexity -- retry loop with exponential backoff + multiple abort conditions
-export async function scryfallPost<T>(endpoint: string, body: object): Promise<T> {
+export async function scryfallPost<T>(
+	endpoint: string,
+	body: object,
+	signal?: AbortSignal
+): Promise<T> {
 	const url = resolvePostUrl(endpoint);
 
 	let lastError: Error | null = null;
@@ -164,6 +168,9 @@ export async function scryfallPost<T>(endpoint: string, body: object): Promise<T
 	for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
 		const controller = new AbortController();
 		const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
+		// Combine the caller's abort signal (viewport exit, modal close) with the internal
+		// timeout so either cancels this attempt.
+		const combined = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
 
 		try {
 			const response = await sharedScryfallThrottle.fetch(url, {
@@ -173,7 +180,7 @@ export async function scryfallPost<T>(endpoint: string, body: object): Promise<T
 					Accept: 'application/json;q=0.9,*/*;q=0.8',
 				},
 				body: JSON.stringify(body),
-				signal: controller.signal,
+				signal: combined,
 			});
 
 			if (!response.ok) {
