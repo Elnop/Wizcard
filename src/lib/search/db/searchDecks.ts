@@ -34,7 +34,7 @@ async function resolveDeckIdsWithCard(
 	commanderOnly: boolean
 ): Promise<string[]> {
 	const supabase = createClient();
-	let q = supabase.from('cards').select('deck_id').eq('scryfall_id', scryfallId);
+	let q = supabase.from('card_entries').select('deck_id').eq('scryfall_id', scryfallId);
 	q = q.not('deck_id', 'is', null);
 	if (commanderOnly) q = q.contains('tags', ['deck:commander']);
 	const { data, error } = await q;

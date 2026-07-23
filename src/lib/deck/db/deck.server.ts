@@ -33,7 +33,7 @@ export async function fetchDeckCoverArtServer(deckId: string): Promise<string | 
 	// same key means tied `date_added` rows come back in the same physical order
 	// on both paths, so the winning card is identical.
 	const { data, error } = await supabase
-		.from('cards')
+		.from('card_entries')
 		.select('scryfall_id, tags')
 		.eq('deck_id', deckId)
 		.order('date_added', { ascending: true });

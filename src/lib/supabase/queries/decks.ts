@@ -82,7 +82,7 @@ export async function deleteDeckRow(ownerId: string, deckId: string): Promise<vo
 export async function unassignDeckCardRows(deckId: string): Promise<void> {
 	const supabase = createClient();
 	const { error } = await supabase
-		.from('cards')
+		.from('card_entries')
 		.update({ deck_id: null })
 		.eq('deck_id', deckId)
 		.not('owner_id', 'is', null);
@@ -107,7 +107,7 @@ export async function fetchDeckCardTagRows(
 	const PAGE = 1000;
 	for (let offset = 0; ; offset += PAGE) {
 		const { data, error } = await supabase
-			.from('cards')
+			.from('card_entries')
 			.select('deck_id, scryfall_id, tags')
 			.in('deck_id', deckIds)
 			.range(offset, offset + PAGE - 1);
@@ -126,7 +126,7 @@ export async function fetchDeckCardRows(deckId: string): Promise<CardDbRow[]> {
 	// displayed on the deck path, only written. See migration
 	// 20260710120000_fix_purchase_price_leak.sql.
 	const { data, error } = await supabase
-		.from('cards')
+		.from('card_entries')
 		.select(
 			'id, owner_id, scryfall_id, date_added, is_foil, foil_type, condition, language, alter, proxy, tags, for_trade, deck_id, wishlist'
 		)
@@ -139,13 +139,13 @@ export async function fetchDeckCardRows(deckId: string): Promise<CardDbRow[]> {
 export async function insertDeckCardRows(rows: Record<string, unknown>[]): Promise<void> {
 	if (rows.length === 0) return;
 	const supabase = createClient();
-	const { error } = await supabase.from('cards').insert(rows);
+	const { error } = await supabase.from('card_entries').insert(rows);
 	if (error) throw new Error(`[queries/decks] insertDeckCardRows error: ${error.message}`);
 }
 
 export async function deleteDeckCardRowById(rowId: string): Promise<void> {
 	const supabase = createClient();
-	const { error } = await supabase.from('cards').delete().eq('id', rowId);
+	const { error } = await supabase.from('card_entries').delete().eq('id', rowId);
 	if (error) throw new Error(`[queries/decks] deleteDeckCardRowById error: ${error.message}`);
 }
 
@@ -154,7 +154,7 @@ export async function updateDeckCardRowById(
 	payload: Record<string, unknown>
 ): Promise<void> {
 	const supabase = createClient();
-	const { error } = await supabase.from('cards').update(payload).eq('id', rowId);
+	const { error } = await supabase.from('card_entries').update(payload).eq('id', rowId);
 	if (error) throw new Error(`[queries/decks] updateDeckCardRowById error: ${error.message}`);
 }
 
