@@ -94,14 +94,14 @@ export async function replacePreconCards(deckId: string, deck: MtgJsonDeck): Pro
 		return rows.length;
 	}
 
-	const { error: delError } = await supabase.from('cards').delete().eq('deck_id', deckId);
+	const { error: delError } = await supabase.from('card_entries').delete().eq('deck_id', deckId);
 	if (delError) throw new Error(`[precons/db] delete cards: ${delError.message}`);
 
 	// Chunked: a 100-card commander deck is fine in one request, but a Draft Set
 	// can run to several hundred rows and PostgREST payloads have limits.
 	const CHUNK = 500;
 	for (let i = 0; i < rows.length; i += CHUNK) {
-		const { error } = await supabase.from('cards').insert(rows.slice(i, i + CHUNK));
+		const { error } = await supabase.from('card_entries').insert(rows.slice(i, i + CHUNK));
 		if (error) throw new Error(`[precons/db] insert cards: ${error.message}`);
 	}
 	return rows.length;
