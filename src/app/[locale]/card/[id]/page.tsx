@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import type { Locale } from '@/i18n/routing';
 import { buildAlternates } from '@/lib/seo/alternates';
-import { getCardById } from '@/lib/scryfall/endpoints/cards';
+import { getCardById } from '@/lib/card/source';
 import { getCustomCardWithSource } from '@/lib/mpc/db/custom-cards.server';
 import { CardPageHeader } from './components/CardPageHeader/CardPageHeader';
 import { CardTabs } from './components/CardTabs/CardTabs';
