@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getCardPrints } from '../endpoints/cards';
+import { getCardCollection } from '../endpoints/cards';
 import type { ScryfallCard } from '../types/scryfall';
 
 interface UseCustomFallbackPrintResult {
@@ -41,14 +41,13 @@ export function useCustomFallbackPrint(
 		if (!canFetch || !oracleId) return;
 
 		const controller = new AbortController();
-		const uri = `https://api.scryfall.com/cards/search?q=oracle_id%3A${oracleId}&unique=prints&order=released`;
 
 		const run = async () => {
 			setLoadingOracleId(oracleId);
 			try {
-				const prints = await getCardPrints(uri, controller.signal);
+				const list = await getCardCollection([{ oracle_id: oracleId }], controller.signal);
 				if (controller.signal.aborted) return;
-				setResult({ oracleId, print: prints[0] ?? null });
+				setResult({ oracleId, print: list.data[0] ?? null });
 			} catch (err: unknown) {
 				if (err instanceof DOMException && err.name === 'AbortError') return;
 				if (controller.signal.aborted) return;
