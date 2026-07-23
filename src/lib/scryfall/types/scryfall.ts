@@ -12,6 +12,7 @@ export type ScryfallLayout =
 	| 'flip'
 	| 'transform'
 	| 'modal_dfc'
+	| 'reversible_card'
 	| 'meld'
 	| 'leveler'
 	| 'class'
