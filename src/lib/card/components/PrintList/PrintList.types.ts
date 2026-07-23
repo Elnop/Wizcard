@@ -101,7 +101,7 @@ export function groupCollectionByPrint(
 		const a = printMap.get(aId)!;
 		const b = printMap.get(bId)!;
 		return (
-			a.set_name.localeCompare(b.set_name, 'fr') ||
+			(a.set_name ?? '').localeCompare(b.set_name ?? '', 'fr') ||
 			a.collector_number.localeCompare(b.collector_number, 'en', { numeric: true })
 		);
 	});

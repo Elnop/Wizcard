@@ -166,14 +166,14 @@ export interface ScryfallCard {
 	name: string;
 	lang: string;
 	released_at: string;
-	uri: string;
-	scryfall_uri: string;
+	uri?: string;
+	scryfall_uri?: string;
 	layout: ScryfallLayout;
 
 	// Visual data
 	image_uris?: ScryfallImageUris;
 	image_status: ScryfallImageStatus;
-	highres_image: boolean;
+	highres_image?: boolean;
 	mana_cost?: string;
 	cmc: number;
 	type_line: string;
@@ -186,26 +186,26 @@ export interface ScryfallCard {
 	// Gameplay
 	keywords: string[];
 	legalities: ScryfallLegalities;
-	games: ScryfallGame[];
+	games?: ScryfallGame[];
 	reserved: boolean;
 	foil: boolean;
 	nonfoil: boolean;
 	finishes: string[];
-	oversized: boolean;
+	oversized?: boolean;
 	promo: boolean;
 	reprint: boolean;
 	variation: boolean;
 
 	// Set info
-	set_id: ScryfallUUID;
+	set_id?: ScryfallUUID;
 	set: string;
-	set_name: string;
-	set_type: string;
-	set_uri: string;
-	set_search_uri: string;
-	scryfall_set_uri: string;
-	rulings_uri: string;
-	prints_search_uri: string;
+	set_name?: string;
+	set_type?: string;
+	set_uri?: string;
+	set_search_uri?: string;
+	scryfall_set_uri?: string;
+	rulings_uri?: string;
+	prints_search_uri?: string;
 
 	// Collection & print
 	collector_number: string;
@@ -218,10 +218,10 @@ export interface ScryfallCard {
 	frame: ScryfallFrame;
 	frame_effects?: ScryfallFrameEffect[];
 	security_stamp?: ScryfallSecurityStamp;
-	full_art: boolean;
-	textless: boolean;
-	booster: boolean;
-	story_spotlight: boolean;
+	full_art?: boolean;
+	textless?: boolean;
+	booster?: boolean;
+	story_spotlight?: boolean;
 	edhrec_rank?: number;
 	penny_rank?: number;
 
@@ -234,8 +234,8 @@ export interface ScryfallCard {
 	hand_modifier?: string;
 
 	// Pricing & availability
-	prices: ScryfallPrices;
-	related_uris: Record<string, string>;
+	prices?: ScryfallPrices;
+	related_uris?: Record<string, string>;
 	purchase_uris?: Record<string, string>;
 
 	// Multi-face cards
