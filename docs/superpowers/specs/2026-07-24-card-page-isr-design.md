@@ -79,24 +79,27 @@ no page is built ahead of time; each is generated statically on first access and
 7 days. With `catalog-db` cookieless (change 2), the official-card render path no longer
 reads cookies, so Next can statically cache it.
 
-### 4. The MPC (custom card) branch stays dynamic
+### 4. The MPC (custom card) branch also goes cookieless — public cards only
 
-The page also handles `id.startsWith('mpc:')` → `getCustomCardWithSource`, which reads via
-the **cookie-bound server client** (`fetchCustomCardRowById` imports
-`@/lib/supabase/server`), and `custom_cards` RLS is owner/visibility-gated (not purely
-public). So the `mpc:` branch **cannot** be statically cached the same way — it depends on
-auth/cookies. `dynamicParams = true` already generates any non-pre-generated id on demand;
-the `mpc:` branch reading cookies makes those specific renders dynamic (uncached), which is
-correct — custom cards are per-user. Only official (catalog) card pages become ISR-cached.
-No special handling needed beyond documenting this: the cookie read in the `mpc:` path
-naturally keeps those responses dynamic, while the official path (now cookieless) caches.
+The page also handles `id.startsWith('mpc:')` → `getCustomCardWithSource`, which today reads
+via the **cookie-bound server client** (`fetchCustomCardRowById` / `fetchCustomCardSourceRowById`
+import `@/lib/supabase/server`). `custom_cards` RLS is `using (is_public = true or created_by
+= auth.uid())` — the **only** reason it needs cookies is to let an owner read their own
+**private** custom card (the `created_by = auth.uid()` term needs the session).
 
-> Implementation note: confirm at plan time that Next does not error on mixing a static
-> `revalidate` with a request that reads cookies in one branch. If Next treats the whole
-> route as dynamic because ONE branch can read cookies, the official path won't cache —
-> in that case the fix is to move the cookie read out of the shared render path (e.g. the
-> `mpc:` branch fetches its custom card in a way that only reads cookies when the id is
-> actually `mpc:`). The plan verifies the official path caches (see Verification).
+**Product decision:** the public card page `/card/mpc:...` serves **only public custom
+cards** (`is_public = true`). A private custom card is the owner's own — visible in their own
+space, not via a shareable public card URL. So the `mpc:` branch reads through the **same
+cookieless catalog client**: with `auth.uid()` = null, the RLS predicate reduces to
+`is_public = true`, so a public custom card resolves and a private one returns no row →
+`notFound()`. This is exactly the desired behavior and requires no query change beyond the
+client swap — the RLS does the filtering.
+
+Consequence: **the whole card page is cookieless → fully ISR-cacheable**, with no
+force-dynamic risk from a cookie-reading branch. `fetchCustomCardRowById` and
+`fetchCustomCardSourceRowById` switch from the cookie server client to `createCatalogClient()`.
+(`custom_cards`/`custom_card_sources` are reached by an anon client under the public-read RLS
+term — verified the predicate; the `is_public` filter is enforced by RLS, not the query.)
 
 ## Scope
 
@@ -104,6 +107,9 @@ naturally keeps those responses dynamic, while the official path (now cookieless
 
 - `createCatalogClient()` cookieless anon client (`src/lib/supabase/catalog.ts`).
 - `catalog-db` uses it (7 sites) instead of the cookie server client.
+- The custom-card read path (`fetchCustomCardRowById` / `fetchCustomCardSourceRowById`) uses
+  it too — the card page then serves only PUBLIC custom cards (RLS filters private ones out
+  with `auth.uid()` = null), so the whole page is cookieless.
 - ISR config on the card page (`revalidate = 604800`, `dynamicParams`, `generateStaticParams → []`).
 
 **Out of scope (later)**
@@ -111,7 +117,9 @@ naturally keeps those responses dynamic, while the official path (now cookieless
 - Sub-project 2 (freshness / re-seed) and on-demand revalidation (`revalidatePath`) tied to
   a re-seed — the 7-day `revalidate` is the interim freshness bound.
 - Static generation of other public pages (sets, public decks) — migratable the same way.
-- The `mpc:` custom-card branch staying dynamic (it must — per-user data).
+- Private custom cards on a `/card/...` URL — intentionally not served here (owner-space only).
+  The user-scoped custom-card reads used elsewhere in the app (editor, collection) keep the
+  cookie server client; only the public card-page read path goes cookieless.
 
 ## Verification
 
@@ -125,9 +133,12 @@ No test framework (project convention) — verify via `npm run check` + runtime 
   (second request served from cache — check the dev log for absence of a repeat catalog
   query / the `x-nextjs-cache` header = HIT). A catalog card renders correctly (name, image,
   tabs) from the cookieless path.
-- **No regression for non-catalog / mpc**: an `mpc:` card page still renders (dynamically),
-  reading its owner-gated custom card; the official path does not accidentally leak into the
-  `mpc:` dynamic behavior (the official path caches).
+- **MPC public/private**: a PUBLIC custom card `/card/mpc:...` still renders (now cookieless,
+  ISR-cacheable); a PRIVATE custom card `/card/mpc:...` returns `notFound()` (RLS filters it
+  with `auth.uid()` = null). No cookie-reading branch remains in the page, so the WHOLE route
+  is ISR (verify the build marks `/[locale]/card/[id]` as ISR, not `ƒ` dynamic).
+- **Custom-card reads elsewhere unaffected**: the editor/collection paths that read a user's
+  own custom cards still use the cookie server client (only the card-page read path changed).
 - **Owner-update independence**: with a card page cached, adding the card to the collection
   (client island) still updates the button state immediately (the cached HTML is unaffected).
 - **catalog-db still works everywhere**: the `/cards/collection` route and card-source
