@@ -55,6 +55,11 @@ export interface CardPrintRow {
 	printed_name: string | null;
 	printed_type_line: string | null;
 	printed_text: string | null;
+	multiverse_ids: number[] | null;
+	mtgo_id: number | null;
+	arena_id: number | null;
+	tcgplayer_id: number | null;
+	cardmarket_id: number | null;
 }
 
 export interface CardDefinitionFaceRow {
@@ -139,6 +144,11 @@ export function toCatalogRows(card: ScryfallCard): {
 		printed_name: card.printed_name ?? null,
 		printed_type_line: card.printed_type_line ?? null,
 		printed_text: card.printed_text ?? null,
+		multiverse_ids: card.multiverse_ids ?? null,
+		mtgo_id: card.mtgo_id ?? null,
+		arena_id: card.arena_id ?? null,
+		tcgplayer_id: card.tcgplayer_id ?? null,
+		cardmarket_id: card.cardmarket_id ?? null,
 	};
 
 	const definitionFaces: CardDefinitionFaceRow[] = (card.card_faces ?? []).map((f, i) => ({
