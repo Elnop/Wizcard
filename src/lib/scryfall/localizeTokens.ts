@@ -1,4 +1,4 @@
-import { getCardBySetNumberAndLang } from '@/lib/scryfall/endpoints/cards';
+import { getLocalizedPrint } from '@/lib/scryfall/getLocalizedPrint';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
 /**
@@ -29,5 +29,8 @@ export async function localizeTokens(
 }
 
 function defaultFetchLocalized(set: string, num: string, lang: string): Promise<ScryfallCard> {
-	return getCardBySetNumberAndLang(set, num, lang);
+	return getLocalizedPrint(set, num, lang).then((card) => {
+		if (!card) throw new Error('localized print not found');
+		return card;
+	});
 }

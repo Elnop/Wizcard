@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
-import { getCardBySetNumberAndLang } from '@/lib/scryfall/endpoints/cards';
+import { getLocalizedPrint } from '@/lib/scryfall/getLocalizedPrint';
 import { isCustomCard } from '@/lib/mpc/types';
 import type { CustomCard } from '@/lib/mpc/types';
 import { resolveLanguageChange } from './resolveLanguageChange';
@@ -50,13 +50,19 @@ export function useCardEntryForm(initialDraft: Partial<CardEntry>, initialPrint:
 		langFetchAbort.current = controller;
 
 		try {
-			const localized = await getCardBySetNumberAndLang(
+			const localized = await getLocalizedPrint(
 				action.set,
 				action.collectorNumber,
 				action.langCode,
 				controller.signal
 			);
 			if (controller.signal.aborted) return;
+			if (!localized) {
+				// No print in that language — leave the current preview, like the old
+				// 404 path (caught below) did.
+				setLangInfoMessage('Localized image unavailable for this print.');
+				return;
+			}
 			// Update the local preview only. The print and language are committed to
 			// the collection on Save/Confirm, like every other field — committing
 			// mid-edit churns the global store and destabilizes the open modal.
