@@ -4,15 +4,15 @@ import { useState, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
 import { useCardsStore, getCard } from '@/lib/scryfall/store/cards-store';
-import type { Card, CardStack } from '@/types/cards';
+import type { CardCopy, CardStack } from '@/types/cards';
 import type { CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { groupByOracleId } from '@/lib/card/utils/group-cards';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 
-function buildCards(entries: StoredCopy[], scryfallMap: Map<string, ScryfallCard>): Card[] {
-	const result: Card[] = [];
+function buildCards(entries: StoredCopy[], scryfallMap: Map<string, ScryfallCard>): CardCopy[] {
+	const result: CardCopy[] = [];
 	for (const copy of entries) {
 		const scryfallCard = scryfallMap.get(copy.scryfallId);
 		if (scryfallCard) {

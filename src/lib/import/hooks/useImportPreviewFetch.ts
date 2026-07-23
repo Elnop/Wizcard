@@ -11,7 +11,7 @@ import {
 import { preferPrint } from '@/lib/card/utils/prefer-print';
 import type { ParsedImportResult, PendingCard, ResolvedImportResult } from '@/lib/import/types';
 import type { ScryfallCard, ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
-import type { Card, CardEntry } from '@/types/cards';
+import type { CardCopy, CardEntry } from '@/types/cards';
 import type { ImportProgress } from '@/lib/import/hooks/useImport';
 
 interface ScryfallLookup {
@@ -143,7 +143,7 @@ export function useImportPreviewFetch(deps: {
 				if (abortRef.current) return;
 
 				const lookup = buildLookup(scryfallCards);
-				const resolved: Card[] = [];
+				const resolved: CardCopy[] = [];
 				const notFound: PendingCard[] = [];
 
 				for (const pc of normalized) {

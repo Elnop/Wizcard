@@ -1,14 +1,14 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { Card, CardEntry } from '@/types/cards';
+import type { CardCopy, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useCardEntryForm } from './useCardEntryForm';
 import { CardEntryFormBody } from './CardEntryFormBody';
 import styles from './EditCardModal.module.css';
 
 export interface EditCardModalProps {
-	card: Card;
+	card: CardCopy;
 	onSave: (patch: Partial<CardEntry>) => void;
 	onChangePrint: (newCard: ScryfallCard) => void;
 	onClose: () => void;

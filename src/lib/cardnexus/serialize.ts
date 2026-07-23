@@ -1,4 +1,4 @@
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 import { CARDNEXUS_CSV_HEADERS } from './types';
 import {
 	cardConditionToCardNexus,
@@ -9,12 +9,12 @@ import {
 import { quoteField } from '@/lib/csv/rfc4180';
 
 // `set_name` exists on ScryfallCard but not on CustomCard.
-function setName(card: Card): string {
+function setName(card: CardCopy): string {
 	return 'set_name' in card && card.set_name ? card.set_name : (card.set ?? '');
 }
 
 // Accepts one Card per physical copy — each becomes one CSV row.
-export function serializeToCardNexusCSV(cards: Card[]): string {
+export function serializeToCardNexusCSV(cards: CardCopy[]): string {
 	const header = CARDNEXUS_CSV_HEADERS.map(quoteField).join(',');
 
 	const dataRows = cards.map((card) => {

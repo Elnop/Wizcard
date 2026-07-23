@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
 import { CardList } from '@/lib/card/components/CardList/CardList';
@@ -41,7 +41,7 @@ export function UseCollectionCopyModal({
 }: Props) {
 	const t = useTranslations('card');
 	const { prints, loading, error } = useCardPrints(prints_search_uri);
-	const [lightboxCard, setLightboxCard] = useState<Card | ScryfallCard | null>(null);
+	const [lightboxCard, setLightboxCard] = useState<CardCopy | ScryfallCard | null>(null);
 
 	const sections = useMemo(() => {
 		if (prints.length === 0) return [];
@@ -56,7 +56,7 @@ export function UseCollectionCopyModal({
 
 	function renderOverlay(anyCard: AnyCard): ReactNode {
 		if (!('entry' in anyCard)) return null;
-		const card = anyCard as Card;
+		const card = anyCard as CardCopy;
 		const copyMeta = collectionCopies.find((c) => c.rowId === card.entry.rowId);
 		const isSelected =
 			currentCollectionRowId !== undefined && card.entry.rowId === currentCollectionRowId;
@@ -110,7 +110,7 @@ export function UseCollectionCopyModal({
 			label: t('detailsCol'),
 			render: (anyCard: AnyCard) => {
 				if (!('entry' in anyCard)) return null;
-				const card = anyCard as Card;
+				const card = anyCard as CardCopy;
 				const langCode = card.entry.language
 					? LANGUAGE_TO_SCRYFALL_CODE[card.entry.language as keyof typeof LANGUAGE_TO_SCRYFALL_CODE]
 					: null;
@@ -150,7 +150,7 @@ export function UseCollectionCopyModal({
 				pageSize={false}
 				viewModes={['grid', 'fluid-grid', 'table']}
 				renderOverlay={renderOverlay}
-				onCardClick={(card) => setLightboxCard(card as Card | ScryfallCard)}
+				onCardClick={(card) => setLightboxCard(card as CardCopy | ScryfallCard)}
 				tableColumns={tableColumns}
 			/>
 		);

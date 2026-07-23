@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { Card, CardStack } from '@/types/cards';
+import type { CardCopy, CardStack } from '@/types/cards';
 import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
@@ -36,22 +36,22 @@ export function useOwnedCardMenuHandlers(
 		if (mode === 'collection') {
 			return {
 				onViewDetails,
-				onAddCopy: (rep: Card) => mutations.collection.duplicate(rep.id, rep.entry),
-				onRemoveCopy: (rep: Card) => mutations.collection.decrement(rep.id),
-				onMove: (rep: Card) => mutations.moveToWishlist(rep.entry.rowId),
+				onAddCopy: (rep: CardCopy) => mutations.collection.duplicate(rep.id, rep.entry),
+				onRemoveCopy: (rep: CardCopy) => mutations.collection.decrement(rep.id),
+				onMove: (rep: CardCopy) => mutations.moveToWishlist(rep.entry.rowId),
 				onAddToDeck: (s: CardStack) => openAddToDeck(s.cards[0]),
 				onChangePrint: onViewDetails,
-				onRemove: (rep: Card) => mutations.collection.remove(rep.id),
+				onRemove: (rep: CardCopy) => mutations.collection.remove(rep.id),
 			};
 		}
 		return {
 			onViewDetails,
-			onAddCopy: (rep: Card) => mutations.wishlist.duplicate(rep.id, rep.entry),
-			onRemoveCopy: (rep: Card) => mutations.wishlist.remove(rep.entry.rowId),
-			onMove: (rep: Card) => move.requestMove(rep.entry.rowId),
+			onAddCopy: (rep: CardCopy) => mutations.wishlist.duplicate(rep.id, rep.entry),
+			onRemoveCopy: (rep: CardCopy) => mutations.wishlist.remove(rep.entry.rowId),
+			onMove: (rep: CardCopy) => move.requestMove(rep.entry.rowId),
 			onAddToDeck: (s: CardStack) => openAddToDeck(s.cards[0]),
 			onChangePrint: onViewDetails,
-			onRemove: (rep: Card) => mutations.wishlist.remove(rep.entry.rowId),
+			onRemove: (rep: CardCopy) => mutations.wishlist.remove(rep.entry.rowId),
 		};
 	}, [mode, mutations, openAddToDeck, openCardModal, move]);
 }

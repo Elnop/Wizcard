@@ -1,4 +1,4 @@
-import type { CardCondition, Card } from '@/types/cards';
+import type { CardCondition, CardCopy } from '@/types/cards';
 import type { MtgLanguage } from '@/lib/mtg/languages';
 
 export type ImportFormatId = 'moxfield' | 'cardnexus' | 'mtga' | 'delverlens';
@@ -36,7 +36,7 @@ export interface ParsedImportResult {
 
 // Result after Scryfall fetch + resolve, stored in useImport state
 export interface ResolvedImportResult {
-	resolved: Card[]; // PendingCard matched with their ScryfallCard
+	resolved: CardCopy[]; // PendingCard matched with their ScryfallCard
 	notFound: PendingCard[]; // identifiers Scryfall did not find
 }
 

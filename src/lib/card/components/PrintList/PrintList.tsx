@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { useCardPrints } from '@/lib/scryfall/hooks/useCardPrints';
 import { useCustomCardPrints } from '@/lib/mpc/hooks/useCustomCardPrints';
@@ -31,7 +31,7 @@ export function PrintList({
 	const { prints: customPrints, loading: customLoading } = useCustomCardPrints(oracleId);
 	const { profile } = useProfileContext();
 	const preferredLang = profile?.language;
-	const [lightboxCard, setLightboxCard] = useState<Card | ScryfallCard | null>(null);
+	const [lightboxCard, setLightboxCard] = useState<CardCopy | ScryfallCard | null>(null);
 
 	function isCurrentPrint(card: ScryfallCard): boolean {
 		if (card.id === currentCardId) return true;
@@ -124,7 +124,7 @@ export function PrintList({
 				pageSize={false}
 				viewModes={['grid', 'fluid-grid', 'table']}
 				renderOverlay={renderOverlay}
-				onCardClick={(card) => setLightboxCard(card as Card | ScryfallCard)}
+				onCardClick={(card) => setLightboxCard(card as CardCopy | ScryfallCard)}
 				tableColumns={tableColumns}
 			/>
 			{lightboxCard && (

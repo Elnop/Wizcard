@@ -3,12 +3,12 @@
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 import styles from './DeckBadge.module.css';
 
 type Props = {
 	/** All copies of one stack (same oracle_id, possibly different prints/decks). */
-	cards: Card[];
+	cards: CardCopy[];
 };
 
 /**

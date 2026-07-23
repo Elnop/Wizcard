@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import type { Profile } from '@/lib/profile/types';
-import type { Card, CardStack } from '@/types/cards';
+import type { CardCopy, CardStack } from '@/types/cards';
 import type { DeckMeta } from '@/types/decks';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
 import { CardList } from '@/lib/card/components/CardList/CardList';
@@ -34,7 +34,7 @@ function formatMemberSince(iso: string, locale: string): string {
  * copy is foil. Returns null when Scryfall has no EUR price (or the card isn't
  * hydrated yet), so such cards drop out of the "most expensive" ranking.
  */
-function cardmarketPrice(card: Card): number | null {
+function cardmarketPrice(card: CardCopy): number | null {
 	if (!('prices' in card) || !card.prices) return null;
 	const raw = card.entry.isFoil ? (card.prices.eur_foil ?? card.prices.eur) : card.prices.eur;
 	if (raw == null) return null;
@@ -75,7 +75,7 @@ export function ProfileOverview({
 	// Top cards by Cardmarket price, excluding proxies (no market value). One
 	// representative copy per print, ranked desc; ties keep hydration order.
 	const topPriced = useMemo(() => {
-		const priced: Array<{ card: Card; stack: CardStack; price: number }> = [];
+		const priced: Array<{ card: CardCopy; stack: CardStack; price: number }> = [];
 		for (const stack of allStacks) {
 			const card = stack.cards.find((c) => !c.entry.proxy);
 			if (!card) continue;

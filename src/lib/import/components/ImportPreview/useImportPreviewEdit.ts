@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Card, CardEntry } from '@/types/cards';
+import type { CardCopy, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckZone } from '@/types/decks';
 import { setDeckZone } from '@/types/decks';
@@ -30,7 +30,7 @@ export type PreviewInit = {
 };
 
 /** One editable copy: a Scryfall card carrying a synthetic deck CardEntry. */
-export type EditableCard = Card;
+export type EditableCard = CardCopy;
 
 function targetZone(row: ResolvedDeckRow, init: PreviewInit): DeckZone {
 	if (init.zoneMode === 'force') return init.zone;

@@ -1,7 +1,7 @@
 import { useEffect, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 import type { DeckZone } from '@/types/decks';
 import styles from './CopyCardOverlay.module.css';
 
@@ -14,7 +14,7 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 };
 
 type Props = {
-	card: Card;
+	card: CardCopy;
 	collectionBadge?: ReactNode;
 	isSelected: boolean;
 	onEdit: () => void;

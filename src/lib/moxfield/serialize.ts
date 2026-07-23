@@ -1,4 +1,4 @@
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 import { MOXFIELD_CSV_HEADERS } from './types';
 import { quoteField } from '@/lib/csv/rfc4180';
 
@@ -8,7 +8,7 @@ function formatDate(iso?: string): string {
 }
 
 // Accepts one Card per physical copy — each becomes one CSV row
-export function serializeToMoxfieldCSV(cards: Card[]): string {
+export function serializeToMoxfieldCSV(cards: CardCopy[]): string {
 	const header = MOXFIELD_CSV_HEADERS.map(quoteField).join(',');
 
 	const dataRows = cards.map((card) => {

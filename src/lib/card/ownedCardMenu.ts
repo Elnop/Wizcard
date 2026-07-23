@@ -1,5 +1,5 @@
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
-import type { Card, CardStack } from '@/types/cards';
+import type { CardCopy, CardStack } from '@/types/cards';
 
 export type OwnedCardMenuMode = 'collection' | 'wishlist';
 
@@ -12,13 +12,13 @@ export type OwnedCardMenuMode = 'collection' | 'wishlist';
  */
 export type OwnedCardMenuHandlers = {
 	onViewDetails: (stack: CardStack) => void;
-	onAddCopy: (rep: Card) => void;
-	onRemoveCopy: (rep: Card) => void;
+	onAddCopy: (rep: CardCopy) => void;
+	onRemoveCopy: (rep: CardCopy) => void;
 	/** Move to the *other* list: wishlist when mode='collection', collection when 'wishlist'. */
-	onMove: (rep: Card) => void;
+	onMove: (rep: CardCopy) => void;
 	onAddToDeck: (stack: CardStack) => void;
 	onChangePrint: (stack: CardStack) => void;
-	onRemove: (rep: Card) => void;
+	onRemove: (rep: CardCopy) => void;
 };
 
 const MOVE_ICONS = { collection: '♡', wishlist: '→' } as const;

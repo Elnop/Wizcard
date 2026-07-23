@@ -154,7 +154,7 @@ export function DeckCardSearchPanel({
 			let scryfallCard: ScryfallCard;
 			if ('entry' in card) {
 				// eslint-disable-next-line @typescript-eslint/no-unused-vars
-				const { entry: _, ...rest } = card as import('@/types/cards').Card;
+				const { entry: _, ...rest } = card as import('@/types/cards').CardCopy;
 				scryfallCard = rest as ScryfallCard;
 			} else {
 				scryfallCard = card as ScryfallCard;

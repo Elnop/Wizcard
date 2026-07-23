@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { ImportFormatId, ResolvedImportResult } from '@/lib/import/types';
 import type { ImportPreview } from '@/lib/import/hooks/useImport';
-import type { Card, CardEntry, CardStack } from '@/types/cards';
+import type { CardCopy, CardEntry, CardStack } from '@/types/cards';
 import { defaultCollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 import { groupByOracleId, filterStacks, cardGroupKey } from '@/lib/card/utils/group-cards';
@@ -62,7 +62,7 @@ export function useImportPreviewState({
 	}, [onTextSubmit, pastedText, forcedFormat]);
 
 	// All resolved cards (one entry per physical copy)
-	const activeCards = useMemo((): Card[] => resolved?.resolved ?? [], [resolved]);
+	const activeCards = useMemo((): CardCopy[] => resolved?.resolved ?? [], [resolved]);
 
 	// Group copies into stacks by oracle_id — the same logic the collection uses,
 	// so grouping, representative-print choice and filtering stay consistent.

@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import type { Card, CardEntry } from '@/types/cards';
+import type { CardCopy, CardEntry } from '@/types/cards';
 import type { ScryfallCard, ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
 import { isCustomCard } from '@/lib/mpc/types';
@@ -48,12 +48,12 @@ const ZONE_ABBR: Record<DeckZone, string> = {
 	tokens: 'Tok',
 };
 
-function isCollectionCard(card: Card | ScryfallCard): card is Card {
+function isCollectionCard(card: CardCopy | ScryfallCard): card is CardCopy {
 	return 'entry' in card;
 }
 
 interface Props {
-	cards: Card | Card[] | ScryfallCard | CustomCard | null;
+	cards: CardCopy | CardCopy[] | ScryfallCard | CustomCard | null;
 	initialRowId?: string;
 	onClose: () => void;
 	onSave?: (rowId: string, updates: Partial<CardEntry>) => void;
@@ -79,7 +79,7 @@ interface Props {
 	onAddToDeck?: (card: ScryfallCard) => void;
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
-	renderCopyBadge?: (copy: Card) => React.ReactNode;
+	renderCopyBadge?: (copy: CardCopy) => React.ReactNode;
 	/**
 	 * Right-click menu for the main card image. Owner vs viewer variant is decided
 	 * by the caller (CardModalProvider) from the open-state; returns null to show
@@ -89,7 +89,7 @@ interface Props {
 }
 
 interface InnerProps {
-	cards: Card[];
+	cards: CardCopy[];
 	initialRowId?: string;
 	onClose: () => void;
 	onSave?: (rowId: string, updates: Partial<CardEntry>) => void;
@@ -112,7 +112,7 @@ interface InnerProps {
 	onAddToDeck?: (card: ScryfallCard) => void;
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
-	renderCopyBadge?: (copy: Card) => React.ReactNode;
+	renderCopyBadge?: (copy: CardCopy) => React.ReactNode;
 	buildImageMenuItems?: (card: AnyCard, close: () => void) => ContextMenuAction[] | null;
 }
 
@@ -383,7 +383,7 @@ function CardModalInner({
 	const [editingRowId, setEditingRowId] = useState<string | null>(null);
 	const [usingCollectionCopy, setUsingCollectionCopy] = useState(false);
 	const [addingCopy, setAddingCopy] = useState(false);
-	const [copyContextMenuCard, setCopyContextMenuCard] = useState<Card | null>(null);
+	const [copyContextMenuCard, setCopyContextMenuCard] = useState<CardCopy | null>(null);
 	const [copyContextMenuPos, setCopyContextMenuPos] = useState<{ x: number; y: number } | null>(
 		null
 	);
@@ -392,7 +392,7 @@ function CardModalInner({
 
 	const count = cards.length;
 
-	const selectedCard: Card = cards.find((c) => c.entry.rowId === selectedRowId) ?? cards[0];
+	const selectedCard: CardCopy = cards.find((c) => c.entry.rowId === selectedRowId) ?? cards[0];
 
 	// Copies of this card in the selected card's zone that are not yet owned.
 	// Used to offer an "Add to collection" action (sets ownerId via toggleOwned).
@@ -414,7 +414,7 @@ function CardModalInner({
 		: null;
 
 	const handleRemoveCopy = useCallback(
-		(card: Card) => {
+		(card: CardCopy) => {
 			if (count === 1) {
 				onRemove?.(card.id);
 			} else {
@@ -429,9 +429,9 @@ function CardModalInner({
 		[count, selectedRowId, cards, onRemove, onRemoveEntry]
 	);
 
-	const copySections: CardListSection[] | Card[] = useMemo(() => {
+	const copySections: CardListSection[] | CardCopy[] = useMemo(() => {
 		if (!availableZones) return cards;
-		const byZone = new Map<DeckZone, Card[]>();
+		const byZone = new Map<DeckZone, CardCopy[]>();
 		for (const card of cards) {
 			const z = getDeckZone(card.entry.tags);
 			const existing = byZone.get(z) ?? [];
@@ -452,30 +452,30 @@ function CardModalInner({
 				key: 'print',
 				label: t('colPrint'),
 				render: (c) => {
-					const card = c as Card;
+					const card = c as CardCopy;
 					return `${card.set?.toUpperCase() ?? ''} #${card.collector_number ?? ''}`;
 				},
 			},
 			{
 				key: 'condition',
 				label: t('colCondition'),
-				render: (c) => (c as Card).entry.condition ?? '—',
+				render: (c) => (c as CardCopy).entry.condition ?? '—',
 			},
 			{
 				key: 'foil',
 				label: t('colFoil'),
-				render: (c) => ((c as Card).entry.isFoil ? '✦' : '—'),
+				render: (c) => ((c as CardCopy).entry.isFoil ? '✦' : '—'),
 			},
 			{
 				key: 'language',
 				label: t('colLanguage'),
-				render: (c) => (c as Card).entry.language ?? 'English',
+				render: (c) => (c as CardCopy).entry.language ?? 'English',
 			},
 			{
 				key: 'actions',
 				label: '',
 				render: (c) => {
-					const card = c as Card;
+					const card = c as CardCopy;
 					return (
 						<span className={styles.tableActions}>
 							<button
@@ -539,7 +539,7 @@ function CardModalInner({
 
 	const renderCopyOverlay = useCallback(
 		(c: AnyCard) => {
-			const card = c as Card;
+			const card = c as CardCopy;
 			const cardZone = availableZones ? getDeckZone(card.entry.tags) : zone;
 			const isContextCard = copyContextMenuCard?.entry.rowId === card.entry.rowId;
 			return (
@@ -707,10 +707,10 @@ function CardModalInner({
 							<CardList
 								cards={copySections}
 								pageSize={false}
-								onCardClick={(c) => setSelectedRowId((c as Card).entry.rowId)}
+								onCardClick={(c) => setSelectedRowId((c as CardCopy).entry.rowId)}
 								onCardContextMenu={(c, e) => {
 									e.preventDefault();
-									const card = c as Card;
+									const card = c as CardCopy;
 									const MENU_WIDTH = 180;
 									const MENU_HEIGHT = 200;
 									const x =
@@ -992,7 +992,7 @@ export function CardModal({
 
 	const first = normalizedCards[0];
 
-	if (!isCollectionCard(first as Card | ScryfallCard)) {
+	if (!isCollectionCard(first as CardCopy | ScryfallCard)) {
 		return (
 			<ScryfallCardModalInner
 				key={first.id}
@@ -1011,7 +1011,7 @@ export function CardModal({
 	return (
 		<CardModalInner
 			key={first.oracle_id}
-			cards={normalizedCards as Card[]}
+			cards={normalizedCards as CardCopy[]}
 			initialRowId={initialRowId}
 			onClose={onClose}
 			onSave={onSave}

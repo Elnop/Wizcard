@@ -1,7 +1,7 @@
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { hasRealScan } from '@/lib/scryfall/types/scryfall';
 import type { CardListSection, AnyCard } from '@/lib/card/components/CardList/CardList.types';
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 
 export interface CollectionCopyEntry {
 	rowId: string;
@@ -114,16 +114,16 @@ export function groupCollectionByPrint(
 		sections.push({
 			label: `${scryfallCard.set_name ?? scryfallCard.set.toUpperCase()} #${scryfallCard.collector_number} (${group.length})`,
 			cards: orderedGroup.map((copy) => {
-				const card: Card = {
+				const card: CardCopy = {
 					...scryfallCard,
 					entry: {
 						rowId: copy.rowId,
 						dateAdded: '',
-						condition: (copy.condition as Card['entry']['condition']) ?? 'NM',
+						condition: (copy.condition as CardCopy['entry']['condition']) ?? 'NM',
 						isFoil: copy.isFoil,
 						foilType: copy.foilType,
 						proxy: copy.proxy,
-						language: copy.language as Card['entry']['language'],
+						language: copy.language as CardCopy['entry']['language'],
 					},
 				};
 				return card as AnyCard;

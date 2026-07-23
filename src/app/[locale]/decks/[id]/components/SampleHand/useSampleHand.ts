@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 import { shuffle } from '@/lib/deck/utils/sample-hand';
 
 const INITIAL_HAND_SIZE = 7;
 
 export interface SampleHandState {
-	hand: Card[];
+	hand: CardCopy[];
 	hasHand: boolean;
 	canDraw: boolean;
 	deal: () => void;
@@ -13,8 +13,8 @@ export interface SampleHandState {
 	draw: () => void;
 }
 
-export function useSampleHand(mainboard: Card[]): SampleHandState {
-	const [state, setState] = useState<{ shuffled: Card[] | null; handSize: number }>({
+export function useSampleHand(mainboard: CardCopy[]): SampleHandState {
+	const [state, setState] = useState<{ shuffled: CardCopy[] | null; handSize: number }>({
 		shuffled: null,
 		handSize: INITIAL_HAND_SIZE,
 	});

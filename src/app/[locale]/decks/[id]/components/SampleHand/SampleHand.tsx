@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
@@ -12,7 +12,7 @@ import styles from './SampleHand.module.css';
 
 type Props = {
 	deckId: string;
-	mainboard: Card[];
+	mainboard: CardCopy[];
 };
 
 export function SampleHand({ deckId, mainboard }: Props) {
@@ -42,7 +42,7 @@ export function SampleHand({ deckId, mainboard }: Props) {
 						cards={hand}
 						viewModes={['fluid-grid']}
 						pageSize={false}
-						onCardClick={(c: AnyCard) => openCardModal([c as Card], { readOnly: true })}
+						onCardClick={(c: AnyCard) => openCardModal([c as CardCopy], { readOnly: true })}
 					/>
 					<div className={styles.actions}>
 						<Button variant="secondary" onClick={handleMulligan}>

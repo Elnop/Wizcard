@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import type { Card, CardEntry } from '@/types/cards';
+import type { CardCopy, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckZone } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
@@ -27,7 +27,7 @@ export type PendingRemove = {
 
 /** The props this hook feeds into `<CardModal>` for the deck-owner case. */
 export type DeckCardModalProps = {
-	cards: Card[] | null;
+	cards: CardCopy[] | null;
 	initialRowId?: string;
 	zone?: DeckZone;
 	availableZones: DeckZone[];
@@ -44,7 +44,7 @@ export type DeckCardModalProps = {
 	onAddToWishlistFromEntry: (deckCardRowId: string) => void;
 	producerSections?: CardListSection[];
 	onProducerClick: (oracleKey: string, clickedRowId: string) => void;
-	renderCopyBadge: (copy: Card) => React.ReactNode;
+	renderCopyBadge: (copy: CardCopy) => React.ReactNode;
 };
 
 function resolveAssignedDeckName(
@@ -119,13 +119,13 @@ export function useDeckCardModalProps(
 
 	// All copies across all zones, ordered: clicked zone first, then the rest —
 	// re-derived live from the store so the modal tracks mutations / print swaps.
-	const selectedCards: Card[] | null = useMemo(() => {
+	const selectedCards: CardCopy[] | null = useMemo(() => {
 		if (!selectedGroup) return null;
 		const clickedCard = [...selectedGroup.byZone.values()]
 			.flat()
 			.find((c) => c.entry.rowId === clickedRowId);
 		const clickedZone = clickedCard ? getDeckZone(clickedCard.entry.tags) : null;
-		const ordered: Card[] = [];
+		const ordered: CardCopy[] = [];
 		if (clickedZone) ordered.push(...(selectedGroup.byZone.get(clickedZone) ?? []));
 		for (const [zone, copies] of selectedGroup.byZone) {
 			if (zone !== clickedZone) ordered.push(...copies);
@@ -239,7 +239,7 @@ export function useDeckCardModalProps(
 		const sections: CardListSection[] = [];
 		for (const { zone, label } of PRODUCER_ZONES) {
 			const seen = new Set<string>();
-			const cards: Card[] = [];
+			const cards: CardCopy[] = [];
 			for (const card of cardsByZone[zone]) {
 				if (!cardProducesToken(card as ScryfallCard, selected)) continue;
 				const key = card.oracle_id ?? card.id;
@@ -327,7 +327,7 @@ export function useDeckCardModalProps(
 	);
 
 	const renderCopyBadge = useCallback(
-		(copy: Card) => {
+		(copy: CardCopy) => {
 			const state = getCopyBadgeState(copy, wishlistScryfallIds);
 			return (
 				<OwnershipBadge

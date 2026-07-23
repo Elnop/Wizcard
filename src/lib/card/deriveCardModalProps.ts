@@ -1,4 +1,4 @@
-import type { Card, CardEntry } from '@/types/cards';
+import type { CardCopy, CardEntry } from '@/types/cards';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
@@ -45,7 +45,7 @@ export type CardModalDeps = {
 	close: () => void;
 };
 
-function hasEntry(card: AnyCard): card is Card {
+function hasEntry(card: AnyCard): card is CardCopy {
 	return 'entry' in card;
 }
 
@@ -83,7 +83,7 @@ export function deriveCardModalProps(card: AnyCard, deps: CardModalDeps): Derive
 
 	// Owned collection card. `onDecrement` is arg-less (the modal decrements the
 	// displayed card), so we close over this card's scryfall id.
-	const ownedCard = card as Card & ScryfallCard;
+	const ownedCard = card as CardCopy & ScryfallCard;
 	return {
 		onSave: (rowId, updates) => deps.collection.updateEntry(rowId, updates),
 		onRemove: (scryfallId) => {

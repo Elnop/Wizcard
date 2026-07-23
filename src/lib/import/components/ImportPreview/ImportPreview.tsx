@@ -11,7 +11,7 @@ import { groupByCardType } from '@/lib/card/utils/group-by-card-type';
 import { ImportBulkApplyPanel } from '@/app/[locale]/collection/lib/ImportModal/components/ImportBulkApplyPanel/ImportBulkApplyPanel';
 import type { BulkApplyPatch } from '@/lib/import/hooks/useImportBulkApply';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
-import type { Card, CardEntry } from '@/types/cards';
+import type { CardCopy, CardEntry } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckZone } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
@@ -38,7 +38,7 @@ const ZONE_ORDER: DeckZone[] = ['commander', 'mainboard', 'sideboard', 'maybeboa
 const MOVABLE_ZONES: DeckZone[] = ['mainboard', 'sideboard', 'maybeboard', 'commander'];
 
 /** A unique card within a zone, with its total quantity and its copy rowIds. */
-type ZoneCard = { card: Card; zone: DeckZone; quantity: number; rowIds: string[] };
+type ZoneCard = { card: CardCopy; zone: DeckZone; quantity: number; rowIds: string[] };
 
 /** Drop the structural entry fields the store regenerates per inserted copy. */
 function importableAttrs(entry: CardEntry): Partial<CardEntry> {
@@ -90,7 +90,7 @@ export function ImportPreview({
 
 	const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
 	const [contextMenu, setContextMenu] = useState<{
-		card: Card;
+		card: CardCopy;
 		zone: DeckZone;
 		x: number;
 		y: number;
@@ -246,7 +246,7 @@ export function ImportPreview({
 	}, [editableCards, onImport]);
 
 	// Selection key for a preview card: one selectable unit per (oracle, zone).
-	const selKeyFor = useCallback((card: Card): string => {
+	const selKeyFor = useCallback((card: CardCopy): string => {
 		return `${oracleKey(card as ScryfallCard)}|${getDeckZone(card.entry.tags)}`;
 	}, []);
 
@@ -273,7 +273,7 @@ export function ImportPreview({
 		});
 	}, [cardsByZone]);
 
-	const toggleSelected = useCallback((card: Card) => {
+	const toggleSelected = useCallback((card: CardCopy) => {
 		const key = `${oracleKey(card as ScryfallCard)}|${getDeckZone(card.entry.tags)}`;
 		setSelected((prev) => {
 			const next = new Set(prev);
@@ -292,7 +292,7 @@ export function ImportPreview({
 		const qty = qtyByCardId.get(card.id) ?? 0;
 		const qtyBadge = qty > 1 ? <span className={styles.gridBadge}>×{qty}</span> : null;
 		if (!selectionMode) return qtyBadge;
-		const checked = selected.has(selKeyFor(card as Card));
+		const checked = selected.has(selKeyFor(card as CardCopy));
 		return (
 			<>
 				{qtyBadge}
@@ -313,7 +313,7 @@ export function ImportPreview({
 	}, [selectedRowId, editableCards]);
 
 	const openDetail = useCallback((card: AnyCard) => {
-		setSelectedRowId((card as Card).entry?.rowId ?? null);
+		setSelectedRowId((card as CardCopy).entry?.rowId ?? null);
 	}, []);
 
 	// --- Bulk actions on the current selection ---
@@ -322,7 +322,7 @@ export function ImportPreview({
 
 	// The single logical card represented by the selection (same oracle across all
 	// selected keys) — enables bulk "change print", which is per-card by nature.
-	const selectionSingleCard = useMemo<Card | null>(() => {
+	const selectionSingleCard = useMemo<CardCopy | null>(() => {
 		const oracles = new Set([...selected].map((k) => k.split('|')[0]));
 		if (oracles.size !== 1) return null;
 		const oracle = [...oracles][0];
@@ -361,20 +361,20 @@ export function ImportPreview({
 	// --- Context menu actions ---
 
 	const rowIdsFor = useCallback(
-		(card: Card, cardZone: DeckZone): string[] =>
+		(card: CardCopy, cardZone: DeckZone): string[] =>
 			cardsByZone.get(cardZone)?.get(oracleKey(card as ScryfallCard))?.rowIds ?? [],
 		[cardsByZone]
 	);
 
 	const moveCardToZone = useCallback(
-		(card: Card, from: DeckZone, to: DeckZone) => {
+		(card: CardCopy, from: DeckZone, to: DeckZone) => {
 			for (const id of rowIdsFor(card, from)) setCardZone(id, to);
 		},
 		[rowIdsFor, setCardZone]
 	);
 
 	const decrementCard = useCallback(
-		(card: Card, cardZone: DeckZone) => {
+		(card: CardCopy, cardZone: DeckZone) => {
 			const rowIds = rowIdsFor(card, cardZone);
 			if (rowIds.length > 0) removeRow(rowIds[rowIds.length - 1]);
 		},
@@ -583,13 +583,13 @@ export function ImportPreview({
 						<CardList
 							cards={sections}
 							cardsPerLine={4}
-							onCardClick={selectionMode ? (card) => toggleSelected(card as Card) : openDetail}
+							onCardClick={selectionMode ? (card) => toggleSelected(card as CardCopy) : openDetail}
 							onCardContextMenu={
 								selectionMode
 									? undefined
 									: (card, e) => {
 											e.preventDefault();
-											const c = card as Card;
+											const c = card as CardCopy;
 											setContextMenu({
 												card: c,
 												zone: getDeckZone(c.entry.tags),

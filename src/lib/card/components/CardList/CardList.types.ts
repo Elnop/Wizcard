@@ -1,12 +1,12 @@
 import type { ReactNode, MouseEvent } from 'react';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import type { ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 
-export type AnyCard = ScryfallCard | Card | CustomCard;
+export type AnyCard = ScryfallCard | CardCopy | CustomCard;
 
 export interface CardListSection {
 	label: string;

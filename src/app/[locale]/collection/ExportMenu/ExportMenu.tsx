@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 import { Button } from '@/components/Button/Button';
 import { downloadCSV } from '@/lib/csv/download';
 import { serializeToMoxfieldCSV } from '@/lib/moxfield/serialize';
@@ -10,7 +10,7 @@ import { serializeToCardNexusCSV } from '@/lib/cardnexus/serialize';
 import styles from './ExportMenu.module.css';
 
 interface ExportMenuProps {
-	cards: Card[];
+	cards: CardCopy[];
 	/** Base filename without extension, e.g. "my-collection". */
 	filenameBase: string;
 	disabled?: boolean;

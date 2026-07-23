@@ -1,6 +1,6 @@
 import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder } from '@/lib/scryfall/types/sort';
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 import { type CardFilters, DEFAULT_CARD_FILTERS } from '@/lib/search/types';
 import type { MtgLanguage } from '@/lib/mtg/languages';
 import type { CardType, CustomCard } from '@/lib/mpc/types';
@@ -8,7 +8,7 @@ import { isCustomCard } from '@/lib/mpc/types';
 
 export type CollectionSortOrder = ScryfallSortOrder | 'language';
 
-type AnyCard = ScryfallCard | Card | CustomCard;
+type AnyCard = ScryfallCard | CardCopy | CustomCard;
 
 export interface CollectionFilters extends Omit<CardFilters, 'order'> {
 	order: CollectionSortOrder;
@@ -107,7 +107,7 @@ const RARITY_ORDER: Record<string, number> = {
 };
 
 export function getSortValue(
-	card: ScryfallCard | Card,
+	card: ScryfallCard | CardCopy,
 	order: CollectionSortOrder
 ): string | number {
 	if (order === 'language') return 'entry' in card ? (card.entry.language ?? '') : '';
@@ -145,7 +145,10 @@ function getCardLang(card: AnyCard): string | null {
 	return (card as ScryfallCard).lang ?? null;
 }
 
-function matchesProxyFilter(card: Card, proxyFilter: CollectionFilters['proxyFilter']): boolean {
+function matchesProxyFilter(
+	card: CardCopy,
+	proxyFilter: CollectionFilters['proxyFilter']
+): boolean {
 	if (proxyFilter === 'all') return true;
 	const isProxy = card.entry.proxy === true;
 	if (proxyFilter === 'proxy') return isProxy;
@@ -154,7 +157,7 @@ function matchesProxyFilter(card: Card, proxyFilter: CollectionFilters['proxyFil
 }
 
 function matchesFoilFilter(
-	card: Card,
+	card: CardCopy,
 	foilTypeFilter: CollectionFilters['foilTypeFilter']
 ): boolean {
 	if (foilTypeFilter === 'all') return true;
@@ -175,7 +178,7 @@ function matchesLanguageFilter(
 	// resolved Scryfall print always carries a `lang`, so falling back to it
 	// would mean no entry is ever "undefined".
 	if ('entry' in card) {
-		const entryLanguage = (card as Card).entry.language;
+		const entryLanguage = (card as CardCopy).entry.language;
 		if (languageFilter === 'undefined') return !entryLanguage;
 		return entryLanguage === languageFilter;
 	}
@@ -259,8 +262,8 @@ export function filterCollectionCards<T extends AnyCard>(
 	if (filtered.length <= 1) return filtered;
 
 	return [...filtered].sort((a, b) => {
-		const av = getSortValue(a as ScryfallCard | Card, filters.order);
-		const bv = getSortValue(b as ScryfallCard | Card, filters.order);
+		const av = getSortValue(a as ScryfallCard | CardCopy, filters.order);
+		const bv = getSortValue(b as ScryfallCard | CardCopy, filters.order);
 		const cmp =
 			typeof av === 'number' && typeof bv === 'number'
 				? av - bv

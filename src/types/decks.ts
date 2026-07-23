@@ -1,4 +1,4 @@
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 
 export type DeckFormat =
 	| 'standard'
@@ -73,8 +73,8 @@ export interface DeckMeta {
 }
 
 export type DeckCardGroup = {
-	representative: Card;
-	byZone: Map<DeckZone, Card[]>;
+	representative: CardCopy;
+	byZone: Map<DeckZone, CardCopy[]>;
 	totalCount: number;
 };
 

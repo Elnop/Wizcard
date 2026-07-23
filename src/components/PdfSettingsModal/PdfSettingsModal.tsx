@@ -7,7 +7,7 @@ import { Button } from '@/components/Button/Button';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { useCardFaceImageUris } from '@/lib/scryfall/hooks/useCardImageUri';
 import { isScryfallImageUrl, scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 import styles from './PdfSettingsModal.module.css';
 
 export type PdfSettings = {
@@ -32,7 +32,7 @@ const PAGE_W_MM = 210;
 const PAGE_H_MM = 297;
 
 type Props = {
-	cards: Card[];
+	cards: CardCopy[];
 	initial?: Partial<PdfSettings>;
 	generating?: boolean;
 	onConfirm: (settings: PdfSettings) => void;
@@ -41,13 +41,13 @@ type Props = {
 
 // A single printed slot = one card face. Double-faced cards produce two slots
 // (faceIndex 0 = front, 1 = back), matching what generateCardsPdf renders.
-type FaceSlot = { card: Card; faceIndex: number };
+type FaceSlot = { card: CardCopy; faceIndex: number };
 
 // Deploy each card into its printed face slots, mirroring the PDF export:
 // getScryfallCardFaceImageUris yields [front, back] for DFCs and a single entry
 // otherwise. The face count is structural (card.card_faces), so it's known
 // synchronously without waiting for the localized image fetch.
-function toFaceSlots(cards: Card[]): FaceSlot[] {
+function toFaceSlots(cards: CardCopy[]): FaceSlot[] {
 	return cards.flatMap((card) => {
 		const faces = card.card_faces;
 		const hasTwoFaces = !!(faces?.[0]?.image_uris?.normal && faces?.[1]?.image_uris?.normal);

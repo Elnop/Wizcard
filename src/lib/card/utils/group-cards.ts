@@ -1,4 +1,4 @@
-import type { Card, CardStack } from '@/types/cards';
+import type { CardCopy, CardStack } from '@/types/cards';
 import { preferPrint } from '@/lib/card/utils/prefer-print';
 import {
 	filterCollectionCards,
@@ -7,7 +7,7 @@ import {
 } from '@/lib/card/utils/filterCollectionCards';
 
 /** Logical-card grouping key: oracle_id when known, else the print id. */
-export function cardGroupKey(card: Card): string {
+export function cardGroupKey(card: CardCopy): string {
 	return card.oracle_id ?? card.id;
 }
 
@@ -17,8 +17,8 @@ export function cardGroupKey(card: Card): string {
  * paper > non-promo > normal set > most recent), keeping the chosen vignette
  * consistent between the collection and the import preview.
  */
-export function groupByOracleId(cards: Card[]): CardStack[] {
-	const map = new Map<string, Card[]>();
+export function groupByOracleId(cards: CardCopy[]): CardStack[] {
+	const map = new Map<string, CardCopy[]>();
 	const order: string[] = [];
 	for (const card of cards) {
 		const key = cardGroupKey(card);
@@ -47,7 +47,7 @@ export function groupByOracleId(cards: Card[]): CardStack[] {
 
 /** Keeps only the copies matching the deck-assignment filter (acts per-copy, before stacking). */
 function matchesDeckAssignment(
-	card: Card,
+	card: CardCopy,
 	deckAssignment: CollectionFilters['deckAssignment']
 ): boolean {
 	if (deckAssignment === 'all') return true;

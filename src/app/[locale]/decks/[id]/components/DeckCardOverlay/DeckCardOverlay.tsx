@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl';
 import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import type { DeckZone, DeckCardGroup } from '@/types/decks';
-import type { Card, CardEntry } from '@/types/cards';
+import type { CardCopy, CardEntry } from '@/types/cards';
 import { useCollectionBadge } from './useCollectionBadge';
 import { buildCollectionAddRequest } from '../../collectionAddRequest';
 import type { CollectionAddRequest } from '../../collectionAddRequest';
@@ -21,12 +21,12 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 };
 
 function buildContextMenuItems(
-	zoneCopies: Card[],
+	zoneCopies: CardCopy[],
 	otherZones: DeckZone[],
-	lastCopy: Card | undefined,
+	lastCopy: CardCopy | undefined,
 	representativeScryfallId: string,
 	group: DeckCardGroup,
-	onDuplicate: (card: Card) => void,
+	onDuplicate: (card: CardCopy) => void,
 	onRemove: (rowId: string) => void,
 	onChangeZone: (rowId: string, zone: DeckZone) => void,
 	onAddToWishlist: ((deckCardRowId: string) => void) | undefined,
@@ -83,7 +83,7 @@ function buildContextMenuItems(
 			label: labels.addCopy,
 			icon: '+',
 			onClick: () => {
-				onDuplicate(zoneCopies[0] ?? (group.representative as Card));
+				onDuplicate(zoneCopies[0] ?? (group.representative as CardCopy));
 				closeMenu();
 			},
 		},
@@ -149,7 +149,7 @@ type Props = {
 	deckId: string;
 	oracleScryfallIds: string[];
 	deckNameResolver: (deckId: string) => string | undefined;
-	onDuplicate: (rc: Card) => void;
+	onDuplicate: (rc: CardCopy) => void;
 	onRemove: (rowId: string) => void;
 	onChangeZone: (rowId: string, zone: DeckZone) => void;
 	onBadgeClick?: () => void;
@@ -201,7 +201,8 @@ export function DeckCardOverlay({
 
 	const closeMenu = useCallback(() => onContextMenuClose?.(), [onContextMenuClose]);
 
-	const representativeScryfallId = (zoneCopies[0]?.id ?? (group.representative as Card).id) || '';
+	const representativeScryfallId =
+		(zoneCopies[0]?.id ?? (group.representative as CardCopy).id) || '';
 	// Wishlisting toggles the flag on an actual deck-card row (the first copy in
 	// this zone), so the wishlist entry IS this deck card, not a separate copy.
 	const wishlistTargetRowId = zoneCopies[0]?.entry.rowId;

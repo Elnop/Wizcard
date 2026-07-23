@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useRef } from 'react';
-import type { Card } from '@/types/cards';
+import type { CardCopy } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckZone } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
@@ -10,10 +10,10 @@ import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfall
 import { computeDeckStats, type DeckStats } from '@/lib/deck/utils/deck-stats';
 import { pickCoverArt } from '@/lib/deck/utils/pick-cover-art';
 
-export type ResolvedDeckCard = Card;
+export type ResolvedDeckCard = CardCopy;
 
 // Stable empty reference so hooks don't re-run when a deck has no loaded cards.
-const EMPTY_DECK_CARDS: Record<string, { scryfallId: string; entry: Card['entry'] }> = {};
+const EMPTY_DECK_CARDS: Record<string, { scryfallId: string; entry: CardCopy['entry'] }> = {};
 
 export function useDeckDetail(deckId: string) {
 	const { decks, decksCards, loadDeck } = useDeckContext();
