@@ -66,7 +66,9 @@ export function CardPageHeader({ card }: Props) {
 						</div>
 					) : (
 						<div className={styles.setInfo}>
-							<span>{(card as ScryfallCard).set_name}</span>
+							<span>
+								{(card as ScryfallCard).set_name ?? (card as ScryfallCard).set.toUpperCase()}
+							</span>
 							<span>·</span>
 							<span className={styles.rarity}>
 								{rarityLabels[(card as ScryfallCard).rarity] ?? (card as ScryfallCard).rarity}
@@ -121,7 +123,10 @@ export function CardPageHeader({ card }: Props) {
 						) : (
 							<>
 								<a
-									href={(card as ScryfallCard).scryfall_uri}
+									href={
+										(card as ScryfallCard).scryfall_uri ??
+										`https://scryfall.com/card/${(card as ScryfallCard).set}/${(card as ScryfallCard).collector_number}`
+									}
 									target="_blank"
 									rel="noopener noreferrer"
 									className={styles.externalLink}
