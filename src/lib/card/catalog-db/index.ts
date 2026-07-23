@@ -325,7 +325,9 @@ function resolveByOracleId(
 	id: ScryfallCardIdentifier,
 	lang: string
 ): ScryfallCard | null {
-	const rows = ctx.prints.filter((p) => p.oracle_id === id.oracle_id);
+	const rows = ctx.prints
+		.filter((p) => p.oracle_id === id.oracle_id)
+		.sort((a, b) => (b.released_at ?? '').localeCompare(a.released_at ?? ''));
 	const row = pickByLang(rows, lang);
 	return row ? (ctx.cardByPrintId.get(row.id) ?? null) : null;
 }
