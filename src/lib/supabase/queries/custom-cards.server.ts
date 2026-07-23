@@ -1,4 +1,4 @@
-import { createClient as createServerClient } from '@/lib/supabase/server';
+import { createCatalogClient } from '@/lib/supabase/catalog';
 import {
 	type CustomCardRow,
 	type CustomCardSourceRow,
@@ -7,7 +7,7 @@ import {
 } from './custom-cards';
 
 export async function fetchCustomCardRowById(id: string): Promise<CustomCardRow | null> {
-	const client = await createServerClient();
+	const client = createCatalogClient();
 	const { data, error } = await client
 		.from('custom_cards')
 		.select(CUSTOM_CARD_SELECT)
@@ -22,7 +22,7 @@ export async function fetchCustomCardRowById(id: string): Promise<CustomCardRow 
 export async function fetchCustomCardSourceRowById(
 	sourceId: string
 ): Promise<CustomCardSourceRow | null> {
-	const client = await createServerClient();
+	const client = createCatalogClient();
 	const { data } = await client
 		.from('custom_card_sources')
 		.select(CUSTOM_CARD_SOURCE_SELECT)
