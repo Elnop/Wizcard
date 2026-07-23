@@ -24,6 +24,8 @@
 
 - Create: `src/lib/supabase/catalog.ts` — `createCatalogClient()` cookieless anon singleton.
 - Modify: `src/lib/card/catalog-db/index.ts` — swap the import + the 7 `await createClient()` sites.
+- Modify: `src/lib/supabase/queries/custom-cards.server.ts` — swap the 2 custom-card reads to
+  the cookieless client (public custom cards only; removes the last cookie read on the page).
 - Modify: `src/app/[locale]/card/[id]/page.tsx` — add `revalidate`, `dynamicParams`, `generateStaticParams`.
 
 No migration, no seed change.
@@ -143,6 +145,67 @@ git commit -m "$(printf 'feat(catalog-db): read via the cookieless catalog clien
 
 ---
 
+## Task 2b: Custom-card read path goes cookieless (public cards only)
+
+**Files:**
+
+- Modify: `src/lib/supabase/queries/custom-cards.server.ts`
+
+**Interfaces:**
+
+- Consumes: `createCatalogClient` (Task 1).
+- Produces: `fetchCustomCardRowById` / `fetchCustomCardSourceRowById` read via the cookieless
+  client. Under RLS `using (is_public = true or created_by = auth.uid())` with `auth.uid()` =
+  null, only PUBLIC custom cards resolve; a private one returns null → the page `notFound()`s.
+  This removes the last cookie read from the card page.
+
+Context: `getCustomCardWithSource` (which calls these) is used ONLY by the card page
+(`page.tsx`, 2 sites) — verified — so this swap affects nothing else. The editor/collection
+read their own private custom cards via different paths that keep the cookie client.
+
+- [ ] **Step 1: Swap the client in both functions**
+
+In `src/lib/supabase/queries/custom-cards.server.ts`, change the import and both `await
+createServerClient()` calls:
+
+```ts
+// before
+import { createClient as createServerClient } from '@/lib/supabase/server';
+// ...
+const client = await createServerClient(); // (in both functions)
+
+// after
+import { createCatalogClient } from '@/lib/supabase/catalog';
+// ...
+const client = createCatalogClient(); // (in both functions, no await)
+```
+
+The `.from('custom_cards')`/`.from('custom_card_sources')` queries are UNCHANGED — the RLS
+public-read term (`is_public = true`) does the filtering when `auth.uid()` is null. The
+`.eq('id', id).not('oracle_id','is',null).single()` logic stays; a private card simply yields
+no row (→ `null`, same as the existing not-found path).
+
+> **Implementer note:** the file is named `*.server.ts` but it no longer needs the server
+> (cookie) client — it now uses the cookieless catalog client. Leave the filename as-is
+> (renaming ripples imports); the client swap is the only change. Confirm no other caller
+> depends on these functions seeing the caller's private cards: `grep -rn
+"fetchCustomCardRowById\|fetchCustomCardSourceRowById\|getCustomCardWithSource" src/ | grep
+-v node_modules` shows only the card page path.
+
+- [ ] **Step 2: Type-check + lint**
+
+Run: `npx tsc --noEmit` → clean. `npx eslint src/lib/supabase/queries/custom-cards.server.ts` →
+no new problems. Confirm no `supabase/server` import left in this file.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/lib/supabase/queries/custom-cards.server.ts
+git commit -m "$(printf 'feat(mpc): custom-card page reads go cookieless (public cards only)\n\nfetchCustomCardRowById/SourceRowById use createCatalogClient. Under RLS\n(is_public OR created_by=auth.uid()) with auth.uid() null, only public custom\ncards resolve; private ones -> null -> the page notFounds. Removes the last\ncookie read from the card page (used only there), making the whole route ISR.\n\nCo-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>')"
+```
+
+---
+
 ## Task 3: Enable ISR on the card page
 
 **Files:**
@@ -180,18 +243,14 @@ Run: `npx tsc --noEmit` → clean. `npx eslint "src/app/[locale]/card/[id]/page.
 
 Run: `npm run build` (this needs the DB reachable for any generateStaticParams work — ours returns `[]`, so it should not query at build). In the build output route table, find `/[locale]/card/[id]`. Expected: it is marked as ISR / revalidate (e.g. `● (ISR)` or shows a revalidate value / `◐`), NOT `ƒ (Dynamic)`.
 
-> **Implementer note — the key risk:** the page has TWO branches — the official path
-> (cookieless now) and the `mpc:` path (reads cookies). In Next App Router, `cookies()` is
-> only evaluated when the `mpc:` branch actually runs, so an official-id request never reads
-> cookies and can be cached; an `mpc:` request reads cookies and is dynamic. This "dynamic on
-> demand" is the intended behavior. BUT verify the build does not mark the WHOLE route
-> force-dynamic. If the build shows `/[locale]/card/[id]` as `ƒ (Dynamic)` (not ISR), it
-> means Next treats the route as dynamic because the `mpc:` branch CAN read cookies. If so,
-> STOP and report — the remedy (a follow-up, do not improvise a large refactor) is to split
-> the cookie read so it is unreachable on the official path (e.g. lazily import/call the mpc
-> fetch only inside the `if (id.startsWith('mpc:'))` block, which it already is — so this
-> likely works; but if Next still force-dynamics, the mpc branch may need to move to its own
-> route segment). Report the build output's marking for `/[locale]/card/[id]` verbatim.
+> **Implementer note:** after Tasks 2 and 2b, NEITHER branch reads cookies — the official
+> path uses the cookieless catalog client, and the `mpc:` path now does too (Task 2b). So the
+> whole route should statically generate. Verify the build marks `/[locale]/card/[id]` as ISR
+> (a revalidate value / `● (ISR)` / `◐`), NOT `ƒ (Dynamic)`. If it still shows `ƒ (Dynamic)`,
+> something is still reading a dynamic API (cookies/headers) on the render path — STOP and
+> report which (grep the page's transitive imports for `next/headers`); the force-dynamic
+> risk from the old cookie-reading mpc branch is gone, so a remaining `ƒ` means an unexpected
+> dynamic read to hunt down, not an accepted tradeoff. Report the build marking verbatim.
 
 - [ ] **Step 4: Runtime — cache HIT on second request + correct render**
 
