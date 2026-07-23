@@ -43,8 +43,11 @@ definition (gameplay identity — the "concept" of a card)
         │  released_at · finishes · image_status · image_uris · printed_* (localized)
         │  → 1 definition has N prints (each reprint × each language).
         │
-        ├─ faces (0..2) — per-face name/text/image for DFC, split, adventure…
-        └─ parts — all_parts relations (token / meld_part / meld_result / combo_piece)
+        └─ faces (0..2) — per-face name/text/image for DFC, split, adventure…
+
+parts — all_parts relations, modeled oracle → oracle (token / meld_part /
+        meld_result / combo_piece). A token is itself a full definition+print;
+        parts stores only the edge between two definitions.
 ```
 
 ### Key API facts that shaped the model (verified 2026-07-23)
@@ -183,20 +186,47 @@ seed normalization; readers should distinguish flippable-DFC (each face has its 
 `image_uris`) from shared-image splits (only face 0 has `image_uris`, or image is on the
 print root).
 
-### `card_parts` — all_parts relations
+### `card_parts` — all_parts relations (oracle → oracle)
 
-PK `(print_id, related_id, component)`. FK `print_id → card_prints`.
+The relation is modeled at the **definition (oracle) level, not the print level**: "Krenko
+creates a Goblin" is a gameplay fact true of every printing of Krenko, so both endpoints
+are `oracle_id`. A token is itself a full card (its own `oracle_id` + print rows in
+`card_definitions`/`card_prints`); `card_parts` only stores the **edge** between two
+definitions.
 
-| column     | type | note                                          |
-| ---------- | ---- | --------------------------------------------- |
-| print_id   | uuid | the card declaring the relation               |
-| related_id | uuid | print id of the related part                  |
-| component  | text | token\|meld_part\|meld_result\|combo_piece    |
-| name       | text |                                               |
-| type_line  | text |                                               |
-|            |      | PRIMARY KEY (print_id, related_id, component) |
+PK `(oracle_id, related_oracle_id, component)`. FK `oracle_id → card_definitions`.
 
-Self-references (a card listing itself as `combo_piece`) are kept as-is.
+| column            | type | note                                                                               |
+| ----------------- | ---- | ---------------------------------------------------------------------------------- |
+| oracle_id         | uuid | FK → card_definitions(oracle_id); the definition that declares the relation        |
+| related_oracle_id | uuid | the related definition (token / meld part / combo piece). NO strict FK — see below |
+| component         | text | token\|meld_part\|meld_result\|combo_piece                                         |
+| name              | text | denormalized part name (as listed in all_parts)                                    |
+| type_line         | text | denormalized part type_line                                                        |
+|                   |      | PRIMARY KEY (oracle_id, related_oracle_id, component)                              |
+
+**Nature of `all_parts` (verified 2026-07-23).** `all_parts` is a **bidirectional list of
+co-related cards**, not a directed "X creates Y" graph. The Goblin token's own `all_parts`
+lists ~65 entries: one `token` (itself) and ~64 `combo_piece` entries — every card that
+produces Goblins (Krenko, Legion Warboss, Dragon Fodder, …). `component` labels the _role_
+of the cited part (`token` = it is a token, `combo_piece` = a normal card of the group,
+`meld_part`/`meld_result` = meld pieces). Recursion (a token that creates another token) is
+covered for free: each definition contributes its own edges, and the full graph emerges
+from the union — no chaining logic needed at seed time.
+
+**`related_oracle_id` has NO strict FK.** The graph may cite an oracle whose prints never
+pass the paper/en/fr filter (a digital-only meld_result, an un-seeded token). A strict FK
+would break the seed on those; readers LEFT JOIN `card_definitions`/`card_prints` and show
+what exists.
+
+**Resolution (print id → oracle id).** An `all_parts` entry exposes the part's **print
+`id`, not its `oracle_id`** (fields: `id`, `component`, `name`, `type_line`, `uri`,
+`object`). The seed therefore resolves parts in a **second pass**: pass 1 builds
+`card_prints` (a complete `print_id → oracle_id` mapping now lives in the DB); pass 2
+re-reads each card's `all_parts`, resolves each `related_print_id` to its
+`related_oracle_id` via that mapping, and upserts `card_parts`. Edges whose cited print is
+absent from `card_prints` are skipped. Self-edges (a card citing itself) are kept as-is.
+Upsert on the composite PK dedupes edges contributed by multiple prints of the same oracle.
 
 ### `localized_cards` — removed / migrated
 
@@ -224,8 +254,10 @@ classification (Core / Gameplay / Print) on 2026-07-23:
   across a definition's prints (every print of Delver is `transform`), so keeping it on
   `card_definitions` is functionally correct. `lang`, `oracle_id`, `id` are also Core
   fields, consistent with each EN/FR Card object being a distinct print row.
-- **`card_parts` ↔ Related Card Object** — confirmed: `id`, `component`, `name`,
-  `type_line` (+ `uri`, unused).
+- **`card_parts` ↔ Related Card Object** — the Related Card object exposes `id` (a print
+  id), `component`, `name`, `type_line` (+ `uri`, unused). We store the edge at oracle
+  level (`oracle_id → related_oracle_id`), resolving the cited print id to its oracle in a
+  second seed pass — see the `card_parts` table and Seed sections.
 - **`'reversible_card'`** must be added to the `ScryfallLayout` TS type (present in the
   API, absent from our type).
 
@@ -239,16 +271,30 @@ the whole file, writes via the service-role key which bypasses RLS).
   via the `/bulk-data` metadata endpoint then streamed from `*.scryfall.io` (no rate
   limit on the bulk host).
 - **Filter**: keep rows where `lang in ('en','fr')` AND `games` contains `'paper'`
-  (exclude digital-only Arena/MTGO cards).
-- **Explode** each print row into the four tables:
+  (exclude digital-only Arena/MTGO cards). **Tokens are full cards** (`object:card`,
+  `layout: token`/`double_faced_token`, own `oracle_id` + print, `games:[paper]`) and are
+  seeded like any other card — they are NOT sub-objects. Verified: Krenko's Goblin token
+  is set `tfdn`, paper, with its own `oracle_id`.
+
+The seed runs in **two passes** (the second is required because `all_parts` cites print
+ids, not oracle ids):
+
+- **Pass 1 — cards, prints, faces.** For each kept bulk row:
   - upsert `card_definitions` on `oracle_id` (idempotent — many prints share one oracle),
-  - upsert `card_prints` on `id` (or on `(set, collector_number, lang)`),
+  - upsert `card_prints` on `id` (arbiter `(set, collector_number, lang)` also unique),
   - replace `card_faces` for that print (delete-then-insert or upsert on
-    `(print_id, face_index)`),
-  - replace `card_parts` for that print.
+    `(print_id, face_index)`).
+    After pass 1 the DB holds a complete `print_id → oracle_id` mapping.
+- **Pass 2 — parts.** Re-stream the bulk (or a retained id list), and for each card's
+  `all_parts`: resolve each `related_print_id → related_oracle_id` via the pass-1 mapping,
+  then upsert `card_parts(oracle_id, related_oracle_id, component, name, type_line)` on its
+  composite PK (dedupes edges from multiple prints of the same oracle). Skip edges whose
+  cited print is absent from `card_prints`.
 - **Image sizes**: store only `{small, normal, large}` in every `image_uris` jsonb
   (the app never reads png/art_crop/border_crop on the card path).
-- Batched upserts (like the localized seeder's `UPSERT_BATCH = 500`).
+- Batched upserts (like the localized seeder's `UPSERT_BATCH = 500`). Keep the streaming
+  discipline that avoided prior OOMs — do not buffer the whole file or a ~90k in-memory
+  map; the print→oracle mapping lives in the DB (pass 2 queries it), not in RAM.
 
 ## Scope
 
