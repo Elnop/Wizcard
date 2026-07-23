@@ -9,6 +9,16 @@ import { CardPageHeader } from './components/CardPageHeader/CardPageHeader';
 import { CardTabs } from './components/CardTabs/CardTabs';
 import styles from './page.module.css';
 
+// ISR: the public card page is static catalog data. Generate each card on first
+// access and cache it (revalidate 7 days). The mpc: branch reads cookies (owner-gated
+// custom cards), which keeps those specific renders dynamic — official cards cache.
+export const revalidate = 604800; // 7 days
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+	return []; // 159k prints × 2 locales is too many to build; everything is on-demand ISR
+}
+
 interface CardPageProps {
 	params: Promise<{
 		locale: Locale;
