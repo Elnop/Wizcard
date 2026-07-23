@@ -915,6 +915,7 @@
 		"invalidJsonBody": "Invalid JSON body",
 		"missingIdentifiers": "Missing identifiers",
 		"invalidIdentifiers": "Invalid identifiers",
+		"collectionResolutionFailed": "Failed to resolve cards.",
 		"invalidRequest": "Invalid request.",
 		"sameEmail": "The new address is the same as the current one.",
 		"invalidOrExpiredLink": "Invalid or expired link.",

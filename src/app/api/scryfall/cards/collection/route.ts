@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getApiTranslations } from '@/i18n/api';
-
-const SCRYFALL_URL = 'https://api.scryfall.com/cards/collection';
+import { getCardCollection } from '@/lib/card/source';
+import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
 
 // Scryfall caps /cards/collection at 75 identifiers per request; the importer
 // already batches by 75 (scryfall-resolver BATCH_SIZE). Anything larger is
@@ -44,21 +44,11 @@ export async function POST(req: Request) {
 		return NextResponse.json({ error: t('invalidIdentifiers') }, { status: 400 });
 	}
 
-	const res = await fetch(SCRYFALL_URL, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			Accept: 'application/json',
-			'User-Agent': 'Wizcard/1.0',
-		},
-		body: JSON.stringify({ identifiers }),
-	});
-
-	const data = await res.json();
-
-	if (!res.ok) {
-		return NextResponse.json(data, { status: res.status });
+	try {
+		const list = await getCardCollection(identifiers as ScryfallCardIdentifier[]);
+		return NextResponse.json(list);
+	} catch (err) {
+		console.error('[api/scryfall/cards/collection] resolution failed:', err);
+		return NextResponse.json({ error: t('collectionResolutionFailed') }, { status: 502 });
 	}
-
-	return NextResponse.json(data);
 }

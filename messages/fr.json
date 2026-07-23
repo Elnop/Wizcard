@@ -915,6 +915,7 @@
 		"invalidJsonBody": "Corps JSON invalide",
 		"missingIdentifiers": "Identifiants manquants",
 		"invalidIdentifiers": "Identifiants invalides",
+		"collectionResolutionFailed": "Échec de la résolution des cartes.",
 		"invalidRequest": "Requête invalide.",
 		"sameEmail": "La nouvelle adresse est identique à l’actuelle.",
 		"invalidOrExpiredLink": "Lien invalide ou expiré.",
