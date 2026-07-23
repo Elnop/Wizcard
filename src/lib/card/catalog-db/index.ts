@@ -4,7 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { rowsToScryfallCard } from './assembler';
 import type { DefinitionRow, PrintRow, DefinitionFaceRow, PrintFaceRow, SetRow } from './assembler';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallCard, ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
 
 const PRINT_COLS =
 	'id, oracle_id, set, collector_number, lang, rarity, released_at, artist, border_color, frame, image_status, image_uris, finishes, promo, reprint, variation, digital, printed_name, printed_type_line, printed_text, multiverse_ids, mtgo_id, arena_id, tcgplayer_id, cardmarket_id';
@@ -145,16 +145,246 @@ export async function byMultiverseId(id: number): Promise<ScryfallCard | null> {
 	);
 }
 
-export async function byCollection(ids: string[]): Promise<(ScryfallCard | null)[]> {
-	if (ids.length === 0) return [];
+const OR_CHUNK = 100; // bound each grouped query so the PostgREST URL stays under limits
+
+// The target language for an identifier: its own lang, else the batch default, else 'en'.
+function langFor(id: ScryfallCardIdentifier, batchLang?: string): string {
+	return id.lang ?? batchLang ?? 'en';
+}
+
+// Pick the best print row for a wanted (set, collector_number, lang): the requested-lang
+// row if present, else the English row (intra-DB fallback).
+function pickByLang(rows: PrintRow[], lang: string): PrintRow | undefined {
+	return rows.find((r) => r.lang === lang) ?? rows.find((r) => r.lang === 'en');
+}
+
+// Buckets of raw identifier values, grouped by resolution form.
+interface IdentifierGroups {
+	idVals: string[];
+	setNumberVals: Array<{ set: string; collector_number: string }>;
+	enNames: string[];
+	frNames: string[];
+	oracleVals: string[];
+	mtgoVals: number[];
+	multiverseVals: number[];
+}
+
+function groupIdentifiers(
+	identifiers: ScryfallCardIdentifier[],
+	batchLang?: string
+): IdentifierGroups {
+	const groups: IdentifierGroups = {
+		idVals: [],
+		setNumberVals: [],
+		enNames: [],
+		frNames: [],
+		oracleVals: [],
+		mtgoVals: [],
+		multiverseVals: [],
+	};
+	for (const id of identifiers) {
+		if (id.id) groups.idVals.push(id.id);
+		else if (id.set && id.collector_number)
+			groups.setNumberVals.push({ set: id.set, collector_number: id.collector_number });
+		else if (id.name) {
+			if (langFor(id, batchLang) !== 'en') groups.frNames.push(id.name);
+			groups.enNames.push(id.name); // always also try EN by name (FR-then-EN best effort)
+		} else if (id.oracle_id) groups.oracleVals.push(id.oracle_id);
+		else if (id.mtgo_id != null) groups.mtgoVals.push(id.mtgo_id);
+		else if (id.multiverse_id != null) groups.multiverseVals.push(id.multiverse_id);
+	}
+	return groups;
+}
+
+// Fetch, in bounded chunks, every print row that could satisfy any identifier in `groups`.
+async function fetchGroupedPrints(sb: SB, groups: IdentifierGroups): Promise<PrintRow[]> {
+	const prints: PrintRow[] = [];
+	const pushRows = (rows: PrintRow[] | null) => {
+		if (rows) prints.push(...rows);
+	};
+
+	// id group
+	for (let i = 0; i < groups.idVals.length; i += OR_CHUNK) {
+		const chunk = [...new Set(groups.idVals.slice(i, i + OR_CHUNK))];
+		const { data } = await sb.from('card_prints').select(PRINT_COLS).in('id', chunk);
+		pushRows(data as PrintRow[] | null);
+	}
+	// set+number group (fetch fr+en for each, pickByLang chooses)
+	for (let i = 0; i < groups.setNumberVals.length; i += OR_CHUNK) {
+		const chunk = groups.setNumberVals.slice(i, i + OR_CHUNK);
+		const orExpr = chunk
+			.map((c) => `and(set.eq.${c.set},collector_number.eq.${c.collector_number})`)
+			.join(',');
+		const { data } = await sb
+			.from('card_prints')
+			.select(PRINT_COLS)
+			.or(orExpr)
+			.in('lang', ['fr', 'en']);
+		pushRows(data as PrintRow[] | null);
+	}
+	// oracle group
+	for (let i = 0; i < groups.oracleVals.length; i += OR_CHUNK) {
+		const chunk = [...new Set(groups.oracleVals.slice(i, i + OR_CHUNK))];
+		const { data } = await sb
+			.from('card_prints')
+			.select(PRINT_COLS)
+			.in('oracle_id', chunk)
+			.in('lang', ['fr', 'en']);
+		pushRows(data as PrintRow[] | null);
+	}
+	// external-id groups
+	for (let i = 0; i < groups.mtgoVals.length; i += OR_CHUNK) {
+		const chunk = [...new Set(groups.mtgoVals.slice(i, i + OR_CHUNK))];
+		const { data } = await sb.from('card_prints').select(PRINT_COLS).in('mtgo_id', chunk);
+		pushRows(data as PrintRow[] | null);
+	}
+	for (const mv of [...new Set(groups.multiverseVals)]) {
+		const { data } = await sb
+			.from('card_prints')
+			.select(PRINT_COLS)
+			.contains('multiverse_ids', [mv]);
+		pushRows(data as PrintRow[] | null);
+	}
+	// name groups: FR printed_name, then EN via definitions.name → its prints
+	for (const name of [...new Set(groups.frNames)]) {
+		const { data } = await sb
+			.from('card_prints')
+			.select(PRINT_COLS)
+			.ilike('printed_name', name)
+			.eq('lang', 'fr');
+		pushRows(data as PrintRow[] | null);
+	}
+	if (groups.enNames.length > 0) {
+		const uniqueEn = [...new Set(groups.enNames)];
+		for (let i = 0; i < uniqueEn.length; i += OR_CHUNK) {
+			const chunk = uniqueEn.slice(i, i + OR_CHUNK);
+			const { data: defs } = await sb
+				.from('card_definitions')
+				.select('oracle_id, name')
+				.in('name', chunk);
+			const oracleIds = [
+				...new Set(((defs as { oracle_id: string }[] | null) ?? []).map((d) => d.oracle_id)),
+			];
+			for (let j = 0; j < oracleIds.length; j += OR_CHUNK) {
+				const oc = oracleIds.slice(j, j + OR_CHUNK);
+				const { data } = await sb
+					.from('card_prints')
+					.select(PRINT_COLS)
+					.in('oracle_id', oc)
+					.eq('lang', 'en');
+				pushRows(data as PrintRow[] | null);
+			}
+		}
+	}
+
+	return prints;
+}
+
+// Everything `resolveOne` needs to turn one identifier into a card, pre-indexed once per batch.
+interface ResolveContext {
+	prints: PrintRow[];
+	cards: ScryfallCard[];
+	cardByPrintId: Map<string, ScryfallCard>;
+	printsBySetNumber: Map<string, PrintRow[]>;
+	batchLang?: string;
+}
+
+function resolveById(ctx: ResolveContext, id: ScryfallCardIdentifier): ScryfallCard | null {
+	return ctx.cardByPrintId.get(id.id!) ?? null;
+}
+
+function resolveBySetNumber(
+	ctx: ResolveContext,
+	id: ScryfallCardIdentifier,
+	lang: string
+): ScryfallCard | null {
+	const rows = ctx.printsBySetNumber.get(`${id.set}/${id.collector_number}`) ?? [];
+	const row = pickByLang(rows, lang);
+	return row ? (ctx.cardByPrintId.get(row.id) ?? null) : null;
+}
+
+function resolveByName(
+	ctx: ResolveContext,
+	id: ScryfallCardIdentifier,
+	lang: string
+): ScryfallCard | null {
+	const target = id.name!.toLowerCase();
+	if (lang !== 'en') {
+		const fr = ctx.prints.find(
+			(p) => p.lang === 'fr' && (p.printed_name ?? '').toLowerCase() === target
+		);
+		if (fr) return ctx.cardByPrintId.get(fr.id) ?? null;
+	}
+	// EN by name: find a card whose (assembled) name matches
+	const en = ctx.cards.find((c) => c.lang === 'en' && c.name.toLowerCase() === target);
+	return en ?? null;
+}
+
+function resolveByOracleId(
+	ctx: ResolveContext,
+	id: ScryfallCardIdentifier,
+	lang: string
+): ScryfallCard | null {
+	const rows = ctx.prints.filter((p) => p.oracle_id === id.oracle_id);
+	const row = pickByLang(rows, lang);
+	return row ? (ctx.cardByPrintId.get(row.id) ?? null) : null;
+}
+
+function resolveByMtgoId(ctx: ResolveContext, id: ScryfallCardIdentifier): ScryfallCard | null {
+	const row = ctx.prints.find((p) => p.mtgo_id === id.mtgo_id);
+	return row ? (ctx.cardByPrintId.get(row.id) ?? null) : null;
+}
+
+function resolveByMultiverseId(
+	ctx: ResolveContext,
+	id: ScryfallCardIdentifier
+): ScryfallCard | null {
+	const row = ctx.prints.find((p) => (p.multiverse_ids ?? []).includes(id.multiverse_id!));
+	return row ? (ctx.cardByPrintId.get(row.id) ?? null) : null;
+}
+
+function resolveOne(ctx: ResolveContext, id: ScryfallCardIdentifier): ScryfallCard | null {
+	const lang = langFor(id, ctx.batchLang);
+	if (id.id) return resolveById(ctx, id);
+	if (id.set && id.collector_number) return resolveBySetNumber(ctx, id, lang);
+	if (id.name) return resolveByName(ctx, id, lang);
+	if (id.oracle_id) return resolveByOracleId(ctx, id, lang);
+	if (id.mtgo_id != null) return resolveByMtgoId(ctx, id);
+	if (id.multiverse_id != null) return resolveByMultiverseId(ctx, id);
+	return null;
+}
+
+export async function byCollection(
+	identifiers: ScryfallCardIdentifier[],
+	opts?: { lang?: string }
+): Promise<(ScryfallCard | null)[]> {
+	if (identifiers.length === 0) return [];
 	const sb = await createClient();
-	const { data } = await sb
-		.from('card_prints')
-		.select(PRINT_COLS)
-		.in('id', [...new Set(ids)]);
-	const cards = await assemblePrints(sb, (data as PrintRow[] | null) ?? []);
-	const byIdMap = new Map(cards.map((c) => [c.id, c]));
-	return ids.map((id) => byIdMap.get(id) ?? null);
+
+	// Collect the print rows needed, grouped by form, in bounded queries, then resolve each
+	// identifier's slot against them in memory.
+	const groups = groupIdentifiers(identifiers, opts?.lang);
+	const prints = await fetchGroupedPrints(sb, groups);
+
+	// Assemble every fetched print once, then index for slot resolution.
+	const cards = await assemblePrints(sb, prints);
+	const cardByPrintId = new Map(cards.map((c) => [c.id, c]));
+	const printsBySetNumber = new Map<string, PrintRow[]>();
+	for (const p of prints) {
+		const key = `${p.set}/${p.collector_number}`;
+		const arr = printsBySetNumber.get(key) ?? [];
+		arr.push(p);
+		printsBySetNumber.set(key, arr);
+	}
+
+	const ctx: ResolveContext = {
+		prints,
+		cards,
+		cardByPrintId,
+		printsBySetNumber,
+		batchLang: opts?.lang,
+	};
+	return identifiers.map((id) => resolveOne(ctx, id));
 }
 
 export async function printsByOracleId(oracleId: string): Promise<ScryfallCard[]> {
