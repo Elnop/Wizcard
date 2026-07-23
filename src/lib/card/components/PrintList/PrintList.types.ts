@@ -112,7 +112,7 @@ export function groupCollectionByPrint(
 		const scryfallCard = printMap.get(scryfallId)!;
 		const orderedGroup = [...group].sort((a, b) => a.rowId.localeCompare(b.rowId));
 		sections.push({
-			label: `${scryfallCard.set_name} #${scryfallCard.collector_number} (${group.length})`,
+			label: `${scryfallCard.set_name ?? scryfallCard.set.toUpperCase()} #${scryfallCard.collector_number} (${group.length})`,
 			cards: orderedGroup.map((copy) => {
 				const card: Card = {
 					...scryfallCard,

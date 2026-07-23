@@ -108,7 +108,7 @@ export function AddCardModal({
 	return (
 		<CardEntryFormBody
 			title={t('addTitle', {
-				print: `${form.selectedPrint.set_name} #${form.selectedPrint.collector_number}`,
+				print: `${form.selectedPrint.set_name ?? form.selectedPrint.set.toUpperCase()} #${form.selectedPrint.collector_number}`,
 			})}
 			form={form}
 			onClose={onClose}
