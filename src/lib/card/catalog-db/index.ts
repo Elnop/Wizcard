@@ -1,7 +1,7 @@
 // Pure catalog reader: DB → ScryfallCard | null. No Scryfall, no fallback (that lives in
 // card-source). Loads a print + its definition + faces (+ set) and rebuilds via the assembler.
 
-import { createClient } from '@/lib/supabase/server';
+import { createCatalogClient } from '@/lib/supabase/catalog';
 import { rowsToScryfallCard } from './assembler';
 import type { DefinitionRow, PrintRow, DefinitionFaceRow, PrintFaceRow, SetRow } from './assembler';
 import type { ScryfallCard, ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
@@ -16,7 +16,7 @@ const PRINT_FACE_COLS =
 	'print_id, face_index, artist, illustration_id, image_uris, printed_name, printed_type_line, printed_text';
 const SET_COLS = 'code, id, name, set_type';
 
-type SB = Awaited<ReturnType<typeof createClient>>;
+type SB = ReturnType<typeof createCatalogClient>;
 
 // Given a set of print rows, load the definitions/faces/sets they need and assemble.
 async function assemblePrints(sb: SB, prints: PrintRow[]): Promise<ScryfallCard[]> {
@@ -77,7 +77,7 @@ async function firstPrintCard(
 }
 
 export async function byId(id: string): Promise<ScryfallCard | null> {
-	const sb = await createClient();
+	const sb = createCatalogClient();
 	return firstPrintCard(sb, sb.from('card_prints').select(PRINT_COLS).eq('id', id).limit(1));
 }
 
@@ -86,7 +86,7 @@ export async function bySetNumberLang(
 	collectorNumber: string,
 	lang: string
 ): Promise<ScryfallCard | null> {
-	const sb = await createClient();
+	const sb = createCatalogClient();
 	return firstPrintCard(
 		sb,
 		sb
@@ -107,7 +107,7 @@ export async function bySetNumber(
 }
 
 export async function byName(name: string, opts?: { lang?: string }): Promise<ScryfallCard | null> {
-	const sb = await createClient();
+	const sb = createCatalogClient();
 	const { data: defs } = await sb
 		.from('card_definitions')
 		.select('oracle_id')
@@ -129,7 +129,7 @@ export async function byName(name: string, opts?: { lang?: string }): Promise<Sc
 }
 
 async function byExternalId(column: string, id: number): Promise<ScryfallCard | null> {
-	const sb = await createClient();
+	const sb = createCatalogClient();
 	return firstPrintCard(sb, sb.from('card_prints').select(PRINT_COLS).eq(column, id).limit(1));
 }
 export const byMtgoId = (id: number) => byExternalId('mtgo_id', id);
@@ -138,7 +138,7 @@ export const byTcgplayerId = (id: number) => byExternalId('tcgplayer_id', id);
 export const byCardmarketId = (id: number) => byExternalId('cardmarket_id', id);
 
 export async function byMultiverseId(id: number): Promise<ScryfallCard | null> {
-	const sb = await createClient();
+	const sb = createCatalogClient();
 	return firstPrintCard(
 		sb,
 		sb.from('card_prints').select(PRINT_COLS).contains('multiverse_ids', [id]).limit(1)
@@ -361,7 +361,7 @@ export async function byCollection(
 	opts?: { lang?: string }
 ): Promise<(ScryfallCard | null)[]> {
 	if (identifiers.length === 0) return [];
-	const sb = await createClient();
+	const sb = createCatalogClient();
 
 	// Collect the print rows needed, grouped by form, in bounded queries, then resolve each
 	// identifier's slot against them in memory.
@@ -390,7 +390,7 @@ export async function byCollection(
 }
 
 export async function printsByOracleId(oracleId: string): Promise<ScryfallCard[]> {
-	const sb = await createClient();
+	const sb = createCatalogClient();
 	const { data } = await sb
 		.from('card_prints')
 		.select(PRINT_COLS)
