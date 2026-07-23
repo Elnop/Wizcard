@@ -4,7 +4,7 @@
 
 **Goal:** Mirror the Scryfall card catalog (EN + FR paper prints) into our own Postgres tables so downstream sub-projects can read cards from the DB instead of `api.scryfall.com`.
 
-**Architecture:** Rename the existing user-owned `cards` table to `card_entries` (isolated first step), then add four catalog tables modeling Scryfall's identity levels — `card_definitions` (oracle/gameplay), `card_prints` (physical edition × language), `card_faces` (0..2 faces), `card_parts` (oracle→oracle relations). A two-pass streaming seed populates them from the `default_cards` bulk file.
+**Architecture:** Rename the existing user-owned `cards` table to `card_entries` (isolated first step), then add four catalog tables modeling Scryfall's identity levels — `card_definitions` (oracle/gameplay), `card_prints` (physical edition × language), `card_faces` (0..2 faces), `card_parts` (oracle→oracle relations). A two-pass streaming seed populates them from the `all_cards` bulk file.
 
 **Tech Stack:** Supabase (Postgres + RLS), TypeScript, `@supabase/supabase-js`, `tsx` for scripts. No test framework in this project — verification is `npm run check` + runtime (`sb:reset`/`sb:migrate` + Studio + spot-checks).
 
@@ -570,7 +570,7 @@ git commit -m "$(printf 'feat(seed): pure normalization ScryfallCard -> catalog 
 
 **Interfaces:**
 
-- Consumes: `toCatalogRows` from Task 5; the `default_cards` bulk URL from `/bulk-data`.
+- Consumes: `toCatalogRows` from Task 5; the `all_cards` bulk URL from `/bulk-data`.
 - Produces: after a run, `card_definitions`/`card_prints`/`card_faces` are populated; pass 2 (Task 7) is added in the next task. This task ships pass 1 as a runnable seed.
 
 Model on `scripts/seed/seed-localized-cards.ts` (streaming line-by-line via `readline` over `Readable.fromWeb`, service-role client, batched upserts, `--dry-run`/`--limit` flags).
@@ -578,7 +578,7 @@ Model on `scripts/seed/seed-localized-cards.ts` (streaming line-by-line via `rea
 - [ ] **Step 1: Write pass-1 seeder**
 
 ```ts
-// Two-pass streaming seed of the Scryfall card catalog from the default_cards bulk.
+// Two-pass streaming seed of the Scryfall card catalog from the all_cards bulk.
 // Pass 1 (this file): explode each kept card into card_definitions / card_prints /
 // card_faces. Pass 2 (added in the next task) resolves all_parts into card_parts.
 //
@@ -680,7 +680,7 @@ async function flushFaces(printIds: string[], rows: CardFaceRow[]) {
 }
 
 async function pass1(): Promise<void> {
-	const url = await bulkUrl('default_cards');
+	const url = await bulkUrl('all_cards');
 	const rl = await openBulkLines(url);
 
 	let seen = 0;
@@ -822,7 +822,7 @@ async function flushParts(rows: CardPartRow[]) {
 }
 
 async function pass2(): Promise<void> {
-	const url = await bulkUrl('default_cards');
+	const url = await bulkUrl('all_cards');
 	const rl = await openBulkLines(url);
 
 	let seen = 0;
@@ -1011,7 +1011,7 @@ Expected: all migrations (rename, catalog, drop localized) apply with no error o
 - EN+FR at print level, gameplay in card_definitions → Tasks 4-5 (lang check, split of fields). ✔
 - `card_faces` per-face printed_* (fixes split/adventure null bug) → Task 5 (faces from card.card_faces). ✔
 - `card_parts` oracle→oracle, no strict FK on related_oracle_id, two-pass resolution → Tasks 4, 7. ✔
-- Seed from default_cards, filter lang∈{en,fr} + games⊇paper, images {small,normal,large}, streaming, batched → Tasks 5-8. ✔
+- Seed from all_cards, filter lang∈{en,fr} + games⊇paper, images {small,normal,large}, streaming, batched → Tasks 5-8. ✔
 - Tokens seeded as full cards (not sub-objects) → Task 5 (no token special-casing; they pass the normal filter). ✔
 - `localized_cards` absorbed/retired → Task 9. ✔
 - `reversible_card` added to ScryfallLayout → Task 3. ✔

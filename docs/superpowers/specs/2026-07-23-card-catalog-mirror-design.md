@@ -267,7 +267,7 @@ Model the seed on the existing streaming seeder
 `scripts/seed/seed-localized-cards.ts` (streams the bulk line-by-line, never buffers
 the whole file, writes via the service-role key which bypasses RLS).
 
-- **Bulk**: `default_cards` (the best print per card+language, ~90k across langs), fetched
+- **Bulk**: `all_cards` (every card in every language, ~2.5 GB), fetched
   via the `/bulk-data` metadata endpoint then streamed from `*.scryfall.io` (no rate
   limit on the bulk host).
 - **Filter**: keep rows where `lang in ('en','fr')` AND `games` contains `'paper'`
@@ -304,7 +304,7 @@ ids, not oracle ids):
   as the first isolated, verified step.
 - Create `card_definitions`, `card_prints`, `card_faces`, `card_parts`.
 - Retire/migrate `localized_cards`.
-- Seed script from `default_cards` (EN + FR, paper).
+- Seed script from `all_cards` (EN + FR, paper). `default_cards` is English-only for cards that have an English print, so it cannot supply FR prints — `all_cards` is required.
 - RLS: public read (these are public card data, like `localized_cards`), service_role
   write only (no write policies; seed uses service-role key + table grants).
 

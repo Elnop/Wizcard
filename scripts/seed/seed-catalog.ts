@@ -1,4 +1,9 @@
-// Two-pass streaming seed of the Scryfall card catalog from the default_cards bulk.
+// Two-pass streaming seed of the Scryfall card catalog from the all_cards bulk.
+// all_cards (not default_cards) is the only bulk that contains non-English prints:
+// default_cards is "English or the printed language if the card is only available in
+// one language", so it holds ~no French prints of normal cards. We need EN + FR, so
+// all_cards (~2.5 GB, every card in every language) is the source; toCatalogRows
+// filters to lang in {en,fr} + paper.
 // Pass 1 (this file): explode each kept card into card_definitions / card_prints /
 // card_faces. Pass 2 (added in the next task) resolves all_parts into card_parts.
 //
@@ -112,7 +117,7 @@ async function flushFaces(printIds: string[], rows: CardFaceRow[]) {
 }
 
 async function pass1(): Promise<void> {
-	const url = await bulkUrl('default_cards');
+	const url = await bulkUrl('all_cards');
 	const rl = await openBulkLines(url);
 
 	let seen = 0;
