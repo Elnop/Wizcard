@@ -5,7 +5,9 @@
 // all_cards (~2.5 GB, every card in every language) is the source; toCatalogRows
 // filters to lang in {en,fr} + paper.
 // Pass 1 (this file): explode each kept card into card_definitions / card_prints /
-// card_faces. Pass 2 (added in the next task) resolves all_parts into card_parts.
+// card_faces. Pass 2 (this file): re-streams the bulk and resolves all_parts (which
+// cite the related PRINT id) into card_parts oracle->oracle edges, via a DB lookup
+// against card_prints (never a whole-catalog in-memory map).
 //
 //   npm run seed:catalog                 -- seed against $SUPABASE_URL
 //   npm run seed:catalog -- --dry-run    -- normalize/count without writing
@@ -116,6 +118,105 @@ async function flushFaces(printIds: string[], rows: CardFaceRow[]) {
 	}
 }
 
+interface PartEdge {
+	oracle_id: string;
+	related_print_id: string;
+	component: string;
+	name: string | null;
+	type_line: string | null;
+}
+
+interface CardPartRow {
+	oracle_id: string;
+	related_oracle_id: string;
+	component: string;
+	name: string | null;
+	type_line: string | null;
+}
+
+// Resolve a batch of related print ids to their oracle ids via the DB (populated
+// by pass 1). Returns a Map(print_id -> oracle_id) for the ids that exist.
+async function resolveOracleIds(printIds: string[]): Promise<Map<string, string>> {
+	const out = new Map<string, string>();
+	if (dryRun || printIds.length === 0) return out;
+	const unique = [...new Set(printIds)];
+	// Chunked like flushFaces' delete: a full UPSERT_BATCH (500) of UUIDs in one
+	// `.in()` overflows PostgREST/kong's URL length limit ("URI too long").
+	for (let i = 0; i < unique.length; i += DELETE_CHUNK) {
+		const chunk = unique.slice(i, i + DELETE_CHUNK);
+		const { data, error } = await sb().from('card_prints').select('id, oracle_id').in('id', chunk);
+		if (error) throw new Error(`card_prints resolve failed: ${error.message}`);
+		for (const r of data as Array<{ id: string; oracle_id: string }>) out.set(r.id, r.oracle_id);
+	}
+	return out;
+}
+
+async function flushParts(rows: CardPartRow[]) {
+	if (rows.length === 0 || dryRun) return;
+	// Multiple prints of the same oracle card (e.g. en + fr) each carry their own
+	// all_parts pointing at the same related part, so the same (oracle_id,
+	// related_oracle_id, component) edge can appear more than once in a batch —
+	// dedupe per batch or Postgres rejects the upsert with "ON CONFLICT DO UPDATE
+	// command cannot affect row a second time" (same issue as flushDefs).
+	const byKey = new Map(
+		rows.map((r) => [`${r.oracle_id}|${r.related_oracle_id}|${r.component}`, r])
+	);
+	const { error } = await sb()
+		.from('card_parts')
+		.upsert([...byKey.values()], { onConflict: 'oracle_id,related_oracle_id,component' });
+	if (error) throw new Error(`card_parts upsert failed: ${error.message}`);
+}
+
+async function pass2(): Promise<void> {
+	const url = await bulkUrl('all_cards');
+	const rl = await openBulkLines(url);
+
+	let seen = 0;
+	let edges: PartEdge[] = [];
+
+	async function flushEdgeBatch() {
+		if (edges.length === 0) return;
+		const map = await resolveOracleIds(edges.map((e) => e.related_print_id));
+		const rows: CardPartRow[] = [];
+		for (const e of edges) {
+			const related = map.get(e.related_print_id);
+			if (!related) continue; // cited print not in catalog — skip
+			rows.push({
+				oracle_id: e.oracle_id,
+				related_oracle_id: related,
+				component: e.component,
+				name: e.name,
+				type_line: e.type_line,
+			});
+		}
+		await flushParts(rows);
+		edges = [];
+	}
+
+	for await (const line of rl) {
+		const card = parseLine(line);
+		if (!card) continue;
+		seen++;
+		// Only cards we kept in pass 1 contribute edges (same filter).
+		const rowsFromCard = toCatalogRows(card);
+		if (!rowsFromCard || !card.all_parts?.length) continue;
+		for (const p of card.all_parts) {
+			edges.push({
+				oracle_id: card.oracle_id,
+				related_print_id: p.id,
+				component: p.component,
+				name: p.name ?? null,
+				type_line: p.type_line ?? null,
+			});
+		}
+		if (edges.length >= UPSERT_BATCH) await flushEdgeBatch();
+		if (seen % 50_000 === 0) console.log(`ℹ pass2: ${seen} lues…`);
+		if (limit > 0 && seen >= limit * 5) break; // parts are sparse; scan a bit wider under --limit
+	}
+	await flushEdgeBatch();
+	console.log(`✓ ${dryRun ? '[dry-run] ' : ''}pass2: edges resolved`);
+}
+
 async function pass1(): Promise<void> {
 	const url = await bulkUrl('all_cards');
 	const rl = await openBulkLines(url);
@@ -160,7 +261,7 @@ async function pass1(): Promise<void> {
 async function main() {
 	const started = Date.now();
 	await pass1();
-	// pass2 added in the next task
+	await pass2();
 	console.log(`✓ done in ${((Date.now() - started) / 1000).toFixed(0)}s`);
 }
 
