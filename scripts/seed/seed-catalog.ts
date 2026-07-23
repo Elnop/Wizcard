@@ -5,9 +5,10 @@
 // all_cards (~2.5 GB, every card in every language) is the source; toCatalogRows
 // filters to lang in {en,fr} + paper.
 // Pass 1 (this file): explode each kept card into card_definitions / card_prints /
-// card_faces. Pass 2 (this file): re-streams the bulk and resolves all_parts (which
-// cite the related PRINT id) into card_parts oracle->oracle edges, via a DB lookup
-// against card_prints (never a whole-catalog in-memory map).
+// card_definition_faces / card_print_faces. Pass 2 (this file): re-streams the bulk
+// and resolves all_parts (which cite the related PRINT id) into card_parts
+// oracle->oracle edges, via a DB lookup against card_prints (never a whole-catalog
+// in-memory map).
 //
 //   npm run seed:catalog                 -- seed against $SUPABASE_URL
 //   npm run seed:catalog -- --dry-run    -- normalize/count without writing
@@ -21,7 +22,8 @@ import {
 	toCatalogRows,
 	type CardDefinitionRow,
 	type CardPrintRow,
-	type CardFaceRow,
+	type CardDefinitionFaceRow,
+	type CardPrintFaceRow,
 } from './normalize-catalog-card';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
@@ -101,20 +103,34 @@ async function flushPrints(rows: CardPrintRow[]) {
 }
 const DELETE_CHUNK = 100; // .in() is a GET-style query string; UPSERT_BATCH-sized UUID lists overflow URL length limits
 
-async function flushFaces(printIds: string[], rows: CardFaceRow[]) {
+async function flushDefinitionFaces(rows: CardDefinitionFaceRow[]) {
+	if (rows.length === 0 || dryRun) return;
+	// Multiple prints of the same oracle (e.g. en + fr, or reprints) emit identical
+	// definition-face rows (gameplay is invariant per oracle) — dedupe per batch or
+	// Postgres rejects the upsert with "ON CONFLICT DO UPDATE command cannot affect
+	// row a second time" (same issue as flushDefs).
+	const byKey = new Map(rows.map((r) => [`${r.oracle_id}|${r.face_index}`, r]));
+	const { error } = await sb()
+		.from('card_definition_faces')
+		.upsert([...byKey.values()], { onConflict: 'oracle_id,face_index' });
+	if (error) throw new Error(`card_definition_faces upsert failed: ${error.message}`);
+}
+
+async function flushPrintFaces(printIds: string[], rows: CardPrintFaceRow[]) {
 	if (dryRun) return;
-	// Replace faces for the prints in this batch: delete then insert (a print's face
-	// set is small and fully known here). Chunk the delete: a full UPSERT_BATCH (500)
-	// of UUIDs in one `.in()` overflows PostgREST/kong's URL length limit ("URI too long").
+	// Replace print-faces for the prints in this batch: delete then insert (a print's
+	// face set is small and fully known here). Chunk the delete: a full UPSERT_BATCH
+	// (500) of UUIDs in one `.in()` overflows PostgREST/kong's URL length limit
+	// ("URI too long").
 	for (let i = 0; i < printIds.length; i += DELETE_CHUNK) {
 		const chunk = printIds.slice(i, i + DELETE_CHUNK);
 		if (chunk.length === 0) continue;
-		const { error: delErr } = await sb().from('card_faces').delete().in('print_id', chunk);
-		if (delErr) throw new Error(`card_faces delete failed: ${delErr.message}`);
+		const { error: delErr } = await sb().from('card_print_faces').delete().in('print_id', chunk);
+		if (delErr) throw new Error(`card_print_faces delete failed: ${delErr.message}`);
 	}
 	if (rows.length > 0) {
-		const { error } = await sb().from('card_faces').insert(rows);
-		if (error) throw new Error(`card_faces insert failed: ${error.message}`);
+		const { error } = await sb().from('card_print_faces').insert(rows);
+		if (error) throw new Error(`card_print_faces insert failed: ${error.message}`);
 	}
 }
 
@@ -140,7 +156,7 @@ async function resolveOracleIds(printIds: string[]): Promise<Map<string, string>
 	const out = new Map<string, string>();
 	if (dryRun || printIds.length === 0) return out;
 	const unique = [...new Set(printIds)];
-	// Chunked like flushFaces' delete: a full UPSERT_BATCH (500) of UUIDs in one
+	// Chunked like flushPrintFaces' delete: a full UPSERT_BATCH (500) of UUIDs in one
 	// `.in()` overflows PostgREST/kong's URL length limit ("URI too long").
 	for (let i = 0; i < unique.length; i += DELETE_CHUNK) {
 		const chunk = unique.slice(i, i + DELETE_CHUNK);
@@ -225,16 +241,20 @@ async function pass1(): Promise<void> {
 	let kept = 0;
 	let defs: CardDefinitionRow[] = [];
 	let prints: CardPrintRow[] = [];
-	let faces: CardFaceRow[] = [];
+	let defFaces: CardDefinitionFaceRow[] = [];
+	let printFaces: CardPrintFaceRow[] = [];
 	let facePrintIds: string[] = [];
 
 	async function flushAll() {
+		// FK order: card_definitions -> card_definition_faces -> card_prints -> card_print_faces.
 		await flushDefs(defs);
+		await flushDefinitionFaces(defFaces);
 		await flushPrints(prints);
-		await flushFaces(facePrintIds, faces);
+		await flushPrintFaces(facePrintIds, printFaces);
 		defs = [];
 		prints = [];
-		faces = [];
+		defFaces = [];
+		printFaces = [];
 		facePrintIds = [];
 	}
 
@@ -247,8 +267,9 @@ async function pass1(): Promise<void> {
 		kept++;
 		defs.push(rows.definition);
 		prints.push(rows.print);
+		defFaces.push(...rows.definitionFaces);
+		printFaces.push(...rows.printFaces);
 		facePrintIds.push(rows.print.id);
-		faces.push(...rows.faces);
 
 		if (prints.length >= UPSERT_BATCH) await flushAll();
 		if (seen % 50_000 === 0) console.log(`ℹ pass1: ${seen} lues, ${kept} gardées…`);

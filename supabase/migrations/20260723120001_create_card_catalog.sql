@@ -1,7 +1,9 @@
 -- Scryfall card catalog mirror. Public read data (like localized_cards); written
 -- only by the seed via the service-role key. Modeled on Scryfall's identity levels:
--- card_definitions (oracle/gameplay) -> card_prints (edition x language) -> card_faces;
--- card_parts holds oracle->oracle relations (tokens/meld/combo).
+-- card_definitions (oracle/gameplay) -> card_prints (edition x language) ->
+-- card_definition_faces (gameplay, per oracle) + card_print_faces (visual/localized,
+-- per print), joined on (oracle_id, face_index); card_parts holds oracle->oracle
+-- relations (tokens/meld/combo).
 
 create table if not exists public.card_definitions (
   oracle_id      uuid primary key,
@@ -58,17 +60,23 @@ create unique index if not exists card_prints_set_number_lang_key
 create index if not exists card_prints_oracle_id_idx
   on public.card_prints (oracle_id);
 
-create table if not exists public.card_faces (
+create table if not exists public.card_definition_faces (
+  oracle_id    uuid not null references public.card_definitions(oracle_id) on delete cascade,
+  face_index   smallint not null,
+  name         text,
+  type_line    text,
+  oracle_text  text,
+  mana_cost    text,
+  colors       text[],
+  power        text,
+  toughness    text,
+  loyalty      text,
+  primary key (oracle_id, face_index)
+);
+
+create table if not exists public.card_print_faces (
   print_id          uuid not null references public.card_prints(id) on delete cascade,
   face_index        smallint not null,
-  name              text,
-  type_line         text,
-  oracle_text       text,
-  mana_cost         text,
-  colors            text[],
-  power             text,
-  toughness         text,
-  loyalty           text,
   artist            text,
   illustration_id   uuid,
   image_uris        jsonb,
@@ -88,22 +96,26 @@ create table if not exists public.card_parts (
 );
 
 -- RLS: public read; no write policies (service_role bypasses RLS but still needs grants).
-alter table public.card_definitions enable row level security;
-alter table public.card_prints      enable row level security;
-alter table public.card_faces       enable row level security;
-alter table public.card_parts       enable row level security;
+alter table public.card_definitions      enable row level security;
+alter table public.card_prints           enable row level security;
+alter table public.card_definition_faces enable row level security;
+alter table public.card_print_faces      enable row level security;
+alter table public.card_parts            enable row level security;
 
 drop policy if exists card_definitions_select_all on public.card_definitions;
 create policy card_definitions_select_all on public.card_definitions for select using (true);
 drop policy if exists card_prints_select_all on public.card_prints;
 create policy card_prints_select_all on public.card_prints for select using (true);
-drop policy if exists card_faces_select_all on public.card_faces;
-create policy card_faces_select_all on public.card_faces for select using (true);
+drop policy if exists card_definition_faces_select_all on public.card_definition_faces;
+create policy card_definition_faces_select_all on public.card_definition_faces for select using (true);
+drop policy if exists card_print_faces_select_all on public.card_print_faces;
+create policy card_print_faces_select_all on public.card_print_faces for select using (true);
 drop policy if exists card_parts_select_all on public.card_parts;
 create policy card_parts_select_all on public.card_parts for select using (true);
 
-grant select on public.card_definitions, public.card_prints, public.card_faces, public.card_parts
+grant select
+  on public.card_definitions, public.card_prints, public.card_definition_faces, public.card_print_faces, public.card_parts
   to anon, authenticated;
 grant select, insert, update, delete
-  on public.card_definitions, public.card_prints, public.card_faces, public.card_parts
+  on public.card_definitions, public.card_prints, public.card_definition_faces, public.card_print_faces, public.card_parts
   to service_role;

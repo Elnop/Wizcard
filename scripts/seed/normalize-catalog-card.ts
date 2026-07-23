@@ -1,8 +1,9 @@
-// Pure normalization: a Scryfall card object -> catalog rows for the four tables.
-// No DB, no I/O. Faces are read from card.card_faces (printed_* + per-face image
-// when present); split/adventure keep 2 face rows but only the root image (their
-// faces have no image_uris), while transform/modal_dfc/reversible carry image_uris
-// on each face.
+// Pure normalization: a Scryfall card object -> catalog rows for the five tables.
+// No DB, no I/O. Faces are read from card.card_faces and split into definitionFaces
+// (gameplay, invariant per oracle) + printFaces (printed_* + per-face image when
+// present); split/adventure keep 2 face rows but only the root image (their faces
+// have no image_uris), while transform/modal_dfc/reversible carry image_uris on
+// each face.
 
 import type { ScryfallCard, ScryfallImageUris } from '@/lib/scryfall/types/scryfall';
 
@@ -56,8 +57,8 @@ export interface CardPrintRow {
 	printed_text: string | null;
 }
 
-export interface CardFaceRow {
-	print_id: string;
+export interface CardDefinitionFaceRow {
+	oracle_id: string;
 	face_index: number;
 	name: string | null;
 	type_line: string | null;
@@ -67,6 +68,11 @@ export interface CardFaceRow {
 	power: string | null;
 	toughness: string | null;
 	loyalty: string | null;
+}
+
+export interface CardPrintFaceRow {
+	print_id: string;
+	face_index: number;
 	artist: string | null;
 	illustration_id: string | null;
 	image_uris: Img3 | null;
@@ -77,9 +83,12 @@ export interface CardFaceRow {
 
 const KEPT_LANGS = new Set(['en', 'fr']);
 
-export function toCatalogRows(
-	card: ScryfallCard
-): { definition: CardDefinitionRow; print: CardPrintRow; faces: CardFaceRow[] } | null {
+export function toCatalogRows(card: ScryfallCard): {
+	definition: CardDefinitionRow;
+	print: CardPrintRow;
+	definitionFaces: CardDefinitionFaceRow[];
+	printFaces: CardPrintFaceRow[];
+} | null {
 	if (!card.id || !card.oracle_id || !card.set || !card.collector_number) return null;
 	if (!KEPT_LANGS.has(card.lang)) return null;
 	if (!card.games?.includes('paper')) return null;
@@ -127,8 +136,8 @@ export function toCatalogRows(
 		printed_text: card.printed_text ?? null,
 	};
 
-	const faces: CardFaceRow[] = (card.card_faces ?? []).map((f, i) => ({
-		print_id: card.id,
+	const definitionFaces: CardDefinitionFaceRow[] = (card.card_faces ?? []).map((f, i) => ({
+		oracle_id: card.oracle_id,
 		face_index: i,
 		name: f.name ?? null,
 		type_line: f.type_line ?? null,
@@ -138,6 +147,11 @@ export function toCatalogRows(
 		power: f.power ?? null,
 		toughness: f.toughness ?? null,
 		loyalty: f.loyalty ?? null,
+	}));
+
+	const printFaces: CardPrintFaceRow[] = (card.card_faces ?? []).map((f, i) => ({
+		print_id: card.id,
+		face_index: i,
 		artist: f.artist ?? null,
 		illustration_id: f.illustration_id ?? null,
 		image_uris: pick3(f.image_uris),
@@ -146,5 +160,5 @@ export function toCatalogRows(
 		printed_text: f.printed_text ?? null,
 	}));
 
-	return { definition, print, faces };
+	return { definition, print, definitionFaces, printFaces };
 }
