@@ -151,6 +151,14 @@ Indexes: `(oracle_id)`, unique `(set, collector_number, lang)`.
 
 PK `(print_id, face_index)`. FK `print_id → card_prints`.
 
+Scryfall classifies `card_faces` as a **Gameplay field**, but the Card Face object
+itself mixes three natures (verified against the official docs): gameplay (`name`,
+`type_line`, `oracle_text`, `mana_cost`, `colors`, `power/toughness/loyalty`), print
+(`artist`, `illustration_id`, `image_uris`), and localization (`printed_*`). Our table
+mirrors the Card Face object faithfully, and the FK is on `print_id` (not `oracle_id`)
+because `image_uris` and `printed_*` vary per print/language — a face row belongs to a
+specific EN or FR print.
+
 | column                    | type     | note                                               |
 | ------------------------- | -------- | -------------------------------------------------- |
 | print_id                  | uuid     | FK → card_prints(id) ON DELETE CASCADE             |
@@ -199,6 +207,28 @@ the prefetch path) are retired or repointed in the implementation plan. The imag
 bug on split/adventure/flip (printed_* pulled from the null top-level) is fixed here by
 reading printed_* per face during the seed.
 
+## Validation against the official Scryfall docs
+
+The table-to-field mapping was checked against Scryfall's official Card object field
+classification (Core / Gameplay / Print) on 2026-07-23:
+
+- **`card_definitions` ↔ Gameplay fields** — confirmed aligned: `cmc`, `colors`,
+  `color_identity`, `keywords`, `legalities`, `mana_cost`, `oracle_text`,
+  `power/toughness/loyalty/defense`, `reserved`, `edhrec_rank` are all documented
+  Gameplay fields.
+- **`card_prints` ↔ Print fields** — confirmed aligned: `set`, `collector_number`,
+  `rarity`, `artist`, `border_color`, `frame`, `image_status`, `image_uris`,
+  `finishes`, `released_at`, `promo/reprint/variation/digital`, `printed_*` are all
+  documented Print fields.
+- **`layout` is a Core field** (per-Card-object), not Gameplay — but it is invariant
+  across a definition's prints (every print of Delver is `transform`), so keeping it on
+  `card_definitions` is functionally correct. `lang`, `oracle_id`, `id` are also Core
+  fields, consistent with each EN/FR Card object being a distinct print row.
+- **`card_parts` ↔ Related Card Object** — confirmed: `id`, `component`, `name`,
+  `type_line` (+ `uri`, unused).
+- **`'reversible_card'`** must be added to the `ScryfallLayout` TS type (present in the
+  API, absent from our type).
+
 ## Seed
 
 Model the seed on the existing streaming seeder
@@ -241,7 +271,9 @@ the whole file, writes via the service-role key which bypasses RLS).
 - Pre-generated SSR / page cache — sub-project 3.
 - **Prices** — excluded entirely (volatile daily data; belongs in a separate
   `card_prices` table/flow if ever needed, not in the catalog).
-- `flavor_name` — not stored (no consumer; YAGNI).
+- `flavor_name`, `flavor_text` — not stored. Both are Print fields (and `flavor_text`
+  is localizable), but no current consumer displays them (YAGNI). Add to `card_prints` /
+  `card_faces` alongside `printed_*` if a future view needs printed flavor text.
 
 ## Verification
 
