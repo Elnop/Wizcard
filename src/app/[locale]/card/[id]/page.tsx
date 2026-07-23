@@ -9,9 +9,10 @@ import { CardPageHeader } from './components/CardPageHeader/CardPageHeader';
 import { CardTabs } from './components/CardTabs/CardTabs';
 import styles from './page.module.css';
 
-// ISR: the public card page is static catalog data. Generate each card on first
-// access and cache it (revalidate 7 days). The mpc: branch reads cookies (owner-gated
-// custom cards), which keeps those specific renders dynamic — official cards cache.
+// ISR: the public card page is static catalog data. Every read (official cards and
+// public custom cards) is cookieless, so the whole route is statically generated on
+// first access and cached (revalidate 7 days). Private custom cards are filtered out by
+// RLS (auth.uid() null → is_public only) and 404 here — they live in the owner's space.
 export const revalidate = 604800; // 7 days
 export const dynamicParams = true;
 
