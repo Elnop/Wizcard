@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { LANGUAGE_TO_SCRYFALL_CODE } from '@/lib/mtg/languages';
-import { getCardBySetNumberAndLang } from '@/lib/scryfall/endpoints/cards';
+import { getLocalizedPrint } from '@/lib/scryfall/getLocalizedPrint';
 import {
 	getLocalizedImageFromCache,
 	putLocalizedImageInCache,
@@ -149,13 +149,14 @@ export async function fetchLocalizedImage(
 
 	// 2. Fetch from Scryfall (rate-limited by the shared throttle)
 	try {
-		const localized = await getCardBySetNumberAndLang(
-			card.set!,
-			card.collector_number!,
-			lang,
-			signal
-		);
+		const localized = await getLocalizedPrint(card.set!, card.collector_number!, lang, signal);
 		if (signal?.aborted) return null;
+
+		if (!localized) {
+			notFound.add(cacheKey);
+			void putLocalizedImageInCache({ key: cacheKey, cachedAt: Date.now(), missing: true });
+			return null;
+		}
 
 		// A localized print exists but has no real scan — Scryfall serves a
 		// grey "Localized Image Not Available" placeholder at a valid 200 URL.
@@ -220,8 +221,14 @@ export async function fetchEnglishImage(
 	if (cached) return cachedToResult(cached);
 
 	try {
-		const english = await getCardBySetNumberAndLang(card.set, card.collector_number, 'en', signal);
+		const english = await getLocalizedPrint(card.set, card.collector_number, 'en', signal);
 		if (signal?.aborted) return null;
+
+		if (!english) {
+			notFound.add(cacheKey);
+			void putLocalizedImageInCache({ key: cacheKey, cachedAt: Date.now(), missing: true });
+			return null;
+		}
 
 		if (english.image_status === 'placeholder' || english.image_status === 'missing') {
 			notFound.add(cacheKey);
