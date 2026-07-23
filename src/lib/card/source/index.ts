@@ -56,7 +56,7 @@ export async function getCardByCardmarketId(id: number): Promise<ScryfallCard> {
 export async function getCardCollection(
 	identifiers: ScryfallCardIdentifier[]
 ): Promise<ScryfallList<ScryfallCard>> {
-	const dbResults = await db.byCollection(identifiers.map((i) => i.id ?? ''));
+	const dbResults = await db.byCollection(identifiers);
 
 	const missIdentifiers: ScryfallCardIdentifier[] = [];
 	identifiers.forEach((identifier, i) => {
