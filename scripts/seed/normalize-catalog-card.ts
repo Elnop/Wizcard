@@ -92,6 +92,11 @@ export function toCatalogRows(card: ScryfallCard): {
 	if (!card.id || !card.oracle_id || !card.set || !card.collector_number) return null;
 	if (!KEPT_LANGS.has(card.lang)) return null;
 	if (!card.games?.includes('paper')) return null;
+	// art_series cards are collector art objects, not playable cards: no gameplay
+	// (type_line "Card", no cost/text), never in a deck, never a card_parts endpoint.
+	// They produce empty definition_faces (2 blank faces each) and only pollute the
+	// catalog — skip them. Their own oracle_id is never shared with a real card.
+	if (card.layout === 'art_series') return null;
 
 	const definition: CardDefinitionRow = {
 		oracle_id: card.oracle_id,

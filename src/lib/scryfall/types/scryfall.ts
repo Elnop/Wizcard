@@ -25,7 +25,12 @@ export type ScryfallLayout =
 	| 'double_faced_token'
 	| 'emblem'
 	| 'augment'
-	| 'host';
+	| 'host'
+	| 'mutate'
+	| 'prototype'
+	| 'case'
+	| 'prepare'
+	| 'art_series';
 export type ScryfallFrameEffect =
 	| 'legendary'
 	| 'miracle'

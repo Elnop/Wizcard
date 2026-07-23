@@ -290,10 +290,15 @@ the whole file, writes via the service-role key which bypasses RLS).
   via the `/bulk-data` metadata endpoint then streamed from `*.scryfall.io` (no rate
   limit on the bulk host).
 - **Filter**: keep rows where `lang in ('en','fr')` AND `games` contains `'paper'`
-  (exclude digital-only Arena/MTGO cards). **Tokens are full cards** (`object:card`,
-  `layout: token`/`double_faced_token`, own `oracle_id` + print, `games:[paper]`) and are
-  seeded like any other card — they are NOT sub-objects. Verified: Krenko's Goblin token
-  is set `tfdn`, paper, with its own `oracle_id`.
+  (exclude digital-only Arena/MTGO cards), AND `layout <> 'art_series'`. **Tokens are
+  full cards** (`object:card`, `layout: token`/`double_faced_token`, own `oracle_id` +
+  print, `games:[paper]`) and are seeded like any other card — they are NOT sub-objects.
+  Verified: Krenko's Goblin token is set `tfdn`, paper, with its own `oracle_id`.
+  **`art_series` is excluded**: these are collector art objects, not playable cards (no
+  gameplay — `type_line` "Card", no cost/text), never in a deck, never a `card_parts`
+  endpoint. They otherwise made up ~71% of `card_definition_faces` as empty (2 blank
+  faces each). Verified safe: an `art_series` oracle_id is never shared with a real card,
+  and no `card_parts.related_oracle_id` points at one.
 
 The seed runs in **two passes** (the second is required because `all_parts` cites print
 ids, not oracle ids):
