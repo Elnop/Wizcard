@@ -1,3 +1,4 @@
+import type { Card } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
 export type CardSourceType = 'mpc_ingested' | 'user_created';
@@ -66,6 +67,6 @@ export type CustomCard = Omit<Partial<ScryfallCard>, 'object'> & {
 	custom: CustomCardMeta;
 };
 
-export function isCustomCard(card: ScryfallCard | CustomCard): card is CustomCard {
-	return card.object === 'custom_card';
+export function isCustomCard(card: Card | CustomCard): card is CustomCard {
+	return 'custom' in card;
 }
