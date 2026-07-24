@@ -88,6 +88,17 @@ export interface Card {
 	arena_id?: number;
 	tcgplayer_id?: number;
 	cardmarket_id?: number;
+	// volatile provider pricing — populated on the Scryfall-fallback path, undefined on the
+	// DB path (the catalog stores no prices). Forward hook for a future price-sync feature.
+	prices?: {
+		usd?: string;
+		usd_foil?: string;
+		usd_etched?: string;
+		eur?: string;
+		eur_foil?: string;
+		eur_etched?: string;
+		tix?: string;
+	};
 }
 
 // Metadata for a single physical copy

@@ -86,5 +86,6 @@ export function toCard(s: ScryfallCard): Card {
 		arena_id: s.arena_id,
 		tcgplayer_id: s.tcgplayer_id,
 		cardmarket_id: s.cardmarket_id,
+		prices: s.prices,
 	};
 }
