@@ -4,18 +4,19 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import { getCardSimilar } from '@/lib/scryfall/endpoints/cards';
 import { LocalizedCardThumb } from '../../LocalizedCardThumb';
 import styles from './SimilarTab.module.css';
 
 interface Props {
-	card: ScryfallCard | CustomCard;
+	card: Card | CustomCard;
 }
 
 export function SimilarTab({ card }: Props) {
 	const t = useTranslations('card');
-	const [similar, setSimilar] = useState<ScryfallCard[]>([]);
+	const [similar, setSimilar] = useState<Card[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {

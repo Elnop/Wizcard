@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import { CardTokensSection } from '@/lib/card/components/CardTokensSection/CardTokensSection';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
@@ -10,13 +10,13 @@ import { useCardTokens } from '@/lib/card/hooks/useCardTokens';
 import styles from './TokensTab.module.css';
 
 interface Props {
-	card: ScryfallCard | CustomCard;
+	card: Card | CustomCard;
 }
 
 export function TokensTab({ card }: Props) {
 	const t = useTranslations('card');
 	const { tokens, loading } = useCardTokens(card);
-	const [tokenModalCard, setTokenModalCard] = useState<ScryfallCard | null>(null);
+	const [tokenModalCard, setTokenModalCard] = useState<Card | null>(null);
 
 	return (
 		<div className={styles.container}>

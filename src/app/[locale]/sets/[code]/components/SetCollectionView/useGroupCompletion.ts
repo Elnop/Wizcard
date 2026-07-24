@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import { searchAllCards } from '@/lib/scryfall/endpoints/cards';
 import type { SetGroup } from '@/lib/scryfall/utils/set-classification';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
@@ -9,9 +9,9 @@ import { computeSetCompletion, type SetCompletion } from '../../utils/setComplet
 
 export interface UseGroupCompletionResult {
 	/** All cards of every set in the group, once loaded. */
-	allCards: ScryfallCard[];
+	allCards: Card[];
 	/** Cards of the currently active set tab only. */
-	activeCards: ScryfallCard[];
+	activeCards: Card[];
 	/** Completion aggregated over the whole group (all sub-sets). */
 	groupCompletion: SetCompletion;
 	/** Completion of the active set tab only. */
@@ -30,7 +30,7 @@ export interface UseGroupCompletionResult {
  */
 export function useGroupCompletion(group: SetGroup, activeCode: string): UseGroupCompletionResult {
 	const { getOwnership, isFullyLoaded } = useCollectionContext();
-	const [allCards, setAllCards] = useState<ScryfallCard[]>([]);
+	const [allCards, setAllCards] = useState<Card[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<Error | null>(null);
 

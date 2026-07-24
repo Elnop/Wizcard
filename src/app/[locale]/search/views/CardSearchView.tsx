@@ -20,7 +20,6 @@ import { getCustomCardSourcesWithCount } from '@/lib/mpc/db/custom-cards';
 import type { MpcSourceWithCount } from '@/lib/mpc/db/custom-cards';
 import type { MpcTagsFilterValue } from '@/lib/search/components/filters/MpcTagsFilter/MpcTagsFilter';
 import { useRouter } from '@/i18n/navigation';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
 import { buildSearchMenuItems } from '../searchCardMenu';
@@ -148,7 +147,7 @@ export function CardSearchView({ cardState }: CardSearchViewProps) {
 	}, []);
 
 	const handleCardClick = useCallback(
-		(card: AnyCard) => openCardModal(card as ScryfallCard),
+		(card: AnyCard) => openCardModal(card),
 		[openCardModal]
 	);
 
@@ -292,16 +291,16 @@ export function CardSearchView({ cardState }: CardSearchViewProps) {
 					buildSearchMenuItems(
 						card,
 						{
-							onViewDetails: (c) => openCardModal(c as ScryfallCard),
+							onViewDetails: (c) => openCardModal(c),
 							onOpenCardPage: (c) => router.push(`/card/${c.id}`),
 							onAddToCollection: (c) =>
 								openAddCard({
-									scryfallCard: c as ScryfallCard,
+									scryfallCard: c,
 									onAdd: (card, entry, count) => addCards(card, count, entry),
 								}),
 							onAddToWishlist: (c) =>
 								openAddCard({
-									scryfallCard: c as ScryfallCard,
+									scryfallCard: c,
 									onAdd: (card, entry, count) => addToWishlist(card, entry, count),
 								}),
 							onAddToDeck: (c) => openAddToDeck(c),

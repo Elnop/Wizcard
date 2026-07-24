@@ -1,7 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallOnlyFields } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { ColorIdentityIcons } from '@/lib/scryfall/components/ColorIdentityIcons';
@@ -13,7 +14,7 @@ function splitOracleText(text: string | undefined): string[] {
 }
 
 interface Props {
-	card: ScryfallCard;
+	card: Card;
 }
 
 export function OverviewTab({ card }: Props) {
@@ -21,6 +22,8 @@ export function OverviewTab({ card }: Props) {
 	const symbolMap = useScryfallSymbols();
 	const colors = card.colors ?? card.color_identity ?? [];
 	const oracleLines = splitOracleText(card.oracle_text);
+	// Flavour text is provider-only (the DB catalog does not mirror it).
+	const flavorText = (card as ScryfallOnlyFields).flavor_text;
 
 	return (
 		<div className={styles.container}>
@@ -34,9 +37,9 @@ export function OverviewTab({ card }: Props) {
 				</div>
 			)}
 
-			{card.flavor_text && (
+			{flavorText && (
 				<div className={styles.flavorText}>
-					<em>{card.flavor_text}</em>
+					<em>{flavorText}</em>
 				</div>
 			)}
 

@@ -1,4 +1,4 @@
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import {
 	type CollectionFilters,
 	defaultCollectionFilters,
@@ -26,7 +26,7 @@ export const defaultSetFilters: SetFilters = {
 };
 
 function matchesOwnership(
-	card: ScryfallCard,
+	card: Card,
 	ownership: OwnershipFilter,
 	completion: SetCompletion
 ): boolean {
@@ -43,10 +43,10 @@ function matchesOwnership(
  * (set-specific), then the shared collection filters (which also handle sorting).
  */
 export function filterSetCards(
-	cards: ScryfallCard[],
+	cards: Card[],
 	filters: SetFilters,
 	completion: SetCompletion
-): ScryfallCard[] {
+): Card[] {
 	const byOwnership =
 		filters.ownership === 'all'
 			? cards

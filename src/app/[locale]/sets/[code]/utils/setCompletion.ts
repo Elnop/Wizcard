@@ -1,4 +1,4 @@
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { CardOwnership } from '@/lib/collection/context/CollectionContext';
 
 /** Per-print ownership flags used to drive the collection grid rendering. */
@@ -26,7 +26,7 @@ export interface SetCompletion {
  * as owned only when the user owns that specific printing.
  */
 export function computeSetCompletion(
-	cards: ScryfallCard[],
+	cards: Card[],
 	getOwnership: (scryfallId: string) => CardOwnership
 ): SetCompletion {
 	const status = new Map<string, PrintStatus>();

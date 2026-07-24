@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SetGroup } from '@/lib/scryfall/utils/set-classification';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import { SetCardsGrid } from '../SetCardsGrid/SetCardsGrid';
 import styles from './SetTabs.module.css';
@@ -12,7 +12,7 @@ export interface SetTabsProps {
 	activeId: string;
 	onTabChange: (code: string) => void;
 	/** Cards to render (already filtered/sorted at the page level). */
-	cards: ScryfallCard[];
+	cards: Card[];
 	isCompletionLoading: boolean;
 	sortOrder: ScryfallSortOrder;
 	sortDir: ScryfallSortDir;

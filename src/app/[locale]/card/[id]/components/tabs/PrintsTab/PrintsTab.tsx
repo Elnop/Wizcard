@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallOnlyFields } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import { isCustomCard } from '@/lib/mpc/types';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
@@ -25,10 +26,10 @@ const MENU_WIDTH = 200;
 const MENU_HEIGHT = 100;
 
 interface Props {
-	card: ScryfallCard | CustomCard;
+	card: Card | CustomCard;
 }
 
-function MiniThumb({ card }: { card: ScryfallCard }): ReactNode {
+function MiniThumb({ card }: { card: Card }): ReactNode {
 	return (
 		<LocalizedCardThumb card={card} size="small" width={40} height={56} className={styles.thumb} />
 	);
@@ -37,10 +38,12 @@ function MiniThumb({ card }: { card: ScryfallCard }): ReactNode {
 export function PrintsTab({ card }: Props) {
 	const t = useTranslations('card');
 	const custom = isCustomCard(card) ? card : null;
-	const scryfall = custom ? null : (card as ScryfallCard);
+	const official = custom ? null : (card as Card);
 
+	// `prints_search_uri` is a genuine provider-only field (the multilingual Prints
+	// tab is frozen on Scryfall); read it through the narrow provider subset.
 	const printsUri =
-		scryfall?.prints_search_uri ??
+		(official as ScryfallOnlyFields | null)?.prints_search_uri ??
 		(card.oracle_id
 			? `https://api.scryfall.com/cards/search?q=oracle_id%3A${card.oracle_id}&unique=prints&order=released`
 			: undefined);
@@ -54,10 +57,10 @@ export function PrintsTab({ card }: Props) {
 	const { openCardModal } = useCardModalContext();
 	const { profile } = useProfileContext();
 
-	const [contextMenuCard, setContextMenuCard] = useState<ScryfallCard | null>(null);
+	const [contextMenuCard, setContextMenuCard] = useState<Card | null>(null);
 	const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
 
-	const currentLang = scryfall?.lang ?? custom?.custom.lang ?? 'en';
+	const currentLang = official?.lang ?? custom?.custom.lang ?? 'en';
 	const hasCustomPrints = customPrints.length > 0;
 
 	let officialSections: CardListSection[] = [];
@@ -91,26 +94,26 @@ export function PrintsTab({ card }: Props) {
 				cards={sections}
 				isLoading={loading || customLoading}
 				pageSize={false}
-				onCardClick={(p) => openCardModal(p as ScryfallCard)}
+				onCardClick={(p) => openCardModal(p as Card)}
 				onCardContextMenu={(p, e) => {
 					e.preventDefault();
 					const x = e.clientX + MENU_WIDTH > window.innerWidth ? e.clientX - MENU_WIDTH : e.clientX;
 					const y =
 						e.clientY + MENU_HEIGHT > window.innerHeight ? e.clientY - MENU_HEIGHT : e.clientY;
-					setContextMenuCard(p as ScryfallCard);
+					setContextMenuCard(p as Card);
 					setContextMenuPos({ x, y });
 				}}
 				tableColumns={[
 					{
 						key: 'image',
 						label: '',
-						render: (p: AnyCard) => <MiniThumb card={p as ScryfallCard} />,
+						render: (p: AnyCard) => <MiniThumb card={p as Card} />,
 					},
 					{
 						key: 'set',
 						label: t('colPrint'),
 						render: (p: AnyCard) => {
-							const c = p as ScryfallCard;
+							const c = p as Card;
 							const isProxy = c.set === 'mpc';
 							return (
 								<>
@@ -130,7 +133,7 @@ export function PrintsTab({ card }: Props) {
 						key: 'rarity',
 						label: t('rarity'),
 						render: (p: AnyCard) => {
-							const c = p as ScryfallCard;
+							const c = p as Card;
 							if (c.set === 'mpc') return null;
 							return (c.rarity ?? '').charAt(0).toUpperCase() + (c.rarity ?? '').slice(1);
 						},
@@ -139,7 +142,7 @@ export function PrintsTab({ card }: Props) {
 						key: 'current',
 						label: '',
 						render: (p: AnyCard) => {
-							if ((p as ScryfallCard).id === card.id) {
+							if ((p as Card).id === card.id) {
 								return <span className={styles.currentBadge}>{t('shown')}</span>;
 							}
 							return null;

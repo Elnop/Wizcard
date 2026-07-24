@@ -1,7 +1,7 @@
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { hasRealScan } from '@/lib/scryfall/types/scryfall';
 import type { CardListSection, AnyCard } from '@/lib/card/components/CardList/CardList.types';
-import type { CardCopy } from '@/types/cards';
+import type { Card, CardCopy } from '@/types/cards';
 
 export interface CollectionCopyEntry {
 	rowId: string;
@@ -45,11 +45,11 @@ export function getLangLabel(lang: string, count: number): string {
  *  3. Remaining languages sort alphabetically (fr locale).
  */
 export function groupPrintsByLang(
-	prints: ScryfallCard[],
+	prints: Card[],
 	currentLang: string,
 	preferredLang?: string
 ): CardListSection[] {
-	const map = new Map<string, ScryfallCard[]>();
+	const map = new Map<string, Card[]>();
 	for (const print of prints) {
 		// Skip prints with no real scan (Scryfall serves a grey "Localized Image
 		// Not Available" placeholder). A language whose prints are all placeholders

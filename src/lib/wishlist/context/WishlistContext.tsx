@@ -1,8 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useRef } from 'react';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { CardEntry } from '@/types/cards';
+import type { Card, CardEntry } from '@/types/cards';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { type DeckZone, setDeckZone } from '@/types/decks';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
@@ -85,7 +84,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 			delete patch.dateAdded;
 			delete patch.deckId;
 			delete patch.ownerId;
-			const stubCard = { id: scryfallId } as ScryfallCard;
+			const stubCard = { id: scryfallId } as Card;
 			store.addToWishlist(stubCard, userId, triggerSync, patch);
 		},
 		[store, userId, triggerSync]

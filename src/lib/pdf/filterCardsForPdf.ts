@@ -1,5 +1,4 @@
 import type { CardCopy } from '@/types/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { getDeckZone } from '@/types/decks';
 import { isBasicLand } from '@/lib/deck/utils/format-rules';
 import type { DeckPdfExportOptions } from '@/lib/pdf/types';
@@ -9,7 +8,7 @@ export function filterCardsForPdf(cards: CardCopy[], options: DeckPdfExportOptio
 		const zone = getDeckZone(card.entry.tags);
 		if (!options.zones.includes(zone)) return false;
 		if (options.ignoreOwned && card.entry.ownerId != null) return false;
-		if (options.ignoreBasicLands && isBasicLand(card as unknown as ScryfallCard)) return false;
+		if (options.ignoreBasicLands && isBasicLand(card)) return false;
 		return true;
 	});
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { BATCH_SIZE } from '@/lib/scryfall/constants';
 import { fetchEdhrecRecommendations } from './fetch-recommendations';
@@ -11,7 +11,7 @@ import type { EdhrecSection } from './types';
 export interface EdhrecResolvedSection {
 	header: string;
 	/** Resolved cards; empty while `status === 'pending'`. */
-	cards: ScryfallCard[];
+	cards: Card[];
 	status: 'pending' | 'ready';
 }
 
@@ -23,8 +23,8 @@ interface UseEdhrecRecommendationsResult {
 }
 
 /** Resolve a list of card names to ScryfallCards, keyed by lowercased name. */
-async function resolveNames(names: string[]): Promise<Map<string, ScryfallCard>> {
-	const byName = new Map<string, ScryfallCard>();
+async function resolveNames(names: string[]): Promise<Map<string, Card>> {
+	const byName = new Map<string, Card>();
 	for (let i = 0; i < names.length; i += BATCH_SIZE) {
 		const chunk = names.slice(i, i + BATCH_SIZE);
 		const result = await getCardCollection(chunk.map((name) => ({ name })));
@@ -38,9 +38,9 @@ async function resolveNames(names: string[]): Promise<Map<string, ScryfallCard>>
 /** Map one EDHREC section's card names onto resolved Scryfall cards, preserving order. */
 function mapSectionCards(
 	section: EdhrecSection,
-	byName: Map<string, ScryfallCard>
-): ScryfallCard[] {
-	const cards: ScryfallCard[] = [];
+	byName: Map<string, Card>
+): Card[] {
+	const cards: Card[] = [];
 	for (const cv of section.cards) {
 		const card = byName.get(cv.name.toLowerCase());
 		if (card) cards.push(card);
@@ -52,7 +52,7 @@ function mapSectionCards(
 function withSectionReady(
 	prev: EdhrecResolvedSection[],
 	index: number,
-	cards: ScryfallCard[]
+	cards: Card[]
 ): EdhrecResolvedSection[] {
 	const next = prev.slice();
 	if (next[index]) next[index] = { ...next[index], cards, status: 'ready' };

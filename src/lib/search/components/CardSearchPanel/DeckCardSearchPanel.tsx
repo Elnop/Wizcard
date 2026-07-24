@@ -12,7 +12,7 @@ import { DeckZoneBadges } from './DeckZoneBadges';
 import { useDeckCardIndex } from './useDeckCardIndex';
 import { SearchPanelCore, type DeckSteering, type SearchState } from './SearchPanelCore';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
-import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
+import type { Card, CardCopy, MtgColor } from '@/types/cards';
 import type { DeckFormat } from '@/types/decks';
 import styles from './CardSearchPanel.module.css';
 
@@ -21,10 +21,10 @@ const COMMANDER_FORMATS: DeckFormat[] = ['commander', 'brawl', 'oathbreaker'];
 
 export type DeckCardSearchPanelProps = {
 	deckId: string;
-	onCardClick: (card: ScryfallCard) => void;
+	onCardClick: (card: Card) => void;
 	onClose: () => void;
 	deckFormat?: DeckFormat | null;
-	commanderColorIdentity?: ScryfallColor[];
+	commanderColorIdentity?: MtgColor[];
 	commanderName?: string | null;
 	onCollectionModeChange?: (inCollectionOnly: boolean) => void;
 	expanded: boolean;
@@ -76,17 +76,17 @@ export function DeckCardSearchPanel({
 		menu: contextMenu,
 		open: openContextMenu,
 		close: closeContextMenu,
-	} = useContextMenu<ScryfallCard>();
+	} = useContextMenu<Card>();
 
 	// Narrow the in-collection overlay to legal + commander-CI cards (deck rules).
 	const filterCollection = useCallback(
 		<T extends AnyCard>(cards: T[]): T[] => {
 			if (!(showLegalToggle && legalOnly && deckFormat)) return cards;
 			const fmt = deckFormat as import('@/lib/scryfall/types/scryfall').ScryfallFormat;
-			const legalFiltered = cards.filter((c) => (c as ScryfallCard).legalities?.[fmt] === 'legal');
+			const legalFiltered = cards.filter((c) => (c as Card).legalities?.[fmt] === 'legal');
 			if (isCommanderFormat && commanderColorIdentity && commanderColorIdentity.length > 0) {
 				return legalFiltered.filter((c) =>
-					((c as ScryfallCard).color_identity ?? []).every((ci) =>
+					((c as Card).color_identity ?? []).every((ci) =>
 						commanderColorIdentity.includes(ci)
 					)
 				);
@@ -105,7 +105,7 @@ export function DeckCardSearchPanel({
 				legalFilter && isCommanderFormat ? commanderColorIdentity : undefined;
 
 			// User CI selection intersects with the commander constraint (both "at most").
-			let effectiveColorIdentity: ScryfallColor[];
+			let effectiveColorIdentity: MtgColor[];
 			if (colorIdentityFilter && colorIdentityFilter.length > 0) {
 				effectiveColorIdentity =
 					state.colorIdentity.length > 0
@@ -151,18 +151,18 @@ export function DeckCardSearchPanel({
 
 	const handleAddCardClick = useCallback(
 		(card: AnyCard) => {
-			let scryfallCard: ScryfallCard;
+			let plainCard: Card;
 			if ('entry' in card) {
 				// eslint-disable-next-line @typescript-eslint/no-unused-vars
-				const { entry: _, ...rest } = card as import('@/types/cards').CardCopy;
-				scryfallCard = rest as ScryfallCard;
+				const { entry: _, ...rest } = card as CardCopy;
+				plainCard = rest as Card;
 			} else {
-				scryfallCard = card as ScryfallCard;
+				plainCard = card as Card;
 			}
 			if (isTokenMode) {
-				addCardToDeck(deckId, scryfallCard, 'tokens');
+				addCardToDeck(deckId, plainCard, 'tokens');
 			} else {
-				onCardClick(scryfallCard);
+				onCardClick(plainCard);
 			}
 		},
 		[isTokenMode, addCardToDeck, deckId, onCardClick]
@@ -173,7 +173,7 @@ export function DeckCardSearchPanel({
 			<>
 				<div
 					className={styles.searchCardOverlay}
-					onContextMenu={(e) => openContextMenu(card as ScryfallCard, e)}
+					onContextMenu={(e) => openContextMenu(card as Card, e)}
 				/>
 				<DeckZoneBadges zones={getDeckZones(card.oracle_id)} />
 			</>

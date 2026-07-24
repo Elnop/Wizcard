@@ -2,7 +2,6 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { Card, CardCopy, CardEntry, CardStack } from '@/types/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { DeckCardGroup } from '@/types/decks';
@@ -36,14 +35,14 @@ type StoredCopy = { scryfallId: string; entry: CardEntry };
 type OpenState =
 	| { kind: 'stack'; oracleKey: string }
 	| { kind: 'frozen'; cards: CardCopy[] }
-	| { kind: 'bare'; card: ScryfallCard | CustomCard }
+	| { kind: 'bare'; card: Card | CustomCard }
 	| { kind: 'deck'; deckId: string; oracleKey: string; clickedRowId: string }
 	| null;
 
 type CardModalContextValue = {
 	/** Open the modal for a bare card (search/sets/prints) or a resolved stack's cards. */
 	openCardModal: (
-		input: ScryfallCard | CustomCard | CardCopy[],
+		input: Card | CustomCard | CardCopy[],
 		opts?: { readOnly?: boolean }
 	) => void;
 	/**
@@ -192,7 +191,7 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 	const [open, setOpen] = useState<OpenState>(null);
 
 	const openCardModal = useCallback(
-		(input: ScryfallCard | CustomCard | CardCopy[], opts?: { readOnly?: boolean }) => {
+		(input: Card | CustomCard | CardCopy[], opts?: { readOnly?: boolean }) => {
 			if (Array.isArray(input)) {
 				const rep = input[0];
 				if (!rep) return;
@@ -226,7 +225,7 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 	// Re-resolve the displayed cards on every render so they track store mutations
 	// (increment/decrement/change-print) without the modal losing its target.
 	const resolved = useMemo<{
-		cards: CardCopy[] | ScryfallCard | CustomCard | null;
+		cards: CardCopy[] | Card | CustomCard | null;
 		rep: AnyCard | null;
 		source: 'collection' | 'wishlist' | null;
 	}>(() => {

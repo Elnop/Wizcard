@@ -1,4 +1,5 @@
-import type { ScryfallCard, ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { DeckZone } from '@/types/decks';
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { BATCH_SIZE } from '@/lib/scryfall/constants';
@@ -7,7 +8,7 @@ import type { DeckImportResult } from '@/lib/import/formats/mtga-deck';
 
 /** A parsed deck row matched to a resolved Scryfall card, ready for bulkAddCardsToDeck. */
 export type ResolvedDeckRow = {
-	card: ScryfallCard;
+	card: Card;
 	zone: DeckZone;
 	quantity: number;
 };
@@ -18,10 +19,10 @@ export type ResolveDeckListResult = {
 };
 
 /** Fetch resolved Scryfall cards for a list of identifiers (deduped, batched). */
-async function fetchResolvedCards(identifiers: ScryfallCardIdentifier[]): Promise<ScryfallCard[]> {
+async function fetchResolvedCards(identifiers: ScryfallCardIdentifier[]): Promise<Card[]> {
 	const deduped = deduplicateIdentifiers(identifiers);
 
-	const results: ScryfallCard[] = [];
+	const results: Card[] = [];
 	for (let i = 0; i < deduped.length; i += BATCH_SIZE) {
 		const batch = deduped.slice(i, i + BATCH_SIZE);
 		const response = await getCardCollection(batch);
@@ -45,7 +46,7 @@ export async function resolveDeckList(
 	const normalized = normalizeSetCodes(parsed);
 	const resolved = await fetchResolvedCards(normalized.identifiers);
 
-	const cardMap = new Map<string, ScryfallCard>();
+	const cardMap = new Map<string, Card>();
 	for (const card of resolved) {
 		cardMap.set(`${card.set}:${card.collector_number}`, card);
 		cardMap.set(`name:${card.name.toLowerCase()}`, card);
@@ -85,7 +86,7 @@ export async function resolveDeckList(
 
 /**
  * Resolve cards that already carry an exact Scryfall id (e.g. a Moxfield import)
- * into concrete ScryfallCard objects, so they can flow through the same preview
+ * into concrete Card objects, so they can flow through the same preview
  * (bulk edit) path as a pasted list. Cards whose id can't be fetched are reported
  * in `notFound` keyed by their id.
  */
@@ -95,7 +96,7 @@ export async function resolveCardsByScryfallId(
 	const uniqueIds = [...new Set(cards.map((c) => c.scryfallId))];
 	const resolved = await fetchResolvedCards(uniqueIds.map((id) => ({ id })));
 
-	const byId = new Map<string, ScryfallCard>();
+	const byId = new Map<string, Card>();
 	for (const card of resolved) byId.set(card.id, card);
 
 	const cardsToAdd: ResolvedDeckRow[] = [];

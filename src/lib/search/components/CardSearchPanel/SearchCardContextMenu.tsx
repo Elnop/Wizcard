@@ -6,16 +6,15 @@ import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { findFreeCollectionCopy } from '@/lib/deck/utils/collectionCopyResolver';
 import { getArtCropUrl } from '@/lib/deck/utils/pick-cover-art';
 import { isCommanderFormat } from '@/lib/deck/utils/zonesForFormat';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckFormat, DeckZone } from '@/types/decks';
-import type { CardEntry } from '@/types/cards';
+import type { Card, CardEntry } from '@/types/cards';
 
 type Props = {
-	card: ScryfallCard;
+	card: Card;
 	position: { x: number; y: number };
 	deckId: string;
 	format: DeckFormat | null | undefined;
-	onCardClick: (card: ScryfallCard) => void;
+	onCardClick: (card: Card) => void;
 	onClose: () => void;
 	inCollectionOnly: boolean;
 	collectionEntries: Array<{ scryfallId: string; entry: CardEntry }>;

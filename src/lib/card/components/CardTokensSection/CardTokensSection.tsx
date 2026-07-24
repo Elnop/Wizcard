@@ -1,15 +1,15 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import styles from './CardTokensSection.module.css';
 
 interface CardTokensSectionProps {
-	tokens: ScryfallCard[];
+	tokens: Card[];
 	loading: boolean;
-	onTokenClick: (card: ScryfallCard) => void;
+	onTokenClick: (card: Card) => void;
 }
 
 /**
@@ -28,7 +28,7 @@ export function CardTokensSection({ tokens, loading, onTokenClick }: CardTokensS
 	return (
 		<CardList
 			cards={tokens}
-			onCardClick={(card: AnyCard) => onTokenClick(card as ScryfallCard)}
+			onCardClick={(card: AnyCard) => onTokenClick(card as Card)}
 			viewModes={['fluid-grid', 'grid', 'table']}
 			cardGap="compact"
 			showCardNames={false}

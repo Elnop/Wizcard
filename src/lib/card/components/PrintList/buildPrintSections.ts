@@ -1,11 +1,11 @@
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/CardList.types';
 import { groupPrintsByLang } from './PrintList.types';
 
 export interface BuildPrintSectionsInput {
 	/** Official Scryfall prints (may be empty while loading). */
-	prints: ScryfallCard[];
+	prints: Card[];
 	/** Official-prints fetch still in flight. */
 	officialLoading: boolean;
 	/** Official-prints fetch error, if any. */

@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useRouter, usePathname } from '@/i18n/navigation';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import { isCustomCard } from '@/lib/mpc/types';
 import { OverviewTab } from '../tabs/OverviewTab/OverviewTab';
@@ -16,7 +16,7 @@ import styles from './CardTabs.module.css';
 type TabId = 'overview' | 'prints' | 'rulings' | 'similar' | 'tokens';
 
 interface Props {
-	card: ScryfallCard | CustomCard;
+	card: Card | CustomCard;
 }
 
 export function CardTabs({ card }: Props) {
@@ -74,7 +74,7 @@ export function CardTabs({ card }: Props) {
 				))}
 			</div>
 
-			{activeTab === 'overview' && <OverviewTab card={card as ScryfallCard} />}
+			{activeTab === 'overview' && <OverviewTab card={card as Card} />}
 			{activeTab === 'prints' && <PrintsTab card={card} />}
 			{activeTab === 'rulings' && (
 				<RulingsTab cardId={card.id} oracleId={card.oracle_id ?? undefined} />

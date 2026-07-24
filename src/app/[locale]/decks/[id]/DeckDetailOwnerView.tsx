@@ -13,7 +13,7 @@ import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/Ca
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { getDeckZone } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
-import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
+import type { Card, MtgColor } from '@/types/cards';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
@@ -90,7 +90,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 
 	const [searchPanelOpen, setSearchPanelOpen] = useState(false);
 	const [searchPanelExpanded, setSearchPanelExpanded] = useState(false);
-	const [panelSelectedCard, setPanelSelectedCard] = useState<ScryfallCard | null>(null);
+	const [panelSelectedCard, setPanelSelectedCard] = useState<Card | null>(null);
 	const [panelInCollectionOnly, setPanelInCollectionOnly] = useState(false);
 	const [pendingCollectionAdd, setPendingCollectionAdd] = useState<CollectionAddRequest | null>(
 		null
@@ -281,14 +281,14 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		);
 	}, [deck, resolvedCards]);
 
-	const commanderColorIdentity = useMemo((): ScryfallColor[] | undefined => {
+	const commanderColorIdentity = useMemo((): MtgColor[] | undefined => {
 		if (!showCommander) return undefined;
 		const commanderCards = resolvedCards.filter((rc) => getDeckZone(rc.entry.tags) === 'commander');
 		if (commanderCards.length === 0) return undefined;
-		const identity = new Set<ScryfallColor>();
+		const identity = new Set<MtgColor>();
 		for (const rc of commanderCards) {
 			for (const color of rc.color_identity ?? []) {
-				identity.add(color as ScryfallColor);
+				identity.add(color as MtgColor);
 			}
 		}
 		return identity.size > 0 ? [...identity] : undefined;

@@ -3,15 +3,15 @@
 import { useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { createPortal } from 'react-dom';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import styles from './PrintContextMenu.module.css';
 
 interface Props {
-	card: ScryfallCard;
+	card: Card;
 	pos: { x: number; y: number } | null;
 	onClose: () => void;
-	onAddToCollection: (card: ScryfallCard) => void;
-	onAddToWishlist: (card: ScryfallCard) => void;
+	onAddToCollection: (card: Card) => void;
+	onAddToWishlist: (card: Card) => void;
 }
 
 export function PrintContextMenu({

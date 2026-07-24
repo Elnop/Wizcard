@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { Card, CardCopy, CardEntry } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckZone } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import type { CardListSection } from '@/lib/card/components/CardList/CardList.types';
@@ -291,7 +290,7 @@ export function useDeckCardModalProps(
 
 	const onIncrement = useCallback(() => {
 		if (!selectedGroup || !selectedZone) return;
-		addCardToDeck(deckId, selectedGroup.representative as unknown as ScryfallCard, selectedZone);
+		addCardToDeck(deckId, selectedGroup.representative, selectedZone);
 	}, [selectedGroup, selectedZone, deckId, addCardToDeck]);
 
 	const onChangeZone = useCallback(

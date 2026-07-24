@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card, CardEntry } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
@@ -11,7 +10,7 @@ import { Button } from '@/components/Button/Button';
 import styles from './AddToCollectionButton.module.css';
 
 export interface AddToCollectionButtonProps {
-	card: ScryfallCard;
+	card: Card;
 }
 
 export function AddToCollectionButton({ card }: AddToCollectionButtonProps) {

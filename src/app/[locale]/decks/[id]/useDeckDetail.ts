@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useRef } from 'react';
-import type { CardCopy } from '@/types/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card, CardCopy } from '@/types/cards';
 import type { DeckZone } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
@@ -20,7 +19,7 @@ export function useDeckDetail(deckId: string) {
 	// Stable reference: only changes when THIS deck's cards change in the store.
 	const deckCards = decksCards[deckId] ?? EMPTY_DECK_CARDS;
 
-	const [scryfallCards, setScryfallCards] = useState<Record<string, ScryfallCard>>({});
+	const [scryfallCards, setScryfallCards] = useState<Record<string, Card>>({});
 	const resolvedIdsRef = useRef<Set<string>>(new Set());
 	const [resolveGeneration, setResolveGeneration] = useState(0);
 	const [isLoading, setIsLoading] = useState(true);

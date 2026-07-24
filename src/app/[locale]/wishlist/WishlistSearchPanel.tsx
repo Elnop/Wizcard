@@ -10,7 +10,6 @@ import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
 type Props = {
 	expanded: boolean;
@@ -33,7 +32,7 @@ export function WishlistSearchPanel({ expanded, onToggleExpand, onClose }: Props
 	const { openAddToDeck } = useAddToDeckModal();
 
 	const onCardClick = useCallback(
-		(card: AnyCard) => openCardModal(card as ScryfallCard),
+		(card: AnyCard) => openCardModal(card),
 		[openCardModal]
 	);
 
@@ -42,16 +41,16 @@ export function WishlistSearchPanel({ expanded, onToggleExpand, onClose }: Props
 			buildSearchMenuItems(
 				card,
 				{
-					onViewDetails: (c) => openCardModal(c as ScryfallCard),
+					onViewDetails: (c) => openCardModal(c),
 					onOpenCardPage: (c) => router.push(`/card/${c.id}`),
 					onAddToCollection: (c) =>
 						openAddCard({
-							scryfallCard: c as ScryfallCard,
+							scryfallCard: c,
 							onAdd: (added, entry, count) => addCards(added, count, entry),
 						}),
 					onAddToWishlist: (c) =>
 						openAddCard({
-							scryfallCard: c as ScryfallCard,
+							scryfallCard: c,
 							onAdd: (added, entry, count) => addToWishlist(added, entry, count),
 						}),
 					onAddToDeck: (c) => openAddToDeck(c),

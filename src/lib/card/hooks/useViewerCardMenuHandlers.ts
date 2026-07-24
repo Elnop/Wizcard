@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
@@ -26,15 +25,15 @@ export function useViewerCardMenuHandlers(): ViewerCardMenuHandlers {
 
 	return useMemo<ViewerCardMenuHandlers>(
 		() => ({
-			onViewDetails: (c: AnyCard) => openCardModal(c as ScryfallCard, { readOnly: true }),
+			onViewDetails: (c: AnyCard) => openCardModal(c, { readOnly: true }),
 			onAddToCollection: (c: AnyCard) =>
 				openAddCard({
-					scryfallCard: c as ScryfallCard,
+					scryfallCard: c,
 					onAdd: (card, entry, count) => addCards(card, count, entry),
 				}),
 			onAddToWishlist: (c: AnyCard) =>
 				openAddCard({
-					scryfallCard: c as ScryfallCard,
+					scryfallCard: c,
 					onAdd: (card, entry, count) => addToWishlist(card, entry, count),
 				}),
 			onAddToDeck: (c: AnyCard) => openAddToDeck(c),

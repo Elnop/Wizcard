@@ -9,13 +9,13 @@ import { OwnershipBadge } from '@/lib/card/components/OwnershipBadge/OwnershipBa
 import type { BadgeState } from '@/app/[locale]/decks/[id]/components/DeckCardOverlay/useCollectionBadge';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
 import styles from './SetCardsGrid.module.css';
 
 export interface SetCardsGridProps {
 	/** Cards to render (already filtered/sorted by the parent). */
-	cards: ScryfallCard[];
+	cards: Card[];
 	isLoading: boolean;
 	sortOrder: ScryfallSortOrder;
 	sortDir: ScryfallSortDir;
@@ -35,7 +35,7 @@ function SetCardsGridInner({
 	const { openCardModal } = useCardModalContext();
 
 	const handleCardClick = useCallback(
-		(card: AnyCard) => openCardModal(card as ScryfallCard),
+		(card: AnyCard) => openCardModal(card),
 		[openCardModal]
 	);
 

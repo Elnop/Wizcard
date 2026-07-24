@@ -425,4 +425,6 @@ export type ScryfallOnlyFields = {
 	scryfall_uri?: string;
 	rulings_uri?: string;
 	penny_rank?: number;
+	/** Flavour text — not mirrored by the DB catalog, so absent on the DB path. */
+	flavor_text?: string;
 };

@@ -10,20 +10,21 @@ import {
 } from '@/lib/import/utils/identifier-dedup';
 import { preferPrint } from '@/lib/card/utils/prefer-print';
 import type { ParsedImportResult, PendingCard, ResolvedImportResult } from '@/lib/import/types';
-import type { ScryfallCard, ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { CardCopy, CardEntry } from '@/types/cards';
 import type { ImportProgress } from '@/lib/import/hooks/useImport';
 
 interface ScryfallLookup {
-	bySetNum: Map<string, ScryfallCard>;
-	byNameSet: Map<string, ScryfallCard>;
-	byName: Map<string, ScryfallCard>;
+	bySetNum: Map<string, Card>;
+	byNameSet: Map<string, Card>;
+	byName: Map<string, Card>;
 }
 
-function buildLookup(scryfallCards: ScryfallCard[]): ScryfallLookup {
-	const bySetNum = new Map<string, ScryfallCard>();
-	const byNameSet = new Map<string, ScryfallCard>();
-	const byName = new Map<string, ScryfallCard>();
+function buildLookup(scryfallCards: Card[]): ScryfallLookup {
+	const bySetNum = new Map<string, Card>();
+	const byNameSet = new Map<string, Card>();
+	const byName = new Map<string, Card>();
 	for (const sc of scryfallCards) {
 		// Index under the lang-qualified key so a same-set/num card in another language
 		// does not overwrite the English print (and vice versa).
@@ -55,7 +56,7 @@ function buildLookup(scryfallCards: ScryfallCard[]): ScryfallLookup {
 	return { bySetNum, byNameSet, byName };
 }
 
-function resolveCard(pc: PendingCard, lookup: ScryfallLookup): ScryfallCard | undefined {
+function resolveCard(pc: PendingCard, lookup: ScryfallLookup): Card | undefined {
 	const key = buildIdentifierKey(buildPendingIdentifier(pc));
 	// Also try without lang — Scryfall falls back to English when the requested lang doesn't exist
 	const keyNoLang =
@@ -120,7 +121,7 @@ export function useImportPreviewFetch(deps: {
 			setPreviewProgress({ current: 0, total: chunks.length });
 			setResolved(null);
 
-			const scryfallCards: ScryfallCard[] = [];
+			const scryfallCards: Card[] = [];
 
 			try {
 				for (let i = 0; i < chunks.length; i++) {

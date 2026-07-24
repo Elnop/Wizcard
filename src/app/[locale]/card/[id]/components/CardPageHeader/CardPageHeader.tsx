@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallOnlyFields } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import { isCustomCard } from '@/lib/mpc/types';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
@@ -22,7 +23,7 @@ const rarityLabels: Record<string, string> = {
 };
 
 interface Props {
-	card: ScryfallCard | CustomCard;
+	card: Card | CustomCard;
 }
 
 export function CardPageHeader({ card }: Props) {
@@ -67,18 +68,18 @@ export function CardPageHeader({ card }: Props) {
 					) : (
 						<div className={styles.setInfo}>
 							<span>
-								{(card as ScryfallCard).set_name ?? (card as ScryfallCard).set.toUpperCase()}
+								{(card as Card).set_name ?? (card as Card).set.toUpperCase()}
 							</span>
 							<span>·</span>
 							<span className={styles.rarity}>
-								{rarityLabels[(card as ScryfallCard).rarity] ?? (card as ScryfallCard).rarity}
+								{rarityLabels[(card as Card).rarity ?? ''] ?? (card as Card).rarity}
 							</span>
 							<span>·</span>
-							<span>#{(card as ScryfallCard).collector_number}</span>
+							<span>#{(card as Card).collector_number}</span>
 						</div>
 					)}
 
-					<AddToCollectionButton card={card as ScryfallCard} />
+					<AddToCollectionButton card={card as Card} />
 
 					<div className={styles.externalLinks}>
 						{custom ? (
@@ -124,8 +125,8 @@ export function CardPageHeader({ card }: Props) {
 							<>
 								<a
 									href={
-										(card as ScryfallCard).scryfall_uri ??
-										`https://scryfall.com/card/${(card as ScryfallCard).set}/${(card as ScryfallCard).collector_number}`
+										(card as ScryfallOnlyFields).scryfall_uri ??
+										`https://scryfall.com/card/${(card as Card).set}/${(card as Card).collector_number}`
 									}
 									target="_blank"
 									rel="noopener noreferrer"
@@ -142,7 +143,7 @@ export function CardPageHeader({ card }: Props) {
 									EDHREC
 								</a>
 								<a
-									href={`https://www.moxfield.com/cards/${(card as ScryfallCard).id}`}
+									href={`https://www.moxfield.com/cards/${(card as Card).id}`}
 									target="_blank"
 									rel="noopener noreferrer"
 									className={styles.externalLink}
@@ -155,7 +156,7 @@ export function CardPageHeader({ card }: Props) {
 				</div>
 			</div>
 
-			{lightbox && <CardLightbox card={card as ScryfallCard} onClose={() => setLightbox(false)} />}
+			{lightbox && <CardLightbox card={card} onClose={() => setLightbox(false)} />}
 		</>
 	);
 }

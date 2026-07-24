@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import {
 	collectDeckTokenIds,
@@ -19,17 +19,17 @@ import { hydrateCardsAllParts } from '@/lib/scryfall/hydrateAllParts';
  * that hydration resolves we use the card as-is; an English card already carries
  * `all_parts`, so its tokens are derived with no extra network round-trip.
  */
-export function useCardTokens(card: ScryfallCard | CustomCard | null): {
-	tokens: ScryfallCard[];
+export function useCardTokens(card: Card | CustomCard | null): {
+	tokens: Card[];
 	loading: boolean;
 	hasTokens: boolean;
 } {
 	// Hold the hydrated all_parts for the current card, tagged by the card's id so a
 	// stale result is ignored when `card` changes (no synchronous reset in an effect).
-	const [hydration, setHydration] = useState<{ id: string; card: ScryfallCard } | null>(null);
+	const [hydration, setHydration] = useState<{ id: string; card: Card } | null>(null);
 
 	useEffect(() => {
-		if (!card || !isScryfallCard(card)) return;
+		if (!card || !isOfficialCard(card)) return;
 
 		let cancelled = false;
 		void hydrateCardsAllParts([card]).then(([hydrated]) => {
@@ -43,7 +43,7 @@ export function useCardTokens(card: ScryfallCard | CustomCard | null): {
 	// Derive tokens from the hydrated card when it matches the current card, else the
 	// card as-is (English cards need no hydration; localized ones fill in once ready).
 	const effectiveCard =
-		card && isScryfallCard(card) && hydration?.id === card.id ? hydration.card : card;
+		card && isOfficialCard(card) && hydration?.id === card.id ? hydration.card : card;
 
 	const tokenIds = useMemo(
 		() => (effectiveCard ? collectDeckTokenIds([effectiveCard]) : []),
@@ -60,7 +60,7 @@ export function useCardTokens(card: ScryfallCard | CustomCard | null): {
 	// Keep resolved tokens tagged with the key they belong to. When `tokenKey`
 	// changes, the previous result no longer matches and we render an empty/loading
 	// state without a synchronous setState in the effect.
-	const [resolved, setResolved] = useState<{ key: string; tokens: ScryfallCard[] } | null>(null);
+	const [resolved, setResolved] = useState<{ key: string; tokens: Card[] } | null>(null);
 
 	useEffect(() => {
 		if (tokenIds.length === 0) return;
@@ -69,10 +69,12 @@ export function useCardTokens(card: ScryfallCard | CustomCard | null): {
 		resolveCardsByScryfallIds(tokenIds)
 			.then(async (resolvedMap) => {
 				if (cancelled) return;
+				// The resolver + localizer are provider I/O (they still speak ScryfallCard);
+				// their result widens to the domain `Card[]` on assignment.
 				const enTokens = tokenIds
 					.map((id) => resolvedMap.get(id))
-					.filter((c): c is ScryfallCard => Boolean(c));
-				const localized = await localizeTokens(enTokens, langByTokenId);
+					.filter((c): c is NonNullable<typeof c> => Boolean(c));
+				const localized: Card[] = await localizeTokens(enTokens, langByTokenId);
 				if (cancelled) return;
 				setResolved({ key: tokenKey, tokens: localized });
 			})
@@ -92,7 +94,7 @@ export function useCardTokens(card: ScryfallCard | CustomCard | null): {
 	return { tokens, loading, hasTokens: tokenIds.length > 0 };
 }
 
-/** True for Scryfall cards (which carry `lang`/`oracle_id`), false for custom cards. */
-function isScryfallCard(card: ScryfallCard | CustomCard): card is ScryfallCard {
-	return 'oracle_id' in card && typeof (card as ScryfallCard).lang === 'string';
+/** True for official prints (which carry `lang`/`oracle_id`), false for custom cards. */
+function isOfficialCard(card: Card | CustomCard): card is Card {
+	return 'oracle_id' in card && typeof (card as Card).lang === 'string';
 }

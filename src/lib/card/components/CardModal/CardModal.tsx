@@ -242,10 +242,8 @@ function CardDetailSection({
 	onClose?: () => void;
 }) {
 	const t = useTranslations('card');
-	// Token resolution is a provider-frozen subsystem (reads Scryfall `all_parts`),
-	// so the token hook is fed the provider view of this print.
-	const { tokens, loading: tokensLoading, hasTokens } = useCardTokens(card as ScryfallCard);
-	const [tokenModalCard, setTokenModalCard] = useState<ScryfallCard | null>(null);
+	const { tokens, loading: tokensLoading, hasTokens } = useCardTokens(card);
+	const [tokenModalCard, setTokenModalCard] = useState<Card | null>(null);
 
 	return (
 		<>

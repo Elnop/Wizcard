@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
-import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
+import type { Card, MtgColor } from '@/types/cards';
 import type { DeckMeta } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { fetchDeckCardEntries } from '@/lib/deck/db/decks';
@@ -10,14 +10,14 @@ import { computeDeckStats } from '@/lib/deck/utils/deck-stats';
 import { validateDeck, getFormatRules } from '@/lib/deck/utils/format-rules';
 import { pickCoverArt } from '@/lib/deck/utils/pick-cover-art';
 
-const WUBRG_ORDER: ScryfallColor[] = ['W', 'U', 'B', 'R', 'G'];
+const WUBRG_ORDER: MtgColor[] = ['W', 'U', 'B', 'R', 'G'];
 
 type DeckCardEntry = { scryfallId: string; tags: string[] | null };
 
 function buildDeckSummary(
 	deckId: string,
 	entries: DeckCardEntry[],
-	cached: Map<string, ScryfallCard>,
+	cached: Map<string, Card>,
 	format: DeckMeta['format'],
 	coverArtUrl: string | null
 ): DeckSummary {
@@ -43,7 +43,7 @@ function buildDeckSummary(
 			pickCoverArt(
 				entries
 					.map((e) => ({ card: cached.get(e.scryfallId), tags: e.tags }))
-					.filter((c): c is { card: ScryfallCard; tags: string[] | null } => c.card != null)
+					.filter((c): c is { card: Card; tags: string[] | null } => c.card != null)
 			),
 		colors: computeColors(entries, cached),
 		commanderName: findCommanderName(entries, cached),
@@ -59,7 +59,7 @@ function buildDeckSummary(
 
 export type DeckSummary = {
 	artCropUrl: string | undefined;
-	colors: ScryfallColor[];
+	colors: MtgColor[];
 	commanderName: string | undefined;
 	manaCurve: Record<number, number>;
 	totalCards: number;
@@ -72,7 +72,7 @@ export type DeckSummary = {
 
 const EMPTY: Record<string, DeckSummary> = {};
 
-function isLand(card: ScryfallCard): boolean {
+function isLand(card: Card): boolean {
 	return (card.type_line ?? '').toLowerCase().includes('land');
 }
 
@@ -80,15 +80,15 @@ function hasCommanderTag(tags: string[] | null): boolean {
 	return tags?.some((t) => t === 'deck:commander') ?? false;
 }
 
-function sortWubrg(colors: Set<ScryfallColor>): ScryfallColor[] {
+function sortWubrg(colors: Set<MtgColor>): MtgColor[] {
 	return WUBRG_ORDER.filter((c) => colors.has(c));
 }
 
 function computeColors(
 	entries: Array<{ scryfallId: string; tags: string[] | null }>,
-	cardMap: Map<string, ScryfallCard>
-): ScryfallColor[] {
-	const colors = new Set<ScryfallColor>();
+	cardMap: Map<string, Card>
+): MtgColor[] {
+	const colors = new Set<MtgColor>();
 	for (const e of entries) {
 		const card = cardMap.get(e.scryfallId);
 		if (card?.color_identity) {
@@ -102,7 +102,7 @@ function computeColors(
 
 function findCommanderName(
 	entries: Array<{ scryfallId: string; tags: string[] | null }>,
-	cardMap: Map<string, ScryfallCard>
+	cardMap: Map<string, Card>
 ): string | undefined {
 	const names: string[] = [];
 	for (const e of entries) {
@@ -120,13 +120,13 @@ function findCommanderName(
 
 function computeManaCurve(
 	entries: Array<{ scryfallId: string; tags: string[] | null }>,
-	cardMap: Map<string, ScryfallCard>
+	cardMap: Map<string, Card>
 ): Record<number, number> {
 	const curve: Record<number, number> = {};
 	for (const e of entries) {
 		const card = cardMap.get(e.scryfallId);
 		if (!card || isLand(card)) continue;
-		const bucket = Math.min(Math.floor(card.cmc), 7);
+		const bucket = Math.min(Math.floor(card.cmc ?? 0), 7);
 		curve[bucket] = (curve[bucket] ?? 0) + 1;
 	}
 	return curve;

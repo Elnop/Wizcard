@@ -3,7 +3,7 @@ import { DeckCardSearchPanel } from './DeckCardSearchPanel';
 import { PlainCardSearchPanel } from './PlainCardSearchPanel';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
-import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
+import type { Card, MtgColor } from '@/types/cards';
 import type { DeckFormat } from '@/types/decks';
 
 export type PanelMode =
@@ -11,9 +11,9 @@ export type PanelMode =
 			kind: 'deck';
 			deckId: string;
 			deckFormat?: DeckFormat | null;
-			commanderColorIdentity?: ScryfallColor[];
+			commanderColorIdentity?: MtgColor[];
 			commanderName?: string | null;
-			onCardClick: (card: ScryfallCard) => void;
+			onCardClick: (card: Card) => void;
 			onCollectionModeChange?: (inCollectionOnly: boolean) => void;
 	  }
 	| {
