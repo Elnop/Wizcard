@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from 'react';
 import type { Card, MtgColor } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import type { DeckMeta } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { fetchDeckCardEntries } from '@/lib/deck/db/decks';
@@ -17,7 +18,7 @@ type DeckCardEntry = { scryfallId: string; tags: string[] | null };
 function buildDeckSummary(
 	deckId: string,
 	entries: DeckCardEntry[],
-	cached: Map<string, Card>,
+	cached: Map<string, Card | CustomCard>,
 	format: DeckMeta['format'],
 	coverArtUrl: string | null
 ): DeckSummary {
@@ -43,7 +44,9 @@ function buildDeckSummary(
 			pickCoverArt(
 				entries
 					.map((e) => ({ card: cached.get(e.scryfallId), tags: e.tags }))
-					.filter((c): c is { card: Card; tags: string[] | null } => c.card != null)
+					.filter(
+						(c): c is { card: Card | CustomCard; tags: string[] | null } => c.card != null
+					)
 			),
 		colors: computeColors(entries, cached),
 		commanderName: findCommanderName(entries, cached),
@@ -72,7 +75,7 @@ export type DeckSummary = {
 
 const EMPTY: Record<string, DeckSummary> = {};
 
-function isLand(card: Card): boolean {
+function isLand(card: Card | CustomCard): boolean {
 	return (card.type_line ?? '').toLowerCase().includes('land');
 }
 
@@ -86,7 +89,7 @@ function sortWubrg(colors: Set<MtgColor>): MtgColor[] {
 
 function computeColors(
 	entries: Array<{ scryfallId: string; tags: string[] | null }>,
-	cardMap: Map<string, Card>
+	cardMap: Map<string, Card | CustomCard>
 ): MtgColor[] {
 	const colors = new Set<MtgColor>();
 	for (const e of entries) {
@@ -102,7 +105,7 @@ function computeColors(
 
 function findCommanderName(
 	entries: Array<{ scryfallId: string; tags: string[] | null }>,
-	cardMap: Map<string, Card>
+	cardMap: Map<string, Card | CustomCard>
 ): string | undefined {
 	const names: string[] = [];
 	for (const e of entries) {
@@ -120,7 +123,7 @@ function findCommanderName(
 
 function computeManaCurve(
 	entries: Array<{ scryfallId: string; tags: string[] | null }>,
-	cardMap: Map<string, Card>
+	cardMap: Map<string, Card | CustomCard>
 ): Record<number, number> {
 	const curve: Record<number, number> = {};
 	for (const e of entries) {

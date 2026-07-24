@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { Card } from '@/types/cards';
-import type { CustomCard } from '@/lib/mpc/types';
+import { type CustomCard, isCustomCard } from '@/lib/mpc/types';
 import {
 	collectDeckTokenIds,
 	collectDeckTokensWithSourceLang,
@@ -69,11 +69,11 @@ export function useCardTokens(card: Card | CustomCard | null): {
 		resolveCardsByScryfallIds(tokenIds)
 			.then(async (resolvedMap) => {
 				if (cancelled) return;
-				// The resolver + localizer are provider I/O (they still speak ScryfallCard);
-				// their result widens to the domain `Card[]` on assignment.
+				// Tokens are always real prints, never MPC custom cards — drop any custom the
+				// resolver returned so the localized result is a clean domain `Card[]`.
 				const enTokens = tokenIds
 					.map((id) => resolvedMap.get(id))
-					.filter((c): c is NonNullable<typeof c> => Boolean(c));
+					.filter((c): c is Card => Boolean(c) && !isCustomCard(c!));
 				const localized: Card[] = await localizeTokens(enTokens, langByTokenId);
 				if (cancelled) return;
 				setResolved({ key: tokenKey, tokens: localized });

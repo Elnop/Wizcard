@@ -4,6 +4,8 @@ import { getCardsFromCache, putCardsInCache } from '@/lib/scryfall/utils/card-ca
 import { putCards } from '@/lib/scryfall/store/cards-store';
 import { getCustomCardsByIds } from '@/lib/mpc/db/custom-cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 
 export interface ResolveProgress {
 	/** Network batches completed so far. */
@@ -32,22 +34,23 @@ export interface ResolveOptions {
  */
 async function resolveCustomCards(
 	customIds: string[],
-	resolved: Map<string, ScryfallCard>
+	resolved: Map<string, Card | CustomCard>
 ): Promise<void> {
 	if (customIds.length === 0) return;
 	try {
 		const customCards = await getCustomCardsByIds(customIds);
 		for (const [id, card] of customCards) {
-			resolved.set(id, card as unknown as ScryfallCard);
+			resolved.set(id, card);
 		}
-		putCards([...customCards.values()] as unknown as ScryfallCard[]);
+		putCards([...customCards.values()]);
 	} catch (err) {
 		console.error('[resolveCardsByScryfallIds] custom-card batch failed:', err);
 	}
 }
 
 /**
- * Resolve a set of Scryfall print IDs into `ScryfallCard` objects.
+ * Resolve a set of print IDs into domain `Card` objects (or `CustomCard` for
+ * MPC prints, which resolve from the local custom-card table).
  *
  * Pipeline: dedupe ids → read IndexedDB cache → batch-fetch the misses in
  * `BATCH_SIZE` chunks → write fetched cards back to cache. Per-batch network
@@ -57,10 +60,10 @@ async function resolveCustomCards(
 export async function resolveCardsByScryfallIds(
 	ids: string[],
 	options: ResolveOptions = {}
-): Promise<Map<string, ScryfallCard>> {
+): Promise<Map<string, Card | CustomCard>> {
 	const { isCancelled, onProgress, skipCache = false } = options;
 	const allIds = [...new Set(ids)];
-	const resolved = new Map<string, ScryfallCard>();
+	const resolved = new Map<string, Card | CustomCard>();
 
 	if (allIds.length === 0) return resolved;
 

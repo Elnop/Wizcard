@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import type { Card, CardEntry } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import type { DeckMeta, DeckZone } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
 import { fetchDeckMetaById, fetchDeckCards } from '@/lib/deck/db/decks';
@@ -23,7 +24,7 @@ export function usePublicDeckDetail(deckId: string) {
 	const [deck, setDeck] = useState<DeckMeta | null>(null);
 	const [ownerNickname, setOwnerNickname] = useState<string | null>(null);
 	const [deckCards, setDeckCards] = useState<DeckCard[]>([]);
-	const [scryfallCards, setScryfallCards] = useState<Record<string, Card>>({});
+	const [scryfallCards, setScryfallCards] = useState<Record<string, Card | CustomCard>>({});
 	const resolvedIdsRef = useRef<Set<string>>(new Set());
 	const [resolveGeneration, setResolveGeneration] = useState(0);
 	const [isLoading, setIsLoading] = useState(true);

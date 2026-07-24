@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import { getCardSimilar } from '@/lib/scryfall/endpoints/cards';
@@ -25,7 +24,7 @@ export function SimilarTab({ card }: Props) {
 		const fetchSimilar = async () => {
 			try {
 				setLoading(true);
-				const data = await getCardSimilar(card as ScryfallCard, controller.signal);
+				const data = await getCardSimilar(card, controller.signal);
 				if (!controller.signal.aborted) {
 					setSimilar(data);
 				}

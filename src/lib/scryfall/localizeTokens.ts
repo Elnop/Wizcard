@@ -8,11 +8,14 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
  * left untouched. When the localized print does not exist (404) or the fetch
  * fails, the English token is kept (fallback) — we never drop a token.
  */
-export async function localizeTokens(
-	tokens: ScryfallCard[],
+// Generic over the token shape: a token is either passed through unchanged or replaced by a
+// localized print, so callers holding domain `Card` (or `Card | CustomCard`) keep their type.
+// Only id/set/collector_number are read — all domain fields.
+export async function localizeTokens<T extends { id: string; set?: string; collector_number?: string }>(
+	tokens: T[],
 	langByTokenId: Map<string, string>,
 	deps: { fetchLocalized?: (set: string, num: string, lang: string) => Promise<ScryfallCard> } = {}
-): Promise<ScryfallCard[]> {
+): Promise<(T | ScryfallCard)[]> {
 	const fetchLocalized = deps.fetchLocalized ?? defaultFetchLocalized;
 
 	return Promise.all(

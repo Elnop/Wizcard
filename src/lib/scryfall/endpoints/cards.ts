@@ -173,11 +173,17 @@ export async function getCardRulings(
 	return result.data;
 }
 
+/**
+ * Input is a structural subset (name/type_line/keywords) rather than a full ScryfallCard, so
+ * domain `Card` values can be passed directly. `type_line` is optional on the domain type —
+ * without it there is no subtype to search on, so we bail out rather than throw.
+ */
 export async function getCardSimilar(
-	card: ScryfallCard,
+	card: { name: string; type_line?: string; keywords?: string[] },
 	signal?: AbortSignal
 ): Promise<ScryfallCard[]> {
 	const keyword = card.keywords?.[0];
+	if (!card.type_line) return [];
 	const typeParts = card.type_line.split('—')[0].trim().split(' ');
 	const subtype = typeParts[typeParts.length - 1];
 	const q = keyword

@@ -1,27 +1,20 @@
-// Persistent IndexedDB cache for ScryfallCard data and collection entries.
+// Persistent IndexedDB cache for card data and collection entries.
 // Silently falls back to no-op if IndexedDB is unavailable (private mode, etc.).
 
-import type {
-	ScryfallCard,
-	ScryfallImageUris,
-	ScryfallImageStatus,
-} from '@/lib/scryfall/types/scryfall';
+import type { ScryfallImageUris, ScryfallImageStatus } from '@/lib/scryfall/types/scryfall';
 import type { Card, CardEntry } from '@/types/cards';
 import type { CollectionData } from '@/lib/collection/db/collection-migrations';
 
-// The object store holds a plain JSON blob, so writes accept the provider-neutral
-// domain `Card`. Reads stay typed `ScryfallCard` until the resolve pipeline
-// (`resolveCardsByScryfallIds`) migrates to the domain type.
+// The object store holds a plain JSON blob of the provider-neutral domain `Card`.
+// Reads and writes use the same shape: a record written from the Scryfall path is a
+// superset of `Card`, so reading it back as `Card` is sound, while a record written
+// from the DB path has exactly the domain fields. Typing reads as `ScryfallCard`
+// would claim provider-only fields (prints_search_uri, object, …) that DB-path
+// records never had.
 interface CachedCard {
 	id: string; // ScryfallUUID — keyPath of the object store
-	data: ScryfallCard;
-	cachedAt: number; // Date.now()
-}
-
-interface CachedCardWrite {
-	id: string;
 	data: Card;
-	cachedAt: number;
+	cachedAt: number; // Date.now()
 }
 
 interface CachedCollectionEntry {
@@ -140,14 +133,14 @@ function purgeExpired(db: IDBDatabase): Promise<void> {
 	});
 }
 
-/** Read a batch of cards from the cache. Returns a Map of id → ScryfallCard for hits only. */
-export async function getCardsFromCache(ids: string[]): Promise<Map<string, ScryfallCard>> {
-	const result = new Map<string, ScryfallCard>();
+/** Read a batch of cards from the cache. Returns a Map of id → Card for hits only. */
+export async function getCardsFromCache(ids: string[]): Promise<Map<string, Card>> {
+	const result = new Map<string, Card>();
 	if (ids.length === 0) return result;
 
 	try {
 		const db = await openDB();
-		return new Promise<Map<string, ScryfallCard>>((resolve) => {
+		return new Promise<Map<string, Card>>((resolve) => {
 			try {
 				const tx = db.transaction(STORE_NAME, 'readonly');
 				const store = tx.objectStore(STORE_NAME);
@@ -179,7 +172,7 @@ export async function getCardsFromCache(ids: string[]): Promise<Map<string, Scry
 	}
 }
 
-/** Write a batch of ScryfallCards to the cache. */
+/** Write a batch of cards to the cache. */
 export async function putCardsInCache(cards: Card[]): Promise<void> {
 	if (cards.length === 0) return;
 
@@ -192,7 +185,7 @@ export async function putCardsInCache(cards: Card[]): Promise<void> {
 				const now = Date.now();
 
 				for (const card of cards) {
-					const entry: CachedCardWrite = { id: card.id, data: card, cachedAt: now };
+					const entry: CachedCard = { id: card.id, data: card, cachedAt: now };
 					store.put(entry);
 				}
 
