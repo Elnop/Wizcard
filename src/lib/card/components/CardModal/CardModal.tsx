@@ -4,11 +4,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { Card, CardCopy, CardEntry } from '@/types/cards';
-import type {
-	ScryfallCard,
-	ScryfallCardSymbol,
-	ScryfallOnlyFields,
-} from '@/lib/scryfall/types/scryfall';
+import type { ScryfallCardSymbol, ScryfallOnlyFields } from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
 import { isCustomCard } from '@/lib/mpc/types';
 import type { DeckZone } from '@/types/decks';
@@ -293,8 +289,8 @@ function CardDetailSection({
 						</div>
 					</div>
 				)}
-				{(card as ScryfallCard).flavor_text && (
-					<p className={styles.flavorText}>{(card as ScryfallCard).flavor_text}</p>
+				{(card as ScryfallOnlyFields).flavor_text && (
+					<p className={styles.flavorText}>{(card as ScryfallOnlyFields).flavor_text}</p>
 				)}
 				{card.loyalty && (
 					<div className={styles.detailRow}>
