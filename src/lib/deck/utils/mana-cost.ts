@@ -1,4 +1,5 @@
-import type { Card, CardFace } from '@/types/cards';
+import type { Card } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 
 export type ManaColor = 'W' | 'U' | 'B' | 'R' | 'G';
 export type ProdColor = ManaColor | 'C';
@@ -60,9 +61,9 @@ export function parseColorPips(manaCost: string): Record<ManaColor | 'C', number
 }
 
 /** Normalise mono/double-face en une liste de faces exploitables (cost/curve/types). */
-export function iterateFaces(card: Card): FaceLike[] {
+export function iterateFaces(card: Card | CustomCard): FaceLike[] {
 	if (card.card_faces && card.card_faces.length > 0) {
-		return card.card_faces.map((f: CardFace) => ({
+		return card.card_faces.map((f) => ({
 			mana_cost: f.mana_cost,
 			cmc: f.cmc ?? card.cmc,
 			type_line: f.type_line,

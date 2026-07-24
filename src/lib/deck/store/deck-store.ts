@@ -1,8 +1,8 @@
 'use client';
 
 import { create } from 'zustand';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { CardEntry } from '@/types/cards';
+import type { Card, CardEntry } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import type { DeckMeta, DeckZone, FolderMeta } from '@/types/decks';
 import { setDeckZone } from '@/types/decks';
 import { fetchDecks, fetchDeckCards } from '../db/decks';
@@ -127,7 +127,7 @@ type DeckActions = {
 
 	addCardToDeck: (
 		deckId: string,
-		card: ScryfallCard,
+		card: Card | CustomCard,
 		zone: DeckZone,
 		userId: string,
 		triggerSync: () => void
@@ -142,7 +142,7 @@ type DeckActions = {
 	bulkAddCardsToDeck: (
 		deckId: string,
 		cards: Array<{
-			card: ScryfallCard;
+			card: Card | CustomCard;
 			zone: DeckZone;
 			quantity: number;
 			entry?: Partial<CardEntry>;
@@ -162,7 +162,7 @@ type DeckActions = {
 	toggleDeckCardWishlist: (rowId: string, triggerSync: () => void) => void;
 	changeDeckCardPrint: (
 		rowId: string,
-		newCard: ScryfallCard,
+		newCard: Card | CustomCard,
 		deckId: string,
 		triggerSync: () => void
 	) => void;

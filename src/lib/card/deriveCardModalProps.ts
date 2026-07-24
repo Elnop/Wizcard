@@ -1,6 +1,6 @@
-import type { CardCopy, CardEntry } from '@/types/cards';
+import type { Card, CardCopy, CardEntry } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
 /**
  * The subset of CardModal props this helper produces. Mirrors the mutation
@@ -14,18 +14,18 @@ export type DerivedCardModalProps = {
 	onDuplicate?: (scryfallId: string, entry: CardEntry) => void;
 	onIncrement?: (entry: Partial<CardEntry>) => void;
 	onDecrement?: () => void;
-	onChangePrint?: (rowId: string, newCard: ScryfallCard) => void;
+	onChangePrint?: (rowId: string, newCard: Card | CustomCard) => void;
 	onMoveToCollection?: (rowId: string) => void;
-	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
-	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
-	onAddToDeck?: (card: ScryfallCard) => void;
+	onAddToCollection?: (card: Card | CustomCard, entry: Partial<CardEntry>, count: number) => void;
+	onAddToWishlist?: (card: Card | CustomCard, entry: Partial<CardEntry>, count: number) => void;
+	onAddToDeck?: (card: Card | CustomCard) => void;
 };
 
 /** Global mutation primitives the helper wires into the modal's callbacks. */
 export type CardModalDeps = {
 	collection: {
-		addCard: (card: ScryfallCard, entryPatch?: Partial<CardEntry>) => void;
-		addCards: (card: ScryfallCard, count: number, entryPatch?: Partial<CardEntry>) => void;
+		addCard: (card: AnyCard, entryPatch?: Partial<CardEntry>) => void;
+		addCards: (card: AnyCard, count: number, entryPatch?: Partial<CardEntry>) => void;
 		duplicateEntry: (scryfallId: string, sourceEntry: CardEntry) => void;
 		decrementCard: (scryfallId: string) => void;
 		removeCard: (scryfallId: string) => void;
@@ -34,7 +34,7 @@ export type CardModalDeps = {
 		changePrint: (rowId: string, newScryfallId: string, entryPatch?: Partial<CardEntry>) => void;
 	};
 	wishlist: {
-		addToWishlist: (card: ScryfallCard, entryPatch: Partial<CardEntry>, count: number) => void;
+		addToWishlist: (card: AnyCard, entryPatch: Partial<CardEntry>, count: number) => void;
 		removeFromWishlist: (rowId: string) => void;
 		moveToCollection: (rowId: string) => void;
 		changePrint: (rowId: string, newScryfallId: string) => void;
@@ -60,7 +60,7 @@ function hasEntry(card: AnyCard): card is CardCopy {
  * - Wishlisted (entry.wishlist) → wishlist edit suite + move-to-collection.
  */
 export function deriveCardModalProps(card: AnyCard, deps: CardModalDeps): DerivedCardModalProps {
-	const onAddToDeck = (c: ScryfallCard) => deps.openAddToDeck(c);
+	const onAddToDeck = (c: Card | CustomCard) => deps.openAddToDeck(c);
 
 	// Bare card from search/sets/prints — only "add" actions apply.
 	if (!hasEntry(card)) {
@@ -83,7 +83,7 @@ export function deriveCardModalProps(card: AnyCard, deps: CardModalDeps): Derive
 
 	// Owned collection card. `onDecrement` is arg-less (the modal decrements the
 	// displayed card), so we close over this card's scryfall id.
-	const ownedCard = card as CardCopy & ScryfallCard;
+	const ownedCard = card;
 	return {
 		onSave: (rowId, updates) => deps.collection.updateEntry(rowId, updates),
 		onRemove: (scryfallId) => {

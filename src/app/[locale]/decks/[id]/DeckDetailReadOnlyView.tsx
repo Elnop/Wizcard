@@ -10,7 +10,6 @@ import { CardList } from '@/lib/card/components/CardList/CardList';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { getDeckZone } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useContextMenu } from '@/components/ContextMenu/useContextMenu';
 import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
@@ -90,8 +89,8 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 		const commanderCards = resolvedCards.filter((rc) => getDeckZone(rc.entry.tags) === 'commander');
 		return validateDeck(
 			deck.format,
-			allCards.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) })),
-			commanderCards.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) }))
+			allCards.map((rc) => ({ card: rc, zone: getDeckZone(rc.entry.tags) })),
+			commanderCards.map((rc) => ({ card: rc, zone: getDeckZone(rc.entry.tags) }))
 		);
 	}, [deck, resolvedCards]);
 
@@ -253,7 +252,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 							icon: '+',
 							onClick: () => {
 								openAddCard({
-									scryfallCard: cardMenu.menu!.data as ScryfallCard,
+									scryfallCard: cardMenu.menu!.data,
 									onAdd: (selectedCard, entry, count) => addCards(selectedCard, count, entry),
 								});
 								cardMenu.close();

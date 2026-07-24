@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef } from 'react';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { type DeckZone, setDeckZone } from '@/types/decks';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
@@ -17,7 +18,7 @@ type WishlistContextValue = {
 	wishlist: WishlistData;
 	entries: Array<{ scryfallId: string; entry: CardEntry }>;
 	isLoaded: boolean;
-	addToWishlist: (card: ScryfallCard, entryPatch?: Partial<CardEntry>, count?: number) => void;
+	addToWishlist: (card: AnyCard, entryPatch?: Partial<CardEntry>, count?: number) => void;
 	duplicateEntry: (scryfallId: string, sourceEntry: CardEntry) => void;
 	removeFromWishlist: (rowId: string) => void;
 	importCards: (cards: Array<{ scryfallId: string; entry: CardEntry }>) => void;
@@ -67,7 +68,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 	}, [userId, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const addToWishlist = useCallback(
-		(card: ScryfallCard, entryPatch?: Partial<CardEntry>, count?: number) =>
+		(card: AnyCard, entryPatch?: Partial<CardEntry>, count?: number) =>
 			store.addToWishlist(card, userId, triggerSync, entryPatch, count),
 		[store, userId, triggerSync]
 	);

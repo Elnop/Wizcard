@@ -1,4 +1,5 @@
 import type { Card } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import type { DeckZone } from '@/types/decks';
 import {
 	parseColorPips,
@@ -55,7 +56,9 @@ function emptyTypes(): Record<TypeCategory, number> {
 	};
 }
 
-export function computeDeckStats(cards: Array<{ card: Card; zone: DeckZone }>): DeckStats {
+export function computeDeckStats(
+	cards: Array<{ card: Card | CustomCard; zone: DeckZone }>
+): DeckStats {
 	const mainboard = cards.filter((c) => c.zone === 'mainboard');
 	const sideboard = cards.filter((c) => c.zone === 'sideboard');
 	const maybeboard = cards.filter((c) => c.zone === 'maybeboard');

@@ -9,7 +9,6 @@ import { buildCollectionAddRequest } from '../../collectionAddRequest';
 import type { CollectionAddRequest } from '../../collectionAddRequest';
 import { OwnershipBadge } from '@/lib/card/components/OwnershipBadge/OwnershipBadge';
 import { getArtCropUrl } from '@/lib/deck/utils/pick-cover-art';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import styles from './DeckCardOverlay.module.css';
 
 const ZONE_LABELS: Record<DeckZone, string> = {
@@ -211,7 +210,7 @@ export function DeckCardOverlay({
 	const hasUnowned = zoneCopies.some((c) => !c.entry.ownerId);
 
 	// art_crop URL of this card group, used as the deck cover when chosen.
-	const cardCoverArtUrl = getArtCropUrl(group.representative as ScryfallCard);
+	const cardCoverArtUrl = getArtCropUrl(group.representative);
 	const isCurrentCover = deckCoverArtUrl != null && deckCoverArtUrl === cardCoverArtUrl;
 
 	const buildAddRequest = (): CollectionAddRequest =>

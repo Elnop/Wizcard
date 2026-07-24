@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { CardEntry } from '@/types/cards';
+import type { ScryfallOnlyFields } from '@/lib/scryfall/types/scryfall';
 import { MTG_LANGUAGES } from '@/lib/mtg/languages';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import { CardPrintPickerModal } from '@/lib/card/components/CardPrintPickerModal/CardPrintPickerModal';
@@ -36,7 +37,7 @@ export function CardEntryFormBody({ title, form, onClose, topExtras, actions }: 
 	// A custom print has no prints_search_uri; fall back to an oracle_id search
 	// so the picker still lists the official prints (same as PrintsTab).
 	const printsSearchUri =
-		selectedPrint.prints_search_uri ??
+		(selectedPrint as ScryfallOnlyFields).prints_search_uri ??
 		(selectedPrint.oracle_id
 			? `https://api.scryfall.com/cards/search?q=oracle_id%3A${selectedPrint.oracle_id}&unique=prints&order=released`
 			: undefined);

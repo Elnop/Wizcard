@@ -1,9 +1,9 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckMeta, DeckZone, FolderMeta } from '@/types/decks';
-import type { CardEntry } from '@/types/cards';
+import type { Card, CardEntry } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { useDeckStore } from '../store/deck-store';
@@ -42,12 +42,12 @@ type DeckContextValue = {
 	deleteDeck: (deckId: string, options?: { deleteCollectionCopies?: boolean }) => void;
 
 	loadDeck: (deckId: string) => Promise<void>;
-	addCardToDeck: (deckId: string, card: ScryfallCard, zone: DeckZone) => void;
+	addCardToDeck: (deckId: string, card: Card | CustomCard, zone: DeckZone) => void;
 	addCollectionCardToDeck: (deckId: string, collectionRowId: string, zone: DeckZone) => void;
 	bulkAddCardsToDeck: (
 		deckId: string,
 		cards: Array<{
-			card: ScryfallCard;
+			card: Card | CustomCard;
 			zone: DeckZone;
 			quantity: number;
 			entry?: Partial<CardEntry>;
@@ -58,7 +58,7 @@ type DeckContextValue = {
 	updateDeckCard: (rowId: string, updates: Partial<CardEntry>) => void;
 	toggleOwned: (rowId: string, proxy?: boolean) => void;
 	toggleDeckCardWishlist: (rowId: string) => void;
-	changeDeckCardPrint: (rowId: string, newCard: ScryfallCard, deckId: string) => void;
+	changeDeckCardPrint: (rowId: string, newCard: Card | CustomCard, deckId: string) => void;
 	replaceDeckCardWithCollectionCopy: (
 		deckCardRowId: string,
 		collectionRowId: string,
@@ -185,7 +185,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	}, []);
 
 	const addCardToDeck = useCallback(
-		(deckId: string, card: ScryfallCard, zone: DeckZone) => {
+		(deckId: string, card: Card | CustomCard, zone: DeckZone) => {
 			if (!userId) return;
 			store.addCardToDeck(deckId, card, zone, userId, triggerSync);
 		},
@@ -201,7 +201,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const bulkAddCardsToDeck = useCallback(
-		(deckId: string, cards: Array<{ card: ScryfallCard; zone: DeckZone; quantity: number }>) => {
+		(deckId: string, cards: Array<{ card: Card | CustomCard; zone: DeckZone; quantity: number }>) => {
 			if (!userId) return;
 			store.bulkAddCardsToDeck(deckId, cards, userId, triggerSync);
 		},
@@ -239,7 +239,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const changeDeckCardPrint = useCallback(
-		(rowId: string, newCard: ScryfallCard, deckId: string) =>
+		(rowId: string, newCard: Card | CustomCard, deckId: string) =>
 			store.changeDeckCardPrint(rowId, newCard, deckId, triggerSync),
 		[store, triggerSync]
 	);

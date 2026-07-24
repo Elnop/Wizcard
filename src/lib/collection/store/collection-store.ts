@@ -1,8 +1,8 @@
 'use client';
 
 import { create } from 'zustand';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { buildEntriesBatch, newEntry } from '@/lib/card/entry/buildEntriesBatch';
 import { fetchCollectionPage } from '../db/collection';
 import { enqueue, clearQueue } from '@/lib/supabase/sync-queue';
@@ -32,13 +32,13 @@ type CollectionActions = {
 
 	// Mutations — all take triggerSync so the sync queue can be triggered
 	addCard: (
-		card: ScryfallCard,
+		card: AnyCard,
 		userId: string | null,
 		triggerSync: () => void,
 		entryPatch?: Partial<CardEntry>
 	) => void;
 	addCards: (
-		card: ScryfallCard,
+		card: AnyCard,
 		count: number,
 		userId: string | null,
 		triggerSync: () => void,

@@ -3,8 +3,12 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import type { CardCopy, CardEntry } from '@/types/cards';
-import type { ScryfallCard, ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
+import type { Card, CardCopy, CardEntry } from '@/types/cards';
+import type {
+	ScryfallCard,
+	ScryfallCardSymbol,
+	ScryfallOnlyFields,
+} from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
 import { isCustomCard } from '@/lib/mpc/types';
 import type { DeckZone } from '@/types/decks';
@@ -48,22 +52,22 @@ const ZONE_ABBR: Record<DeckZone, string> = {
 	tokens: 'Tok',
 };
 
-function isCollectionCard(card: CardCopy | ScryfallCard): card is CardCopy {
+function isCollectionCard(card: CardCopy | Card | CustomCard): card is CardCopy {
 	return 'entry' in card;
 }
 
 interface Props {
-	cards: CardCopy | CardCopy[] | ScryfallCard | CustomCard | null;
+	cards: CardCopy | CardCopy[] | Card | CustomCard | null;
 	initialRowId?: string;
 	onClose: () => void;
 	onSave?: (rowId: string, updates: Partial<CardEntry>) => void;
 	onRemove?: (scryfallId: string) => void;
 	onRemoveEntry?: (rowId: string) => void;
 	onDuplicate?: (scryfallId: string, entry: CardEntry) => void;
-	onChangePrint?: (rowId: string, newCard: ScryfallCard) => void;
+	onChangePrint?: (rowId: string, newCard: Card | CustomCard) => void;
 	onIncrement?: (entry: Partial<CardEntry>) => void;
 	onDecrement?: () => void;
-	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
+	onAddToCollection?: (card: Card | CustomCard, entry: Partial<CardEntry>, count: number) => void;
 	addLabel?: string;
 	zone?: DeckZone;
 	availableZones?: DeckZone[];
@@ -75,8 +79,8 @@ interface Props {
 	onAddToWishlistFromEntry?: (deckCardRowId: string) => void;
 	onAddToCollectionFromEntry?: (rowIds: string[]) => void;
 	onRemoveFromCollectionEntry?: (rowId: string) => void;
-	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
-	onAddToDeck?: (card: ScryfallCard) => void;
+	onAddToWishlist?: (card: Card | CustomCard, entry: Partial<CardEntry>, count: number) => void;
+	onAddToDeck?: (card: Card | CustomCard) => void;
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
 	renderCopyBadge?: (copy: CardCopy) => React.ReactNode;
@@ -96,7 +100,7 @@ interface InnerProps {
 	onRemove?: (scryfallId: string) => void;
 	onRemoveEntry?: (rowId: string) => void;
 	onDuplicate?: (scryfallId: string, entry: CardEntry) => void;
-	onChangePrint?: (rowId: string, newCard: ScryfallCard) => void;
+	onChangePrint?: (rowId: string, newCard: Card | CustomCard) => void;
 	onIncrement?: (entry: Partial<CardEntry>) => void;
 	onDecrement?: () => void;
 	zone?: DeckZone;
@@ -109,7 +113,7 @@ interface InnerProps {
 	onAddToWishlistFromEntry?: (deckCardRowId: string) => void;
 	onAddToCollectionFromEntry?: (rowIds: string[]) => void;
 	onRemoveFromCollectionEntry?: (rowId: string) => void;
-	onAddToDeck?: (card: ScryfallCard) => void;
+	onAddToDeck?: (card: Card | CustomCard) => void;
 	producerSections?: CardListSection[];
 	onProducerClick?: (card: AnyCard) => void;
 	renderCopyBadge?: (copy: CardCopy) => React.ReactNode;
@@ -230,7 +234,7 @@ function CardDetailSection({
 	entry,
 	onClose,
 }: {
-	card: ScryfallCard;
+	card: Card | CustomCard;
 	symbolMap: Record<string, ScryfallCardSymbol>;
 	language?: string;
 	isCustom?: boolean;
@@ -238,7 +242,9 @@ function CardDetailSection({
 	onClose?: () => void;
 }) {
 	const t = useTranslations('card');
-	const { tokens, loading: tokensLoading, hasTokens } = useCardTokens(card);
+	// Token resolution is a provider-frozen subsystem (reads Scryfall `all_parts`),
+	// so the token hook is fed the provider view of this print.
+	const { tokens, loading: tokensLoading, hasTokens } = useCardTokens(card as ScryfallCard);
 	const [tokenModalCard, setTokenModalCard] = useState<ScryfallCard | null>(null);
 
 	return (
@@ -289,7 +295,9 @@ function CardDetailSection({
 						</div>
 					</div>
 				)}
-				{card.flavor_text && <p className={styles.flavorText}>{card.flavor_text}</p>}
+				{(card as ScryfallCard).flavor_text && (
+					<p className={styles.flavorText}>{(card as ScryfallCard).flavor_text}</p>
+				)}
 				{card.loyalty && (
 					<div className={styles.detailRow}>
 						<span className={styles.detailLabel}>{t('detailLoyalty')}</span>
@@ -675,7 +683,7 @@ function CardModalInner({
 							<button
 								type="button"
 								className={styles.changePrintBtn}
-								onClick={() => onAddToDeck(selectedCard as ScryfallCard)}
+								onClick={() => onAddToDeck(selectedCard)}
 							>
 								<span aria-hidden="true">🗂</span> {t('addToDeck')}
 							</button>
@@ -684,7 +692,7 @@ function CardModalInner({
 
 					<div className={styles.infoCol}>
 						<CardDetailSection
-							card={selectedCard as ScryfallCard}
+							card={selectedCard}
 							symbolMap={symbolMap}
 							language={selectedCard.entry.language}
 							entry={selectedCard.entry}
@@ -757,7 +765,7 @@ function CardModalInner({
 
 			{lightbox && (
 				<CardLightbox
-					card={selectedCard as ScryfallCard}
+					card={selectedCard}
 					onClose={() => setLightbox(false)}
 					isFoil={selectedCard.entry.isFoil}
 					foilType={selectedCard.entry.foilType}
@@ -792,9 +800,9 @@ function CardModalInner({
 				/>
 			)}
 
-			{usingCollectionCopy && (selectedCard as ScryfallCard).prints_search_uri && (
+			{usingCollectionCopy && (selectedCard as ScryfallOnlyFields).prints_search_uri && (
 				<UseCollectionCopyModal
-					prints_search_uri={(selectedCard as ScryfallCard).prints_search_uri!}
+					prints_search_uri={(selectedCard as ScryfallOnlyFields).prints_search_uri!}
 					collectionCopies={collectionCopies ?? []}
 					currentCollectionRowId={selectedCard.entry.ownerId ? selectedCard.entry.rowId : undefined}
 					onSelectCollectionCopy={(rowId) => {
@@ -815,7 +823,7 @@ function CardModalInner({
 
 			{addingCopy && (
 				<AddCardModal
-					scryfallCard={selectedCard as ScryfallCard}
+					scryfallCard={selectedCard}
 					hideQuantity
 					onAdd={(_print, entry) => {
 						onIncrement?.(entry);
@@ -838,13 +846,13 @@ function ScryfallCardModalInner({
 	onAddToDeck,
 	buildImageMenuItems,
 }: {
-	card: ScryfallCard;
+	card: Card | CustomCard;
 	onClose: () => void;
-	onAddToCollection?: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
+	onAddToCollection?: (card: Card | CustomCard, entry: Partial<CardEntry>, count: number) => void;
 	addLabel?: string;
 	availableZones?: DeckZone[];
-	onAddToWishlist?: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
-	onAddToDeck?: (card: ScryfallCard) => void;
+	onAddToWishlist?: (card: Card | CustomCard, entry: Partial<CardEntry>, count: number) => void;
+	onAddToDeck?: (card: Card | CustomCard) => void;
 	buildImageMenuItems?: (card: AnyCard, close: () => void) => ContextMenuAction[] | null;
 }) {
 	const t = useTranslations('card');
@@ -852,7 +860,7 @@ function ScryfallCardModalInner({
 	const [addingCard, setAddingCard] = useState(false);
 	const [addingToWishlist, setAddingToWishlist] = useState(false);
 	const symbolMap = useScryfallSymbols();
-	const isCustom = isCustomCard(card as ScryfallCard | CustomCard);
+	const isCustom = isCustomCard(card);
 
 	return (
 		<>
@@ -915,12 +923,12 @@ function ScryfallCardModalInner({
 							onClose={onClose}
 						/>
 
-						{isCustom && (
+						{isCustomCard(card) && (
 							<>
 								<Link href={`/card/${card.id}`} className={styles.moreInfoLink} onClick={onClose}>
 									{t('moreInfo')}
 								</Link>
-								<CustomCardSection card={card as unknown as CustomCard} />
+								<CustomCardSection card={card} />
 							</>
 						)}
 					</div>
@@ -992,11 +1000,11 @@ export function CardModal({
 
 	const first = normalizedCards[0];
 
-	if (!isCollectionCard(first as CardCopy | ScryfallCard)) {
+	if (!isCollectionCard(first)) {
 		return (
 			<ScryfallCardModalInner
 				key={first.id}
-				card={first as ScryfallCard}
+				card={first}
 				onClose={onClose}
 				onAddToCollection={onAddToCollection}
 				addLabel={addLabel}

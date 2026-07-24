@@ -5,7 +5,8 @@ import { useRouter } from '@/i18n/navigation';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { getDeckZone } from '@/types/decks';
 import type { DeckMeta, DeckZone } from '@/types/decks';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import type { ResolvedDeckCard } from './useDeckDetail';
 
 /**
@@ -35,7 +36,7 @@ export function useCopyDeckToMyCollection(): {
 
 				// Aggregate individual copies into { card, zone, quantity } groups,
 				// keyed by scryfall print + zone.
-				const grouped = new Map<string, { card: ScryfallCard; zone: DeckZone; quantity: number }>();
+				const grouped = new Map<string, { card: Card | CustomCard; zone: DeckZone; quantity: number }>();
 				for (const rc of cards) {
 					const zone = getDeckZone(rc.entry.tags);
 					const key = `${rc.id}:${zone}`;
@@ -43,7 +44,7 @@ export function useCopyDeckToMyCollection(): {
 					if (existing) {
 						existing.quantity += 1;
 					} else {
-						grouped.set(key, { card: rc as ScryfallCard, zone, quantity: 1 });
+						grouped.set(key, { card: rc, zone, quantity: 1 });
 					}
 				}
 

@@ -1,16 +1,16 @@
 'use client';
 
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import type { CardEntry } from '@/types/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card, CardEntry } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import type { DeckZone } from '@/types/decks';
 import { AddCardModal } from '@/lib/card/components/AddCardModal/AddCardModal';
 import { useCloseOnRouteChange } from '@/contexts/useCloseOnRouteChange';
 
 /** Params for opening the add-card modal — mirrors AddCardModal's props minus onClose. */
 export type AddCardModalParams = {
-	scryfallCard: ScryfallCard;
-	onAdd: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
+	scryfallCard: Card | CustomCard;
+	onAdd: (card: Card | CustomCard, entry: Partial<CardEntry>, count: number) => void;
 	availableZones?: DeckZone[];
 	defaultZone?: DeckZone;
 	hideQuantity?: boolean;

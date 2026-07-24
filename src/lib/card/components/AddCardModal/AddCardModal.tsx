@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import type { CardEntry } from '@/types/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card, CardEntry } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import { type DeckZone, setDeckZone } from '@/types/decks';
 import { useCardEntryForm } from '@/lib/card/components/EditCardModal/useCardEntryForm';
 import { CardEntryFormBody } from '@/lib/card/components/EditCardModal/CardEntryFormBody';
@@ -18,8 +18,8 @@ const ZONE_LABELS: Record<DeckZone, string> = {
 };
 
 export interface AddCardModalProps {
-	scryfallCard: ScryfallCard;
-	onAdd: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
+	scryfallCard: Card | CustomCard;
+	onAdd: (card: Card | CustomCard, entry: Partial<CardEntry>, count: number) => void;
 	onClose: () => void;
 	availableZones?: DeckZone[];
 	defaultZone?: DeckZone;
@@ -108,7 +108,7 @@ export function AddCardModal({
 	return (
 		<CardEntryFormBody
 			title={t('addTitle', {
-				print: `${form.selectedPrint.set_name ?? form.selectedPrint.set.toUpperCase()} #${form.selectedPrint.collector_number}`,
+				print: `${form.selectedPrint.set_name ?? form.selectedPrint.set?.toUpperCase() ?? ''} #${form.selectedPrint.collector_number}`,
 			})}
 			form={form}
 			onClose={onClose}

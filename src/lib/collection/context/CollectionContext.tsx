@@ -1,8 +1,8 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { useCollectionStore } from '../store/collection-store';
@@ -19,8 +19,8 @@ type CollectionContextValue = {
 	entries: Array<{ scryfallId: string; entry: CardEntry }>;
 	isLoaded: boolean;
 	isFullyLoaded: boolean;
-	addCard: (card: ScryfallCard, entryPatch?: Partial<CardEntry>) => void;
-	addCards: (card: ScryfallCard, count: number, entryPatch?: Partial<CardEntry>) => void;
+	addCard: (card: AnyCard, entryPatch?: Partial<CardEntry>) => void;
+	addCards: (card: AnyCard, count: number, entryPatch?: Partial<CardEntry>) => void;
 	duplicateEntry: (scryfallId: string, sourceEntry: CardEntry) => void;
 	removeCard: (scryfallId: string) => void;
 	decrementCard: (scryfallId: string) => void;
@@ -72,12 +72,12 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 
 	// Bind mutations to current userId + triggerSync
 	const addCard = useCallback(
-		(card: ScryfallCard, entryPatch?: Partial<CardEntry>) =>
+		(card: AnyCard, entryPatch?: Partial<CardEntry>) =>
 			store.addCard(card, userId, triggerSync, entryPatch),
 		[store, userId, triggerSync]
 	);
 	const addCards = useCallback(
-		(card: ScryfallCard, count: number, entryPatch?: Partial<CardEntry>) =>
+		(card: AnyCard, count: number, entryPatch?: Partial<CardEntry>) =>
 			store.addCards(card, count, userId, triggerSync, entryPatch),
 		[store, userId, triggerSync]
 	);

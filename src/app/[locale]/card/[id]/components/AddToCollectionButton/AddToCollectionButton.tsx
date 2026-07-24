@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
-import type { CardEntry } from '@/types/cards';
+import type { Card, CardEntry } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 import { Button } from '@/components/Button/Button';
@@ -29,7 +30,7 @@ export function AddToCollectionButton({ card }: AddToCollectionButtonProps) {
 	function openAdd() {
 		openAddCard({
 			scryfallCard: card,
-			onAdd: (selectedCard: ScryfallCard, entry: Partial<CardEntry>, count: number) => {
+			onAdd: (selectedCard: Card | CustomCard, entry: Partial<CardEntry>, count: number) => {
 				addCards(selectedCard, count, entry);
 				setShowFeedback(true);
 			},

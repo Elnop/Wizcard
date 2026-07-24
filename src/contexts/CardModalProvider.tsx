@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import type { CardCopy, CardEntry, CardStack } from '@/types/cards';
+import type { Card, CardCopy, CardEntry, CardStack } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CustomCard } from '@/lib/mpc/types';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
@@ -78,11 +78,11 @@ type ImageMenuDeps = {
 	requestMoveToCollection: (rowId: string) => void;
 	openAddToDeck: (card: AnyCard) => void;
 	openAddCard: (params: {
-		scryfallCard: ScryfallCard;
-		onAdd: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
+		scryfallCard: Card | CustomCard;
+		onAdd: (card: Card | CustomCard, entry: Partial<CardEntry>, count: number) => void;
 	}) => void;
-	addToCollection: (card: ScryfallCard, count: number, entry: Partial<CardEntry>) => void;
-	addToWishlist: (card: ScryfallCard, entry: Partial<CardEntry>, count: number) => void;
+	addToCollection: (card: AnyCard, count: number, entry: Partial<CardEntry>) => void;
+	addToWishlist: (card: AnyCard, entry: Partial<CardEntry>, count: number) => void;
 	closeModal: () => void;
 };
 
@@ -141,12 +141,12 @@ function buildViewerImageMenu(
 			onViewDetails: () => {},
 			onAddToCollection: (c) =>
 				deps.openAddCard({
-					scryfallCard: c as ScryfallCard,
+					scryfallCard: c,
 					onAdd: (sc, entry, count) => deps.addToCollection(sc, count, entry),
 				}),
 			onAddToWishlist: (c) =>
 				deps.openAddCard({
-					scryfallCard: c as ScryfallCard,
+					scryfallCard: c,
 					onAdd: (sc, entry, count) => deps.addToWishlist(sc, entry, count),
 				}),
 			onAddToDeck: (c) => deps.openAddToDeck(c),
@@ -164,10 +164,7 @@ function resolveStackCards(oracleKey: string, entries: StoredCopy[]): CardCopy[]
 		const scryfall = getCard(scryfallId);
 		if (!scryfall) continue;
 		if (oracleKeyOf(scryfall) !== oracleKey) continue;
-		// The global store is typed as the provider-neutral `Card` (Wave A migration),
-		// but at runtime it only ever holds ScryfallCard | CustomCard objects (fed by
-		// resolvers not yet migrated) — this cast reflects that, not a new invariant.
-		result.push({ ...(scryfall as ScryfallCard | CustomCard), entry });
+		result.push({ ...scryfall, entry });
 	}
 	return result;
 }
@@ -257,8 +254,8 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 	// Stateful change-print: persist the print change, then re-target the open
 	// stack to the new print's oracle key so the modal keeps showing it.
 	const handleChangePrint = useCallback(
-		(rowId: string, newCard: ScryfallCard, source: 'collection' | 'wishlist') => {
-			if (isCustomCard(newCard as ScryfallCard | CustomCard)) {
+		(rowId: string, newCard: Card | CustomCard, source: 'collection' | 'wishlist') => {
+			if (isCustomCard(newCard)) {
 				// Custom prints never enter the Scryfall IndexedDB cache; mirror them
 				// into the in-memory store so the reopened stack resolves synchronously.
 				putCards([newCard]);
@@ -290,7 +287,7 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 			const rep = stackCards[0];
 			if (!rep) return;
 			openAddCard({
-				scryfallCard: rep as ScryfallCard,
+				scryfallCard: rep,
 				initialEntry: buildMoveInitialEntry(rep.entry),
 				maxQuantity: stackCards.length,
 				hideQuantity: stackCards.length <= 1,

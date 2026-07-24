@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { CardCopy, CardEntry } from '@/types/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card, CardCopy, CardEntry } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import type { DeckZone } from '@/types/decks';
 import { setDeckZone } from '@/types/decks';
 import { isBasicLand } from '@/lib/deck/utils/format-rules';
@@ -12,7 +12,7 @@ function mergeTags(existing: string[] | undefined, toAdd: string[]): string[] {
 }
 
 /** Same dedup key as dedupeByOracle in useDeckCardSections. */
-export function oracleKey(card: ScryfallCard): string {
+export function oracleKey(card: Card | CustomCard): string {
 	return card.oracle_id ?? card.id;
 }
 
@@ -115,7 +115,7 @@ export function useImportPreviewEdit(init: PreviewInit) {
 		);
 	}, []);
 
-	const changePrint = useCallback((rowId: string, newCard: ScryfallCard) => {
+	const changePrint = useCallback((rowId: string, newCard: Card | CustomCard) => {
 		setCards((prev) =>
 			prev.map((c) => (c.entry.rowId === rowId ? { ...newCard, entry: c.entry } : c))
 		);
@@ -143,7 +143,7 @@ export function useImportPreviewEdit(init: PreviewInit) {
 		setCards((prev) => prev.filter((c) => !rowIds.has(c.entry.rowId)));
 	}, []);
 
-	const changePrintForRows = useCallback((rowIds: Set<string>, newCard: ScryfallCard) => {
+	const changePrintForRows = useCallback((rowIds: Set<string>, newCard: Card | CustomCard) => {
 		setCards((prev) =>
 			prev.map((c) => (rowIds.has(c.entry.rowId) ? { ...newCard, entry: c.entry } : c))
 		);

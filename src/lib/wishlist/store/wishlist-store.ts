@@ -1,8 +1,8 @@
 'use client';
 
 import { create } from 'zustand';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { CardEntry } from '@/types/cards';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { fetchWishlistPage } from '../db/wishlist';
 import { enqueue } from '@/lib/supabase/sync-queue';
 import { buildEntriesBatch } from '@/lib/card/entry/buildEntriesBatch';
@@ -20,7 +20,7 @@ type WishlistActions = {
 	hydrateFromSupabase: (userId: string) => Promise<void>;
 	handleLogout: () => void;
 	addToWishlist: (
-		card: ScryfallCard,
+		card: AnyCard,
 		userId: string | null,
 		triggerSync: () => void,
 		entryPatch?: Partial<CardEntry>,

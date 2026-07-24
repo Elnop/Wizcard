@@ -6,13 +6,22 @@ import type {
 	ScryfallImageUris,
 	ScryfallImageStatus,
 } from '@/lib/scryfall/types/scryfall';
-import type { CardEntry } from '@/types/cards';
+import type { Card, CardEntry } from '@/types/cards';
 import type { CollectionData } from '@/lib/collection/db/collection-migrations';
 
+// The object store holds a plain JSON blob, so writes accept the provider-neutral
+// domain `Card`. Reads stay typed `ScryfallCard` until the resolve pipeline
+// (`resolveCardsByScryfallIds`) migrates to the domain type.
 interface CachedCard {
 	id: string; // ScryfallUUID — keyPath of the object store
 	data: ScryfallCard;
 	cachedAt: number; // Date.now()
+}
+
+interface CachedCardWrite {
+	id: string;
+	data: Card;
+	cachedAt: number;
 }
 
 interface CachedCollectionEntry {
@@ -171,7 +180,7 @@ export async function getCardsFromCache(ids: string[]): Promise<Map<string, Scry
 }
 
 /** Write a batch of ScryfallCards to the cache. */
-export async function putCardsInCache(cards: ScryfallCard[]): Promise<void> {
+export async function putCardsInCache(cards: Card[]): Promise<void> {
 	if (cards.length === 0) return;
 
 	try {
@@ -183,7 +192,7 @@ export async function putCardsInCache(cards: ScryfallCard[]): Promise<void> {
 				const now = Date.now();
 
 				for (const card of cards) {
-					const entry: CachedCard = { id: card.id, data: card, cachedAt: now };
+					const entry: CachedCardWrite = { id: card.id, data: card, cachedAt: now };
 					store.put(entry);
 				}
 

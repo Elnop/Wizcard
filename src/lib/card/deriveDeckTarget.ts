@@ -1,13 +1,13 @@
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
-import type { CardEntry } from '@/types/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card, CardEntry } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import type { DeckZone } from '@/types/decks';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 type AssignFn = (rowIds: string[], deckId: string, zone: DeckZone) => void;
 
 export type DeckTarget = {
-	card: ScryfallCard;
+	card: Card | CustomCard;
 	ownedRowIds?: string[];
 	onAssign?: AssignFn;
 };
@@ -39,7 +39,7 @@ export function deriveDeckTarget(
 	getOracleId: (scryfallId: string) => string | undefined
 ): DeckTarget {
 	if (!hasEntry(card)) {
-		return { card: card as ScryfallCard };
+		return { card };
 	}
 
 	const isWishlisted = card.entry.wishlist === true;
@@ -53,7 +53,7 @@ export function deriveDeckTarget(
 		.map((copy) => copy.entry.rowId);
 
 	return {
-		card: card as ScryfallCard,
+		card,
 		ownedRowIds,
 		onAssign: isWishlisted ? assignToDeck : undefined,
 	};

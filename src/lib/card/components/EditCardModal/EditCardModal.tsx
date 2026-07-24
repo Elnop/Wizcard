@@ -1,8 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { CardCopy, CardEntry } from '@/types/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card, CardCopy, CardEntry } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import { useCardEntryForm } from './useCardEntryForm';
 import { CardEntryFormBody } from './CardEntryFormBody';
 import styles from './EditCardModal.module.css';
@@ -10,14 +10,14 @@ import styles from './EditCardModal.module.css';
 export interface EditCardModalProps {
 	card: CardCopy;
 	onSave: (patch: Partial<CardEntry>) => void;
-	onChangePrint: (newCard: ScryfallCard) => void;
+	onChangePrint: (newCard: Card | CustomCard) => void;
 	onClose: () => void;
 }
 
 /** Modal for editing an existing owned copy (metadata + print/language). */
 export function EditCardModal({ card, onSave, onChangePrint, onClose }: EditCardModalProps) {
 	const t = useTranslations('card');
-	const form = useCardEntryForm({ ...card.entry }, card as ScryfallCard);
+	const form = useCardEntryForm({ ...card.entry }, card);
 
 	function handleSave() {
 		// Commit a print change (incl. localized language) before the metadata

@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo } from 'react';
 import type { CardStack, CardEntry } from '@/types/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 
 function buildInitialEntry(entry: CardEntry): Partial<CardEntry> {
@@ -45,7 +44,7 @@ export function useMoveToCollection(
 			const rep = stack?.cards[0];
 			if (!stack || !rep) return;
 			openAddCard({
-				scryfallCard: rep as ScryfallCard,
+				scryfallCard: rep,
 				initialEntry: buildInitialEntry(rep.entry),
 				maxQuantity: stack.cards.length,
 				hideQuantity: stack.cards.length <= 1,

@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { CardEntry } from '@/types/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card, CardEntry } from '@/types/cards';
 import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
 import { getLocalizedPrint } from '@/lib/scryfall/getLocalizedPrint';
 import { isCustomCard } from '@/lib/mpc/types';
@@ -15,9 +14,12 @@ import { resolveLanguageChange } from './resolveLanguageChange';
  * localized-language fetch (with abort). Both modals compose this hook and render
  * `CardEntryFormBody`; they only differ in init source and their confirm action.
  */
-export function useCardEntryForm(initialDraft: Partial<CardEntry>, initialPrint: ScryfallCard) {
+export function useCardEntryForm(
+	initialDraft: Partial<CardEntry>,
+	initialPrint: Card | CustomCard
+) {
 	const [draftEntry, setDraftEntry] = useState<Partial<CardEntry>>(initialDraft);
-	const [selectedPrint, setSelectedPrint] = useState<ScryfallCard>(initialPrint);
+	const [selectedPrint, setSelectedPrint] = useState<Card | CustomCard>(initialPrint);
 	const [showPrintPicker, setShowPrintPicker] = useState(false);
 	const [tagInput, setTagInput] = useState('');
 	const [langInfoMessage, setLangInfoMessage] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export function useCardEntryForm(initialDraft: Partial<CardEntry>, initialPrint:
 		save({ language });
 
 		// A custom print has no Scryfall-localized variants — keep its image as-is.
-		if (isCustomCard(selectedPrint as ScryfallCard | CustomCard)) {
+		if (isCustomCard(selectedPrint)) {
 			setLangInfoMessage(null);
 			langFetchAbort.current?.abort();
 			return;
@@ -96,9 +98,9 @@ export function useCardEntryForm(initialDraft: Partial<CardEntry>, initialPrint:
 		save({ tags: newTags.length > 0 ? newTags : undefined });
 	}
 
-	function selectPrint(print: ScryfallCard) {
+	function selectPrint(print: Card | CustomCard) {
 		setSelectedPrint(print);
-		if (!isCustomCard(print as ScryfallCard | CustomCard)) {
+		if (!isCustomCard(print)) {
 			const lang = print.lang ? SCRYFALL_CODE_TO_LANGUAGE[print.lang] : undefined;
 			save({ language: lang });
 		}

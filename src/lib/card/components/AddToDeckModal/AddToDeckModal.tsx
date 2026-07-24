@@ -7,12 +7,13 @@ import { Modal } from '@/components/Modal/Modal';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { zonesForFormat, ZONE_LABELS } from '@/lib/deck/utils/zonesForFormat';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import type { DeckZone } from '@/types/decks';
 import styles from './AddToDeckModal.module.css';
 
 interface Props {
-	card: ScryfallCard;
+	card: Card | CustomCard;
 	/**
 	 * When set, the card is added by ASSIGNING existing rows (rowIds of the card
 	 * stack) to the deck — no new copy is created. Quantity is capped to the

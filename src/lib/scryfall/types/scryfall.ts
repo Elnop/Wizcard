@@ -410,3 +410,19 @@ export interface ScryfallBulkData {
 	content_type: string;
 	content_encoding: string;
 }
+
+/**
+ * Provider-only fields that the domain `Card` deliberately does not carry
+ * (see `@/types/cards`). A card that came off the Scryfall fallback path still
+ * has them at runtime; a card assembled from the DB catalog does not.
+ *
+ * Use this as the cast target at the few genuine Scryfall boundaries (the Prints
+ * tab, the print picker) instead of casting a domain value to the full
+ * `ScryfallCard` — that conversion is unsound because of the `object` literal.
+ */
+export type ScryfallOnlyFields = {
+	prints_search_uri?: string;
+	scryfall_uri?: string;
+	rulings_uri?: string;
+	penny_rank?: number;
+};

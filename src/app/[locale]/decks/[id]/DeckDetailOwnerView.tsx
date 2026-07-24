@@ -276,8 +276,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		const commanderCards = resolvedCards.filter((rc) => getDeckZone(rc.entry.tags) === 'commander');
 		return validateDeck(
 			deck.format,
-			allCards.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) })),
-			commanderCards.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) }))
+			allCards.map((rc) => ({ card: rc, zone: getDeckZone(rc.entry.tags) })),
+			commanderCards.map((rc) => ({ card: rc, zone: getDeckZone(rc.entry.tags) }))
 		);
 	}, [deck, resolvedCards]);
 
@@ -302,7 +302,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 
 	const handleDuplicateCard = useCallback(
 		(rc: ResolvedDeckCard) => {
-			addCardToDeck(deckId, rc as ScryfallCard, getDeckZone(rc.entry.tags));
+			addCardToDeck(deckId, rc, getDeckZone(rc.entry.tags));
 		},
 		[deckId, addCardToDeck]
 	);

@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import { CardImage } from '@/lib/card/components/CardImage/CardImage';
 import styles from './CardLightbox.module.css';
 
 interface Props {
-	card: ScryfallCard & { entry?: { language?: string; isFoil?: boolean; foilType?: string } };
+	card: (Card | CustomCard) & { entry?: { language?: string; isFoil?: boolean; foilType?: string } };
 	onClose: () => void;
 	isFoil?: boolean;
 	foilType?: 'foil' | 'etched';

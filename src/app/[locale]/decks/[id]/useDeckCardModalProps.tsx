@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import type { CardCopy, CardEntry } from '@/types/cards';
+import type { Card, CardCopy, CardEntry } from '@/types/cards';
+import type { CustomCard } from '@/lib/mpc/types';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { DeckZone } from '@/types/decks';
 import { getDeckZone } from '@/types/decks';
@@ -35,7 +36,7 @@ export type DeckCardModalProps = {
 	onRemoveEntry: (rowId: string) => void;
 	onIncrement: () => void;
 	onChangeZone: (rowId: string, zone: DeckZone) => void;
-	onChangePrint: (rowId: string, newCard: ScryfallCard) => void;
+	onChangePrint: (rowId: string, newCard: Card | CustomCard) => void;
 	collectionCopies: CollectionCopyEntry[];
 	onAssignCollectionCopy: (rowId: string) => void;
 	onUnassignCollectionCopy: () => void;
@@ -241,7 +242,7 @@ export function useDeckCardModalProps(
 			const seen = new Set<string>();
 			const cards: CardCopy[] = [];
 			for (const card of cardsByZone[zone]) {
-				if (!cardProducesToken(card as ScryfallCard, selected)) continue;
+				if (!cardProducesToken(card, selected)) continue;
 				const key = card.oracle_id ?? card.id;
 				if (seen.has(key)) continue;
 				seen.add(key);
@@ -299,7 +300,7 @@ export function useDeckCardModalProps(
 	);
 
 	const onChangePrint = useCallback(
-		(rowId: string, newCard: ScryfallCard) => changeDeckCardPrint(rowId, newCard, deckId),
+		(rowId: string, newCard: Card | CustomCard) => changeDeckCardPrint(rowId, newCard, deckId),
 		[changeDeckCardPrint, deckId]
 	);
 
