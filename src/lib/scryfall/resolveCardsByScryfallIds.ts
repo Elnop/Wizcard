@@ -3,7 +3,6 @@ import { BATCH_SIZE } from '@/lib/scryfall/constants';
 import { getCardsFromCache, putCardsInCache } from '@/lib/scryfall/utils/card-cache';
 import { putCards } from '@/lib/scryfall/store/cards-store';
 import { getCustomCardsByIds } from '@/lib/mpc/db/custom-cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { Card } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 
@@ -98,7 +97,7 @@ export async function resolveCardsByScryfallIds(
 		chunks.push(missIds.slice(i, i + BATCH_SIZE));
 	}
 
-	const fetched: ScryfallCard[] = [];
+	const fetched: Card[] = [];
 	for (let i = 0; i < chunks.length; i++) {
 		if (isCancelled?.()) return resolved;
 		try {

@@ -15,6 +15,7 @@ import type {
 	ScryfallImageStatus,
 } from '@/lib/scryfall/types/scryfall';
 import type { CachedLocalizedImage } from '@/lib/scryfall/utils/card-cache';
+import type { Card } from '@/types/cards';
 
 export interface LocalizedImageResult {
 	image_uris?: ScryfallImageUris;
@@ -86,18 +87,22 @@ function cachedToResult(cached: {
 	};
 }
 
-/** Normalise un ScryfallCard en tableau card_faces uniforme (Option 1) pour le cache. */
+/** Normalise un Card en tableau card_faces uniforme (Option 1) pour le cache. */
 function toCachedFaces(card: {
-	image_uris?: ScryfallImageUris;
+	image_uris?: { small?: string; normal?: string; large?: string };
 	printed_name?: string;
 	printed_type_line?: string;
 	printed_text?: string;
-	card_faces?: ScryfallCardFace[];
+	card_faces?: Array<{ image_uris?: { small?: string; normal?: string; large?: string }; printed_name?: string; printed_type_line?: string; printed_text?: string }>;
 }): CachedLocalizedImage['card_faces'] {
 	if (card.image_uris) {
+		// Card.image_uris is a subset of ScryfallImageUris; missing fields (png, art_crop,
+		// border_crop) will be undefined when cached and restored, which is fine for
+		// our purposes (they're only used by image resolution code that handles undefined).
+		const imageUris = card.image_uris as Partial<ScryfallImageUris>;
 		return [
 			{
-				image_uris: card.image_uris,
+				image_uris: imageUris as ScryfallImageUris | undefined,
 				printed_name: card.printed_name,
 				printed_type_line: card.printed_type_line,
 				printed_text: card.printed_text,
@@ -108,7 +113,7 @@ function toCachedFaces(card: {
 		return card.card_faces
 			.filter((f) => f.image_uris)
 			.map((f) => ({
-				image_uris: f.image_uris,
+				image_uris: f.image_uris as ScryfallImageUris | undefined,
 				printed_name: f.printed_name,
 				printed_type_line: f.printed_type_line,
 				printed_text: f.printed_text,
@@ -169,18 +174,18 @@ export async function fetchLocalizedImage(
 		}
 
 		// 3. Persist to IndexedDB (format card_faces uniforme)
+		const cachedFaces = toCachedFaces(localized);
 		void putLocalizedImageInCache({
 			key: cacheKey,
-			card_faces: toCachedFaces(localized),
+			card_faces: cachedFaces,
 			image_status: localized.image_status,
 			cachedAt: Date.now(),
 		});
 
-		return {
-			image_uris: localized.image_uris,
-			card_faces: localized.card_faces,
+		return cachedToResult({
+			card_faces: cachedFaces,
 			image_status: localized.image_status,
-		};
+		});
 	} catch (e) {
 		// Aborted requests (card left viewport, component unmounted) are not errors —
 		// don't blacklist the cache key so the image can be retried next time.
@@ -236,18 +241,18 @@ export async function fetchEnglishImage(
 			return null;
 		}
 
+		const cachedFaces = toCachedFaces(english);
 		void putLocalizedImageInCache({
 			key: cacheKey,
-			card_faces: toCachedFaces(english),
+			card_faces: cachedFaces,
 			image_status: english.image_status,
 			cachedAt: Date.now(),
 		});
 
-		return {
-			image_uris: english.image_uris,
-			card_faces: english.card_faces,
+		return cachedToResult({
+			card_faces: cachedFaces,
 			image_status: english.image_status,
-		};
+		});
 	} catch (e) {
 		if (e instanceof DOMException && e.name === 'AbortError') return null;
 		notFound.add(cacheKey);

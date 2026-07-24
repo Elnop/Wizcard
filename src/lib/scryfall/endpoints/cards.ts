@@ -11,6 +11,7 @@ import type {
 	ScryfallRuling,
 } from '../types/scryfall';
 import type { ScryfallSearchParams } from '../types/api';
+import type { Card } from '@/types/cards';
 
 export async function searchCards(
 	params: ScryfallSearchParams,
@@ -63,8 +64,8 @@ export async function randomCard(query?: string): Promise<ScryfallCard> {
 export async function getCardCollection(
 	identifiers: ScryfallCardIdentifier[],
 	signal?: AbortSignal
-): Promise<ScryfallList<ScryfallCard>> {
-	return scryfallPost<ScryfallList<ScryfallCard>>('/cards/collection', { identifiers }, signal);
+): Promise<ScryfallList<Card>> {
+	return scryfallPost<ScryfallList<Card>>('/cards/collection', { identifiers }, signal);
 }
 
 export async function getCardById(id: ScryfallUUID): Promise<ScryfallCard> {

@@ -1,5 +1,5 @@
 import { getLocalizedPrint } from '@/lib/scryfall/getLocalizedPrint';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 
 /**
  * Re-resolve each resolved (English) token print into the language of the card
@@ -16,8 +16,8 @@ export async function localizeTokens<
 >(
 	tokens: T[],
 	langByTokenId: Map<string, string>,
-	deps: { fetchLocalized?: (set: string, num: string, lang: string) => Promise<ScryfallCard> } = {}
-): Promise<(T | ScryfallCard)[]> {
+	deps: { fetchLocalized?: (set: string, num: string, lang: string) => Promise<Card> } = {}
+): Promise<(T | Card)[]> {
 	const fetchLocalized = deps.fetchLocalized ?? defaultFetchLocalized;
 
 	return Promise.all(
@@ -33,7 +33,7 @@ export async function localizeTokens<
 	);
 }
 
-function defaultFetchLocalized(set: string, num: string, lang: string): Promise<ScryfallCard> {
+function defaultFetchLocalized(set: string, num: string, lang: string): Promise<Card> {
 	return getLocalizedPrint(set, num, lang).then((card) => {
 		if (!card) throw new Error('localized print not found');
 		return card;

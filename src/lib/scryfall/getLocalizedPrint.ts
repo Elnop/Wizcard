@@ -5,14 +5,14 @@
 // "resolve English then re-fetch in lang" pattern — the language is in the identifier.
 
 import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 
 export async function getLocalizedPrint(
 	set: string,
 	collectorNumber: string,
 	lang: string,
 	signal?: AbortSignal
-): Promise<ScryfallCard | null> {
+): Promise<Card | null> {
 	const list = await getCardCollection([{ set, collector_number: collectorNumber, lang }], signal);
 	return list.data[0] ?? null;
 }
