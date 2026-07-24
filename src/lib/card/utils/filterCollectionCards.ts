@@ -1,6 +1,6 @@
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder } from '@/lib/scryfall/types/sort';
-import type { CardCopy, MtgColor } from '@/types/cards';
+import type { Card, CardCopy, MtgColor } from '@/types/cards';
 import { type CardFilters, DEFAULT_CARD_FILTERS } from '@/lib/search/types';
 import type { MtgLanguage } from '@/lib/mtg/languages';
 import type { CardType, CustomCard } from '@/lib/mpc/types';
@@ -8,7 +8,7 @@ import { isCustomCard } from '@/lib/mpc/types';
 
 export type CollectionSortOrder = ScryfallSortOrder | 'language';
 
-type AnyCard = ScryfallCard | CardCopy | CustomCard;
+type AnyCard = Card | CardCopy | CustomCard;
 
 export interface CollectionFilters extends Omit<CardFilters, 'order'> {
 	order: CollectionSortOrder;
@@ -107,22 +107,22 @@ const RARITY_ORDER: Record<string, number> = {
 };
 
 export function getSortValue(
-	card: ScryfallCard | CardCopy,
+	card: Card | CardCopy,
 	order: CollectionSortOrder
 ): string | number {
 	if (order === 'language') return 'entry' in card ? (card.entry.language ?? '') : '';
 	if (order === 'name') return card.name.toLowerCase();
-	if (order === 'cmc') return (card as ScryfallCard).cmc ?? 0;
-	if (order === 'rarity') return RARITY_ORDER[(card as ScryfallCard).rarity ?? ''] ?? 0;
+	if (order === 'cmc') return (card as Card).cmc ?? 0;
+	if (order === 'rarity') return RARITY_ORDER[(card as Card).rarity ?? ''] ?? 0;
 	if (order === 'set')
-		return `${(card as ScryfallCard).set ?? ''}-${(card as ScryfallCard).collector_number?.padStart(6, '0') ?? ''}`;
-	if (order === 'released') return (card as ScryfallCard).released_at ?? '';
-	if (order === 'color') return ((card as ScryfallCard).colors ?? []).sort().join('');
-	if (order === 'usd') return parseFloat((card as ScryfallCard).prices?.usd ?? '0');
-	if (order === 'eur') return parseFloat((card as ScryfallCard).prices?.eur ?? '0');
-	if (order === 'tix') return parseFloat((card as ScryfallCard).prices?.tix ?? '0');
-	if (order === 'power') return parseFloat((card as ScryfallCard).power ?? '0');
-	if (order === 'toughness') return parseFloat((card as ScryfallCard).toughness ?? '0');
+		return `${(card as Card).set ?? ''}-${(card as Card).collector_number?.padStart(6, '0') ?? ''}`;
+	if (order === 'released') return (card as Card).released_at ?? '';
+	if (order === 'color') return ((card as Card).colors ?? []).sort().join('');
+	if (order === 'usd') return parseFloat((card as Card).prices?.usd ?? '0');
+	if (order === 'eur') return parseFloat((card as Card).prices?.eur ?? '0');
+	if (order === 'tix') return parseFloat((card as Card).prices?.tix ?? '0');
+	if (order === 'power') return parseFloat((card as Card).power ?? '0');
+	if (order === 'toughness') return parseFloat((card as Card).toughness ?? '0');
 	if (order === 'edhrec') return (card as ScryfallCard).edhrec_rank ?? 9999999;
 	if (order === 'penny') return (card as ScryfallCard).penny_rank ?? 9999999;
 	if (order === 'artist') return ((card as ScryfallCard).artist ?? '').toLowerCase();
@@ -262,8 +262,8 @@ export function filterCollectionCards<T extends AnyCard>(
 	if (filtered.length <= 1) return filtered;
 
 	return [...filtered].sort((a, b) => {
-		const av = getSortValue(a as ScryfallCard | CardCopy, filters.order);
-		const bv = getSortValue(b as ScryfallCard | CardCopy, filters.order);
+		const av = getSortValue(a as Card | CardCopy, filters.order);
+		const bv = getSortValue(b as Card | CardCopy, filters.order);
 		const cmp =
 			typeof av === 'number' && typeof bv === 'number'
 				? av - bv
