@@ -1,8 +1,7 @@
 // Persistent IndexedDB cache for card data and collection entries.
 // Silently falls back to no-op if IndexedDB is unavailable (private mode, etc.).
 
-import type { ScryfallImageUris, ScryfallImageStatus } from '@/lib/scryfall/types/scryfall';
-import type { Card, CardEntry } from '@/types/cards';
+import type { Card, CardEntry, CardImageStatus, CardImageUris } from '@/types/cards';
 import type { CollectionData } from '@/lib/collection/db/collection-migrations';
 
 // The object store holds a plain JSON blob of the provider-neutral domain `Card`.
@@ -29,13 +28,13 @@ export interface CachedLocalizedImage {
 	// Faces normalisées (Option 1) : toujours 1 ou 2 entrées quand la carte a un
 	// scan localisé. Absent pour une entrée `missing`. Noms Scryfall.
 	card_faces?: Array<{
-		image_uris?: ScryfallImageUris;
+		image_uris?: CardImageUris;
 		printed_name?: string;
 		printed_type_line?: string;
 		printed_text?: string;
 	}>;
 	/** Qualité du scan localisé (lowres/highres_scan). Absent pour une entrée `missing`. */
-	image_status?: ScryfallImageStatus;
+	image_status?: CardImageStatus;
 	cachedAt: number;
 	/**
 	 * True when Scryfall has no print in that language (404). Persisting the
