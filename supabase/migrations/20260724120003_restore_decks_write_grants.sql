@@ -1,0 +1,31 @@
+-- Restore write privileges on public.decks for authenticated users.
+--
+-- Suite de 20260724120002_restore_table_grants.sql : cette migration-là avait
+-- rendu les SELECT manquants mais laissé les écritures de `decks` de côté,
+-- parce que la table répondait déjà correctement en lecture. Résultat : créer
+-- un deck (import Moxfield) partait en `POST /rest/v1/decks` → 403 42501, le
+-- deck n'était jamais inséré et la redirection tombait sur « deck not found ».
+--
+-- Même cause racine que la migration précédente : `decks` ne tenait ses
+-- privilèges que de la default ACL du bootstrap Supabase, qui a dérivé sur ce
+-- cluster et ne grant plus rien aux rôles applicatifs.
+--
+-- SÉCURITÉ : les policies RLS INSERT/UPDATE/DELETE (« Users can insert/update/
+-- delete their own decks ») existent déjà et contraignent owner_id = auth.uid().
+-- Le grant ne fait qu'autoriser PostgREST à atteindre la table ; c'est la policy
+-- qui décide de la ligne. Les plafonds (100 decks) et le rate-limit restent
+-- assurés par les triggers decks_limit_before / decks_usage_after, qui sont
+-- SECURITY DEFINER et donc insensibles aux privilèges de l'appelant.
+--
+-- Contrairement à card_entries, `decks` n'a AUCUN grant colonne d'écriture
+-- (seuls SELECT/REFERENCES sont posés colonne par colonne) : il n'y a donc pas
+-- de restriction fine à préserver ici, le grant table est le bon niveau.
+--
+-- `card_entries` n'est volontairement pas touchée : ses INSERT/UPDATE passent
+-- déjà par des grants colonne (15 colonnes, created_at exclu pour que le
+-- rate-limit ne soit pas contournable) et le 403 observé sur elle n'était qu'une
+-- conséquence de l'échec d'insertion du deck parent.
+--
+-- Idempotent : `grant` est un no-op si le privilège est déjà présent.
+
+grant insert, update, delete on public.decks to authenticated;

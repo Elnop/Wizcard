@@ -480,6 +480,49 @@ select pg_temp.chk('security', 'authenticated CAN SELECT cards.purchase_price',
   'owner ne peut plus lire ses propres prix (grant trop restreint)');
 
 -- =============================================================================
+-- 12bis. GRANTS TABLE — lecture ET écriture.
+--
+-- Ces assertions existent parce que la default ACL du bootstrap Supabase peut
+-- dériver sur un cluster (rôles recréés, restore partiel) : les tables se
+-- retrouvent alors SANS privilège et PostgREST répond 403 42501 alors que les
+-- policies RLS sont correctes. Cf. 20260724120002 / 20260724120003.
+--
+-- Le bloc 12 ne couvrait que des grants COLONNE en lecture : les écritures
+-- cassées (impossible de créer un deck) passaient donc l'audit au vert. On
+-- teste ici explicitement les deux sens.
+-- =============================================================================
+-- Lecture : toute table lue par l'app doit être atteignable par authenticated.
+select pg_temp.chk('grant', 'authenticated SELECT '||t,
+  has_table_privilege('authenticated', 'public.'||t, 'SELECT'),
+  'privilège SELECT absent → 403 42501 malgré des policies correctes')
+from unnest(array[
+  'decks','card_entries','deck_folders','profiles',
+  'custom_cards','custom_card_sources','user_usage','email_change_requests'
+]) t;
+
+-- Écriture : `decks` porte ses droits au niveau TABLE (aucun grant colonne).
+select pg_temp.chk('grant', 'authenticated '||p||' decks',
+  has_table_privilege('authenticated','public.decks', p),
+  'privilège '||p||' absent → création/édition de deck en 403')
+from unnest(array['INSERT','UPDATE','DELETE']) p;
+
+-- Écriture : `card_entries` passe par des grants COLONNE (created_at exclu, cf.
+-- bloc 12) ; seul DELETE se pose au niveau table faute de granularité colonne.
+select pg_temp.chk('grant', 'authenticated INSERT card_entries.scryfall_id',
+  pg_temp.has_col_grant('card_entries','authenticated','INSERT','scryfall_id'),
+  'insertion de carte impossible → import de deck en 403');
+select pg_temp.chk('grant', 'authenticated DELETE card_entries',
+  has_table_privilege('authenticated','public.card_entries','DELETE'),
+  'suppression de carte impossible');
+
+-- Contre-preuve : anon ne doit jamais pouvoir écrire.
+select pg_temp.chk('security', 'anon cannot write decks',
+  not has_table_privilege('anon','public.decks','INSERT')
+  and not has_table_privilege('anon','public.decks','UPDATE')
+  and not has_table_privilege('anon','public.decks','DELETE'),
+  'anon peut écrire dans decks');
+
+-- =============================================================================
 -- PRECONS MTGJSON + VISIBILITÉ PAR DECK (20260720120000 → 20260720150000)
 -- =============================================================================
 -- Ces assertions vont au-delà de « l'objet existe » : elles vérifient la NATURE
