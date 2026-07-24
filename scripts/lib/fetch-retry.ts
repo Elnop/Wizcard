@@ -1,6 +1,8 @@
 // Shared HTTP helper for the seed scripts, which run unattended on a server: a
 // transient 429/5xx or a dropped connect must not kill a scheduled run.
 
+import type { Logger } from './logger';
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const MAX_ATTEMPTS = 4;
@@ -9,6 +11,12 @@ const MAX_ATTEMPTS = 4;
 // aborts. Never size this against the body transfer.
 const CONNECT_TIMEOUT_MS = 60_000;
 
+export interface FetchRetryOptions {
+	init?: RequestInit;
+	/** Retries are logged as warn events so a dashboard can alert on flapping upstreams. */
+	logger?: Logger;
+}
+
 /**
  * fetch with a connect timeout and exponential backoff on transient failures
  * (429, 5xx, network errors). Non-transient responses (4xx) are returned as-is for
@@ -16,9 +24,10 @@ const CONNECT_TIMEOUT_MS = 60_000;
  */
 export async function fetchWithRetry(
 	url: string,
-	init?: RequestInit,
+	options: FetchRetryOptions = {},
 	attempt = 0
 ): Promise<Response> {
+	const { init, logger } = options;
 	try {
 		const controller = new AbortController();
 		const timeoutId = setTimeout(() => controller.abort(), CONNECT_TIMEOUT_MS);
@@ -34,17 +43,29 @@ export async function fetchWithRetry(
 			// behind the ingest worker's OOM).
 			await res.body?.cancel();
 			const wait = 1000 * Math.pow(2, attempt);
-			console.error(`ℹ HTTP ${res.status} sur ${url} — retry dans ${wait}ms`);
+			logger?.warn('http retry', {
+				url,
+				status: res.status,
+				attempt: attempt + 1,
+				max_attempts: MAX_ATTEMPTS,
+				wait_ms: wait,
+			});
 			await sleep(wait);
-			return fetchWithRetry(url, init, attempt + 1);
+			return fetchWithRetry(url, options, attempt + 1);
 		}
 		return res;
 	} catch (err) {
 		if (attempt < MAX_ATTEMPTS) {
 			const wait = 1000 * Math.pow(2, attempt);
-			console.error(`ℹ ${(err as Error).message} — retry dans ${wait}ms`);
+			logger?.warn('http retry', {
+				url,
+				error: (err as Error).message,
+				attempt: attempt + 1,
+				max_attempts: MAX_ATTEMPTS,
+				wait_ms: wait,
+			});
 			await sleep(wait);
-			return fetchWithRetry(url, init, attempt + 1);
+			return fetchWithRetry(url, options, attempt + 1);
 		}
 		throw err;
 	}

@@ -6,6 +6,7 @@
 
 import { existsSync } from 'node:fs';
 import * as dotenv from 'dotenv';
+import type { Logger } from './logger';
 
 const BASE_ENV_PATH = '.env.local';
 // Seed-specific overrides (gitignored). Optional: only the keys it defines win
@@ -30,8 +31,9 @@ export interface SupabaseEnv {
 /**
  * Resolves the Supabase target for a seed script. When `requireServiceRole` is
  * false (e.g. --dry-run), a missing key is returned as '' instead of exiting.
+ * Pass the caller's logger so the resolved target is recorded as a normal event.
  */
-export function resolveSupabaseEnv(requireServiceRole = true): SupabaseEnv {
+export function resolveSupabaseEnv(logger: Logger, requireServiceRole = true): SupabaseEnv {
 	// SUPABASE_URL is the canonical name; fall back to NEXT_PUBLIC_SUPABASE_URL
 	// (what .env.local actually defines for the app) before the local default.
 	const supabaseUrl =
@@ -41,12 +43,14 @@ export function resolveSupabaseEnv(requireServiceRole = true): SupabaseEnv {
 
 	if (requireServiceRole && !supabaseServiceRoleKey) {
 		const where = usingSeedEnv ? `${SEED_ENV_PATH} or ${BASE_ENV_PATH}` : BASE_ENV_PATH;
-		console.error(`✖ Missing SUPABASE_SERVICE_ROLE_KEY — set it in ${where}`);
+		logger.error('missing SUPABASE_SERVICE_ROLE_KEY', { expected_in: where });
 		process.exit(1);
 	}
 
-	const envDesc = usingSeedEnv ? `${BASE_ENV_PATH} + ${SEED_ENV_PATH}` : BASE_ENV_PATH;
-	console.error(`ℹ env: ${envDesc} → Supabase ${supabaseUrl}`);
+	logger.info('env resolved', {
+		env_files: usingSeedEnv ? `${BASE_ENV_PATH},${SEED_ENV_PATH}` : BASE_ENV_PATH,
+		supabase_url: supabaseUrl,
+	});
 
 	return { supabaseUrl, supabaseServiceRoleKey };
 }

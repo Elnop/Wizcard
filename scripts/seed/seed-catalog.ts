@@ -14,12 +14,17 @@
 //   npm run seed:catalog -- --dry-run    -- normalize/count without writing
 //   npm run seed:catalog -- --limit=N    -- stop after N kept cards
 //
+// Scheduled/unattended runs: use `npm run --silent …`. Without --silent, npm prints its
+// own "> wizcard@0.1.0 …" preamble to STDOUT, which is not JSON and breaks a log
+// collector parsing the ndjson stream.
+//
 // Streams the bulk (never buffers the whole file). Writes via the service-role key.
 
 import { createInterface } from 'node:readline';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { resolveSupabaseEnv } from '../lib/load-env';
 import { fetchWithRetry } from '../lib/fetch-retry';
+import { createLogger } from '../lib/logger';
 import {
 	toCatalogRows,
 	type CardDefinitionRow,
@@ -44,9 +49,11 @@ const dryRun = args.includes('--dry-run');
 const limitArg = args.find((a) => a.startsWith('--limit='));
 const limit = limitArg ? parseInt(limitArg.slice('--limit='.length), 10) : 0;
 
+const log = createLogger('seed-catalog');
+
 // The service-role key is only required when actually writing.
 const { supabaseUrl: SUPABASE_URL, supabaseServiceRoleKey: SUPABASE_SERVICE_ROLE_KEY } =
-	resolveSupabaseEnv(!dryRun);
+	resolveSupabaseEnv(log, !dryRun);
 
 let _sb: SupabaseClient | null = null;
 function sb() {
@@ -59,7 +66,8 @@ function sb() {
 
 async function bulkUrl(type: string): Promise<string> {
 	const res = await fetchWithRetry(BULK_META_URL, {
-		headers: { 'User-Agent': UA, Accept: 'application/json' },
+		init: { headers: { 'User-Agent': UA, Accept: 'application/json' } },
+		logger: log,
 	});
 	if (!res.ok) throw new Error(`GET /bulk-data failed: HTTP ${res.status}`);
 	const json = (await res.json()) as {
@@ -67,12 +75,19 @@ async function bulkUrl(type: string): Promise<string> {
 	};
 	const entry = json.data.find((b) => b.type === type);
 	if (!entry) throw new Error(`${type} entry not found in /bulk-data`);
-	console.log(`ℹ ${type}: ${(entry.size / 1e6).toFixed(0)} MB — ${entry.download_uri}`);
+	log.info('bulk resolved', {
+		bulk_type: type,
+		size_mb: Math.round(entry.size / 1e6),
+		url: entry.download_uri,
+	});
 	return entry.download_uri;
 }
 
 async function openBulkLines(url: string) {
-	const res = await fetchWithRetry(url, { headers: { 'User-Agent': UA } });
+	const res = await fetchWithRetry(url, {
+		init: { headers: { 'User-Agent': UA } },
+		logger: log,
+	});
 	if (!res.ok || !res.body) {
 		await res.body?.cancel();
 		throw new Error(`bulk download failed: HTTP ${res.status}`);
@@ -167,7 +182,9 @@ async function deleteDriftedPrints(rows: CardPrintRow[]) {
 		if (error) throw new Error(`card_prints drift delete failed: ${error.message}`);
 	}
 	driftedPrints += stale.length;
-	console.log(`ℹ ${stale.length} print(s) réémis par Scryfall — ancien id remplacé`);
+	// Notable but expected during spoiler season: surfaced as warn so a dashboard can
+	// track how often Scryfall reissues print ids.
+	log.warn('drifted prints replaced', { count: stale.length });
 }
 const DELETE_CHUNK = 100; // .in() is a GET-style query string; UPSERT_BATCH-sized UUID lists overflow URL length limits
 
@@ -294,11 +311,11 @@ async function pass2(): Promise<void> {
 			});
 		}
 		if (edges.length >= UPSERT_BATCH) await flushEdgeBatch();
-		if (seen % 50_000 === 0) console.log(`ℹ pass2: ${seen} lues…`);
+		if (seen % 50_000 === 0) log.info('pass2 progress', { read: seen });
 		if (limit > 0 && seen >= limit * 5) break; // parts are sparse; scan a bit wider under --limit
 	}
 	await flushEdgeBatch();
-	console.log(`✓ ${dryRun ? '[dry-run] ' : ''}pass2: edges resolved`);
+	log.info('pass2 complete', { dry_run: dryRun, read: seen });
 }
 
 async function pass1(): Promise<{ seen: number; kept: number }> {
@@ -340,7 +357,7 @@ async function pass1(): Promise<{ seen: number; kept: number }> {
 		facePrintIds.push(rows.print.id);
 
 		if (prints.length >= UPSERT_BATCH) await flushAll();
-		if (seen % 50_000 === 0) console.log(`ℹ pass1: ${seen} lues, ${kept} gardées…`);
+		if (seen % 50_000 === 0) log.info('pass1 progress', { read: seen, kept });
 		if (limit > 0 && kept >= limit) break;
 	}
 	await flushAll();
@@ -354,7 +371,7 @@ async function pass1(): Promise<{ seen: number; kept: number }> {
 				`téléchargement incomplet, la base n'est pas à jour`
 		);
 	}
-	console.log(`✓ ${dryRun ? '[dry-run] ' : ''}pass1: ${kept}/${seen} cartes gardées`);
+	log.info('pass1 complete', { dry_run: dryRun, read: seen, kept });
 	return { seen, kept };
 }
 
@@ -362,12 +379,17 @@ async function main() {
 	const started = Date.now();
 	const { seen, kept } = await pass1();
 	await pass2();
-	const secs = ((Date.now() - started) / 1000).toFixed(0);
-	// Single-line summary for an unattended run: enough for cron mail / journald to say
-	// what happened without digging through the progress lines.
-	console.log(
-		`✓ seed-catalog OK — ${kept}/${seen} cartes gardées, ${driftedPrints} print(s) réémis, ${secs}s`
-	);
+	// Terminal event for an unattended run: one line carrying the whole outcome, so a
+	// dashboard can chart duration/volume and alert on outcome=failure without parsing
+	// the progress events.
+	log.info('run complete', {
+		outcome: 'success',
+		dry_run: dryRun,
+		read: seen,
+		kept,
+		drifted_prints: driftedPrints,
+		duration_ms: Date.now() - started,
+	});
 }
 
 main()
@@ -375,7 +397,6 @@ main()
 	.catch((err) => {
 		// Exit 1 so cron/systemd sees the failure. Partial writes are safe to leave: every
 		// write is an idempotent upsert, so the next run converges on the same state.
-		console.error(`✖ seed-catalog failed: ${err instanceof Error ? err.message : err}`);
-		if (err instanceof Error && err.stack) console.error(err.stack);
+		log.fatal('run complete', err, { outcome: 'failure' });
 		process.exit(1);
 	});

@@ -5,12 +5,14 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { resolveSupabaseEnv } from '../lib/load-env';
 import { fetchWithRetry } from '../lib/fetch-retry';
+import { createLogger } from '../lib/logger';
 import type { ScryfallSet, ScryfallList } from '@/lib/scryfall/types/scryfall';
 
 const UA = 'Wizcard/1.0 (https://github.com/devinedev/wizcard)';
+const log = createLogger('seed-sets');
 
 const { supabaseUrl: SUPABASE_URL, supabaseServiceRoleKey: SUPABASE_SERVICE_ROLE_KEY } =
-	resolveSupabaseEnv();
+	resolveSupabaseEnv(log);
 
 let _sb: SupabaseClient | null = null;
 function sb() {
@@ -61,7 +63,8 @@ async function main() {
 	const rows: CardSetRow[] = [];
 	while (url) {
 		const res = await fetchWithRetry(url, {
-			headers: { 'User-Agent': UA, Accept: 'application/json' },
+			init: { headers: { 'User-Agent': UA, Accept: 'application/json' } },
+			logger: log,
 		});
 		if (!res.ok) {
 			await res.body?.cancel();
@@ -83,9 +86,11 @@ async function main() {
 
 	const { error } = await sb().from('card_sets').upsert(rows, { onConflict: 'code' });
 	if (error) throw new Error(`card_sets upsert failed: ${error.message}`);
-	console.log(
-		`✓ seed-sets OK — ${rows.length} sets, ${((Date.now() - started) / 1000).toFixed(0)}s`
-	);
+	log.info('run complete', {
+		outcome: 'success',
+		sets: rows.length,
+		duration_ms: Date.now() - started,
+	});
 }
 
 main()
@@ -93,7 +98,6 @@ main()
 	.catch((err) => {
 		// Exit 1 so cron/systemd sees the failure; the upsert is idempotent so the next
 		// scheduled run converges on the same state.
-		console.error(`✖ seed-sets failed: ${err instanceof Error ? err.message : err}`);
-		if (err instanceof Error && err.stack) console.error(err.stack);
+		log.fatal('run complete', err, { outcome: 'failure' });
 		process.exit(1);
 	});
