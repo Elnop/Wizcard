@@ -1,6 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
 import type { DeckMeta, DeckSource } from '@/types/decks';
 import type { DeckFormat } from '@/types/decks';
+import { fetchDeckCardRowsServer } from '@/lib/supabase/queries/decks';
+import { rowToCardEntry } from '@/lib/card/db/cardRow';
+import { byCollection } from '@/lib/card/catalog-db';
+import { fetchNicknameById } from '@/lib/profile/db/profiles.server';
+import type { Card, CardEntry } from '@/types/cards';
 
 type ScryfallImageUris = { art_crop?: string } | undefined;
 type ScryfallCoverCard = {
@@ -157,4 +162,62 @@ export async function fetchDeckMetaServer(deckId: string): Promise<DeckMeta | nu
 		createdAt: data.created_at as string,
 		updatedAt: data.updated_at as string,
 	};
+}
+
+export interface PublicDeckData {
+	deckCards: Array<{ scryfallId: string; entry: CardEntry }>;
+	cards: Card[];
+	ownerNickname: string | null;
+}
+
+/**
+ * Server-side load of everything the PUBLIC deck view needs: the deck's card
+ * entries plus the prints the local catalog can resolve, so the decklist ships
+ * in the HTML instead of being fetched by the browser.
+ *
+ * Two deliberate limits, both covered by the client hydrating on top:
+ * - Only the DB catalog is consulted (no Scryfall). A server-side Scryfall
+ *   fallback would put TTFB at the mercy of a third-party API; the client
+ *   already resolves misses, with an IndexedDB cache the server lacks.
+ * - `mpc:` custom cards live in another table and are never sent to byCollection.
+ *
+ * Best-effort throughout: on any failure it returns empty `cards` and the client
+ * resolves the whole deck, exactly as before this path existed.
+ */
+export async function fetchPublicDeckDataServer(
+	deckId: string,
+	ownerId: string | null
+): Promise<PublicDeckData> {
+	const ownerNickname = ownerId ? await fetchNicknameById(ownerId).catch(() => null) : null;
+
+	let rows;
+	try {
+		rows = await fetchDeckCardRowsServer(deckId);
+	} catch {
+		return { deckCards: [], cards: [], ownerNickname };
+	}
+
+	// `proxy` is the OWNER's private physical status. Neutralise it here, before
+	// anything is serialised into the RSC payload — on this path a leak would
+	// ship in the raw HTML. Mirrors usePublicDeckDetail's client-side handling.
+	const deckCards = rows.map((row) => {
+		const entry = rowToCardEntry(row, { includeOwnerId: true });
+		return { scryfallId: row.scryfall_id, entry: { ...entry, proxy: false } };
+	});
+
+	const catalogIds = [
+		...new Set(deckCards.map((c) => c.scryfallId).filter((id) => !id.startsWith('mpc:'))),
+	];
+	if (catalogIds.length === 0) return { deckCards, cards: [], ownerNickname };
+
+	try {
+		const resolved = await byCollection(catalogIds.map((id) => ({ id })));
+		return {
+			deckCards,
+			cards: resolved.filter((c): c is Card => c !== null),
+			ownerNickname,
+		};
+	} catch {
+		return { deckCards, cards: [], ownerNickname };
+	}
 }
