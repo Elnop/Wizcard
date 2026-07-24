@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { DeckMeta, DeckSource } from '@/types/decks';
 import type { DeckFormat } from '@/types/decks';
-import { fetchDeckCardRowsServer } from '@/lib/supabase/queries/decks';
-import { rowToCardEntry } from '@/lib/card/db/cardRow';
+import { rowToCardEntry, type CardDbRow } from '@/lib/card/db/cardRow';
 import { byCollection } from '@/lib/card/catalog-db';
 import { fetchNicknameById } from '@/lib/profile/db/profiles.server';
 import type { Card, CardEntry } from '@/types/cards';
@@ -184,6 +183,35 @@ export interface PublicDeckData {
  * Best-effort throughout: on any failure it returns empty `cards` and the client
  * resolves the whole deck, exactly as before this path existed.
  */
+/**
+ * Server-side twin of {@link fetchDeckCardRows}, for RSC use. Same explicit
+ * column list (omits purchase_price — anon holds column grants, not a table
+ * grant, so `select('*')` would 403; see migration
+ * 20260710120000_fix_purchase_price_leak.sql) and the same date_added ordering,
+ * so both paths produce identical card order.
+ *
+ * Uses the cookie-bearing SSR client: RLS on card_entries gates deck-card reads
+ * through the parent deck's visibility, which includes `auth.uid() = d.owner_id`
+ * — a cookieless client would drop that branch and hide decks a signed-in
+ * visitor may legitimately see.
+ *
+ * Lives here rather than in `@/lib/supabase/queries/decks` because that module is
+ * also imported by client components; a top-level `@/lib/supabase/server` import
+ * there pulls `next/headers` into the browser bundle and fails the build.
+ */
+async function fetchDeckCardRowsServer(deckId: string): Promise<CardDbRow[]> {
+	const supabase = await createClient();
+	const { data, error } = await supabase
+		.from('card_entries')
+		.select(
+			'id, owner_id, scryfall_id, date_added, is_foil, foil_type, condition, language, alter, proxy, tags, for_trade, deck_id, wishlist'
+		)
+		.eq('deck_id', deckId)
+		.order('date_added', { ascending: true });
+	if (error) throw new Error(`[queries/decks] fetchDeckCardRowsServer error: ${error.message}`);
+	return data as CardDbRow[];
+}
+
 export async function fetchPublicDeckDataServer(
 	deckId: string,
 	ownerId: string | null
