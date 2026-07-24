@@ -3,16 +3,13 @@
 // Writes via the service-role key.
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { resolveSupabaseEnv } from '../lib/load-env';
 import type { ScryfallSet, ScryfallList } from '@/lib/scryfall/types/scryfall';
 
-const SUPABASE_URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const UA = 'Wizcard/1.0 (https://github.com/devinedev/wizcard)';
 
-if (!SUPABASE_SERVICE_ROLE_KEY) {
-	console.error('✖ Missing SUPABASE_SERVICE_ROLE_KEY');
-	process.exit(1);
-}
+const { supabaseUrl: SUPABASE_URL, supabaseServiceRoleKey: SUPABASE_SERVICE_ROLE_KEY } =
+	resolveSupabaseEnv();
 
 let _sb: SupabaseClient | null = null;
 function sb() {

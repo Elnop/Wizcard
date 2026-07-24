@@ -18,6 +18,7 @@
 
 import { createInterface } from 'node:readline';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { resolveSupabaseEnv } from '../lib/load-env';
 import {
 	toCatalogRows,
 	type CardDefinitionRow,
@@ -27,8 +28,6 @@ import {
 } from './normalize-catalog-card';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
-const SUPABASE_URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const BULK_META_URL = 'https://api.scryfall.com/bulk-data';
 const UA = 'Wizcard/1.0 (https://github.com/devinedev/wizcard)';
 const UPSERT_BATCH = 500;
@@ -38,10 +37,9 @@ const dryRun = args.includes('--dry-run');
 const limitArg = args.find((a) => a.startsWith('--limit='));
 const limit = limitArg ? parseInt(limitArg.slice('--limit='.length), 10) : 0;
 
-if (!SUPABASE_SERVICE_ROLE_KEY && !dryRun) {
-	console.error('✖ Missing SUPABASE_SERVICE_ROLE_KEY (required unless --dry-run)');
-	process.exit(1);
-}
+// The service-role key is only required when actually writing.
+const { supabaseUrl: SUPABASE_URL, supabaseServiceRoleKey: SUPABASE_SERVICE_ROLE_KEY } =
+	resolveSupabaseEnv(!dryRun);
 
 let _sb: SupabaseClient | null = null;
 function sb() {
