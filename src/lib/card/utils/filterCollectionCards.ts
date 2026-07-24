@@ -1,6 +1,6 @@
-import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder } from '@/lib/scryfall/types/sort';
-import type { CardCopy } from '@/types/cards';
+import type { CardCopy, MtgColor } from '@/types/cards';
 import { type CardFilters, DEFAULT_CARD_FILTERS } from '@/lib/search/types';
 import type { MtgLanguage } from '@/lib/mtg/languages';
 import type { CardType, CustomCard } from '@/lib/mpc/types';
@@ -66,8 +66,8 @@ function parseOracleTokens(raw: string): string[] {
 }
 
 function matchColors(
-	cardColors: ScryfallColor[] | undefined,
-	selected: ScryfallColor[],
+	cardColors: MtgColor[] | undefined,
+	selected: MtgColor[],
 	mode: 'exact' | 'include' | 'atMost'
 ): boolean {
 	if (selected.length === 0) return true;
@@ -83,8 +83,8 @@ function matchColors(
 }
 
 function matchColorIdentity(
-	cardColorIdentity: ScryfallColor[] | undefined,
-	selected: ScryfallColor[],
+	cardColorIdentity: MtgColor[] | undefined,
+	selected: MtgColor[],
 	mode: 'atMost' | 'exact'
 ): boolean {
 	if (selected.length === 0) return true;

@@ -2,6 +2,11 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import type { MtgLanguage } from '@/lib/mtg/languages';
 import type { CustomCard } from '@/lib/mpc/types';
 
+// Domain-neutral MTG literals (structurally identical to their Scryfall counterparts,
+// but declared here so the domain Card stays independent of @/lib/scryfall/types).
+export type MtgColor = 'W' | 'U' | 'B' | 'R' | 'G';
+export type CardImageStatus = 'missing' | 'placeholder' | 'lowres' | 'highres_scan';
+
 export type CardCondition = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG';
 
 // A face of a multi-face card (transform/split/adventure/DFC). Mirrors what the DB
@@ -11,7 +16,7 @@ export interface CardFace {
 	type_line?: string;
 	oracle_text?: string;
 	mana_cost?: string;
-	colors?: string[];
+	colors?: MtgColor[];
 	power?: string;
 	toughness?: string;
 	loyalty?: string;
@@ -47,8 +52,8 @@ export interface Card {
 	oracle_text?: string;
 	mana_cost?: string;
 	cmc?: number;
-	colors?: string[];
-	color_identity?: string[];
+	colors?: MtgColor[];
+	color_identity?: MtgColor[];
 	keywords?: string[];
 	power?: string;
 	toughness?: string;
@@ -66,7 +71,7 @@ export interface Card {
 	artist?: string;
 	frame?: string;
 	border_color?: string;
-	image_status?: string;
+	image_status?: CardImageStatus;
 	image_uris?: { small: string; normal: string; large: string };
 	finishes?: string[];
 	foil?: boolean;

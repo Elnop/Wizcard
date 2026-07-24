@@ -8,7 +8,7 @@ import { isScryfallImageUrl, scryfallImageLoader } from '@/lib/scryfall/utils/sc
 import { useLocalizedImage, useEnglishFallbackImage } from '@/lib/scryfall/hooks/useLocalizedImage';
 import { useCustomFallbackPrint } from '@/lib/scryfall/hooks/useCustomFallbackPrint';
 import { hasRealScan } from '@/lib/scryfall/types/scryfall';
-import type { ScryfallImageStatus } from '@/lib/scryfall/types/scryfall';
+import type { CardImageStatus } from '@/types/cards';
 import { isCustomCard } from '@/lib/mpc/types';
 import type { CustomCard } from '@/lib/mpc/types';
 import { useProfileStore } from '@/lib/profile/store/profile-store';
@@ -22,7 +22,7 @@ type CardImageCard = {
 	oracle_id?: string;
 	language?: string;
 	entry?: { language?: string };
-	image_status?: ScryfallImageStatus;
+	image_status?: CardImageStatus;
 	image_uris?: { small?: string; normal?: string; large?: string };
 	card_faces?: Array<{
 		name?: string;
