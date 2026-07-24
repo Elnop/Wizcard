@@ -1,4 +1,4 @@
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallOnlyFields } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder } from '@/lib/scryfall/types/sort';
 import type { Card, CardCopy, MtgColor } from '@/types/cards';
 import { type CardFilters, DEFAULT_CARD_FILTERS } from '@/lib/search/types';
@@ -123,26 +123,27 @@ export function getSortValue(
 	if (order === 'tix') return parseFloat((card as Card).prices?.tix ?? '0');
 	if (order === 'power') return parseFloat((card as Card).power ?? '0');
 	if (order === 'toughness') return parseFloat((card as Card).toughness ?? '0');
-	if (order === 'edhrec') return (card as ScryfallCard).edhrec_rank ?? 9999999;
-	if (order === 'penny') return (card as ScryfallCard).penny_rank ?? 9999999;
-	if (order === 'artist') return ((card as ScryfallCard).artist ?? '').toLowerCase();
+	if (order === 'edhrec') return (card as Card).edhrec_rank ?? 9999999;
+	// penny_rank is provider-only (not mirrored by the DB catalog) — narrow boundary read.
+	if (order === 'penny') return (card as ScryfallOnlyFields).penny_rank ?? 9999999;
+	if (order === 'artist') return ((card as Card).artist ?? '').toLowerCase();
 	return card.name.toLowerCase();
 }
 
 function getCardType(card: AnyCard): CardType {
-	if (isCustomCard(card as ScryfallCard | CustomCard)) {
+	if (isCustomCard(card as Card | CustomCard)) {
 		return (card as CustomCard).custom.card_type;
 	}
-	const layout = (card as ScryfallCard).layout;
+	const layout = (card as Card).layout;
 	if (layout === 'token' || layout === 'double_faced_token') return 'token';
 	return 'card';
 }
 
 function getCardLang(card: AnyCard): string | null {
-	if (isCustomCard(card as ScryfallCard | CustomCard)) {
+	if (isCustomCard(card as Card | CustomCard)) {
 		return (card as CustomCard).custom.lang;
 	}
-	return (card as ScryfallCard).lang ?? null;
+	return (card as Card).lang ?? null;
 }
 
 function matchesProxyFilter(
@@ -198,12 +199,12 @@ function matchesCardTypeFilter(
 
 function matchesMpcTagsFilter(card: AnyCard, mpcTagsFilter: string[]): boolean {
 	if (mpcTagsFilter.length === 0) return true;
-	if (!isCustomCard(card as ScryfallCard | CustomCard)) return true;
+	if (!isCustomCard(card as Card | CustomCard)) return true;
 	const tags = (card as CustomCard).custom.tags;
 	return mpcTagsFilter.every((t) => tags.includes(t));
 }
 
-function matchesOracleText(card: ScryfallCard, oracleText: string): boolean {
+function matchesOracleText(card: Card, oracleText: string): boolean {
 	if (!oracleText) return true;
 	const tokens = parseOracleTokens(oracleText);
 	if (tokens.length === 0) return true;
@@ -226,7 +227,7 @@ function cardMatchesFilters(
 	if (!matchColors(card.colors, filters.colors, filters.colorMatch)) return false;
 	if (
 		!matchColorIdentity(
-			(card as ScryfallCard).color_identity,
+			(card as Card).color_identity,
 			filters.colorIdentity,
 			filters.colorIdentityMatch
 		)
@@ -240,7 +241,7 @@ function cardMatchesFilters(
 		!filters.rarities.includes(card.rarity)
 	)
 		return false;
-	if (!matchesOracleText(card as ScryfallCard, filters.oracleText)) return false;
+	if (!matchesOracleText(card as Card, filters.oracleText)) return false;
 	if (cmcTest && card.cmc !== undefined && !cmcTest(card.cmc)) return false;
 	if ('entry' in card) {
 		if (!matchesProxyFilter(card, filters.proxyFilter)) return false;
