@@ -127,7 +127,7 @@ export function ImportPreview({
 		const byZone = new Map<DeckZone, Map<string, ZoneCard>>();
 		for (const card of editableCards) {
 			const z = getDeckZone(card.entry.tags);
-			const key = oracleKey(card as ScryfallCard);
+			const key = oracleKey(card as unknown as ScryfallCard);
 			const zoneMap = byZone.get(z) ?? new Map<string, ZoneCard>();
 			const existing = zoneMap.get(key);
 			if (existing) {
@@ -240,14 +240,14 @@ export function ImportPreview({
 			const key = `${card.id}:${z}:${JSON.stringify(attrs)}`;
 			const existing = agg.get(key);
 			if (existing) existing.quantity += 1;
-			else agg.set(key, { card: card as ScryfallCard, zone: z, quantity: 1, entry: attrs });
+			else agg.set(key, { card: card as unknown as ScryfallCard, zone: z, quantity: 1, entry: attrs });
 		}
 		onImport([...agg.values()]);
 	}, [editableCards, onImport]);
 
 	// Selection key for a preview card: one selectable unit per (oracle, zone).
 	const selKeyFor = useCallback((card: CardCopy): string => {
-		return `${oracleKey(card as ScryfallCard)}|${getDeckZone(card.entry.tags)}`;
+		return `${oracleKey(card as unknown as ScryfallCard)}|${getDeckZone(card.entry.tags)}`;
 	}, []);
 
 	// Resolve currently-selected keys to the underlying synthetic rowIds.
@@ -274,7 +274,7 @@ export function ImportPreview({
 	}, [cardsByZone]);
 
 	const toggleSelected = useCallback((card: CardCopy) => {
-		const key = `${oracleKey(card as ScryfallCard)}|${getDeckZone(card.entry.tags)}`;
+		const key = `${oracleKey(card as unknown as ScryfallCard)}|${getDeckZone(card.entry.tags)}`;
 		setSelected((prev) => {
 			const next = new Set(prev);
 			if (next.has(key)) next.delete(key);
@@ -308,8 +308,8 @@ export function ImportPreview({
 		if (!selectedRowId) return null;
 		const target = editableCards.find((c) => c.entry.rowId === selectedRowId);
 		if (!target) return null;
-		const key = oracleKey(target as ScryfallCard);
-		return editableCards.filter((c) => oracleKey(c as ScryfallCard) === key);
+		const key = oracleKey(target as unknown as ScryfallCard);
+		return editableCards.filter((c) => oracleKey(c as unknown as ScryfallCard) === key);
 	}, [selectedRowId, editableCards]);
 
 	const openDetail = useCallback((card: AnyCard) => {
@@ -326,7 +326,7 @@ export function ImportPreview({
 		const oracles = new Set([...selected].map((k) => k.split('|')[0]));
 		if (oracles.size !== 1) return null;
 		const oracle = [...oracles][0];
-		return editableCards.find((c) => oracleKey(c as ScryfallCard) === oracle) ?? null;
+		return editableCards.find((c) => oracleKey(c as unknown as ScryfallCard) === oracle) ?? null;
 	}, [selected, editableCards]);
 
 	const bulkMoveTo = useCallback(
@@ -362,7 +362,7 @@ export function ImportPreview({
 
 	const rowIdsFor = useCallback(
 		(card: CardCopy, cardZone: DeckZone): string[] =>
-			cardsByZone.get(cardZone)?.get(oracleKey(card as ScryfallCard))?.rowIds ?? [],
+			cardsByZone.get(cardZone)?.get(oracleKey(card as unknown as ScryfallCard))?.rowIds ?? [],
 		[cardsByZone]
 	);
 
@@ -635,10 +635,15 @@ export function ImportPreview({
 				selectionSingleCard &&
 				createPortal(
 					<CardPrintPickerModal
-						prints_search_uri={(selectionSingleCard as ScryfallCard).prints_search_uri ?? ''}
+						// prints_search_uri is provider-only (Scryfall-specific); CardCopy's
+						// ScryfallCard branch carries it at runtime for Scryfall-sourced
+						// copies — narrow cast at this genuine provider-boundary read.
+						prints_search_uri={
+							(selectionSingleCard as unknown as ScryfallCard).prints_search_uri ?? ''
+						}
 						currentCardId={selectionSingleCard.id}
-						currentSet={(selectionSingleCard as ScryfallCard).set}
-						currentCollectorNumber={(selectionSingleCard as ScryfallCard).collector_number}
+						currentSet={selectionSingleCard.set}
+						currentCollectorNumber={selectionSingleCard.collector_number}
 						currentLang={selectionSingleCard.entry.language}
 						onSelect={bulkChangePrint}
 						onClose={() => setBulkPrintOpen(false)}

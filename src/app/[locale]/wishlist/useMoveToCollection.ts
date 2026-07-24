@@ -45,7 +45,7 @@ export function useMoveToCollection(
 			const rep = stack?.cards[0];
 			if (!stack || !rep) return;
 			openAddCard({
-				scryfallCard: rep as ScryfallCard,
+				scryfallCard: rep as unknown as ScryfallCard,
 				initialEntry: buildInitialEntry(rep.entry),
 				maxQuantity: stack.cards.length,
 				hideQuantity: stack.cards.length <= 1,

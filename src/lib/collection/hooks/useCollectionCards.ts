@@ -4,14 +4,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
 import { useCardsStore, getCard } from '@/lib/scryfall/store/cards-store';
-import type { CardCopy, CardStack } from '@/types/cards';
+import type { Card, CardCopy, CardStack } from '@/types/cards';
 import type { CardEntry } from '@/types/cards';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 import { groupByOracleId } from '@/lib/card/utils/group-cards';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 
-function buildCards(entries: StoredCopy[], scryfallMap: Map<string, ScryfallCard>): CardCopy[] {
+function buildCards(entries: StoredCopy[], scryfallMap: Map<string, Card>): CardCopy[] {
 	const result: CardCopy[] = [];
 	for (const copy of entries) {
 		const scryfallCard = scryfallMap.get(copy.scryfallId);
@@ -39,12 +38,9 @@ export function useCollectionCards(entries: StoredCopy[]): {
 	// new-reference-every-render re-render loop.
 	const scryfallMap = useCardsStore(
 		useShallow((s) => {
-			const m = new Map<string, ScryfallCard>();
+			const m = new Map<string, Card>();
 			for (const id of ids) {
-				// The global store is typed as the provider-neutral `Card` (Wave A
-				// migration), but at runtime it only ever holds ScryfallCard | CustomCard
-				// objects (fed by resolvers not yet migrated) — this cast reflects that.
-				const card = s.cards.get(id) as ScryfallCard | undefined;
+				const card = s.cards.get(id);
 				if (card) m.set(id, card);
 			}
 			return m;

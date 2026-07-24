@@ -241,7 +241,7 @@ export function useDeckCardModalProps(
 			const seen = new Set<string>();
 			const cards: CardCopy[] = [];
 			for (const card of cardsByZone[zone]) {
-				if (!cardProducesToken(card as ScryfallCard, selected)) continue;
+				if (!cardProducesToken(card, selected)) continue;
 				const key = card.oracle_id ?? card.id;
 				if (seen.has(key)) continue;
 				seen.add(key);
