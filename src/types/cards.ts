@@ -9,6 +9,18 @@ export type CardImageStatus = 'missing' | 'placeholder' | 'lowres' | 'highres_sc
 
 export type CardCondition = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG';
 
+// Domain image-uris. small/normal/large are always present (the DB catalog seed stores at
+// least these); art_crop/png/border_crop are OPTIONAL — the catalog seed (pick3) drops them,
+// so only Scryfall-fallback-path cards carry them. Same pattern as Card.prices?.
+export interface CardImageUris {
+	small: string;
+	normal: string;
+	large: string;
+	art_crop?: string;
+	png?: string;
+	border_crop?: string;
+}
+
 // A face of a multi-face card (transform/split/adventure/DFC). Mirrors what the DB
 // assembler produces per face.
 export interface CardFace {
@@ -16,13 +28,14 @@ export interface CardFace {
 	type_line?: string;
 	oracle_text?: string;
 	mana_cost?: string;
+	cmc?: number;
 	colors?: MtgColor[];
 	power?: string;
 	toughness?: string;
 	loyalty?: string;
 	artist?: string;
 	illustration_id?: string;
-	image_uris?: { small: string; normal: string; large: string };
+	image_uris?: CardImageUris;
 	printed_name?: string;
 	printed_type_line?: string;
 	printed_text?: string;
@@ -59,7 +72,7 @@ export interface Card {
 	toughness?: string;
 	loyalty?: string;
 	defense?: string;
-	legalities?: unknown;
+	legalities?: Record<string, string>;
 	reserved?: boolean;
 	edhrec_rank?: number;
 	// print
@@ -72,7 +85,7 @@ export interface Card {
 	frame?: string;
 	border_color?: string;
 	image_status?: CardImageStatus;
-	image_uris?: { small: string; normal: string; large: string };
+	image_uris?: CardImageUris;
 	finishes?: string[];
 	foil?: boolean;
 	nonfoil?: boolean;
@@ -87,6 +100,7 @@ export interface Card {
 	// multi-face + relations
 	card_faces?: CardFace[];
 	all_parts?: CardPart[];
+	produced_mana?: MtgColor[];
 	// external ids
 	multiverse_ids?: number[];
 	mtgo_id?: number;

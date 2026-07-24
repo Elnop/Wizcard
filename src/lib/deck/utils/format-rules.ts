@@ -1,5 +1,5 @@
 import type { DeckFormat, DeckZone } from '@/types/decks';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 
 export interface FormatRules {
 	minMainboard: number;
@@ -147,7 +147,7 @@ type PartnerAbility = (typeof Ability)[keyof typeof Ability];
 // "Partner with X" = named partner (only pairs with the specific card X)
 // "Friends forever" = Un-set mechanic, pairs with any other Friends forever card
 // "Doctor's companion" = pairs with a Doctor commander
-function getPartnerAbility(card: ScryfallCard): PartnerAbility | null {
+function getPartnerAbility(card: Card): PartnerAbility | null {
 	const keywords = card.keywords ?? [];
 	const oracleText = card.oracle_text ?? '';
 	const typeLine = card.type_line ?? '';
@@ -175,7 +175,7 @@ function getPartnerAbility(card: ScryfallCard): PartnerAbility | null {
 }
 
 // Returns the name this card partners with (for "Partner with X"), or null.
-function getNamedPartner(card: ScryfallCard): string | null {
+function getNamedPartner(card: Card): string | null {
 	const match =
 		(card.oracle_text ?? '').match(/Partner with ([^\n(]+)/) ??
 		(card.keywords ?? [])
@@ -186,19 +186,19 @@ function getNamedPartner(card: ScryfallCard): string | null {
 	return typeof match === 'string' ? match : null;
 }
 
-function isDoctor(card: ScryfallCard): boolean {
+function isDoctor(card: Card): boolean {
 	return /\bDoctor\b/.test(card.type_line ?? '');
 }
 
 // Returns true if the two named-partner cards reference each other by name.
-function isMatchedNamedPartner(a: ScryfallCard, b: ScryfallCard): boolean {
+function isMatchedNamedPartner(a: Card, b: Card): boolean {
 	const namedByA = getNamedPartner(a);
 	const namedByB = getNamedPartner(b);
 	return Boolean(namedByA && namedByB && namedByA === b.name && namedByB === a.name);
 }
 
 // Returns true if two commander-zone cards form a legal pair.
-function isLegalCommanderPair(a: ScryfallCard, b: ScryfallCard): boolean {
+function isLegalCommanderPair(a: Card, b: Card): boolean {
 	const abilityA = getPartnerAbility(a);
 	const abilityB = getPartnerAbility(b);
 
@@ -228,7 +228,7 @@ function isLegalCommanderPair(a: ScryfallCard, b: ScryfallCard): boolean {
 // Handles all multi-commander exceptions.
 function getEffectiveCommanderMax(
 	rules: FormatRules,
-	commanderCards: Array<{ card: ScryfallCard }>
+	commanderCards: Array<{ card: Card }>
 ): number {
 	if (rules.commanderCount !== 1 || commanderCards.length <= 1) return rules.commanderCount;
 
@@ -291,7 +291,7 @@ function checkSideboardSize(
 
 function checkCommanderCount(
 	rules: FormatRules,
-	commanderCards: Array<{ card: ScryfallCard }>,
+	commanderCards: Array<{ card: Card }>,
 	effectiveCommanderMax: number
 ): ValidationWarning[] {
 	const warnings: ValidationWarning[] = [];
@@ -318,7 +318,7 @@ function checkCommanderCount(
 
 function checkCopyLimits(
 	rules: FormatRules,
-	cards: Array<{ card: ScryfallCard; zone: DeckZone }>
+	cards: Array<{ card: Card; zone: DeckZone }>
 ): ValidationWarning[] {
 	if (rules.maxCopies === null) return [];
 	const warnings: ValidationWarning[] = [];
@@ -340,7 +340,7 @@ function checkCopyLimits(
 
 function checkLegality(
 	format: DeckFormat,
-	cards: Array<{ card: ScryfallCard; zone: DeckZone }>
+	cards: Array<{ card: Card; zone: DeckZone }>
 ): ValidationWarning[] {
 	// Scryfall publishes no legality field for these: draft/limited are sealed
 	// formats, and jumpstart/planechase/archenemy are product lines or casual
@@ -372,8 +372,8 @@ function checkLegality(
 
 function checkColorIdentity(
 	rules: FormatRules,
-	cards: Array<{ card: ScryfallCard; zone: DeckZone }>,
-	commanderCards: Array<{ card: ScryfallCard; zone: DeckZone }>
+	cards: Array<{ card: Card; zone: DeckZone }>,
+	commanderCards: Array<{ card: Card; zone: DeckZone }>
 ): ValidationWarning[] {
 	if (!rules.requiresCommander || commanderCards.length === 0) return [];
 	const warnings: ValidationWarning[] = [];
@@ -395,7 +395,7 @@ function checkColorIdentity(
 
 function checkPauper(
 	format: DeckFormat,
-	cards: Array<{ card: ScryfallCard; zone: DeckZone }>
+	cards: Array<{ card: Card; zone: DeckZone }>
 ): ValidationWarning[] {
 	if (format !== 'pauper') return [];
 	return cards
@@ -408,8 +408,8 @@ function checkPauper(
 
 export function validateDeck(
 	format: DeckFormat | null,
-	cards: Array<{ card: ScryfallCard; zone: DeckZone }>,
-	commanderCards: Array<{ card: ScryfallCard; zone: DeckZone }>
+	cards: Array<{ card: Card; zone: DeckZone }>,
+	commanderCards: Array<{ card: Card; zone: DeckZone }>
 ): ValidationWarning[] {
 	if (!format) return [];
 

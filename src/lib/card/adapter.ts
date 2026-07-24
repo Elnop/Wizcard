@@ -11,7 +11,16 @@ import type {
 import type { Card, CardFace, CardPart } from '@/types/cards';
 
 function img3(uris: ScryfallImageUris | undefined): Card['image_uris'] {
-	return uris ? { small: uris.small, normal: uris.normal, large: uris.large } : undefined;
+	return uris
+		? {
+				small: uris.small,
+				normal: uris.normal,
+				large: uris.large,
+				art_crop: uris.art_crop,
+				png: uris.png,
+				border_crop: uris.border_crop,
+			}
+		: undefined;
 }
 
 function toFace(f: ScryfallCardFace): CardFace {
@@ -20,6 +29,7 @@ function toFace(f: ScryfallCardFace): CardFace {
 		type_line: f.type_line,
 		oracle_text: f.oracle_text,
 		mana_cost: f.mana_cost,
+		cmc: f.cmc,
 		colors: f.colors,
 		power: f.power,
 		toughness: f.toughness,
@@ -81,6 +91,7 @@ export function toCard(s: ScryfallCard): Card {
 		printed_text: s.printed_text,
 		card_faces: s.card_faces?.map(toFace),
 		all_parts: s.all_parts?.map(toPart),
+		produced_mana: s.produced_mana,
 		multiverse_ids: s.multiverse_ids,
 		mtgo_id: s.mtgo_id,
 		arena_id: s.arena_id,

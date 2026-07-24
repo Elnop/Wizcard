@@ -1,4 +1,4 @@
-import type { ScryfallCard, ScryfallCardFace } from '@/lib/scryfall/types/scryfall';
+import type { Card, CardFace } from '@/types/cards';
 
 export type ManaColor = 'W' | 'U' | 'B' | 'R' | 'G';
 export type ProdColor = ManaColor | 'C';
@@ -60,9 +60,9 @@ export function parseColorPips(manaCost: string): Record<ManaColor | 'C', number
 }
 
 /** Normalise mono/double-face en une liste de faces exploitables (cost/curve/types). */
-export function iterateFaces(card: ScryfallCard): FaceLike[] {
+export function iterateFaces(card: Card): FaceLike[] {
 	if (card.card_faces && card.card_faces.length > 0) {
-		return card.card_faces.map((f: ScryfallCardFace) => ({
+		return card.card_faces.map((f: CardFace) => ({
 			mana_cost: f.mana_cost,
 			cmc: f.cmc ?? card.cmc,
 			type_line: f.type_line,

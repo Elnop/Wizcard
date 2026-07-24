@@ -1,4 +1,4 @@
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import type { DeckZone } from '@/types/decks';
 import {
 	parseColorPips,
@@ -55,7 +55,7 @@ function emptyTypes(): Record<TypeCategory, number> {
 	};
 }
 
-export function computeDeckStats(cards: Array<{ card: ScryfallCard; zone: DeckZone }>): DeckStats {
+export function computeDeckStats(cards: Array<{ card: Card; zone: DeckZone }>): DeckStats {
 	const mainboard = cards.filter((c) => c.zone === 'mainboard');
 	const sideboard = cards.filter((c) => c.zone === 'sideboard');
 	const maybeboard = cards.filter((c) => c.zone === 'maybeboard');
@@ -72,7 +72,7 @@ export function computeDeckStats(cards: Array<{ card: ScryfallCard; zone: DeckZo
 	// Distributions par face : mainboard + commander, hors maybeboard/sideboard
 	for (const { card } of [...mainboard, ...commander]) {
 		// Production : au niveau carte (produced_mana absent des faces).
-		accumulateProduction((card.produced_mana ?? []) as string[], colorsProduction);
+		accumulateProduction(card.produced_mana ?? [], colorsProduction);
 
 		for (const face of iterateFaces(card)) {
 			const category = categorizeType(face.type_line ?? '');
