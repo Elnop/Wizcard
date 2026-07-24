@@ -100,10 +100,7 @@ export async function bySetNumberLang(
 	);
 }
 
-export async function bySetNumber(
-	set: string,
-	collectorNumber: string
-): Promise<Card | null> {
+export async function bySetNumber(set: string, collectorNumber: string): Promise<Card | null> {
 	return bySetNumberLang(set, collectorNumber, 'en');
 }
 
@@ -304,11 +301,7 @@ function resolveBySetNumber(
 	return row ? (ctx.cardByPrintId.get(row.id) ?? null) : null;
 }
 
-function resolveByName(
-	ctx: ResolveContext,
-	id: ScryfallCardIdentifier,
-	lang: string
-): Card | null {
+function resolveByName(ctx: ResolveContext, id: ScryfallCardIdentifier, lang: string): Card | null {
 	const target = id.name!.toLowerCase();
 	if (lang !== 'en') {
 		const fr = ctx.prints.find(
@@ -338,10 +331,7 @@ function resolveByMtgoId(ctx: ResolveContext, id: ScryfallCardIdentifier): Card 
 	return row ? (ctx.cardByPrintId.get(row.id) ?? null) : null;
 }
 
-function resolveByMultiverseId(
-	ctx: ResolveContext,
-	id: ScryfallCardIdentifier
-): Card | null {
+function resolveByMultiverseId(ctx: ResolveContext, id: ScryfallCardIdentifier): Card | null {
 	const row = ctx.prints.find((p) => (p.multiverse_ids ?? []).includes(id.multiverse_id!));
 	return row ? (ctx.cardByPrintId.get(row.id) ?? null) : null;
 }

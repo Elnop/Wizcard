@@ -5,10 +5,7 @@
 import * as db from '@/lib/card/catalog-db';
 import * as scry from '@/lib/scryfall/endpoints/cards';
 import type { Card } from '@/types/cards';
-import type {
-	ScryfallCardIdentifier,
-	ScryfallList,
-} from '@/lib/scryfall/types/scryfall';
+import type { ScryfallCardIdentifier, ScryfallList } from '@/lib/scryfall/types/scryfall';
 
 export async function getCardById(id: string): Promise<Card> {
 	return (await db.byId(id)) ?? scry.getCardById(id);
