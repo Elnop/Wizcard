@@ -19,6 +19,7 @@
 import { createInterface } from 'node:readline';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { resolveSupabaseEnv } from '../lib/load-env';
+import { fetchWithRetry } from '../lib/fetch-retry';
 import {
 	toCatalogRows,
 	type CardDefinitionRow,
@@ -31,6 +32,12 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 const BULK_META_URL = 'https://api.scryfall.com/bulk-data';
 const UA = 'Wizcard/1.0 (https://github.com/devinedev/wizcard)';
 const UPSERT_BATCH = 500;
+// Sanity floor for a complete all_cards stream (~535k lines as of 2026-07). Deliberately
+// slack: the catalog only grows, and a real truncation loses far more than this margin.
+const MIN_EXPECTED_LINES = 400_000;
+
+// Prints whose Scryfall id changed this run (see deleteDriftedPrints), for the summary.
+let driftedPrints = 0;
 
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
@@ -51,7 +58,7 @@ function sb() {
 }
 
 async function bulkUrl(type: string): Promise<string> {
-	const res = await fetch(BULK_META_URL, {
+	const res = await fetchWithRetry(BULK_META_URL, {
 		headers: { 'User-Agent': UA, Accept: 'application/json' },
 	});
 	if (!res.ok) throw new Error(`GET /bulk-data failed: HTTP ${res.status}`);
@@ -65,8 +72,11 @@ async function bulkUrl(type: string): Promise<string> {
 }
 
 async function openBulkLines(url: string) {
-	const res = await fetch(url, { headers: { 'User-Agent': UA } });
-	if (!res.ok || !res.body) throw new Error(`bulk download failed: HTTP ${res.status}`);
+	const res = await fetchWithRetry(url, { headers: { 'User-Agent': UA } });
+	if (!res.ok || !res.body) {
+		await res.body?.cancel();
+		throw new Error(`bulk download failed: HTTP ${res.status}`);
+	}
 	const { Readable } = await import('node:stream');
 	const nodeStream = Readable.fromWeb(res.body as never);
 	return createInterface({ input: nodeStream, crlfDelay: Infinity });
@@ -96,8 +106,68 @@ async function flushDefs(rows: CardDefinitionRow[]) {
 }
 async function flushPrints(rows: CardPrintRow[]) {
 	if (rows.length === 0 || dryRun) return;
+	// card_prints has TWO unique keys: the PK (id) and card_prints_set_number_lang_key
+	// on (set, collector_number, lang). Scryfall occasionally reissues a print's id
+	// while keeping the same set/number/lang — typically on spoiler-season sets whose
+	// entries get rebuilt. Such a row is an INSERT under onConflict:'id', which then
+	// trips the *other* unique index and fails the whole batch with "duplicate key
+	// value violates unique constraint" (on data that holds no actual duplicates).
+	// Drop the superseded row first so the new id takes over the triplet; its
+	// card_print_faces go with it (on delete cascade) and are re-inserted below.
+	await deleteDriftedPrints(rows);
 	const { error } = await sb().from('card_prints').upsert(rows, { onConflict: 'id' });
 	if (error) throw new Error(`card_prints upsert failed: ${error.message}`);
+}
+
+// Triplets per drift-lookup request. Each becomes one and(...) term in an or() filter,
+// which PostgREST takes in the query string: 200 terms overflows kong's URL limit
+// ("URI too long"), so keep chunks small. Also bounds the rows a request can return
+// (at most CHUNK), staying well under PostgREST's 1000-row default cap.
+const DRIFT_LOOKUP_CHUNK = 50;
+
+/**
+ * Deletes rows holding a batch triplet under a different id (see flushPrints).
+ *
+ * Matches the exact (set, collector_number, lang) triplets. Filtering by
+ * .in('set', …).in('collector_number', …) instead would select the whole cross-product
+ * of both lists — tens of thousands of unrelated rows for a 500-row batch — and
+ * PostgREST silently truncates that at 1000, so the drifted row was invisible and the
+ * upsert kept failing.
+ */
+async function deleteDriftedPrints(rows: CardPrintRow[]) {
+	const byTriplet = new Map(rows.map((r) => [`${r.set}|${r.collector_number}|${r.lang}`, r.id]));
+	const triplets = [...byTriplet.keys()];
+
+	const stale: string[] = [];
+	for (let i = 0; i < triplets.length; i += DRIFT_LOOKUP_CHUNK) {
+		const chunk = triplets.slice(i, i + DRIFT_LOOKUP_CHUNK);
+		// PostgREST or() terms are comma-separated; quote values so commas/parens in a
+		// collector_number (e.g. "CHK-280", promo variants) can't break out of the filter.
+		const filter = chunk
+			.map((t) => {
+				const [set, number, lang] = t.split('|');
+				return `and(set.eq."${set}",collector_number.eq."${number}",lang.eq."${lang}")`;
+			})
+			.join(',');
+		const { data, error } = await sb()
+			.from('card_prints')
+			.select('id, set, collector_number, lang')
+			.or(filter);
+		if (error) throw new Error(`card_prints drift lookup failed: ${error.message}`);
+		for (const row of data ?? []) {
+			const incomingId = byTriplet.get(`${row.set}|${row.collector_number}|${row.lang}`);
+			if (incomingId && incomingId !== row.id) stale.push(row.id);
+		}
+	}
+	if (stale.length === 0) return;
+
+	for (let i = 0; i < stale.length; i += DELETE_CHUNK) {
+		const chunk = stale.slice(i, i + DELETE_CHUNK);
+		const { error } = await sb().from('card_prints').delete().in('id', chunk);
+		if (error) throw new Error(`card_prints drift delete failed: ${error.message}`);
+	}
+	driftedPrints += stale.length;
+	console.log(`ℹ ${stale.length} print(s) réémis par Scryfall — ancien id remplacé`);
 }
 const DELETE_CHUNK = 100; // .in() is a GET-style query string; UPSERT_BATCH-sized UUID lists overflow URL length limits
 
@@ -231,7 +301,7 @@ async function pass2(): Promise<void> {
 	console.log(`✓ ${dryRun ? '[dry-run] ' : ''}pass2: edges resolved`);
 }
 
-async function pass1(): Promise<void> {
+async function pass1(): Promise<{ seen: number; kept: number }> {
 	const url = await bulkUrl('all_cards');
 	const rl = await openBulkLines(url);
 
@@ -274,17 +344,38 @@ async function pass1(): Promise<void> {
 		if (limit > 0 && kept >= limit) break;
 	}
 	await flushAll();
+	// A body can also end *cleanly* mid-file (connection closed without a TCP error),
+	// which readline reports as a normal end-of-stream — pass 1 would then log a ✓ over
+	// a truncated catalog and exit 0. Refuse to call that a success: the bulk holds
+	// ~535k lines, so anything far short of that means we did not receive the file.
+	if (limit === 0 && seen < MIN_EXPECTED_LINES) {
+		throw new Error(
+			`bulk stream ended early: ${seen} lignes lues (< ${MIN_EXPECTED_LINES} attendues) — ` +
+				`téléchargement incomplet, la base n'est pas à jour`
+		);
+	}
 	console.log(`✓ ${dryRun ? '[dry-run] ' : ''}pass1: ${kept}/${seen} cartes gardées`);
+	return { seen, kept };
 }
 
 async function main() {
 	const started = Date.now();
-	await pass1();
+	const { seen, kept } = await pass1();
 	await pass2();
-	console.log(`✓ done in ${((Date.now() - started) / 1000).toFixed(0)}s`);
+	const secs = ((Date.now() - started) / 1000).toFixed(0);
+	// Single-line summary for an unattended run: enough for cron mail / journald to say
+	// what happened without digging through the progress lines.
+	console.log(
+		`✓ seed-catalog OK — ${kept}/${seen} cartes gardées, ${driftedPrints} print(s) réémis, ${secs}s`
+	);
 }
 
-main().catch((err) => {
-	console.error('✖ seed-catalog failed:', err);
-	process.exit(1);
-});
+main()
+	.then(() => process.exit(0))
+	.catch((err) => {
+		// Exit 1 so cron/systemd sees the failure. Partial writes are safe to leave: every
+		// write is an idempotent upsert, so the next run converges on the same state.
+		console.error(`✖ seed-catalog failed: ${err instanceof Error ? err.message : err}`);
+		if (err instanceof Error && err.stack) console.error(err.stack);
+		process.exit(1);
+	});

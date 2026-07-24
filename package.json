@@ -28,7 +28,7 @@
 		"ingest": "NODE_ENV=production systemd-inhibit npx tsx scripts/ingest-mpc-cards.ts",
 		"precons:sync": "NODE_ENV=production npx tsx scripts/sync-precons.ts",
 		"seed": "npm run seed:sets && npm run seed:catalog --",
-		"seed:catalog": "NODE_ENV=production systemd-inhibit npx tsx scripts/seed/seed-catalog.ts",
+		"seed:catalog": "NODE_ENV=production $(command -v systemd-inhibit || true) npx tsx scripts/seed/seed-catalog.ts",
 		"seed:sets": "NODE_ENV=production npx tsx scripts/seed/seed-sets.ts",
 		"logo:generate": "tsx scripts/generate-logo.ts",
 		"clean": "rm -rf node_modules .next",

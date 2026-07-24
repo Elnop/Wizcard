@@ -4,6 +4,7 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { resolveSupabaseEnv } from '../lib/load-env';
+import { fetchWithRetry } from '../lib/fetch-retry';
 import type { ScryfallSet, ScryfallList } from '@/lib/scryfall/types/scryfall';
 
 const UA = 'Wizcard/1.0 (https://github.com/devinedev/wizcard)';
@@ -50,22 +51,49 @@ function toRow(s: ScryfallSet): CardSetRow {
 	};
 }
 
+// Sanity floor for a complete /sets listing (~1050 as of 2026-07). Guards against
+// upserting a truncated or empty page set over good data on a scheduled run.
+const MIN_EXPECTED_SETS = 800;
+
 async function main() {
+	const started = Date.now();
 	let url: string | null = 'https://api.scryfall.com/sets';
 	const rows: CardSetRow[] = [];
 	while (url) {
-		const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
-		if (!res.ok) throw new Error(`GET ${url} failed: HTTP ${res.status}`);
+		const res = await fetchWithRetry(url, {
+			headers: { 'User-Agent': UA, Accept: 'application/json' },
+		});
+		if (!res.ok) {
+			await res.body?.cancel();
+			throw new Error(`GET ${url} failed: HTTP ${res.status}`);
+		}
 		const list = (await res.json()) as ScryfallList<ScryfallSet>;
 		for (const s of list.data) rows.push(toRow(s));
 		url = list.has_more && list.next_page ? list.next_page : null;
 	}
+
+	// Never let a short response shrink the table: the upsert would not delete rows, but
+	// a near-empty result means the listing is unreliable and should not be trusted.
+	if (rows.length < MIN_EXPECTED_SETS) {
+		throw new Error(
+			`only ${rows.length} sets reçus (< ${MIN_EXPECTED_SETS} attendus) — ` +
+				`réponse Scryfall incomplète, upsert annulé`
+		);
+	}
+
 	const { error } = await sb().from('card_sets').upsert(rows, { onConflict: 'code' });
 	if (error) throw new Error(`card_sets upsert failed: ${error.message}`);
-	console.log(`✓ seeded ${rows.length} sets`);
+	console.log(
+		`✓ seed-sets OK — ${rows.length} sets, ${((Date.now() - started) / 1000).toFixed(0)}s`
+	);
 }
 
-main().catch((err) => {
-	console.error('✖ seed-sets failed:', err);
-	process.exit(1);
-});
+main()
+	.then(() => process.exit(0))
+	.catch((err) => {
+		// Exit 1 so cron/systemd sees the failure; the upsert is idempotent so the next
+		// scheduled run converges on the same state.
+		console.error(`✖ seed-sets failed: ${err instanceof Error ? err.message : err}`);
+		if (err instanceof Error && err.stack) console.error(err.stack);
+		process.exit(1);
+	});
