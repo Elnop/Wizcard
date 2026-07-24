@@ -2,9 +2,10 @@
 // card-source). Loads a print + its definition + faces (+ set) and rebuilds via the assembler.
 
 import { createCatalogClient } from '@/lib/supabase/catalog';
-import { rowsToScryfallCard } from './assembler';
+import { rowsToCard } from './assembler';
 import type { DefinitionRow, PrintRow, DefinitionFaceRow, PrintFaceRow, SetRow } from './assembler';
-import type { ScryfallCard, ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
+import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
 
 const PRINT_COLS =
 	'id, oracle_id, set, collector_number, lang, rarity, released_at, artist, border_color, frame, image_status, image_uris, finishes, promo, reprint, variation, digital, printed_name, printed_type_line, printed_text, multiverse_ids, mtgo_id, arena_id, tcgplayer_id, cardmarket_id';
@@ -19,7 +20,7 @@ const SET_COLS = 'code, id, name, set_type';
 type SB = ReturnType<typeof createCatalogClient>;
 
 // Given a set of print rows, load the definitions/faces/sets they need and assemble.
-async function assemblePrints(sb: SB, prints: PrintRow[]): Promise<ScryfallCard[]> {
+async function assemblePrints(sb: SB, prints: PrintRow[]): Promise<Card[]> {
 	if (prints.length === 0) return [];
 	const oracleIds = [...new Set(prints.map((p) => p.oracle_id))];
 	const printIds = prints.map((p) => p.id);
@@ -49,12 +50,12 @@ async function assemblePrints(sb: SB, prints: PrintRow[]): Promise<ScryfallCard[
 	}
 	const setByCode = new Map(((setsRes.data as SetRow[] | null) ?? []).map((s) => [s.code, s]));
 
-	const out: ScryfallCard[] = [];
+	const out: Card[] = [];
 	for (const print of prints) {
 		const def = defByOracle.get(print.oracle_id);
 		if (!def) continue; // a print without its definition should not happen (FK), skip defensively
 		out.push(
-			rowsToScryfallCard({
+			rowsToCard({
 				def,
 				print,
 				defFaces: defFacesByOracle.get(print.oracle_id) ?? [],
@@ -69,14 +70,14 @@ async function assemblePrints(sb: SB, prints: PrintRow[]): Promise<ScryfallCard[
 async function firstPrintCard(
 	sb: SB,
 	query: PromiseLike<{ data: unknown; error: unknown }>
-): Promise<ScryfallCard | null> {
+): Promise<Card | null> {
 	const { data, error } = await query;
 	if (error || !data || (data as PrintRow[]).length === 0) return null;
 	const cards = await assemblePrints(sb, data as PrintRow[]);
 	return cards[0] ?? null;
 }
 
-export async function byId(id: string): Promise<ScryfallCard | null> {
+export async function byId(id: string): Promise<Card | null> {
 	const sb = createCatalogClient();
 	return firstPrintCard(sb, sb.from('card_prints').select(PRINT_COLS).eq('id', id).limit(1));
 }
@@ -85,7 +86,7 @@ export async function bySetNumberLang(
 	set: string,
 	collectorNumber: string,
 	lang: string
-): Promise<ScryfallCard | null> {
+): Promise<Card | null> {
 	const sb = createCatalogClient();
 	return firstPrintCard(
 		sb,
@@ -102,11 +103,11 @@ export async function bySetNumberLang(
 export async function bySetNumber(
 	set: string,
 	collectorNumber: string
-): Promise<ScryfallCard | null> {
+): Promise<Card | null> {
 	return bySetNumberLang(set, collectorNumber, 'en');
 }
 
-export async function byName(name: string, opts?: { lang?: string }): Promise<ScryfallCard | null> {
+export async function byName(name: string, opts?: { lang?: string }): Promise<Card | null> {
 	const sb = createCatalogClient();
 	const { data: defs } = await sb
 		.from('card_definitions')
@@ -128,7 +129,7 @@ export async function byName(name: string, opts?: { lang?: string }): Promise<Sc
 	);
 }
 
-async function byExternalId(column: string, id: number): Promise<ScryfallCard | null> {
+async function byExternalId(column: string, id: number): Promise<Card | null> {
 	const sb = createCatalogClient();
 	return firstPrintCard(sb, sb.from('card_prints').select(PRINT_COLS).eq(column, id).limit(1));
 }
@@ -137,7 +138,7 @@ export const byArenaId = (id: number) => byExternalId('arena_id', id);
 export const byTcgplayerId = (id: number) => byExternalId('tcgplayer_id', id);
 export const byCardmarketId = (id: number) => byExternalId('cardmarket_id', id);
 
-export async function byMultiverseId(id: number): Promise<ScryfallCard | null> {
+export async function byMultiverseId(id: number): Promise<Card | null> {
 	const sb = createCatalogClient();
 	return firstPrintCard(
 		sb,
@@ -283,13 +284,13 @@ async function fetchGroupedPrints(sb: SB, groups: IdentifierGroups): Promise<Pri
 // Everything `resolveOne` needs to turn one identifier into a card, pre-indexed once per batch.
 interface ResolveContext {
 	prints: PrintRow[];
-	cards: ScryfallCard[];
-	cardByPrintId: Map<string, ScryfallCard>;
+	cards: Card[];
+	cardByPrintId: Map<string, Card>;
 	printsBySetNumber: Map<string, PrintRow[]>;
 	batchLang?: string;
 }
 
-function resolveById(ctx: ResolveContext, id: ScryfallCardIdentifier): ScryfallCard | null {
+function resolveById(ctx: ResolveContext, id: ScryfallCardIdentifier): Card | null {
 	return ctx.cardByPrintId.get(id.id!) ?? null;
 }
 
@@ -297,7 +298,7 @@ function resolveBySetNumber(
 	ctx: ResolveContext,
 	id: ScryfallCardIdentifier,
 	lang: string
-): ScryfallCard | null {
+): Card | null {
 	const rows = ctx.printsBySetNumber.get(`${id.set}/${id.collector_number}`) ?? [];
 	const row = pickByLang(rows, lang);
 	return row ? (ctx.cardByPrintId.get(row.id) ?? null) : null;
@@ -307,7 +308,7 @@ function resolveByName(
 	ctx: ResolveContext,
 	id: ScryfallCardIdentifier,
 	lang: string
-): ScryfallCard | null {
+): Card | null {
 	const target = id.name!.toLowerCase();
 	if (lang !== 'en') {
 		const fr = ctx.prints.find(
@@ -324,7 +325,7 @@ function resolveByOracleId(
 	ctx: ResolveContext,
 	id: ScryfallCardIdentifier,
 	lang: string
-): ScryfallCard | null {
+): Card | null {
 	const rows = ctx.prints
 		.filter((p) => p.oracle_id === id.oracle_id)
 		.sort((a, b) => (b.released_at ?? '').localeCompare(a.released_at ?? ''));
@@ -332,7 +333,7 @@ function resolveByOracleId(
 	return row ? (ctx.cardByPrintId.get(row.id) ?? null) : null;
 }
 
-function resolveByMtgoId(ctx: ResolveContext, id: ScryfallCardIdentifier): ScryfallCard | null {
+function resolveByMtgoId(ctx: ResolveContext, id: ScryfallCardIdentifier): Card | null {
 	const row = ctx.prints.find((p) => p.mtgo_id === id.mtgo_id);
 	return row ? (ctx.cardByPrintId.get(row.id) ?? null) : null;
 }
@@ -340,12 +341,12 @@ function resolveByMtgoId(ctx: ResolveContext, id: ScryfallCardIdentifier): Scryf
 function resolveByMultiverseId(
 	ctx: ResolveContext,
 	id: ScryfallCardIdentifier
-): ScryfallCard | null {
+): Card | null {
 	const row = ctx.prints.find((p) => (p.multiverse_ids ?? []).includes(id.multiverse_id!));
 	return row ? (ctx.cardByPrintId.get(row.id) ?? null) : null;
 }
 
-function resolveOne(ctx: ResolveContext, id: ScryfallCardIdentifier): ScryfallCard | null {
+function resolveOne(ctx: ResolveContext, id: ScryfallCardIdentifier): Card | null {
 	const lang = langFor(id, ctx.batchLang);
 	if (id.id) return resolveById(ctx, id);
 	if (id.set && id.collector_number) return resolveBySetNumber(ctx, id, lang);
@@ -359,7 +360,7 @@ function resolveOne(ctx: ResolveContext, id: ScryfallCardIdentifier): ScryfallCa
 export async function byCollection(
 	identifiers: ScryfallCardIdentifier[],
 	opts?: { lang?: string }
-): Promise<(ScryfallCard | null)[]> {
+): Promise<(Card | null)[]> {
 	if (identifiers.length === 0) return [];
 	const sb = createCatalogClient();
 
@@ -389,7 +390,7 @@ export async function byCollection(
 	return identifiers.map((id) => resolveOne(ctx, id));
 }
 
-export async function printsByOracleId(oracleId: string): Promise<ScryfallCard[]> {
+export async function printsByOracleId(oracleId: string): Promise<Card[]> {
 	const sb = createCatalogClient();
 	const { data } = await sb
 		.from('card_prints')
