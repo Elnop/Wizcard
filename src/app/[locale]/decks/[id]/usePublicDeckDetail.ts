@@ -14,24 +14,41 @@ import type { ResolvedDeckCard } from './useDeckDetail';
 
 type DeckCard = { scryfallId: string; entry: CardEntry };
 
+export interface InitialPublicDeckData {
+	deck: DeckMeta;
+	ownerNickname: string | null;
+	deckCards: DeckCard[];
+	cards: Card[];
+}
+
 /**
  * Read-only, context-free counterpart of {@link useDeckDetail}. Loads a deck and
  * its cards directly from the DB by id (no owner filter, relies on the public
  * SELECT policy) so a non-owner / anonymous visitor can view any deck. Produces
  * the same shape as useDeckDetail for reuse by the read-only deck view.
+ *
+ * When `initial` is provided (server-rendered data from Task 2), state is
+ * seeded from it and the fetch effects below skip their network calls.
  */
-export function usePublicDeckDetail(deckId: string) {
-	const [deck, setDeck] = useState<DeckMeta | null>(null);
-	const [ownerNickname, setOwnerNickname] = useState<string | null>(null);
-	const [deckCards, setDeckCards] = useState<DeckCard[]>([]);
-	const [scryfallCards, setScryfallCards] = useState<Record<string, Card | CustomCard>>({});
-	const resolvedIdsRef = useRef<Set<string>>(new Set());
+export function usePublicDeckDetail(deckId: string, initial?: InitialPublicDeckData) {
+	const [deck, setDeck] = useState<DeckMeta | null>(initial?.deck ?? null);
+	const [ownerNickname, setOwnerNickname] = useState<string | null>(initial?.ownerNickname ?? null);
+	const [deckCards, setDeckCards] = useState<DeckCard[]>(initial?.deckCards ?? []);
+	const [scryfallCards, setScryfallCards] = useState<Record<string, Card | CustomCard>>(() =>
+		Object.fromEntries((initial?.cards ?? []).map((c) => [c.id, c]))
+	);
+	// Pre-seed with the ids the server already resolved so the resolution effect
+	// below computes an empty `toResolve` — no network call at all when the
+	// catalog covered the whole deck, and exactly the misses when it didn't.
+	const resolvedIdsRef = useRef<Set<string>>(new Set((initial?.cards ?? []).map((c) => c.id)));
 	const [resolveGeneration, setResolveGeneration] = useState(0);
-	const [isLoading, setIsLoading] = useState(true);
+	const [isLoading, setIsLoading] = useState(!initial);
 	const activeResolveRef = useRef(0);
 
 	// Load deck meta + cards from DB
 	useEffect(() => {
+		// Server already provided deck + cards; nothing to fetch.
+		if (initial) return;
 		let cancelled = false;
 		async function load() {
 			setIsLoading(true);
@@ -55,13 +72,14 @@ export function usePublicDeckDetail(deckId: string) {
 		return () => {
 			cancelled = true;
 		};
-	}, [deckId]);
+	}, [deckId, initial]);
 
 	// Resolve the owner's public nickname for the "by <author>" byline / profile
 	// link. Precons (source 'mtgjson') have no owner → ownerId is null → no byline.
 	// The deck is only visible to a non-owner when the owner's profile is public,
 	// so linking to /users/<nickname> here is always safe.
 	useEffect(() => {
+		if (initial) return;
 		const ownerId = deck?.ownerId;
 		let cancelled = false;
 		// No owner (precon) resolves to a null nickname via the same async path, so
@@ -79,7 +97,7 @@ export function usePublicDeckDetail(deckId: string) {
 		return () => {
 			cancelled = true;
 		};
-	}, [deck?.ownerId]);
+	}, [deck?.ownerId, initial]);
 
 	// Resolve Scryfall data for all unique scryfall IDs
 	useEffect(() => {
