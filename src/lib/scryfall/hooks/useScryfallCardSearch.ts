@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { ScryfallCard, ScryfallColor } from '@/lib/scryfall/types/scryfall';
+import type { ScryfallColor } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder, ScryfallSortDir } from '@/lib/scryfall/types/sort';
+import type { Card } from '@/types/cards';
 import { searchCards } from '@/lib/scryfall/endpoints/cards';
 import { buildScryfallQuery } from '@/lib/scryfall/utils/scryfall-query';
 import { ScryfallApiError } from '@/lib/scryfall/utils/errors';
@@ -33,7 +34,7 @@ export interface SearchFilters {
 }
 
 interface UseScryfallCardSearchResult {
-	cards: ScryfallCard[];
+	cards: Card[];
 	isLoading: boolean;
 	isLoadingMore: boolean;
 	error: Error | null;
@@ -55,7 +56,7 @@ export function useScryfallCardSearch(
 	options: { enabled?: boolean } = {}
 ): UseScryfallCardSearchResult {
 	const enabled = options.enabled ?? true;
-	const [cards, setCards] = useState<ScryfallCard[]>([]);
+	const [cards, setCards] = useState<Card[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isLoadingMore, setIsLoadingMore] = useState(false);
 	const [error, setError] = useState<Error | null>(null);
@@ -75,7 +76,7 @@ export function useScryfallCardSearch(
 	// Raw prints accumulated across pages in multilingual mode (unique=prints).
 	// `cards` is derived from this by collapsing to one print per logical card,
 	// so a real English scan can win over a placeholder-only localized print.
-	const rawPrintsRef = useRef<ScryfallCard[]>([]);
+	const rawPrintsRef = useRef<Card[]>([]);
 
 	const preferredLang = usePreferredCardLang();
 	const order = filters.order ?? 'name';

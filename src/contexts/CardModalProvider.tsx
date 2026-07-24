@@ -164,7 +164,10 @@ function resolveStackCards(oracleKey: string, entries: StoredCopy[]): CardCopy[]
 		const scryfall = getCard(scryfallId);
 		if (!scryfall) continue;
 		if (oracleKeyOf(scryfall) !== oracleKey) continue;
-		result.push({ ...scryfall, entry });
+		// The global store is typed as the provider-neutral `Card` (Wave A migration),
+		// but at runtime it only ever holds ScryfallCard | CustomCard objects (fed by
+		// resolvers not yet migrated) — this cast reflects that, not a new invariant.
+		result.push({ ...(scryfall as ScryfallCard | CustomCard), entry });
 	}
 	return result;
 }

@@ -1,4 +1,4 @@
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 import { hasRealScan } from '@/lib/scryfall/types/scryfall';
 import { preferPrint } from '@/lib/card/utils/prefer-print';
 
@@ -9,10 +9,10 @@ import { preferPrint } from '@/lib/card/utils/prefer-print';
  * general print-representativeness rule (paper > non-promo > recent).
  */
 function preferSearchPrint(
-	current: ScryfallCard,
-	candidate: ScryfallCard,
+	current: Card,
+	candidate: Card,
 	preferredLang: string | undefined
-): ScryfallCard {
+): Card {
 	const curReal = hasRealScan(current.image_status);
 	const candReal = hasRealScan(candidate.image_status);
 	if (curReal !== candReal) return candReal ? candidate : current;
@@ -35,11 +35,8 @@ function preferSearchPrint(
  * Insertion order of first-seen cards is preserved so the overall sort Scryfall
  * applied is respected.
  */
-export function dedupeSearchPrints(
-	prints: ScryfallCard[],
-	preferredLang: string | undefined
-): ScryfallCard[] {
-	const byCard = new Map<string, ScryfallCard>();
+export function dedupeSearchPrints(prints: Card[], preferredLang: string | undefined): Card[] {
+	const byCard = new Map<string, Card>();
 	const order: string[] = [];
 	for (const print of prints) {
 		const key = print.oracle_id ?? print.id;

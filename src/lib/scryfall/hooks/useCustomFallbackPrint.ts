@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { getCardCollection } from '../endpoints/cards';
-import type { ScryfallCard } from '../types/scryfall';
+import type { Card } from '@/types/cards';
 
 interface UseCustomFallbackPrintResult {
 	/** The default official print for the oracle, or null while loading / if none. */
-	print: ScryfallCard | null;
+	print: Card | null;
 	loading: boolean;
 }
 
@@ -30,9 +30,7 @@ export function useCustomFallbackPrint(
 	// previous oracle is never surfaced for a different card (and we can derive
 	// state during render without a reset-in-effect, which the strict React
 	// Compiler ruleset forbids).
-	const [result, setResult] = useState<{ oracleId: string; print: ScryfallCard | null } | null>(
-		null
-	);
+	const [result, setResult] = useState<{ oracleId: string; print: Card | null } | null>(null);
 	const [loadingOracleId, setLoadingOracleId] = useState<string | null>(null);
 
 	const canFetch = enabled && !!oracleId;

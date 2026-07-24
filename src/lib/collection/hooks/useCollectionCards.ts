@@ -41,7 +41,10 @@ export function useCollectionCards(entries: StoredCopy[]): {
 		useShallow((s) => {
 			const m = new Map<string, ScryfallCard>();
 			for (const id of ids) {
-				const card = s.cards.get(id);
+				// The global store is typed as the provider-neutral `Card` (Wave A
+				// migration), but at runtime it only ever holds ScryfallCard | CustomCard
+				// objects (fed by resolvers not yet migrated) — this cast reflects that.
+				const card = s.cards.get(id) as ScryfallCard | undefined;
 				if (card) m.set(id, card);
 			}
 			return m;

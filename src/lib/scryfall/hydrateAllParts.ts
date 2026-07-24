@@ -2,6 +2,7 @@ import { getCardCollection } from '@/lib/scryfall/endpoints/cards';
 import { BATCH_SIZE } from '@/lib/scryfall/constants';
 import { putCardsInCache } from '@/lib/scryfall/utils/card-cache';
 import { isCustomCard, type CustomCard } from '@/lib/mpc/types';
+import type { Card } from '@/types/cards';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
 /**
@@ -15,16 +16,16 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
  * token detection degrades to "no tokens for this card", never worse than today.
  */
 export async function hydrateAllParts(
-	cards: ScryfallCard[],
-	deps: { fetchByOracleIds?: (oracleIds: string[]) => Promise<ScryfallCard[]> } = {}
-): Promise<ScryfallCard[]> {
+	cards: Card[],
+	deps: { fetchByOracleIds?: (oracleIds: string[]) => Promise<Card[]> } = {}
+): Promise<Card[]> {
 	const fetchByOracleIds = deps.fetchByOracleIds ?? defaultFetchByOracleIds;
 
 	const needsHydration = cards.filter(
 		// Custom cards must never enter the Scryfall IndexedDB cache and never need
 		// Scryfall all_parts hydration (token discovery works from the official card).
 		(c) =>
-			!isCustomCard(c as ScryfallCard | CustomCard) &&
+			!isCustomCard(c as Card | CustomCard) &&
 			c.lang !== 'en' &&
 			!c.all_parts &&
 			Boolean(c.oracle_id)
@@ -33,7 +34,7 @@ export async function hydrateAllParts(
 
 	const oracleIds = [...new Set(needsHydration.map((c) => c.oracle_id))];
 
-	let oracleCards: ScryfallCard[];
+	let oracleCards: Card[];
 	try {
 		oracleCards = await fetchByOracleIds(oracleIds);
 	} catch (err) {
@@ -41,7 +42,7 @@ export async function hydrateAllParts(
 		return cards;
 	}
 
-	const partsByOracle = new Map<string, ScryfallCard['all_parts']>();
+	const partsByOracle = new Map<string, Card['all_parts']>();
 	for (const oc of oracleCards) {
 		if (oc.oracle_id && oc.all_parts) partsByOracle.set(oc.oracle_id, oc.all_parts);
 	}
@@ -50,7 +51,7 @@ export async function hydrateAllParts(
 		// Mirrors the needsHydration guard above: a custom card must never be
 		// grafted with Scryfall all_parts, even if it shares an oracle_id with an
 		// official card that was fetched in this batch.
-		if (isCustomCard(c as ScryfallCard | CustomCard)) return c;
+		if (isCustomCard(c as Card | CustomCard)) return c;
 		if (c.lang === 'en' || c.all_parts || !c.oracle_id) return c;
 		const parts = partsByOracle.get(c.oracle_id);
 		return parts ? { ...c, all_parts: parts } : c;
@@ -72,19 +73,19 @@ export async function hydrateCardsAllParts<
 		id: string;
 		lang?: string;
 		oracle_id?: string;
-		all_parts?: ScryfallCard['all_parts'];
+		all_parts?: Card['all_parts'];
 	},
 >(
 	cards: T[],
 	deps: {
-		fetchByOracleIds?: (oracleIds: string[]) => Promise<ScryfallCard[]>;
+		fetchByOracleIds?: (oracleIds: string[]) => Promise<Card[]>;
 		writeCache?: (cards: ScryfallCard[]) => Promise<void>;
 	} = {}
 ): Promise<T[]> {
 	const writeCache = deps.writeCache ?? putCardsInCache;
 	// hydrateAllParts reads only id/lang/oracle_id/all_parts and skips cards missing
 	// oracle_id, so the wider deck-card union (custom cards included) is safe here.
-	const hydrated = (await hydrateAllParts(cards as unknown as ScryfallCard[], {
+	const hydrated = (await hydrateAllParts(cards as unknown as Card[], {
 		fetchByOracleIds: deps.fetchByOracleIds,
 	})) as unknown as T[];
 
@@ -93,8 +94,8 @@ export async function hydrateCardsAllParts<
 	return hydrated;
 }
 
-async function defaultFetchByOracleIds(oracleIds: string[]): Promise<ScryfallCard[]> {
-	const out: ScryfallCard[] = [];
+async function defaultFetchByOracleIds(oracleIds: string[]): Promise<Card[]> {
+	const out: Card[] = [];
 	for (let i = 0; i < oracleIds.length; i += BATCH_SIZE) {
 		const batch = oracleIds.slice(i, i + BATCH_SIZE);
 		const result = await getCardCollection(batch.map((oracle_id) => ({ oracle_id })));

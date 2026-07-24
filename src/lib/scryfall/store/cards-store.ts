@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
+import type { Card } from '@/types/cards';
 
 /**
  * Best-effort in-memory mirror of hydrated Scryfall cards, keyed by print id.
@@ -13,8 +13,8 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
  * truth; this is just a hot, synchronous read layer.
  */
 type CardsStoreState = {
-	cards: Map<string, ScryfallCard>;
-	putCards: (cards: ScryfallCard[]) => void;
+	cards: Map<string, Card>;
+	putCards: (cards: Card[]) => void;
 };
 
 export const useCardsStore = create<CardsStoreState>((set, get) => ({
@@ -28,7 +28,7 @@ export const useCardsStore = create<CardsStoreState>((set, get) => ({
 }));
 
 /** Synchronous, non-React accessors over the global cards store. */
-export function getCard(scryfallId: string): ScryfallCard | undefined {
+export function getCard(scryfallId: string): Card | undefined {
 	return useCardsStore.getState().cards.get(scryfallId);
 }
 
@@ -36,6 +36,6 @@ export function getOracleId(scryfallId: string): string | undefined {
 	return getCard(scryfallId)?.oracle_id;
 }
 
-export function putCards(cards: ScryfallCard[]): void {
+export function putCards(cards: Card[]): void {
 	useCardsStore.getState().putCards(cards);
 }
