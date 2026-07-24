@@ -23,7 +23,7 @@ export async function fetchCollectionPage(
 	userId: string,
 	from: number
 ): Promise<{ rows: Array<{ scryfallId: string; entry: CardEntry }>; hasMore: boolean }> {
-	const { rows, hasMore } = await fetchCardRowsPage('cards', {
+	const { rows, hasMore } = await fetchCardRowsPage('card_entries', {
 		ownerId: userId,
 		from,
 		pageSize: DB_FETCH_PAGE_SIZE,

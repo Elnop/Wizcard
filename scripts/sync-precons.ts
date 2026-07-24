@@ -1,4 +1,4 @@
-// Sync MTGJSON preconstructed decks into public.decks / public.cards.
+// Sync MTGJSON preconstructed decks into public.decks / public.card_entries.
 //
 //   npm run precons:sync                  — sync everything that changed
 //   npm run precons:sync -- --force       — re-import all, ignoring versions

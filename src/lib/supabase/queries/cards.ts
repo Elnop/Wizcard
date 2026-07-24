@@ -2,13 +2,14 @@ import { createClient } from '@/lib/supabase/client';
 import type { CardDbRow } from '@/lib/card/db/cardRow';
 
 /**
- * Raw Supabase access for the `cards` table and its public view. This file is
- * the ONLY place that issues client.from('cards'|'public_collection_cards')
- * calls; domain mapping (row <-> CardEntry) lives in collection/db + wishlist/db.
+ * Raw Supabase access for the `card_entries` table and its public view. This
+ * file is the ONLY place that issues
+ * client.from('card_entries'|'public_collection_cards') calls; domain mapping
+ * (row <-> CardEntry) lives in collection/db + wishlist/db.
  */
 
 export async function fetchCardRowsPage(
-	table: 'cards' | 'public_collection_cards',
+	table: 'card_entries' | 'public_collection_cards',
 	filter: { ownerId: string; from: number; pageSize: number }
 ): Promise<{ rows: CardDbRow[]; hasMore: boolean }> {
 	const supabase = createClient();

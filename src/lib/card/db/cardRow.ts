@@ -3,7 +3,7 @@ import { SCRYFALL_CODE_TO_LANGUAGE, MTG_LANGUAGES } from '@/lib/mtg/languages';
 import type { MtgLanguage } from '@/lib/mtg/languages';
 
 /**
- * Shape of a `public.cards` row. `owner_id` is nullable because deck cards may
+ * Shape of a `public.card_entries` row. `owner_id` is nullable because deck cards may
  * not carry an owner; `wishlist` is optional because deck-card queries don't
  * select it. All three persistence layers (collection, wishlist, deck) read
  * through this same shape.
