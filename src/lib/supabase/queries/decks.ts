@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
+import { createClient as createServerSupabaseClient } from '@/lib/supabase/server';
 import type { CardDbRow } from '@/lib/card/db/cardRow';
 
 /**
@@ -133,6 +134,31 @@ export async function fetchDeckCardRows(deckId: string): Promise<CardDbRow[]> {
 		.eq('deck_id', deckId)
 		.order('date_added', { ascending: true });
 	if (error) throw new Error(`[queries/decks] fetchDeckCardRows error: ${error.message}`);
+	return data as CardDbRow[];
+}
+
+/**
+ * Server-side twin of {@link fetchDeckCardRows}, for RSC use. Same explicit
+ * column list (omits purchase_price — anon holds column grants, not a table
+ * grant, so `select('*')` would 403; see migration
+ * 20260710120000_fix_purchase_price_leak.sql) and the same date_added ordering,
+ * so both paths produce identical card order.
+ *
+ * Uses the cookie-bearing SSR client: RLS on card_entries gates deck-card reads
+ * through the parent deck's visibility, which includes `auth.uid() = d.owner_id`
+ * — a cookieless client would drop that branch and hide decks a signed-in
+ * visitor may legitimately see.
+ */
+export async function fetchDeckCardRowsServer(deckId: string): Promise<CardDbRow[]> {
+	const supabase = await createServerSupabaseClient();
+	const { data, error } = await supabase
+		.from('card_entries')
+		.select(
+			'id, owner_id, scryfall_id, date_added, is_foil, foil_type, condition, language, alter, proxy, tags, for_trade, deck_id, wishlist'
+		)
+		.eq('deck_id', deckId)
+		.order('date_added', { ascending: true });
+	if (error) throw new Error(`[queries/decks] fetchDeckCardRowsServer error: ${error.message}`);
 	return data as CardDbRow[];
 }
 
