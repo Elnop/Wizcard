@@ -675,7 +675,7 @@ function CardModalInner({
 							<button
 								type="button"
 								className={styles.changePrintBtn}
-								onClick={() => onAddToDeck(selectedCard as unknown as ScryfallCard)}
+								onClick={() => onAddToDeck(selectedCard as ScryfallCard)}
 							>
 								<span aria-hidden="true">🗂</span> {t('addToDeck')}
 							</button>
@@ -684,7 +684,7 @@ function CardModalInner({
 
 					<div className={styles.infoCol}>
 						<CardDetailSection
-							card={selectedCard as unknown as ScryfallCard}
+							card={selectedCard as ScryfallCard}
 							symbolMap={symbolMap}
 							language={selectedCard.entry.language}
 							entry={selectedCard.entry}
@@ -757,7 +757,7 @@ function CardModalInner({
 
 			{lightbox && (
 				<CardLightbox
-					card={selectedCard as unknown as ScryfallCard}
+					card={selectedCard as ScryfallCard}
 					onClose={() => setLightbox(false)}
 					isFoil={selectedCard.entry.isFoil}
 					foilType={selectedCard.entry.foilType}
@@ -792,12 +792,9 @@ function CardModalInner({
 				/>
 			)}
 
-			{/* prints_search_uri is provider-only (Scryfall-specific); CardCopy's ScryfallCard
-			    branch carries it at runtime for Scryfall-sourced copies — narrow cast at this
-			    genuine provider-boundary read. */}
-			{usingCollectionCopy && (selectedCard as unknown as ScryfallCard).prints_search_uri && (
+			{usingCollectionCopy && (selectedCard as ScryfallCard).prints_search_uri && (
 				<UseCollectionCopyModal
-					prints_search_uri={(selectedCard as unknown as ScryfallCard).prints_search_uri!}
+					prints_search_uri={(selectedCard as ScryfallCard).prints_search_uri!}
 					collectionCopies={collectionCopies ?? []}
 					currentCollectionRowId={selectedCard.entry.ownerId ? selectedCard.entry.rowId : undefined}
 					onSelectCollectionCopy={(rowId) => {
@@ -818,7 +815,7 @@ function CardModalInner({
 
 			{addingCopy && (
 				<AddCardModal
-					scryfallCard={selectedCard as unknown as ScryfallCard}
+					scryfallCard={selectedCard as ScryfallCard}
 					hideQuantity
 					onAdd={(_print, entry) => {
 						onIncrement?.(entry);

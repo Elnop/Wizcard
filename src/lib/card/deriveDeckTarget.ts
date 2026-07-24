@@ -39,7 +39,7 @@ export function deriveDeckTarget(
 	getOracleId: (scryfallId: string) => string | undefined
 ): DeckTarget {
 	if (!hasEntry(card)) {
-		return { card: card as unknown as ScryfallCard };
+		return { card: card as ScryfallCard };
 	}
 
 	const isWishlisted = card.entry.wishlist === true;
@@ -53,7 +53,7 @@ export function deriveDeckTarget(
 		.map((copy) => copy.entry.rowId);
 
 	return {
-		card: card as unknown as ScryfallCard,
+		card: card as ScryfallCard,
 		ownedRowIds,
 		onAssign: isWishlisted ? assignToDeck : undefined,
 	};

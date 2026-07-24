@@ -43,7 +43,7 @@ export function useCopyDeckToMyCollection(): {
 					if (existing) {
 						existing.quantity += 1;
 					} else {
-						grouped.set(key, { card: rc as unknown as ScryfallCard, zone, quantity: 1 });
+						grouped.set(key, { card: rc as ScryfallCard, zone, quantity: 1 });
 					}
 				}
 

@@ -211,9 +211,7 @@ export function DeckCardOverlay({
 	const hasUnowned = zoneCopies.some((c) => !c.entry.ownerId);
 
 	// art_crop URL of this card group, used as the deck cover when chosen.
-	// getArtCropUrl only reads image_uris/card_faces (Card-covered fields); it's still
-	// ScryfallCard-typed pending Task 6/7 migration of lib/deck utils off ScryfallCard.
-	const cardCoverArtUrl = getArtCropUrl(group.representative as unknown as ScryfallCard);
+	const cardCoverArtUrl = getArtCropUrl(group.representative as ScryfallCard);
 	const isCurrentCover = deckCoverArtUrl != null && deckCoverArtUrl === cardCoverArtUrl;
 
 	const buildAddRequest = (): CollectionAddRequest =>

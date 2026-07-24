@@ -1,9 +1,9 @@
-import type { CardPart } from '@/types/cards';
+import type { ScryfallRelatedCard } from '@/lib/scryfall/types/scryfall';
 
 /** Minimal shape needed to extract token parts — satisfied by both Scryfall and custom cards. */
 interface CardWithParts {
 	id: string;
-	all_parts?: CardPart[];
+	all_parts?: ScryfallRelatedCard[];
 }
 
 /**
@@ -17,7 +17,7 @@ interface CardWithParts {
  * on its own, since the planeswalker face is a separate print (different id), so the
  * type-based filter is what keeps non-emblem `combo_piece` entries out.
  */
-function isProducedToken(part: CardPart, sourceId: string): boolean {
+function isProducedToken(part: ScryfallRelatedCard, sourceId: string): boolean {
 	if (part.id === sourceId) return false;
 	if (part.component === 'token') return true;
 	if (part.component === 'combo_piece' && /\bEmblem\b/.test(part.type_line)) return true;

@@ -17,7 +17,7 @@ export interface EditCardModalProps {
 /** Modal for editing an existing owned copy (metadata + print/language). */
 export function EditCardModal({ card, onSave, onChangePrint, onClose }: EditCardModalProps) {
 	const t = useTranslations('card');
-	const form = useCardEntryForm({ ...card.entry }, card as unknown as ScryfallCard);
+	const form = useCardEntryForm({ ...card.entry }, card as ScryfallCard);
 
 	function handleSave() {
 		// Commit a print change (incl. localized language) before the metadata

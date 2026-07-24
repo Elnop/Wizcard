@@ -1,4 +1,5 @@
 import type { CardStack, CollectionStats } from '@/types/cards';
+import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
 export function computeCollectionStats(stacks: CardStack[]): CollectionStats {
 	const sets = new Set<string>();
@@ -8,9 +9,9 @@ export function computeCollectionStats(stacks: CardStack[]): CollectionStats {
 	for (const stack of stacks) {
 		for (const card of stack.cards) {
 			totalCards += 1;
-			const set = card.set;
+			const set = (card as ScryfallCard).set;
 			if (set) sets.add(set);
-			const rarity = card.rarity;
+			const rarity = (card as ScryfallCard).rarity;
 			if (rarity) rarityDistribution[rarity] = (rarityDistribution[rarity] ?? 0) + 1;
 		}
 	}

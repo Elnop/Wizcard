@@ -90,14 +90,8 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 		const commanderCards = resolvedCards.filter((rc) => getDeckZone(rc.entry.tags) === 'commander');
 		return validateDeck(
 			deck.format,
-			allCards.map((rc) => ({
-				card: rc as unknown as ScryfallCard,
-				zone: getDeckZone(rc.entry.tags),
-			})),
-			commanderCards.map((rc) => ({
-				card: rc as unknown as ScryfallCard,
-				zone: getDeckZone(rc.entry.tags),
-			}))
+			allCards.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) })),
+			commanderCards.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) }))
 		);
 	}, [deck, resolvedCards]);
 
@@ -259,7 +253,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 							icon: '+',
 							onClick: () => {
 								openAddCard({
-									scryfallCard: cardMenu.menu!.data as unknown as ScryfallCard,
+									scryfallCard: cardMenu.menu!.data as ScryfallCard,
 									onAdd: (selectedCard, entry, count) => addCards(selectedCard, count, entry),
 								});
 								cardMenu.close();

@@ -153,16 +153,14 @@ export function usePublicDeckDetail(deckId: string) {
 		return computeDeckStats(
 			resolvedCards
 				.filter((rc) => getDeckZone(rc.entry.tags) !== 'tokens')
-				.map((rc) => ({ card: rc as unknown as ScryfallCard, zone: getDeckZone(rc.entry.tags) }))
+				.map((rc) => ({ card: rc as ScryfallCard, zone: getDeckZone(rc.entry.tags) }))
 		);
 	}, [resolvedCards]);
 
 	const coverArtUrl = useMemo(
 		() =>
 			deck?.coverArtUrl ??
-			pickCoverArt(
-				resolvedCards.map((rc) => ({ card: rc as unknown as ScryfallCard, tags: rc.entry.tags }))
-			),
+			pickCoverArt(resolvedCards.map((rc) => ({ card: rc as ScryfallCard, tags: rc.entry.tags }))),
 		[deck?.coverArtUrl, resolvedCards]
 	);
 
