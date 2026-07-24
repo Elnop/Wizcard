@@ -86,9 +86,7 @@ export function DeckCardSearchPanel({
 			const legalFiltered = cards.filter((c) => (c as Card).legalities?.[fmt] === 'legal');
 			if (isCommanderFormat && commanderColorIdentity && commanderColorIdentity.length > 0) {
 				return legalFiltered.filter((c) =>
-					((c as Card).color_identity ?? []).every((ci) =>
-						commanderColorIdentity.includes(ci)
-					)
+					((c as Card).color_identity ?? []).every((ci) => commanderColorIdentity.includes(ci))
 				);
 			}
 			return legalFiltered;

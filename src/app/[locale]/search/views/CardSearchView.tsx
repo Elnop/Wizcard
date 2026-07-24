@@ -146,10 +146,7 @@ export function CardSearchView({ cardState }: CardSearchViewProps) {
 			.catch(() => {});
 	}, []);
 
-	const handleCardClick = useCallback(
-		(card: AnyCard) => openCardModal(card),
-		[openCardModal]
-	);
+	const handleCardClick = useCallback((card: AnyCard) => openCardModal(card), [openCardModal]);
 
 	const hasFilters =
 		name ||

@@ -31,10 +31,7 @@ export function WishlistSearchPanel({ expanded, onToggleExpand, onClose }: Props
 	const { openAddCard } = useAddCardModal();
 	const { openAddToDeck } = useAddToDeckModal();
 
-	const onCardClick = useCallback(
-		(card: AnyCard) => openCardModal(card),
-		[openCardModal]
-	);
+	const onCardClick = useCallback((card: AnyCard) => openCardModal(card), [openCardModal]);
 
 	const buildCardMenuItems = useCallback(
 		(card: AnyCard, close: () => void) =>

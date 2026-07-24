@@ -41,10 +41,7 @@ type OpenState =
 
 type CardModalContextValue = {
 	/** Open the modal for a bare card (search/sets/prints) or a resolved stack's cards. */
-	openCardModal: (
-		input: Card | CustomCard | CardCopy[],
-		opts?: { readOnly?: boolean }
-	) => void;
+	openCardModal: (input: Card | CustomCard | CardCopy[], opts?: { readOnly?: boolean }) => void;
 	/**
 	 * Open the deck-owner modal for a clicked deck-card group. Deck state lives on
 	 * the page; the call-site already has the group, so we pass it through and the

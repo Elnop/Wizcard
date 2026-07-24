@@ -34,10 +34,7 @@ function SetCardsGridInner({
 	const { entries: wishlistEntries } = useWishlistContext();
 	const { openCardModal } = useCardModalContext();
 
-	const handleCardClick = useCallback(
-		(card: AnyCard) => openCardModal(card),
-		[openCardModal]
-	);
+	const handleCardClick = useCallback((card: AnyCard) => openCardModal(card), [openCardModal]);
 
 	// Prints present in the wishlist, for the 🛒 badge state.
 	const wishlistPrintIds = useMemo(

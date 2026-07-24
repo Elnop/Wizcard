@@ -36,7 +36,10 @@ export function useCopyDeckToMyCollection(): {
 
 				// Aggregate individual copies into { card, zone, quantity } groups,
 				// keyed by scryfall print + zone.
-				const grouped = new Map<string, { card: Card | CustomCard; zone: DeckZone; quantity: number }>();
+				const grouped = new Map<
+					string,
+					{ card: Card | CustomCard; zone: DeckZone; quantity: number }
+				>();
 				for (const rc of cards) {
 					const zone = getDeckZone(rc.entry.tags);
 					const key = `${rc.id}:${zone}`;

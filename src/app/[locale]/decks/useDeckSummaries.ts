@@ -44,9 +44,7 @@ function buildDeckSummary(
 			pickCoverArt(
 				entries
 					.map((e) => ({ card: cached.get(e.scryfallId), tags: e.tags }))
-					.filter(
-						(c): c is { card: Card | CustomCard; tags: string[] | null } => c.card != null
-					)
+					.filter((c): c is { card: Card | CustomCard; tags: string[] | null } => c.card != null)
 			),
 		colors: computeColors(entries, cached),
 		commanderName: findCommanderName(entries, cached),

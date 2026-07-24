@@ -36,10 +36,12 @@
 ## Task 1: Add `prices?` to domain `Card` + adapter
 
 **Files:**
+
 - Modify: `src/types/cards.ts` (the `Card` interface, after the print block near line 90)
 - Modify: `src/lib/card/adapter.ts` (`toCard` return object)
 
 **Interfaces:**
+
 - Produces: `Card.prices?: { usd?: string; usd_foil?: string; usd_etched?: string; eur?: string; eur_foil?: string; eur_etched?: string; tix?: string }` — the same shape as `ScryfallPrices`. Consumed by Task 3 (`filterCollectionCards` price-sort) and the display sites already guarding `'prices' in card`.
 
 - [ ] **Step 1: Add `prices?` to the `Card` interface**
@@ -86,6 +88,7 @@ git commit --no-verify -m "feat(card): add prices? to domain Card + carry throug
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ```
+
 Note: `--no-verify` — lint-staged blocks on pre-existing baseline eslint errors in touched files.
 
 ---
@@ -93,9 +96,11 @@ Note: `--no-verify` — lint-staged blocks on pre-existing baseline eslint error
 ## Task 2: Widen `isCustomCard` to accept domain `Card`
 
 **Files:**
+
 - Modify: `src/lib/mpc/types.ts:69-71` (`isCustomCard`)
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces: `isCustomCard(card: Card | CustomCard): card is CustomCard` — narrows via `'custom' in card`. 11 call sites depend on it (CardTabs, PrintsTab, CardModalProvider, CardPageHeader, filterCollectionCards, useCardEntryForm, PrintList, CardModal, CustomCardBadge, CardImage, hydrateAllParts).
 
@@ -141,6 +146,7 @@ git commit --no-verify -m "refactor(card): isCustomCard accepts domain Card (dis
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ```
+
 Note: `--no-verify` (baseline eslint).
 
 ---
@@ -148,10 +154,12 @@ Note: `--no-verify` (baseline eslint).
 ## Task 3: Pivot the `AnyCard` union + `filterCollectionCards` casts
 
 **Files:**
+
 - Modify: `src/lib/card/components/CardList/CardList.types.ts:9` (exported `AnyCard`)
 - Modify: `src/lib/card/utils/filterCollectionCards.ts:11` (local `AnyCard`) + the `as ScryfallCard` casts in `sortKey` (lines ~115-125)
 
 **Interfaces:**
+
 - Consumes: `Card` (`@/types/cards`), `isCustomCard` (Task 2).
 - Produces: `export type AnyCard = Card | CardCopy | CustomCard` — the app's shared card union. ~40 files import this exported alias; they update automatically (no per-file change needed for the union itself).
 
@@ -160,12 +168,14 @@ Note: `--no-verify` (baseline eslint).
 - [ ] **Step 1: Pivot the exported union**
 
 In `src/lib/card/components/CardList/CardList.types.ts`:
+
 - Replace the import `import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';` with `import type { Card } from '@/types/cards';` (keep the existing `CardCopy` import from `@/types/cards` — merge into one import line).
 - Change line 9: `export type AnyCard = ScryfallCard | CardCopy | CustomCard;` → `export type AnyCard = Card | CardCopy | CustomCard;`
 
 - [ ] **Step 2: Pivot the local union in filterCollectionCards**
 
 In `src/lib/card/utils/filterCollectionCards.ts`:
+
 - Change line 11: `type AnyCard = ScryfallCard | CardCopy | CustomCard;` → `type AnyCard = Card | CardCopy | CustomCard;`
 - Ensure `Card` is imported from `@/types/cards`.
 
@@ -193,6 +203,7 @@ git commit --no-verify -m "refactor(card): pivot AnyCard union to domain Card + 
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ```
+
 Note: `--no-verify` (baseline eslint).
 
 ---
@@ -210,6 +221,7 @@ Run: `npm run dev` (use a free PORT if :3000 is held by a lingering server; read
 - [ ] **Step 2: Spot-check the hot AnyCard paths**
 
 In the browser, verify these render identically to before (they consume `AnyCard`):
+
 - Collection list view (`/collection`) — cards render, price column shows values or "—" as before.
 - Card search (`/search`) — results render.
 - Deck detail (`/decks/[id]`) — card table renders.
@@ -223,12 +235,14 @@ Expected: identical rendering, no console type/render errors. (Runtime objects a
 ## Task 5: Migrate `lib/scryfall` store + hooks + utils to `Card`
 
 **Files (standalone `ScryfallCard`-typed consumers in the scryfall zone):**
+
 - Modify: `src/lib/scryfall/store/*` (the cards store — `useCardsStore` holds `Map<string, ScryfallCard>` → `Map<string, Card>`)
 - Modify: `src/lib/scryfall/hooks/*` (except `useCardPrints.ts` — provider-only, KEEP `ScryfallCard`)
 - Modify: `src/lib/scryfall/utils/*` (except files that legitimately handle raw provider data)
 - Modify: `src/lib/scryfall/hydrateAllParts.ts`, `src/lib/scryfall/hydrateCard*` if present
 
 **Interfaces:**
+
 - Consumes: `Card` (`@/types/cards`).
 - Produces: the cards store typed `Card`. Since the store is fed by `resolveCardsByScryfallIds` → the DB-first collection route (which returns `ScryfallCard` objects), and `ScryfallCard` is assignable to `Card`, the store's writes stay green without touching the resolver (that's Wave B).
 
@@ -265,6 +279,7 @@ git commit --no-verify -m "refactor(card): migrate scryfall store/hooks/utils co
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ```
+
 Note: `--no-verify` (baseline eslint). List in the commit body any site kept on `ScryfallCard` as a provider boundary.
 
 ---
@@ -272,10 +287,12 @@ Note: `--no-verify` (baseline eslint). List in the commit body any site kept on 
 ## Task 6: Migrate `lib/card/components` + `lib/card` consumers to `Card`
 
 **Files:**
+
 - Modify: card component props/state typed `ScryfallCard` across `src/lib/card/components/*` — CardModal, CardImage, CardLightbox, PrintList, CardPrintPickerModal, AddCardModal, AddToDeckModal, CardTokensSection, UseCollectionCopyModal, EditCardModal (`useCardEntryForm.ts`, `CardEntryFormBody.tsx`), CustomCardBadge.
 - Modify: `src/lib/card/*` top-level consumers (`deriveCardModalProps.ts`, `deriveDeckTarget.ts`, `viewerCardMenu.ts`, `hooks/*`, `utils/*` not already done).
 
 **Interfaces:**
+
 - Consumes: `Card`, `AnyCard` (now `Card`-based), `isCustomCard` (accepts `Card`).
 - Produces: card-rendering components typed against `Card`/`AnyCard`.
 
@@ -307,6 +324,7 @@ git commit --no-verify -m "refactor(card): migrate card components + lib/card co
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ```
+
 Note: `--no-verify` (baseline eslint). List any provider-boundary sites kept on `ScryfallCard`.
 
 ---
@@ -314,9 +332,11 @@ Note: `--no-verify` (baseline eslint). List any provider-boundary sites kept on 
 ## Task 7: Migrate `lib/deck`, `lib/import`, `lib/search`, `lib/collection`, `lib/wishlist`, `lib/edhrec`, `lib/pdf`, `lib/mpc`, `lib/cardnexus`, `contexts` consumers to `Card`
 
 **Files:**
+
 - Modify: standalone `ScryfallCard` consumers across `src/lib/deck/*`, `src/lib/import/*`, `src/lib/search/*`, `src/lib/collection/*`, `src/lib/wishlist/*`, `src/lib/edhrec/*`, `src/lib/pdf/*`, `src/lib/mpc/mpc-tags.ts`, `src/lib/cardnexus/*`, `src/contexts/*`.
 
 **Interfaces:**
+
 - Consumes: `Card`, `AnyCard`, `isCustomCard`.
 - Produces: lib-level feature consumers typed `Card`.
 
@@ -348,6 +368,7 @@ git commit --no-verify -m "refactor(card): migrate deck/import/search/collection
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ```
+
 Note: `--no-verify` (baseline eslint). List provider-boundary sites kept on `ScryfallCard`.
 
 ---
@@ -355,10 +376,12 @@ Note: `--no-verify` (baseline eslint). List provider-boundary sites kept on `Scr
 ## Task 8: Migrate `app/[locale]` page consumers to `Card` (except provider-boundary headers/tabs)
 
 **Files:**
+
 - Modify: `src/app/[locale]/decks/[id]/*`, `src/app/[locale]/collection/*`, `src/app/[locale]/wishlist/*`, `src/app/[locale]/search/*`, `src/app/[locale]/sets/[code]/*`, `src/app/[locale]/users/[userId]/*`, `src/app/[locale]/card/[id]/components/tabs/*` (Tokens/Similar/Rulings/Overview), `src/app/[locale]/card/[id]/components/CardTabs`, `AddToCollectionButton`.
 - KEEP `ScryfallCard` (provider boundary): `src/app/[locale]/card/[id]/components/CardPageHeader/CardPageHeader.tsx` (reads `scryfall_uri` — already derived in 1a, but the prop may still be typed `ScryfallCard`; migrate to `Card` ONLY if it reads no provider-only field, else keep), `PrintsTab/PrintsTab.tsx` (reads `prints_search_uri`), `SetDetailHeader` (reads `scryfall_uri`).
 
 **Interfaces:**
+
 - Consumes: `Card`, `AnyCard`, `isCustomCard`.
 - Produces: page-level consumers typed `Card`.
 
@@ -388,6 +411,7 @@ git commit --no-verify -m "refactor(card): migrate app page consumers to domain 
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ```
+
 Note: `--no-verify` (baseline eslint). List provider-boundary sites kept on `ScryfallCard`.
 
 ---
@@ -424,6 +448,7 @@ Append the Wave A section to `.superpowers/sdd/progress.md`: base commit, per-ta
 ## Self-Review
 
 **Spec coverage:**
+
 - Spec §1 (prices? on Card) → Task 1. ✓
 - Spec §2 (AnyCard pivot both defs) → Task 3. ✓
 - Spec §3 (isCustomCard widening + PrintList cast) → Task 2 (signature) + Task 6 (PrintList cast). ✓
@@ -432,7 +457,7 @@ Append the Wave A section to `.superpowers/sdd/progress.md`: base commit, per-ta
 - Spec "no runtime change" → Task 4 + Task 9 runtime smoke. ✓
 - Spec verification (tsc authoritative, eslint no-new, --no-verify) → Global Constraints + every task's gate steps. ✓
 
-**Placeholder scan:** Tasks 5-8 use "enumerate then migrate" rather than listing every one of ~50 files inline, because the exact set is tsc-driven (the compiler names the sites that break) and file-by-file listing would be brittle across the sweep. Each such task pins the *zone*, the *enumeration command*, the *provider-boundary exceptions by name*, and the *gate*. This is deliberate for a tsc-gated type sweep, not an under-specified placeholder — the reviewer between tasks verifies tsc-clean + survivor categorization. The mechanical, non-obvious sites (isCustomCard discriminant, AnyCard both defs, filterCollectionCards casts, PrintList cast) ARE spelled out with exact code in Tasks 1-3, 6.
+**Placeholder scan:** Tasks 5-8 use "enumerate then migrate" rather than listing every one of ~50 files inline, because the exact set is tsc-driven (the compiler names the sites that break) and file-by-file listing would be brittle across the sweep. Each such task pins the _zone_, the _enumeration command_, the _provider-boundary exceptions by name_, and the _gate_. This is deliberate for a tsc-gated type sweep, not an under-specified placeholder — the reviewer between tasks verifies tsc-clean + survivor categorization. The mechanical, non-obvious sites (isCustomCard discriminant, AnyCard both defs, filterCollectionCards casts, PrintList cast) ARE spelled out with exact code in Tasks 1-3, 6.
 
 **Type consistency:** `isCustomCard(card: Card | CustomCard): card is CustomCard` — signature defined in Task 2, referenced consistently in Tasks 3/6. `AnyCard = Card | CardCopy | CustomCard` — Task 3, referenced in 5-8. `Card.prices?` shape — Task 1, consumed in Task 3. Consistent throughout.
 

@@ -67,9 +67,7 @@ export function CardPageHeader({ card }: Props) {
 						</div>
 					) : (
 						<div className={styles.setInfo}>
-							<span>
-								{(card as Card).set_name ?? (card as Card).set.toUpperCase()}
-							</span>
+							<span>{(card as Card).set_name ?? (card as Card).set.toUpperCase()}</span>
 							<span>·</span>
 							<span className={styles.rarity}>
 								{rarityLabels[(card as Card).rarity ?? ''] ?? (card as Card).rarity}

@@ -31,10 +31,7 @@ export function CollectionSearchPanel({ expanded, onToggleExpand, onClose }: Pro
 	const { openAddCard } = useAddCardModal();
 	const { openAddToDeck } = useAddToDeckModal();
 
-	const onCardClick = useCallback(
-		(card: AnyCard) => openCardModal(card),
-		[openCardModal]
-	);
+	const onCardClick = useCallback((card: AnyCard) => openCardModal(card), [openCardModal]);
 
 	const buildCardMenuItems = useCallback(
 		(card: AnyCard, close: () => void) =>

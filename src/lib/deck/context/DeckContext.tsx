@@ -201,7 +201,10 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const bulkAddCardsToDeck = useCallback(
-		(deckId: string, cards: Array<{ card: Card | CustomCard; zone: DeckZone; quantity: number }>) => {
+		(
+			deckId: string,
+			cards: Array<{ card: Card | CustomCard; zone: DeckZone; quantity: number }>
+		) => {
 			if (!userId) return;
 			store.bulkAddCardsToDeck(deckId, cards, userId, triggerSync);
 		},

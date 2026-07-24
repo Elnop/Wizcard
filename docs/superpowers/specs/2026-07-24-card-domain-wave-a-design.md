@@ -28,7 +28,7 @@ Per user decision, the migration is **two waves**, not five:
 If the seam flipped first (`card/source` → `Card`), all 113 consumers would go red in tsc
 simultaneously — an unreviewable big-bang. Instead we re-type consumers first. This is
 **type-safe with zero runtime change**: `ScryfallCard` is structurally a superset of domain
-`Card` for every field the migrated consumers read, so the *same runtime objects* the seam
+`Card` for every field the migrated consumers read, so the _same runtime objects_ the seam
 produces today remain assignable to the now-`Card`-typed consumers. Wave A cannot
 runtime-regress — it only re-types. Wave B then becomes a near-no-op.
 
@@ -41,13 +41,13 @@ card`, `'power' in card`, …) plus the `isCustomCard` guard.
 
 Field-optionality parity between `ScryfallCard` and domain `Card` (verified):
 
-| field              | ScryfallCard | domain Card | narrowing behaves identically |
-| ------------------ | ------------ | ----------- | ----------------------------- |
-| `set`              | required     | required    | yes                           |
-| `collector_number` | required     | required    | yes                           |
-| `mana_cost`        | optional     | optional    | yes                           |
-| `power`            | optional     | optional    | yes                           |
-| `prices`           | optional     | optional (added Wave A) | yes                |
+| field              | ScryfallCard | domain Card             | narrowing behaves identically |
+| ------------------ | ------------ | ----------------------- | ----------------------------- |
+| `set`              | required     | required                | yes                           |
+| `collector_number` | required     | required                | yes                           |
+| `mana_cost`        | optional     | optional                | yes                           |
+| `power`            | optional     | optional                | yes                           |
+| `prices`           | optional     | optional (added Wave A) | yes                           |
 
 Because the shapes match for every narrowed field, redefining `AnyCard`'s first member from
 `ScryfallCard` to `Card` keeps the 167 uses typechecking, and the `(card.set as string)`
@@ -65,7 +65,7 @@ stay valid. This is what makes Wave A one mechanical sweep rather than four.
 
 **Rationale (user decision):** prices is a forward hook. The DB catalog stores no prices (1a
 normalizer dropped them) and the collection route is DB-first (1b-2), so catalog cards have
-no prices *today* — display shows "—" and price-sort treats them as 0, guarded by `'prices'
+no prices _today_ — display shows "—" and price-sort treats them as 0, guarded by `'prices'
 in card`. Adding `prices?` to `Card` restores no current behavior; it exists so a future
 price-sync feature can repopulate it, and so the adapter faithfully carries prices on the
 Scryfall-fallback path (where a raw provider card still has them). Behavior is byte-identical

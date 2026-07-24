@@ -36,10 +36,7 @@ async function resolveNames(names: string[]): Promise<Map<string, Card>> {
 }
 
 /** Map one EDHREC section's card names onto resolved Scryfall cards, preserving order. */
-function mapSectionCards(
-	section: EdhrecSection,
-	byName: Map<string, Card>
-): Card[] {
+function mapSectionCards(section: EdhrecSection, byName: Map<string, Card>): Card[] {
 	const cards: Card[] = [];
 	for (const cv of section.cards) {
 		const card = byName.get(cv.name.toLowerCase());

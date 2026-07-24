@@ -106,10 +106,7 @@ const RARITY_ORDER: Record<string, number> = {
 	bonus: 5,
 };
 
-export function getSortValue(
-	card: Card | CardCopy,
-	order: CollectionSortOrder
-): string | number {
+export function getSortValue(card: Card | CardCopy, order: CollectionSortOrder): string | number {
 	if (order === 'language') return 'entry' in card ? (card.entry.language ?? '') : '';
 	if (order === 'name') return card.name.toLowerCase();
 	if (order === 'cmc') return (card as Card).cmc ?? 0;

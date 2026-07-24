@@ -11,7 +11,9 @@ import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 // Generic over the token shape: a token is either passed through unchanged or replaced by a
 // localized print, so callers holding domain `Card` (or `Card | CustomCard`) keep their type.
 // Only id/set/collector_number are read — all domain fields.
-export async function localizeTokens<T extends { id: string; set?: string; collector_number?: string }>(
+export async function localizeTokens<
+	T extends { id: string; set?: string; collector_number?: string },
+>(
 	tokens: T[],
 	langByTokenId: Map<string, string>,
 	deps: { fetchLocalized?: (set: string, num: string, lang: string) => Promise<ScryfallCard> } = {}
