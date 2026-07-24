@@ -4,17 +4,17 @@
 
 import * as db from '@/lib/card/catalog-db';
 import * as scry from '@/lib/scryfall/endpoints/cards';
+import type { Card } from '@/types/cards';
 import type {
-	ScryfallCard,
 	ScryfallCardIdentifier,
 	ScryfallList,
 } from '@/lib/scryfall/types/scryfall';
 
-export async function getCardById(id: string): Promise<ScryfallCard> {
+export async function getCardById(id: string): Promise<Card> {
 	return (await db.byId(id)) ?? scry.getCardById(id);
 }
 
-export async function getCardBySetNumber(set: string, n: string): Promise<ScryfallCard> {
+export async function getCardBySetNumber(set: string, n: string): Promise<Card> {
 	return (await db.bySetNumber(set, n)) ?? scry.getCardBySetNumber(set, n);
 }
 
@@ -23,39 +23,39 @@ export async function getCardBySetNumberAndLang(
 	n: string,
 	lang: string,
 	signal?: AbortSignal
-): Promise<ScryfallCard> {
+): Promise<Card> {
 	return (
 		(await db.bySetNumberLang(set, n, lang)) ?? scry.getCardBySetNumberAndLang(set, n, lang, signal)
 	);
 }
 
-export async function getCardByName(name: string, opts?: { lang?: string }): Promise<ScryfallCard> {
+export async function getCardByName(name: string, opts?: { lang?: string }): Promise<Card> {
 	return (await db.byName(name, opts)) ?? scry.getCardByName(name);
 }
 
-export async function getCardByMultiverseId(id: number): Promise<ScryfallCard> {
+export async function getCardByMultiverseId(id: number): Promise<Card> {
 	return (await db.byMultiverseId(id)) ?? scry.getCardByMultiverseId(id);
 }
-export async function getCardByMtgoId(id: number): Promise<ScryfallCard> {
+export async function getCardByMtgoId(id: number): Promise<Card> {
 	return (await db.byMtgoId(id)) ?? scry.getCardByMtgoId(id);
 }
-export async function getCardByArenaId(id: number): Promise<ScryfallCard> {
+export async function getCardByArenaId(id: number): Promise<Card> {
 	return (await db.byArenaId(id)) ?? scry.getCardByArenaId(id);
 }
-export async function getCardByTcgplayerId(id: number): Promise<ScryfallCard> {
+export async function getCardByTcgplayerId(id: number): Promise<Card> {
 	return (await db.byTcgplayerId(id)) ?? scry.getCardByTcgplayerId(id);
 }
-export async function getCardByCardmarketId(id: number): Promise<ScryfallCard> {
+export async function getCardByCardmarketId(id: number): Promise<Card> {
 	return (await db.byCardmarketId(id)) ?? scry.getCardByCardmarketId(id);
 }
 
 // Collection: resolve id-identifiers from the DB, fall back to ONE batched Scryfall call
 // for the misses (identifiers with no `id`, or an `id` not present in the catalog), then
-// merge in input order. Matches scry.getCardCollection's ScryfallList<ScryfallCard> shape
+// merge in input order. Matches scry.getCardCollection's ScryfallList<Card> shape
 // (some callers read `.data`, one reads `.not_found`) so this is a true drop-in.
 export async function getCardCollection(
 	identifiers: ScryfallCardIdentifier[]
-): Promise<ScryfallList<ScryfallCard>> {
+): Promise<ScryfallList<Card>> {
 	const dbResults = await db.byCollection(identifiers);
 
 	const missIdentifiers: ScryfallCardIdentifier[] = [];
@@ -73,7 +73,7 @@ export async function getCardCollection(
 	const notFoundKeys = new Set(
 		(fallback?.not_found ?? []).map((identifier) => JSON.stringify(identifier))
 	);
-	const fallbackById = new Map<string, ScryfallCard>();
+	const fallbackById = new Map<string, Card>();
 	let fallbackIndex = 0;
 	for (const identifier of missIdentifiers) {
 		if (notFoundKeys.has(JSON.stringify(identifier))) continue;
@@ -81,7 +81,7 @@ export async function getCardCollection(
 		if (card) fallbackById.set(JSON.stringify(identifier), card);
 	}
 
-	const data: ScryfallCard[] = [];
+	const data: Card[] = [];
 	const notFoundOut: ScryfallCardIdentifier[] = [];
 	identifiers.forEach((identifier, i) => {
 		const dbCard = dbResults[i];
