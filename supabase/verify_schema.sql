@@ -21,8 +21,11 @@
 -- schéma/relation attendu est absent. Aucune transaction englobante : un objet
 -- manquant ne peut pas avorter le rapport entier.
 --
--- RÉFÉRENCE : état attendu = migrations rejouées jusqu'à 20260719130000
--- (custom_cards_tags_lower : colonne générée tags_lower + GIN, incluse). MàJ 2026-07-19.
+-- RÉFÉRENCE : état attendu = migrations rejouées jusqu'à 20260724120002
+-- (restore_table_grants : grants table-level explicites pour anon/authenticated).
+-- NB : la table `cards` a été renommée `card_entries` par 20260723120000 ; les
+-- identifiants d'index/contraintes (cards_*, collections_pkey) sont conservés
+-- tels quels par ALTER … RENAME. MàJ 2026-07-24.
 -- =============================================================================
 
 -- Pas de transaction englobante : on veut qu'un objet manquant produise un FAIL,
@@ -119,7 +122,7 @@ $$;
 -- =============================================================================
 select pg_temp.chk('table', 'public.'||t, pg_temp.has_table(t), 'table absente')
 from unnest(array[
-  'decks','cards','deck_folders','profiles',
+  'decks','card_entries','deck_folders','profiles',
   'custom_cards','custom_card_sources','user_usage','email_change_requests'
 ]) t;
 
@@ -138,12 +141,12 @@ with expected(t, col, typ) as (
     ('decks','is_public','boolean'),('decks','source','text'),
     ('decks','source_deck_id','text'),('decks','source_version','text'),
     -- cards
-    ('cards','id','uuid'),('cards','owner_id','uuid'),('cards','scryfall_id','text'),
-    ('cards','date_added','timestamp with time zone'),('cards','is_foil','boolean'),
-    ('cards','foil_type','text'),('cards','condition','text'),('cards','language','text'),
-    ('cards','purchase_price','text'),('cards','alter','boolean'),('cards','proxy','boolean'),
-    ('cards','tags','ARRAY'),('cards','for_trade','boolean'),('cards','deck_id','uuid'),
-    ('cards','wishlist','boolean'),('cards','created_at','timestamp with time zone'),
+    ('card_entries','id','uuid'),('card_entries','owner_id','uuid'),('card_entries','scryfall_id','text'),
+    ('card_entries','date_added','timestamp with time zone'),('card_entries','is_foil','boolean'),
+    ('card_entries','foil_type','text'),('card_entries','condition','text'),('card_entries','language','text'),
+    ('card_entries','purchase_price','text'),('card_entries','alter','boolean'),('card_entries','proxy','boolean'),
+    ('card_entries','tags','ARRAY'),('card_entries','for_trade','boolean'),('card_entries','deck_id','uuid'),
+    ('card_entries','wishlist','boolean'),('card_entries','created_at','timestamp with time zone'),
     -- deck_folders
     ('deck_folders','id','uuid'),('deck_folders','owner_id','uuid'),('deck_folders','parent_id','uuid'),
     ('deck_folders','name','text'),('deck_folders','position','integer'),
@@ -199,7 +202,7 @@ from expected e;
 -- Défauts des colonnes de préférence profiles (20260713120000_add_profile_preferences).
 with expected_default(t, col, dflt) as (
   values
-    ('profiles','language','''fr''::text'),
+    ('profiles','language','''en''::text'),
     ('profiles','price_currency','''eur''::text'),
     ('profiles','show_prices','true'),
     ('profiles','theme_preference','''system''::text'),
@@ -219,7 +222,7 @@ from expected_default e;
 -- =============================================================================
 select pg_temp.chk('rls', 'public.'||t, pg_temp.rls_on(t), 'row level security désactivé')
 from unnest(array[
-  'decks','cards','deck_folders','profiles',
+  'decks','card_entries','deck_folders','profiles',
   'custom_cards','custom_card_sources','user_usage'
 ]) t;
 
@@ -233,9 +236,9 @@ with pol(t, p) as (
     ('decks','Users can update their own decks'),('decks','Users can delete their own decks'),
     ('decks','Public can view all decks'),
     -- cards
-    ('cards','Users can view their own cards'),('cards','Users can insert their own cards'),
-    ('cards','Users can update their own cards'),('cards','Users can delete their own cards'),
-    ('cards','Public can view deck cards'),
+    ('card_entries','Users can view their own cards'),('card_entries','Users can insert their own cards'),
+    ('card_entries','Users can update their own cards'),('card_entries','Users can delete their own cards'),
+    ('card_entries','Public can view deck cards'),
     -- deck_folders
     ('deck_folders','Users can view their own folders'),('deck_folders','Users can insert their own folders'),
     ('deck_folders','Users can update their own folders'),('deck_folders','Users can delete their own folders'),
@@ -272,7 +275,7 @@ from unnest(array[
 select pg_temp.chk(
   'security', 'cards collection read is privacy-gated',
   exists (select 1 from pg_policies
-          where schemaname='public' and tablename='cards'
+          where schemaname='public' and tablename='card_entries'
             and policyname='Public can view collection cards'
             and qual ilike '%profile_is_public%'),
   'policy "Public can view collection cards" absente ou ne filtre pas par profile_is_public'
@@ -299,7 +302,7 @@ select pg_temp.chk(
 select pg_temp.chk(
   'security', 'deck cards public read is privacy-gated',
   exists (select 1 from pg_policies
-          where schemaname='public' and tablename='cards'
+          where schemaname='public' and tablename='card_entries'
             and policyname='Public can view deck cards'
             and qual ilike '%profile_is_public%'),
   'policy "Public can view deck cards" ne filtre pas par profile_is_public'
@@ -390,8 +393,8 @@ with tg(schema_, t, name) as (
     ('auth','users','on_auth_user_created'),
     ('public','decks','decks_limit_before'),
     ('public','decks','decks_usage_after'),
-    ('public','cards','cards_limit_before'),
-    ('public','cards','cards_usage_after')
+    ('public','card_entries','cards_limit_before'),
+    ('public','card_entries','cards_usage_after')
 )
 select pg_temp.chk('trigger', tg.schema_||'.'||tg.t||' :: '||tg.name,
   pg_temp.has_trigger(tg.schema_, tg.t, tg.name), 'trigger absent')
@@ -409,8 +412,8 @@ from unnest(array['avatars','custom-cards']) b;
 with con(t, name) as (
   values
     ('decks','decks_format_check'),
-    ('cards','cards_condition_check'),('cards','cards_foil_type_check'),
-    ('cards','cards_owner_or_deck'),
+    ('card_entries','cards_condition_check'),('card_entries','cards_foil_type_check'),
+    ('card_entries','cards_owner_or_deck'),
     ('custom_cards','custom_cards_card_type_check'),
     ('custom_cards','custom_cards_source_type_check'),
     ('profiles','profiles_language_check'),
@@ -429,9 +432,9 @@ from con;
 -- =============================================================================
 with idx(t, name) as (
   values
-    ('cards','cards_owner_created_at_idx'),   -- fenêtre rate-limit
-    ('cards','cards_deck_id_idx'),            -- deck cards
-    ('cards','collections_pkey'),
+    ('card_entries','cards_owner_created_at_idx'),   -- fenêtre rate-limit
+    ('card_entries','cards_deck_id_idx'),            -- deck cards
+    ('card_entries','collections_pkey'),
     ('decks','decks_owner_id_idx'),('decks','decks_folder_id_idx'),
     -- 20260720120000 + 20260720130000 : clé d'upsert du sync precon. L'index
     -- DOIT être total, pas partiel — Postgres refuse un index partiel comme
@@ -463,17 +466,17 @@ select pg_temp.chk('index', 'email_change_requests.token_hash',
 --       (sinon le rate-limit devient contournable)
 -- =============================================================================
 select pg_temp.chk('security', 'anon cannot SELECT cards.purchase_price',
-  not pg_temp.has_col_grant('cards','anon','SELECT','purchase_price'),
+  not pg_temp.has_col_grant('card_entries','anon','SELECT','purchase_price'),
   'anon peut lire purchase_price → fuite de prix');
 select pg_temp.chk('security', 'anon cannot INSERT cards.created_at',
-  not pg_temp.has_col_grant('cards','anon','INSERT','created_at'),
+  not pg_temp.has_col_grant('card_entries','anon','INSERT','created_at'),
   'anon peut écrire created_at → rate-limit contournable');
 select pg_temp.chk('security', 'authenticated cannot INSERT cards.created_at',
-  not pg_temp.has_col_grant('cards','authenticated','INSERT','created_at'),
+  not pg_temp.has_col_grant('card_entries','authenticated','INSERT','created_at'),
   'authenticated peut écrire created_at → rate-limit contournable');
 -- Contre-preuve : l'owner (authenticated) DOIT garder SELECT purchase_price.
 select pg_temp.chk('security', 'authenticated CAN SELECT cards.purchase_price',
-  pg_temp.has_col_grant('cards','authenticated','SELECT','purchase_price'),
+  pg_temp.has_col_grant('card_entries','authenticated','SELECT','purchase_price'),
   'owner ne peut plus lire ses propres prix (grant trop restreint)');
 
 -- =============================================================================
@@ -527,7 +530,7 @@ select pg_temp.chk('precons', 'decks_format_check accepts jumpstart/planechase/a
 -- public — la decklist entière fuite. Bug réel, reproduit avant correction.
 select pg_temp.chk('security', 'collection-cards policy is scoped to deck_id IS NULL',
   (select qual::text from pg_policies
-   where schemaname='public' and tablename='cards'
+   where schemaname='public' and tablename='card_entries'
      and policyname='Public can view collection cards') like '%deck_id IS NULL%',
   'FUITE : les cartes d''un deck privé sont lisibles par anon');
 
