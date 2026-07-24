@@ -91,6 +91,13 @@ export function NavbarDrawer() {
 					{t('search')}
 				</Link>
 				<Link
+					href="/studio"
+					className={`${styles.drawerLink} ${pathname === '/studio' ? styles.drawerLinkActive : ''}`}
+					onClick={closeDrawer}
+				>
+					{t('studio')}
+				</Link>
+				<Link
 					href="/sets"
 					className={`${styles.drawerLink} ${pathname === '/sets' ? styles.drawerLinkActive : ''}`}
 					onClick={closeDrawer}

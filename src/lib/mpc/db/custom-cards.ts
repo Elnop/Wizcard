@@ -14,11 +14,17 @@ import {
 export type { CustomCardQueryFilters };
 export type { CardType };
 
-function resolveImageUrl(row: CustomCardRow): string {
-	if (row.image_storage_path) {
+function resolveStorageImageUrl(storagePath: string | null): string {
+	if (storagePath) {
 		const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-		return `${supabaseUrl}/storage/v1/object/public/custom-cards/${row.image_storage_path}`;
+		return `${supabaseUrl}/storage/v1/object/public/custom-cards/${storagePath}`;
 	}
+	return '';
+}
+
+function resolveImageUrl(row: CustomCardRow): string {
+	const storageUrl = resolveStorageImageUrl(row.image_storage_path);
+	if (storageUrl) return storageUrl;
 	return row.image_drive_url ?? '';
 }
 
@@ -41,6 +47,7 @@ export function rowToMpcCard(row: CustomCardRow): MpcCard {
 		displayName: row.display_name ?? null,
 		sourceId: row.source_id,
 		imageUrl: resolveImageUrl(row),
+		backImageUrl: resolveStorageImageUrl(row.back_image_storage_path) || undefined,
 		isCustom: true,
 		oracleId: row.oracle_id ?? undefined,
 		sourceType: row.source_type,
@@ -60,6 +67,7 @@ export function rowToMpcCard(row: CustomCardRow): MpcCard {
 		rarity: row.rarity ?? undefined,
 		setName: row.set_name ?? undefined,
 		artist: row.artist ?? undefined,
+		editorLayout: row.layout ?? undefined,
 		driveFolderPath: row.drive_folder_path ?? null,
 	};
 }

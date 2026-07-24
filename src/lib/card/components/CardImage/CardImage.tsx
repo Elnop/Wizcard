@@ -29,7 +29,7 @@ type CardImageCard = {
 		image_uris?: { small?: string; normal?: string; large?: string };
 	}>;
 	object?: string;
-	custom?: { image_url: string };
+	custom?: { image_url: string; back_image_url?: string | null };
 };
 
 export interface CardImageProps {
@@ -84,11 +84,10 @@ function shouldFallbackFromCustomCard(args: {
 	return args.isTagIgnored || didCustomImageError(args.customImageUri, args.erroredUri);
 }
 
-/** A non-custom card with 2+ faces that carry image_uris renders a flippable front/back. */
+/** Official and custom double-faced cards render a flippable front/back. */
 function computeIsDoubleFaced(card: CardImageCard, isCustom: boolean): boolean {
-	return Boolean(
-		!isCustom && card.card_faces && card.card_faces.length > 1 && card.card_faces[0].image_uris
-	);
+	if (isCustom) return Boolean(card.custom?.back_image_url);
+	return Boolean(card.card_faces && card.card_faces.length > 1 && card.card_faces[0].image_uris);
 }
 
 /** Pick the image URL for the effective card: custom image, current DFC face, or scryfall image. */
@@ -100,7 +99,11 @@ function resolveImageUri(args: {
 	size: 'small' | 'normal' | 'large';
 }): string {
 	const { card, isCustom, isDoubleFaced, currentFace, size } = args;
-	if (isCustom) return (card as unknown as CustomCard).custom.image_url;
+	if (isCustom) {
+		const custom = card.custom;
+		if (currentFace === 1 && custom?.back_image_url) return custom.back_image_url;
+		return (card as unknown as CustomCard).custom.image_url;
+	}
 	if (isDoubleFaced) return card.card_faces![currentFace].image_uris?.[size] ?? '';
 	return getScryfallCardImageUriBySize(
 		{ image_uris: card.image_uris, card_faces: card.card_faces },

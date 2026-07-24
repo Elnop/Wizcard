@@ -68,6 +68,15 @@
 		"colLanguage": "Langue",
 		"moveTo": "Déplacer vers {zone}",
 		"customTitle": "Carte custom",
+		"customType": {
+			"card": "Carte",
+			"token": "Jeton",
+			"cardback": "Dos de carte"
+		},
+		"customSource": {
+			"mpc_ingested": "MPC",
+			"user_created": "Création utilisateur"
+		},
 		"source": "Source",
 		"file": "Fichier",
 		"selected": "Sélectionnée",
@@ -126,6 +135,7 @@
 	},
 	"nav": {
 		"search": "Recherche",
+		"studio": "Studio",
 		"sets": "Extensions",
 		"decks": "Decks",
 		"wishlist": "Wishlist",
@@ -136,6 +146,214 @@
 		"profile": "Profil",
 		"settings": "Paramètres",
 		"logout": "Se déconnecter"
+	},
+	"cardEditor": {
+		"seo": {
+			"title": "Studio de cartes custom",
+			"description": "Créez, prévisualisez, exportez et sauvegardez des cartes custom originales avec le Studio Wizcard."
+		},
+		"toolbar": {
+			"eyebrow": "Créateur de cartes custom",
+			"title": "Studio Wizcard",
+			"undo": "Annuler",
+			"redo": "Rétablir",
+			"front": "Recto",
+			"back": "Verso",
+			"addBack": "Ajouter un verso",
+			"removeBack": "Supprimer le verso",
+			"reset": "Recommencer",
+			"resetConfirm": "Effacer ce brouillon et recommencer ?",
+			"export": "Exporter en PNG",
+			"save": "Sauvegarder",
+			"autosave": {
+				"saving": "Enregistrement du brouillon…",
+				"saved": "Brouillon enregistré",
+				"unavailable": "Sauvegarde locale indisponible"
+			}
+		},
+		"tabs": {
+			"card": "Carte",
+			"art": "Illustration",
+			"style": "Style",
+			"details": "Détails"
+		},
+		"fields": {
+			"title": "Écrivez votre carte",
+			"directHint": "Utilisez ce formulaire ou cliquez directement sur un texte de la carte. Les deux restent parfaitement synchronisés.",
+			"name": "Nom de la carte",
+			"namePlaceholder": "Cartographe de l'Éther",
+			"manaCost": "Coût de mana",
+			"manaHint": "Placez les symboles entre accolades, par exemple '{2}{U}{R}'.",
+			"insertSymbol": "Insérer {symbol}",
+			"typeLine": "Ligne de type",
+			"typePlaceholder": "Créature — humain et sorcier",
+			"rules": "Texte de règles",
+			"rulesHint": "Utilisez ~ comme raccourci pour le nom de la carte. Les retours à la ligne sont conservés.",
+			"rulesPlaceholder": "Quand cette créature arrive, piochez une carte.",
+			"flavor": "Texte d'ambiance",
+			"flavorPlaceholder": "Chaque horizon soulève une nouvelle question.",
+			"power": "Force",
+			"toughness": "Endurance",
+			"loyalty": "Loyauté initiale",
+			"artist": "Crédit d'illustration",
+			"artistPlaceholder": "Nom de l'artiste"
+		},
+		"art": {
+			"title": "Composez l'illustration",
+			"description": "Importez, collez ou déposez une image. La source est optimisée localement avant de quitter votre navigateur.",
+			"drop": "Déposez une image ou parcourez vos fichiers",
+			"formats": "PNG, JPG, WebP ou AVIF · 15 Mo maximum",
+			"replace": "Remplacer l'illustration",
+			"zoom": "Zoom",
+			"horizontal": "Horizontal",
+			"vertical": "Vertical",
+			"resetCrop": "Réinitialiser le cadrage",
+			"dragTip": "Astuce : faites glisser l'illustration directement dans la carte pour la recadrer.",
+			"errors": {
+				"tooLarge": "Cette image dépasse la limite de 15 Mo.",
+				"unsupported": "Ce fichier n'est pas une image prise en charge.",
+				"unreadable": "Impossible de lire cette image. Essayez un autre fichier."
+			}
+		},
+		"style": {
+			"title": "Donnez-lui une identité",
+			"description": "Changez de layout à tout moment sans perdre les données ni le cadrage de l'illustration.",
+			"layout": "Layout",
+			"frame": "Palette du cadre",
+			"accent": "Accent",
+			"finish": "Finition",
+			"frames": {
+				"auto": "Automatique",
+				"light": "Ivoire",
+				"tide": "Marée",
+				"void": "Néant",
+				"ember": "Braise",
+				"grove": "Bosquet",
+				"prismatic": "Prismatique",
+				"artifact": "Artefact"
+			},
+			"finishes": {
+				"matte": "Mate",
+				"foil": "Foil",
+				"etched": "Etched"
+			}
+		},
+		"mseLibrary": {
+			"title": "Bibliothèque de cadres Magic",
+			"count": "{count} layouts prêts à rendre",
+			"loading": "Chargement des cadres haute définition…",
+			"error": "La bibliothèque de cadres n'a pas pu être chargée. Les cadres Wizcard restent disponibles.",
+			"sourceBadge": "HD",
+			"sourceFilterLabel": "Source des cadres",
+			"searchLabel": "Rechercher un cadre",
+			"searchPlaceholder": "M15, full art, snow…",
+			"filtersLabel": "Filtrer les layouts",
+			"results": "{count, plural, =0 {Aucun résultat} one {# layout} other {# layouts}}",
+			"empty": "Aucun cadre ne correspond à cette recherche.",
+			"loadMore": "Afficher {count} layouts de plus",
+			"renderReady": "cadre HD",
+			"previewMode": "aperçu MSE",
+			"sources": {
+				"accurate": "Accurate — recommandé",
+				"legacy": "Archives MSE"
+			},
+			"filters": {
+				"all": "Tous",
+				"card": "Cartes",
+				"token": "Jetons",
+				"planeswalker": "Planeswalkers",
+				"double-faced": "Double face",
+				"other": "Autres"
+			},
+			"kinds": {
+				"card": "Carte",
+				"token": "Jeton",
+				"planeswalker": "Planeswalker",
+				"saga": "Saga",
+				"split": "Split",
+				"double-faced": "Double face",
+				"oversized": "Grand format",
+				"packaging": "Packaging"
+			}
+		},
+		"layouts": {
+			"arcana": { "name": "Classique", "description": "Carte standard au format 63 × 88 mm" },
+			"modern": { "name": "Moderne", "description": "Cadre contemporain et illustration agrandie" },
+			"full-art": { "name": "Full art", "description": "Illustration sur toute la carte" },
+			"showcase": { "name": "Showcase", "description": "Traitement collector angulaire" },
+			"token": { "name": "Jeton", "description": "Grande illustration, texte compact" },
+			"planeswalker": { "name": "Planeswalker", "description": "Capacités et zone de loyauté" },
+			"saga": { "name": "Saga", "description": "Composition narrative verticale" },
+			"adventure": { "name": "Aventure", "description": "Traitement narratif secondaire" },
+			"landscape": {
+				"name": "Paysage hérité",
+				"description": "Compatibilité avec les anciens brouillons"
+			}
+		},
+		"details": {
+			"title": "Détails de publication",
+			"description": "Complétez les métadonnées de l'impression et choisissez qui pourra découvrir la carte.",
+			"setName": "Nom de l'extension",
+			"setCode": "Code de l'extension",
+			"number": "Numéro de collection",
+			"rarity": "Rareté",
+			"language": "Langue",
+			"tags": "Tags",
+			"tagsHint": "Séparez les tags par des virgules.",
+			"tagsPlaceholder": "cube, commander, playtest",
+			"public": "Carte publique",
+			"publicHint": "Les cartes publiques peuvent apparaître dans la recherche custom. Les cartes privées restent dans votre compte.",
+			"rarities": {
+				"common": "Commune",
+				"uncommon": "Peu commune",
+				"rare": "Rare",
+				"mythic": "Mythique"
+			},
+			"languages": {
+				"en": "Anglais",
+				"fr": "Français",
+				"de": "Allemand",
+				"es": "Espagnol",
+				"it": "Italien",
+				"pt": "Portugais",
+				"ja": "Japonais",
+				"ko": "Coréen",
+				"ru": "Russe",
+				"zhs": "Chinois simplifié"
+			}
+		},
+		"canvas": {
+			"namePlaceholder": "Carte sans titre",
+			"typePlaceholder": "Type de carte",
+			"rulesPlaceholder": "Écrivez le texte de règles ici…",
+			"artistPrefix": "Illustration",
+			"customMark": "WIZCARD · CUSTOM",
+			"panArtwork": "Faire glisser pour repositionner l'illustration",
+			"editName": "Modifier le nom de la carte",
+			"editManaCost": "Modifier le coût de mana",
+			"editType": "Modifier la ligne de type",
+			"editRules": "Modifier le texte de règles",
+			"editStats": "Modifier une statistique de la carte"
+		},
+		"preview": {
+			"eyebrow": "Rendu en direct",
+			"title": "Votre carte, en temps réel",
+			"hint": "Tout reste modifiable. Survolez un texte de la carte, cliquez et écrivez directement.",
+			"directEdit": "Édition directe du texte",
+			"dropImage": "Déposer ou coller une illustration",
+			"highResolution": "Export haute résolution 3×"
+		},
+		"notices": {
+			"imageError": "Impossible d'importer l'image. Utilisez un PNG, JPG, WebP ou AVIF de moins de 15 Mo.",
+			"exported": "PNG haute résolution exporté.",
+			"exportError": "Impossible d'exporter la carte. Essayez une autre image.",
+			"incomplete": "Ajoutez un nom, une ligne de type et une illustration avant de sauvegarder.",
+			"loginRequired": "Votre brouillon est conservé localement. Connectez-vous pour le sauvegarder dans votre compte Wizcard.",
+			"loginAction": "Se connecter",
+			"saving": "Rendu et sauvegarde de votre carte…",
+			"saved": "Carte sauvegardée. Ouverture en cours…",
+			"saveError": "Impossible de sauvegarder la carte. Votre brouillon local n'est pas perdu."
+		}
 	},
 	"footer": {
 		"legalLinks": "Liens légaux",

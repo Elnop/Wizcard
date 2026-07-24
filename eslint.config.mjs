@@ -167,6 +167,7 @@ const eslintConfig = defineConfig([
 		'next-env.d.ts',
 		'cosmos-export/**',
 		'cosmos.imports.ts',
+		'public/card-assets/v/**',
 	]),
 ]);
 

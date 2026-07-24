@@ -1,0 +1,3 @@
+# Immutable third-party snapshot: preserve upstream bytes and keep GitHub diffs usable.
+public/card-assets/v/** -diff -merge linguist-vendored
+public/card-assets/manifests/assets.json -diff linguist-generated

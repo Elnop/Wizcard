@@ -81,6 +81,24 @@ const nextConfig: NextConfig = {
 					{ key: 'Content-Security-Policy-Report-Only', value: csp },
 				],
 			},
+			{
+				source: '/card-assets/v/:path*',
+				headers: [
+					{
+						key: 'Cache-Control',
+						value: 'public, max-age=31536000, immutable',
+					},
+				],
+			},
+			{
+				source: '/card-assets/manifests/:path*',
+				headers: [
+					{
+						key: 'Cache-Control',
+						value: 'public, max-age=300, stale-while-revalidate=86400',
+					},
+				],
+			},
 		];
 	},
 };

@@ -28,6 +28,8 @@
 		"ingest": "NODE_ENV=production systemd-inhibit npx tsx scripts/ingest-mpc-cards.ts",
 		"precons:sync": "NODE_ENV=production npx tsx scripts/sync-precons.ts",
 		"logo:generate": "tsx scripts/generate-logo.ts",
+		"card-assets:manifest": "node scripts/card-assets/generate-manifests.mjs",
+		"card-assets:verify": "node scripts/card-assets/verify-assets.mjs",
 		"clean": "rm -rf node_modules .next",
 		"prepare": "husky"
 	},
