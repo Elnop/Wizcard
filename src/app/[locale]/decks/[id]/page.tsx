@@ -2,8 +2,11 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import type { Locale } from '@/i18n/routing';
 import { buildAlternates } from '@/lib/seo/alternates';
-import { fetchDeckMetaServer } from '@/lib/deck/db/deck.server';
-import DeckDetailClient from './DeckDetailClient';
+import { notFound } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { fetchDeckMetaServer, fetchPublicDeckDataServer } from '@/lib/deck/db/deck.server';
+import DeckDetailOwnerView from './DeckDetailOwnerView';
+import { DeckDetailReadOnlyView } from './DeckDetailReadOnlyView';
 
 interface DeckPageProps {
 	params: Promise<{ locale: Locale; id: string }>;
@@ -44,22 +47,21 @@ export async function generateMetadata({ params }: DeckPageProps): Promise<Metad
 export default async function DeckPage({ params }: DeckPageProps) {
 	const { id } = await params;
 	const deck = await fetchDeckMetaServer(id);
-	return (
-		<>
-			{/* Server-rendered heading for crawlers; visual heading comes from the
-			    client view. Off-screen so it doesn't duplicate on screen. */}
-			<h1
-				style={{
-					position: 'absolute',
-					width: 1,
-					height: 1,
-					overflow: 'hidden',
-					clip: 'rect(0 0 0 0)',
-				}}
-			>
-				{deck?.name ?? 'Deck'}
-			</h1>
-			<DeckDetailClient />
-		</>
-	);
+	// RLS already hid a deck this viewer may not see, so a null deck is a real 404
+	// (the route used to answer 200 with a client-rendered "not found" screen).
+	if (!deck) notFound();
+
+	// getUser() verifies the token server-side; getSession() would trust an
+	// unverified cookie for an ownership decision.
+	const supabase = await createClient();
+	const {
+		data: { user },
+	} = await supabase.auth.getUser();
+
+	if (user && deck.ownerId === user.id) {
+		return <DeckDetailOwnerView deckId={id} />;
+	}
+
+	const { deckCards, cards, ownerNickname } = await fetchPublicDeckDataServer(id, deck.ownerId);
+	return <DeckDetailReadOnlyView deckId={id} initial={{ deck, ownerNickname, deckCards, cards }} />;
 }

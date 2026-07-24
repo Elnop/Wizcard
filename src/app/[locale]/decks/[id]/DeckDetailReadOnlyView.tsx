@@ -16,7 +16,7 @@ import { ContextMenu } from '@/components/ContextMenu/ContextMenu';
 import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { serializeDecklist } from '@/lib/deck/utils/serialize-decklist';
-import { usePublicDeckDetail } from './usePublicDeckDetail';
+import { usePublicDeckDetail, type InitialPublicDeckData } from './usePublicDeckDetail';
 import type { ResolvedDeckCard } from './useDeckDetail';
 import { useDeckCardSections, dedupeByOracle, type DeckGroupBy } from './useDeckCardSections';
 import { useDeckSort } from './useDeckSort';
@@ -36,7 +36,13 @@ import styles from './page.module.css';
  * affordances (search panel, edit modals, overlays). A logged-in visitor also
  * gets a "copy this deck into my account" action.
  */
-export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
+export function DeckDetailReadOnlyView({
+	deckId,
+	initial,
+}: {
+	deckId: string;
+	initial?: InitialPublicDeckData;
+}) {
 	const t = useTranslations('decks');
 	const { user } = useAuth();
 	const {
@@ -49,7 +55,7 @@ export function DeckDetailReadOnlyView({ deckId }: { deckId: string }) {
 		isLoading,
 		isResolving,
 		deckCardCount,
-	} = usePublicDeckDetail(deckId);
+	} = usePublicDeckDetail(deckId, initial);
 	const { addCards } = useCollectionContext();
 	const { openAddCard } = useAddCardModal();
 
