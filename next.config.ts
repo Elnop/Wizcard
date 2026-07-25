@@ -98,7 +98,10 @@ const nextConfig: NextConfig = {
 			`script-src 'self' 'unsafe-inline' 'unsafe-eval'`,
 			`style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
 			`font-src 'self' https://fonts.gstatic.com`,
-			`img-src 'self' data: blob: https://cards.scryfall.io https://svgs.scryfall.io https://drive.google.com https://drive.usercontent.google.com`,
+			// supabaseUrl couvre Storage : rendus de cartes custom, avatars, frames de
+			// templates. Sans lui, le passage de cette CSP en mode bloquant ferait
+			// disparaître toutes ces images (elle est Report-Only pour l'instant).
+			`img-src 'self' data: blob: ${supabaseUrl} https://cards.scryfall.io https://svgs.scryfall.io https://drive.google.com https://drive.usercontent.google.com`,
 			`connect-src 'self' ${supabaseUrl} https://api.scryfall.com`,
 			`worker-src 'self' blob:`,
 			`frame-ancestors 'none'`,
