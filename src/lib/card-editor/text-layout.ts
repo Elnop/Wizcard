@@ -55,10 +55,59 @@ export function getRulesFontSize(characterCount: number, isNarrow: boolean): num
 	return 26;
 }
 
-export function getTitleFontSize(characterCount: number): number {
-	if (characterCount > 34) return 25;
-	if (characterCount > 25) return 29;
-	return 33;
+/** Corps du titre à pleine taille, avant toute réduction. */
+const TITLE_MAX_FONT_SIZE = 33;
+/**
+ * Plancher de lisibilité. En dessous, le nom devient illisible à la taille
+ * d'impression réelle ; on préfère le tronquer (cf. fitTitle) que le rapetisser
+ * indéfiniment.
+ */
+const TITLE_MIN_FONT_SIZE = 19;
+/**
+ * Largeur moyenne d'un glyphe en fraction du corps, pour du Georgia gras.
+ * Empirique mais stable : la mesure exacte demanderait un canvas, indisponible
+ * pendant le rendu SVG côté serveur.
+ */
+const TITLE_GLYPH_RATIO = 0.505;
+
+export interface FittedTitle {
+	text: string;
+	fontSize: number;
+}
+
+/**
+ * Ajuste le titre à la largeur disponible.
+ *
+ * Une carte imprimée réserve ~52-53 mm à la ligne de nom, coût de mana déduit,
+ * ce qui absorbe environ 30 à 33 caractères avant que le corps ne diminue.
+ * `availableWidth` doit donc être la largeur de la zone titre MOINS celle
+ * qu'occupent les symboles de mana : sinon un nom long passe sous le coût.
+ *
+ * Deux étapes, dans l'ordre de ce que fait une vraie carte :
+ *  1. réduire le corps jusqu'au plancher de lisibilité ;
+ *  2. si ça ne suffit toujours pas, tronquer avec une ellipse.
+ */
+export function fitTitle(title: string, availableWidth: number): FittedTitle {
+	if (!title) return { text: title, fontSize: TITLE_MAX_FONT_SIZE };
+
+	const widthAt = (size: number, characters: number) => characters * size * TITLE_GLYPH_RATIO;
+
+	if (widthAt(TITLE_MAX_FONT_SIZE, title.length) <= availableWidth) {
+		return { text: title, fontSize: TITLE_MAX_FONT_SIZE };
+	}
+
+	const ideal = availableWidth / (title.length * TITLE_GLYPH_RATIO);
+	if (ideal >= TITLE_MIN_FONT_SIZE) {
+		return { text: title, fontSize: Math.floor(ideal) };
+	}
+
+	// Même au plancher le nom ne rentre pas : on tronque sur le nombre de
+	// caractères que cette taille autorise, ellipse comprise.
+	const maxCharacters = Math.max(
+		1,
+		Math.floor(availableWidth / (TITLE_MIN_FONT_SIZE * TITLE_GLYPH_RATIO)) - 1
+	);
+	return { text: `${title.slice(0, maxCharacters).trimEnd()}…`, fontSize: TITLE_MIN_FONT_SIZE };
 }
 
 export function getManaSymbols(manaCost: string): string[] {

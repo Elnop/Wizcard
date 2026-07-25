@@ -5,9 +5,9 @@ import { getCardLayout } from '@/lib/card-editor/layout-registry';
 import type { MseTextColors } from '@/lib/card-editor/mse-assets';
 import {
 	expandCardNameShortcut,
+	fitTitle,
 	getManaSymbols,
 	getRulesFontSize,
-	getTitleFontSize,
 	manaSymbolProxyUrl,
 	wrapCardText,
 } from '@/lib/card-editor/text-layout';
@@ -83,6 +83,16 @@ function rectStyle(rect: CardRect, width: number, height: number): CSSProperties
 	};
 }
 
+/** Dimensions des symboles de mana, partagées avec le calcul de largeur du titre. */
+const MANA_SYMBOL_SIZE = 34;
+const MANA_SYMBOL_GAP = 3;
+
+/** Largeur occupée par un coût de n symboles, gouttières comprises. */
+function manaCostWidth(symbolCount: number): number {
+	if (symbolCount === 0) return 0;
+	return symbolCount * MANA_SYMBOL_SIZE + (symbolCount - 1) * MANA_SYMBOL_GAP;
+}
+
 /**
  * Coût de mana rendu avec les SVG officiels de Scryfall.
  *
@@ -116,9 +126,9 @@ function ManaSymbols({
 	// n'entraîne pas de fetch supplémentaire.
 	const symbolMap = useScryfallSymbols();
 	const symbols = getManaSymbols(manaCost);
-	const size = 34;
-	const gap = 3;
-	const totalWidth = symbols.length * size + Math.max(0, symbols.length - 1) * gap;
+	const size = MANA_SYMBOL_SIZE;
+	const gap = MANA_SYMBOL_GAP;
+	const totalWidth = manaCostWidth(symbols.length);
 	const startX = x + width - totalWidth;
 	return (
 		<g>
@@ -412,6 +422,14 @@ function CardSvg({
 	const { geometry } = layout;
 	const palette = resolvePalette(face);
 	const title = face.name || labels.namePlaceholder;
+	// Le titre partage sa ligne avec le coût de mana : la place réellement
+	// disponible est la zone titre moins ce que prennent les symboles, sinon un
+	// nom long passe DESSOUS le coût. Sur une carte imprimée cette ligne fait
+	// ~52-53 mm, soit une trentaine de caractères avant réduction du corps.
+	const fittedTitle = fitTitle(
+		title,
+		geometry.title.width - 18 - manaCostWidth(getManaSymbols(face.manaCost).length)
+	);
 	const typeLine = face.typeLine || labels.typePlaceholder;
 	const isFullArt = layoutId === 'full-art';
 	const isNarrowRules = geometry.rules.width < 500;
@@ -535,12 +553,12 @@ function CardSvg({
 				x={geometry.title.x + 18}
 				y={geometry.title.y + 39}
 				fontFamily="Georgia, 'Times New Roman', serif"
-				fontSize={getTitleFontSize(title.length)}
+				fontSize={fittedTitle.fontSize}
 				fontWeight="800"
 				fill={mseTextColors?.title ?? palette.ink}
 				opacity={face.name ? 1 : 0.46}
 			>
-				{title}
+				{fittedTitle.text}
 			</text>
 			<ManaSymbols
 				manaCost={face.manaCost}
