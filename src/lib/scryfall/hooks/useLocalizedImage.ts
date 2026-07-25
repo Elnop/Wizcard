@@ -307,13 +307,25 @@ export function useLocalizedImage(
 
 		(async () => {
 			setLoadingKey(cacheKey);
-			// Shared cache→fetch logic, also used by the PDF export resolver.
-			const localized = await fetchLocalizedImage(card, controller.signal, preferredLang);
-			if (controller.signal.aborted) return;
-			// Tag the result with its cacheKey so a stale image from a previous
-			// print/edition is never surfaced for a different card.
-			setResult(localized ? { key: cacheKey, data: localized } : null);
-			setLoadingKey(null);
+			try {
+				// Shared cache→fetch logic, also used by the PDF export resolver.
+				const localized = await fetchLocalizedImage(card, controller.signal, preferredLang);
+				if (controller.signal.aborted) return;
+				// Tag the result with its cacheKey so a stale image from a previous
+				// print/edition is never surfaced for a different card.
+				setResult(localized ? { key: cacheKey, data: localized } : null);
+			} catch {
+				// A rejected fetch must not strand the card: leaving `loadingKey` set
+				// would keep `loading` true forever and freeze the skeleton. Drop the
+				// localized image and let the caller fall back to the base print.
+				if (controller.signal.aborted) return;
+				setResult(null);
+			} finally {
+				// Only the fetch that is still current may clear the flag. An aborted
+				// run has been superseded (card changed, unmount) and its `loadingKey`
+				// no longer belongs to it, so clearing it would unfreeze the wrong tile.
+				if (!controller.signal.aborted) setLoadingKey(null);
+			}
 		})();
 
 		return () => {
@@ -352,10 +364,19 @@ export function useEnglishFallbackImage(
 
 		(async () => {
 			setLoadingKey(cacheKey);
-			const english = await fetchEnglishImage(card, controller.signal);
-			if (controller.signal.aborted) return;
-			setResult(english ? { key: cacheKey, data: english } : null);
-			setLoadingKey(null);
+			try {
+				const english = await fetchEnglishImage(card, controller.signal);
+				if (controller.signal.aborted) return;
+				setResult(english ? { key: cacheKey, data: english } : null);
+			} catch {
+				// Same contract as useLocalizedImage: a rejection must never leave the
+				// card stuck in `loading`. Without a fallback image the caller falls
+				// through to the name placeholder rather than an endless skeleton.
+				if (controller.signal.aborted) return;
+				setResult(null);
+			} finally {
+				if (!controller.signal.aborted) setLoadingKey(null);
+			}
 		})();
 
 		return () => {
