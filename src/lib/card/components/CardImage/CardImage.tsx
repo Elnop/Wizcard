@@ -92,6 +92,29 @@ function computeIsDoubleFaced(card: CardImageCard, isCustom: boolean): boolean {
 }
 
 /** Pick the image URL for the effective card: custom image, current DFC face, or scryfall image. */
+/**
+ * Merges a resolved localized/English-fallback print onto the base card — but
+ * ONLY when that override actually carries an image.
+ *
+ * An override with no image URIs (a cache row in a superseded format, or a print
+ * whose images are absent) would otherwise overwrite the base card's working
+ * `image_uris` with `undefined`. `imageUri` would then change while `loadedUri`
+ * kept the old value, so `isLoading` (see below) would never clear again: a card
+ * that had already rendered would drop back into a skeleton permanently.
+ * Returning `baseCard` untouched keeps the image that is already on screen.
+ */
+function applyImageOverride<T extends CardImageCard>(
+	baseCard: T,
+	override: {
+		image_uris?: { small?: string; normal?: string; large?: string };
+		card_faces?: Array<{ image_uris?: { small?: string; normal?: string; large?: string } }>;
+	} | null
+): T {
+	if (!override) return baseCard;
+	const hasImage = !!override.image_uris || (override.card_faces ?? []).some((f) => !!f.image_uris);
+	return hasImage ? { ...baseCard, ...override } : baseCard;
+}
+
 function resolveImageUri(args: {
 	card: CardImageCard;
 	isCustom: boolean;
@@ -195,8 +218,7 @@ export function CardImage({
 		visible && basePlaceholder
 	);
 
-	const resolvedOverride = localized ?? englishFallback;
-	const effectiveCard = resolvedOverride ? { ...baseCard, ...resolvedOverride } : baseCard;
+	const effectiveCard = applyImageOverride(baseCard, localized ?? englishFallback);
 
 	// When falling back from a custom (ignored or failed-to-load), do NOT treat it
 	// as custom for image selection — use the resolved official/localized print.
@@ -274,8 +296,11 @@ export function CardImage({
 	// English fallback replaced it — show the name placeholder. While the oracle
 	// fallback print or the English fallback is still loading, keep showing the
 	// skeleton (not the name) so a real image can still arrive.
+	// `applyImageOverride` returns `baseCard` by identity when no usable override
+	// was applied, so this reads "no localized/fallback image replaced the base".
+	const hasResolvedOverride = effectiveCard !== baseCard;
 	const isPlaceholderImage =
-		basePlaceholder && !resolvedOverride && !fallbackLoading && !fallbackPrintLoading;
+		basePlaceholder && !hasResolvedOverride && !fallbackLoading && !fallbackPrintLoading;
 
 	function renderCardImage() {
 		if (fallbackPrintLoading || localizedLoading || (basePlaceholder && fallbackLoading)) {

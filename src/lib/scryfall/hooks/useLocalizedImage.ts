@@ -53,6 +53,26 @@ function needsLocalization(card: LocalizedImageCard, lang: string | undefined): 
 	return !!lang && lang !== 'en' && !!card.set && !!card.collector_number;
 }
 
+/**
+ * Whether a cached entry actually carries an image we can display.
+ *
+ * A row written in a superseded format (pre-v4, which stored `face_image_uris`
+ * instead of `card_faces`) has no readable face, so `cachedToResult` would build
+ * `{ image_uris: undefined }`. CardImage spreads that override onto the base card
+ * (`{ ...baseCard, ...resolvedOverride }`), which BLANKS the working English
+ * image: `imageUri` changes, `loadedUri` never matches it again, and the tile
+ * stays in `isLoading` forever — an image that renders, then reverts to a
+ * skeleton for good.
+ *
+ * The v4 upgrade purges those rows, but `onupgradeneeded` never runs when
+ * another tab holds the database open (`onblocked` rejects the open), so stale
+ * rows do survive in real profiles — which is why a fresh/incognito profile is
+ * unaffected while an established one breaks.
+ */
+function hasUsableImage(cached: { card_faces?: Array<{ image_uris?: CardImageUris }> }): boolean {
+	return (cached.card_faces ?? []).some((f) => !!f.image_uris);
+}
+
 function cachedToResult(cached: {
 	card_faces?: Array<{
 		image_uris?: CardImageUris;
@@ -141,7 +161,9 @@ export async function fetchLocalizedImage(
 		notFound.add(cacheKey);
 		return null;
 	}
-	if (cached) return cachedToResult(cached);
+	// A stale-format row carries no usable image: treat it as a miss and re-fetch
+	// rather than returning an imageless override that blanks the base image.
+	if (cached && hasUsableImage(cached)) return cachedToResult(cached);
 
 	// 2. Fetch from Scryfall (rate-limited by the shared throttle)
 	try {
@@ -214,7 +236,8 @@ export async function fetchEnglishImage(
 		notFound.add(cacheKey);
 		return null;
 	}
-	if (cached) return cachedToResult(cached);
+	// Same guard as fetchLocalizedImage: a stale-format row must not be served.
+	if (cached && hasUsableImage(cached)) return cachedToResult(cached);
 
 	try {
 		const english = await getLocalizedPrint(card.set, card.collector_number, 'en', signal);
