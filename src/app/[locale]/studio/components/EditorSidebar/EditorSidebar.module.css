@@ -188,15 +188,28 @@ fieldset.field > legend {
 }
 
 .genericControls button {
-	width: 26px;
-	height: 26px;
+	display: flex;
+	width: 36px;
+	height: 36px;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
 	border: 1px solid rgba(255, 255, 255, 0.16);
-	border-radius: 6px;
+	border-radius: 8px;
 	background: rgba(255, 255, 255, 0.05);
 	color: var(--text);
-	font-size: 14px;
+	font-size: 20px;
+	font-weight: 600;
 	line-height: 1;
 	cursor: pointer;
+	transition:
+		border-color 0.15s ease,
+		background 0.15s ease;
+}
+
+.genericControls button:hover:not(:disabled) {
+	border-color: rgba(255, 255, 255, 0.38);
+	background: rgba(255, 255, 255, 0.09);
 }
 
 .genericControls button:disabled {
@@ -205,8 +218,11 @@ fieldset.field > legend {
 }
 
 .genericControls input {
-	width: 52px;
+	width: 56px;
+	height: 36px;
 	padding: 4px 6px;
+	font-size: var(--text-sm);
+	font-weight: 700;
 	text-align: center;
 }
 

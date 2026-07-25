@@ -51,9 +51,11 @@ const PANEL_ICONS = {
 	details: SlidersHorizontal,
 };
 
-// Symboles insérables d'un clic. Le générique ({1}, {2}…) n'est PAS ici : il a
-// son propre champ numérique, un bouton par valeur n'aurait aucun sens.
-const MANA_SYMBOLS = ['{W}', '{U}', '{B}', '{R}', '{G}', '{C}', '{X}', '{S}', '{T}'];
+// Symboles insérables d'un clic. Deux absents volontaires :
+// - le générique ({1}, {2}…), qui a son propre compteur ;
+// - {T} (tap), qui est un coût d'ACTIVATION apparaissant dans le texte de
+//   règles, jamais dans le coût de mana d'une carte.
+const MANA_SYMBOLS = ['{W}', '{U}', '{B}', '{R}', '{G}', '{C}', '{X}', '{S}'];
 
 /** Coût générique en tête d'un coût de mana : {3}{U}{U} -> 3. */
 function readGenericMana(manaCost: string): number | null {
