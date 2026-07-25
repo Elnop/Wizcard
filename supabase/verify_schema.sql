@@ -21,11 +21,15 @@
 -- schéma/relation attendu est absent. Aucune transaction englobante : un objet
 -- manquant ne peut pas avorter le rapport entier.
 --
--- RÉFÉRENCE : état attendu = migrations rejouées jusqu'à 20260724120002
--- (restore_table_grants : grants table-level explicites pour anon/authenticated).
+-- RÉFÉRENCE : état attendu = migrations rejouées jusqu'à 20260724120003
+-- (restore_decks_write_grants), catalogue Scryfall inclus.
 -- NB : la table `cards` a été renommée `card_entries` par 20260723120000 ; les
 -- identifiants d'index/contraintes (cards_*, collections_pkey) sont conservés
--- tels quels par ALTER … RENAME. MàJ 2026-07-24.
+-- tels quels par ALTER … RENAME.
+-- NB : les 6 tables du catalogue (card_definitions, card_prints, *_faces,
+-- card_parts, card_sets) sont créées VIDES par les migrations et peuplées par
+-- `npm run seed` ; ce script audite leur STRUCTURE et signale un catalogue vide
+-- par une ligne INFO (jamais un FAIL). MàJ 2026-07-25.
 -- =============================================================================
 
 -- Pas de transaction englobante : on veut qu'un objet manquant produise un FAIL,
@@ -578,22 +582,279 @@ select pg_temp.chk('security', 'collection-cards policy is scoped to deck_id IS 
   'FUITE : les cartes d''un deck privé sont lisibles par anon');
 
 -- =============================================================================
+-- CATALOGUE SCRYFALL EN DB (20260723120001 → 20260724120001)
+--
+-- Miroir du catalogue Scryfall : card_definitions (identité oracle/gameplay) →
+-- card_prints (édition × langue) → *_faces (par face, jointes sur face_index) +
+-- card_parts (relations oracle→oracle). Lecture publique, écriture service-role
+-- uniquement (via le seed).
+--
+-- ⚠️ Ces tables sont créées VIDES par la migration et peuplées ENSUITE par
+-- `npm run seed`. Ce bloc valide la STRUCTURE, pas le contenu — un catalogue
+-- vide passe donc au vert ici (cf. la section « données » en fin de bloc, qui
+-- signale l'absence de seed sans faire échouer l'audit de schéma).
+-- =============================================================================
+
+select pg_temp.chk('catalog', 'public.'||t, pg_temp.has_table(t), 'table absente')
+from unnest(array[
+  'card_definitions','card_prints','card_definition_faces',
+  'card_print_faces','card_parts','card_sets'
+]) t;
+
+-- localized_cards est ABSORBÉE par card_prints (lang='fr') + card_print_faces et
+-- doit avoir été DROPPÉE par 20260723120002. Sa présence = migration incomplète.
+select pg_temp.chk('catalog', 'localized_cards is dropped',
+  not pg_temp.has_table('localized_cards'),
+  'table localized_cards toujours présente → 20260723120002 non appliquée');
+
+-- Colonnes exhaustives (nom + type), source : DB locale à jour.
+with expected(t, col, typ) as (
+  values
+    -- card_definitions (identité gameplay, PK oracle_id)
+    ('card_definitions','oracle_id','uuid'),('card_definitions','name','text'),
+    ('card_definitions','type_line','text'),('card_definitions','oracle_text','text'),
+    ('card_definitions','mana_cost','text'),('card_definitions','cmc','numeric'),
+    ('card_definitions','colors','ARRAY'),('card_definitions','color_identity','ARRAY'),
+    ('card_definitions','keywords','ARRAY'),('card_definitions','power','text'),
+    ('card_definitions','toughness','text'),('card_definitions','loyalty','text'),
+    ('card_definitions','defense','text'),('card_definitions','legalities','jsonb'),
+    ('card_definitions','reserved','boolean'),('card_definitions','edhrec_rank','integer'),
+    ('card_definitions','layout','text'),
+    ('card_definitions','updated_at','timestamp with time zone'),
+    -- card_prints (édition × langue, PK id)
+    ('card_prints','id','uuid'),('card_prints','oracle_id','uuid'),
+    ('card_prints','set','text'),('card_prints','collector_number','text'),
+    ('card_prints','lang','text'),('card_prints','rarity','text'),
+    ('card_prints','released_at','date'),('card_prints','artist','text'),
+    ('card_prints','border_color','text'),('card_prints','frame','text'),
+    ('card_prints','image_status','text'),('card_prints','image_uris','jsonb'),
+    ('card_prints','finishes','ARRAY'),('card_prints','promo','boolean'),
+    ('card_prints','reprint','boolean'),('card_prints','variation','boolean'),
+    ('card_prints','digital','boolean'),('card_prints','printed_name','text'),
+    ('card_prints','printed_type_line','text'),('card_prints','printed_text','text'),
+    ('card_prints','updated_at','timestamp with time zone'),
+    -- 20260724120000_add_print_external_ids : IDs des plateformes externes.
+    ('card_prints','multiverse_ids','ARRAY'),('card_prints','mtgo_id','integer'),
+    ('card_prints','arena_id','integer'),('card_prints','tcgplayer_id','integer'),
+    ('card_prints','cardmarket_id','integer'),
+    -- card_definition_faces (gameplay par face, PK (oracle_id, face_index))
+    ('card_definition_faces','oracle_id','uuid'),('card_definition_faces','face_index','smallint'),
+    ('card_definition_faces','name','text'),('card_definition_faces','type_line','text'),
+    ('card_definition_faces','oracle_text','text'),('card_definition_faces','mana_cost','text'),
+    ('card_definition_faces','colors','ARRAY'),('card_definition_faces','power','text'),
+    ('card_definition_faces','toughness','text'),('card_definition_faces','loyalty','text'),
+    -- card_print_faces (visuel/localisé par face, PK (print_id, face_index))
+    ('card_print_faces','print_id','uuid'),('card_print_faces','face_index','smallint'),
+    ('card_print_faces','artist','text'),('card_print_faces','illustration_id','uuid'),
+    ('card_print_faces','image_uris','jsonb'),('card_print_faces','printed_name','text'),
+    ('card_print_faces','printed_type_line','text'),('card_print_faces','printed_text','text'),
+    -- card_parts (relations oracle→oracle : tokens/meld/combo)
+    ('card_parts','oracle_id','uuid'),('card_parts','related_oracle_id','uuid'),
+    ('card_parts','component','text'),('card_parts','name','text'),
+    ('card_parts','type_line','text'),
+    -- card_sets (métadonnées de set, jointes par card_prints.set = card_sets.code)
+    ('card_sets','code','text'),('card_sets','id','uuid'),('card_sets','name','text'),
+    ('card_sets','set_type','text'),('card_sets','released_at','date'),
+    ('card_sets','card_count','integer'),('card_sets','digital','boolean'),
+    ('card_sets','icon_svg_uri','text'),('card_sets','parent_set_code','text'),
+    ('card_sets','block','text'),('card_sets','block_code','text'),
+    ('card_sets','updated_at','timestamp with time zone')
+)
+select pg_temp.chk(
+  'catalog-column', e.t||'.'||e.col,
+  pg_temp.has_col(e.t, e.col) and pg_temp.col_type(e.t, e.col) is not distinct from e.typ,
+  case
+    when not pg_temp.has_col(e.t, e.col) then 'colonne absente'
+    else 'type '||coalesce(pg_temp.col_type(e.t,e.col),'?')||' ≠ attendu '||e.typ
+  end
+)
+from expected e;
+
+-- RLS activée sur les 6 tables du catalogue.
+select pg_temp.chk('catalog-rls', 'public.'||t, pg_temp.rls_on(t),
+  'row level security désactivée → écriture possible sans passer par service_role')
+from unnest(array[
+  'card_definitions','card_prints','card_definition_faces',
+  'card_print_faces','card_parts','card_sets'
+]) t;
+
+-- Policies de lecture publique (une par table, nommée <table>_select_all).
+select pg_temp.chk('catalog-policy', t||' :: '||t||'_select_all',
+  pg_temp.has_policy('public', t, t||'_select_all'), 'policy de lecture publique absente')
+from unnest(array[
+  'card_definitions','card_prints','card_definition_faces',
+  'card_print_faces','card_parts','card_sets'
+]) t;
+
+-- SÉCURITÉ : le catalogue est en lecture seule pour le client. AUCUNE policy
+-- d'écriture ne doit exister — le seed écrit via service_role, qui BYPASSE la RLS.
+select pg_temp.chk('catalog-security', 'no client write policy on catalog',
+  not exists (
+    select 1 from pg_policies
+    where schemaname='public'
+      and tablename in ('card_definitions','card_prints','card_definition_faces',
+                        'card_print_faces','card_parts','card_sets')
+      and cmd <> 'SELECT'
+  ),
+  'une policy d''écriture existe → le client pourrait altérer le catalogue');
+
+-- Clés primaires : COMPOSITES pour les faces/parts. Une PK erronée casserait
+-- l'upsert du seed (arbitre ON CONFLICT) sans erreur visible à la migration.
+with pk(t, cols) as (
+  values
+    ('card_definitions','oracle_id'),
+    ('card_prints','id'),
+    ('card_definition_faces','oracle_id, face_index'),
+    ('card_print_faces','print_id, face_index'),
+    ('card_parts','oracle_id, related_oracle_id, component'),
+    ('card_sets','code')
+)
+select pg_temp.chk('catalog-pk', pk.t||' ('||pk.cols||')',
+  coalesce((
+    select string_agg(a.attname, ', ' order by k.ord)
+    from pg_constraint c
+    join lateral unnest(c.conkey) with ordinality as k(attnum, ord) on true
+    join pg_attribute a on a.attrelid = c.conrelid and a.attnum = k.attnum
+    where c.contype='p' and c.conrelid = ('public.'||pk.t)::regclass
+  ), '∅') = pk.cols,
+  'PK inattendue → l''upsert du seed (ON CONFLICT) échouera')
+from pk;
+
+-- card_prints_set_number_lang_key est la clé d'accès du client (set,
+-- collector_number, lang) — le triplet que le front possède — ET l'arbitre
+-- ON CONFLICT du seed. Il DOIT être UNIQUE.
+select pg_temp.chk('catalog-index', 'card_prints_set_number_lang_key is UNIQUE',
+  exists (select 1 from pg_indexes
+          where schemaname='public' and tablename='card_prints'
+            and indexname='card_prints_set_number_lang_key' and indexdef like '%UNIQUE%'),
+  'index absent ou non unique → doublons de prints et upsert du seed cassé');
+
+select pg_temp.chk('catalog-index', 'card_prints :: '||idx,
+  pg_temp.has_index('card_prints', idx), 'index absent')
+from unnest(array[
+  'card_prints_oracle_id_idx',
+  -- 20260724120000 : index partiels (where … is not null) + GIN sur multiverse_ids.
+  'card_prints_mtgo_id_idx','card_prints_arena_id_idx',
+  'card_prints_tcgplayer_id_idx','card_prints_cardmarket_id_idx',
+  'card_prints_multiverse_ids_idx'
+]) idx;
+
+-- CHECK sur la langue : le catalogue ne stocke que 'en' et 'fr'.
+select pg_temp.chk('catalog-check', 'card_prints :: card_prints_lang_check',
+  pg_temp.has_check('card_prints','card_prints_lang_check'),
+  'contrainte absente → des langues non supportées peuvent entrer');
+
+-- FK vers card_definitions avec ON DELETE CASCADE : sans elles, des lignes
+-- orphelines survivent à la suppression de leur définition oracle.
+with fk(t, col) as (
+  values
+    ('card_prints','oracle_id'),
+    ('card_definition_faces','oracle_id'),
+    ('card_parts','oracle_id')
+)
+select pg_temp.chk('catalog-fk', fk.t||'.'||fk.col||' → card_definitions (CASCADE)',
+  exists (
+    select 1 from pg_constraint c
+    where c.contype='f' and c.conrelid = ('public.'||fk.t)::regclass
+      and c.confrelid = 'public.card_definitions'::regclass
+      and c.confdeltype='c'
+  ),
+  'FK absente ou sans ON DELETE CASCADE → lignes orphelines')
+from fk;
+
+select pg_temp.chk('catalog-fk', 'card_print_faces.print_id → card_prints (CASCADE)',
+  exists (
+    select 1 from pg_constraint c
+    where c.contype='f' and c.conrelid='public.card_print_faces'::regclass
+      and c.confrelid='public.card_prints'::regclass and c.confdeltype='c'
+  ),
+  'FK absente ou sans ON DELETE CASCADE → faces orphelines');
+
+-- card_parts.related_oracle_id NE DOIT PAS porter de FK stricte : il peut citer
+-- un oracle non encore seedé (token, face de meld absente du bulk). Une FK ici
+-- ferait échouer le seed sur des cartes parfaitement valides.
+select pg_temp.chk('catalog-fk', 'card_parts.related_oracle_id has NO strict FK',
+  not exists (
+    select 1 from pg_constraint c
+    join lateral unnest(c.conkey) as k(attnum) on true
+    join pg_attribute a on a.attrelid=c.conrelid and a.attnum=k.attnum
+    where c.contype='f' and c.conrelid='public.card_parts'::regclass
+      and a.attname='related_oracle_id'
+  ),
+  'FK stricte présente → le seed échouera sur les oracles non seedés');
+
+-- GRANTS. Lecture pour anon + authenticated ; écriture pour service_role
+-- uniquement (rolbypassrls ne dispense PAS des privilèges ACL : sans ces grants
+-- le seed échoue en 42501, cf. project_table_grants_drift).
+select pg_temp.chk('catalog-grant', g.role||' SELECT '||g.t,
+  has_table_privilege(g.role, 'public.'||g.t, 'SELECT'),
+  'lecture impossible → catalogue invisible côté app (403 42501)')
+from (
+  select r.role, t.t
+  from unnest(array['anon','authenticated']) r(role),
+       unnest(array['card_definitions','card_prints','card_definition_faces',
+                    'card_print_faces','card_parts','card_sets']) t(t)
+) g;
+
+select pg_temp.chk('catalog-grant', 'service_role '||g.priv||' '||g.t,
+  has_table_privilege('service_role', 'public.'||g.t, g.priv),
+  'le seed échouera en 42501 (permission denied) malgré le bypass RLS')
+from (
+  select p.priv, t.t
+  from unnest(array['SELECT','INSERT','UPDATE','DELETE']) p(priv),
+       unnest(array['card_definitions','card_prints','card_definition_faces',
+                    'card_print_faces','card_parts','card_sets']) t(t)
+) g;
+
+-- SÉCURITÉ : anon/authenticated ne doivent JAMAIS pouvoir écrire le catalogue.
+select pg_temp.chk('catalog-security', g.role||' cannot write '||g.t,
+  not has_table_privilege(g.role,'public.'||g.t,'INSERT')
+  and not has_table_privilege(g.role,'public.'||g.t,'UPDATE')
+  and not has_table_privilege(g.role,'public.'||g.t,'DELETE'),
+  'le client peut écrire le catalogue → altération possible des données de jeu')
+from (
+  select r.role, t.t
+  from unnest(array['anon','authenticated']) r(role),
+       unnest(array['card_definitions','card_prints','card_definition_faces',
+                    'card_print_faces','card_parts','card_sets']) t(t)
+) g;
+
+-- DONNÉES (informatif, jamais FAIL). Le schéma peut être conforme alors que le
+-- seed n'a pas tourné — cas attendu juste après la migration prod. On le signale
+-- en clair plutôt que de laisser croire que le catalogue est prêt.
+insert into _verify(status, category, object, detail)
+select
+  case when (select count(*) from public.card_definitions) > 0 then 'PASS' else 'INFO' end,
+  'catalog-data', 'catalogue peuplé',
+  case when (select count(*) from public.card_definitions) > 0
+       then ''
+       else 'catalogue VIDE → lancer `npm run seed` (structure OK, contenu absent)' end
+where pg_temp.has_table('card_definitions');
+
+-- =============================================================================
 -- RÉSUMÉ + RAPPORT
 -- =============================================================================
 insert into _verify(status, category, object, detail)
 select
   case when count(*) filter (where status='FAIL') = 0 then 'PASS' else 'FAIL' end,
   'SUMMARY',
-  count(*) filter (where status='PASS')||' passed / '||count(*) filter (where status='FAIL')||' failed',
+  count(*) filter (where status='PASS')||' passed / '||count(*) filter (where status='FAIL')||' failed'
+    -- Les lignes INFO ne sont ni des succès ni des échecs (ex. catalogue vide) :
+    -- on les compte à part pour qu'elles ne disparaissent pas du résumé.
+    ||case when count(*) filter (where status='INFO') > 0
+           then ' / '||count(*) filter (where status='INFO')||' info' else '' end,
   case when count(*) filter (where status='FAIL') = 0
        then 'Schéma conforme aux migrations ✔'
+            ||case when count(*) filter (where status='INFO') > 0
+                   then ' (voir les lignes INFO)' else '' end
        else 'Objets manquants ou dérive détectée — voir les lignes FAIL ci-dessus' end
 from _verify;
 
--- FAIL d'abord, puis SUMMARY en toute fin.
+-- FAIL d'abord, puis INFO, puis les PASS ; SUMMARY en toute fin.
 select status, category, object, detail
 from _verify
 order by
   (status='FAIL') desc,
+  (status='INFO') desc,
   (category='SUMMARY') asc,
   category, ord;
