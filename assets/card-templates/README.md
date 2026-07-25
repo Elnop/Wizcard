@@ -36,29 +36,33 @@ Décompresser chacun sous le chemin versionné correspondant ci-dessus.
 
 ## Pipeline
 
+Une seule commande : génération du manifeste, contrôles, upload Storage et
+upsert du catalogue sont les étapes d'un même geste.
+
 ```bash
-npm run card-assets:manifests   # scanne le pack → manifests/*.json
-npm run card-assets:verify      # cohérence manifeste ↔ disque
-npm run card-assets:upload -- --dry-run   # inventaire, aucune écriture
-npm run card-assets:upload      # upload Storage + upsert card_templates
+npm run card-assets -- --dry-run   # inventaire + contrôles, aucune écriture
+npm run card-assets                # exécute tout
 ```
 
-### Cible locale puis prod
+Options : `--skip-manifests` réutilise le manifeste existant (évite un rescan
+du pack, ~30 s) ; `--force` re-téléverse même les objets déjà à jour.
 
-`upload-templates.ts` résout sa cible via `resolveSupabaseEnv` :
-`.env.local`, puis `.env.seed` **en override s'il existe**.
+### Cible : local puis prod
 
-- **Local** : rien à faire, `.env.local` suffit.
-- **Prod** : déposer un `.env.seed` (gitignoré) avec le `SUPABASE_URL` et le
-  `SUPABASE_SERVICE_ROLE_KEY` de prod, puis relancer **la même commande**.
-  Supprimer ou renommer `.env.seed` pour repointer sur le local.
+Le script suit `resolveSupabaseEnv` — `.env.local`, puis `.env.seed` **en
+override s'il existe**. La bascule se fait par ce fichier, pas par un flag :
 
-Le script logge l'URL ciblée au démarrage — vérifier cette ligne avant de
-laisser tourner un upload prod.
+- **Local** : pas de `.env.seed` (ou renommé), `.env.local` suffit.
+- **Prod** : déposer `.env.seed` (gitignoré) avec les `SUPABASE_URL` et
+  `SUPABASE_SERVICE_ROLE_KEY` de prod, puis relancer la même commande.
+
+⚠️ **`.env.seed` gagne toujours.** S'il contient les creds de prod, la commande
+écrit en prod. Le script logge l'URL ciblée dès la première ligne, et ajoute un
+`WARN` explicite quand la cible n'est pas locale — lire cette ligne avant de
+laisser tourner. En cas de doute, `--dry-run` affiche la cible sans rien écrire.
 
 L'upload est idempotent : les objets dont la taille distante correspond déjà au
 fichier local sont sautés, donc une ré-exécution ne re-téléverse que le delta.
-`--force` ignore ce cache.
 
 ## Licences
 

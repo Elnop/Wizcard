@@ -1,17 +1,17 @@
 // Uploade les assets de template du Custom Card Studio vers Supabase Storage,
 // puis remplit public.card_templates depuis le manifeste généré.
 //
-//   npm run card-assets:upload -- --dry-run     # inventaire, aucune écriture
-//   npm run card-assets:upload -- --local       # cible locale, ignore .env.seed
-//   npm run card-assets:upload -- --remote      # cible résolue (.env.seed = prod)
+//   npm run card-assets -- --dry-run   # inventaire + contrôles, aucune écriture
+//   npm run card-assets                # génère, vérifie, uploade, upsert
 //
-// La cible DOIT être explicite. resolveSupabaseEnv applique .env.local puis
-// .env.seed en override s'il existe : comme .env.seed contient les creds de
-// prod (il sert aux seeds prod), un upload sans flag partirait silencieusement
-// en prod dès que ce fichier traîne dans le dépôt. On refuse donc de deviner.
+// Un seul point d'entrée : le manifeste, la vérification et l'upload sont trois
+// étapes du même geste — un manifeste régénéré sans upload laisse la table
+// désynchronisée du bucket, et l'inverse n'a pas de sens.
 //
-// --local force http://127.0.0.1:54321 quel que soit l'environnement chargé.
-// --remote accepte la cible résolue et affiche l'hôte visé avant d'écrire.
+// Cible Supabase : resolveSupabaseEnv, c'est-à-dire .env.local puis .env.seed
+// en override s'il existe. Basculer local <-> prod se fait en posant ou en
+// retirant .env.seed, jamais par un flag. L'URL visée est loggée avant toute
+// écriture, et en WARN lorsqu'elle n'est pas locale.
 //
 // Source des fichiers : assets/card-templates/ (gitignoré, cf. README du
 // dossier). La PR d'origine committait 35 030 fichiers pour 1 Go ; on
@@ -20,67 +20,35 @@
 // Idempotent : upsert Storage + upsert table. Une seconde exécution ne
 // duplique rien et ne re-télé-verse que ce qui a changé de taille.
 
+import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { resolveSupabaseEnv } from '../lib/load-env';
 import { createLogger } from '../lib/logger';
 
 const log = createLogger('card-assets');
+const execFileAsync = promisify(execFile);
 
 const DRY_RUN = process.argv.includes('--dry-run');
 // Re-téléverse tout, même si l'objet distant a déjà la bonne taille.
 const FORCE = process.argv.includes('--force');
-const TARGET_LOCAL = process.argv.includes('--local');
-const TARGET_REMOTE = process.argv.includes('--remote');
-
-const LOCAL_SUPABASE_URL = 'http://127.0.0.1:54321';
-// Clé service-role du stack Supabase local : publique par construction (elle
-// est identique sur toutes les installations `supabase start`), donc la coder
-// ici n'expose rien. Elle évite d'avoir à neutraliser .env.seed pour un run local.
-const LOCAL_SERVICE_ROLE_KEY =
-	process.env.LOCAL_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-
-if (!DRY_RUN && !TARGET_LOCAL && !TARGET_REMOTE) {
-	log.error('cible non spécifiée', {
-		hint: 'ajouter --local (stack local) ou --remote (cible de .env.seed / .env.local)',
-		why: '.env.seed contient les creds de prod : deviner la cible risquerait un upload prod involontaire',
-	});
-	process.exit(1);
-}
-if (TARGET_LOCAL && TARGET_REMOTE) {
-	log.error('--local et --remote sont mutuellement exclusifs');
-	process.exit(1);
-}
+// Réutilise le manifeste existant au lieu de rescanner le pack (~30 s).
+const SKIP_MANIFESTS = process.argv.includes('--skip-manifests');
 
 const ASSETS_ROOT = path.resolve('assets/card-templates');
 const MANIFEST_PATH = path.join(ASSETS_ROOT, 'manifests', 'templates.json');
+const GENERATE_SCRIPT = path.resolve('scripts/card-assets/generate-manifests.mjs');
 const BUCKET = 'card-templates';
 const UPLOAD_CONCURRENCY = 8;
 
-const resolved = resolveSupabaseEnv(log, !DRY_RUN && !TARGET_LOCAL);
-
-// --local court-circuite l'env résolu : c'est le seul moyen fiable de viser le
-// stack local quand un .env.seed de prod est présent.
-const SUPABASE_URL = TARGET_LOCAL ? LOCAL_SUPABASE_URL : resolved.supabaseUrl;
-const SUPABASE_SERVICE_ROLE_KEY = TARGET_LOCAL
-	? LOCAL_SERVICE_ROLE_KEY
-	: resolved.supabaseServiceRoleKey;
+const { supabaseUrl: SUPABASE_URL, supabaseServiceRoleKey: SUPABASE_SERVICE_ROLE_KEY } =
+	resolveSupabaseEnv(log, !DRY_RUN);
 
 const IS_REMOTE_TARGET = !/^https?:\/\/(127\.0\.0\.1|localhost)(:|$)/.test(SUPABASE_URL);
-
-if (TARGET_LOCAL && IS_REMOTE_TARGET) {
-	log.error('--local mais URL non locale', { supabase_url: SUPABASE_URL });
-	process.exit(1);
-}
-if (TARGET_LOCAL && !SUPABASE_SERVICE_ROLE_KEY) {
-	log.error('clé service-role locale introuvable', {
-		hint: 'définir LOCAL_SUPABASE_SERVICE_ROLE_KEY, ou lire `supabase status`',
-	});
-	process.exit(1);
-}
 
 const MIME_BY_EXT: Record<string, string> = {
 	'.avif': 'image/avif',
@@ -292,7 +260,53 @@ async function upsertTemplates(rows: CardTemplateRow[]): Promise<void> {
 	}
 }
 
+/**
+ * Étape 1 : (re)génère les manifestes en scannant le pack. Sous-processus plutôt
+ * qu'import : generate-manifests.mjs est un module à effets de bord qui
+ * s'exécute au chargement, et sharp y traite plusieurs centaines d'images.
+ */
+async function generateManifests(): Promise<void> {
+	log.info('génération des manifestes', { source: path.basename(GENERATE_SCRIPT) });
+	const started = Date.now();
+	try {
+		const { stdout } = await execFileAsync('node', [GENERATE_SCRIPT], {
+			maxBuffer: 32 * 1024 * 1024,
+		});
+		log.info('manifestes générés', {
+			ms: Date.now() - started,
+			output: stdout.trim().split('\n').at(-1) ?? '',
+		});
+	} catch (error) {
+		const stderr = (error as { stderr?: string }).stderr?.trim();
+		log.error('génération des manifestes échouée', {
+			error: stderr || (error instanceof Error ? error.message : String(error)),
+			hint: 'le pack est-il bien en place ? cf. assets/card-templates/README.md',
+		});
+		process.exit(1);
+	}
+}
+
+/**
+ * Étape 2 : cohérence interne du manifeste. Un template qui annonce
+ * renderMode='frame' sans aucune frame casserait le rendu côté studio ; mieux
+ * vaut refuser d'uploader que publier un catalogue incohérent. L'absence de
+ * fichiers sur le disque est traitée à part (assets manquants tolérés).
+ */
+function checkManifestCoherence(templates: ManifestTemplate[]): string[] {
+	const failures: string[] = [];
+	const seen = new Set<string>();
+	for (const template of templates) {
+		if (seen.has(template.id)) failures.push(`id dupliqué : ${template.id}`);
+		seen.add(template.id);
+		if (template.renderMode === 'frame' && Object.keys(template.framePaths ?? {}).length === 0)
+			failures.push(`${template.id} annonce renderMode=frame sans aucune frame`);
+	}
+	return failures;
+}
+
 async function main(): Promise<void> {
+	if (!SKIP_MANIFESTS) await generateManifests();
+
 	if (!existsSync(MANIFEST_PATH)) {
 		log.error('manifest introuvable', {
 			expected: MANIFEST_PATH,
@@ -343,6 +357,17 @@ async function main(): Promise<void> {
 			count: missing.length,
 			sample: missing.slice(0, 3).join(' | '),
 		});
+	}
+
+	// Bloquant : un catalogue incohérent casserait le studio pour tous les
+	// utilisateurs. On le détecte AVANT d'écrire quoi que ce soit.
+	const coherenceFailures = checkManifestCoherence(manifest.templates);
+	if (coherenceFailures.length > 0) {
+		log.error('manifeste incohérent — aucune écriture', {
+			count: coherenceFailures.length,
+			sample: coherenceFailures.slice(0, 3).join(' | '),
+		});
+		process.exit(1);
 	}
 
 	if (DRY_RUN) {
