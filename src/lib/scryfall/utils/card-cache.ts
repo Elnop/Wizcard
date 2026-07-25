@@ -45,6 +45,9 @@ export interface CachedLocalizedImage {
 }
 
 const DB_NAME = 'wizcard-cache';
+// Bumping this triggers onupgradeneeded, which is where store creation and any
+// format migration (see the `oldVersion < 4` purge below) happens.
+const DB_VERSION = 4;
 const STORE_NAME = 'scryfall-cards';
 const COLLECTION_STORE = 'collection-entries';
 const LOCALIZED_IMAGE_STORE = 'localized-images';
@@ -60,11 +63,38 @@ const LOCALIZED_IMAGE_TTL_MS = 30 * 86_400_000; // 30 days
 // Lazily opened DB promise — only one IDBDatabase instance across the module lifetime
 let dbPromise: Promise<IDBDatabase> | null = null;
 
+// An open that needs a version upgrade cannot proceed while another connection
+// still holds the database. In practice that connection is another tab of the app
+// left open across a deploy that bumped DB_VERSION. The spec says we should then
+// get `blocked`, but a connection that never closes can leave the request pending
+// with NO event at all — observed in the wild as an open that simply never settles.
+//
+// Every caller awaits openDB(), so an unsettled open means every cache read hangs
+// forever, and any UI that waits on one (useLocalizedImage's loading flag) stays
+// stuck on its skeleton for the lifetime of the page. The cache is an optimisation:
+// failing fast makes callers fall through to the network, which is always correct.
+const OPEN_TIMEOUT_MS = 5_000;
+
 function openDB(): Promise<IDBDatabase> {
 	if (dbPromise) return dbPromise;
 
 	dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
-		const request = indexedDB.open(DB_NAME, 4);
+		const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+		// Nothing below may settle the promise twice: whichever path fires first wins.
+		let settled = false;
+		const succeed = (db: IDBDatabase) => {
+			if (settled) return;
+			settled = true;
+			resolve(db);
+		};
+		const fail = (err: Error) => {
+			if (settled) return;
+			settled = true;
+			reject(err);
+		};
+
+		const timer = setTimeout(() => fail(new Error('IndexedDB open timed out')), OPEN_TIMEOUT_MS);
 
 		request.onupgradeneeded = (event) => {
 			const db = request.result;
@@ -85,14 +115,30 @@ function openDB(): Promise<IDBDatabase> {
 		};
 
 		request.onsuccess = () => {
+			clearTimeout(timer);
 			const db = request.result;
+			// A LATER tab asking for a higher version is blocked until this connection
+			// closes. Without this handler that tab hangs (and so does every cache read
+			// it makes) until the user closes this one. Close on demand instead: this
+			// tab loses its cache — it keeps working against the network — and drops the
+			// memoised promise so the next call re-opens at the new version.
+			db.onversionchange = () => {
+				db.close();
+				if (dbPromise) dbPromise = null;
+			};
 			// Purge expired entries asynchronously — don't block the open
 			void purgeExpired(db);
-			resolve(db);
+			succeed(db);
 		};
 
-		request.onerror = () => reject(request.error);
-		request.onblocked = () => reject(new Error('IndexedDB blocked'));
+		request.onerror = () => {
+			clearTimeout(timer);
+			fail(request.error ?? new Error('IndexedDB open failed'));
+		};
+		request.onblocked = () => {
+			clearTimeout(timer);
+			fail(new Error('IndexedDB blocked'));
+		};
 	});
 
 	// If the DB open fails, clear the cached promise so subsequent calls retry
