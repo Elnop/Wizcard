@@ -31,12 +31,15 @@ export async function generateMetadata({ params }: CardPageProps) {
 	const { locale, id: rawId } = await params;
 	const id = decodeURIComponent(rawId);
 	const t = await getTranslations({ locale, namespace: 'seo.cardNotFound' });
+	// Le template racine prefixe « Wizcard - » : ce libelle fournit le mot d'entite
+	// pour obtenir « Wizcard - carte Black Lotus ».
+	const tCard = await getTranslations({ locale, namespace: 'seo.card' });
 
 	if (id.startsWith('mpc:')) {
 		const card = await getCustomCardWithSource(id);
 		if (!card) return { title: t('title') };
 		return {
-			title: card.name,
+			title: tCard('title', { name: card.name }),
 			description: card.type_line ?? card.name,
 			alternates: buildAlternates(locale, `card/${encodeURIComponent(id)}`),
 		};
@@ -45,7 +48,7 @@ export async function generateMetadata({ params }: CardPageProps) {
 	try {
 		const card = await getCardById(id);
 		return {
-			title: card.name,
+			title: tCard('title', { name: card.name }),
 			description: `${card.type_line} - ${card.oracle_text?.slice(0, 150) ?? card.name}`,
 			alternates: buildAlternates(locale, `card/${encodeURIComponent(id)}`),
 		};

@@ -9,7 +9,7 @@ import { Providers } from '@/contexts/Providers';
 import { Navbar } from '@/components/Navbar/Navbar';
 import { Footer } from '@/components/Footer/Footer';
 import { LocaleSync } from '@/lib/profile/components/LocaleSync';
-import { SITE_URL, SITE_NAME } from '@/lib/seo/site';
+import { SITE_URL, SITE_NAME, TITLE_TEMPLATE } from '@/lib/seo/site';
 import { buildAlternates } from '@/lib/seo/alternates';
 import { BRAND_FONT_VARIABLES } from '@/fonts/brand';
 import '../globals.css';
@@ -48,7 +48,9 @@ export async function generateMetadata({
 		metadataBase: new URL(SITE_URL),
 		title: {
 			default: t('title'),
-			template: '%s | Wizcard',
+			// Marque en tête : le nom du site reste lisible même quand l'onglet est
+			// tronqué, ce qui n'est pas le cas d'un suffixe « %s | Wizcard ».
+			template: TITLE_TEMPLATE,
 		},
 		description: t('description'),
 		alternates: buildAlternates(locale),

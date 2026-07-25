@@ -865,7 +865,7 @@
 			"title": "Extensions"
 		},
 		"setDetail": {
-			"title": "{code} | Extensions"
+			"title": "extension {code}"
 		},
 		"cardNotFound": {
 			"title": "Carte introuvable"
@@ -874,6 +874,7 @@
 			"title": "Changer d'adresse e-mail"
 		},
 		"userProfile": {
+			"title": "profil {name}",
 			"notFound": "Profil introuvable",
 			"defaultDescription": "Le profil de {name} sur Wizcard."
 		},
@@ -899,10 +900,14 @@
 			"title": "Ma liste de souhaits"
 		},
 		"deck": {
+			"title": "deck {name}",
 			"notFoundTitle": "Deck introuvable",
 			"defaultDescription": "Deck {format} sur Wizcard.",
 			"descriptionWithCommander": "{commander} — deck {format} de {cards} cartes sur Wizcard.",
 			"descriptionWithFormat": "Deck {format} de {cards} cartes sur Wizcard."
+		},
+		"card": {
+			"title": "carte {name}"
 		}
 	},
 	"apiErrors": {

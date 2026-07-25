@@ -18,7 +18,9 @@ export async function generateMetadata({ params }: UserPageProps): Promise<Metad
 	const name = profile.nickname ?? nickname;
 	const desc = profile.description?.slice(0, 160) ?? t('defaultDescription', { name });
 	return {
-		title: name,
+		// Le template racine prefixe « Wizcard - ». Le titre og: reste le pseudo nu :
+		// il ne passe pas par le template et sert de libelle de partage.
+		title: t('title', { name }),
 		description: desc,
 		alternates: buildAlternates(locale, `users/${encodeURIComponent(nickname)}`),
 		openGraph: {

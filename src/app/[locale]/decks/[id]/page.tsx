@@ -68,7 +68,10 @@ export async function generateMetadata({ params }: DeckPageProps): Promise<Metad
 	// image tags for both openGraph and twitter, so we only set the text fields
 	// here and let the generated card supply the image.
 	return {
-		title: deck.name,
+		// Le template racine prefixe « Wizcard - », d'ou un titre d'onglet
+		// « Wizcard - deck Slivoid ». Les titres og:/twitter: ne passent pas par le
+		// template, donc ils gardent le nom nu du deck.
+		title: t('title', { name: deck.name }),
 		description: desc,
 		// `/decks/[id]` is publicly shareable, so re-enable indexing (the parent
 		// decks/layout.tsx sets noindex for the owner-only /decks list).

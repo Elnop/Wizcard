@@ -865,7 +865,7 @@
 			"title": "Sets"
 		},
 		"setDetail": {
-			"title": "{code} | Sets"
+			"title": "{code} set"
 		},
 		"cardNotFound": {
 			"title": "Card Not Found"
@@ -874,6 +874,7 @@
 			"title": "Change email address"
 		},
 		"userProfile": {
+			"title": "{name} profile",
 			"notFound": "Profile Not Found",
 			"defaultDescription": "{name}'s profile on Wizcard."
 		},
@@ -899,10 +900,14 @@
 			"title": "My wishlist"
 		},
 		"deck": {
+			"title": "{name} deck",
 			"notFoundTitle": "Deck not found",
 			"defaultDescription": "{format} deck on Wizcard.",
 			"descriptionWithCommander": "{commander} — {format} deck with {cards} cards on Wizcard.",
 			"descriptionWithFormat": "{format} deck with {cards} cards on Wizcard."
+		},
+		"card": {
+			"title": "{name} card"
 		}
 	},
 	"apiErrors": {
