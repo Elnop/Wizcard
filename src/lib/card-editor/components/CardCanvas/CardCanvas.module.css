@@ -1,6 +1,39 @@
+/*
+ * La carte doit tenir ENTIÈREMENT dans la scène : sa taille est bornée par la
+ * largeur ET par la hauteur disponibles.
+ *
+ * Un simple `width` ne suffisait pas : la hauteur en découlant via l'aspect
+ * ratio, une scène plus courte que la carte la faisait déborder et
+ * `.previewStage` devenait scrollable. On convertit donc la hauteur disponible
+ * (100% de la scène, padding déduit par box-sizing sur le parent flex) en
+ * largeur équivalente via le ratio, et on prend la plus contraignante.
+ *
+ * --card-aspect : largeur / hauteur. 63 × 88 mm ≈ 0.716 pour une carte
+ * portrait ; les gabarits paysage l'inversent plus bas.
+ *
+ * --stage-padding-y : cqh mesure la boîte du conteneur, padding compris, alors
+ * que la carte vit dans la zone de contenu. Sans cette soustraction, la carte
+ * dépasserait exactement du padding et le débordement reviendrait. La valeur
+ * réelle est fournie par le conteneur (.previewStage la déclare à côté de son
+ * propre `padding`) ; celle ci-dessous n'est qu'un repli pour un usage du canvas
+ * hors de la scène du studio.
+ */
 .canvas {
+	--card-aspect: 0.716;
+	--max-width: 620px;
+	--stage-padding-y: 68px;
+	/* Plancher : en dessous, les champs d'édition directe deviennent inutilisables
+	   et les textes illisibles. Sur une scène plus courte que ça, mieux vaut
+	   laisser la carte déborder (la scène redevient scrollable) que d'afficher
+	   une vignette sur laquelle on ne peut rien faire. */
+	--min-width: 260px;
+
 	position: relative;
-	width: min(100%, 620px);
+	width: clamp(
+		var(--min-width),
+		min(100%, var(--max-width), (100cqh - var(--stage-padding-y)) * var(--card-aspect)),
+		var(--max-width)
+	);
 	filter: drop-shadow(0 34px 44px rgba(0, 0, 0, 0.48));
 	transition:
 		width 0.2s ease,
@@ -8,7 +41,9 @@
 }
 
 .canvas[data-orientation='landscape'] {
-	width: min(100%, 860px);
+	/* Gabarits oversized (planechase, schemes…) : le ratio s'inverse. */
+	--card-aspect: 1.397;
+	--max-width: 860px;
 }
 
 .svg {
@@ -105,8 +140,13 @@
 }
 
 @media (max-width: 720px) {
+	/* On abaisse seulement le plafond de largeur et le padding de scène : la
+	   borne sur la hauteur (déclarée dans .canvas) reste active, sinon la carte
+	   redéborderait sur les écrans courts — c'est exactement ce que faisait la
+	   règle `width: min(100%, 520px)` qui écrasait tout ici. */
 	.canvas,
 	.canvas[data-orientation='landscape'] {
-		width: min(100%, 520px);
+		--max-width: 520px;
+		--stage-padding-y: 44px;
 	}
 }

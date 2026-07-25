@@ -98,6 +98,18 @@
 	flex: 1;
 	align-items: center;
 	justify-content: center;
+	/* Conteneur de requête : .canvas borne sa largeur sur 100cqh (la hauteur
+	   utile de la scène) pour que la carte tienne toujours en entier. Le
+	   container-type `size` est nécessaire — `inline-size` n'expose pas cqh. */
+	container-type: size;
+	/* Doit rester égal au total vertical du `padding` ci-dessous : cqh mesure la
+	   boîte padding comprise, que .canvas soustrait pour se dimensionner. */
+	--stage-padding-y: 68px;
+	/* La carte se met à l'échelle pour tenir dans la scène (cf. .canvas, borné sur
+	   la hauteur disponible) : en usage normal rien ne déborde et aucune barre
+	   n'apparaît. `auto` reste un filet pour le seul cas où la scène descend sous
+	   le plancher de lisibilité de la carte (--min-width), où l'on préfère
+	   scroller plutôt que rogner. */
 	overflow: auto;
 	padding: 34px clamp(20px, 5vw, 72px);
 	background-image:
@@ -106,10 +118,20 @@
 	background-size: 28px 28px;
 }
 
+/*
+ * Halo décoratif derrière la carte. `width: 55%` + `aspect-ratio: 1` le rendait
+ * plus HAUT que la scène dès qu'elle était large et courte (ex. 1466 × 785 :
+ * halo de 806px), ce qui suffisait à rendre .previewStage scrollable alors même
+ * que la carte, elle, tenait. On le borne donc aussi sur la hauteur, et on le
+ * sort du flux de calcul du scroll en le centrant en absolu.
+ */
 .stageGlow {
 	position: absolute;
-	width: 55%;
+	top: 50%;
+	left: 50%;
+	width: min(55%, 55cqh);
 	aspect-ratio: 1;
+	transform: translate(-50%, -50%);
 	border-radius: 50%;
 	background: radial-gradient(circle, rgba(201, 168, 76, 0.13), transparent 64%);
 	filter: blur(15px);
@@ -186,6 +208,11 @@
 	}
 
 	.previewStage {
+		/* --stage-padding-y doit rester égal au total vertical du padding :
+		   .canvas le soustrait de 100cqh pour se dimensionner. Les deux valeurs
+		   se lisent ici côte à côte pour qu'elles ne divergent pas. */
+		--stage-padding-y: 44px;
+
 		padding: 22px 12px;
 	}
 
