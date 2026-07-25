@@ -72,3 +72,20 @@ export function getManaSymbols(manaCost: string): string[] {
 export function expandCardNameShortcut(text: string, cardName: string): string {
 	return text.replaceAll('~', cardName || 'CARDNAME');
 }
+
+/**
+ * URL same-origin d'un symbole de mana, à partir de son svg_uri Scryfall.
+ *
+ * Le canvas ne peut pas pointer vers svgs.scryfall.io directement : ce CDN ne
+ * renvoie pas d'en-tête CORS, et l'export PNG doit pouvoir LIRE le SVG pour
+ * l'inliner. On route donc par /api/scryfall/symbol/<code>, qui le sert depuis
+ * notre origine (cf. la route du même nom).
+ *
+ * Retourne null si l'URL amont n'a pas la forme attendue, ce qui laisse
+ * l'appelant retomber sur son rendu de repli.
+ */
+export function manaSymbolProxyUrl(svgUri: string | undefined): string | null {
+	if (!svgUri) return null;
+	const code = /\/card-symbols\/([A-Za-z0-9]{1,4})\.svg$/.exec(svgUri)?.[1];
+	return code ? `/api/scryfall/symbol/${code}` : null;
+}

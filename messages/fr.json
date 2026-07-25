@@ -976,7 +976,7 @@
 			"name": "Nom de la carte",
 			"namePlaceholder": "Cartographe de l'Éther",
 			"manaCost": "Coût de mana",
-			"manaHint": "Placez les symboles entre accolades, par exemple '{2}{U}{R}'.",
+			"manaHint": "Cliquez les symboles ci-dessous, ou saisissez-les entre accolades — '{2}{U}{R}'.",
 			"insertSymbol": "Insérer {symbol}",
 			"typeLine": "Ligne de type",
 			"typePlaceholder": "Créature — humain et sorcier",
@@ -989,7 +989,12 @@
 			"toughness": "Endurance",
 			"loyalty": "Loyauté initiale",
 			"artist": "Crédit d'illustration",
-			"artistPlaceholder": "Nom de l'artiste"
+			"artistPlaceholder": "Nom de l'artiste",
+			"manaEmpty": "Aucun coût de mana",
+			"manaClear": "Effacer",
+			"genericMana": "Mana générique",
+			"genericIncrease": "Augmenter le mana générique",
+			"genericDecrease": "Diminuer le mana générique"
 		},
 		"art": {
 			"title": "Composez l'illustration",

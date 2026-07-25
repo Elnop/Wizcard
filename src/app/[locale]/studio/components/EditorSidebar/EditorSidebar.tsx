@@ -12,6 +12,9 @@ import { useTranslations } from 'next-intl';
 import { CARD_LAYOUT_LIST } from '@/lib/card-editor/layout-registry';
 import { prepareArtwork } from '@/lib/card-editor/image';
 import { layoutForMseTemplate, type MseTemplate } from '@/lib/card-editor/mse-assets';
+import { getManaSymbols } from '@/lib/card-editor/text-layout';
+import { ManaSymbol } from '@/lib/scryfall/components/ManaSymbol/ManaSymbol';
+import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import {
 	FRAME_STYLE_IDS,
 	type CardArtworkDraft,
@@ -48,7 +51,28 @@ const PANEL_ICONS = {
 	details: SlidersHorizontal,
 };
 
-const MANA_SYMBOLS = ['{W}', '{U}', '{B}', '{R}', '{G}', '{C}', '{1}', '{X}', '{T}'];
+// Symboles insérables d'un clic. Le générique ({1}, {2}…) n'est PAS ici : il a
+// son propre champ numérique, un bouton par valeur n'aurait aucun sens.
+const MANA_SYMBOLS = ['{W}', '{U}', '{B}', '{R}', '{G}', '{C}', '{X}', '{S}', '{T}'];
+
+/** Coût générique en tête d'un coût de mana : {3}{U}{U} -> 3. */
+function readGenericMana(manaCost: string): number | null {
+	const match = /^\{(\d+)\}/.exec(manaCost.trim());
+	return match ? Number(match[1]) : null;
+}
+
+/**
+ * Réécrit la partie générique en conservant les symboles colorés.
+ *
+ * Le générique est par convention en PREMIÈRE position d'un coût ({2}{U}{R}),
+ * donc on remplace ou insère en tête plutôt que d'ajouter à la suite.
+ * `amount` à 0 ou null le retire — un coût purement coloré n'a pas de {0}.
+ */
+function writeGenericMana(manaCost: string, amount: number | null): string {
+	const rest = manaCost.trim().replace(/^\{\d+\}/, '');
+	if (!amount || amount < 1) return rest;
+	return `{${amount}}${rest}`;
+}
 const LANGUAGE_CODES = ['en', 'fr', 'de', 'es', 'it', 'pt', 'ja', 'ko', 'ru', 'zhs'] as const;
 
 function PanelTabs({
@@ -98,6 +122,118 @@ function FormField({
 	);
 }
 
+/**
+ * Éditeur de coût de mana : aperçu du coût courant, compteur pour le générique
+ * et palette de symboles colorés — tous rendus avec les SVG officiels Scryfall
+ * (mêmes visuels que le reste de l'app, cf. ManaSymbol/SymbolText).
+ *
+ * Le champ texte reste la source de vérité et demeure éditable à la main : les
+ * commandes ne sont qu'un raccourci, ce qui laisse la porte ouverte aux
+ * symboles exotiques ({W/U}, {2/R}, {U/P}…) sans avoir à tous les câbler.
+ */
+function ManaCostField({
+	manaCost,
+	onChange,
+}: {
+	manaCost: string;
+	onChange: (value: string) => void;
+}) {
+	const t = useTranslations('cardEditor.fields');
+	const symbolMap = useScryfallSymbols();
+	const generic = readGenericMana(manaCost);
+	const preview = getManaSymbols(manaCost);
+
+	// `fieldset` plutôt que le `label` de FormField : ce bloc contient plusieurs
+	// contrôles (texte, compteur, boutons), qu'un unique <label> ne peut pas
+	// décrire correctement.
+	return (
+		<fieldset className={styles.field}>
+			<legend className={styles.fieldLabel}>{t('manaCost')}</legend>
+			<span className={styles.fieldHint}>{t('manaHint')}</span>
+			<div className={styles.manaPreview} aria-live="polite">
+				{preview.length === 0 ? (
+					<span className={styles.manaPreviewEmpty}>{t('manaEmpty')}</span>
+				) : (
+					preview.map((symbol, index) => (
+						<ManaSymbol
+							key={`${symbol}-${index}`}
+							symbol={`{${symbol}}`}
+							symbolMap={symbolMap}
+							size={22}
+						/>
+					))
+				)}
+			</div>
+			<input
+				value={manaCost}
+				onChange={(event) => onChange(event.target.value)}
+				maxLength={80}
+				placeholder="{2}{U}{R}"
+				aria-label={t('manaCost')}
+			/>
+			<div className={styles.genericRow}>
+				<label className={styles.genericLabel} htmlFor="mana-generic">
+					{t('genericMana')}
+				</label>
+				<div className={styles.genericControls}>
+					<button
+						type="button"
+						onClick={() => onChange(writeGenericMana(manaCost, (generic ?? 0) - 1))}
+						disabled={!generic}
+						aria-label={t('genericDecrease')}
+					>
+						−
+					</button>
+					<input
+						id="mana-generic"
+						type="number"
+						min={0}
+						max={20}
+						value={generic ?? ''}
+						placeholder="0"
+						onChange={(event) => {
+							const raw = event.target.value;
+							if (raw === '') return onChange(writeGenericMana(manaCost, null));
+							const parsed = Number.parseInt(raw, 10);
+							if (Number.isNaN(parsed)) return;
+							onChange(writeGenericMana(manaCost, Math.min(20, Math.max(0, parsed))));
+						}}
+					/>
+					<button
+						type="button"
+						onClick={() => onChange(writeGenericMana(manaCost, Math.min(20, (generic ?? 0) + 1)))}
+						disabled={(generic ?? 0) >= 20}
+						aria-label={t('genericIncrease')}
+					>
+						+
+					</button>
+				</div>
+			</div>
+			<span className={styles.symbolBar}>
+				{MANA_SYMBOLS.map((symbol) => (
+					<button
+						key={symbol}
+						type="button"
+						onClick={() => onChange(`${manaCost}${symbol}`)}
+						aria-label={t('insertSymbol', { symbol })}
+						title={symbolMap[symbol]?.english ?? symbol}
+					>
+						<ManaSymbol symbol={symbol} symbolMap={symbolMap} size={22} />
+					</button>
+				))}
+				<button
+					type="button"
+					className={styles.symbolClear}
+					onClick={() => onChange('')}
+					disabled={manaCost.length === 0}
+				>
+					{t('manaClear')}
+				</button>
+			</span>
+		</fieldset>
+	);
+}
+
 function CardFieldsPanel({
 	face,
 	draft,
@@ -106,9 +242,6 @@ function CardFieldsPanel({
 }: Pick<EditorSidebarProps, 'face' | 'draft' | 'validationErrors' | 'onFieldChange'>) {
 	const t = useTranslations('cardEditor.fields');
 	const isPlaneswalker = draft.layoutId === 'planeswalker';
-	function appendMana(symbol: string) {
-		onFieldChange('manaCost', `${face.manaCost}${symbol}`);
-	}
 	return (
 		<div className={styles.panelContent}>
 			<div className={styles.panelIntro}>
@@ -123,26 +256,10 @@ function CardFieldsPanel({
 					placeholder={t('namePlaceholder')}
 				/>
 			</FormField>
-			<FormField label={t('manaCost')} hint={t('manaHint')}>
-				<input
-					value={face.manaCost}
-					onChange={(event) => onFieldChange('manaCost', event.target.value)}
-					maxLength={80}
-					placeholder="{2}{U}{R}"
-				/>
-				<span className={styles.symbolBar}>
-					{MANA_SYMBOLS.map((symbol) => (
-						<button
-							key={symbol}
-							type="button"
-							onClick={() => appendMana(symbol)}
-							aria-label={t('insertSymbol', { symbol })}
-						>
-							{symbol.replace(/[{}]/g, '')}
-						</button>
-					))}
-				</span>
-			</FormField>
+			<ManaCostField
+				manaCost={face.manaCost}
+				onChange={(value) => onFieldChange('manaCost', value)}
+			/>
 			<FormField label={t('typeLine')} error={validationErrors.includes('type')}>
 				<input
 					value={face.typeLine}

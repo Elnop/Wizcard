@@ -136,22 +136,134 @@
 	gap: 12px;
 }
 
+/* L'éditeur de mana est un fieldset (plusieurs contrôles) mais doit se fondre
+   dans la pile de .field : on neutralise la bordure et la marge natives. */
+fieldset.field {
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+fieldset.field > legend {
+	padding: 0;
+}
+
+/* Aperçu du coût courant, rendu avec les vrais symboles Scryfall. */
+.manaPreview {
+	display: flex;
+	min-height: 30px;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 3px;
+	padding: 4px 8px;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.manaPreviewEmpty {
+	font-size: var(--text-2xs);
+	color: var(--text-muted);
+}
+
+/* Mana générique : compteur dédié — le générique est une VALEUR ({3}), pas un
+   symbole à répéter, d'où un stepper plutôt qu'un bouton par chiffre. */
+.genericRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.genericLabel {
+	font-size: var(--text-2xs);
+	color: var(--text-muted);
+}
+
+.genericControls {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.genericControls button {
+	width: 26px;
+	height: 26px;
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.05);
+	color: var(--text);
+	font-size: 14px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.genericControls button:disabled {
+	opacity: 0.35;
+	cursor: not-allowed;
+}
+
+.genericControls input {
+	width: 52px;
+	padding: 4px 6px;
+	text-align: center;
+}
+
+/* Masque les flèches natives : le stepper maison les remplace. */
+.genericControls input::-webkit-outer-spin-button,
+.genericControls input::-webkit-inner-spin-button {
+	margin: 0;
+	-webkit-appearance: none;
+	appearance: none;
+}
+
+.genericControls input {
+	-moz-appearance: textfield;
+	appearance: textfield;
+}
+
 .symbolBar {
 	display: flex;
 	flex-wrap: wrap;
+	align-items: center;
 	gap: 5px;
 }
 
 .symbolBar button {
-	width: 29px;
-	height: 29px;
-	border: 1px solid rgba(255, 255, 255, 0.16);
+	display: flex;
+	width: 30px;
+	height: 30px;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 1px solid transparent;
 	border-radius: 50%;
-	background: #d8d5cc;
-	color: #171717;
-	font-size: 11px;
-	font-weight: 800;
+	background: transparent;
 	cursor: pointer;
+	transition:
+		border-color 0.15s ease,
+		transform 0.15s ease;
+}
+
+.symbolBar button:hover:not(:disabled) {
+	border-color: rgba(255, 255, 255, 0.35);
+	transform: translateY(-1px);
+}
+
+.symbolClear {
+	width: auto !important;
+	height: 26px !important;
+	padding: 0 10px !important;
+	border-radius: 6px !important;
+	border-color: rgba(255, 255, 255, 0.16) !important;
+	color: var(--text-muted);
+	font-size: var(--text-2xs);
+}
+
+.symbolClear:disabled {
+	opacity: 0.35;
+	cursor: not-allowed;
 }
 
 .hiddenInput {

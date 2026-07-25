@@ -8,6 +8,7 @@ import {
 	getManaSymbols,
 	getRulesFontSize,
 	getTitleFontSize,
+	manaSymbolProxyUrl,
 	wrapCardText,
 } from '@/lib/card-editor/text-layout';
 import type {
@@ -20,6 +21,7 @@ import type {
 	CardRect,
 	EditableCardField,
 } from '@/lib/card-editor/types';
+import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import styles from './CardCanvas.module.css';
 
 interface CardCanvasProps {
@@ -81,6 +83,23 @@ function rectStyle(rect: CardRect, width: number, height: number): CSSProperties
 	};
 }
 
+/**
+ * Coût de mana rendu avec les SVG officiels de Scryfall.
+ *
+ * Le dessin maison précédent (cercle coloré + lettre) ne ressemblait pas aux
+ * vrais symboles : ni hybrides, ni phyrexians, ni Tap, et les couleurs étaient
+ * approximatives. On s'appuie donc sur symbolMap, déjà utilisé partout ailleurs
+ * dans l'app (SymbolText / ManaSymbol).
+ *
+ * Les <image href> passent par /api/scryfall/symbol/<code> et NON par
+ * svgs.scryfall.io en direct : ce CDN ne renvoie pas d'en-tête CORS. L'affichage
+ * fonctionnerait quand même, mais l'export PNG doit LIRE ces SVG pour les
+ * inliner en data-URI (cf. inlineSvgImages dans card-editor/export) et son
+ * `fetch` échouerait, faisant planter tout l'export.
+ *
+ * Repli : un symbole absent de la map (map pas encore chargée, ou saisie libre
+ * comme {ABC}) retombe sur un jeton neutre lisible plutôt que de disparaître.
+ */
 function ManaSymbols({
 	manaCost,
 	x,
@@ -92,53 +111,54 @@ function ManaSymbols({
 	y: number;
 	width: number;
 }) {
+	// Le store Scryfall dédoublonne la requête /symbology et la met en cache :
+	// appeler le hook ici plutôt que de forer la prop à travers tout le canvas
+	// n'entraîne pas de fetch supplémentaire.
+	const symbolMap = useScryfallSymbols();
 	const symbols = getManaSymbols(manaCost);
 	const size = 34;
 	const gap = 3;
 	const totalWidth = symbols.length * size + Math.max(0, symbols.length - 1) * gap;
-	const startX = x + width - totalWidth + size / 2;
-	const symbolColors: Record<string, string> = {
-		W: '#f2e9c8',
-		U: '#7ec8e3',
-		B: '#8d8092',
-		R: '#e57658',
-		G: '#76b58a',
-	};
+	const startX = x + width - totalWidth;
 	return (
 		<g>
 			{symbols.map((symbol, index) => {
-				const centerX = startX + index * (size + gap);
-				const baseColor = symbolColors[symbol] ?? '#d7d8d2';
+				const left = startX + index * (size + gap);
+				const svgUri = manaSymbolProxyUrl(symbolMap[`{${symbol}}`]?.svg_uri);
+				if (!svgUri) {
+					return (
+						<g key={`${symbol}-${index}`}>
+							<circle
+								cx={left + size / 2}
+								cy={y + 26}
+								r={size / 2}
+								fill="#d7d8d2"
+								stroke="#171412"
+								strokeWidth="2.4"
+							/>
+							<text
+								x={left + size / 2}
+								y={y + 32}
+								textAnchor="middle"
+								fontFamily="Arial, sans-serif"
+								fontSize={symbol.length > 1 ? 13 : 18}
+								fontWeight="800"
+								fill="#141414"
+							>
+								{symbol}
+							</text>
+						</g>
+					);
+				}
 				return (
-					<g key={`${symbol}-${index}`}>
-						<circle cx={centerX - 1.5} cy={y + 29} r={size / 2} fill="#080808" opacity="0.7" />
-						<circle
-							cx={centerX}
-							cy={y + 26}
-							r={size / 2}
-							fill={baseColor}
-							stroke="#171412"
-							strokeWidth="2.4"
-						/>
-						<path
-							d={`M ${centerX - 10} ${y + 18} A 14 14 0 0 1 ${centerX + 8} ${y + 14}`}
-							fill="none"
-							stroke="#fff"
-							strokeWidth="2"
-							opacity="0.42"
-						/>
-						<text
-							x={centerX}
-							y={y + 32}
-							textAnchor="middle"
-							fontFamily="Arial, sans-serif"
-							fontSize={symbol.length > 1 ? 13 : 18}
-							fontWeight="800"
-							fill="#141414"
-						>
-							{symbol}
-						</text>
-					</g>
+					<image
+						key={`${symbol}-${index}`}
+						href={svgUri}
+						x={left}
+						y={y + 26 - size / 2}
+						width={size}
+						height={size}
+					/>
 				);
 			})}
 		</g>

@@ -976,7 +976,7 @@
 			"name": "Card name",
 			"namePlaceholder": "Aether Cartographer",
 			"manaCost": "Mana cost",
-			"manaHint": "Use braces for symbols, for example '{2}{U}{R}'.",
+			"manaHint": "Click the symbols below, or type them by hand between braces — '{2}{U}{R}'.",
 			"insertSymbol": "Insert {symbol}",
 			"typeLine": "Type line",
 			"typePlaceholder": "Creature — Human Wizard",
@@ -989,7 +989,12 @@
 			"toughness": "Toughness",
 			"loyalty": "Starting loyalty",
 			"artist": "Artist credit",
-			"artistPlaceholder": "Artist name"
+			"artistPlaceholder": "Artist name",
+			"manaEmpty": "No mana cost yet",
+			"manaClear": "Clear",
+			"genericMana": "Generic mana",
+			"genericIncrease": "Increase generic mana",
+			"genericDecrease": "Decrease generic mana"
 		},
 		"art": {
 			"title": "Compose the artwork",
