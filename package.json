@@ -30,7 +30,6 @@
 		"seed": "NODE_ENV=production npx tsx scripts/seed/seed-sets.ts && NODE_ENV=production $(command -v systemd-inhibit || true) npx tsx scripts/seed/seed-catalog.ts",
 		"seed:catalog": "NODE_ENV=production $(command -v systemd-inhibit || true) npx tsx scripts/seed/seed-catalog.ts",
 		"seed:sets": "NODE_ENV=production npx tsx scripts/seed/seed-sets.ts",
-		"impersonate": "npx tsx scripts/impersonate.ts",
 		"logo:generate": "tsx scripts/generate-logo.ts",
 		"clean": "rm -rf node_modules .next",
 		"prepare": "husky"
