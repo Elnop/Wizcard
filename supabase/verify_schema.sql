@@ -641,6 +641,42 @@ select pg_temp.chk('catalog', 'localized_cards is dropped',
   not pg_temp.has_table('localized_cards'),
   'table localized_cards toujours présente → 20260723120002 non appliquée');
 
+-- Catalogue des templates du Custom Card Studio (20260726130000). Alimenté par
+-- scripts/card-assets/upload-templates.ts, jamais par une migration : une table
+-- vide est donc normale sur une base fraîche (INFO, pas FAIL).
+select pg_temp.chk('catalog', 'public.card_templates',
+  pg_temp.has_table('card_templates'), 'table absente');
+
+-- Le bucket des frames doit être PUBLIC : ce sont des gabarits vierges servis
+-- par le CDN à tous les utilisateurs du studio.
+select pg_temp.chk(
+  'catalog', 'bucket card-templates is public',
+  coalesce((select public from storage.buckets where id='card-templates'), false),
+  'bucket card-templates absent ou privé'
+);
+
+-- SÉCURITÉ : la default ACL de ce cluster accorde `all` (TRUNCATE compris, qui
+-- CONTOURNE la RLS) à anon/authenticated sur toute nouvelle table. 20260726130000
+-- révoque puis re-grant SELECT seul : on vérifie que la révocation tient.
+select pg_temp.chk(
+  'security', 'card_templates not truncatable by anon',
+  not exists (select 1 from information_schema.role_table_grants
+              where table_schema='public' and table_name='card_templates'
+                and grantee in ('anon','authenticated')
+                and privilege_type in ('TRUNCATE','INSERT','UPDATE','DELETE')),
+  'anon/authenticated ont des privilèges d''écriture sur card_templates'
+);
+
+-- Le script d'upload écrit via la clé service-role : sans ce grant, l'upsert
+-- échoue en 42501 alors que le bucket, lui, a bien reçu les fichiers.
+select pg_temp.chk(
+  'catalog', 'card_templates writable by service_role',
+  exists (select 1 from information_schema.role_table_grants
+          where table_schema='public' and table_name='card_templates'
+            and grantee='service_role' and privilege_type='INSERT'),
+  'service_role ne peut pas écrire dans card_templates'
+);
+
 -- Colonnes exhaustives (nom + type), source : DB locale à jour.
 with expected(t, col, typ) as (
   values

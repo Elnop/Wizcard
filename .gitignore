@@ -59,3 +59,9 @@ cosmos-export
 
 # ops docs containing secrets (Resend API key, etc.)
 /docs/resend-otp-setup.md
+
+# Card studio template assets (~1 Go, packs MSE + CardConjurer sous licence
+# tierce). Uploadés vers Supabase Storage par scripts/card-assets/, jamais
+# committés. Seul le README qui documente la récupération du pack est versionné.
+/assets/card-templates/*
+!/assets/card-templates/README.md
