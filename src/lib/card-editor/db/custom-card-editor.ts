@@ -71,7 +71,13 @@ function buildRow(
 		image_storage_path: frontPath,
 		art_storage_path: artPaths[0] ?? null,
 		back_image_storage_path: backPath,
-		oracle_id: `custom:${cardUuid}`,
+		// oracle_id est l'identifiant SCRYFALL de la carte officielle correspondante
+		// (cf. 20260601000003) : il relie une carte custom à son oracle pour
+		// l'enrichissement. Une création originale n'en a aucune — d'où null, la
+		// valeur que l'index partiel `where oracle_id is not null` attend déjà.
+		// Y écrire un `custom:<uuid>` synthétique faisait partir cet identifiant
+		// vers l'API Scryfall, qui le rejetait ("must be a valid UUID", 400).
+		oracle_id: null,
 		source_type: 'user_created',
 		is_public: draft.isPublic,
 		created_by: userId,

@@ -16,7 +16,8 @@ export interface UserCreatedCardRowInput {
 	image_storage_path: string;
 	art_storage_path: string | null;
 	back_image_storage_path: string | null;
-	oracle_id: string;
+	/** Oracle Scryfall de la carte officielle correspondante ; null pour une création originale. */
+	oracle_id: string | null;
 	source_type: 'user_created';
 	is_public: boolean;
 	created_by: string;

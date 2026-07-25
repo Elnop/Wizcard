@@ -1,5 +1,11 @@
+import { loadEnvConfig } from '@next/env';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
+
+// next.config.ts est évalué AVANT que Next ne charge .env* : sans cet appel,
+// process.env.NEXT_PUBLIC_SUPABASE_URL est vide ici (et uniquement ici — le
+// runtime, lui, la voit bien). supabaseImagePatterns() ci-dessous en dépend.
+loadEnvConfig(process.cwd());
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
@@ -8,6 +14,42 @@ const isDev = process.env.NODE_ENV === 'development';
 const pageExtensions = isDev
 	? ['tsx', 'ts', 'jsx', 'js', 'cosmos.tsx', 'cosmos.ts']
 	: ['tsx', 'ts', 'jsx', 'js'];
+
+/**
+ * Hôte Supabase autorisé pour next/image.
+ *
+ * Les images servies par Storage (rendus de cartes custom du studio, cartes MPC
+ * ingérées, avatars, frames de templates) passent par l'optimiseur next/image.
+ * Sans entrée dans remotePatterns, celui-ci répond 400 « "url" parameter is not
+ * allowed » et AUCUNE de ces images ne s'affiche — alors que l'objet lui-même
+ * est bien servi en 200 par Storage.
+ *
+ * L'hôte est dérivé de NEXT_PUBLIC_SUPABASE_URL plutôt que codé en dur : il
+ * diffère entre le stack local (127.0.0.1:54321, http) et la prod self-hostée
+ * (https). Retourne [] si la variable est absente ou malformée, pour ne pas
+ * casser le build.
+ *
+ * NB dev local : même avec le pattern autorisé, Next 16 refuse d'optimiser une
+ * image dont l'hôte résout vers une IP privée (« resolved to private ip », garde
+ * anti-SSRF). Les rendus de cartes custom ne s'affichent donc pas via
+ * next/image sur le stack local — l'objet reste servi normalement en direct par
+ * Storage, et la prod (hôte public) n'est pas concernée.
+ */
+function supabaseImagePatterns(): {
+	protocol: 'http' | 'https';
+	hostname: string;
+	port?: string;
+}[] {
+	const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
+	if (!raw) return [];
+	try {
+		const url = new URL(raw);
+		const protocol = url.protocol === 'http:' ? 'http' : 'https';
+		return [{ protocol, hostname: url.hostname, ...(url.port ? { port: url.port } : {}) }];
+	} catch {
+		return [];
+	}
+}
 
 const nextConfig: NextConfig = {
 	pageExtensions,
@@ -42,6 +84,7 @@ const nextConfig: NextConfig = {
 				protocol: 'https',
 				hostname: 'drive.usercontent.google.com',
 			},
+			...supabaseImagePatterns(),
 		],
 	},
 	async headers() {
