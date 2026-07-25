@@ -10,6 +10,8 @@ import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfall
 import { computeDeckStats } from '@/lib/deck/utils/deck-stats';
 import { validateDeck, getFormatRules } from '@/lib/deck/utils/format-rules';
 import { pickCoverArt } from '@/lib/deck/utils/pick-cover-art';
+import { fetchCoverInfoByPrintIds } from '@/lib/deck/db/cover-art-catalog';
+import { coverCandidateIds, pickCoverFromCatalog } from '@/lib/deck/utils/pick-cover-from-catalog';
 
 const WUBRG_ORDER: MtgColor[] = ['W', 'U', 'B', 'R', 'G'];
 
@@ -73,6 +75,25 @@ export type DeckSummary = {
 
 const EMPTY: Record<string, DeckSummary> = {};
 
+/**
+ * Placeholder a deck holds between pass 1 (cover painted) and pass 2 (stats in).
+ * Every stat reads as "nothing yet" so DeckCard renders the cover alone: no
+ * colors, no mana curve, no warning badge — each of those is guarded on a
+ * non-empty value at the render site, so none of them flash in early.
+ */
+const PENDING_SUMMARY: DeckSummary = {
+	artCropUrl: undefined,
+	colors: [],
+	commanderName: undefined,
+	manaCurve: {},
+	totalCards: 0,
+	targetCards: null,
+	landCount: 0,
+	averageCmc: 0,
+	warningCount: 0,
+	warnings: [],
+};
+
 function isLand(card: Card | CustomCard): boolean {
 	return (card.type_line ?? '').toLowerCase().includes('land');
 }
@@ -133,6 +154,38 @@ function computeManaCurve(
 	return curve;
 }
 
+/**
+ * Pass 1 of the summary build: derive a cover for every deck that lacks an
+ * explicit one, using only the DB catalog.
+ *
+ * Split out from the effect both to keep it readable and because it is the whole
+ * fast path: it returns as soon as the catalog answers, long before any card is
+ * resolved through Scryfall. Decks whose cover the catalog can't derive are
+ * absent from the result and get theirs from pass 2 instead.
+ */
+async function resolveCoversFromCatalog(
+	deckEntries: Record<string, DeckCardEntry[]>,
+	deckCoverMap: Map<string, string | null>
+): Promise<Record<string, string>> {
+	const deckIdsNeedingCover = Object.keys(deckEntries).filter((id) => !deckCoverMap.get(id));
+	if (deckIdsNeedingCover.length === 0) return {};
+
+	const lookupIds = new Set<string>();
+	for (const deckId of deckIdsNeedingCover) {
+		for (const id of coverCandidateIds(deckEntries[deckId])) lookupIds.add(id);
+	}
+	if (lookupIds.size === 0) return {};
+
+	const coverInfo = await fetchCoverInfoByPrintIds([...lookupIds]);
+
+	const covers: Record<string, string> = {};
+	for (const deckId of deckIdsNeedingCover) {
+		const url = pickCoverFromCatalog(deckEntries[deckId], coverInfo);
+		if (url) covers[deckId] = url;
+	}
+	return covers;
+}
+
 export function useDeckSummaries(decks: DeckMeta[]): Record<string, DeckSummary> {
 	const [summaries, setSummaries] = useState<Record<string, DeckSummary>>(EMPTY);
 	const runIdRef = useRef(0);
@@ -153,14 +206,39 @@ export function useDeckSummaries(decks: DeckMeta[]): Record<string, DeckSummary>
 			}
 			if (allIds.size === 0 || runIdRef.current !== currentRunId) return;
 
+			const deckFormatMap = new Map(decks.map((d) => [d.id, d.format]));
+			const deckCoverMap = new Map(decks.map((d) => [d.id, d.coverArtUrl]));
+
+			// ── Pass 1: covers only ──────────────────────────────────────────────
+			// The cover needs ONE card per deck, but deck stats need every card.
+			// Resolving them together meant a thumbnail waited on the full
+			// resolution of every card of every listed deck (dozens of sequential
+			// Scryfall batches on a cold cache) — the reason covers took so long or
+			// never showed. So covers are resolved first, from the DB catalog, and
+			// painted before any stats work begins.
+			const covers = await resolveCoversFromCatalog(deckEntries, deckCoverMap);
+			if (runIdRef.current !== currentRunId) return;
+
+			if (Object.keys(covers).length > 0) {
+				setSummaries((prev) => {
+					const next = { ...prev };
+					for (const [deckId, url] of Object.entries(covers)) {
+						next[deckId] = { ...(next[deckId] ?? PENDING_SUMMARY), artCropUrl: url };
+					}
+					return next;
+				});
+			}
+
+			// ── Pass 2: full stats ───────────────────────────────────────────────
+			// Everything else on the card (mana curve, counts, warnings) genuinely
+			// needs every card resolved. It runs after the covers are on screen, so
+			// this cost is no longer in front of the first paint.
 			const cached = await resolveCardsByScryfallIds([...allIds], {
 				isCancelled: () => runIdRef.current !== currentRunId,
 			});
 
 			if (runIdRef.current !== currentRunId) return;
 
-			const deckFormatMap = new Map(decks.map((d) => [d.id, d.format]));
-			const deckCoverMap = new Map(decks.map((d) => [d.id, d.coverArtUrl]));
 			const result: Record<string, DeckSummary> = {};
 			for (const [deckId, entries] of Object.entries(deckEntries)) {
 				result[deckId] = buildDeckSummary(
@@ -176,7 +254,20 @@ export function useDeckSummaries(decks: DeckMeta[]): Record<string, DeckSummary>
 			// grown list, so replacing wholesale made every already-resolved cover
 			// blink out and re-resolve on each page. Merging keeps visible covers
 			// stable and only fills in the newly-loaded decks.
-			setSummaries((prev) => ({ ...prev, ...result }));
+			//
+			// Keep the pass-1 cover when pass 2 couldn't derive one: an unresolved
+			// card (network failure, id absent from Scryfall) would otherwise blank
+			// a cover the catalog had already produced.
+			setSummaries((prev) => {
+				const next = { ...prev };
+				for (const [deckId, summary] of Object.entries(result)) {
+					next[deckId] = {
+						...summary,
+						artCropUrl: summary.artCropUrl ?? prev[deckId]?.artCropUrl,
+					};
+				}
+				return next;
+			});
 		}
 
 		void resolve();

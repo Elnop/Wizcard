@@ -7,11 +7,19 @@
 
 import type { ScryfallCard, ScryfallImageUris } from '@/lib/scryfall/types/scryfall';
 
-type Img3 = Pick<ScryfallImageUris, 'small' | 'normal' | 'large'>;
+// The image sizes the catalog stores. `art_crop` is the landscape art used for
+// deck covers; the other three are the card renders. Scryfall serves more sizes
+// (png, border_crop) that nothing here reads, so they stay out of the row.
+type CatalogImageUris = Pick<ScryfallImageUris, 'small' | 'normal' | 'large' | 'art_crop'>;
 
-function pick3(uris: ScryfallImageUris | undefined): Img3 | null {
+function pickImageUris(uris: ScryfallImageUris | undefined): CatalogImageUris | null {
 	if (!uris) return null;
-	return { small: uris.small, normal: uris.normal, large: uris.large };
+	return {
+		small: uris.small,
+		normal: uris.normal,
+		large: uris.large,
+		art_crop: uris.art_crop,
+	};
 }
 
 export interface CardDefinitionRow {
@@ -46,7 +54,7 @@ export interface CardPrintRow {
 	border_color: string | null;
 	frame: string | null;
 	image_status: string | null;
-	image_uris: Img3 | null;
+	image_uris: CatalogImageUris | null;
 	finishes: string[] | null;
 	promo: boolean | null;
 	reprint: boolean | null;
@@ -80,7 +88,7 @@ export interface CardPrintFaceRow {
 	face_index: number;
 	artist: string | null;
 	illustration_id: string | null;
-	image_uris: Img3 | null;
+	image_uris: CatalogImageUris | null;
 	printed_name: string | null;
 	printed_type_line: string | null;
 	printed_text: string | null;
@@ -135,7 +143,7 @@ export function toCatalogRows(card: ScryfallCard): {
 		border_color: card.border_color ?? null,
 		frame: card.frame ?? null,
 		image_status: card.image_status ?? null,
-		image_uris: pick3(card.image_uris),
+		image_uris: pickImageUris(card.image_uris),
 		finishes: card.finishes ?? null,
 		promo: card.promo ?? null,
 		reprint: card.reprint ?? null,
@@ -169,7 +177,7 @@ export function toCatalogRows(card: ScryfallCard): {
 		face_index: i,
 		artist: f.artist ?? null,
 		illustration_id: f.illustration_id ?? null,
-		image_uris: pick3(f.image_uris),
+		image_uris: pickImageUris(f.image_uris),
 		printed_name: f.printed_name ?? null,
 		printed_type_line: f.printed_type_line ?? null,
 		printed_text: f.printed_text ?? null,
