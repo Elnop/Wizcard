@@ -900,7 +900,9 @@
 		},
 		"deck": {
 			"notFoundTitle": "Deck not found",
-			"defaultDescription": "{format} deck on Wizcard."
+			"defaultDescription": "{format} deck on Wizcard.",
+			"descriptionWithCommander": "{commander} — {format} deck with {cards} cards on Wizcard.",
+			"descriptionWithFormat": "{format} deck with {cards} cards on Wizcard."
 		}
 	},
 	"apiErrors": {

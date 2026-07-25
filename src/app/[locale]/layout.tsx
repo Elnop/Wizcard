@@ -10,6 +10,7 @@ import { Navbar } from '@/components/Navbar/Navbar';
 import { Footer } from '@/components/Footer/Footer';
 import { LocaleSync } from '@/lib/profile/components/LocaleSync';
 import { SITE_URL, SITE_NAME } from '@/lib/seo/site';
+import { buildAlternates } from '@/lib/seo/alternates';
 import { BRAND_FONT_VARIABLES } from '@/fonts/brand';
 import '../globals.css';
 
@@ -50,10 +51,7 @@ export async function generateMetadata({
 			template: '%s | Wizcard',
 		},
 		description: t('description'),
-		alternates: {
-			canonical: `/${locale}`,
-			languages: { fr: '/fr', en: '/en', 'x-default': '/fr' },
-		},
+		alternates: buildAlternates(locale),
 		openGraph: {
 			type: 'website',
 			siteName: SITE_NAME,
