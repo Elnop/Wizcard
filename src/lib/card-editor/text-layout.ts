@@ -64,11 +64,54 @@ const TITLE_MAX_FONT_SIZE = 33;
  */
 const TITLE_MIN_FONT_SIZE = 19;
 /**
- * Largeur moyenne d'un glyphe en fraction du corps, pour du Georgia gras.
- * Empirique mais stable : la mesure exacte demanderait un canvas, indisponible
- * pendant le rendu SVG côté serveur.
+ * Largeur par glyphe, en fraction du corps, pour du Georgia gras.
+ *
+ * Une moyenne unique ne marche PAS : mesuré dans le SVG, un « W » vaut 1.0 et un
+ * « i » 0.278 — un facteur 3.6. Avec une moyenne à ~0.5, « WWWWWWWWWWWWWWWWWW »
+ * était estimé deux fois trop étroit et débordait avant que la réduction ne se
+ * déclenche.
+ *
+ * On classe donc les caractères par gabarit. Valeurs relevées sur le rendu réel
+ * (getBBox sur un <text> Georgia 800), arrondies à la hausse pour que
+ * l'estimation reste conservatrice — mieux vaut réduire un peu tôt que déborder.
  */
-const TITLE_GLYPH_RATIO = 0.505;
+const GLYPH_WIDTHS = {
+	/** W, M et l'ellipse : les plus larges de la fonte (mesurés à 1.0). */
+	widest: 1.0,
+	/** Majuscules larges (A ≈ 0.72, E ≈ 0.67) et minuscules m/w. */
+	wide: 0.78,
+	/** Minuscules ordinaires (o ≈ 0.5) et chiffres. */
+	normal: 0.55,
+	/** Lettres étroites (I ≈ 0.39, t ≈ 0.33) et ponctuation (, ≈ 0.25). */
+	narrow: 0.4,
+	/** Espace : getBBox le mesure à 0, mais il avance bien le curseur. */
+	space: 0.25,
+} as const;
+
+function glyphWidth(character: string): number {
+	if (character === ' ') return GLYPH_WIDTHS.space;
+	if (/[WM…]/.test(character)) return GLYPH_WIDTHS.widest;
+	if (/[IiltfjJ.,;:'"!|\-()[\]]/.test(character)) return GLYPH_WIDTHS.narrow;
+	if (/[A-HK-Zmw@#%&]/.test(character)) return GLYPH_WIDTHS.wide;
+	return GLYPH_WIDTHS.normal;
+}
+
+/**
+ * Marge de sécurité (2%) sur la largeur estimée.
+ *
+ * Le classement par gabarit surestime la plupart des textes, mais tombe PILE sur
+ * une chaîne de « W » (mesuré : 594 estimé vs 594 réel à corps 33). Sans marge,
+ * un arrondi défavorable ou une substitution de fonte suffit à déborder d'un
+ * poil. 2% coûte moins d'un caractère sur un titre courant.
+ */
+const TITLE_SAFETY_MARGIN = 1.02;
+
+/** Largeur estimée d'une chaîne à un corps donné, en unités SVG. */
+function measureTitle(text: string, fontSize: number): number {
+	let total = 0;
+	for (const character of text) total += glyphWidth(character);
+	return total * fontSize * TITLE_SAFETY_MARGIN;
+}
 
 export interface FittedTitle {
 	text: string;
@@ -90,24 +133,30 @@ export interface FittedTitle {
 export function fitTitle(title: string, availableWidth: number): FittedTitle {
 	if (!title) return { text: title, fontSize: TITLE_MAX_FONT_SIZE };
 
-	const widthAt = (size: number, characters: number) => characters * size * TITLE_GLYPH_RATIO;
-
-	if (widthAt(TITLE_MAX_FONT_SIZE, title.length) <= availableWidth) {
+	// Largeur à corps 1 : la largeur à n'importe quel corps s'en déduit par
+	// produit, ce qui donne le corps idéal sans boucler.
+	const unitWidth = measureTitle(title, 1);
+	if (unitWidth * TITLE_MAX_FONT_SIZE <= availableWidth) {
 		return { text: title, fontSize: TITLE_MAX_FONT_SIZE };
 	}
 
-	const ideal = availableWidth / (title.length * TITLE_GLYPH_RATIO);
+	const ideal = Math.floor(availableWidth / unitWidth);
 	if (ideal >= TITLE_MIN_FONT_SIZE) {
-		return { text: title, fontSize: Math.floor(ideal) };
+		return { text: title, fontSize: ideal };
 	}
 
-	// Même au plancher le nom ne rentre pas : on tronque sur le nombre de
-	// caractères que cette taille autorise, ellipse comprise.
-	const maxCharacters = Math.max(
-		1,
-		Math.floor(availableWidth / (TITLE_MIN_FONT_SIZE * TITLE_GLYPH_RATIO)) - 1
-	);
-	return { text: `${title.slice(0, maxCharacters).trimEnd()}…`, fontSize: TITLE_MIN_FONT_SIZE };
+	// Même au plancher le nom ne rentre pas : on retire des caractères jusqu'à
+	// ce que le texte + l'ellipse tiennent. Boucle sur les glyphes réels, car
+	// couper « WWWW » et couper « iiii » ne libèrent pas la même largeur.
+	const ellipsisWidth = glyphWidth('…') * TITLE_MIN_FONT_SIZE;
+	let text = title;
+	while (
+		text.length > 1 &&
+		measureTitle(text, TITLE_MIN_FONT_SIZE) + ellipsisWidth > availableWidth
+	) {
+		text = text.slice(0, -1);
+	}
+	return { text: `${text.trimEnd()}…`, fontSize: TITLE_MIN_FONT_SIZE };
 }
 
 export function getManaSymbols(manaCost: string): string[] {
