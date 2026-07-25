@@ -18,7 +18,7 @@ import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
-import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
+import { useCollectionOracleIds } from '@/lib/collection/hooks/useCollectionOracleIds';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
 import { findFreeCollectionCopy } from '@/lib/deck/utils/collectionCopyResolver';
 import { useDeckDetail, type ResolvedDeckCard } from './useDeckDetail';
@@ -161,23 +161,24 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 
 	const deckNameResolver = useCallback((id: string) => deckNameById.get(id), [deckNameById]);
 
-	// Always resolve collection stacks so oracle_id lookups work for assign-all
-	const { stacks: collectionStacks } = useCollectionCards(entries);
+	// oracle_id lookups for assign-all, read from the DB catalog rather than by
+	// resolving the whole collection. `useCollectionCards(entries)` used to run
+	// here purely to read one field per card, which cost ~65 batched POSTs to
+	// /api/scryfall/cards/collection for a 4.8k-print collection. Only entries
+	// sharing an oracle_id with a DECK card can ever substitute for one, so the
+	// catalog answers that directly in two narrow queries.
+	const deckScryfallIds = useMemo(() => resolvedCards.map((rc) => rc.id), [resolvedCards]);
+	const catalogOracleIds = useCollectionOracleIds(deckScryfallIds, entries);
 
 	const collectionScryfallIdToOracleId = useMemo(() => {
-		const map = new Map<string, string>();
-		// Deck prints first
+		// Deck prints first: prefer the already-resolved card's own oracle_id, so a
+		// print missing from the catalog still maps correctly.
+		const map = new Map(catalogOracleIds);
 		for (const rc of resolvedCards) {
 			if (rc.oracle_id) map.set(rc.id, rc.oracle_id);
 		}
-		// Collection prints (may be different editions)
-		for (const stack of collectionStacks) {
-			for (const card of stack.cards) {
-				if (card.oracle_id) map.set(card.id, card.oracle_id);
-			}
-		}
 		return map;
-	}, [resolvedCards, collectionStacks]);
+	}, [resolvedCards, catalogOracleIds]);
 
 	// Reverse map: oracle_id → all scryfallIds known from collection + deck entries
 	const oracleIdToAllScryfallIds = useMemo(() => {

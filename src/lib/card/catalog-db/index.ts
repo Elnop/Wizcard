@@ -380,6 +380,61 @@ export async function byCollection(
 	return identifiers.map((id) => resolveOne(ctx, id));
 }
 
+// A GET with an `in.(…)` list of UUIDs is capped by the server's URI length:
+// 300 ids answers 414, 200 is comfortably under. Used to chunk the two lookups
+// below, which trade full-card assembly for two narrow id↔oracle_id columns.
+const ID_LOOKUP_CHUNK = 200;
+
+async function chunkedIn<T>(
+	values: string[],
+	run: (chunk: string[]) => Promise<T[]>
+): Promise<T[]> {
+	const out: T[] = [];
+	for (let i = 0; i < values.length; i += ID_LOOKUP_CHUNK) {
+		out.push(...(await run(values.slice(i, i + ID_LOOKUP_CHUNK))));
+	}
+	return out;
+}
+
+type IdOracle = { id: string; oracle_id: string };
+
+/**
+ * `oracle_id` for each of the given print ids — the catalog's two narrow columns,
+ * never a full assembled Card.
+ *
+ * Exists so a caller that only needs "which logical card is this print?" doesn't
+ * have to resolve whole cards through `/api/scryfall/cards/collection`. Ids absent
+ * from the catalog are simply missing from the returned map.
+ */
+export async function oracleIdsByPrintIds(printIds: string[]): Promise<Map<string, string>> {
+	const unique = [...new Set(printIds)].filter((id) => !id.startsWith('mpc:'));
+	if (unique.length === 0) return new Map();
+	const sb = createCatalogClient();
+	const rows = await chunkedIn(unique, async (chunk) => {
+		const { data } = await sb.from('card_prints').select('id, oracle_id').in('id', chunk);
+		return (data as IdOracle[] | null) ?? [];
+	});
+	return new Map(rows.map((r) => [r.id, r.oracle_id]));
+}
+
+/**
+ * Every print id in the catalog that shares one of the given `oracle_id`s, as an
+ * id → oracle_id map.
+ *
+ * Lets a caller map "a collection entry in any edition" back to a logical card
+ * without resolving the whole collection: intersect this with the entries on hand.
+ */
+export async function printIdsByOracleIds(oracleIds: string[]): Promise<Map<string, string>> {
+	const unique = [...new Set(oracleIds)];
+	if (unique.length === 0) return new Map();
+	const sb = createCatalogClient();
+	const rows = await chunkedIn(unique, async (chunk) => {
+		const { data } = await sb.from('card_prints').select('id, oracle_id').in('oracle_id', chunk);
+		return (data as IdOracle[] | null) ?? [];
+	});
+	return new Map(rows.map((r) => [r.id, r.oracle_id]));
+}
+
 export async function printsByOracleId(oracleId: string): Promise<Card[]> {
 	const sb = createCatalogClient();
 	const { data } = await sb

@@ -10,7 +10,7 @@ import type { CollectionCopyEntry } from '@/lib/card/components/CardPrintPickerM
 import { useDeckContext } from '@/lib/deck/context/DeckContext';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
-import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
+import { useCollectionOracleIds } from '@/lib/collection/hooks/useCollectionOracleIds';
 import { cardProducesToken } from '@/lib/deck/utils/collectDeckTokens';
 import { getCopyBadgeState } from '@/lib/card/components/OwnershipBadge/copyBadgeState';
 import { OwnershipBadge } from '@/lib/card/components/OwnershipBadge/OwnershipBadge';
@@ -144,23 +144,27 @@ export function useDeckCardModalProps(
 
 	const deckNameById = useMemo(() => new Map(allDecks.map((d) => [d.id, d.name])), [allDecks]);
 
-	// Resolve collection stacks so oracle_id lookups work across editions.
-	const { stacks: collectionStacks } = useCollectionCards(entries);
+	// oracle_id lookups across editions, from the DB catalog. Only the SELECTED
+	// card's copies are ever matched here, so resolving the whole collection (the
+	// previous `useCollectionCards(entries)` call, ~65 batched POSTs for a large
+	// collection) was wasted work — see useCollectionOracleIds.
+	const selectedPrintIds = useMemo(
+		() => [...(selectedGroup?.byZone.values() ?? [])].flat().map((c) => c.id),
+		[selectedGroup]
+	);
+	const catalogOracleIds = useCollectionOracleIds(selectedPrintIds, entries);
 
 	const collectionScryfallIdToOracleId = useMemo(() => {
-		const map = new Map<string, string>();
-		for (const stack of collectionStacks) {
-			for (const card of stack.cards) {
-				if (card.oracle_id) map.set(card.id, card.oracle_id);
-			}
-		}
+		const map = new Map(catalogOracleIds);
+		// The selected copies' own oracle_id wins: it is already resolved in memory
+		// and covers prints the catalog may not carry.
 		for (const copies of selectedGroup?.byZone.values() ?? []) {
 			for (const c of copies) {
 				if (c.oracle_id) map.set(c.id, c.oracle_id);
 			}
 		}
 		return map;
-	}, [collectionStacks, selectedGroup]);
+	}, [catalogOracleIds, selectedGroup]);
 
 	const oracleIdToAllScryfallIds = useMemo(() => {
 		const map = new Map<string, Set<string>>();
