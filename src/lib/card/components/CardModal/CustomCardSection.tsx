@@ -2,29 +2,24 @@ import { useTranslations } from 'next-intl';
 import type { CustomCard } from '@/lib/mpc/types';
 import styles from './CustomCardSection.module.css';
 
-const CARD_TYPE_LABELS: Record<string, string> = {
-	card: 'Card',
-	token: 'Token',
-	cardback: 'Cardback',
-};
-
-const SOURCE_TYPE_LABELS: Record<string, string> = {
-	mpc_ingested: 'MPC',
-	user_created: 'User Created',
-};
-
 export function CustomCardSection({ card }: { card: CustomCard }) {
 	const t = useTranslations('card');
 	const m = card.custom;
+	const cardTypeLabel =
+		m.card_type === 'card' || m.card_type === 'token' || m.card_type === 'cardback'
+			? t(`customType.${m.card_type}`)
+			: m.card_type;
+	const sourceTypeLabel =
+		m.source_type === 'mpc_ingested' || m.source_type === 'user_created'
+			? t(`customSource.${m.source_type}`)
+			: m.source_type;
 	return (
 		<div className={styles.section}>
 			<div className={styles.sectionTitle}>{t('customTitle')}</div>
 
 			<div className={styles.badgeRow}>
-				<span className={styles.badge}>{CARD_TYPE_LABELS[m.card_type] ?? m.card_type}</span>
-				<span className={styles.badgeSecondary}>
-					{SOURCE_TYPE_LABELS[m.source_type] ?? m.source_type}
-				</span>
+				<span className={styles.badge}>{cardTypeLabel}</span>
+				<span className={styles.badgeSecondary}>{sourceTypeLabel}</span>
 			</div>
 
 			{m.source_name && (
