@@ -246,10 +246,6 @@ function CardFieldsPanel({
 	const isPlaneswalker = draft.layoutId === 'planeswalker';
 	return (
 		<div className={styles.panelContent}>
-			<div className={styles.panelIntro}>
-				<h2>{t('title')}</h2>
-				<p>{t('directHint')}</p>
-			</div>
 			<FormField label={t('name')} error={validationErrors.includes('name')}>
 				<input
 					value={face.name}

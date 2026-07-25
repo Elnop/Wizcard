@@ -971,8 +971,6 @@
 			"details": "Details"
 		},
 		"fields": {
-			"title": "Write your card",
-			"directHint": "Use this form or click any text directly on the preview. Both stay perfectly synchronized.",
 			"name": "Card name",
 			"namePlaceholder": "Aether Cartographer",
 			"manaCost": "Mana cost",

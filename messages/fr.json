@@ -971,8 +971,6 @@
 			"details": "Détails"
 		},
 		"fields": {
-			"title": "Écrivez votre carte",
-			"directHint": "Utilisez ce formulaire ou cliquez directement sur un texte de la carte. Les deux restent parfaitement synchronisés.",
 			"name": "Nom de la carte",
 			"namePlaceholder": "Cartographe de l'Éther",
 			"manaCost": "Coût de mana",
