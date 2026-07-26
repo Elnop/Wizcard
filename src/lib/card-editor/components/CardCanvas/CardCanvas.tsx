@@ -727,7 +727,10 @@ function CardSvg({
 						fontWeight="800"
 						fill={palette.ink}
 					>
-						{face.loyalty || `${face.power || '—'} / ${face.toughness || '—'}`}
+						{/* Une créature a TOUJOURS deux valeurs : renseigner la force sans
+						    l'endurance donne « 3 / 0 », pas « 3 / — ». Le tiret laissait
+						    croire à une valeur absente, qui n'existe pas sur une carte. */}
+						{face.loyalty || `${face.power || '0'} / ${face.toughness || '0'}`}
 					</text>
 				</g>
 			)}
