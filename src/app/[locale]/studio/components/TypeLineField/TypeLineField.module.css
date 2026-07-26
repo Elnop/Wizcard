@@ -15,10 +15,9 @@
 
 .fieldLabel {
 	padding: 0;
-	font-size: var(--text-xs);
-	font-weight: 700;
-	letter-spacing: 0.05em;
-	color: #d7d2c8;
+	font-size: var(--text-sm);
+	font-weight: 500;
+	color: var(--text-muted);
 }
 
 /*
@@ -32,8 +31,13 @@
 	gap: 2px;
 	overflow: hidden;
 	border: 1px solid var(--border);
-	border-radius: 7px;
-	background: rgba(7, 8, 13, 0.72);
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.04);
+	transition: border-color 0.15s ease;
+}
+
+.groups:focus-within {
+	border-color: var(--primary);
 }
 
 .group {
@@ -58,8 +62,8 @@
    trois libellés empilés au-dessus de trois champs mangeaient toute la hauteur. */
 .groupLabel {
 	flex-shrink: 0;
-	width: 74px;
-	font-size: var(--text-2xs);
+	width: 78px;
+	font-size: var(--text-xs);
 	color: var(--text-muted);
 }
 
@@ -67,13 +71,13 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
-	padding: 2px 4px 2px 8px;
-	border: 1px solid rgba(201, 168, 76, 0.28);
-	border-radius: 99px;
-	background: rgba(201, 168, 76, 0.11);
-	font-size: var(--text-2xs);
+	padding: 2px 4px 2px 9px;
+	border: 1px solid var(--glass-border);
+	border-radius: 999px;
+	background: rgba(201, 168, 76, 0.1);
+	font-size: var(--text-xs);
 	line-height: 1.6;
-	color: #e8dfc9;
+	color: var(--foreground);
 }
 
 .tag button {
@@ -84,13 +88,13 @@
 	border: 0;
 	border-radius: 50%;
 	background: transparent;
-	color: rgba(232, 223, 201, 0.55);
+	color: var(--text-muted);
 	cursor: pointer;
 	transition: color 0.15s ease;
 }
 
 .tag button:hover {
-	color: #f0a79e;
+	color: var(--error);
 }
 
 /* La liste de suggestions se superpose au contenu suivant : le wrapper porte le
@@ -110,7 +114,7 @@
 	border: 0;
 	background: transparent;
 	color: var(--foreground);
-	font: 500 var(--text-sm) var(--font-body);
+	font: 400 var(--text-base) var(--font-body);
 	outline: none;
 }
 
@@ -128,8 +132,8 @@
 	padding: 4px;
 	overflow-y: auto;
 	border: 1px solid var(--border);
-	border-radius: 7px;
-	background: #14151d;
+	border-radius: 8px;
+	background: var(--surface);
 	box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
 	list-style: none;
 }
@@ -137,12 +141,12 @@
 .suggestions button {
 	display: block;
 	width: 100%;
-	padding: 6px 8px;
+	padding: 7px 9px;
 	border: 0;
-	border-radius: 5px;
+	border-radius: 6px;
 	background: transparent;
 	color: var(--foreground);
-	font-size: var(--text-2xs);
+	font-size: var(--text-sm);
 	text-align: start;
 	cursor: pointer;
 }
@@ -154,16 +158,16 @@
 /* Aperçu de la ligne telle qu'elle sera imprimée : en serif, comme sur la carte. */
 .preview {
 	padding: 6px 2px 0;
-	font-family: Georgia, serif;
+	font-family: var(--font-display);
 	font-size: var(--text-sm);
-	color: #d7d2c8;
+	color: var(--text-muted);
 }
 
 .preview:empty::before {
 	content: '—';
-	color: rgba(255, 255, 255, 0.24);
+	color: var(--text-muted);
 }
 
 .fieldError .groups {
-	border-color: rgba(207, 91, 79, 0.55);
+	border-color: var(--error);
 }

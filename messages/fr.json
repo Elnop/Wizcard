@@ -946,7 +946,6 @@
 			"description": "Créez, prévisualisez, exportez et sauvegardez des cartes custom originales avec le Studio Wizcard."
 		},
 		"toolbar": {
-			"eyebrow": "Créateur de cartes custom",
 			"title": "Studio Wizcard",
 			"undo": "Annuler",
 			"redo": "Rétablir",
@@ -1008,8 +1007,8 @@
 			"subtypesPlaceholder": "Humain, Sorcier…"
 		},
 		"art": {
-			"title": "Composez l'illustration",
-			"description": "Importez, collez ou déposez une image. La source est optimisée localement avant de quitter votre navigateur.",
+			"title": "Illustration",
+			"description": "Importez, collez ou déposez une image. Elle est optimisée localement avant d'être envoyée.",
 			"drop": "Déposez une image ou parcourez vos fichiers",
 			"formats": "PNG, JPG, WebP ou AVIF · 15 Mo maximum",
 			"replace": "Remplacer l'illustration",
@@ -1025,8 +1024,8 @@
 			}
 		},
 		"style": {
-			"title": "Donnez-lui une identité",
-			"description": "Changez de layout à tout moment sans perdre les données ni le cadrage de l'illustration.",
+			"title": "Style",
+			"description": "Le layout se change à tout moment sans perdre les textes ni le cadrage.",
 			"layout": "Layout",
 			"frame": "Palette du cadre",
 			"accent": "Accent",
@@ -1124,8 +1123,8 @@
 			}
 		},
 		"details": {
-			"title": "Détails de publication",
-			"description": "Complétez les métadonnées de l'impression et choisissez qui pourra découvrir la carte.",
+			"title": "Détails",
+			"description": "Métadonnées d'impression et visibilité de la carte.",
 			"setName": "Nom de l'extension",
 			"setCode": "Code de l'extension",
 			"number": "Numéro de collection",
@@ -1169,9 +1168,7 @@
 			"editStats": "Modifier une statistique de la carte"
 		},
 		"preview": {
-			"eyebrow": "Rendu en direct",
-			"title": "Votre carte, en temps réel",
-			"hint": "Tout reste modifiable. Survolez un texte de la carte, cliquez et écrivez directement.",
+			"title": "Aperçu de la carte",
 			"directEdit": "Édition directe du texte",
 			"dropImage": "Déposer ou coller une illustration",
 			"highResolution": "Export haute résolution 3×"

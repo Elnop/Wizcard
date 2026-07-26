@@ -293,13 +293,6 @@ export function CardEditorStudio() {
 					onDragOver={(event) => event.preventDefault()}
 					onDrop={handlePreviewDrop}
 				>
-					<div className={styles.previewHeader}>
-						<div>
-							<span>{t('preview.eyebrow')}</span>
-							<h2>{t('preview.title')}</h2>
-						</div>
-						<p>{t('preview.hint')}</p>
-					</div>
 					<div className={styles.previewStage}>
 						<div className={styles.stageGlow} aria-hidden />
 						<CardCanvas

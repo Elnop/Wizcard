@@ -51,7 +51,6 @@ export function EditorToolbar({
 	return (
 		<header className={styles.toolbar}>
 			<div className={styles.brandBlock}>
-				<div className={styles.eyebrow}>{t('eyebrow')}</div>
 				<h1>{t('title')}</h1>
 				<span className={styles.autosave} data-status={autosaveStatus}>
 					<i /> {t(`autosave.${autosaveStatus}`)}
