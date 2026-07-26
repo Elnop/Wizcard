@@ -66,20 +66,18 @@ function TypeTagInput({
 	return (
 		<div className={styles.group}>
 			<span className={styles.groupLabel}>{label}</span>
-			<div className={styles.tagRow}>
-				{values.map((value) => (
-					<span key={value} className={styles.tag}>
-						{value}
-						<button
-							type="button"
-							onClick={() => onChange(values.filter((entry) => entry !== value))}
-							aria-label={`${label} — ${value}`}
-						>
-							<X size={11} weight="bold" />
-						</button>
-					</span>
-				))}
-			</div>
+			{values.map((value) => (
+				<span key={value} className={styles.tag}>
+					{value}
+					<button
+						type="button"
+						onClick={() => onChange(values.filter((entry) => entry !== value))}
+						aria-label={`${label} — ${value}`}
+					>
+						<X size={11} weight="bold" />
+					</button>
+				</span>
+			))}
 			<div className={styles.inputWrapper}>
 				<input
 					value={draft}
@@ -101,7 +99,10 @@ function TypeTagInput({
 						}
 					}}
 					onBlur={() => commit(draft)}
-					placeholder={placeholder}
+					// Placeholder seulement tant que la liste est vide : avec des tags il
+					// passe à la ligne et déséquilibre la rangée, alors qu'il n'apprend
+					// plus rien à ce stade.
+					placeholder={values.length === 0 ? placeholder : ''}
 					maxLength={40}
 				/>
 				{suggestions.length > 0 && (
@@ -151,27 +152,29 @@ export function TypeLineField({
 	return (
 		<fieldset className={`${styles.field} ${hasError ? styles.fieldError : ''}`}>
 			<legend className={styles.fieldLabel}>{t('typeLine')}</legend>
-			<TypeTagInput
-				label={t('supertypes')}
-				placeholder={t('supertypesPlaceholder')}
-				values={parts.supertypes}
-				vocabulary={vocabulary?.supertypes ?? []}
-				onChange={(values) => update('supertypes', values)}
-			/>
-			<TypeTagInput
-				label={t('types')}
-				placeholder={t('typesPlaceholder')}
-				values={parts.types}
-				vocabulary={vocabulary?.types ?? []}
-				onChange={(values) => update('types', values)}
-			/>
-			<TypeTagInput
-				label={t('subtypes')}
-				placeholder={t('subtypesPlaceholder')}
-				values={parts.subtypes}
-				vocabulary={vocabulary?.subtypes ?? []}
-				onChange={(values) => update('subtypes', values)}
-			/>
+			<div className={styles.groups}>
+				<TypeTagInput
+					label={t('supertypes')}
+					placeholder={t('supertypesPlaceholder')}
+					values={parts.supertypes}
+					vocabulary={vocabulary?.supertypes ?? []}
+					onChange={(values) => update('supertypes', values)}
+				/>
+				<TypeTagInput
+					label={t('types')}
+					placeholder={t('typesPlaceholder')}
+					values={parts.types}
+					vocabulary={vocabulary?.types ?? []}
+					onChange={(values) => update('types', values)}
+				/>
+				<TypeTagInput
+					label={t('subtypes')}
+					placeholder={t('subtypesPlaceholder')}
+					values={parts.subtypes}
+					vocabulary={vocabulary?.subtypes ?? []}
+					onChange={(values) => update('subtypes', values)}
+				/>
+			</div>
 			{/*
 			 * Aperçu de la ligne composée : c'est elle qui sera imprimée. Vide, on
 			 * laisse le pseudo-élément CSS afficher le tiret plutôt que d'injecter

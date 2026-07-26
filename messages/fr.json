@@ -1001,9 +1001,9 @@
 			},
 			"capacityHint": "{lines} lignes d’environ {perLine} caractères, selon le layout.",
 			"supertypes": "Supertypes",
-			"supertypesPlaceholder": "Légendaire, Neige…",
+			"supertypesPlaceholder": "Légendaire…",
 			"types": "Types",
-			"typesPlaceholder": "Créature, Artefact…",
+			"typesPlaceholder": "Créature…",
 			"subtypes": "Sous-types",
 			"subtypesPlaceholder": "Humain, Sorcier…"
 		},

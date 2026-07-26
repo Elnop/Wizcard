@@ -1001,9 +1001,9 @@
 			},
 			"capacityHint": "{lines} lines of about {perLine} characters, set by the layout.",
 			"supertypes": "Supertypes",
-			"supertypesPlaceholder": "Legendary, Snow…",
+			"supertypesPlaceholder": "Legendary…",
 			"types": "Types",
-			"typesPlaceholder": "Creature, Artifact…",
+			"typesPlaceholder": "Creature…",
 			"subtypes": "Subtypes",
 			"subtypesPlaceholder": "Human, Wizard…"
 		},

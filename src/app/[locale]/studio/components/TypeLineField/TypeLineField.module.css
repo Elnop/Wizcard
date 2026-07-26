@@ -1,8 +1,13 @@
+/*
+ * Aligné sur les conventions de EditorSidebar.module.css : mêmes tokens de
+ * bordure, de rayon et de fond que .field, pour que ce bloc ne détonne pas au
+ * milieu des autres champs.
+ */
 .field {
 	display: flex;
 	min-width: 0;
 	flex-direction: column;
-	gap: 10px;
+	gap: 7px;
 	margin: 0;
 	padding: 0;
 	border: 0;
@@ -13,45 +18,62 @@
 	font-size: var(--text-xs);
 	font-weight: 700;
 	letter-spacing: 0.05em;
-	text-transform: uppercase;
-	color: var(--text-muted);
+	color: #d7d2c8;
 }
 
-.fieldError input {
-	border-color: rgba(207, 91, 79, 0.55);
+/*
+ * Les trois listes vivent dans un même cadre plutôt que côte à côte : elles
+ * composent UNE ligne, et trois encadrés séparés donnaient l'impression de
+ * trois champs sans rapport.
+ */
+.groups {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	overflow: hidden;
+	border: 1px solid var(--border);
+	border-radius: 7px;
+	background: rgba(7, 8, 13, 0.72);
 }
 
 .group {
 	display: flex;
-	flex-direction: column;
+	min-height: 40px;
+	flex-wrap: wrap;
+	align-items: center;
 	gap: 5px;
+	padding: 7px 10px;
+	transition: background 0.16s ease;
 }
 
+.group + .group {
+	border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.group:focus-within {
+	background: rgba(201, 168, 76, 0.05);
+}
+
+/* Le libellé tient sur la même ligne que les tags : la colonne est étroite, et
+   trois libellés empilés au-dessus de trois champs mangeaient toute la hauteur. */
 .groupLabel {
+	flex-shrink: 0;
+	width: 74px;
 	font-size: var(--text-2xs);
 	color: var(--text-muted);
-}
-
-.tagRow {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 4px;
-}
-
-.tagRow:empty {
-	display: none;
 }
 
 .tag {
 	display: inline-flex;
 	align-items: center;
-	gap: 5px;
-	padding: 3px 5px 3px 9px;
-	border: 1px solid rgba(201, 168, 76, 0.32);
+	gap: 4px;
+	padding: 2px 4px 2px 8px;
+	border: 1px solid rgba(201, 168, 76, 0.28);
 	border-radius: 99px;
-	background: rgba(201, 168, 76, 0.1);
+	background: rgba(201, 168, 76, 0.11);
 	font-size: var(--text-2xs);
-	color: var(--text);
+	line-height: 1.6;
+	color: #e8dfc9;
 }
 
 .tag button {
@@ -62,7 +84,7 @@
 	border: 0;
 	border-radius: 50%;
 	background: transparent;
-	color: var(--text-muted);
+	color: rgba(232, 223, 201, 0.55);
 	cursor: pointer;
 	transition: color 0.15s ease;
 }
@@ -72,28 +94,41 @@
 }
 
 /* La liste de suggestions se superpose au contenu suivant : le wrapper porte le
-   contexte de positionnement. */
+   contexte de positionnement. Il pousse aussi pour occuper la place restante. */
 .inputWrapper {
 	position: relative;
+	min-width: 90px;
+	flex: 1;
 }
 
-/* Les <input> de la sidebar ont une largeur intrinsèque (taille par défaut d'un
-   champ texte) : sans ça ils n'occupent qu'un tiers de la colonne. */
+/* Champ nu : le cadre est porté par .groups, pas par chaque input — sinon on
+   voyait une bordure dans une bordure. */
 .inputWrapper input {
 	width: 100%;
+	min-width: 0;
+	padding: 2px 0;
+	border: 0;
+	background: transparent;
+	color: var(--foreground);
+	font: 500 var(--text-sm) var(--font-body);
+	outline: none;
+}
+
+.inputWrapper input::placeholder {
+	color: rgba(255, 255, 255, 0.26);
 }
 
 .suggestions {
 	position: absolute;
 	z-index: 10;
-	top: calc(100% + 3px);
+	top: calc(100% + 6px);
 	inset-inline: 0;
-	max-height: 216px;
+	max-height: 212px;
 	margin: 0;
 	padding: 4px;
 	overflow-y: auto;
 	border: 1px solid var(--border);
-	border-radius: 8px;
+	border-radius: 7px;
 	background: #14151d;
 	box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
 	list-style: none;
@@ -106,7 +141,7 @@
 	border: 0;
 	border-radius: 5px;
 	background: transparent;
-	color: var(--text);
+	color: var(--foreground);
 	font-size: var(--text-2xs);
 	text-align: start;
 	cursor: pointer;
@@ -116,18 +151,19 @@
 	background: rgba(255, 255, 255, 0.07);
 }
 
-/* Aperçu de la ligne telle qu'elle sera imprimée sur la carte. */
+/* Aperçu de la ligne telle qu'elle sera imprimée : en serif, comme sur la carte. */
 .preview {
-	padding: 7px 10px;
-	border: 1px solid var(--border);
-	border-radius: 6px;
-	background: rgba(255, 255, 255, 0.03);
+	padding: 6px 2px 0;
 	font-family: Georgia, serif;
 	font-size: var(--text-sm);
-	color: var(--text);
+	color: #d7d2c8;
 }
 
 .preview:empty::before {
 	content: '—';
-	color: var(--text-muted);
+	color: rgba(255, 255, 255, 0.24);
+}
+
+.fieldError .groups {
+	border-color: rgba(207, 91, 79, 0.55);
 }
