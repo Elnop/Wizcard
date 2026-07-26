@@ -16,6 +16,17 @@ export type Node =
 	| { type: 'member'; object: Node; property: string }
 	| { type: 'index'; object: Node; index: Node }
 	| { type: 'call'; callee: Node; args: Node[]; named: Record<string, Node> }
+	// Application partielle « nom@(nommé: valeur, …) » (tâche 6f), ex.
+	// `replace@(match:", (horizontal|…)", replace:"")` (magic.mse-game/script:432).
+	// DISTINCT du suffixe de paramètres déclarés « }@(…) » d'une définition
+	// (tâche 6d, capturé en amont par `collectDefinitions`/`parseParamList` —
+	// jamais vu ici, cf. commentaire de `parsePostfix`) : ici, `@(…)` apparaît
+	// après un identifiant NU en position d'EXPRESSION, et veut dire « ce nom,
+	// avec ces arguments déjà fournis » — un appel ultérieur (`cull_directions
+	// (indicator_field)`) complète juste l'argument manquant (typiquement
+	// `input`). `callee` reste le nom brut (jamais un objet arbitraire : aucun
+	// contre-exemple `expr@(...)` dans le corpus, toujours un `ident`).
+	| { type: 'curry'; callee: string; named: Record<string, Node> }
 	| { type: 'if'; condition: Node; then: Node; else: Node }
 	| { type: 'unary'; op: string; operand: Node }
 	| { type: 'binary'; op: string; left: Node; right: Node }
@@ -313,10 +324,68 @@ export function parseExpression(source: string): Node {
 		throw new ParseError(`jeton inattendu « ${token.value} » à ${token.pos}`);
 	}
 
+	/**
+	 * Suffixe d'application partielle « @(nommé: valeur, …) » (tâche 6f), ex.
+	 * `replace@(match:", (horizontal|…)", replace:"")` — toujours un
+	 * identifiant NU suivi de « @( » sans espace dans le corpus (251
+	 * occurrences vérifiées, aucun contre-exemple ni sur un
+	 * `member`/`call`/`index`) — cf. Node['curry']. Extraite de `parsePostfix`
+	 * (comme `tryParseReservedLiteral` en tâche 6d) pour ne pas alourdir sa
+	 * complexité cognitive déjà élevée, pas seulement pour éviter le lint.
+	 * DISTINCT du suffixe de paramètres déclarés « }@(…) » d'une définition
+	 * (tâche 6d) : celui-ci ne traverse jamais cette fonction, il est
+	 * intercepté par `collectDefinitions`/`parseParamList` avant même que le
+	 * CORPS ne soit tokenisé séparément.
+	 */
+	function parseCurrySuffix(callee: string): Node {
+		pos += 1; // « @ »
+		// eslint-disable-next-line sonarjs/no-incomplete-assertions -- safe: `expect` est le consommateur de jeton local, pas une assertion de test
+		expect('(');
+		const named: Record<string, Node> = {};
+		while (peek() && peek()!.value !== ')') {
+			const label = next();
+			if (label.kind !== 'ident') throw new ParseError(`nom d'argument attendu à ${label.pos}`);
+			// eslint-disable-next-line sonarjs/no-incomplete-assertions -- safe: `expect` est le consommateur de jeton local, pas une assertion de test
+			expect(':');
+			named[label.value] = parseBinary(0);
+			if (!eat(',')) break;
+		}
+		// eslint-disable-next-line sonarjs/no-incomplete-assertions -- safe: `expect` est le consommateur de jeton local, pas une assertion de test
+		expect(')');
+		return { type: 'curry', callee, named };
+	}
+
+	/** Suffixe d'appel « (arg1, nommé: arg2, …) » — extraite pour la même raison que `parseCurrySuffix`. */
+	function parseCallSuffix(callee: Node): Node {
+		pos += 1; // « ( »
+		const args: Node[] = [];
+		const named: Record<string, Node> = {};
+		while (peek() && peek()!.value !== ')') {
+			const label = peek();
+			// Argument nommé : « f(face: 1) ».
+			if (label?.kind === 'ident' && tokens[pos + 1]?.value === ':') {
+				pos += 2;
+				named[label.value] = parseBinary(0);
+			} else {
+				args.push(parseBinary(0));
+			}
+			if (!eat(',')) break;
+		}
+		// eslint-disable-next-line sonarjs/no-incomplete-assertions -- safe: `expect` est le consommateur de jeton local, pas une assertion de test
+		expect(')');
+		return { type: 'call', callee, args, named };
+	}
+
 	function parsePostfix(): Node {
 		let node = parsePrimary();
 		for (;;) {
-			if (eat('.')) {
+			if (peek()?.value === '@') {
+				// On n'accepte que ce cas précis (identifiant nu) plutôt que
+				// d'autoriser « @ » après n'importe quel noeud — cf. commentaire de
+				// `parseCurrySuffix`.
+				if (node.type !== 'ident') throw new ParseError(`« @ » inattendu après un noeud non nommé`);
+				node = parseCurrySuffix(node.name);
+			} else if (eat('.')) {
 				const property = next();
 				node = { type: 'member', object: node, property: property.value };
 			} else if (eat('[')) {
@@ -325,23 +394,7 @@ export function parseExpression(source: string): Node {
 				expect(']');
 				node = { type: 'index', object: node, index };
 			} else if (peek()?.value === '(') {
-				pos += 1;
-				const args: Node[] = [];
-				const named: Record<string, Node> = {};
-				while (peek() && peek()!.value !== ')') {
-					const label = peek();
-					// Argument nommé : « f(face: 1) ».
-					if (label?.kind === 'ident' && tokens[pos + 1]?.value === ':') {
-						pos += 2;
-						named[label.value] = parseBinary(0);
-					} else {
-						args.push(parseBinary(0));
-					}
-					if (!eat(',')) break;
-				}
-				// eslint-disable-next-line sonarjs/no-incomplete-assertions -- safe: `expect` est le consommateur de jeton local, pas une assertion de test
-				expect(')');
-				node = { type: 'call', callee: node, args, named };
+				node = parseCallSuffix(node);
 			} else {
 				return node;
 			}

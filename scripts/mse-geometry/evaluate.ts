@@ -102,6 +102,169 @@ function bindArguments(
 }
 
 /**
+ * Évalue un APPEL vers une définition du corpus (`scope.functions`), qu'il
+ * s'écrive avec parenthèses (`call`) ou sans (`ident` référencé nu) — les deux
+ * partagent EXACTEMENT la même sémantique de liaison depuis la tâche 6d (cf.
+ * leurs cas respectifs), donc la même fonction plutôt que dupliquer la
+ * logique deux fois.
+ *
+ * Tâche 6f : le corps analysé peut être un noeud `curry` plutôt qu'une
+ * expression ordinaire — ex. `cull_directions := replace@(match:"…",
+ * replace:"")`, où `parseExpression(definition.body)` renvoie directement le
+ * noeud `curry` (rien à équilibrer autour, c'est toute l'expression). Dans ce
+ * cas, on ne passe PAS par `bindArguments`/le cadre de locales habituel : une
+ * application partielle n'a pas de corps à exécuter dans un cadre, c'est un
+ * APPEL DIFFÉRÉ vers `callee` — cf. `evaluateCurry`.
+ */
+function evaluateDefinition(
+	definition: FunctionDef,
+	args: Value[],
+	named: Record<string, Value>,
+	scope: Scope,
+	depth: number,
+	locals: Locals
+): Value {
+	const body = parseExpression(definition.body);
+	if (body.type === 'curry') return evaluateCurry(body, args, named, scope, depth, locals);
+	const callLocals = bindArguments(definition, args, named, scope, depth);
+	return evaluate(body, scope, depth + 1, callLocals);
+}
+
+/**
+ * Complète une application partielle « nom@(nommé: valeur, …) » (tâche 6f)
+ * avec les arguments manquants d'un appel PLUS TARD (ex. `cull_directions
+ * (indicator_field)` complète l'« input » que `replace` attend en premier
+ * positionnel). Vérifié sur les 251 occurrences `@(` du corpus : le point
+ * d'appel d'un alias curried ne fournit JAMAIS d'argument nommé qui
+ * chevaucherait ceux déjà fixés par la curry — donc les nommés de l'APPEL
+ * s'ajoutent à ceux de la curry sans jamais avoir besoin de trancher un
+ * conflit (si un futur appel le faisait malgré tout, l'appel gagnerait,
+ * cohérent avec la façon dont `bindArguments` traite déjà les nommés comme
+ * prioritaires sur les défauts).
+ *
+ * `callee` peut être un builtin (`replace`, `filter_text`, …) ou une AUTRE
+ * définition du corpus (aucun exemple mesuré, mais rien dans la grammaire ne
+ * l'exclut) — les deux chemins existent déjà pour un `call` ordinaire, donc
+ * réutilisés ici plutôt que dupliqués.
+ */
+function evaluateCurry(
+	node: Node & { type: 'curry' },
+	args: Value[],
+	named: Record<string, Value>,
+	scope: Scope,
+	depth: number,
+	locals: Locals
+): Value {
+	// `replace` (tâche 6f) est un cas à part : son argument `replace:` peut être
+	// une expression qui référence les groupes capturés du PATTERN (`_1`, `_2`,
+	// …), donc ne doit PAS être évaluée maintenant comme n'importe quel autre
+	// nommé — cf. `evaluateReplaceCall`, qui reçoit les noeuds bruts plutôt que
+	// des valeurs déjà calculées. On l'intercepte avant la boucle d'évaluation
+	// générique ci-dessous, exactement comme le fait le cas `call` plus bas.
+	if (node.callee === 'replace') {
+		return evaluateReplaceCall(node.named, args, named, scope, depth, locals);
+	}
+	const boundNamed: Record<string, Value> = {};
+	for (const [key, valueNode] of Object.entries(node.named)) {
+		boundNamed[key] = evaluate(valueNode, scope, depth + 1, locals);
+	}
+	const finalNamed = { ...boundNamed, ...named };
+	const builtin = BUILTINS.get(node.callee);
+	if (builtin) return builtin(args, finalNamed);
+	const definition = scope.functions.get(node.callee);
+	if (definition !== undefined) {
+		return evaluateDefinition(definition, args, finalNamed, scope, depth, locals);
+	}
+	throw new Unresolved(`${node.callee}()`);
+}
+
+/**
+ * Traduit un motif MSE en `RegExp` JS GLOBALE (tâche 6f) — MSE remplace TOUTES
+ * les occurrences (`replace`), jamais une seule, donc le drapeau `g` n'est pas
+ * optionnel. Les motifs du corpus mesurés pour `replace`/`match`/`filter_text`
+ * (`cull_directions`, `cull_noncolors`, `</?soft-line>`, …) sont déjà de la
+ * syntaxe PCRE ordinaire acceptée telle quelle par JS ; on ne traduit aucune
+ * extension MSE ici (ex. `(?i)`/`(?ix)` en tête de motif, `in_context`) — un
+ * motif qui en a besoin lève `Unresolved` plutôt que d'être mal interprété
+ * silencieusement (cf. « aucun fallback »).
+ */
+function toGlobalRegex(pattern: string, what: string): RegExp {
+	if (pattern.startsWith('(?')) {
+		// Drapeaux inline façon PCRE (« (?i) », « (?ix) », …) : JS ne les
+		// supporte pas en tête de motif de cette manière. Aucun des motifs
+		// mesurés par `cull_directions`/`cull_noncolors`/`softline_ripper` n'en
+		// a besoin ; un futur appelant qui en dépendrait doit le signaler
+		// honnêtement plutôt que produire un motif silencieusement erroné.
+		throw new Unresolved(`${what} (drapeaux PCRE non pris en charge)`);
+	}
+	try {
+		return new RegExp(pattern, 'g');
+	} catch {
+		throw new Unresolved(`${what} (motif invalide)`);
+	}
+}
+
+/**
+ * `replace(input, match:motif, replace:remplacement)` — remplace TOUTES les
+ * occurrences du motif (tâche 6f). Deux formes de `replace:` coexistent dans
+ * le corpus :
+ *  - une chaîne LITTÉRALE (150/179 appels mesurés, ex. `cull_directions`) :
+ *    remplacement direct, sans rien évaluer par correspondance ;
+ *  - une expression qui référence les groupes capturés (`to_title`,
+ *    `replace:{_1+to_upper(_2)+to_lower(_3)}`, 23/179 appels) : chaque
+ *    occurrence est remplacée en évaluant cette expression dans un cadre où
+ *    `_1`, `_2`, … sont liés au texte capturé par CETTE correspondance —
+ *    c'est le seul moyen honnête de la traiter (une valeur constante ne
+ *    pourrait jamais représenter un remplacement qui dépend du texte trouvé).
+ *
+ * `in_context` (motif contextuel autour de `<match>`) n'est pas modélisé :
+ * aucun des appels bloquant `cull_directions`/`cull_noncolors` ne l'utilise ;
+ * un appel qui le fournit lève `Unresolved` plutôt que d'ignorer le contexte
+ * en silence.
+ */
+function evaluateReplaceCall(
+	namedNodes: Record<string, Node>,
+	args: Value[],
+	named: Record<string, Value>,
+	scope: Scope,
+	depth: number,
+	locals: Locals
+): Value {
+	if (namedNodes.in_context || named.in_context !== undefined) {
+		throw new Unresolved('replace(in_context:) non pris en charge');
+	}
+	const matchNode = namedNodes.match;
+	if (!matchNode) throw new Unresolved('replace(match:) manquant');
+	const matchValue = named.match ?? evaluate(matchNode, scope, depth + 1, locals);
+	if (typeof matchValue !== 'string') throw new Unresolved('replace(match:) non textuel');
+	const replaceNode = namedNodes.replace;
+	if (!replaceNode) throw new Unresolved('replace(replace:) manquant');
+	const input = String(named.input ?? args[0] ?? '');
+	const regex = toGlobalRegex(matchValue, 'replace(match:)');
+	if (replaceNode.type === 'string') {
+		// Remplacement littéral : pas de groupe capturé à lier, cf. commentaire
+		// de tête. `$`-séquences (`$1`, `$&`, …) de JS n'ont AUCUN sens ici — ce
+		// sont des caractères MSE ordinaires — donc échappées avant substitution.
+		const literal = replaceNode.value.replace(/\$/g, '$$$$');
+		return input.replace(regex, literal);
+	}
+	// Remplacement par EXPRESSION : chaque correspondance est remplacée en
+	// évaluant `replaceNode` avec `_1..._N` liés aux groupes capturés de CETTE
+	// correspondance dans le MÊME cadre de locales que l'appelant (les autres
+	// noms visibles, ex. `errata_map` dans `errata_map[_1] or else _1`,
+	// doivent rester accessibles).
+	return input.replace(regex, (...matchArgs) => {
+		// `String.replace` avec une fonction reçoit (match, p1, p2, ..., offset, string) ;
+		// les groupes sont toujours des `string` ou `undefined` (groupe non capturé).
+		const groups = matchArgs.slice(0, -2) as Array<string | undefined>;
+		const callLocals: Locals = new Map(locals);
+		groups.forEach((group, index) => callLocals.set(`_${index + 1}`, group ?? ''));
+		const value = evaluate(replaceNode, scope, depth + 1, callLocals);
+		return String(value);
+	});
+}
+
+/**
  * Évalue un noeud d'AST.
  *
  * `locals` est le cadre de variables du corps EN COURS (tâche 6c) : omis, un
@@ -144,10 +307,11 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 			// PAS vide : les défauts déclarés par `@(...)` (tâche 6d) s'appliquent
 			// même sans appel explicite, exactement comme un appel à zéro
 			// argument (`has_identity()` et `has_identity` référencé sans
-			// parenthèses doivent voir le même `face` par défaut).
+			// parenthèses doivent voir le même `face` par défaut). Tâche 6f :
+			// `evaluateDefinition` gère aussi le cas où le corps est une
+			// application partielle (`curry`).
 			if (definition !== undefined) {
-				const callLocals = bindArguments(definition, [], {}, scope, depth);
-				return evaluate(parseExpression(definition.body), scope, depth + 1, callLocals);
+				return evaluateDefinition(definition, [], {}, scope, depth, locals);
 			}
 			throw new Unresolved(node.name);
 		}
@@ -286,6 +450,20 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 		case 'call': {
 			if (node.callee.type !== 'ident') throw new Unresolved('appel non nommé');
 			const name = node.callee.name;
+			// `replace(input, match:…, replace:…)` appelé DIRECTEMENT (sans currying,
+			// ex. script:1148 `replace(input, match:"up to ", replace:"")`) a besoin
+			// des noeuds BRUTS de `replace:`, pas de valeurs déjà évaluées — cf.
+			// `evaluateReplaceCall`. Interceptée ici, avant l'évaluation générique des
+			// arguments ci-dessous, pour la même raison que dans `evaluateCurry`.
+			if (name === 'replace') {
+				const args = node.args.map((arg) => evaluate(arg, scope, depth + 1, locals));
+				const named = Object.fromEntries(
+					Object.entries(node.named)
+						.filter(([key]) => key !== 'replace')
+						.map(([key, value]) => [key, evaluate(value, scope, depth + 1, locals)])
+				);
+				return evaluateReplaceCall(node.named, args, named, scope, depth, locals);
+			}
 			const args = node.args.map((arg) => evaluate(arg, scope, depth + 1, locals));
 			const named = Object.fromEntries(
 				Object.entries(node.named).map(([key, value]) => [
@@ -298,13 +476,23 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 			const definition = scope.functions.get(name);
 			// Cadre de locales NEUF construit à partir des défauts déclarés ET des
 			// arguments de CET appel (tâche 6d, cf. `bindArguments`) — jamais celui
-			// de l'appelant, pour ne pas lui faire fuiter ses propres locales.
+			// de l'appelant, pour ne pas lui faire fuiter ses propres locales. Tâche
+			// 6f : `evaluateDefinition` gère aussi le cas où le corps est une
+			// application partielle (`curry`), ex. `cull_directions(indicator_field)`.
 			if (definition !== undefined) {
-				const callLocals = bindArguments(definition, args, named, scope, depth);
-				return evaluate(parseExpression(definition.body), scope, depth + 1, callLocals);
+				return evaluateDefinition(definition, args, named, scope, depth, locals);
 			}
 			throw new Unresolved(`${name}()`);
 		}
+		case 'curry':
+			// Une application partielle référencée SANS jamais être appelée (ni
+			// directement en `ident`/`call` via `scope.functions`, ni combinée par
+			// « + » à une autre — cf. `combined_cost`, `separate_words`, qui
+			// composent PLUSIEURS filtres de texte via des builtins moteur
+			// `remove_tags`/`trim` non modélisés) n'est PAS une valeur MSE : cf.
+			// « aucun fallback », on refuse plutôt que de deviner un résultat pour
+			// une composition de fonctions qu'on ne sait pas exécuter.
+			throw new Unresolved('application partielle non appelée');
 	}
 }
 

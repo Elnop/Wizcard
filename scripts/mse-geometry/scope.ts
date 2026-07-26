@@ -30,8 +30,88 @@ export interface Scope {
 }
 
 /**
- * Relève les définitions `nom := { corps }` d'une source de script, avec leur
- * suffixe optionnel `@(…)` de paramètres (tâche 6d).
+ * Trouve la fin d'un corps de définition NU (tâche 6f), c-à-d sans accolade
+ * ouvrante — ex. `cull_directions := replace@(match:", (horizontal|…)",
+ * replace:"")` (magic.mse-game/script:432). 1280 définitions du script
+ * partagé sont de cette forme (alias simples, littéraux, applications
+ * partielles) et n'étaient JUSQU'ICI JAMAIS capturées : la regex existante
+ * n'accepte que `nom := {`. Un corps nu n'a pas de délimiteur explicite — il
+ * se termine soit en fin de fichier, soit juste avant la PROCHAINE définition
+ * de premier niveau (`^nom := `, colonne 0, vérifié sur les 376 styles +
+ * magic.mse-game/script : aucune définition de premier niveau n'est
+ * indentée — seules les affectations LOCALES à l'intérieur d'un corps le
+ * sont, toujours précédées d'une tabulation).
+ *
+ * On balaie caractère par caractère plutôt que ligne par ligne car un corps
+ * nu peut contenir une chaîne MULTI-LIGNE (ex. `mana_context`, script:1498+,
+ * un regex verbeux de plusieurs dizaines de lignes) : sans suivi de l'état
+ * "dans une chaîne", un `#` ou un saut de ligne suivi de `nom :=` À
+ * L'INTÉRIEUR de cette chaîne serait pris pour un commentaire ou une
+ * nouvelle définition. Le suivi des guillemets reproduit volontairement la
+ * règle NAÏVE du lexer (`lexer.ts` : tout `"` bascule l'état, aucun
+ * échappement `\"` reconnu) — se comporter autrement romprait la cohérence
+ * avec la tokenisation qui aura lieu ensuite sur ce même texte.
+ */
+/**
+ * Avance `index` d'un commentaire « # » jusqu'à la fin de ligne, comme dans le
+ * lexer — un « ( » ou « := » DANS un commentaire (cf. script:517, 1767) ne
+ * doit jamais influencer le comptage de profondeur ni la détection de limite
+ * de `findBareBodyEnd`. Renvoie l'index inchangé si `ch` n'ouvre pas un
+ * commentaire.
+ */
+function skipComment(source: string, index: number, ch: string): number {
+	if (ch !== '#') return index;
+	let i = index;
+	while (i < source.length && source[i] !== '\n') i += 1;
+	return i;
+}
+
+function findBareBodyEnd(source: string, start: number): number {
+	const topLevelStart = /^[a-z_][a-z_0-9]*\s*:=/im;
+	let index = start;
+	let inString = false;
+	let depth = 0; // parenthèses/crochets/accolades confondus, cf. commentaire de collectDefinitions
+	while (index < source.length) {
+		const ch = source[index];
+		if (inString) {
+			if (ch === '"') inString = false;
+			index += 1;
+			continue;
+		}
+		if (ch === '"') {
+			inString = true;
+			index += 1;
+			continue;
+		}
+		const afterComment = skipComment(source, index, ch);
+		if (afterComment !== index) {
+			index = afterComment;
+			continue;
+		}
+		if (ch === '(' || ch === '[' || ch === '{') depth += 1;
+		else if (ch === ')' || ch === ']' || ch === '}') depth -= 1;
+		if (ch === '\n' && depth <= 0) {
+			// Hors de toute parenthèse ouverte : la ligne SUIVANTE démarre-t-elle
+			// une nouvelle définition de premier niveau ? Si oui, le corps nu
+			// s'arrête ICI (avant ce saut de ligne). Une ligne blanche ou un
+			// commentaire ne termine PAS le corps à eux seuls (ex. `tap_reduction`,
+			// script:539-541, continue après un « + » en fin de ligne) : seule la
+			// prochaine ligne qui ressemble à `nom := ` compte.
+			const rest = source.slice(index + 1);
+			if (topLevelStart.test(rest)) return index;
+		}
+		index += 1;
+	}
+	return source.length;
+}
+
+/**
+ * Capture un corps ACCOLADE `{ corps }` et son suffixe optionnel `@(…)` de
+ * paramètres (tâche 6d) à partir de l'index qui suit le `{` ouvrant. Extraite
+ * de `collectDefinitions` (comme `findBareBodyEnd` juste au-dessus) pour
+ * rester sous la limite de complexité cognitive plutôt que par pur souci de
+ * lint : c'est aussi la moitié du travail de la fonction appelante, nommée en
+ * propre.
  *
  * Vérifié sur les 376 styles + magic.mse-game/script : l'accolade fermante
  * est TOUJOURS immédiatement suivie de `@(` sans espace quand ce suffixe
@@ -39,33 +119,60 @@ export interface Scope {
  * caractères qui suivent le point où le comptage d'accolades s'arrête, sans
  * élargir la regex d'en-tête (qui reste focalisée sur `nom := {`).
  */
+function captureBraceDefinition(
+	source: string,
+	openBraceEnd: number
+): { def: FunctionDef; end: number } {
+	// Équilibrage des accolades pour capturer un corps multi-ligne.
+	let depth = 1;
+	let index = openBraceEnd;
+	while (index < source.length && depth > 0) {
+		if (source[index] === '{') depth += 1;
+		else if (source[index] === '}') depth -= 1;
+		index += 1;
+	}
+	const body = source.slice(openBraceEnd, index - 1);
+	let params: ParamList = new Map();
+	if (source[index] === '@' && source[index + 1] === '(') {
+		// Équilibrage des parenthèses pour capturer la liste de paramètres, même
+		// précaution que pour le corps ci-dessus (les défauts peuvent contenir
+		// des « [...] »/« {...} » internes, cf. `color_list`).
+		let parenDepth = 1;
+		let paramsEnd = index + 2;
+		while (paramsEnd < source.length && parenDepth > 0) {
+			if (source[paramsEnd] === '(') parenDepth += 1;
+			else if (source[paramsEnd] === ')') parenDepth -= 1;
+			paramsEnd += 1;
+		}
+		params = parseParamList(source.slice(index + 2, paramsEnd - 1));
+	}
+	return { def: { body, params }, end: index };
+}
+
+/**
+ * Relève les définitions `nom := { corps }` ET `nom := <expression nue>`
+ * (tâche 6f) d'une source de script. Une définition nue n'a pas de second
+ * suffixe `@(…)` séparé (cf. `findBareBodyEnd`) : son `@(…)` éventuel fait
+ * partie intégrante de son expression, ex. une application partielle.
+ */
 function collectDefinitions(source: string, into: Map<string, FunctionDef>): void {
-	const pattern = /^[\t ]*([a-z_][a-z_0-9]*)\s*:=\s*\{/gim;
+	const pattern = /^[\t ]*([a-z_][a-z_0-9]*)\s*:=\s*(\{)?/gim;
 	for (let match = pattern.exec(source); match; match = pattern.exec(source)) {
-		// Équilibrage des accolades pour capturer un corps multi-ligne.
-		let depth = 1;
-		let index = match.index + match[0].length;
-		while (index < source.length && depth > 0) {
-			if (source[index] === '{') depth += 1;
-			else if (source[index] === '}') depth -= 1;
-			index += 1;
+		const bodyStart = match.index + match[0].length;
+		if (match[2] === '{') {
+			const { def, end } = captureBraceDefinition(source, bodyStart);
+			into.set(match[1], def);
+			pattern.lastIndex = end;
+		} else {
+			// Corps NU (tâche 6f) : pas d'accolade, la limite se trouve en
+			// cherchant la prochaine définition de premier niveau (cf.
+			// `findBareBodyEnd`). Aucun paramètre déclaré séparément possible ici
+			// — cf. commentaire de `captureBraceDefinition`.
+			const end = findBareBodyEnd(source, bodyStart);
+			const body = source.slice(bodyStart, end).trim();
+			into.set(match[1], { body, params: new Map() });
+			pattern.lastIndex = end;
 		}
-		const body = source.slice(match.index + match[0].length, index - 1);
-		let params: ParamList = new Map();
-		if (source[index] === '@' && source[index + 1] === '(') {
-			// Équilibrage des parenthèses pour capturer la liste de paramètres,
-			// même précaution que pour le corps ci-dessus (les défauts peuvent
-			// contenir des « [...] »/« {...} » internes, cf. `color_list`).
-			let parenDepth = 1;
-			let paramsEnd = index + 2;
-			while (paramsEnd < source.length && parenDepth > 0) {
-				if (source[paramsEnd] === '(') parenDepth += 1;
-				else if (source[paramsEnd] === ')') parenDepth -= 1;
-				paramsEnd += 1;
-			}
-			params = parseParamList(source.slice(index + 2, paramsEnd - 1));
-		}
-		into.set(match[1], { body, params });
 	}
 }
 

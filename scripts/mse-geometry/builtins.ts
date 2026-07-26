@@ -31,10 +31,24 @@ function num(value: Value): number {
 BUILTINS.set('max', (args) => Math.max(...args.map(num)));
 BUILTINS.set('min', (args) => Math.min(...args.map(num)));
 BUILTINS.set('length', (args) => String(args[0] ?? '').length);
+// Tâche 6f : signature CORRIGÉE. L'ancienne version inversait haystack/needle
+// (elle lisait `named.match` comme le TEXTE examiné et `named.in`/`args[1]`
+// comme le motif) — vérifié faux contre les 125 appels réels du script
+// partagé, tous de la forme `contains(input, match:"motif")` (ex.
+// script:339 : `contains(sh, match:"adventure")`, `sh` est le premier
+// POSITIONNEL, `match:` le texte cherché DANS `sh`). Aucun appel mesuré
+// n'utilise `named.in` ; ce nom n'existe pas dans le corpus, seulement dans
+// l'implémentation précédente. `match:` s'avère être une sous-chaîne LITTÉRALE
+// (pas une regex) : les 125 valeurs observées (`"+"`, `","`, `"-"`, `"[/|]"`
+// n'apparaît JAMAIS ici contrairement à `replace`/`match`/`filter_text`) ne
+// contiennent aucune syntaxe regex authentique (pas de `|`, `[...]`, `^`/`$`),
+// et certaines (`"+"` seul) seraient même des regex INVALIDES si interprétées
+// comme telles (`+` sans rien à répéter) — la seule lecture cohérente avec
+// TOUS les appels mesurés est `String.includes`.
 BUILTINS.set('contains', (args, named) => {
-	const haystack = String(named.match ?? args[0] ?? '');
-	const needle = String(named.in ?? args[1] ?? '');
-	return needle.includes(haystack);
+	const haystack = String(args[0] ?? '');
+	const needle = String(named.match ?? '');
+	return haystack.includes(needle);
 });
 BUILTINS.set('to_int', (args) => Math.trunc(num(args[0])));
 BUILTINS.set('to_number', (args) => num(args[0]));

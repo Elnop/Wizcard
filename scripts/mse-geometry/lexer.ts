@@ -17,7 +17,12 @@ const ONE_CHAR_OPS = ['+', '-', '*', '/', '<', '>', '='];
 // ex. « for x from 1 to fill do output := lead + output + follow; ») : sans
 // lui, le caractère est simplement inconnu du lexer et l'analyse échoue avant
 // même d'atteindre la logique de séquence du parseur.
-const PUNCT = ['(', ')', '[', ']', ',', ':', '.', ';'];
+// « @ » (tâche 6f) précède toujours une liste d'arguments PRÉ-LIÉE, soit en
+// suffixe d'une définition (« }@(face:1) », tâche 6d), soit directement après
+// un identifiant nu comme APPLICATION PARTIELLE (« replace@(match:"x",
+// replace:"") », cf. parser.ts/parsePostfix) — les deux formes partagent ce
+// même jeton, seule leur POSITION dans le flux distingue leur sens.
+const PUNCT = ['(', ')', '[', ']', ',', ':', '.', ';', '@'];
 
 /**
  * Découpe une expression MSE en jetons.
