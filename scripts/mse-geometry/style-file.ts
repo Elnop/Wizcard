@@ -49,9 +49,9 @@ const CONTENT_WIDTH_FIELDS = ['casting cost', 'rarity'] as const;
 type ContentWidthField = (typeof CONTENT_WIDTH_FIELDS)[number];
 type TrackedField = GeometryField | ContentWidthField;
 
-/** Valeurs BRUTES : un nombre (« 29 ») ou une expression (« { max(30, …) } »). */
 /**
- * Ancres BRUTES d'une boîte.
+ * Ancres BRUTES d'une boîte : un nombre (« 29 ») ou une expression
+ * (« { max(30, …) } »).
  *
  * MSE positionne une boîte avec n'importe quelle paire suffisante : `left` +
  * `width`, mais aussi `left` + `right`, ou `right` + `width` sans `left`.
