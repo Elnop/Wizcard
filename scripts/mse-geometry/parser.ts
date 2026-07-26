@@ -31,6 +31,13 @@ export type Node =
 	| { type: 'unary'; op: string; operand: Node }
 	| { type: 'binary'; op: string; left: Node; right: Node }
 	| { type: 'array'; items: Node[] }
+	// « [nom: expr, …] » (tâche 6h), ex. `[left: 0, top: 0, width: stylesheet.
+	// card_width, height: stylesheet.card_height]` dans `faces_coordinates`
+	// (magic.mse-game/script:2891-2899) — un « struct » à champs nommés, DISTINCT
+	// d'un tableau d'expressions positionnelles (cf. Node['array']) bien que MSE
+	// utilise les mêmes crochets pour les deux formes. Ne porte que des champs
+	// NUMÉRIQUES dans le corpus mesuré (left/top/width/height) : cf. `MseRecord`.
+	| { type: 'record'; fields: Record<string, Node> }
 	// Affectation locale « nom := expr », statement d'une séquence (tâche 6c).
 	// Sa VALEUR est celle affectée : un bloc qui se termine sur une affectation
 	// (boucle à effet de bord, cf. calc_lines) reste donc évaluable.
@@ -317,20 +324,51 @@ export function parseExpression(source: string): Node {
 			expect(')');
 			return inner;
 		}
-		if (token.value === '[') {
-			const items: Node[] = [];
-			while (peek() && peek()!.value !== ']') {
-				items.push(parseBinary(0));
-				if (!eat(',')) break;
-			}
-			// eslint-disable-next-line sonarjs/no-incomplete-assertions -- safe: `expect` est le consommateur de jeton local, pas une assertion de test
-			expect(']');
-			return { type: 'array', items };
-		}
+		if (token.value === '[') return parseBracketLiteral();
 		if (token.value === '-') return { type: 'unary', op: '-', operand: parsePrimary() };
 		if (token.value === 'not') return { type: 'unary', op: 'not', operand: parseBinary(3) };
 		if (token.kind === 'ident') return { type: 'ident', name: token.value };
 		throw new ParseError(`jeton inattendu « ${token.value} » à ${token.pos}`);
+	}
+
+	/**
+	 * Littéral entre crochets, APRÈS le « [ » ouvrant déjà consommé par
+	 * `parsePrimary` — tâche 6h. Extraite de `parsePrimary` pour rester sous la
+	 * limite de complexité cognitive (comme `tryParseReservedLiteral`,
+	 * `parseCurrySuffix`), pas seulement pour le lint : c'est aussi tout le
+	 * travail de désambiguïsation entre les deux grammaires que MSE fait
+	 * partager le même délimiteur.
+	 *
+	 * « [nom: expr, …] » (record) est distingué d'un tableau positionnel PAR LE
+	 * PREMIER ÉLÉMENT SEUL — un `ident` immédiatement suivi de « : ». Vérifié
+	 * sur le corpus : jamais de mélange des deux formes dans un même littéral
+	 * (soit toutes les entrées sont « nom: expr », soit aucune), donc regarder
+	 * la première suffit à choisir la bonne grammaire pour tout le reste.
+	 */
+	function parseBracketLiteral(): Node {
+		const looksLikeRecord = peek()?.kind === 'ident' && tokens[pos + 1]?.value === ':';
+		if (looksLikeRecord) {
+			const fields: Record<string, Node> = {};
+			while (peek() && peek()!.value !== ']') {
+				const label = next();
+				if (label.kind !== 'ident') throw new ParseError(`nom de champ attendu à ${label.pos}`);
+				// eslint-disable-next-line sonarjs/no-incomplete-assertions -- safe: `expect` est le consommateur de jeton local, pas une assertion de test
+				expect(':');
+				fields[label.value] = parseBinary(0);
+				if (!eat(',')) break;
+			}
+			// eslint-disable-next-line sonarjs/no-incomplete-assertions -- safe: `expect` est le consommateur de jeton local, pas une assertion de test
+			expect(']');
+			return { type: 'record', fields };
+		}
+		const items: Node[] = [];
+		while (peek() && peek()!.value !== ']') {
+			items.push(parseBinary(0));
+			if (!eat(',')) break;
+		}
+		// eslint-disable-next-line sonarjs/no-incomplete-assertions -- safe: `expect` est le consommateur de jeton local, pas une assertion de test
+		expect(']');
+		return { type: 'array', items };
 	}
 
 	/**

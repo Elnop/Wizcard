@@ -51,7 +51,10 @@ export function extractAll(corpusRoot: string): {
 	for (const file of files) {
 		const style = readStyleFile(file, corpusRoot);
 		if (!style) continue;
-		const scope = buildScope(readFileSync(file, 'utf8'), gameScript, style.fontFields);
+		const scope = buildScope(readFileSync(file, 'utf8'), gameScript, style.fontFields, {
+			width: style.cardWidth,
+			height: style.cardHeight,
+		});
 		const boxes: TemplateGeometry['boxes'] = {};
 		const ast: TemplateGeometry['ast'] = {};
 		let ok = true;

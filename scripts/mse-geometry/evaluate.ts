@@ -1,4 +1,4 @@
-import { BUILTINS, type Value } from './builtins';
+import { BUILTINS, type MseRecord, type Value } from './builtins';
 import { parseExpression, type Node } from './parser';
 import type { FunctionDef, Scope } from './scope';
 
@@ -14,6 +14,9 @@ export class Unresolved extends Error {
 		super(`non résolu : ${what}`);
 	}
 }
+
+/** Raison partagée par les trois formes d'indexation hors limites (chaîne, MseArray via `[]`, via `.N`). */
+const INDEX_OUT_OF_BOUNDS = 'indexation hors limites';
 
 /**
  * Cadre de variables LOCALES d'un corps de fonction (tâche 6c, étendu 6d).
@@ -322,6 +325,37 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 			throw new Unresolved(node.name);
 		}
 		case 'member': {
+			// Accès de champ sur un MseRecord RUNTIME (tâche 6h), ex. `map.width`
+			// où `map := face_coordinates_map(face)` est une LOCALE — distinct de
+			// `card.xxx`/`styling.xxx`/`card_style.xxx`, qui ne sont jamais de
+			// vraies valeurs (seuls leurs chemins pointés vivent dans
+			// `scope.variables`, cf. le repli plus bas). On ne tente cette lecture
+			// que si `node.object` est un simple `ident` : un chemin plus long
+			// (`a.b.c`) n'est jamais un accès à un MseRecord dans le corpus mesuré
+			// (les structs n'ont qu'un niveau de champs), donc pas la peine de
+			// résoudre récursivement.
+			if (node.object.type === 'ident') {
+				const local = locals.get(node.object.name);
+				if (typeof local === 'object' && local !== null && local.kind === 'record') {
+					const value = local.fields[node.property];
+					if (value === undefined) throw new Unresolved(`champ ${node.property}`);
+					return value;
+				}
+				// `split.0` / `split.1` (tâche 6h) : accès par POSITION à un MseArray
+				// via la notation pointée — le lexer ne distingue pas `split.0` d'un
+				// vrai accès de champ (cf. commentaire de tête de lexer.ts sur
+				// `isMemberDot`), donc `node.property` est ici la représentation
+				// textuelle d'un INDEX, pas un nom de champ. Vérifié sur le corpus
+				// (`rarity_user_offset_left` et consorts, magic.mse-game/script) :
+				// toujours un entier positif nu, jamais une expression.
+				if (typeof local === 'object' && local !== null && local.kind === 'array') {
+					const index = Number(node.property);
+					if (!Number.isInteger(index)) throw new Unresolved(`indexation .${node.property}`);
+					const item = local.items[index];
+					if (item === undefined) throw new Unresolved(INDEX_OUT_OF_BOUNDS);
+					return item;
+				}
+			}
 			const path = flattenMember(node);
 			const variable = scope.variables.get(path);
 			if (variable !== undefined) return variable;
@@ -360,18 +394,53 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 				// de manipulation de texte du corpus (ex. ar_position, join).
 				const index = toNumber(evaluate(node.index, scope, depth + 1, locals));
 				const char = collection[index];
-				if (char === undefined) throw new Unresolved('indexation hors limites');
+				if (char === undefined) throw new Unresolved(INDEX_OUT_OF_BOUNDS);
 				return char;
+			}
+			// Indexation d'un MseArray par position (tâche 6h), ex. `fc[input-1]`
+			// dans `face_coordinates_map` — `fc := faces_coordinates()` est LOCAL,
+			// jamais dans `scope.variables`, donc pas concerné par le repli « chemin
+			// pointé » ci-dessus (qui ne s'applique qu'aux clés STRING). Un index
+			// hors limites lève `Unresolved` plutôt que de renvoyer `undefined` :
+			// c'est exactement ce que le corpus attend de ce cas (cf.
+			// `face_coordinates_map`, qui rattrape ce cas précis avec « or else »).
+			if (typeof collection === 'object' && collection !== null && collection.kind === 'array') {
+				const index = toNumber(evaluate(node.index, scope, depth + 1, locals));
+				const item = collection.items[index];
+				if (item === undefined) throw new Unresolved(INDEX_OUT_OF_BOUNDS);
+				return item;
 			}
 			throw new Unresolved('indexation');
 		}
-		case 'array':
-			// Aucune valeur MSE ne représente un tableau (Value est
-			// number|string|boolean|null) : on ne feint pas d'en construire un, on
-			// refuse — cf. « aucun fallback ». Un tableau n'est utile que
-			// consommé par length()/for/index, jamais renvoyé tel quel comme
-			// géométrie.
+		case 'array': {
+			// Tâche 6h : un tableau de LITTÉRAUX-STRUCT (« [[left:0, …], …] »,
+			// cf. `faces_coordinates`) devient un MseArray réel — c'est la SEULE
+			// forme de tableau mesurée comme valeur consommée ensuite par index
+			// (`fc[input-1]`) puis accès de champ (`.left`). Un tableau dont un
+			// item n'est PAS un littéral-struct reste refusé tel quel (aucun usage
+			// mesuré ne le consomme comme valeur — seulement via `for`/`length`
+			// sur sa forme scriptée, jamais matérialisé) : on ne devine pas sa
+			// représentation, cf. « aucun fallback ».
+			if (node.items.every((item) => item.type === 'record')) {
+				const items = node.items.map(
+					(item) => evaluate(item, scope, depth + 1, locals) as MseRecord
+				);
+				return { kind: 'array', items };
+			}
 			throw new Unresolved('tableau');
+		}
+		case 'record': {
+			// Tâche 6h : chaque champ est évalué puis contraint en NOMBRE — tous
+			// les champs mesurés du corpus (`left`/`top`/`width`/`height`) le sont
+			// déjà par construction (cf. `faces_coordinates`), donc `toNumber`
+			// signale honnêtement tout contre-exemple futur plutôt que de porter
+			// une valeur d'un autre type sans le dire.
+			const fields: Record<string, number> = {};
+			for (const [name, valueNode] of Object.entries(node.fields)) {
+				fields[name] = toNumber(evaluate(valueNode, scope, depth + 1, locals));
+			}
+			return { kind: 'record', fields };
+		}
 		case 'unary': {
 			if (node.op === '-') return -toNumber(evaluate(node.operand, scope, depth + 1, locals));
 			return !evaluate(node.operand, scope, depth + 1, locals);
@@ -404,6 +473,25 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 					if (!(error instanceof Error)) throw error;
 				}
 				return evaluate(node.right, scope, depth + 1, locals);
+			}
+			// « and »/« or » COURT-CIRCUITÉS (tâche 6h) : la garde `length(split) > 2
+			// and split.2 != ""` (cf. `rarity_user_offset_width`,
+			// magic.mse-game/script:4188) dépend de ce que la DROITE ne soit jamais
+			// évaluée quand la gauche décide déjà le résultat — `split.2` sur un
+			// tableau à un seul élément lève `Unresolved`, et cette garde existe
+			// PRÉCISÉMENT pour l'éviter. L'ancienne version évaluait `left`/`right`
+			// systématiquement avant le switch, donc l'erreur de la droite
+			// remontait même quand la gauche suffisait déjà à trancher — pas un
+			// fallback : le comportement standard de `and`/`or` dans n'importe quel
+			// langage à évaluation paresseuse, MSE y compris (aucun appel mesuré du
+			// corpus ne dépend d'un effet de bord dans la branche non évaluée).
+			if (node.op === 'and') {
+				if (!evaluate(node.left, scope, depth + 1, locals)) return false;
+				return Boolean(evaluate(node.right, scope, depth + 1, locals));
+			}
+			if (node.op === 'or') {
+				if (evaluate(node.left, scope, depth + 1, locals)) return true;
+				return Boolean(evaluate(node.right, scope, depth + 1, locals));
 			}
 			const left = evaluate(node.left, scope, depth + 1, locals);
 			const right = evaluate(node.right, scope, depth + 1, locals);
@@ -440,10 +528,14 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 					return toNumber(left) <= toNumber(right);
 				case '>=':
 					return toNumber(left) >= toNumber(right);
+				// « and »/« or » : interceptés PLUS HAUT pour court-circuiter (cf.
+				// commentaire au-dessus de l'évaluation à-priori de `left`/`right`) —
+				// jamais atteints ici, mais laissés dans la liste pour que le
+				// `default` ci-dessous reste un vrai « opérateur inconnu », pas une
+				// omission silencieuse de ces deux-là.
 				case 'and':
-					return Boolean(left) && Boolean(right);
 				case 'or':
-					return Boolean(left) || Boolean(right);
+					throw new Unresolved(`opérateur ${node.op} (court-circuité plus haut)`);
 				default:
 					throw new Unresolved(`opérateur ${node.op}`);
 			}

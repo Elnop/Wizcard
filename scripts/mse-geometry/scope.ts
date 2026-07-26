@@ -347,7 +347,14 @@ function rarityContentWidth(info: FieldFontInfo | undefined, scope: Scope): numb
 export function buildScope(
 	styleSource: string,
 	gameScript: string,
-	fontFields?: { 'casting cost'?: FieldFontInfo; rarity?: FieldFontInfo }
+	fontFields?: { 'casting cost'?: FieldFontInfo; rarity?: FieldFontInfo },
+	// Dimensions du PAQUET de style (tâche 6h), ex. `stylesheet.card_width`
+	// référencé par `faces_coordinates` (magic.mse-game/script:2896-2897) — pas
+	// une donnée de CARTE (`card.xxx`, cf. CANONICAL_CARD) mais du GABARIT
+	// lui-même, déjà lue par `readStyleFile` (`style.cardWidth`/`cardHeight`)
+	// et jusqu'ici jamais transmise à la portée d'évaluation. Optionnel pour ne
+	// pas casser les appelants existants qui ne la fournissent pas encore.
+	cardDimensions?: { width: number; height: number }
 ): Scope {
 	const functions = new Map<string, FunctionDef>();
 	// Le script de la partie EN PREMIER : le style écrase ensuite ce qu'il
@@ -355,6 +362,10 @@ export function buildScope(
 	collectDefinitions(gameScript, functions);
 	collectDefinitions(styleSource, functions);
 	const scope: Scope = { functions, variables: new Map(Object.entries(CANONICAL_CARD)) };
+	if (cardDimensions) {
+		scope.variables.set('stylesheet.card_width', cardDimensions.width);
+		scope.variables.set('stylesheet.card_height', cardDimensions.height);
+	}
 
 	// `content_width` est injecté comme variable de portée (résolue une fois
 	// par style) plutôt que comme fonction : dans l'AST, `card_style.x.y` est
