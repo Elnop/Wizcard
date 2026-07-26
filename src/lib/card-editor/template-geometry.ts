@@ -12,6 +12,19 @@ import type { CardLayoutGeometry, CardLayoutId, CardRect } from './types';
  */
 const CANVAS_LONG_EDGE = 1039;
 
+/**
+ * Pied de carte, déduit et non mesuré.
+ *
+ * Le corpus MSE éclate cette ligne en plusieurs champs (`illustrator`,
+ * `copyright line`, `card number`…) qui ne font pas partie des zones extraites.
+ * On la cale donc sur le BAS DE LA CARTE, comme le fait le gabarit `arcana`
+ * dessiné à la main : son pied est à y=964 pour 1039 de haut, soit 75 px de
+ * fond de carte. L'ancrer sous la zone de texte le collait au bord noir des
+ * gabarits dont le texte descend bas (constaté sur `magic-tenth`).
+ */
+const FOOTER_BOTTOM_OFFSET = 75;
+const FOOTER_HEIGHT = 28;
+
 export type CardGeometry = CardLayoutGeometry;
 
 export function templateGeometry(template: MseTemplate | undefined): CardGeometry | null {
@@ -47,7 +60,16 @@ export function templateGeometry(template: MseTemplate | undefined): CardGeometr
 		// positive, donc le panneau force/endurance reste masqué au lieu d'être
 		// peint par-dessus le type. Emprunter une autre zone serait un fallback.
 		stats: boxes.pt ? to(boxes.pt) : { x: 0, y: 0, width: 0, height: 0 },
-		footer: to(boxes.text),
+		// Ligne de bas de carte : calée sur le bas de la carte (cf.
+		// FOOTER_BOTTOM_OFFSET), alignée horizontalement sur la zone de texte.
+		// Reprendre `boxes.text` tel quel plaçait le pied SUR le haut du texte
+		// de règles.
+		footer: {
+			x: boxes.text.left * scale,
+			y: cardHeight * scale - FOOTER_BOTTOM_OFFSET,
+			width: boxes.text.width * scale,
+			height: FOOTER_HEIGHT,
+		},
 	};
 }
 
