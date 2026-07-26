@@ -606,7 +606,22 @@ function CardSvg({
 					<rect {...geometry.art} rx="3" />
 				</clipPath>
 			</defs>
-			{mseFramePath ? (
+			{/*
+			 * Ordre de peinture : en SVG le dernier élément passe au-dessus.
+			 *
+			 * Un gabarit vendor (CardConjurer/MSE) est un PNG PLEINE CARTE à fenêtre
+			 * d'illustration transparente : il doit donc être peint APRÈS l'image,
+			 * pour que ses bordures et ses ornements mordent dessus — c'est ce
+			 * recouvrement qui donne une carte finie.
+			 *
+			 * Le cadre intégré (FrameSurface), lui, est fait de rectangles OPAQUES
+			 * couvrant toute la carte : peint après, il masquerait complètement
+			 * l'illustration. Il reste donc dessous, et ce sont les tracés qui
+			 * suivent (bordure de la fenêtre, ornements) qui l'encadrent.
+			 */}
+			{!mseFramePath && <FrameSurface geometry={geometry} palette={palette} clipId={clipId} />}
+			<Artwork artwork={face.artwork} rect={geometry.art} clipId={clipId} />
+			{mseFramePath && (
 				<image
 					href={mseFramePath}
 					x="0"
@@ -615,10 +630,7 @@ function CardSvg({
 					height={geometry.height}
 					preserveAspectRatio="none"
 				/>
-			) : (
-				<FrameSurface geometry={geometry} palette={palette} clipId={clipId} />
 			)}
-			<Artwork artwork={face.artwork} rect={geometry.art} clipId={clipId} />
 			{!mseFramePath && (
 				<>
 					{!isFullArt && (
