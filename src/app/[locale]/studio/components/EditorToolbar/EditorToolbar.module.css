@@ -3,8 +3,12 @@
 	grid-template-columns: minmax(200px, 1fr) auto minmax(200px, 1fr);
 	align-items: center;
 	gap: 1rem;
-	max-width: 1680px;
-	margin: 0 auto;
+	width: 100%;
+	max-width: var(--studio-max-width);
+	/* La page est une colonne flex : sans cela la barre se ferait comprimer par
+	   l'atelier qui réclame le reste de la hauteur. */
+	flex-shrink: 0;
+	margin-inline: auto;
 	padding: 0.75rem 1rem;
 	border: 1px solid var(--glass-border);
 	border-radius: 14px;

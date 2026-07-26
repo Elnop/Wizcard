@@ -466,9 +466,11 @@ fieldset.field > legend {
 	border: 0;
 }
 
+/* auto-fit plutôt qu'un nombre fixe de colonnes : la sidebar s'élargit, et on
+   veut alors PLUS de vignettes par ligne, pas des vignettes plus larges. */
 .layoutGrid {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
 	gap: 9px;
 }
 
@@ -567,7 +569,7 @@ fieldset.field > legend {
 
 .swatchGrid {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
 	gap: 7px;
 }
 
@@ -664,13 +666,11 @@ fieldset.field > legend {
 	cursor: pointer;
 }
 
+/* Les grilles ci-dessus sont en auto-fit : elles retombent d'elles-mêmes sur une
+   colonne quand la sidebar est étroite, sans requête média — sa largeur ne suit
+   plus celle du viewport depuis qu'elle est une piste de grille. */
 @media (max-width: 520px) {
 	.panelContent {
-		padding: 18px;
-	}
-
-	.layoutGrid,
-	.swatchGrid {
-		grid-template-columns: 1fr;
+		padding: 1rem;
 	}
 }

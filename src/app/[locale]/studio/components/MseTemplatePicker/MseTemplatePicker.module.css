@@ -115,7 +115,7 @@
 
 .grid {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 	gap: 6px;
 }
 
@@ -246,10 +246,4 @@
 	overflow: hidden;
 	clip: rect(0, 0, 0, 0);
 	white-space: nowrap;
-}
-
-@media (max-width: 430px) {
-	.grid {
-		grid-template-columns: 1fr;
-	}
 }
