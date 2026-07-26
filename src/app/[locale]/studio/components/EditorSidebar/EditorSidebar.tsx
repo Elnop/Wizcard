@@ -12,7 +12,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { CARD_LAYOUT_LIST } from '@/lib/card-editor/layout-registry';
 import { prepareArtwork } from '@/lib/card-editor/image';
-import { layoutForMseTemplate, type MseTemplate } from '@/lib/card-editor/mse-assets';
+import { type MseTemplate } from '@/lib/card-editor/mse-assets';
 import { getManaSymbols, MAX_MANA_PIPS, type RulesCapacity } from '@/lib/card-editor/text-layout';
 import { ManaSymbol } from '@/lib/scryfall/components/ManaSymbol/ManaSymbol';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
@@ -155,6 +155,9 @@ function writeGenericMana(manaCost: string, amount: number | null): string {
 	return `{${amount}}${rest}`;
 }
 const LANGUAGE_CODES = ['en', 'fr', 'de', 'es', 'it', 'pt', 'ja', 'ko', 'ru', 'zhs'] as const;
+
+/** Gabarits maison proposés, dans l'ordre. `landscape` reste exclu (cf. CARD_LAYOUT_LIST). */
+const HOUSE_LAYOUT_IDS = CARD_LAYOUT_LIST.map((layout) => layout.id);
 
 function PanelTabs({
 	activePanel,
@@ -593,7 +596,6 @@ function StylePanel({
 	| 'onFaceAppearanceChange'
 >) {
 	const t = useTranslations('cardEditor.style');
-	const layouts = useTranslations('cardEditor.layouts');
 	return (
 		<div className={styles.panelContent}>
 			<div className={styles.panelIntro}>
@@ -602,37 +604,21 @@ function StylePanel({
 			</div>
 			<MseTemplatePicker
 				templates={mseTemplates}
-				selectedId={draft.mseTemplateId}
+				houseLayoutIds={HOUSE_LAYOUT_IDS}
+				layoutId={draft.layoutId}
+				mseTemplateId={draft.mseTemplateId}
 				isLoading={isMseCatalogLoading}
 				hasError={hasMseCatalogError}
-				onSelect={(template) =>
+				// Une seule écriture pour les deux champs : c'est ce qui rend la
+				// désynchronisation impossible, là où les deux sélecteurs d'avant
+				// s'écrasaient l'un l'autre.
+				onSelect={(choice) =>
 					onDraftChange({
-						mseTemplateId: template.id,
-						layoutId: layoutForMseTemplate(template),
+						mseTemplateId: choice.mseTemplateId,
+						layoutId: choice.layoutId,
 					})
 				}
 			/>
-			<fieldset className={styles.fieldset}>
-				<legend>{t('layout')}</legend>
-				<div className={styles.layoutGrid}>
-					{CARD_LAYOUT_LIST.map((layout) => (
-						<button
-							key={layout.id}
-							type="button"
-							className={draft.layoutId === layout.id ? styles.layoutActive : styles.layoutCard}
-							onClick={() => onDraftChange({ layoutId: layout.id })}
-						>
-							<span className={styles.layoutPreview} data-layout={layout.id}>
-								<i />
-								<i />
-								<i />
-							</span>
-							<strong>{layouts(`${layout.labelKey}.name`)}</strong>
-							<small>{layouts(`${layout.descriptionKey}.description`)}</small>
-						</button>
-					))}
-				</div>
-			</fieldset>
 			<fieldset className={styles.fieldset}>
 				<legend>{t('frame')}</legend>
 				<div className={styles.swatchGrid}>

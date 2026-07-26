@@ -1024,7 +1024,6 @@
 		"style": {
 			"title": "Layout",
 			"description": "Le gabarit se change à tout moment sans perdre les textes ni le cadrage.",
-			"layout": "Disposition",
 			"frame": "Palette du cadre",
 			"accent": "Accent",
 			"finish": "Finition",
