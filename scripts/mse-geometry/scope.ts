@@ -77,6 +77,89 @@ function collectDefinitions(source: string, into: Map<string, FunctionDef>): voi
 export const CANONICAL_CARD: Record<string, number | string | boolean> = {
 	'card.card_symbol': 'none',
 	'card.card_color': 'white',
+	// Indicateur de couleur (bande de couleur au-dessus du type, ex. cartes
+	// "Dryad Arbor") : chaîne vide = absent. La carte canonique est une créature
+	// ORDINAIRE sans indicateur (cf. spec) — magic.mse-game/script:449-450 teste
+	// explicitement `culled_indicator == ""` comme condition « pas d'indicateur,
+	// ne pas l'afficher », donc ce choix est celui qui désactive proprement la
+	// branche indicateur plutôt que d'en simuler une couleur arbitraire.
+	'card.indicator': '',
+	// Forme de la carte. La carte canonique est une carte à UNE seule face
+	// ordinaire (ni recto-verso, ni split, ni flip, ni aventure, ni aftermath)
+	// — `"normal"` est la valeur que le script partagé lui-même assigne par
+	// défaut (`card_shape := { "normal" }`, magic.mse-game/script:395), donc ce
+	// n'est pas un choix arbitraire mais celui du corpus. `has_two_names()`
+	// (:337) teste ce champ pour décider s'il faut lire `card.name_2` : avec
+	// "normal", il vaut `false`, donc les champs "face 2" (name_2, rule_text_2,
+	// …) restent légitimement absents pour cette carte à une seule face.
+	'card.shape': 'normal',
+	// Nom de la carte. Chaîne non vide générique — une carte doit avoir un nom
+	// pour être une carte ; la valeur exacte n'a pas d'incidence sur une
+	// géométrie (jamais utilisée pour dimensionner une boîte, seulement pour
+	// des tests de vide/égalité ou de la concaténation de texte).
+	'card.name': 'Nom de Carte',
+	// Texte de règles. Non vide et SANS mot-clé spécial (pas de niveau, pas de
+	// texte de saga, pas de cible) — cf. "carte ordinaire, texte de règles
+	// ordinaire" dans la spec. Une phrase simple suffit : ce champ n'est jamais
+	// mesuré pour une largeur/hauteur ici (`content_width` du bloc rule text
+	// n'est pas dans GEOMETRY_FIELDS), seulement testé pour vide/contenu par
+	// des fonctions de mise en page (is_targeted, hasrules, saga check, etc.).
+	'card.rule_text': 'Texte de règles ordinaire.',
+	// Force/endurance. La carte canonique est une créature normale (cf. spec :
+	// "power et toughness présents") : deux petits entiers positifs distincts
+	// pour ne ressembler à aucun cas particulier (pas de "*", pas de "1/1"
+	// trivial qui masquerait un bug d'arrondi). `card.pt` est le texte COMBINÉ
+	// "force/endurance" tel qu'affiché (`pt: {fill_len(power)+fill_len(
+	// toughness)}`, script:5787) : on fixe les trois de façon cohérente entre
+	// elles plutôt que de dupliquer une valeur devinée pour `card.pt` seul.
+	'card.power': '2',
+	'card.toughness': '3',
+	'card.pt': '2/3',
+	// Type de carte (supertype + type, avant le tiret). La carte canonique est
+	// une créature ORDINAIRE sans supertype (ni Legendary, ni Basic, ni Snow,
+	// …) — chaîne vide, cohérente avec `card.super_type`/`card.sub_type`
+	// ci-dessous qui portent respectivement le type principal et les
+	// sous-types.
+	'card.supertype': '',
+	'card.super_type': 'Creature',
+	'card.sub_type': 'Human Wizard',
+	// Ligne de type complète telle qu'affichée (utilisée par `is_creature`,
+	// `main_type`, etc. via `card.type`, distinct de `card.super_type` qui
+	// n'est que le premier mot). Cohérente avec super_type/sub_type ci-dessus.
+	'card.type': 'Creature — Human Wizard',
+	// Coût de mana de la face 1. Non vide (une carte ordinaire a un coût) —
+	// s'aligne sur CANONICAL_MANA_COST (tâche 6, "{1}{W}") pour rester
+	// cohérent avec le coût déjà mesuré ailleurs dans le même style.
+	'card.casting_cost': '{1}{W}',
+	// Loyauté. La carte canonique est une créature, PAS un planeswalker :
+	// chaîne vide, seule valeur qui désactive proprement les branches
+	// planeswalker (`card.loyalty != ""` est le test de présence usuel, cf.
+	// même convention que `card.pt`/`card.indicator`).
+	'card.loyalty': '',
+	// Timbre (stamp) d'authenticité en bas de carte. "none" est la valeur
+	// littérale que le script partagé lui-même assigne à sa branche "All
+	// unstamped" (`stamp_behavior_checks`, script:4508) — une carte ordinaire
+	// sans timbre spécial.
+	'card.card_stamp': 'none',
+	// Texte de niveau (mécanique "Level Up", cartes de type "leveler"), champ
+	// `card.level_N` — accédé soit directement (`card.level_1` en dur dans
+	// certains styles "leveler"), soit dynamiquement
+	// (`card["level_" + n + "_text"]`). La carte canonique n'a pas cette
+	// mécanique : chaîne vide pour chaque index effectivement rencontré dans
+	// le rapport de blocage (0, 1, 2) — on ne pré-remplit pas une plage
+	// arbitraire, un style qui en indexerait un autre lèvera `Unresolved`.
+	'card.level_0': '',
+	'card.level_1': '',
+	'card.level_2': '',
+	// Texte d'ambiance (flavor text). Non vide, comme `card.rule_text` — une
+	// carte ordinaire "normale" en a généralement un ; le contenu exact
+	// n'affecte aucune géométrie (mêmes tests de vide/contenu que rule_text).
+	'card.flavor_text': "Texte d'ambiance ordinaire.",
+	// Nom de la face 2 (dos de carte recto-verso). Certaines chaînes lisent ce
+	// champ INCONDITIONNELLEMENT (ex. `dfc_splitter_name`, script:361-363,
+	// avant même de tester `has_two_names()`) : chaîne vide, cohérente avec
+	// `card.shape: "normal"` — la carte canonique n'a qu'une seule face.
+	'card.name_2': '',
 	'styling.border_visible': true,
 	'styling.stretch_image_to_whole_card': false,
 	'styling.stretch_art_to_whole_card': false,
