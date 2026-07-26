@@ -965,8 +965,8 @@
 		},
 		"tabs": {
 			"card": "Card",
+			"style": "Layout",
 			"art": "Artwork",
-			"style": "Style",
 			"details": "Details"
 		},
 		"fields": {
@@ -1022,9 +1022,9 @@
 			}
 		},
 		"style": {
-			"title": "Style",
-			"description": "Switch layout at any time without losing text or artwork framing.",
-			"layout": "Layout",
+			"title": "Layout",
+			"description": "Switch template at any time without losing text or artwork framing.",
+			"layout": "Arrangement",
 			"frame": "Frame palette",
 			"accent": "Accent",
 			"finish": "Finish",

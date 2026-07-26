@@ -965,8 +965,8 @@
 		},
 		"tabs": {
 			"card": "Carte",
+			"style": "Layout",
 			"art": "Illustration",
-			"style": "Style",
 			"details": "Détails"
 		},
 		"fields": {
@@ -1022,9 +1022,9 @@
 			}
 		},
 		"style": {
-			"title": "Style",
-			"description": "Le layout se change à tout moment sans perdre les textes ni le cadrage.",
-			"layout": "Layout",
+			"title": "Layout",
+			"description": "Le gabarit se change à tout moment sans perdre les textes ni le cadrage.",
+			"layout": "Disposition",
 			"frame": "Palette du cadre",
 			"accent": "Accent",
 			"finish": "Finition",

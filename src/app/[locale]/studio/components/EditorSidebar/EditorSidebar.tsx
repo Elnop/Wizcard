@@ -5,8 +5,8 @@ import {
 	CaretRight,
 	CardsThree,
 	ImageSquare,
-	MagicWand,
 	SlidersHorizontal,
+	SquaresFour,
 	UploadSimple,
 } from '@phosphor-icons/react';
 import { useTranslations } from 'next-intl';
@@ -50,10 +50,12 @@ interface EditorSidebarProps {
 	onDraftChange: (values: Partial<CustomCardDraft>) => void;
 }
 
+/* `style` est resté la CLÉ de l'onglet (elle porte tout son sous-arbre de
+   messages : layouts, frames, finishes) mais s'affiche « Layout ». */
 const PANEL_ICONS = {
 	card: CardsThree,
+	style: SquaresFour,
 	art: ImageSquare,
-	style: MagicWand,
 	details: SlidersHorizontal,
 };
 
@@ -161,7 +163,9 @@ function PanelTabs({
 	const t = useTranslations('cardEditor.tabs');
 	return (
 		<div className={styles.tabs} role="tablist">
-			{(['card', 'art', 'style', 'details'] as EditorPanel[]).map((panel) => {
+			{/* Le gabarit se choisit AVANT l'illustration : il fixe la forme de la
+			    zone d'art, donc le cadrage qu'on lui donnera ensuite. */}
+			{(['card', 'style', 'art', 'details'] as EditorPanel[]).map((panel) => {
 				const Icon = PANEL_ICONS[panel];
 				return (
 					<button
