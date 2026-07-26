@@ -1,0 +1,133 @@
+.field {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.fieldLabel {
+	padding: 0;
+	font-size: var(--text-xs);
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+}
+
+.fieldError input {
+	border-color: rgba(207, 91, 79, 0.55);
+}
+
+.group {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.groupLabel {
+	font-size: var(--text-2xs);
+	color: var(--text-muted);
+}
+
+.tagRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.tagRow:empty {
+	display: none;
+}
+
+.tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 5px 3px 9px;
+	border: 1px solid rgba(201, 168, 76, 0.32);
+	border-radius: 99px;
+	background: rgba(201, 168, 76, 0.1);
+	font-size: var(--text-2xs);
+	color: var(--text);
+}
+
+.tag button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2px;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: color 0.15s ease;
+}
+
+.tag button:hover {
+	color: #f0a79e;
+}
+
+/* La liste de suggestions se superpose au contenu suivant : le wrapper porte le
+   contexte de positionnement. */
+.inputWrapper {
+	position: relative;
+}
+
+/* Les <input> de la sidebar ont une largeur intrinsèque (taille par défaut d'un
+   champ texte) : sans ça ils n'occupent qu'un tiers de la colonne. */
+.inputWrapper input {
+	width: 100%;
+}
+
+.suggestions {
+	position: absolute;
+	z-index: 10;
+	top: calc(100% + 3px);
+	inset-inline: 0;
+	max-height: 216px;
+	margin: 0;
+	padding: 4px;
+	overflow-y: auto;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: #14151d;
+	box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+	list-style: none;
+}
+
+.suggestions button {
+	display: block;
+	width: 100%;
+	padding: 6px 8px;
+	border: 0;
+	border-radius: 5px;
+	background: transparent;
+	color: var(--text);
+	font-size: var(--text-2xs);
+	text-align: start;
+	cursor: pointer;
+}
+
+.suggestions button:hover {
+	background: rgba(255, 255, 255, 0.07);
+}
+
+/* Aperçu de la ligne telle qu'elle sera imprimée sur la carte. */
+.preview {
+	padding: 7px 10px;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.03);
+	font-family: Georgia, serif;
+	font-size: var(--text-sm);
+	color: var(--text);
+}
+
+.preview:empty::before {
+	content: '—';
+	color: var(--text-muted);
+}

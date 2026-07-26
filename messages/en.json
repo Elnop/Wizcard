@@ -999,7 +999,13 @@
 				"phyrexianHybrid": "Hybrid Phyrexian",
 				"exotic": "Exotic"
 			},
-			"capacityHint": "{lines} lines of about {perLine} characters, set by the layout."
+			"capacityHint": "{lines} lines of about {perLine} characters, set by the layout.",
+			"supertypes": "Supertypes",
+			"supertypesPlaceholder": "Legendary, Snow…",
+			"types": "Types",
+			"typesPlaceholder": "Creature, Artifact…",
+			"subtypes": "Subtypes",
+			"subtypesPlaceholder": "Human, Wizard…"
 		},
 		"art": {
 			"title": "Compose the artwork",

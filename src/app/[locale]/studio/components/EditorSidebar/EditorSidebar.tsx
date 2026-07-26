@@ -26,6 +26,7 @@ import {
 	type EditableCardField,
 } from '@/lib/card-editor/types';
 import { MseTemplatePicker } from '../MseTemplatePicker/MseTemplatePicker';
+import { TypeLineField } from '../TypeLineField/TypeLineField';
 import styles from './EditorSidebar.module.css';
 
 export type EditorPanel = 'card' | 'art' | 'style' | 'details';
@@ -351,14 +352,11 @@ function CardFieldsPanel({
 				manaCost={face.manaCost}
 				onChange={(value) => onFieldChange('manaCost', value)}
 			/>
-			<FormField label={t('typeLine')} error={validationErrors.includes('type')}>
-				<input
-					value={face.typeLine}
-					onChange={(event) => onFieldChange('typeLine', event.target.value)}
-					maxLength={CARD_FIELD_MAX_LENGTH.typeLine}
-					placeholder={t('typePlaceholder')}
-				/>
-			</FormField>
+			<TypeLineField
+				typeLine={face.typeLine}
+				onChange={(value) => onFieldChange('typeLine', value)}
+				hasError={validationErrors.includes('type')}
+			/>
 			{/*
 			 * Règles et ambiance se partagent la zone de texte : leur limite est sa
 			 * CAPACITÉ (lignes x caractères/ligne), qui dépend du layout — de 116

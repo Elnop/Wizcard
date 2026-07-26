@@ -999,7 +999,13 @@
 				"phyrexianHybrid": "Phyrexian hybride",
 				"exotic": "Exotiques"
 			},
-			"capacityHint": "{lines} lignes d’environ {perLine} caractères, selon le layout."
+			"capacityHint": "{lines} lignes d’environ {perLine} caractères, selon le layout.",
+			"supertypes": "Supertypes",
+			"supertypesPlaceholder": "Légendaire, Neige…",
+			"types": "Types",
+			"typesPlaceholder": "Créature, Artefact…",
+			"subtypes": "Sous-types",
+			"subtypesPlaceholder": "Humain, Sorcier…"
 		},
 		"art": {
 			"title": "Composez l'illustration",
