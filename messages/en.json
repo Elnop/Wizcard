@@ -1053,8 +1053,6 @@
 			"results": "{count, plural, =0 {No results} one {# layout} other {# layouts}}",
 			"empty": "No frame matches this search.",
 			"loadMore": "Show {count} more layouts",
-			"renderReady": "HD frame",
-			"previewMode": "MSE preview",
 			"kinds": {
 				"card": "Card",
 				"token": "Token",

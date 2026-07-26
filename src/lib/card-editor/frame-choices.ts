@@ -129,7 +129,37 @@ export function buildFrameChoices(
 		template,
 	}));
 
-	return [...house, ...vendor];
+	// La liste est paginée par tranche sur SA position brute (voir le composant) :
+	// si l'ordre ne suit pas déjà SECTION_ORDER, une tranche coupe une section en
+	// plein milieu et en fait disparaître d'autres entièrement sans même afficher
+	// leur en-tête. Trier ici garantit qu'une vue tronquée reste un PRÉFIXE correct
+	// de la séquence des sections.
+	const vendorBySection = new Map<FrameChoiceKind, FrameChoice[]>();
+	for (const choice of vendor) {
+		const bucket = vendorBySection.get(choice.kind);
+		if (bucket) bucket.push(choice);
+		else vendorBySection.set(choice.kind, [choice]);
+	}
+	for (const bucket of vendorBySection.values()) sortWithinSection(bucket);
+
+	const orderedVendor = SECTION_ORDER.flatMap((kind) => vendorBySection.get(kind) ?? []);
+
+	return [...house, ...orderedVendor];
+}
+
+/**
+ * Tri intra-section : cadres CardConjurer d'abord, puis alphabétique sur le
+ * libellé désambiguïsé (celui qu'on affiche — pas `name`, qui peut être un
+ * doublon que le libellé a déjà résolu). Ne s'applique pas aux gabarits
+ * maison : leur ordre dans le registre est signifiant (cf. buildFrameChoices).
+ */
+function sortWithinSection(choices: FrameChoice[]): void {
+	choices.sort((a, b) => {
+		const aIsCardConjurer = a.template?.source === 'cardconjurer';
+		const bIsCardConjurer = b.template?.source === 'cardconjurer';
+		if (aIsCardConjurer !== bIsCardConjurer) return aIsCardConjurer ? -1 : 1;
+		return a.label.localeCompare(b.label);
+	});
 }
 
 /**

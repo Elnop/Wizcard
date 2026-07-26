@@ -1053,8 +1053,6 @@
 			"results": "{count, plural, =0 {Aucun résultat} one {# layout} other {# layouts}}",
 			"empty": "Aucun cadre ne correspond à cette recherche.",
 			"loadMore": "Afficher {count} layouts de plus",
-			"renderReady": "cadre HD",
-			"previewMode": "aperçu MSE",
 			"kinds": {
 				"card": "Carte",
 				"token": "Jeton",
