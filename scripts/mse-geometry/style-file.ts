@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { basename, dirname } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 
 /** Les zones dont le studio a besoin. Tout autre bloc du style est ignoré. */
 export const GEOMETRY_FIELDS = ['image', 'name', 'type', 'text', 'pt', 'casting cost'] as const;
@@ -64,6 +64,38 @@ function cardStyleBlock(lines: string[]): string[] {
 	return block;
 }
 
+/**
+ * Cible d'un `include file:` capable d'apporter des CHAMPS (un fichier avec
+ * son propre en-tête `card style:`), par opposition aux fragments imbriqués
+ * dans un champ (choix d'images, scripts) qui n'en ont jamais un — vérifié
+ * sur les 86 cibles absolues du corpus : seules 14 ont cet en-tête, toutes à
+ * une profondeur de 0 ou 1 tabulation dans le fichier qui les inclut. Un
+ * chemin RELATIF (sans « / » de tête) désigne toujours un script du MÊME
+ * paquet (ex. `font_m15`), jamais un bloc `card style:` — vérifié aussi,
+ * donc ignoré ici sans perte.
+ *
+ * Le séparateur après « include file: » peut être une tabulation OU une
+ * espace selon les fichiers.
+ */
+const INCLUDE_DIRECTIVE = /^(\t?)include file:[\t ]+(\/\S+)\s*$/;
+
+/**
+ * Relève les cibles `include file:` d'UN fichier de style, dans l'ordre où
+ * elles apparaissent. On ne regarde que les lignes à 0 ou 1 tabulation : à
+ * deux tabulations ou plus, la directive est nichée DANS un champ déjà ouvert
+ * (ex. `rarity: / include file: .../choice_images`) et ne peut apporter que
+ * des propriétés de ce champ, jamais un nouveau champ — cf. commentaire de
+ * INCLUDE_DIRECTIVE. On ne les résout donc pas ici.
+ */
+function collectIncludeTargets(lines: string[]): string[] {
+	const targets: string[] = [];
+	for (const line of lines) {
+		const match = INCLUDE_DIRECTIVE.exec(line);
+		if (match) targets.push(match[2]);
+	}
+	return targets;
+}
+
 /** Accumulateur mutable rempli ligne par ligne par `readStyleFile`. */
 interface ParseState {
 	fields: Partial<Record<GeometryField, RawBox>>;
@@ -126,30 +158,21 @@ function handleBoxProperty(line: string, state: ParseState): void {
 	}
 }
 
-/**
- * Lit un fichier `style` de paquet MSE.
- *
- * Les valeurs sont rendues TELLES QUELLES : ce module ne sait pas évaluer, il
- * sépare seulement la structure du contenu. C'est volontaire — l'évaluation
- * demande une portée (scripts de la partie + du style) que ce niveau n'a pas.
- *
- * Attention au format : MSE écrit parfois « top : 0 » avec une espace AVANT le
- * deux-points. Une regex qui exige « top: » perd silencieusement le champ.
- */
-export function readStyleFile(path: string): StyleFile | null {
-	let source: string;
-	try {
-		source = readFileSync(path, 'utf8');
-	} catch {
-		return null;
-	}
-	const lines = source.split('\n');
-	const width = /^card width:\s*([\d.]+)/m.exec(source);
-	const height = /^card height:\s*([\d.]+)/m.exec(source);
-	if (!width || !height) return null;
+/** Champs bruts d'un bloc `card style:`, sans la largeur/hauteur de carte. */
+interface ParsedFields {
+	fields: Partial<Record<GeometryField, RawBox>>;
+	fontFields: Partial<Record<ContentWidthField, FieldFontInfo>>;
+}
 
+/**
+ * Analyse les lignes d'un bloc `card style:` (déjà découpé par
+ * `cardStyleBlock`) en champs. Factorisé pour servir aussi bien au fichier
+ * `style` principal qu'à chaque fichier `include file:` qu'il hérite — même
+ * forme, même profondeur de tabulation.
+ */
+function parseCardStyleFields(lines: string[]): ParsedFields {
 	const state: ParseState = { fields: {}, fontFields: {}, current: null, subBlock: null };
-	for (const line of cardStyleBlock(lines)) {
+	for (const line of lines) {
 		if (handleFieldOpener(line, state)) continue;
 		if (!state.current) continue;
 		// Toute ligne à deux tabulations (ou moins) referme le sous-bloc
@@ -160,12 +183,151 @@ export function readStyleFile(path: string): StyleFile | null {
 		if (isContentWidthField && handleFontSubBlock(line, state)) continue;
 		handleBoxProperty(line, state);
 	}
+	return { fields: state.fields, fontFields: state.fontFields };
+}
+
+/** Complète `into` avec les clés de `from` qu'il n'a pas déjà — jamais l'inverse. */
+function fillMissing<T extends object>(into: T, from: T | undefined): void {
+	if (!from) return;
+	for (const key of Object.keys(from) as (keyof T)[]) {
+		if (into[key] === undefined && from[key] !== undefined) into[key] = from[key];
+	}
+}
+
+/**
+ * Fusionne les boîtes (« image », « name », … ) d'un bloc HÉRITÉ dans un bloc
+ * PROPRE, champ par champ puis propriété par propriété — cf. `mergeFields`.
+ */
+function mergeGeometryFields(own: ParsedFields, inherited: ParsedFields): void {
+	for (const field of GEOMETRY_FIELDS) {
+		const from = inherited.fields[field];
+		if (!from) continue;
+		own.fields[field] ??= {};
+		fillMissing(own.fields[field], from);
+	}
+}
+
+/**
+ * Fusionne les blocs `casting cost` / `rarity` (largeur + sous-blocs
+ * `font:` / `symbol font:`) — même règle de priorité que `mergeGeometryFields`.
+ */
+function mergeFontFields(own: ParsedFields, inherited: ParsedFields): void {
+	for (const field of CONTENT_WIDTH_FIELDS) {
+		const from = inherited.fontFields[field];
+		if (!from) continue;
+		own.fontFields[field] ??= {};
+		const into = own.fontFields[field];
+		if (into.width === undefined && from.width !== undefined) into.width = from.width;
+		for (const sub of ['font', 'symbolFont'] as const) {
+			if (!from[sub]) continue;
+			into[sub] ??= {};
+			fillMissing(into[sub], from[sub]);
+		}
+	}
+}
+
+/**
+ * Fusionne un bloc HÉRITÉ (`inherited`) dans un bloc PROPRE (`own`), sans
+ * jamais écraser une valeur que `own` a déjà. La fusion est à grain FIN :
+ * - par champ (« image », « name », … ) : un style qui ne définit `image`
+ *   que lui-même garde quand même le `text` hérité ;
+ * - par PROPRIÉTÉ dans un champ commun aux deux : si `own.name.left` existe
+ *   mais que `own.name.top` est absent, seul `top` vient de `inherited`.
+ * Muter `own` en place évite une recopie profonde à chaque niveau de
+ * récursion (jusqu'à 4, cf. spec).
+ */
+function mergeFields(own: ParsedFields, inherited: ParsedFields): void {
+	mergeGeometryFields(own, inherited);
+	mergeFontFields(own, inherited);
+}
+
+/**
+ * Lit et résout récursivement les champs d'UN fichier de style ou d'inclusion
+ * (même forme : un en-tête `card style:` avec ses champs). `visited` protège
+ * contre un cycle d'inclusion — aucun n'est mesuré dans le corpus (profondeur
+ * max 4), mais un cycle non gardé bloquerait l'extracteur indéfiniment.
+ *
+ * Aucun repli : une cible d'inclusion introuvable est signalée sur la
+ * console plutôt qu'ignorée en silence — cf. règle « aucun fallback », le
+ * champ reste simplement absent en aval.
+ */
+function readFieldsWithIncludes(
+	path: string,
+	corpusRoot: string,
+	visited: Set<string>
+): ParsedFields {
+	if (visited.has(path)) return { fields: {}, fontFields: {} };
+	visited.add(path);
+
+	let source: string;
+	try {
+		source = readFileSync(path, 'utf8');
+	} catch {
+		// Cible d'inclusion absente : visible plutôt que silencieuse (cf.
+		// « aucun fallback »). Les 86 cibles du corpus existent toutes ; si ce
+		// message apparaît, le corpus a changé et mérite d'être regardé.
+		console.error(`mse-geometry: include file introuvable : ${path}`);
+		return { fields: {}, fontFields: {} };
+	}
+
+	const lines = source.split('\n');
+	const own = parseCardStyleFields(cardStyleBlock(lines));
+
+	// Les propres inclusions du fichier inclus (récursion) sont résolues
+	// D'ABORD, puis fusionnées dans `own` : la règle « le propre l'emporte »
+	// s'applique à CHAQUE niveau, pas seulement au fichier de style final.
+	for (const target of collectIncludeTargets(lines)) {
+		const inherited = readFieldsWithIncludes(join(corpusRoot, target), corpusRoot, visited);
+		mergeFields(own, inherited);
+	}
+
+	return own;
+}
+
+/**
+ * Lit un fichier `style` de paquet MSE.
+ *
+ * Les valeurs sont rendues TELLES QUELLES : ce module ne sait pas évaluer, il
+ * sépare seulement la structure du contenu. C'est volontaire — l'évaluation
+ * demande une portée (scripts de la partie + du style) que ce niveau n'a pas.
+ *
+ * Attention au format : MSE écrit parfois « top : 0 » avec une espace AVANT le
+ * deux-points. Une regex qui exige « top: » perd silencieusement le champ.
+ *
+ * `corpusRoot` sert à résoudre les `include file:` : leur chemin est ABSOLU
+ * au sein du corpus (ex. `/magic-modules.mse-include/corners/card_fields`),
+ * donc relatif à sa racine, jamais au fichier qui inclut. 255 des 376 styles
+ * (67 %) en contiennent au moins un dans leur bloc `card style:` — sans les
+ * suivre, les champs qu'un style HÉRITE plutôt que définit lui-même restent
+ * invisibles, ce qui disqualifiait à tort la plupart des gabarits.
+ */
+export function readStyleFile(path: string, corpusRoot: string): StyleFile | null {
+	let source: string;
+	try {
+		source = readFileSync(path, 'utf8');
+	} catch {
+		return null;
+	}
+	const width = /^card width:\s*([\d.]+)/m.exec(source);
+	const height = /^card height:\s*([\d.]+)/m.exec(source);
+	if (!width || !height) return null;
+
+	const lines = source.split('\n');
+	const own = parseCardStyleFields(cardStyleBlock(lines));
+
+	// Même logique de priorité qu'en récursion : le fichier de style l'emporte
+	// sur tout ce qu'il inclut, quel que soit le nombre de cibles.
+	const visited = new Set<string>([path]);
+	for (const target of collectIncludeTargets(lines)) {
+		const inherited = readFieldsWithIncludes(join(corpusRoot, target), corpusRoot, visited);
+		mergeFields(own, inherited);
+	}
 
 	return {
 		id: basename(dirname(path)).replace(/\.mse-style$/, ''),
 		cardWidth: Number(width[1]),
 		cardHeight: Number(height[1]),
-		fields: state.fields,
-		fontFields: state.fontFields,
+		fields: own.fields,
+		fontFields: own.fontFields,
 	};
 }

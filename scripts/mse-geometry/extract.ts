@@ -49,7 +49,7 @@ export function extractAll(corpusRoot: string): {
 	const missing = new Map<string, Set<string>>();
 
 	for (const file of files) {
-		const style = readStyleFile(file);
+		const style = readStyleFile(file, corpusRoot);
 		if (!style) continue;
 		const scope = buildScope(readFileSync(file, 'utf8'), gameScript, style.fontFields);
 		const boxes: TemplateGeometry['boxes'] = {};
