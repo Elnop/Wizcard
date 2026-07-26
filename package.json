@@ -32,6 +32,7 @@
 		"seed:sets": "NODE_ENV=production npx tsx scripts/seed/seed-sets.ts",
 		"card-assets": "NODE_ENV=production npx tsx scripts/card-assets/upload-templates.ts",
 		"logo:generate": "tsx scripts/generate-logo.ts",
+		"mse:geometry": "NODE_ENV=production npx tsx scripts/mse-geometry/extract.ts",
 		"clean": "rm -rf node_modules .next",
 		"prepare": "husky"
 	},
