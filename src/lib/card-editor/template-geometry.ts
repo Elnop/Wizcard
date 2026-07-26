@@ -35,10 +35,18 @@ export function templateGeometry(template: MseTemplate | undefined): CardGeometr
 		height: cardHeight * scale,
 		art: to(boxes.image),
 		title: to(boxes.name),
+		// Le coût de mana se pose SUR la ligne de titre : à défaut de zone mesurée
+		// (12 gabarits), la boîte du nom est le bon repère, pas un emprunt fautif —
+		// c'est là que le coût s'imprime sur une vraie carte. Contrairement à
+		// `stats` ci-dessous, rien n'est peint ici : c'est une ancre, pas un panneau.
 		mana: to(boxes['casting cost'] ?? boxes.name),
 		typeLine: to(boxes.type),
 		rules: to(boxes.text),
-		stats: to(boxes.pt ?? boxes.type),
+		// Pas de zone `pt` mesurée (48 gabarits) => boîte de LARGEUR NULLE, et non
+		// celle de la ligne de type : `showStats` ne s'allume que sur une largeur
+		// positive, donc le panneau force/endurance reste masqué au lieu d'être
+		// peint par-dessus le type. Emprunter une autre zone serait un fallback.
+		stats: boxes.pt ? to(boxes.pt) : { x: 0, y: 0, width: 0, height: 0 },
 		footer: to(boxes.text),
 	};
 }
