@@ -239,6 +239,20 @@ fieldset.field > legend {
 	appearance: textfield;
 }
 
+/* Les symboles sont groupés par famille (base / hybride / hybride générique /
+   phyrexian) : 29 boutons d'affilée seraient illisibles. */
+.symbolGroup {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.symbolGroupLabel {
+	font-size: var(--text-2xs);
+	letter-spacing: 0.04em;
+	color: var(--text-muted);
+}
+
 .symbolBar {
 	display: flex;
 	flex-wrap: wrap;

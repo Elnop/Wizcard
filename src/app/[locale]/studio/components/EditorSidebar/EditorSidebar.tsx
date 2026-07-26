@@ -53,11 +53,44 @@ const PANEL_ICONS = {
 	details: SlidersHorizontal,
 };
 
-// Symboles insérables d'un clic. Deux absents volontaires :
-// - le générique ({1}, {2}…), qui a son propre compteur ;
-// - {T} (tap), qui est un coût d'ACTIVATION apparaissant dans le texte de
-//   règles, jamais dans le coût de mana d'une carte.
-const MANA_SYMBOLS = ['{W}', '{U}', '{B}', '{R}', '{G}', '{C}', '{X}', '{S}'];
+/**
+ * Symboles insérables d'un clic, groupés par famille — une palette plate de 34
+ * boutons serait illisible.
+ *
+ * Absents volontaires :
+ * - le générique simple ({1}, {2}…), qui a son propre compteur ;
+ * - {T} (tap), coût d'ACTIVATION qui apparaît dans le texte de règles, jamais
+ *   dans un coût de mana.
+ *
+ * Les familles suivent la nomenclature Scryfall (/symbology) :
+ * - hybrides colorés : payables par l'une OU l'autre couleur ({W/U}) ;
+ * - hybrides génériques : 2 génériques OU une couleur ({2/W}) — c'est le
+ *   « générique coloré » ;
+ * - phyrexians : payables par une couleur OU 2 points de vie ({W/P}).
+ */
+const MANA_SYMBOL_GROUPS = [
+	{ id: 'basic', symbols: ['{W}', '{U}', '{B}', '{R}', '{G}', '{C}', '{X}', '{S}'] },
+	{
+		id: 'hybrid',
+		symbols: [
+			'{W/U}',
+			'{U/B}',
+			'{B/R}',
+			'{R/G}',
+			'{G/W}',
+			'{W/B}',
+			'{U/R}',
+			'{B/G}',
+			'{R/W}',
+			'{G/U}',
+		],
+	},
+	{ id: 'hybridGeneric', symbols: ['{2/W}', '{2/U}', '{2/B}', '{2/R}', '{2/G}'] },
+	{
+		id: 'phyrexian',
+		symbols: ['{W/P}', '{U/P}', '{B/P}', '{R/P}', '{G/P}', '{C/P}'],
+	},
+] as const;
 
 /** Coût générique en tête d'un coût de mana : {3}{U}{U} -> 3. */
 function readGenericMana(manaCost: string): number | null {
@@ -217,21 +250,28 @@ function ManaCostField({
 					</button>
 				</div>
 			</div>
+			{MANA_SYMBOL_GROUPS.map((group) => (
+				<div key={group.id} className={styles.symbolGroup}>
+					<span className={styles.symbolGroupLabel}>{t(`manaGroups.${group.id}`)}</span>
+					<span className={styles.symbolBar}>
+						{group.symbols.map((symbol) => (
+							<button
+								key={symbol}
+								type="button"
+								onClick={() => onChange(`${manaCost}${symbol}`)}
+								// À la limite de pips, l'ajout serait retiré par clampManaCost :
+								// mieux vaut désactiver que laisser cliquer sans effet.
+								disabled={isPipLimitReached}
+								aria-label={t('insertSymbol', { symbol })}
+								title={symbolMap[symbol]?.english ?? symbol}
+							>
+								<ManaSymbol symbol={symbol} symbolMap={symbolMap} size={22} />
+							</button>
+						))}
+					</span>
+				</div>
+			))}
 			<span className={styles.symbolBar}>
-				{MANA_SYMBOLS.map((symbol) => (
-					<button
-						key={symbol}
-						type="button"
-						onClick={() => onChange(`${manaCost}${symbol}`)}
-						// À la limite de pips, l'ajout serait retiré par clampManaCost :
-						// mieux vaut désactiver que laisser cliquer sans effet.
-						disabled={isPipLimitReached}
-						aria-label={t('insertSymbol', { symbol })}
-						title={symbolMap[symbol]?.english ?? symbol}
-					>
-						<ManaSymbol symbol={symbol} symbolMap={symbolMap} size={22} />
-					</button>
-				))}
 				<button
 					type="button"
 					className={styles.symbolClear}

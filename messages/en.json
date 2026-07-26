@@ -992,7 +992,13 @@
 			"manaClear": "Clear",
 			"genericMana": "Generic mana",
 			"genericIncrease": "Increase generic mana",
-			"genericDecrease": "Decrease generic mana"
+			"genericDecrease": "Decrease generic mana",
+			"manaGroups": {
+				"basic": "Basic",
+				"hybrid": "Hybrid",
+				"hybridGeneric": "Generic hybrid",
+				"phyrexian": "Phyrexian"
+			}
 		},
 		"art": {
 			"title": "Compose the artwork",
