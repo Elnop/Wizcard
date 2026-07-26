@@ -158,6 +158,32 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 			throw new Unresolved(path);
 		}
 		case 'index': {
+			// Indexation CALCULÉE de l'objet « carte » (tâche 6e), ex.
+			// `card["indicator"+tag]` dans magic.mse-game/script:446. `card` n'est
+			// jamais une vraie valeur (ident non défini dans `scope.variables` —
+			// seuls ses champs `card.xxx` le sont, cf. CANONICAL_CARD) : on ne peut
+			// donc PAS évaluer `node.object` en premier comme pour une chaîne, ça
+			// lèverait toujours Unresolved('card') avant même de regarder la clé.
+			// On tente d'abord la lecture « chemin pointé » : si `node.object` est
+			// lui-même un `ident`/`member` (jamais un calcul), on évalue la clé
+			// (une expression ordinaire, ex. `"indicator" + tag`) et on cherche
+			// `<chemin de l'objet>.<clé évaluée>` dans `scope.variables` — même
+			// mécanisme que le cas `member` juste au-dessus, avec un chemin construit
+			// au lieu d'un chemin littéral figé par le parseur.
+			if (node.object.type === 'ident' || node.object.type === 'member') {
+				const base = flattenMember(node.object);
+				const key = evaluate(node.index, scope, depth + 1, locals);
+				if (typeof key === 'string') {
+					const path = `${base}.${key}`;
+					const variable = scope.variables.get(path);
+					if (variable !== undefined) return variable;
+					// Le nom manquant remonté est le CHEMIN COMPLET (ex. `card.indicator`),
+					// jamais le nom nu de l'objet — sinon tous les champs manquants de
+					// `card` se confondraient dans le rapport (cf. tâche 6d, motif exact
+					// que cette tâche corrige).
+					throw new Unresolved(path);
+				}
+			}
 			const collection = evaluate(node.object, scope, depth + 1, locals);
 			if (typeof collection === 'string') {
 				// Indexation d'une chaîne par position — utilisée par les fonctions
@@ -186,6 +212,17 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 			// eslint-disable-next-line sonarjs/max-switch-cases -- safe: un cas par opérateur binaire MSE, la liste est fixée par la grammaire du parseur
 			switch (node.op) {
 				case '+':
+					// MSE surcharge « + » : concaténation dès qu'un des deux côtés est
+					// une chaîne (ex. `"_" + face`, `"indicator" + tag` où `tag` vaut
+					// `""` ou `"_2"`) — omniprésent dans le script partagé pour bâtir
+					// les CLÉS d'indexation dynamique de `card` (tâche 6e). Convertir
+					// systématiquement en nombre AVANT cette tâche empêchait ces
+					// concaténations de jamais réussir. `String(number)` restitue un
+					// entier sans décimale parasite (ex. `2`, pas `2.0`), cohérent avec
+					// les suffixes `_2`/`_3` observés dans le corpus.
+					if (typeof left === 'string' || typeof right === 'string') {
+						return String(left) + String(right);
+					}
 					return toNumber(left) + toNumber(right);
 				case '-':
 					return toNumber(left) - toNumber(right);
