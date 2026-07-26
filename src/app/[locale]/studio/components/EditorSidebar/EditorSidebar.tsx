@@ -2,6 +2,7 @@
 
 import { useRef, useState, type DragEvent } from 'react';
 import {
+	CaretRight,
 	CardsThree,
 	ImageSquare,
 	MagicWand,
@@ -90,6 +91,32 @@ const MANA_SYMBOL_GROUPS = [
 		id: 'phyrexian',
 		symbols: ['{W/P}', '{U/P}', '{B/P}', '{R/P}', '{G/P}', '{C/P}'],
 	},
+	{
+		// Phyrexians hybrides (New Phyrexia) : une des deux couleurs OU 2 points de vie.
+		id: 'phyrexianHybrid',
+		symbols: [
+			'{W/U/P}',
+			'{U/B/P}',
+			'{B/R/P}',
+			'{R/G/P}',
+			'{G/W/P}',
+			'{W/B/P}',
+			'{U/R/P}',
+			'{B/G/P}',
+			'{R/W/P}',
+			'{G/U/P}',
+		],
+	},
+	{
+		// Symboles rares ou issus des Un-sets, marqués `appears_in_mana_costs` par
+		// Scryfall : {Y}/{Z} (génériques variables) et {HW} (demi-mana blanc).
+		//
+		// {L} (source légendaire) et {D} (land drop) sont volontairement absents :
+		// leurs SVG sont de simples glyphes NOIRS sans pastille de fond, donc
+		// invisibles sur le thème sombre. Ils restent saisissables à la main.
+		id: 'exotic',
+		symbols: ['{Y}', '{Z}', '{HW}'],
+	},
 ] as const;
 
 /** Coût générique en tête d'un coût de mana : {3}{U}{U} -> 3. */
@@ -177,6 +204,8 @@ function ManaCostField({
 }) {
 	const t = useTranslations('cardEditor.fields');
 	const symbolMap = useScryfallSymbols();
+	// Une seule famille ouverte à la fois : les 6 dépliées rempliraient l'écran.
+	const [openSymbolGroup, setOpenSymbolGroup] = useState<string | null>('basic');
 	const generic = readGenericMana(manaCost);
 	const preview = getManaSymbols(manaCost);
 	const isPipLimitReached = preview.length >= MAX_MANA_PIPS;
@@ -250,37 +279,46 @@ function ManaCostField({
 					</button>
 				</div>
 			</div>
-			{MANA_SYMBOL_GROUPS.map((group) => (
-				<div key={group.id} className={styles.symbolGroup}>
-					<span className={styles.symbolGroupLabel}>{t(`manaGroups.${group.id}`)}</span>
-					<span className={styles.symbolBar}>
-						{group.symbols.map((symbol) => (
-							<button
-								key={symbol}
-								type="button"
-								onClick={() => onChange(`${manaCost}${symbol}`)}
-								// À la limite de pips, l'ajout serait retiré par clampManaCost :
-								// mieux vaut désactiver que laisser cliquer sans effet.
-								disabled={isPipLimitReached}
-								aria-label={t('insertSymbol', { symbol })}
-								title={symbolMap[symbol]?.english ?? symbol}
-							>
-								<ManaSymbol symbol={symbol} symbolMap={symbolMap} size={22} />
-							</button>
-						))}
-					</span>
-				</div>
-			))}
-			<span className={styles.symbolBar}>
-				<button
-					type="button"
-					className={styles.symbolClear}
-					onClick={() => onChange('')}
-					disabled={manaCost.length === 0}
-				>
-					{t('manaClear')}
-				</button>
-			</span>
+			{/*
+			 * Accordéon : 44 symboles répartis en 6 familles occuperaient tout le
+			 * panneau. Seule la famille de base est ouverte par défaut — c'est celle
+			 * qui sert dans l'immense majorité des cas.
+			 */}
+			{MANA_SYMBOL_GROUPS.map((group) => {
+				const isOpen = openSymbolGroup === group.id;
+				return (
+					<div key={group.id} className={styles.symbolGroup}>
+						<button
+							type="button"
+							className={styles.symbolGroupToggle}
+							onClick={() => setOpenSymbolGroup(isOpen ? null : group.id)}
+							aria-expanded={isOpen}
+						>
+							<CaretRight size={12} weight="bold" data-open={isOpen || undefined} />
+							{t(`manaGroups.${group.id}`)}
+							<span className={styles.symbolGroupCount}>{group.symbols.length}</span>
+						</button>
+						{isOpen && (
+							<span className={styles.symbolBar}>
+								{group.symbols.map((symbol) => (
+									<button
+										key={symbol}
+										type="button"
+										onClick={() => onChange(`${manaCost}${symbol}`)}
+										// À la limite de pips, l'ajout serait retiré par clampManaCost :
+										// mieux vaut désactiver que laisser cliquer sans effet.
+										disabled={isPipLimitReached}
+										aria-label={t('insertSymbol', { symbol })}
+										title={symbolMap[symbol]?.english ?? symbol}
+									>
+										<ManaSymbol symbol={symbol} symbolMap={symbolMap} size={22} />
+									</button>
+								))}
+							</span>
+						)}
+					</div>
+				);
+			})}
 		</fieldset>
 	);
 }

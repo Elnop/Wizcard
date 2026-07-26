@@ -239,18 +239,50 @@ fieldset.field > legend {
 	appearance: textfield;
 }
 
-/* Les symboles sont groupés par famille (base / hybride / hybride générique /
-   phyrexian) : 29 boutons d'affilée seraient illisibles. */
+/* Accordéon de symboles : 44 boutons en 6 familles rempliraient le panneau,
+   donc une seule famille est dépliée à la fois. */
 .symbolGroup {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: 6px;
 }
 
-.symbolGroupLabel {
+.symbolGroupToggle {
+	display: flex;
+	width: 100%;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 0;
+	border: 0;
+	background: transparent;
+	color: var(--text-muted);
 	font-size: var(--text-2xs);
 	letter-spacing: 0.04em;
-	color: var(--text-muted);
+	text-align: start;
+	cursor: pointer;
+	transition: color 0.15s ease;
+}
+
+.symbolGroupToggle:hover {
+	color: var(--text);
+}
+
+.symbolGroupToggle svg {
+	flex-shrink: 0;
+	transition: transform 0.18s ease;
+}
+
+.symbolGroupToggle svg[data-open] {
+	transform: rotate(90deg);
+}
+
+.symbolGroupCount {
+	margin-inline-start: auto;
+	padding: 1px 6px;
+	border-radius: 99px;
+	background: rgba(255, 255, 255, 0.06);
+	font-size: 10px;
+	font-variant-numeric: tabular-nums;
 }
 
 .symbolBar {
@@ -279,21 +311,6 @@ fieldset.field > legend {
 .symbolBar button:hover:not(:disabled) {
 	border-color: rgba(255, 255, 255, 0.35);
 	transform: translateY(-1px);
-}
-
-.symbolClear {
-	width: auto !important;
-	height: 26px !important;
-	padding: 0 10px !important;
-	border-radius: 6px !important;
-	border-color: rgba(255, 255, 255, 0.16) !important;
-	color: var(--text-muted);
-	font-size: var(--text-2xs);
-}
-
-.symbolClear:disabled {
-	opacity: 0.35;
-	cursor: not-allowed;
 }
 
 .hiddenInput {

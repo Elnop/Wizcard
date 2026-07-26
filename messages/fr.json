@@ -989,7 +989,6 @@
 			"artist": "Crédit d'illustration",
 			"artistPlaceholder": "Nom de l'artiste",
 			"manaEmpty": "Aucun coût de mana",
-			"manaClear": "Effacer",
 			"genericMana": "Mana générique",
 			"genericIncrease": "Augmenter le mana générique",
 			"genericDecrease": "Diminuer le mana générique",
@@ -997,7 +996,9 @@
 				"basic": "De base",
 				"hybrid": "Hybride",
 				"hybridGeneric": "Hybride générique",
-				"phyrexian": "Phyrexian"
+				"phyrexian": "Phyrexian",
+				"phyrexianHybrid": "Phyrexian hybride",
+				"exotic": "Exotiques"
 			}
 		},
 		"art": {

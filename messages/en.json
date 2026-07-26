@@ -989,7 +989,6 @@
 			"artist": "Artist credit",
 			"artistPlaceholder": "Artist name",
 			"manaEmpty": "No mana cost yet",
-			"manaClear": "Clear",
 			"genericMana": "Generic mana",
 			"genericIncrease": "Increase generic mana",
 			"genericDecrease": "Decrease generic mana",
@@ -997,7 +996,9 @@
 				"basic": "Basic",
 				"hybrid": "Hybrid",
 				"hybridGeneric": "Generic hybrid",
-				"phyrexian": "Phyrexian"
+				"phyrexian": "Phyrexian",
+				"phyrexianHybrid": "Hybrid Phyrexian",
+				"exotic": "Exotic"
 			}
 		},
 		"art": {
