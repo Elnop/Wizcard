@@ -1,6 +1,6 @@
 import { BUILTINS, type Value } from './builtins';
 import { parseExpression, type Node } from './parser';
-import type { Scope } from './scope';
+import type { FunctionDef, Scope } from './scope';
 
 /**
  * Levée dès qu'une valeur ne peut pas être calculée AVEC CERTITUDE.
@@ -16,17 +16,25 @@ export class Unresolved extends Error {
 }
 
 /**
- * Cadre de variables LOCALES d'un corps de fonction (tâche 6c).
+ * Cadre de variables LOCALES d'un corps de fonction (tâche 6c, étendu 6d).
  *
  * Une affectation « nom := expr » lie un nom visible par les statements
  * SUIVANTS du même corps (et des blocs qu'il contient), mais jamais par
  * l'appelant ni par une définition sœur — cf. spec. On matérialise donc ce
  * cadre par un `Map` créé une fois PAR INVOCATION (un nouvel appel à
- * `evaluate` sans troisième argument démarre un cadre vierge), puis transmis
+ * `evaluate` sans quatrième argument démarre un cadre vierge), puis transmis
  * tel quel aux noeuds enfants d'un même corps (block/for/guard) pour que les
  * affectations s'y accumulent. Un appel vers une AUTRE définition (ident ou
  * call résolus via `scope.functions`) reçoit un cadre neuf, jamais celui de
  * l'appelant : c'est ce qui empêche la fuite entre portées.
+ *
+ * Tâche 6d : ce cadre neuf n'est plus systématiquement VIDE. `bindArguments`
+ * le préremplit avec les paramètres déclarés par `@(...)` (défauts) puis les
+ * arguments de l'appel — une deuxième SOURCE de liaisons locales, orthogonale
+ * aux affectations `:=`, mais qui vit dans le même `Map` : un corps qui fait
+ * `field := field + 1` après avoir reçu `field` en paramètre doit voir sa
+ * propre valeur AVANT de la réaffecter, exactement comme une affectation
+ * locale ordinaire le ferait.
  */
 type Locals = Map<string, Value>;
 
@@ -35,6 +43,62 @@ function toNumber(value: Value): number {
 	// MSE stocke parfois un nombre sous forme de chaîne (« "52" »).
 	if (typeof value === 'string' && /^-?[\d.]+$/.test(value.trim())) return Number(value);
 	throw new Unresolved(`valeur non numérique ${JSON.stringify(value)}`);
+}
+
+/**
+ * Construit le cadre de locales d'un APPEL vers une définition du corpus
+ * (tâche 6d) — c'est le mécanisme qui manquait : jusqu'ici `args`/`named`
+ * étaient évalués puis jetés dès qu'on tombait sur `scope.functions` (seuls
+ * les BUILTINS les recevaient). Trois sources, dans cet ordre de priorité
+ * croissante :
+ *
+ *  1. Les défauts déclarés par `}@(nom: défaut, …)` — évalués PARESSEUSEMENT
+ *     (seulement si l'appel ne fournit pas ce nom) et dans le cadre construit
+ *     JUSQU'ICI plutôt qu'un cadre vide : `alternative_cost`, dans le script
+ *     partagé, déclare `@(trim: lower_first, s:false, trim:{input})` — la
+ *     dernière déclaration de `trim` (comme un objet littéral, la dernière
+ *     clé gagne) référence `input`, donc un défaut peut vouloir voir un autre
+ *     paramètre déjà résolu. Ordre d'itération = ordre de déclaration dans le
+ *     `Map` (cf. `parseParamList`), donc déterministe.
+ *  2. Les arguments NOMMÉS de l'appel (`face:1`, `field:field`) — écrasent le
+ *     défaut correspondant s'il existe, ou introduisent un nom que le
+ *     paramètre n'avait pas prévu (rare mais pas interdit : cf. `named` déjà
+ *     transmis tel quel aux BUILTINS).
+ *  3. Un unique argument POSITIONNEL — lié à l'implicite `input` (405
+ *     références dans le script partagé, ex. `rarity_field(field)` où
+ *     `rarity_field` n'a AUCUN `@(...)`), sauf si la définition déclare
+ *     exactement un paramètre : dans ce cas, un positionnel vise CE paramètre
+ *     (cf. énoncé de tâche — aucun contre-exemple positif trouvé dans le
+ *     corpus, mais aucun exemple ne contredit non plus la règle par défaut
+ *     « input », donc les deux se combinent sans ambiguïté observée).
+ *     Plusieurs positionnels au-delà du premier n'ont pas de convention
+ *     connue dans le corpus : ignorés plutôt que devinés (cf. « aucun
+ *     fallback » — un futur appelant qui en dépendrait échouera sur le nom
+ *     manquant, pas sur une valeur erronée silencieuse).
+ */
+function bindArguments(
+	def: FunctionDef,
+	args: Value[],
+	named: Record<string, Value>,
+	scope: Scope,
+	depth: number
+): Locals {
+	const locals: Locals = new Map();
+	for (const [name, defaultNode] of def.params) {
+		if (Object.hasOwn(named, name)) continue; // écrasé plus bas, pas la peine d'évaluer le défaut
+		// Le défaut est évalué dans un cadre NEUF qui incrémente `depth` : une
+		// définition dont le défaut se référence elle-même (ex. `hash_update`
+		// dans le script partagé, `@(func:hash_update, …)`, jamais surchargé
+		// aux points d'appel mesurés) reste donc protégée par la garde de
+		// récursion plutôt que de boucler indéfiniment.
+		locals.set(name, evaluate(defaultNode, scope, depth + 1, locals));
+	}
+	for (const [name, value] of Object.entries(named)) locals.set(name, value);
+	if (args.length > 0) {
+		const singleDeclaredParam = def.params.size === 1 ? [...def.params.keys()][0] : undefined;
+		locals.set(singleDeclaredParam ?? 'input', args[0]);
+	}
+	return locals;
 }
 
 /**
@@ -63,6 +127,10 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 			return node.value;
 		case 'string':
 			return node.value;
+		case 'bool':
+			return node.value;
+		case 'nil':
+			return null;
 		case 'ident': {
 			// Une locale du corps courant masque toute variable/définition de
 			// même nom — cf. commentaire de tête sur `Locals`.
@@ -72,8 +140,15 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 			if (variable !== undefined) return variable;
 			const definition = scope.functions.get(node.name);
 			// Un nom défini sans parenthèses s'évalue comme son corps, dans un
-			// cadre de locales NEUF (pas celui de l'appelant, cf. Locals).
-			if (definition !== undefined) return evaluate(parseExpression(definition), scope, depth + 1);
+			// cadre de locales NEUF (pas celui de l'appelant, cf. Locals) — mais
+			// PAS vide : les défauts déclarés par `@(...)` (tâche 6d) s'appliquent
+			// même sans appel explicite, exactement comme un appel à zéro
+			// argument (`has_identity()` et `has_identity` référencé sans
+			// parenthèses doivent voir le même `face` par défaut).
+			if (definition !== undefined) {
+				const callLocals = bindArguments(definition, [], {}, scope, depth);
+				return evaluate(parseExpression(definition.body), scope, depth + 1, callLocals);
+			}
 			throw new Unresolved(node.name);
 		}
 		case 'member': {
@@ -96,7 +171,7 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 		}
 		case 'array':
 			// Aucune valeur MSE ne représente un tableau (Value est
-			// number|string|boolean) : on ne feint pas d'en construire un, on
+			// number|string|boolean|null) : on ne feint pas d'en construire un, on
 			// refuse — cf. « aucun fallback ». Un tableau n'est utile que
 			// consommé par length()/for/index, jamais renvoyé tel quel comme
 			// géométrie.
@@ -184,10 +259,13 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 			const builtin = BUILTINS.get(name);
 			if (builtin) return builtin(args, named);
 			const definition = scope.functions.get(name);
-			// Cadre de locales NEUF : les arguments ne sont pas encore liés dans
-			// le corps appelé (limite connue, hors périmètre 6c — cf. rapport),
-			// mais on ne doit surtout pas lui exposer les locales de l'appelant.
-			if (definition !== undefined) return evaluate(parseExpression(definition), scope, depth + 1);
+			// Cadre de locales NEUF construit à partir des défauts déclarés ET des
+			// arguments de CET appel (tâche 6d, cf. `bindArguments`) — jamais celui
+			// de l'appelant, pour ne pas lui faire fuiter ses propres locales.
+			if (definition !== undefined) {
+				const callLocals = bindArguments(definition, args, named, scope, depth);
+				return evaluate(parseExpression(definition.body), scope, depth + 1, callLocals);
+			}
 			throw new Unresolved(`${name}()`);
 		}
 	}

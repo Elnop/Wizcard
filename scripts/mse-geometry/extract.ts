@@ -80,7 +80,13 @@ export function extractAll(corpusRoot: string): {
 				try {
 					const node = parseExpression(source);
 					fieldAst[key] = node;
-					box[key] = Number(evaluate(node, scope));
+					const value = evaluate(node, scope);
+					// `evaluate` peut désormais renvoyer le littéral `nil` (tâche 6d,
+					// `Value` inclut `null`) : `Number(null)` vaudrait 0 silencieusement,
+					// un fallback déguisé. Une géométrie n'est JAMAIS censée être `nil`
+					// dans le corpus — donc refuser plutôt que deviner « 0 ».
+					if (value === null) throw new Unresolved(`${field}.${key} vaut nil`);
+					box[key] = Number(value);
 				} catch (error) {
 					const reason = error instanceof Unresolved ? error.what : (error as Error).message;
 					rejected.push({ id: style.id, field, key, reason });

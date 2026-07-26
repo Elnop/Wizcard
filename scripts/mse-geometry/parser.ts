@@ -3,6 +3,15 @@ import { tokenise, type Token } from './lexer';
 export type Node =
 	| { type: 'number'; value: number }
 	| { type: 'string'; value: string }
+	// Littéraux booléens/`nil` (tâche 6d) : jusqu'ici « true »/« false »/« nil »
+	// se lisaient comme de simples `ident`, donc levaient Unresolved(nom) dès
+	// qu'on les évaluait — ce qui n'avait jamais d'importance tant qu'aucune
+	// valeur PAR DÉFAUT de `@(...)` n'en dépendait (ex. `reverse:false`,
+	// `left:nil`). Distingués ici plutôt que dans l'évaluateur, pour que
+	// `scope.functions`/les locales ne puissent jamais masquer ces trois mots
+	// réservés avec une définition de même nom (cf. `parsePrimary`).
+	| { type: 'bool'; value: boolean }
+	| { type: 'nil' }
 	| { type: 'ident'; name: string }
 	| { type: 'member'; object: Node; property: string }
 	| { type: 'index'; object: Node; index: Node }
@@ -39,6 +48,32 @@ export type Node =
 	| { type: 'block'; statements: Node[] };
 
 export class ParseError extends Error {}
+
+/**
+ * Liste de PARAMÈTRES déclarés en suffixe d'une définition (tâche 6d) :
+ * « nom := { corps }@(p1: défaut1, p2: défaut2) ». Chaque défaut est une
+ * expression MSE à part entière (pas seulement un littéral — cf.
+ * `trim:{input}`, `func:hash_update`, `color_list:["white", …]` dans le
+ * script partagé), donc analysée avec le même `parseExpression` que le
+ * reste, sans grammaire séparée à maintenir.
+ */
+export type ParamList = Map<string, Node>;
+
+/**
+ * Reconnaît les trois mots réservés « true »/« false »/« nil » (tâche 6d) —
+ * extrait de `parsePrimary` en fonction autonome pour ne pas alourdir sa
+ * complexité cognitive déjà élevée (un cas par forme de primaire). Renvoie
+ * `null` pour tout autre jeton, y compris un `ident` ordinaire, qui reste géré
+ * par l'appelant.
+ */
+function tryParseReservedLiteral(token: Token): Node | null {
+	if (token.kind !== 'ident') return null;
+	if (token.value === 'true' || token.value === 'false') {
+		return { type: 'bool', value: token.value === 'true' };
+	}
+	if (token.value === 'nil') return { type: 'nil' };
+	return null;
+}
 
 /** Précédences, du plus faible au plus fort. */
 const BINDING: Record<string, number> = {
@@ -246,6 +281,13 @@ export function parseExpression(source: string): Node {
 		const token = next();
 		if (token.kind === 'number') return { type: 'number', value: Number(token.value) };
 		if (token.kind === 'string') return { type: 'string', value: token.value };
+		// « true »/« false »/« nil » (tâche 6d) : reconnus AVANT le cas générique
+		// `ident` plus bas (via un helper séparé, pour ne pas alourdir la
+		// complexité déjà élevée de `parsePrimary`), pour qu'aucune définition du
+		// corpus ne puisse jamais masquer ces trois mots réservés (aucune ne le
+		// fait, vérifié, mais ce n'est pas laissé au hasard).
+		const literal = tryParseReservedLiteral(token);
+		if (literal) return literal;
 		if (token.value === '(') {
 			// Un bloc parenthésé peut lui-même contenir des statements — cf. la
 			// branche `else ( ... )` de has_identity_general dans
@@ -326,6 +368,64 @@ export function parseExpression(source: string): Node {
 	const result = parseBlockBody();
 	if (pos !== tokens.length) throw new ParseError(`entrée résiduelle à ${peek()?.pos}`);
 	return result;
+}
+
+/**
+ * Analyse le CONTENU d'un suffixe « @(p1: défaut1, p2: défaut2, …) » (tâche
+ * 6d) — `source` est déjà la sous-chaîne ENTRE les parenthèses, extraite par
+ * `scope.ts` via un simple équilibrage de parenthèses (jamais de « ( »
+ * imbriqué dans les défauts observés sur les 376 styles, seuls « {…} » et
+ * « […] » le sont, tous deux déjà équilibrés par ce même comptage). Réutilise
+ * `parseExpression` pour chaque défaut plutôt qu'une grammaire de littéraux
+ * séparée : les défauts du corpus ne sont PAS que des littéraux (cf.
+ * `trim:{input}`, `func:hash_update`, `color_list:["white", …]`).
+ */
+export function parseParamList(source: string): ParamList {
+	const params: ParamList = new Map();
+	const trimmed = source.trim();
+	if (trimmed === '') return params;
+	// Découpe au niveau des virgules de TOP NIVEAU seulement (une virgule à
+	// l'intérieur de « […] »/« {…} » ne sépare pas deux paramètres — cf.
+	// `color_list:["white", "blue", …]` — NI À L'INTÉRIEUR D'UNE CHAÎNE — cf.
+	// `sep:","`, `closing:"and "` : sans ce suivi, la virgule DANS le
+	// littéral « "," » serait lue comme un séparateur de paramètres et
+	// couperait la chaîne en deux moitiés non terminées.
+	let depth = 0;
+	let inString = false;
+	let start = 0;
+	const parts: string[] = [];
+	for (let i = 0; i < trimmed.length; i += 1) {
+		const ch = trimmed[i];
+		if (ch === '"') inString = !inString;
+		else if (inString) continue;
+		else if (ch === '[' || ch === '{' || ch === '(') depth += 1;
+		else if (ch === ']' || ch === '}' || ch === ')') depth -= 1;
+		else if (ch === ',' && depth === 0) {
+			parts.push(trimmed.slice(start, i));
+			start = i + 1;
+		}
+	}
+	parts.push(trimmed.slice(start));
+	for (const part of parts) {
+		// Le nom du paramètre est tout ce qui précède le PREMIER « : » du
+		// segment (jamais dans une chaîne à ce stade : un nom de paramètre ne
+		// commence jamais par un guillemet) ; le reste est le défaut.
+		const colon = part.indexOf(':');
+		if (colon === -1) throw new ParseError(`paramètre sans défaut « ${part.trim()} »`);
+		const name = part.slice(0, colon).trim();
+		let defaultSource = part.slice(colon + 1).trim();
+		// Un défaut peut être entouré de « {…} » comme n'importe quelle valeur
+		// de champ MSE (cf. `trim:{input}`) — ce ne sont pas des accolades de
+		// bloc de code, juste la même enveloppe que `unwrapFieldValue` retire
+		// pour les champs de style ; on fait de même ici plutôt que de laisser
+		// `parseExpression` buter dessus (les accolades ne font pas partie de
+		// sa grammaire).
+		if (defaultSource.startsWith('{') && defaultSource.endsWith('}')) {
+			defaultSource = defaultSource.slice(1, -1);
+		}
+		params.set(name, parseExpression(defaultSource));
+	}
+	return params;
 }
 
 /**

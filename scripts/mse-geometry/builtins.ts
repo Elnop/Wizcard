@@ -1,6 +1,11 @@
 import { verticalOffset } from './font-metrics';
 
-export type Value = number | string | boolean;
+// `null` représente le littéral MSE « nil » (tâche 6d) — nécessaire pour que
+// des défauts de `@(…)` comme `left:nil` soient une VALEUR utilisable (ex.
+// dans un test `left != nil`) plutôt qu'un type que `Value` ne peut pas
+// porter. Distinct de `undefined`, qui reste réservé à « cette clé est
+// absente » (`scope.variables.get(...)`, `named[...]`, etc.).
+export type Value = number | string | boolean | null;
 export type Builtin = (args: Value[], named: Record<string, Value>) => Value;
 
 /**

@@ -1,7 +1,19 @@
 import { Unresolved, evaluate } from './evaluate';
 import { manaCostWidth } from './font-metrics';
-import { parseExpression } from './parser';
+import { parseExpression, parseParamList, type ParamList } from './parser';
 import type { FieldFontInfo } from './style-file';
+
+/**
+ * Une définition du corpus : son corps (source, analysée à la demande, comme
+ * avant), et ses paramètres DÉCLARÉS le cas échéant (tâche 6d) — le suffixe
+ * « }@(nom: défaut, …) » vu juste après l'accolade fermante. `params` est une
+ * Map vide pour l'écrasante majorité des définitions (aucun suffixe) : le
+ * comportement pré-6d (aucun argument lié) en est le cas particulier.
+ */
+export interface FunctionDef {
+	body: string;
+	params: ParamList;
+}
 
 /**
  * Portée de noms pour l'évaluation.
@@ -12,13 +24,22 @@ import type { FieldFontInfo } from './style-file';
  * un style qui redéfinit `art_left` recevrait la géométrie d'un autre.
  */
 export interface Scope {
-	/** nom -> corps de la définition (source, analysée à la demande). */
-	functions: Map<string, string>;
+	/** nom -> définition (corps + paramètres déclarés). */
+	functions: Map<string, FunctionDef>;
 	variables: Map<string, number | string | boolean>;
 }
 
-/** Relève les définitions `nom := { corps }` d'une source de script. */
-function collectDefinitions(source: string, into: Map<string, string>): void {
+/**
+ * Relève les définitions `nom := { corps }` d'une source de script, avec leur
+ * suffixe optionnel `@(…)` de paramètres (tâche 6d).
+ *
+ * Vérifié sur les 376 styles + magic.mse-game/script : l'accolade fermante
+ * est TOUJOURS immédiatement suivie de `@(` sans espace quand ce suffixe
+ * existe (aucun contre-exemple) — on peut donc simplement regarder les deux
+ * caractères qui suivent le point où le comptage d'accolades s'arrête, sans
+ * élargir la regex d'en-tête (qui reste focalisée sur `nom := {`).
+ */
+function collectDefinitions(source: string, into: Map<string, FunctionDef>): void {
 	const pattern = /^[\t ]*([a-z_][a-z_0-9]*)\s*:=\s*\{/gim;
 	for (let match = pattern.exec(source); match; match = pattern.exec(source)) {
 		// Équilibrage des accolades pour capturer un corps multi-ligne.
@@ -29,7 +50,22 @@ function collectDefinitions(source: string, into: Map<string, string>): void {
 			else if (source[index] === '}') depth -= 1;
 			index += 1;
 		}
-		into.set(match[1], source.slice(match.index + match[0].length, index - 1));
+		const body = source.slice(match.index + match[0].length, index - 1);
+		let params: ParamList = new Map();
+		if (source[index] === '@' && source[index + 1] === '(') {
+			// Équilibrage des parenthèses pour capturer la liste de paramètres,
+			// même précaution que pour le corps ci-dessus (les défauts peuvent
+			// contenir des « [...] »/« {...} » internes, cf. `color_list`).
+			let parenDepth = 1;
+			let paramsEnd = index + 2;
+			while (paramsEnd < source.length && parenDepth > 0) {
+				if (source[paramsEnd] === '(') parenDepth += 1;
+				else if (source[paramsEnd] === ')') parenDepth -= 1;
+				paramsEnd += 1;
+			}
+			params = parseParamList(source.slice(index + 2, paramsEnd - 1));
+		}
+		into.set(match[1], { body, params });
 	}
 }
 
@@ -113,7 +149,7 @@ export function buildScope(
 	gameScript: string,
 	fontFields?: { 'casting cost'?: FieldFontInfo; rarity?: FieldFontInfo }
 ): Scope {
-	const functions = new Map<string, string>();
+	const functions = new Map<string, FunctionDef>();
 	// Le script de la partie EN PREMIER : le style écrase ensuite ce qu'il
 	// redéfinit, puisque Map.set remplace la valeur existante.
 	collectDefinitions(gameScript, functions);
