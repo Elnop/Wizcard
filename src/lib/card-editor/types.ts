@@ -81,6 +81,42 @@ export type EditableCardField =
 	| 'loyalty'
 	| 'artist';
 
+/**
+ * Longueur maximale de chaque champ éditable, appliquée dans le STATE.
+ *
+ * Les attributs `maxLength` des <input> ne bornent que la saisie clavier : une
+ * valeur posée par programme — collage traité par React, brouillon restauré du
+ * localStorage, champ pré-rempli — les traverse sans obstacle. Mesuré : un
+ * `maxLength={80}` laissait passer 300 caractères jusqu'au state, et donc
+ * jusqu'en base.
+ *
+ * Ces valeurs restent alignées sur les `maxLength` de EditorSidebar et de
+ * CardCanvas, qui gardent leur utilité pour le retour immédiat à la frappe.
+ */
+export const CARD_FIELD_MAX_LENGTH: Record<EditableCardField, number> = {
+	name: 80,
+	manaCost: 80,
+	typeLine: 120,
+	oracleText: 1600,
+	flavorText: 320,
+	power: 8,
+	toughness: 8,
+	loyalty: 8,
+	artist: 100,
+};
+
+/**
+ * Mêmes bornes pour les champs texte du brouillon (panneau Détails), qui
+ * passent par updateDraft et non par updateFace. Les clés absentes ici ne sont
+ * pas des chaînes libres (booléens, énumérations bornées par un <select>).
+ */
+export const DRAFT_FIELD_MAX_LENGTH: Partial<Record<keyof CustomCardDraft, number>> = {
+	setName: 80,
+	setCode: 6,
+	collectorNumber: 12,
+	tags: 240,
+};
+
 export interface CardEditorPayload {
 	version: 1;
 	layoutId: CardLayoutId;

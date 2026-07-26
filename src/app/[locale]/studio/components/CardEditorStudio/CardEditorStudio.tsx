@@ -16,7 +16,9 @@ import {
 } from '@/lib/card-editor/mse-assets';
 import { validateCardDraft } from '@/lib/card-editor/draft';
 import {
+	CARD_FIELD_MAX_LENGTH,
 	DEFAULT_FRAME_TEMPLATE_ID,
+	DRAFT_FIELD_MAX_LENGTH,
 	type CardCanvasLabels,
 	type EditableCardField,
 } from '@/lib/card-editor/types';
@@ -165,7 +167,12 @@ export function CardEditorStudio() {
 	function handleFieldChange(field: EditableCardField, value: string) {
 		setValidationErrors([]);
 		setNotice(null);
-		editor.updateFace(field, value);
+		// Borner ICI et pas seulement via maxLength : cet attribut ne retient que
+		// la frappe. Un collage traité par React, un brouillon restauré ou un
+		// champ pré-rempli passent tout droit — 300 caractères atteignaient le
+		// state avec un maxLength de 80. Ce handler est le point de passage unique
+		// de la sidebar ET de l'édition directe sur la carte.
+		editor.updateFace(field, value.slice(0, CARD_FIELD_MAX_LENGTH[field]));
 	}
 
 	function handleArtworkChange(artwork: Parameters<typeof editor.updateArtwork>[0]) {
@@ -177,7 +184,16 @@ export function CardEditorStudio() {
 	function handleDraftChange(values: Parameters<typeof editor.updateDraft>[0]) {
 		setValidationErrors([]);
 		setNotice(null);
-		editor.updateDraft(values);
+		// Même raison que handleFieldChange : maxLength ne retient que la frappe.
+		// On ne tronque que les champs texte connus ; les autres (booléens,
+		// énumérations d'un <select>) traversent inchangés.
+		const bounded = Object.fromEntries(
+			Object.entries(values).map(([key, value]) => {
+				const limit = DRAFT_FIELD_MAX_LENGTH[key as keyof typeof DRAFT_FIELD_MAX_LENGTH];
+				return typeof value === 'string' && limit ? [key, value.slice(0, limit)] : [key, value];
+			})
+		) as typeof values;
+		editor.updateDraft(bounded);
 	}
 
 	const canvasProps = {
