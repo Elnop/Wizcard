@@ -200,6 +200,7 @@ function RulesLine({
 	fontSize,
 	textColor,
 	symbolMap,
+	isItalic = false,
 }: {
 	line: string;
 	x: number;
@@ -207,6 +208,8 @@ function RulesLine({
 	fontSize: number;
 	textColor: string;
 	symbolMap: Record<string, ScryfallCardSymbol>;
+	/** Le texte d'ambiance est en italique ; les symboles, eux, restent droits. */
+	isItalic?: boolean;
 }) {
 	const symbolSize = fontSize * RULES_SYMBOL_SIZE_RATIO;
 	// Positions calculées en amont : le rendu ne peut pas muter un curseur dans
@@ -220,8 +223,21 @@ function RulesLine({
 		Array<{ segment: ReturnType<typeof splitRulesSegments>[number]; at: number }>
 	>((result, segment) => {
 		const previous = result.at(-1);
-		const at = previous ? previous.at + advance(previous.segment) : x;
-		return [...result, { segment, at }];
+		const start = previous ? previous.at + advance(previous.segment) : x;
+		if (segment.kind === 'symbol') return [...result, { segment, at: start }];
+		// SVG SUPPRIME les espaces en tête d'un <text> au rendu (vérifié : « coule »
+		// et «  coule » mesurent pareil), alors que notre calcul les compte. Sans
+		// correction, le mot qui suit un symbole se colle à lui. On avance donc le
+		// curseur de ces espaces et on les retire du texte effectivement rendu.
+		const leading = /^\s*/.exec(segment.value)?.[0] ?? '';
+		const trimmed = segment.value.slice(leading.length);
+		return [
+			...result,
+			{
+				segment: { kind: 'text', value: trimmed },
+				at: start + measureText(leading, fontSize, false),
+			},
+		];
 	}, []);
 
 	return (
@@ -241,6 +257,7 @@ function RulesLine({
 							y={y}
 							fontFamily="Georgia, serif"
 							fontSize={fontSize}
+							fontStyle={isItalic ? 'italic' : undefined}
 							fill={textColor}
 						>
 							{segment.value}
@@ -279,6 +296,8 @@ function RulesText({
 	const oracle = expandCardNameShortcut(face.oracleText, face.name);
 	const content = oracle || placeholder;
 	const fontSize = getRulesFontSize(oracle.length + face.flavorText.length, isNarrow);
+	// L'ambiance est légèrement plus petite que les règles, comme sur une carte.
+	const flavorFontSize = Math.max(17, fontSize - 2);
 	const lineHeight = fontSize * 1.28;
 	const maxCharacters = Math.max(15, Math.floor((rect.width - 44) / (fontSize * 0.53)));
 	const maxLines = Math.max(2, Math.floor((rect.height - 46) / lineHeight));
@@ -307,20 +326,29 @@ function RulesText({
 					symbolMap={symbolMap}
 				/>
 			))}
-			{face.flavorText && flavorOffset < maxLines - 1 && (
-				<text
-					x={rect.x + 24}
-					y={rect.y + 40 + (flavorOffset + 1.3) * lineHeight}
-					fontFamily="Georgia, serif"
-					fontSize={Math.max(17, fontSize - 2)}
-					fontStyle="italic"
-					fill={textColor}
-				>
-					{face.flavorText.length > maxCharacters
-						? `${face.flavorText.slice(0, maxCharacters - 1)}…`
-						: face.flavorText}
-				</text>
-			)}
+			{/*
+			 * Texte d'ambiance : mêmes symboles dessinés que les règles, et surtout
+			 * un vrai retour à la ligne — il était auparavant rendu d'un bloc puis
+			 * tronqué à la première ligne, ce qui coupait la plupart des citations.
+			 */}
+			{face.flavorText &&
+				flavorOffset < maxLines - 1 &&
+				wrapCardText(
+					face.flavorText,
+					Math.floor(maxCharacters * (fontSize / flavorFontSize)),
+					Math.max(1, maxLines - Math.ceil(flavorOffset) - 1)
+				).map((flavorLine, index) => (
+					<RulesLine
+						key={`${flavorLine.text}-${index}`}
+						line={flavorLine.text}
+						x={rect.x + 24}
+						y={rect.y + 40 + (flavorOffset + 1.3 + index) * lineHeight}
+						fontSize={flavorFontSize}
+						textColor={textColor}
+						symbolMap={symbolMap}
+						isItalic
+					/>
+				))}
 		</g>
 	);
 }
