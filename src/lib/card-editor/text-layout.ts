@@ -3,6 +3,22 @@ export interface CardTextLine {
 	isParagraphEnd: boolean;
 }
 
+/**
+ * Longueur « visuelle » d'un mot, en équivalents-caractères.
+ *
+ * Le retour à la ligne compte des caractères, mais un symbole comme {T} en
+ * occupe 3 dans la chaîne pour la largeur d'environ 1.5 : sans correction, une
+ * ligne pleine de symboles se coupe beaucoup trop tôt. On remplace donc chaque
+ * groupe {…} par sa largeur approchée avant de compter.
+ */
+const SYMBOL_CHAR_EQUIVALENT = 1.5;
+
+function visualLength(text: string): number {
+	const symbols = text.match(/\{[^{}]+\}/g) ?? [];
+	const symbolChars = symbols.reduce((sum, symbol) => sum + symbol.length, 0);
+	return text.length - symbolChars + symbols.length * SYMBOL_CHAR_EQUIVALENT;
+}
+
 function wrapParagraph(paragraph: string, maxCharacters: number): string[] {
 	const words = paragraph.trim().split(/\s+/).filter(Boolean);
 	if (words.length === 0) return [''];
@@ -10,7 +26,7 @@ function wrapParagraph(paragraph: string, maxCharacters: number): string[] {
 	let current = '';
 	for (const word of words) {
 		const candidate = current ? `${current} ${word}` : word;
-		if (candidate.length <= maxCharacters || !current) current = candidate;
+		if (visualLength(candidate) <= maxCharacters || !current) current = candidate;
 		else {
 			lines.push(current);
 			current = word;
@@ -106,11 +122,27 @@ function glyphWidth(character: string): number {
  */
 const TITLE_SAFETY_MARGIN = 1.02;
 
-/** Largeur estimée d'une chaîne à un corps donné, en unités SVG. */
-function measureTitle(text: string, fontSize: number): number {
+/**
+ * Facteur de graisse pour le texte de règles.
+ *
+ * GLYPH_WIDTHS est calibrée sur du Georgia **gras** (le titre). Le texte de
+ * règles est en Georgia normal, nettement plus étroit : sans correction,
+ * l'estimation dépassait le réel de ~26 % et les segments posés APRÈS un
+ * symbole dérivaient visiblement vers la droite.
+ *
+ * 0.79 est le rapport mesuré (getBBox) sur cinq phrases de règles typiques.
+ */
+const RULES_WEIGHT_FACTOR = 0.79;
+
+/** Largeur brute, sans marge : sert au positionnement, où l'exactitude prime. */
+export function measureText(text: string, fontSize: number, isBold = true): number {
 	let total = 0;
 	for (const character of text) total += glyphWidth(character);
-	return total * fontSize * TITLE_SAFETY_MARGIN;
+	return total * fontSize * (isBold ? 1 : RULES_WEIGHT_FACTOR);
+}
+
+function measureTitle(text: string, fontSize: number): number {
+	return measureText(text, fontSize) * TITLE_SAFETY_MARGIN;
 }
 
 export interface FittedTitle {
@@ -192,6 +224,50 @@ export function clampManaCost(manaCost: string): string {
 
 export function expandCardNameShortcut(text: string, cardName: string): string {
 	return text.replaceAll('~', cardName || 'CARDNAME');
+}
+
+export type RulesSegment =
+	{ kind: 'text'; value: string } | { kind: 'symbol'; value: string; code: string };
+
+/**
+ * Découpe une ligne de texte de règles en segments texte / symbole.
+ *
+ * Le texte de règles contient des symboles entre accolades ({T}, {2}{U}, {W/P}…)
+ * qu'une vraie carte dessine, pas qu'elle écrit. Le rendu SVG a besoin de la
+ * découpe pour intercaler des <image> entre les <text>.
+ *
+ * `code` est le contenu sans les accolades, normalisé en majuscules — la forme
+ * qu'attend la map Scryfall (via `{CODE}`).
+ */
+export function splitRulesSegments(line: string): RulesSegment[] {
+	const segments: RulesSegment[] = [];
+	for (const part of line.split(/(\{[^{}]+\})/g)) {
+		if (!part) continue;
+		const inner = /^\{([^{}]+)\}$/.exec(part);
+		if (inner) segments.push({ kind: 'symbol', value: part, code: inner[1].trim().toUpperCase() });
+		else segments.push({ kind: 'text', value: part });
+	}
+	return segments;
+}
+
+/**
+ * Largeur d'une ligne de règles à un corps donné, symboles compris.
+ *
+ * Les symboles sont dessinés carrés et légèrement plus petits que le corps
+ * (SYMBOL_SIZE_RATIO), donc leur largeur ne suit pas celle du texte : sans ce
+ * calcul dédié, les segments qui suivent un symbole seraient mal positionnés.
+ */
+export const RULES_SYMBOL_SIZE_RATIO = 0.82;
+
+export function measureRulesLine(line: string, fontSize: number): number {
+	let total = 0;
+	for (const segment of splitRulesSegments(line)) {
+		total +=
+			segment.kind === 'symbol'
+				? fontSize * RULES_SYMBOL_SIZE_RATIO
+				: measureText(segment.value, fontSize, false);
+	}
+	return total;
 }
 
 /**

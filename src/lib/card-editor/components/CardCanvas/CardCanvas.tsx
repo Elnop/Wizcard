@@ -9,6 +9,9 @@ import {
 	getManaSymbols,
 	getRulesFontSize,
 	manaSymbolProxyUrl,
+	measureText,
+	RULES_SYMBOL_SIZE_RATIO,
+	splitRulesSegments,
 	wrapCardText,
 } from '@/lib/card-editor/text-layout';
 import {
@@ -23,6 +26,7 @@ import {
 	type EditableCardField,
 } from '@/lib/card-editor/types';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
+import type { ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
 import styles from './CardCanvas.module.css';
 
 interface CardCanvasProps {
@@ -178,6 +182,86 @@ function ManaSymbols({
 	);
 }
 
+/**
+ * Une ligne de texte de règles, symboles dessinés plutôt qu'écrits.
+ *
+ * Une vraie carte n'imprime pas « {T} : ajoutez {G} » : elle dessine les
+ * symboles. On découpe donc la ligne en segments et on avance manuellement le
+ * curseur horizontal — un <text> monolithique ne permet pas d'intercaler des
+ * <image>.
+ *
+ * Les symboles sont posés sur la ligne de base optique (décalés vers le haut
+ * d'environ 0.78 × leur taille) pour s'aligner sur la hauteur d'x du texte.
+ */
+function RulesLine({
+	line,
+	x,
+	y,
+	fontSize,
+	textColor,
+	symbolMap,
+}: {
+	line: string;
+	x: number;
+	y: number;
+	fontSize: number;
+	textColor: string;
+	symbolMap: Record<string, ScryfallCardSymbol>;
+}) {
+	const symbolSize = fontSize * RULES_SYMBOL_SIZE_RATIO;
+	// Positions calculées en amont : le rendu ne peut pas muter un curseur dans
+	// map() (react-hooks/immutability), et l'avance dépend du segment précédent.
+	// `false` : le texte de règles est en Georgia NORMAL, pas gras comme le titre
+	// sur lequel la table de glyphes est calibrée.
+	const advance = (segment: ReturnType<typeof splitRulesSegments>[number]) =>
+		segment.kind === 'symbol' ? symbolSize : measureText(segment.value, fontSize, false);
+
+	const placed = splitRulesSegments(line).reduce<
+		Array<{ segment: ReturnType<typeof splitRulesSegments>[number]; at: number }>
+	>((result, segment) => {
+		const previous = result.at(-1);
+		const at = previous ? previous.at + advance(previous.segment) : x;
+		return [...result, { segment, at }];
+	}, []);
+
+	return (
+		<>
+			{placed.map(({ segment, at }, index) => {
+				const uri =
+					segment.kind === 'symbol'
+						? manaSymbolProxyUrl(symbolMap[`{${segment.code}}`]?.svg_uri)
+						: null;
+				// Texte, ou symbole inconnu ({ABC}, map pas encore chargée) : on garde
+				// la forme brute plutôt que de laisser un trou dans la phrase.
+				if (!uri) {
+					return (
+						<text
+							key={index}
+							x={at}
+							y={y}
+							fontFamily="Georgia, serif"
+							fontSize={fontSize}
+							fill={textColor}
+						>
+							{segment.value}
+						</text>
+					);
+				}
+				return (
+					<image
+						key={index}
+						href={uri}
+						x={at}
+						y={y - symbolSize * 0.78}
+						width={symbolSize}
+						height={symbolSize}
+					/>
+				);
+			})}
+		</>
+	);
+}
+
 function RulesText({
 	face,
 	rect,
@@ -191,6 +275,7 @@ function RulesText({
 	isNarrow: boolean;
 	textColor: string;
 }) {
+	const symbolMap = useScryfallSymbols();
 	const oracle = expandCardNameShortcut(face.oracleText, face.name);
 	const content = oracle || placeholder;
 	const fontSize = getRulesFontSize(oracle.length + face.flavorText.length, isNarrow);
@@ -211,21 +296,17 @@ function RulesText({
 	const flavorOffset = positionedLines.at(-1)?.offset ?? 0;
 	return (
 		<g opacity={oracle ? 1 : 0.48}>
-			{positionedLines.map(({ line, offset }, index) => {
-				const y = rect.y + 34 + offset * lineHeight;
-				return (
-					<text
-						key={`${line.text}-${index}`}
-						x={rect.x + 24}
-						y={y}
-						fontFamily="Georgia, serif"
-						fontSize={fontSize}
-						fill={textColor}
-					>
-						{line.text}
-					</text>
-				);
-			})}
+			{positionedLines.map(({ line, offset }, index) => (
+				<RulesLine
+					key={`${line.text}-${index}`}
+					line={line.text}
+					x={rect.x + 24}
+					y={rect.y + 34 + offset * lineHeight}
+					fontSize={fontSize}
+					textColor={textColor}
+					symbolMap={symbolMap}
+				/>
+			))}
 			{face.flavorText && flavorOffset < maxLines - 1 && (
 				<text
 					x={rect.x + 24}
