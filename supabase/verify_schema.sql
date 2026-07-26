@@ -677,6 +677,17 @@ select pg_temp.chk(
   'service_role ne peut pas écrire dans card_templates'
 );
 
+-- Géométrie mesurée (20260727120000). NULL tant qu'un gabarit n'a pas été
+-- mesuré depuis le corpus MSE : colonne présente et de type jsonb, pas de
+-- contrainte sur son contenu (le studio la traite en NULL = non mesuré).
+select pg_temp.chk(
+  'catalog', 'card_templates.geometry column',
+  exists (select 1 from information_schema.columns
+          where table_schema='public' and table_name='card_templates'
+            and column_name='geometry' and data_type='jsonb'),
+  'colonne card_templates.geometry absente ou de mauvais type'
+);
+
 -- Colonnes exhaustives (nom + type), source : DB locale à jour.
 with expected(t, col, typ) as (
   values

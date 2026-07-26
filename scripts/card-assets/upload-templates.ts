@@ -29,6 +29,7 @@ import { promisify } from 'node:util';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { resolveSupabaseEnv } from '../lib/load-env';
 import { createLogger } from '../lib/logger';
+import { extractAll, type TemplateGeometry } from '../mse-geometry/extract';
 
 const log = createLogger('card-assets');
 const execFileAsync = promisify(execFile);
@@ -44,6 +45,13 @@ const MANIFEST_PATH = path.join(ASSETS_ROOT, 'manifests', 'templates.json');
 const GENERATE_SCRIPT = path.resolve('scripts/card-assets/generate-manifests.mjs');
 const BUCKET = 'card-templates';
 const UPLOAD_CONCURRENCY = 8;
+// Racine du corpus MSE d'où la géométrie est mesurée (cf. scripts/mse-geometry).
+// Les clés de la Map renvoyée par extractAll sont les id .mse-style, identiques
+// aux id de card_templates : aucune normalisation à faire ici.
+const GEOMETRY_CORPUS_ROOT = path.join(
+	ASSETS_ROOT,
+	'card-assets/v/bcdf4190b4bf/full-magic-pack/data'
+);
 
 const { supabaseUrl: SUPABASE_URL, supabaseServiceRoleKey: SUPABASE_SERVICE_ROLE_KEY } =
 	resolveSupabaseEnv(log, !DRY_RUN);
@@ -106,6 +114,9 @@ interface CardTemplateRow {
 	dpi: number | null;
 	asset_version: string;
 	version: string | null;
+	// Géométrie mesurée depuis le corpus MSE (scripts/mse-geometry/extract.ts).
+	// NULL = non mesuré : jamais de géométrie empruntée à un autre gabarit.
+	geometry: TemplateGeometry | null;
 }
 
 let _sb: SupabaseClient | null = null;
@@ -160,7 +171,11 @@ function collectReferencedPaths(templates: ManifestTemplate[]): string[] {
 	return [...referenced].sort();
 }
 
-function toRow(template: ManifestTemplate, assetVersion: string): CardTemplateRow {
+function toRow(
+	template: ManifestTemplate,
+	assetVersion: string,
+	geometries: Map<string, TemplateGeometry>
+): CardTemplateRow {
 	return {
 		id: template.id,
 		name: template.name,
@@ -181,6 +196,9 @@ function toRow(template: ManifestTemplate, assetVersion: string): CardTemplateRo
 		dpi: template.dimensions?.dpi ?? null,
 		asset_version: assetVersion,
 		version: template.version,
+		// Les clés de la Map == template.id (vérifié : 109 hits directs, aucune
+		// normalisation). Pas de géométrie mesurée -> NULL, jamais de fallback.
+		geometry: geometries.get(template.id) ?? null,
 	};
 }
 
@@ -397,7 +415,18 @@ async function main(): Promise<void> {
 	const { uploaded, skipped } = await uploadAssets(present);
 	log.info('assets terminés', { uploaded, skipped, total: present.length });
 
-	const rows = manifest.templates.map((template) => toRow(template, manifest.assetVersion));
+	// Géométrie mesurée depuis le corpus MSE : une seule passe avant l'upsert,
+	// jointe par id (cf. scripts/mse-geometry/extract.ts). Un gabarit absent de
+	// la Map reçoit NULL, jamais la géométrie d'un autre gabarit.
+	const { geometries, report: geometryReport } = extractAll(GEOMETRY_CORPUS_ROOT);
+	log.info('géométrie extraite', {
+		resolved: geometryReport.resolved,
+		total: geometryReport.total,
+	});
+
+	const rows = manifest.templates.map((template) =>
+		toRow(template, manifest.assetVersion, geometries)
+	);
 	await upsertTemplates(rows);
 
 	log.info('terminé', {
@@ -405,6 +434,7 @@ async function main(): Promise<void> {
 		uploaded,
 		skipped,
 		asset_version: manifest.assetVersion,
+		with_geometry: rows.filter((row) => row.geometry !== null).length,
 	});
 }
 
