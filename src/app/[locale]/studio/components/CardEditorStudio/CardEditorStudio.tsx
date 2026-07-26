@@ -309,6 +309,7 @@ export function CardEditorStudio() {
 						face={editor.activeFace}
 						mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.activeFace)}
 						mseTextColors={resolveMseTextColors(selectedMseTemplate, editor.activeFace)}
+						mseTemplate={selectedMseTemplate}
 						onFieldChange={handleFieldChange}
 						onArtworkChange={handleArtworkChange}
 					/>
@@ -322,6 +323,7 @@ export function CardEditorStudio() {
 					face={editor.draft.faces[0]}
 					mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.draft.faces[0])}
 					mseTextColors={resolveMseTextColors(selectedMseTemplate, editor.draft.faces[0])}
+					mseTemplate={selectedMseTemplate}
 					onFieldChange={() => undefined}
 					onArtworkChange={() => undefined}
 					isInteractive={false}
@@ -333,6 +335,7 @@ export function CardEditorStudio() {
 						face={editor.draft.faces[1]}
 						mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.draft.faces[1])}
 						mseTextColors={resolveMseTextColors(selectedMseTemplate, editor.draft.faces[1])}
+						mseTemplate={selectedMseTemplate}
 						onFieldChange={() => undefined}
 						onArtworkChange={() => undefined}
 						isInteractive={false}

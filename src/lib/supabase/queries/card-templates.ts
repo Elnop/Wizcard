@@ -10,6 +10,23 @@ import { createClient } from '@/lib/supabase/client';
  * par scripts/card-assets/upload-templates.ts.
  */
 
+/**
+ * Géométrie mesurée depuis le corpus MSE (cf.
+ * scripts/mse-geometry/extract.ts::TemplateGeometry). `boxes` n'a que 4 clés
+ * garanties (image/name/type/text) ; `pt` et `casting cost` sont optionnelles.
+ */
+export interface TemplateGeometryRow {
+	cardWidth: number;
+	cardHeight: number;
+	boxes: Partial<
+		Record<
+			'image' | 'name' | 'type' | 'text' | 'pt' | 'casting cost',
+			{ left: number; top: number; width: number; height: number }
+		>
+	>;
+	ast: Record<string, unknown>;
+}
+
 export interface CardTemplateRow {
 	id: string;
 	name: string;
@@ -30,10 +47,11 @@ export interface CardTemplateRow {
 	dpi: number | null;
 	asset_version: string | null;
 	version: string | null;
+	geometry: TemplateGeometryRow | null;
 }
 
 export const CARD_TEMPLATE_SELECT =
-	'id, name, short_name, source, quality, kind, orientation, layout_id, sample_path, icon_path, frame_paths, frame_text_colors, sample_text_colors, render_mode, width, height, dpi, asset_version, version';
+	'id, name, short_name, source, quality, kind, orientation, layout_id, sample_path, icon_path, frame_paths, frame_text_colors, sample_text_colors, render_mode, width, height, dpi, asset_version, version, geometry';
 
 /** Bucket public hébergeant les frames ; les chemins des rows y sont relatifs. */
 export const CARD_TEMPLATE_BUCKET = 'card-templates';

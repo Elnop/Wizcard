@@ -2,7 +2,8 @@
 
 import { forwardRef, useId, useRef, type CSSProperties, type PointerEvent } from 'react';
 import { getCardLayout } from '@/lib/card-editor/layout-registry';
-import type { MseTextColors } from '@/lib/card-editor/mse-assets';
+import type { MseTemplate, MseTextColors } from '@/lib/card-editor/mse-assets';
+import { houseGeometry, templateGeometry } from '@/lib/card-editor/template-geometry';
 import {
 	expandCardNameShortcut,
 	fitTitle,
@@ -39,6 +40,7 @@ interface CardCanvasProps {
 	collectorNumber: string;
 	mseFramePath?: string | null;
 	mseTextColors?: MseTextColors | null;
+	mseTemplate?: MseTemplate;
 	labels: CardCanvasLabels;
 	onFieldChange: (field: EditableCardField, value: string) => void;
 	onArtworkChange: (artwork: CardArtworkDraft) => void;
@@ -532,11 +534,15 @@ function CardSvg({
 	collectorNumber,
 	mseFramePath,
 	mseTextColors,
+	mseTemplate,
 	labels,
 	clipId,
 }: Omit<CardCanvasProps, 'onFieldChange' | 'onArtworkChange'> & { clipId: string }) {
-	const layout = getCardLayout(layoutId);
-	const { geometry } = layout;
+	// Géométrie MESURÉE du gabarit quand elle existe ; sinon celle du layout
+	// maison. Ce n'est pas un repli de secours : un gabarit vendor sans
+	// géométrie n'est pas proposé (cf. spec « aucun fallback »), donc ce cas
+	// ne concerne que les 8 gabarits maison.
+	const geometry = templateGeometry(mseTemplate) ?? houseGeometry(layoutId);
 	const palette = resolvePalette(face);
 	const title = face.name || labels.namePlaceholder;
 	// Le titre court jusqu'au premier symbole de mana, pas jusqu'au bord de sa
@@ -787,12 +793,19 @@ function CardSvg({
 function DirectEditingLayer({
 	face,
 	layoutId,
+	mseTemplate,
 	labels,
 	onFieldChange,
 	onArtworkChange,
-}: Pick<CardCanvasProps, 'face' | 'layoutId' | 'labels' | 'onFieldChange' | 'onArtworkChange'>) {
+}: Pick<
+	CardCanvasProps,
+	'face' | 'layoutId' | 'mseTemplate' | 'labels' | 'onFieldChange' | 'onArtworkChange'
+>) {
 	const drag = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(null);
-	const { geometry } = getCardLayout(layoutId);
+	// Géométrie MESURÉE si disponible, sinon celle du gabarit maison (cf.
+	// CardSvg) : les zones cliquables doivent rester alignées avec le rendu,
+	// pas avec l'ancienne géométrie du layout.
+	const geometry = templateGeometry(mseTemplate) ?? houseGeometry(layoutId);
 	const isLoyaltyLayout = layoutId === 'planeswalker';
 	const baseField = (field: EditableCardField) => (value: string) => onFieldChange(field, value);
 	function handleArtPointerDown(event: PointerEvent<HTMLButtonElement>) {
@@ -914,6 +927,7 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 		collectorNumber,
 		mseFramePath,
 		mseTextColors,
+		mseTemplate,
 		labels,
 		onFieldChange,
 		onArtworkChange,
@@ -921,14 +935,18 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 	},
 	ref
 ) {
-	const layout = getCardLayout(layoutId);
+	// Géométrie MESURÉE si disponible : le viewBox doit refléter le ratio NATIF
+	// du gabarit (27 cadres du catalogue sont en paysage), pas celui du layout
+	// maison sous-jacent.
+	const geometry = templateGeometry(mseTemplate) ?? houseGeometry(layoutId);
+	const orientation = geometry.width >= geometry.height ? 'landscape' : 'portrait';
 	const clipId = `card-art-${useId().replaceAll(':', '')}`;
 	return (
-		<div className={styles.canvas} data-orientation={layout.orientation}>
+		<div className={styles.canvas} data-orientation={orientation}>
 			<svg
 				ref={ref}
 				className={styles.svg}
-				viewBox={`0 0 ${layout.geometry.width} ${layout.geometry.height}`}
+				viewBox={`0 0 ${geometry.width} ${geometry.height}`}
 				role="img"
 				aria-label={face.name || labels.namePlaceholder}
 			>
@@ -941,6 +959,7 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 					collectorNumber={collectorNumber}
 					mseFramePath={mseFramePath}
 					mseTextColors={mseTextColors}
+					mseTemplate={mseTemplate}
 					labels={labels}
 					clipId={clipId}
 				/>
@@ -949,6 +968,7 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 				<DirectEditingLayer
 					face={face}
 					layoutId={layoutId}
+					mseTemplate={mseTemplate}
 					labels={labels}
 					onFieldChange={onFieldChange}
 					onArtworkChange={onArtworkChange}

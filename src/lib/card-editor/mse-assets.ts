@@ -5,6 +5,7 @@ import {
 	cardTemplateAssetUrl,
 	fetchCardTemplates,
 	type CardTemplateRow,
+	type TemplateGeometryRow,
 } from '@/lib/supabase/queries/card-templates';
 import type { CardFaceDraft, CardLayoutId, FrameStyleId } from './types';
 import { getManaSymbols } from './text-layout';
@@ -37,6 +38,8 @@ export interface MseTemplate {
 	source?: 'cardconjurer' | 'mse';
 	quality?: 'accurate' | 'legacy';
 	layoutId?: CardLayoutId;
+	/** Géométrie mesurée du corpus MSE ; null = gabarit non mesuré (cf. Task 11). */
+	geometry: TemplateGeometryRow | null;
 }
 
 export interface MseTextColors {
@@ -89,6 +92,7 @@ function rowToTemplate(row: CardTemplateRow): MseTemplate {
 		source: row.source as MseTemplate['source'],
 		quality: row.quality as MseTemplate['quality'],
 		layoutId: (row.layout_id ?? undefined) as CardLayoutId | undefined,
+		geometry: row.geometry,
 	};
 }
 
