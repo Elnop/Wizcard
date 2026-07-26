@@ -255,7 +255,9 @@ export class LexError extends Error {}
 /** Opérateurs à deux caractères d'abord : « == » ne doit pas se lire « = » « = ». */
 const TWO_CHAR_OPS = ['==', '!=', '<=', '>='];
 const ONE_CHAR_OPS = ['+', '-', '*', '/', '<', '>', '='];
-const PUNCT = ['(', ')', '[', ']', ',', ':'];
+// Le point EN FAIT PARTIE : il porte l'accès membre (`card_style.rarity`), de
+// loin la construction la plus fréquente du corpus après l'appel de fonction.
+const PUNCT = ['(', ')', '[', ']', ',', ':', '.'];
 
 /**
  * Découpe une expression MSE en jetons.
