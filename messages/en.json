@@ -1049,28 +1049,13 @@
 			"count": "{count} render-ready layouts",
 			"loading": "Loading high-definition frames…",
 			"error": "The frame library could not be loaded. Wizcard frames remain available.",
-			"sourceBadge": "HD",
-			"sourceFilterLabel": "Frame source",
 			"searchLabel": "Search frames",
 			"searchPlaceholder": "M15, full art, snow…",
-			"filtersLabel": "Filter layouts",
 			"results": "{count, plural, =0 {No results} one {# layout} other {# layouts}}",
 			"empty": "No frame matches this search.",
 			"loadMore": "Show {count} more layouts",
 			"renderReady": "HD frame",
 			"previewMode": "MSE preview",
-			"sources": {
-				"accurate": "Accurate — recommended",
-				"legacy": "MSE archive"
-			},
-			"filters": {
-				"all": "All",
-				"card": "Cards",
-				"token": "Tokens",
-				"planeswalker": "Planeswalkers",
-				"double-faced": "Double-faced",
-				"other": "Other"
-			},
 			"kinds": {
 				"card": "Card",
 				"token": "Token",
@@ -1080,6 +1065,16 @@
 				"double-faced": "Double-faced",
 				"oversized": "Oversized",
 				"packaging": "Packaging"
+			},
+			"houseFrame": "Built-in Wizcard frame",
+			"sections": {
+				"house": "Wizcard templates",
+				"card": "Cards",
+				"planeswalker": "Planeswalkers",
+				"split": "Split",
+				"double-faced": "Double-faced",
+				"token": "Tokens",
+				"other": "Other"
 			}
 		},
 		"layouts": {

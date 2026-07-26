@@ -34,16 +34,6 @@
 	color: var(--text-muted);
 }
 
-.sourceBadge {
-	flex-shrink: 0;
-	padding: 3px 9px;
-	border: 1px solid var(--glass-border);
-	border-radius: 999px;
-	color: var(--primary) !important;
-	font-weight: 500;
-	letter-spacing: 0.04em;
-}
-
 .search {
 	display: flex;
 	align-items: center;
@@ -69,48 +59,6 @@
 	color: var(--foreground);
 	font: 400 var(--text-sm) var(--font-body);
 	outline: none;
-}
-
-.filters,
-.sourceFilters {
-	display: flex;
-	gap: 5px;
-	overflow-x: auto;
-	padding-bottom: 2px;
-	scrollbar-width: thin;
-}
-
-.filters button,
-.sourceFilters button {
-	flex: 0 0 auto;
-	padding: 5px 10px;
-	border: 1px solid var(--border);
-	border-radius: 999px;
-	background: rgba(255, 255, 255, 0.04);
-	color: var(--text-muted);
-	font-size: var(--text-xs);
-	cursor: pointer;
-	transition:
-		border-color 0.15s ease,
-		color 0.15s ease;
-}
-
-.filters button:hover,
-.sourceFilters button:hover {
-	color: var(--foreground);
-}
-
-.filters button[aria-pressed='true'],
-.sourceFilters button[aria-pressed='true'] {
-	border-color: var(--primary);
-	background: rgba(201, 168, 76, 0.12);
-	color: var(--primary);
-}
-
-.sourceFilters button {
-	flex: 1 1 0;
-	padding-block: 7px;
-	font-weight: 500;
 }
 
 .grid {
@@ -246,4 +194,29 @@
 	overflow: hidden;
 	clip: rect(0, 0, 0, 0);
 	white-space: nowrap;
+}
+
+/* Les sections remplacent la ligne de filtres : le regroupement est le même, mais
+   rien n'est masqué et aucun clic n'est nécessaire. */
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.sectionTitle {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	padding-top: 2px;
+	color: var(--text-muted);
+	font-size: var(--text-xs);
+	font-weight: 500;
+}
+
+.sectionCount {
+	padding: 1px 7px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.06);
+	font-variant-numeric: tabular-nums;
 }

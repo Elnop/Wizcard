@@ -3,67 +3,87 @@
 import { Check, MagnifyingGlass, Stack } from '@phosphor-icons/react';
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import {
+	buildFrameChoices,
+	findActiveChoice,
+	groupFrameChoices,
+	type FrameChoice,
+} from '@/lib/card-editor/frame-choices';
 import { cardAssetUrl, type MseTemplate } from '@/lib/card-editor/mse-assets';
+import type { CardLayoutId } from '@/lib/card-editor/types';
 import styles from './MseTemplatePicker.module.css';
 
 const PAGE_SIZE = 30;
-const PRIMARY_KINDS = ['card', 'token', 'planeswalker', 'double-faced'] as const;
-type FilterKind = 'all' | (typeof PRIMARY_KINDS)[number] | 'other';
-type LibrarySource = 'accurate' | 'legacy';
 
 interface MseTemplatePickerProps {
 	templates: MseTemplate[];
-	selectedId: string;
+	/** Gabarits maison proposés, dans l'ordre d'affichage. */
+	houseLayoutIds: readonly CardLayoutId[];
+	layoutId: CardLayoutId;
+	mseTemplateId: string;
 	isLoading: boolean;
 	hasError: boolean;
-	onSelect: (template: MseTemplate) => void;
+	onSelect: (choice: FrameChoice) => void;
 }
 
-function matchesKind(template: MseTemplate, kind: FilterKind): boolean {
-	if (kind === 'all') return true;
-	if (kind === 'other')
-		return !PRIMARY_KINDS.includes(template.kind as (typeof PRIMARY_KINDS)[number]);
-	return template.kind === kind;
+/**
+ * Sous-titre de la vignette : source + type vendor, ou mention du gabarit
+ * maison. Extrait en fonction pour éviter un ternaire imbriqué dans un
+ * template literal imbriqué (règles sonarjs) sans changer le rendu.
+ */
+function subtitleFor(choice: FrameChoice, t: ReturnType<typeof useTranslations>): string {
+	if (!choice.template) return t('houseFrame');
+	const sourceLabel = choice.template.source === 'cardconjurer' ? 'CardConjurer' : 'MSE';
+	const kindLabel = t(`kinds.${choice.template.kind}`);
+	return `${sourceLabel} · ${kindLabel}`;
 }
 
 export function MseTemplatePicker({
 	templates,
-	selectedId,
+	houseLayoutIds,
+	layoutId,
+	mseTemplateId,
 	isLoading,
 	hasError,
 	onSelect,
 }: MseTemplatePickerProps) {
 	const t = useTranslations('cardEditor.mseLibrary');
+	const layouts = useTranslations('cardEditor.layouts');
 	const [query, setQuery] = useState('');
-	const [kind, setKind] = useState<FilterKind>('all');
-	const [source, setSource] = useState<LibrarySource>('accurate');
 	const [limit, setLimit] = useState(PAGE_SIZE);
+
 	const renderableTemplates = useMemo(
 		() => templates.filter((template) => template.renderMode === 'frame'),
 		[templates]
 	);
+	const choices = useMemo(
+		() => buildFrameChoices(renderableTemplates, houseLayoutIds),
+		[houseLayoutIds, renderableTemplates]
+	);
+
+	// Le libellé maison est traduit ici (le modèle ne connaît pas l'i18n) : on le
+	// résout AVANT de filtrer, pour que la recherche porte sur ce qui est affiché.
+	// `choice.label` vaut ici toujours un `CardLayoutId` (cf. buildFrameChoices),
+	// mais `FrameChoice.label` est typé `string` : le cast reflète cette invariance
+	// sans l'élargir dans l'interface partagée.
+	const labelled = useMemo(
+		() =>
+			choices.map((choice) =>
+				choice.kind === 'house'
+					? { ...choice, label: layouts(`${choice.label as CardLayoutId}.name`) }
+					: choice
+			),
+		[choices, layouts]
+	);
+
 	const filtered = useMemo(() => {
-		const normalizedQuery = query.trim().toLocaleLowerCase();
-		return renderableTemplates
-			.filter((template) => {
-				const isAccurate = template.source === 'cardconjurer';
-				if (source === 'accurate' ? !isAccurate : isAccurate) return false;
-				if (!matchesKind(template, kind)) return false;
-				if (!normalizedQuery) return true;
-				return [template.name, template.shortName, template.id]
-					.filter(Boolean)
-					.some((value) => value?.toLocaleLowerCase().includes(normalizedQuery));
-			})
-			.toSorted((left, right) => {
-				if (left.id === selectedId) return -1;
-				if (right.id === selectedId) return 1;
-				const leftStarts = left.name.toLocaleLowerCase().startsWith(normalizedQuery);
-				const rightStarts = right.name.toLocaleLowerCase().startsWith(normalizedQuery);
-				if (leftStarts !== rightStarts) return leftStarts ? -1 : 1;
-				return left.name.localeCompare(right.name);
-			});
-	}, [kind, query, renderableTemplates, selectedId, source]);
-	const visible = filtered.slice(0, limit);
+		const needle = query.trim().toLocaleLowerCase();
+		if (!needle) return labelled;
+		return labelled.filter((choice) => choice.label.toLocaleLowerCase().includes(needle));
+	}, [labelled, query]);
+
+	const active = findActiveChoice(labelled, layoutId, mseTemplateId);
+	const sections = useMemo(() => groupFrameChoices(filtered.slice(0, limit)), [filtered, limit]);
 
 	if (isLoading) {
 		return (
@@ -83,25 +103,8 @@ export function MseTemplatePicker({
 			<div className={styles.libraryHeader}>
 				<div>
 					<strong>{t('title')}</strong>
-					<span>{t('count', { count: renderableTemplates.length })}</span>
+					<span>{t('count', { count: labelled.length })}</span>
 				</div>
-				<span className={styles.sourceBadge}>{t('sourceBadge')}</span>
-			</div>
-			<div className={styles.sourceFilters} aria-label={t('sourceFilterLabel')}>
-				{(['accurate', 'legacy'] as LibrarySource[]).map((filter) => (
-					<button
-						key={filter}
-						type="button"
-						aria-pressed={source === filter}
-						onClick={() => {
-							setSource(filter);
-							setKind('all');
-							setLimit(PAGE_SIZE);
-						}}
-					>
-						{t(`sources.${filter}`)}
-					</button>
-				))}
 			</div>
 			<label className={styles.search}>
 				<MagnifyingGlass size={17} aria-hidden />
@@ -116,66 +119,56 @@ export function MseTemplatePicker({
 					}}
 				/>
 			</label>
-			<div className={styles.filters} aria-label={t('filtersLabel')}>
-				{(['all', ...PRIMARY_KINDS, 'other'] as FilterKind[]).map((filter) => (
-					<button
-						key={filter}
-						type="button"
-						aria-pressed={kind === filter}
-						onClick={() => {
-							setKind(filter);
-							setLimit(PAGE_SIZE);
-						}}
-					>
-						{t(`filters.${filter}`)}
-					</button>
-				))}
-			</div>
 			<div className={styles.resultLine} aria-live="polite">
 				{t('results', { count: filtered.length })}
 			</div>
-			{visible.length > 0 ? (
-				<div className={styles.grid}>
-					{visible.map((template) => {
-						const isSelected = selectedId === template.id;
-						return (
-							<button
-								key={template.id}
-								type="button"
-								className={isSelected ? styles.templateSelected : styles.template}
-								data-template-id={template.id}
-								aria-pressed={isSelected}
-								onClick={() => onSelect(template)}
-							>
-								<span className={styles.preview}>
-									{template.samplePath ? (
-										// eslint-disable-next-line @next/next/no-img-element -- dynamic local vendor catalogue
-										<img
-											src={cardAssetUrl(template.samplePath) ?? undefined}
-											alt=""
-											loading="lazy"
-											decoding="async"
-										/>
-									) : (
-										<Stack size={24} />
-									)}
-									{isSelected && (
-										<span className={styles.check}>
-											<Check size={14} weight="bold" />
+			{sections.length > 0 ? (
+				sections.map((section) => (
+					<section key={section.kind} className={styles.section}>
+						<h4 className={styles.sectionTitle}>
+							{t(`sections.${section.kind}`)}
+							<span className={styles.sectionCount}>{section.choices.length}</span>
+						</h4>
+						<div className={styles.grid}>
+							{section.choices.map((choice) => {
+								const isSelected = active?.key === choice.key;
+								return (
+									<button
+										key={choice.key}
+										type="button"
+										className={isSelected ? styles.templateSelected : styles.template}
+										data-template-id={choice.mseTemplateId}
+										aria-pressed={isSelected}
+										onClick={() => onSelect(choice)}
+									>
+										<span className={styles.preview}>
+											{choice.template?.samplePath ? (
+												// eslint-disable-next-line @next/next/no-img-element -- dynamic local vendor catalogue
+												<img
+													src={cardAssetUrl(choice.template.samplePath) ?? undefined}
+													alt=""
+													loading="lazy"
+													decoding="async"
+												/>
+											) : (
+												<Stack size={24} />
+											)}
+											{isSelected && (
+												<span className={styles.check}>
+													<Check size={14} weight="bold" />
+												</span>
+											)}
 										</span>
-									)}
-								</span>
-								<span className={styles.templateCopy}>
-									<strong title={template.name}>{template.name}</strong>
-									<small>
-										{template.source === 'cardconjurer' ? 'CardConjurer' : 'MSE'} ·{' '}
-										{t(`kinds.${template.kind}`)} · {t('renderReady')}
-									</small>
-								</span>
-							</button>
-						);
-					})}
-				</div>
+										<span className={styles.templateCopy}>
+											<strong title={choice.label}>{choice.label}</strong>
+											<small>{subtitleFor(choice, t)}</small>
+										</span>
+									</button>
+								);
+							})}
+						</div>
+					</section>
+				))
 			) : (
 				<p className={styles.empty}>{t('empty')}</p>
 			)}
