@@ -24,15 +24,68 @@ const DASH = '—';
 export const EMPTY_TYPE_LINE: TypeLineParts = { supertypes: [], types: [], subtypes: [] };
 
 /**
- * Reconstruit la ligne à partir des trois listes.
+ * Ordre canonique des supertypes, relevé sur les cartes réelles :
+ * « Legendary Snow Land » (Dark Depths), jamais « Snow Legendary ».
+ */
+const SUPERTYPE_ORDER = ['Basic', 'Legendary', 'Snow', 'World', 'Ongoing', 'Elite', 'Token'];
+
+/**
+ * Ordre canonique des types quand une carte en cumule plusieurs :
+ * « Artifact Creature — Beast » (Arcbound Ravager), « Land Creature — Forest
+ * Dryad » (Dryad Arbor), « Enchantment Land » (Urza's Saga). Le type
+ * « permanent porteur » vient en premier, la Créature ferme la marche.
+ */
+const TYPE_ORDER = [
+	'Kindred',
+	'Tribal',
+	'Enchantment',
+	'Artifact',
+	'Land',
+	'Battle',
+	'Planeswalker',
+	'Creature',
+	'Instant',
+	'Sorcery',
+];
+
+/** Trie selon un ordre de référence ; l'inconnu passe à la fin, ordre d'ajout. */
+function sortByReference(values: string[], reference: string[]): string[] {
+	const rank = (value: string) => {
+		const index = reference.findIndex((entry) => entry.toLowerCase() === value.toLowerCase());
+		return index === -1 ? reference.length : index;
+	};
+	return [...values].sort((a, b) => rank(a) - rank(b));
+}
+
+/** Dédoublonne sans tenir compte de la casse, en gardant la première forme. */
+function dedupe(values: string[]): string[] {
+	const seen = new Set<string>();
+	return values.filter((value) => {
+		const key = value.toLowerCase();
+		if (seen.has(key)) return false;
+		seen.add(key);
+		return true;
+	});
+}
+
+/**
+ * Reconstruit la ligne en respectant les règles de composition de Magic.
  *
- * Le tiret n'apparaît que s'il y a des sous-types — « Instant — » n'existe pas.
+ * - supertypes puis types, chacun dans son ordre canonique — une carte ne dit
+ *   pas « Snow Legendary Land » ni « Creature Artifact » ;
+ * - doublons retirés (« Creature Creature ») ;
+ * - le tiret n'apparaît qu'entre une gauche ET une droite non vides :
+ *   « Instant — » n'existe pas, « — Human » non plus. Des sous-types sans type
+ *   sont donc rendus seuls, en attendant que l'utilisateur complète la ligne.
  */
 export function composeTypeLine(parts: TypeLineParts): string {
-	const left = [...parts.supertypes, ...parts.types].join(' ').trim();
-	const right = parts.subtypes.join(' ').trim();
+	const supertypes = sortByReference(dedupe(parts.supertypes), SUPERTYPE_ORDER);
+	const types = sortByReference(dedupe(parts.types), TYPE_ORDER);
+	const left = [...supertypes, ...types].join(' ').trim();
+	const right = dedupe(parts.subtypes).join(' ').trim();
+
+	if (!left) return right;
 	if (!right) return left;
-	if (!left) return `${DASH} ${right}`;
 	return `${left} ${DASH} ${right}`;
 }
 
