@@ -11,15 +11,16 @@ import {
 	manaSymbolProxyUrl,
 	wrapCardText,
 } from '@/lib/card-editor/text-layout';
-import type {
-	CardArtworkDraft,
-	CardCanvasLabels,
-	CardFaceDraft,
-	CardFinish,
-	CardLayoutId,
-	CardRarity,
-	CardRect,
-	EditableCardField,
+import {
+	CARD_FIELD_MAX_LENGTH,
+	type CardArtworkDraft,
+	type CardCanvasLabels,
+	type CardFaceDraft,
+	type CardFinish,
+	type CardLayoutId,
+	type CardRarity,
+	type CardRect,
+	type EditableCardField,
 } from '@/lib/card-editor/types';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import styles from './CardCanvas.module.css';
@@ -713,7 +714,7 @@ function DirectEditingLayer({
 				value={face.name}
 				onChange={(event) => baseField('name')(event.target.value)}
 				aria-label={labels.editName}
-				maxLength={80}
+				maxLength={CARD_FIELD_MAX_LENGTH.name}
 			/>
 			<input
 				className={`${styles.directField} ${styles.manaField}`}
@@ -721,7 +722,7 @@ function DirectEditingLayer({
 				value={face.manaCost}
 				onChange={(event) => baseField('manaCost')(event.target.value)}
 				aria-label={labels.editManaCost}
-				maxLength={80}
+				maxLength={CARD_FIELD_MAX_LENGTH.manaCost}
 			/>
 			<input
 				className={styles.directField}
@@ -729,7 +730,7 @@ function DirectEditingLayer({
 				value={face.typeLine}
 				onChange={(event) => baseField('typeLine')(event.target.value)}
 				aria-label={labels.editType}
-				maxLength={120}
+				maxLength={CARD_FIELD_MAX_LENGTH.typeLine}
 			/>
 			<textarea
 				className={styles.directRules}
@@ -737,7 +738,7 @@ function DirectEditingLayer({
 				value={face.oracleText}
 				onChange={(event) => baseField('oracleText')(event.target.value)}
 				aria-label={labels.editRules}
-				maxLength={1600}
+				maxLength={CARD_FIELD_MAX_LENGTH.oracleText}
 			/>
 			{geometry.stats.width > 0 && (
 				<>
@@ -752,7 +753,7 @@ function DirectEditingLayer({
 							baseField(isLoyaltyLayout ? 'loyalty' : 'power')(event.target.value)
 						}
 						aria-label={labels.editStats}
-						maxLength={8}
+						maxLength={CARD_FIELD_MAX_LENGTH.power}
 					/>
 					{!isLoyaltyLayout && (
 						<input
@@ -765,7 +766,7 @@ function DirectEditingLayer({
 							value={face.toughness}
 							onChange={(event) => baseField('toughness')(event.target.value)}
 							aria-label={labels.editStats}
-							maxLength={8}
+							maxLength={CARD_FIELD_MAX_LENGTH.toughness}
 						/>
 					)}
 				</>

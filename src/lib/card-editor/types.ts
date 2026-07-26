@@ -93,16 +93,31 @@ export type EditableCardField =
  * Ces valeurs restent alignées sur les `maxLength` de EditorSidebar et de
  * CardCanvas, qui gardent leur utilité pour le retour immédiat à la frappe.
  */
+/**
+ * Bornes calées sur les valeurs RÉELLES du jeu, relevées via l'API Scryfall :
+ *   name        141  « Our Market Research Shows That Players Like… » (Unhinged)
+ *   type_line    37  « Legendary Creature — Elemental Shaman »
+ *   oracle_text 397  Nicol Bolas, God-Pharaoh
+ *   flavor_text  ~300
+ *   artist       16
+ * On garde une marge au-dessus de ces maxima : le studio sert à créer des cartes
+ * originales, pas seulement à recopier l'existant. Mais plus de bornes molles à
+ * 1600 caractères — la DB stocke du `text` sans limite, donc c'est ici que ça se
+ * joue.
+ *
+ * manaCost est borné en caractères ici, mais sa vraie contrainte est le nombre
+ * de pips (MAX_MANA_PIPS, cf. clampManaCost).
+ */
 export const CARD_FIELD_MAX_LENGTH: Record<EditableCardField, number> = {
-	name: 80,
-	manaCost: 80,
-	typeLine: 120,
-	oracleText: 1600,
-	flavorText: 320,
-	power: 8,
-	toughness: 8,
-	loyalty: 8,
-	artist: 100,
+	name: 160,
+	manaCost: 120,
+	typeLine: 80,
+	oracleText: 800,
+	flavorText: 400,
+	power: 6,
+	toughness: 6,
+	loyalty: 6,
+	artist: 60,
 };
 
 /**
@@ -111,9 +126,11 @@ export const CARD_FIELD_MAX_LENGTH: Record<EditableCardField, number> = {
  * pas des chaînes libres (booléens, énumérations bornées par un <select>).
  */
 export const DRAFT_FIELD_MAX_LENGTH: Partial<Record<keyof CustomCardDraft, number>> = {
+	// Relevés sur /sets : le code le plus long fait 6, le nom d'extension 54
+	// (« The Lord of the Rings: Tales of Middle-earth Minigames »).
 	setName: 80,
 	setCode: 6,
-	collectorNumber: 12,
+	collectorNumber: 8,
 	tags: 240,
 };
 

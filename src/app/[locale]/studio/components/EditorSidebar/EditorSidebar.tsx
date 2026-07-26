@@ -16,6 +16,8 @@ import { getManaSymbols, MAX_MANA_PIPS } from '@/lib/card-editor/text-layout';
 import { ManaSymbol } from '@/lib/scryfall/components/ManaSymbol/ManaSymbol';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import {
+	CARD_FIELD_MAX_LENGTH,
+	DRAFT_FIELD_MAX_LENGTH,
 	FRAME_STYLE_IDS,
 	type CardArtworkDraft,
 	type CardFaceDraft,
@@ -173,7 +175,7 @@ function ManaCostField({
 			<input
 				value={manaCost}
 				onChange={(event) => onChange(event.target.value)}
-				maxLength={80}
+				maxLength={CARD_FIELD_MAX_LENGTH.manaCost}
 				placeholder="{2}{U}{R}"
 				aria-label={t('manaCost')}
 			/>
@@ -257,7 +259,7 @@ function CardFieldsPanel({
 				<input
 					value={face.name}
 					onChange={(event) => onFieldChange('name', event.target.value)}
-					maxLength={80}
+					maxLength={CARD_FIELD_MAX_LENGTH.name}
 					placeholder={t('namePlaceholder')}
 				/>
 			</FormField>
@@ -269,7 +271,7 @@ function CardFieldsPanel({
 				<input
 					value={face.typeLine}
 					onChange={(event) => onFieldChange('typeLine', event.target.value)}
-					maxLength={120}
+					maxLength={CARD_FIELD_MAX_LENGTH.typeLine}
 					placeholder={t('typePlaceholder')}
 				/>
 			</FormField>
@@ -277,7 +279,7 @@ function CardFieldsPanel({
 				<textarea
 					value={face.oracleText}
 					onChange={(event) => onFieldChange('oracleText', event.target.value)}
-					maxLength={1600}
+					maxLength={CARD_FIELD_MAX_LENGTH.oracleText}
 					rows={7}
 					placeholder={t('rulesPlaceholder')}
 				/>
@@ -286,7 +288,7 @@ function CardFieldsPanel({
 				<textarea
 					value={face.flavorText}
 					onChange={(event) => onFieldChange('flavorText', event.target.value)}
-					maxLength={320}
+					maxLength={CARD_FIELD_MAX_LENGTH.flavorText}
 					rows={3}
 					placeholder={t('flavorPlaceholder')}
 				/>
@@ -296,7 +298,7 @@ function CardFieldsPanel({
 					<input
 						value={face.loyalty}
 						onChange={(event) => onFieldChange('loyalty', event.target.value)}
-						maxLength={8}
+						maxLength={CARD_FIELD_MAX_LENGTH.loyalty}
 						inputMode="numeric"
 					/>
 				</FormField>
@@ -306,14 +308,14 @@ function CardFieldsPanel({
 						<input
 							value={face.power}
 							onChange={(event) => onFieldChange('power', event.target.value)}
-							maxLength={8}
+							maxLength={CARD_FIELD_MAX_LENGTH.power}
 						/>
 					</FormField>
 					<FormField label={t('toughness')}>
 						<input
 							value={face.toughness}
 							onChange={(event) => onFieldChange('toughness', event.target.value)}
-							maxLength={8}
+							maxLength={CARD_FIELD_MAX_LENGTH.toughness}
 						/>
 					</FormField>
 				</div>
@@ -322,7 +324,7 @@ function CardFieldsPanel({
 				<input
 					value={face.artist}
 					onChange={(event) => onFieldChange('artist', event.target.value)}
-					maxLength={100}
+					maxLength={CARD_FIELD_MAX_LENGTH.artist}
 					placeholder={t('artistPlaceholder')}
 				/>
 			</FormField>
@@ -572,7 +574,7 @@ function DetailsPanel({
 				<input
 					value={draft.setName}
 					onChange={(event) => onDraftChange({ setName: event.target.value })}
-					maxLength={80}
+					maxLength={DRAFT_FIELD_MAX_LENGTH.setName}
 				/>
 			</FormField>
 			<div className={styles.fieldRow}>
@@ -587,14 +589,14 @@ function DetailsPanel({
 									.slice(0, 6),
 							})
 						}
-						maxLength={6}
+						maxLength={DRAFT_FIELD_MAX_LENGTH.setCode}
 					/>
 				</FormField>
 				<FormField label={t('number')}>
 					<input
 						value={draft.collectorNumber}
 						onChange={(event) => onDraftChange({ collectorNumber: event.target.value })}
-						maxLength={12}
+						maxLength={DRAFT_FIELD_MAX_LENGTH.collectorNumber}
 					/>
 				</FormField>
 			</div>
@@ -629,7 +631,7 @@ function DetailsPanel({
 				<input
 					value={draft.tags}
 					onChange={(event) => onDraftChange({ tags: event.target.value })}
-					maxLength={240}
+					maxLength={DRAFT_FIELD_MAX_LENGTH.tags}
 					placeholder={t('tagsPlaceholder')}
 				/>
 			</FormField>
