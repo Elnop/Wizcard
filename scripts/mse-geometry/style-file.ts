@@ -6,6 +6,40 @@ export const GEOMETRY_FIELDS = ['image', 'name', 'type', 'text', 'pt', 'casting 
 export type GeometryField = (typeof GEOMETRY_FIELDS)[number];
 
 /**
+ * Alias de noms de champ : même géométrie, orthographe différente selon les
+ * gabarits. Vérifié un par un sur le corpus (jamais deviné) :
+ * - « rule text » remplace « text » dans 37 gabarits sur 376 (aucun des deux
+ *   n'a JAMAIS les deux — cf. `magic-rulestip`, `vanguard-standard`) ;
+ * - « rule_text » (soulignement) apparaît une fois, dans
+ *   `magic-baseball-1980-topps`, seul champ de texte de règles du gabarit.
+ * Les variantes `text 2` / `rule text 2` / `rule text 3` / `center rule
+ * text` / `forwarded rule text 2` sont des boîtes SECONDAIRES (verso, texte
+ * alternatif) et ne sont PAS des alias du champ primaire : les 5 gabarits qui
+ * ont `center rule text` ont aussi `rule text`, donc l'alias primaire suffit
+ * à les résoudre sans y toucher. Pas d'alias trouvé pour `image` / `name` /
+ * `type` : leurs quasi-doublons (`image 2`, `name 2`, `type 2`, `urban
+ * type`, `scroll type`, …) sont des boîtes différentes, pas des synonymes —
+ * cf. règle « aucun fallback », on ne devine pas.
+ */
+const FIELD_ALIASES: Partial<Record<GeometryField, readonly string[]>> = {
+	text: ['rule text', 'rule_text'],
+};
+
+/** Table inverse alias → nom canonique, construite une seule fois. */
+const ALIAS_TO_CANONICAL = new Map<string, GeometryField>(
+	Object.entries(FIELD_ALIASES).flatMap(([canonical, aliases]) =>
+		(aliases ?? []).map((alias): [string, GeometryField] => [alias, canonical as GeometryField])
+	)
+);
+
+/** Résout un nom de champ BRUT (tel qu'écrit dans le style) vers son nom canonique. */
+function resolveFieldName(raw: string): GeometryField | ContentWidthField | null {
+	if (GEOMETRY_FIELDS.includes(raw as GeometryField)) return raw as GeometryField;
+	if (CONTENT_WIDTH_FIELDS.includes(raw as ContentWidthField)) return raw as ContentWidthField;
+	return ALIAS_TO_CANONICAL.get(raw) ?? null;
+}
+
+/**
  * Champs supplémentaires lus pour `content_width` (tâche 6) : « rarity » n'est
  * pas une boîte que le studio dessine (absente de GEOMETRY_FIELDS), mais son
  * bloc doit quand même être lu pour calculer la largeur que d'AUTRES champs
@@ -110,9 +144,12 @@ function handleFieldOpener(line: string, state: ParseState): boolean {
 	// eslint-disable-next-line sonarjs/super-linear-regex -- safe: une ligne de style, longueur bornée
 	const opener = /^\t([^\t:]+?)\s*:\s*$/.exec(line);
 	if (!opener) return false;
-	const name = opener[1].trim() as TrackedField;
-	const isGeometry = GEOMETRY_FIELDS.includes(name as GeometryField);
-	const isContentWidth = CONTENT_WIDTH_FIELDS.includes(name as ContentWidthField);
+	// Le nom BRUT peut être un alias (« rule text » → « text ») : on le
+	// résout avant de tester l'appartenance à GEOMETRY_FIELDS / CONTENT_WIDTH_FIELDS,
+	// cf. FIELD_ALIASES.
+	const name = resolveFieldName(opener[1].trim());
+	const isGeometry = name !== null && GEOMETRY_FIELDS.includes(name as GeometryField);
+	const isContentWidth = name !== null && CONTENT_WIDTH_FIELDS.includes(name as ContentWidthField);
 	state.current = isGeometry || isContentWidth ? name : null;
 	if (isGeometry) state.fields[name as GeometryField] ??= {};
 	if (isContentWidth) state.fontFields[name as ContentWidthField] ??= {};
