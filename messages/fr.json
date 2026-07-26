@@ -993,9 +993,7 @@
 			"manaGroups": {
 				"basic": "De base",
 				"hybrid": "Hybride",
-				"hybridGeneric": "Hybride générique",
 				"phyrexian": "Phyrexian",
-				"phyrexianHybrid": "Phyrexian hybride",
 				"exotic": "Exotiques"
 			},
 			"capacityHint": "{lines} lignes d’environ {perLine} caractères, selon le layout.",

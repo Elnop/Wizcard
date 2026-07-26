@@ -75,6 +75,10 @@ const PANEL_ICONS = {
 const MANA_SYMBOL_GROUPS = [
 	{ id: 'basic', symbols: ['{W}', '{U}', '{B}', '{R}', '{G}', '{C}', '{X}', '{S}'] },
 	{
+		// Hybrides : d'abord les bicolores ({W/U}, payables par l'une OU l'autre
+		// couleur), puis les « génériques colorés » ({2/W} : 2 génériques OU la
+		// couleur). Deux formes d'une même idée — on cherche « un hybride » sans
+		// distinguer laquelle, d'où une seule famille.
 		id: 'hybrid',
 		symbols: [
 			'{W/U}',
@@ -87,17 +91,25 @@ const MANA_SYMBOL_GROUPS = [
 			'{B/G}',
 			'{R/W}',
 			'{G/U}',
+			'{2/W}',
+			'{2/U}',
+			'{2/B}',
+			'{2/R}',
+			'{2/G}',
 		],
 	},
-	{ id: 'hybridGeneric', symbols: ['{2/W}', '{2/U}', '{2/B}', '{2/R}', '{2/G}'] },
 	{
+		// Phyrexians : d'abord les monocolores ({W/P} : la couleur OU 2 points de
+		// vie), puis les hybrides phyrexians de New Phyrexia ({W/U/P} : l'une des
+		// deux couleurs OU 2 points de vie).
 		id: 'phyrexian',
-		symbols: ['{W/P}', '{U/P}', '{B/P}', '{R/P}', '{G/P}', '{C/P}'],
-	},
-	{
-		// Phyrexians hybrides (New Phyrexia) : une des deux couleurs OU 2 points de vie.
-		id: 'phyrexianHybrid',
 		symbols: [
+			'{W/P}',
+			'{U/P}',
+			'{B/P}',
+			'{R/P}',
+			'{G/P}',
+			'{C/P}',
 			'{W/U/P}',
 			'{U/B/P}',
 			'{B/R/P}',
