@@ -128,7 +128,8 @@ export interface FittedTitle {
  *
  * Deux étapes, dans l'ordre de ce que fait une vraie carte :
  *  1. réduire le corps jusqu'au plancher de lisibilité ;
- *  2. si ça ne suffit toujours pas, tronquer avec une ellipse.
+ *  2. si ça ne suffit toujours pas, couper net (pas d'ellipse : une carte
+ *     imprimée n'en met pas).
  */
 export function fitTitle(title: string, availableWidth: number): FittedTitle {
 	if (!title) return { text: title, fontSize: TITLE_MAX_FONT_SIZE };
@@ -145,18 +146,15 @@ export function fitTitle(title: string, availableWidth: number): FittedTitle {
 		return { text: title, fontSize: ideal };
 	}
 
-	// Même au plancher le nom ne rentre pas : on retire des caractères jusqu'à
-	// ce que le texte + l'ellipse tiennent. Boucle sur les glyphes réels, car
-	// couper « WWWW » et couper « iiii » ne libèrent pas la même largeur.
-	const ellipsisWidth = glyphWidth('…') * TITLE_MIN_FONT_SIZE;
+	// Même au plancher le nom ne rentre pas : on coupe net, SANS ellipse — une
+	// vraie carte n'en met pas, et le « … » prenait en plus la largeur d'un W.
+	// Boucle sur les glyphes réels, car couper « WWWW » et couper « iiii » ne
+	// libèrent pas la même largeur.
 	let text = title;
-	while (
-		text.length > 1 &&
-		measureTitle(text, TITLE_MIN_FONT_SIZE) + ellipsisWidth > availableWidth
-	) {
+	while (text.length > 1 && measureTitle(text, TITLE_MIN_FONT_SIZE) > availableWidth) {
 		text = text.slice(0, -1);
 	}
-	return { text: `${text.trimEnd()}…`, fontSize: TITLE_MIN_FONT_SIZE };
+	return { text: text.trimEnd(), fontSize: TITLE_MIN_FONT_SIZE };
 }
 
 export function getManaSymbols(manaCost: string): string[] {

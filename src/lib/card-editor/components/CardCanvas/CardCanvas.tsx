@@ -86,6 +86,8 @@ function rectStyle(rect: CardRect, width: number, height: number): CSSProperties
 /** Dimensions des symboles de mana, partagées avec le calcul de largeur du titre. */
 const MANA_SYMBOL_SIZE = 34;
 const MANA_SYMBOL_GAP = 3;
+/** Gouttière entre la fin du titre et le premier symbole de mana. */
+const TITLE_MANA_GUTTER = 12;
 
 /** Largeur occupée par un coût de n symboles, gouttières comprises. */
 function manaCostWidth(symbolCount: number): number {
@@ -422,14 +424,17 @@ function CardSvg({
 	const { geometry } = layout;
 	const palette = resolvePalette(face);
 	const title = face.name || labels.namePlaceholder;
-	// Le titre partage sa ligne avec le coût de mana : la place réellement
-	// disponible est la zone titre moins ce que prennent les symboles, sinon un
-	// nom long passe DESSOUS le coût. Sur une carte imprimée cette ligne fait
-	// ~52-53 mm, soit une trentaine de caractères avant réduction du corps.
-	const fittedTitle = fitTitle(
-		title,
-		geometry.title.width - 18 - manaCostWidth(getManaSymbols(face.manaCost).length)
-	);
+	// Le titre court jusqu'au premier symbole de mana, pas jusqu'au bord de sa
+	// propre zone : les symboles sont alignés à DROITE de la zone mana, donc un
+	// coût court laisse beaucoup de place que le titre peut occuper.
+	//
+	// Soustraire manaCostWidth de la zone titre comptait la réserve deux fois
+	// (les zones title et mana sont déjà adjacentes : 61+468=529 vs mana à 523)
+	// et arrêtait le texte très en deçà des symboles.
+	const titleStart = geometry.title.x + 18;
+	const manaLeftEdge =
+		geometry.mana.x + geometry.mana.width - manaCostWidth(getManaSymbols(face.manaCost).length);
+	const fittedTitle = fitTitle(title, manaLeftEdge - TITLE_MANA_GUTTER - titleStart);
 	const typeLine = face.typeLine || labels.typePlaceholder;
 	const isFullArt = layoutId === 'full-art';
 	const isNarrowRules = geometry.rules.width < 500;
