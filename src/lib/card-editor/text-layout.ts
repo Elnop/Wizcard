@@ -59,6 +59,35 @@ export function wrapCardText(
 	return clipped;
 }
 
+export interface RulesCapacity {
+	/** Caractères tenant sur une ligne au corps le plus petit. */
+	charactersPerLine: number;
+	/** Lignes tenant dans la zone au corps le plus petit. */
+	lines: number;
+	/** Produit des deux : plafond de saisie utile. */
+	total: number;
+}
+
+/**
+ * Capacité de la zone de texte, en lignes × caractères par ligne.
+ *
+ * Un plafond exprimé en NOMBRE DE CARACTÈRES ne veut rien dire ici : la zone de
+ * règles varie de 350×738 (saga) à 604×100 (jeton), soit de 116 à 1023
+ * caractères utiles. Une borne unique était donc soit absurdement large pour un
+ * jeton, soit trop courte pour une saga.
+ *
+ * Le calcul reprend celui du rendu (cf. RulesText), au corps MINIMAL : c'est la
+ * taille qui accepte le plus de texte, donc la capacité réelle avant troncature.
+ */
+export function getRulesCapacity(width: number, height: number): RulesCapacity {
+	const isNarrow = width < 500;
+	const fontSize = isNarrow ? 17 : 18;
+	const lineHeight = fontSize * 1.28;
+	const charactersPerLine = Math.max(15, Math.floor((width - 44) / (fontSize * 0.53)));
+	const lines = Math.max(2, Math.floor((height - 46) / lineHeight));
+	return { charactersPerLine, lines, total: charactersPerLine * lines };
+}
+
 export function getRulesFontSize(characterCount: number, isNarrow: boolean): number {
 	if (isNarrow) {
 		if (characterCount > 520) return 17;

@@ -979,7 +979,6 @@
 			"typeLine": "Type line",
 			"typePlaceholder": "Creature — Human Wizard",
 			"rules": "Rules text",
-			"rulesHint": "Use ~ as a shortcut for the card name. Line breaks are preserved.",
 			"rulesPlaceholder": "When this creature enters, draw a card.",
 			"flavor": "Flavor text",
 			"flavorPlaceholder": "Every horizon is another question.",
@@ -999,7 +998,8 @@
 				"phyrexian": "Phyrexian",
 				"phyrexianHybrid": "Hybrid Phyrexian",
 				"exotic": "Exotic"
-			}
+			},
+			"capacityHint": "{lines} lines of about {perLine} characters, set by the layout."
 		},
 		"art": {
 			"title": "Compose the artwork",

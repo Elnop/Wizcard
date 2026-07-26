@@ -15,7 +15,8 @@ import {
 	useSelectedMseTemplate,
 } from '@/lib/card-editor/mse-assets';
 import { validateCardDraft } from '@/lib/card-editor/draft';
-import { clampManaCost } from '@/lib/card-editor/text-layout';
+import { getCardLayout } from '@/lib/card-editor/layout-registry';
+import { clampManaCost, getRulesCapacity } from '@/lib/card-editor/text-layout';
 import {
 	CARD_FIELD_MAX_LENGTH,
 	DEFAULT_FRAME_TEMPLATE_ID,
@@ -48,6 +49,10 @@ export function CardEditorStudio() {
 		mseCatalog.templates,
 		editor.draft.mseTemplateId
 	);
+	// Capacité de la zone de texte du layout courant : elle borne la saisie des
+	// règles et de l'ambiance, et alimente le compteur affiché sous les champs.
+	const rulesGeometry = getCardLayout(editor.draft.layoutId).geometry.rules;
+	const rulesCapacity = getRulesCapacity(rulesGeometry.width, rulesGeometry.height);
 	const [activePanel, setActivePanel] = useState<EditorPanel>('card');
 	const [validationErrors, setValidationErrors] = useState<string[]>([]);
 	const [notice, setNotice] = useState<Notice>(null);
@@ -176,7 +181,14 @@ export function CardEditorStudio() {
 		const bounded = value.slice(0, CARD_FIELD_MAX_LENGTH[field]);
 		// Le coût de mana se borne en NOMBRE DE PIPS, pas en caractères : {15}{W}
 		// est court mais {W}×20 déborde de la ligne de titre.
-		editor.updateFace(field, field === 'manaCost' ? clampManaCost(bounded) : bounded);
+		if (field === 'manaCost') return editor.updateFace(field, clampManaCost(bounded));
+		// Règles et ambiance partagent la zone de texte : leur vraie limite est sa
+		// capacité (lignes × caractères par ligne), pas un plafond fixe — elle va
+		// de 116 caractères sur un jeton à 1023 sur une saga.
+		if (field === 'oracleText' || field === 'flavorText') {
+			return editor.updateFace(field, bounded.slice(0, rulesCapacity.total));
+		}
+		editor.updateFace(field, bounded);
 	}
 
 	function handleArtworkChange(artwork: Parameters<typeof editor.updateArtwork>[0]) {
@@ -198,6 +210,21 @@ export function CardEditorStudio() {
 			})
 		) as typeof values;
 		editor.updateDraft(bounded);
+
+		// Changer de layout change la capacité de la zone de texte : passer d'une
+		// saga (1023) à un jeton (116) laisserait sinon un texte trop long, que le
+		// rendu tronquerait silencieusement à l'affichage. On le recadre tout de
+		// suite pour que le compteur et la carte disent la même chose.
+		if (bounded.layoutId && bounded.layoutId !== editor.draft.layoutId) {
+			const next = getRulesCapacity(
+				getCardLayout(bounded.layoutId).geometry.rules.width,
+				getCardLayout(bounded.layoutId).geometry.rules.height
+			);
+			for (const field of ['oracleText', 'flavorText'] as const) {
+				const current = editor.activeFace[field];
+				if (current.length > next.total) editor.updateFace(field, current.slice(0, next.total));
+			}
+		}
 	}
 
 	const canvasProps = {
@@ -249,6 +276,7 @@ export function CardEditorStudio() {
 					face={editor.activeFace}
 					activePanel={activePanel}
 					validationErrors={validationErrors}
+					rulesCapacity={rulesCapacity}
 					mseTemplates={mseCatalog.templates}
 					isMseCatalogLoading={mseCatalog.isLoading}
 					hasMseCatalogError={mseCatalog.error}

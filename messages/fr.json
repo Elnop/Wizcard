@@ -979,7 +979,6 @@
 			"typeLine": "Ligne de type",
 			"typePlaceholder": "Créature — humain et sorcier",
 			"rules": "Texte de règles",
-			"rulesHint": "Utilisez ~ comme raccourci pour le nom de la carte. Les retours à la ligne sont conservés.",
 			"rulesPlaceholder": "Quand cette créature arrive, piochez une carte.",
 			"flavor": "Texte d'ambiance",
 			"flavorPlaceholder": "Chaque horizon soulève une nouvelle question.",
@@ -999,7 +998,8 @@
 				"phyrexian": "Phyrexian",
 				"phyrexianHybrid": "Phyrexian hybride",
 				"exotic": "Exotiques"
-			}
+			},
+			"capacityHint": "{lines} lignes d’environ {perLine} caractères, selon le layout."
 		},
 		"art": {
 			"title": "Composez l'illustration",

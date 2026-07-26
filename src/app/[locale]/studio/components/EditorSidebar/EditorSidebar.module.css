@@ -313,6 +313,15 @@ fieldset.field > legend {
 	transform: translateY(-1px);
 }
 
+/* Compteur de remplissage sous les zones de texte : la limite vient de la
+   capacité du layout, pas d'un plafond fixe. */
+.capacityCount {
+	align-self: flex-end;
+	font-size: var(--text-2xs);
+	font-variant-numeric: tabular-nums;
+	color: var(--text-muted);
+}
+
 .hiddenInput {
 	display: none;
 }

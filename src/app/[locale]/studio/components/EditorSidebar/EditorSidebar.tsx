@@ -13,7 +13,7 @@ import { useTranslations } from 'next-intl';
 import { CARD_LAYOUT_LIST } from '@/lib/card-editor/layout-registry';
 import { prepareArtwork } from '@/lib/card-editor/image';
 import { layoutForMseTemplate, type MseTemplate } from '@/lib/card-editor/mse-assets';
-import { getManaSymbols, MAX_MANA_PIPS } from '@/lib/card-editor/text-layout';
+import { getManaSymbols, MAX_MANA_PIPS, type RulesCapacity } from '@/lib/card-editor/text-layout';
 import { ManaSymbol } from '@/lib/scryfall/components/ManaSymbol/ManaSymbol';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import {
@@ -35,6 +35,8 @@ interface EditorSidebarProps {
 	face: CardFaceDraft;
 	activePanel: EditorPanel;
 	validationErrors: string[];
+	/** Capacité de la zone de texte du layout courant (lignes x chars/ligne). */
+	rulesCapacity: RulesCapacity;
 	mseTemplates: MseTemplate[];
 	isMseCatalogLoading: boolean;
 	hasMseCatalogError: boolean;
@@ -327,8 +329,12 @@ function CardFieldsPanel({
 	face,
 	draft,
 	validationErrors,
+	rulesCapacity,
 	onFieldChange,
-}: Pick<EditorSidebarProps, 'face' | 'draft' | 'validationErrors' | 'onFieldChange'>) {
+}: Pick<
+	EditorSidebarProps,
+	'face' | 'draft' | 'validationErrors' | 'rulesCapacity' | 'onFieldChange'
+>) {
 	const t = useTranslations('cardEditor.fields');
 	const isPlaneswalker = draft.layoutId === 'planeswalker';
 	return (
@@ -353,23 +359,41 @@ function CardFieldsPanel({
 					placeholder={t('typePlaceholder')}
 				/>
 			</FormField>
-			<FormField label={t('rules')} hint={t('rulesHint')}>
+			{/*
+			 * Règles et ambiance se partagent la zone de texte : leur limite est sa
+			 * CAPACITÉ (lignes x caractères/ligne), qui dépend du layout — de 116
+			 * caractères sur un jeton à 1023 sur une saga. Le compteur affiche le
+			 * remplissage plutôt qu'un plafond abstrait.
+			 */}
+			<FormField
+				label={t('rules')}
+				hint={t('capacityHint', {
+					lines: rulesCapacity.lines,
+					perLine: rulesCapacity.charactersPerLine,
+				})}
+			>
 				<textarea
 					value={face.oracleText}
 					onChange={(event) => onFieldChange('oracleText', event.target.value)}
-					maxLength={CARD_FIELD_MAX_LENGTH.oracleText}
+					maxLength={rulesCapacity.total}
 					rows={7}
 					placeholder={t('rulesPlaceholder')}
 				/>
+				<span className={styles.capacityCount}>
+					{face.oracleText.length} / {rulesCapacity.total}
+				</span>
 			</FormField>
 			<FormField label={t('flavor')}>
 				<textarea
 					value={face.flavorText}
 					onChange={(event) => onFieldChange('flavorText', event.target.value)}
-					maxLength={CARD_FIELD_MAX_LENGTH.flavorText}
+					maxLength={rulesCapacity.total}
 					rows={3}
 					placeholder={t('flavorPlaceholder')}
 				/>
+				<span className={styles.capacityCount}>
+					{face.flavorText.length} / {rulesCapacity.total}
+				</span>
 			</FormField>
 			{isPlaneswalker ? (
 				<FormField label={t('loyalty')}>
