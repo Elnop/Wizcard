@@ -227,6 +227,7 @@ freshly-reset local DB.
 - `docs/architecture.md` — directory map, route definitions, data flow diagrams
 - `docs/data-model.md` — full type definitions, ID concepts, localStorage format
 - `docs/scryfall.md` — Scryfall API integration, caching strategy, query builder
+- `docs/card-studio.md` — custom-card editor: appearance model, MSE geometry extraction, no-fallback rule
 - `docs/offline-sync.md` — offline-first architecture, sync queue processing, login merge
 - `docs/import-formats.md` — supported formats, auto-detection, import flow
 - `docs/guides/local-setup.md` — step-by-step local dev setup
