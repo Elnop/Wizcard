@@ -1063,53 +1063,13 @@
 				"oversized": "Oversized",
 				"packaging": "Packaging"
 			},
-			"houseFrame": "Built-in Wizcard frame",
 			"sections": {
-				"house": "Wizcard templates",
 				"card": "Cards",
 				"planeswalker": "Planeswalkers",
 				"split": "Split",
 				"double-faced": "Double-faced",
 				"token": "Tokens",
 				"other": "Other"
-			}
-		},
-		"layouts": {
-			"arcana": {
-				"name": "Classic",
-				"description": "Standard 63 × 88 mm card frame"
-			},
-			"modern": {
-				"name": "Modern",
-				"description": "Contemporary frame with larger artwork"
-			},
-			"full-art": {
-				"name": "Full art",
-				"description": "Artwork across the entire card"
-			},
-			"showcase": {
-				"name": "Showcase",
-				"description": "Angular collector treatment"
-			},
-			"token": {
-				"name": "Token",
-				"description": "Large artwork and compact text"
-			},
-			"planeswalker": {
-				"name": "Planeswalker",
-				"description": "Abilities and loyalty area"
-			},
-			"saga": {
-				"name": "Saga",
-				"description": "Vertical narrative composition"
-			},
-			"adventure": {
-				"name": "Adventure",
-				"description": "Inset story treatment"
-			},
-			"landscape": {
-				"name": "Legacy landscape",
-				"description": "Compatibility for older drafts"
 			}
 		},
 		"details": {

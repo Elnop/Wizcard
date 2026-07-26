@@ -1,14 +1,18 @@
 import { CARD_LAYOUTS } from './layout-registry';
 import type { MseTemplate } from './mse-assets';
-import { HOUSE_FRAME_TEMPLATE_ID, type CardLayoutId } from './types';
+import type { CardLayoutId } from './types';
 
 /**
- * Une entrée de la liste unique d'apparences.
+ * Une entrée de la liste d'apparences.
  *
- * Le studio proposait deux sélecteurs concurrents — les 8 gabarits maison et les
- * 206 cadres vendor — qui écrivaient tous deux `layoutId`, le second écrasant
- * silencieusement le premier. Ils fusionnent ici en une seule liste : choisir une
- * entrée écrit les DEUX champs d'un coup, ils ne peuvent donc plus diverger.
+ * Choisir une entrée écrit `mseTemplateId` ET `layoutId` d'un seul coup, ils ne
+ * peuvent donc pas diverger — le studio a eu deux sélecteurs concurrents qui
+ * s'écrasaient l'un l'autre.
+ *
+ * La liste ne contient QUE des cadres vendor. Les 8 gabarits « maison » dessinés
+ * en SVG ont été retirés : leur rendu (panneaux flottants aux coins arrondis,
+ * dégradé diagonal, texture rayée) ne tenait pas la comparaison avec les cadres
+ * mesurés posés à côté d'eux dans la même grille.
  */
 export interface FrameChoice {
 	/** Identité stable dans la liste (clé React et cible de comparaison). */
@@ -18,12 +22,11 @@ export interface FrameChoice {
 	label: string;
 	layoutId: CardLayoutId;
 	mseTemplateId: string;
-	/** null pour un gabarit maison : il n'a pas de cadre vendor. */
-	template: MseTemplate | null;
+	template: MseTemplate;
 }
 
 export type FrameChoiceKind =
-	'house' | 'card' | 'planeswalker' | 'split' | 'double-faced' | 'token' | 'other';
+	'card' | 'planeswalker' | 'split' | 'double-faced' | 'token' | 'other';
 
 export interface FrameChoiceSection {
 	kind: FrameChoiceKind;
@@ -36,7 +39,6 @@ export interface FrameChoiceSection {
  * section au-dessus d'une seule ligne.
  */
 const SECTION_ORDER: FrameChoiceKind[] = [
-	'house',
 	'card',
 	'planeswalker',
 	'split',
@@ -98,32 +100,15 @@ function disambiguateLabels(templates: MseTemplate[]): Map<string, string> {
 	return labels;
 }
 
-/**
- * Construit la liste unique : gabarits maison d'abord, puis cadres vendor.
- *
- * `layoutIds` est injecté plutôt que lu de CARD_LAYOUT_LIST pour que l'appelant
- * garde la main sur ce qui est proposé (le studio masque `landscape`).
- */
-export function buildFrameChoices(
-	templates: MseTemplate[],
-	layoutIds: readonly CardLayoutId[]
-): FrameChoice[] {
-	const house: FrameChoice[] = layoutIds.map((layoutId) => ({
-		key: `house:${layoutId}`,
-		kind: 'house',
-		// Le libellé maison vient des messages i18n, côté composant : on stocke
-		// l'id, que l'appelant traduit via `cardEditor.layouts.<id>.name`.
-		label: layoutId,
-		layoutId,
-		mseTemplateId: HOUSE_FRAME_TEMPLATE_ID,
-		template: null,
-	}));
-
-	// « Aucun fallback » appliqué à la liste : un cadre vendor sans géométrie
-	// MESURÉE n'est pas proposé. Mieux vaut une bibliothèque plus courte que des
-	// cartes dont le texte tombe à côté — c'est précisément le défaut que ce
-	// chantier corrige. Les gabarits maison ne sont pas concernés : leur
-	// géométrie est dessinée à la main, elle leur appartient.
+/** Construit la liste des apparences proposées : les cadres vendor mesurés. */
+export function buildFrameChoices(templates: MseTemplate[]): FrameChoice[] {
+	// « Aucun fallback » appliqué à la liste : un cadre sans géométrie MESURÉE
+	// n'est pas proposé. Mieux vaut une bibliothèque plus courte que des cartes
+	// dont le texte tombe à côté — c'est précisément le défaut que ce chantier
+	// corrige.
+	//
+	// Depuis le retrait des gabarits maison, cette règle décide de la totalité de
+	// la liste : plus rien n'est rendu en dehors d'un cadre mesuré.
 	//
 	// Le filtrage précède `disambiguateLabels` : désambiguïser sur l'ensemble
 	// complet collerait un suffixe « · variante » à des cadres dont l'homonyme
@@ -145,29 +130,26 @@ export function buildFrameChoices(
 	// plein milieu et en fait disparaître d'autres entièrement sans même afficher
 	// leur en-tête. Trier ici garantit qu'une vue tronquée reste un PRÉFIXE correct
 	// de la séquence des sections.
-	const vendorBySection = new Map<FrameChoiceKind, FrameChoice[]>();
+	const bySection = new Map<FrameChoiceKind, FrameChoice[]>();
 	for (const choice of vendor) {
-		const bucket = vendorBySection.get(choice.kind);
+		const bucket = bySection.get(choice.kind);
 		if (bucket) bucket.push(choice);
-		else vendorBySection.set(choice.kind, [choice]);
+		else bySection.set(choice.kind, [choice]);
 	}
-	for (const bucket of vendorBySection.values()) sortWithinSection(bucket);
+	for (const bucket of bySection.values()) sortWithinSection(bucket);
 
-	const orderedVendor = SECTION_ORDER.flatMap((kind) => vendorBySection.get(kind) ?? []);
-
-	return [...house, ...orderedVendor];
+	return SECTION_ORDER.flatMap((kind) => bySection.get(kind) ?? []);
 }
 
 /**
  * Tri intra-section : cadres CardConjurer d'abord, puis alphabétique sur le
  * libellé désambiguïsé (celui qu'on affiche — pas `name`, qui peut être un
- * doublon que le libellé a déjà résolu). Ne s'applique pas aux gabarits
- * maison : leur ordre dans le registre est signifiant (cf. buildFrameChoices).
+ * doublon que le libellé a déjà résolu).
  */
 function sortWithinSection(choices: FrameChoice[]): void {
 	choices.sort((a, b) => {
-		const aIsCardConjurer = a.template?.source === 'cardconjurer';
-		const bIsCardConjurer = b.template?.source === 'cardconjurer';
+		const aIsCardConjurer = a.template.source === 'cardconjurer';
+		const bIsCardConjurer = b.template.source === 'cardconjurer';
 		if (aIsCardConjurer !== bIsCardConjurer) return aIsCardConjurer ? -1 : 1;
 		return a.label.localeCompare(b.label);
 	});
@@ -195,25 +177,15 @@ export function groupFrameChoices(choices: FrameChoice[]): FrameChoiceSection[] 
 }
 
 /**
- * Entrée active, résolue dans cet ordre :
- *
- * 1. sentinel maison -> le gabarit dont l'id vaut `layoutId` ;
- * 2. sinon le cadre vendor dont l'id vaut `mseTemplateId` — c'est lui que le
- *    canvas peint réellement, donc lui que l'utilisateur voit ;
- * 3. rien, si le brouillon pointe un cadre retiré du catalogue.
- *
- * Aucune migration au chargement : un vieux brouillon n'est jamais réécrit tant
- * que l'utilisateur n'a pas choisi lui-même.
+ * Entrée active : le cadre dont l'id vaut `mseTemplateId` — c'est lui que le
+ * canvas peint réellement, donc lui que l'utilisateur voit. `null` si le
+ * brouillon pointe un cadre absent de la liste (retiré du catalogue, non mesuré,
+ * ou l'ancien sentinel maison) ; CardEditorStudio le récupère alors vers le
+ * cadre par défaut.
  */
 export function findActiveChoice(
 	choices: FrameChoice[],
-	layoutId: CardLayoutId,
 	mseTemplateId: string
 ): FrameChoice | null {
-	if (mseTemplateId === HOUSE_FRAME_TEMPLATE_ID) {
-		return (
-			choices.find((choice) => choice.kind === 'house' && choice.layoutId === layoutId) ?? null
-		);
-	}
 	return choices.find((choice) => choice.mseTemplateId === mseTemplateId) ?? null;
 }

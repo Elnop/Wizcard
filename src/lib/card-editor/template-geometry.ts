@@ -1,6 +1,5 @@
-import { getCardLayout } from './layout-registry';
 import type { MseTemplate } from './mse-assets';
-import type { CardLayoutGeometry, CardLayoutId, CardRect } from './types';
+import type { CardLayoutGeometry, CardRect } from './types';
 
 /**
  * Convertit la géométrie mesurée (repère du style MSE, ex. 375x523) vers le
@@ -71,9 +70,4 @@ export function templateGeometry(template: MseTemplate | undefined): CardGeometr
 			height: FOOTER_HEIGHT,
 		},
 	};
-}
-
-/** Repli explicite : les gabarits MAISON, qui ont leur géométrie dessinée à la main. */
-export function houseGeometry(layoutId: CardLayoutId): CardGeometry {
-	return getCardLayout(layoutId).geometry;
 }

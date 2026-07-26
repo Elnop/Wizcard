@@ -1,5 +1,24 @@
 import type { CardLayoutDefinition, CardLayoutId } from './types';
 
+/**
+ * Familles de mise en page, indexées par `CardLayoutId`.
+ *
+ * Ce N'EST PLUS un catalogue d'apparences proposées : les gabarits « maison »
+ * ont été retirés du studio, qui n'offre que des cadres vendor dont la géométrie
+ * a été MESURÉE depuis le corpus MSE (cf. frame-choices.ts). Il ne reste ici
+ * qu'une table de correspondance, à deux usages :
+ *
+ * 1. `layoutForTemplate` / `layoutForMseTemplate` classent un cadre vendor dans
+ *    une famille (token, planeswalker, saga…) — `layoutId` est persisté sur le
+ *    brouillon et sert de discriminant de comportement, pas de source de rendu ;
+ * 2. `DirectEditingLayer` s'en sert pour savoir qu'un planeswalker saisit une
+ *    loyauté plutôt qu'une force/endurance.
+ *
+ * Les rectangles ci-dessous ne peignent donc plus rien. Le canvas lit la
+ * géométrie mesurée du gabarit (cf. template-geometry.ts) ; ces valeurs ne sont
+ * conservées que parce que `CardLayoutDefinition` les exige et qu'elles
+ * documentent les proportions de chaque famille.
+ */
 export const CARD_LAYOUTS: Record<CardLayoutId, CardLayoutDefinition> = {
 	arcana: {
 		id: 'arcana',
@@ -155,13 +174,6 @@ export const CARD_LAYOUTS: Record<CardLayoutId, CardLayoutDefinition> = {
 		},
 	},
 };
-
-// Landscape remains readable for older saved drafts, but the Studio only offers
-// standard 63 × 88 mm portrait cards. Horizontal experiments looked like UI
-// panels rather than collectible cards and are intentionally not discoverable.
-export const CARD_LAYOUT_LIST = Object.values(CARD_LAYOUTS).filter(
-	(layout) => layout.id !== 'landscape'
-);
 
 export function getCardLayout(id: CardLayoutId): CardLayoutDefinition {
 	return CARD_LAYOUTS[id];

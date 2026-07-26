@@ -10,16 +10,12 @@ import {
 	type FrameChoice,
 } from '@/lib/card-editor/frame-choices';
 import { cardAssetUrl, type MseTemplate } from '@/lib/card-editor/mse-assets';
-import type { CardLayoutId } from '@/lib/card-editor/types';
 import styles from './MseTemplatePicker.module.css';
 
 const PAGE_SIZE = 30;
 
 interface MseTemplatePickerProps {
 	templates: MseTemplate[];
-	/** Gabarits maison proposés, dans l'ordre d'affichage. */
-	houseLayoutIds: readonly CardLayoutId[];
-	layoutId: CardLayoutId;
 	mseTemplateId: string;
 	isLoading: boolean;
 	hasError: boolean;
@@ -27,12 +23,10 @@ interface MseTemplatePickerProps {
 }
 
 /**
- * Sous-titre de la vignette : source + type vendor, ou mention du gabarit
- * maison. Extrait en fonction pour éviter un ternaire imbriqué dans un
- * template literal imbriqué (règles sonarjs) sans changer le rendu.
+ * Sous-titre de la vignette : source + type de cadre. Extrait en fonction pour
+ * éviter un ternaire imbriqué dans un template literal (règles sonarjs).
  */
 function subtitleFor(choice: FrameChoice, t: ReturnType<typeof useTranslations>): string {
-	if (!choice.template) return t('houseFrame');
 	const sourceLabel = choice.template.source === 'cardconjurer' ? 'CardConjurer' : 'MSE';
 	const kindLabel = t(`kinds.${choice.template.kind}`);
 	return `${sourceLabel} · ${kindLabel}`;
@@ -40,15 +34,12 @@ function subtitleFor(choice: FrameChoice, t: ReturnType<typeof useTranslations>)
 
 export function MseTemplatePicker({
 	templates,
-	houseLayoutIds,
-	layoutId,
 	mseTemplateId,
 	isLoading,
 	hasError,
 	onSelect,
 }: MseTemplatePickerProps) {
 	const t = useTranslations('cardEditor.mseLibrary');
-	const layouts = useTranslations('cardEditor.layouts');
 	const [query, setQuery] = useState('');
 	const [limit, setLimit] = useState(PAGE_SIZE);
 
@@ -56,33 +47,15 @@ export function MseTemplatePicker({
 		() => templates.filter((template) => template.renderMode === 'frame'),
 		[templates]
 	);
-	const choices = useMemo(
-		() => buildFrameChoices(renderableTemplates, houseLayoutIds),
-		[houseLayoutIds, renderableTemplates]
-	);
-
-	// Le libellé maison est traduit ici (le modèle ne connaît pas l'i18n) : on le
-	// résout AVANT de filtrer, pour que la recherche porte sur ce qui est affiché.
-	// `choice.label` vaut ici toujours un `CardLayoutId` (cf. buildFrameChoices),
-	// mais `FrameChoice.label` est typé `string` : le cast reflète cette invariance
-	// sans l'élargir dans l'interface partagée.
-	const labelled = useMemo(
-		() =>
-			choices.map((choice) =>
-				choice.kind === 'house'
-					? { ...choice, label: layouts(`${choice.label as CardLayoutId}.name`) }
-					: choice
-			),
-		[choices, layouts]
-	);
+	const choices = useMemo(() => buildFrameChoices(renderableTemplates), [renderableTemplates]);
 
 	const filtered = useMemo(() => {
 		const needle = query.trim().toLocaleLowerCase();
-		if (!needle) return labelled;
-		return labelled.filter((choice) => choice.label.toLocaleLowerCase().includes(needle));
-	}, [labelled, query]);
+		if (!needle) return choices;
+		return choices.filter((choice) => choice.label.toLocaleLowerCase().includes(needle));
+	}, [choices, query]);
 
-	const active = findActiveChoice(labelled, layoutId, mseTemplateId);
+	const active = findActiveChoice(choices, mseTemplateId);
 	const sections = useMemo(() => groupFrameChoices(filtered.slice(0, limit)), [filtered, limit]);
 
 	if (isLoading) {
@@ -103,7 +76,7 @@ export function MseTemplatePicker({
 			<div className={styles.libraryHeader}>
 				<div>
 					<strong>{t('title')}</strong>
-					<span>{t('count', { count: labelled.length })}</span>
+					<span>{t('count', { count: choices.length })}</span>
 				</div>
 			</div>
 			<label className={styles.search}>
@@ -142,7 +115,7 @@ export function MseTemplatePicker({
 										onClick={() => onSelect(choice)}
 									>
 										<span className={styles.preview}>
-											{choice.template?.samplePath ? (
+											{choice.template.samplePath ? (
 												// eslint-disable-next-line @next/next/no-img-element -- dynamic local vendor catalogue
 												<img
 													src={cardAssetUrl(choice.template.samplePath) ?? undefined}

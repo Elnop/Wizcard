@@ -1,9 +1,8 @@
 'use client';
 
 import { forwardRef, useId, useRef, type CSSProperties, type PointerEvent } from 'react';
-import { getCardLayout } from '@/lib/card-editor/layout-registry';
 import type { MseTemplate, MseTextColors } from '@/lib/card-editor/mse-assets';
-import { houseGeometry, templateGeometry } from '@/lib/card-editor/template-geometry';
+import { templateGeometry } from '@/lib/card-editor/template-geometry';
 import {
 	expandCardNameShortcut,
 	fitTitle,
@@ -15,7 +14,6 @@ import {
 	splitRulesSegments,
 	wrapCardText,
 } from '@/lib/card-editor/text-layout';
-import { isLandTypeLine } from '@/lib/card-editor/type-line';
 import {
 	CARD_FIELD_MAX_LENGTH,
 	type CardArtworkDraft,
@@ -47,44 +45,28 @@ interface CardCanvasProps {
 	isInteractive?: boolean;
 }
 
-interface FramePalette {
-	dark: string;
-	mid: string;
-	light: string;
-	ink: string;
-}
+/**
+ * Encre par défaut du titre et de la ligne de type.
+ *
+ * Chaque gabarit déclare ses propres couleurs de texte (`mseTextColors`), lues
+ * du corpus MSE : c'est le chemin normal. Cette valeur ne sert qu'aux gabarits
+ * dont le corpus ne déclare rien — un quasi-noir, lisible sur les barres claires
+ * de la très grande majorité des cadres.
+ *
+ * Ce n'est pas un repli de géométrie (interdits par la règle « aucun fallback »),
+ * seulement une couleur de dernier recours : sans elle le texte serait invisible.
+ */
+const DEFAULT_INK = '#17140d';
 
-const PALETTES: Record<Exclude<CardFaceDraft['frameStyle'], 'auto'>, FramePalette> = {
-	light: { dark: '#62553a', mid: '#b49b62', light: '#eee1b9', ink: '#17140d' },
-	tide: { dark: '#173b4f', mid: '#34758c', light: '#a8cbd0', ink: '#0b161a' },
-	void: { dark: '#242127', mid: '#5d5361', light: '#aaa0a8', ink: '#121014' },
-	ember: { dark: '#672a21', mid: '#a9573d', light: '#d99c75', ink: '#1d0c08' },
-	grove: { dark: '#244633', mid: '#4e765a', light: '#a4bd8b', ink: '#0d1710' },
-	prismatic: { dark: '#5c4723', mid: '#aa8740', light: '#e1c77c', ink: '#1c1508' },
-	artifact: { dark: '#38464b', mid: '#78898b', light: '#c4ceca', ink: '#111719' },
-};
-
-function resolvePalette(face: CardFaceDraft): FramePalette {
-	if (face.frameStyle !== 'auto') return PALETTES[face.frameStyle];
-	const symbols = getManaSymbols(face.manaCost).join('');
-	const colors = ['W', 'U', 'B', 'R', 'G'].filter((color) => symbols.includes(color));
-	if (colors.length > 1) return PALETTES.prismatic;
-	const paletteByColor: Record<string, FramePalette> = {
-		W: PALETTES.light,
-		U: PALETTES.tide,
-		B: PALETTES.void,
-		R: PALETTES.ember,
-		G: PALETTES.grove,
-	};
-	if (colors[0]) return paletteByColor[colors[0]];
-	if (symbols.includes('C')) return PALETTES.artifact;
-	// Terrain. PALETTES n'a pas d'entrée 'land' (contrairement à MseFrameKey, qui
-	// en a une pour les frames MSE) : on retombe sur le doré, le plus proche du
-	// cadre terrain. Les deux chemins s'accordent au moins sur la DÉTECTION, qui
-	// se faisait auparavant par regex de part et d'autre.
-	if (isLandTypeLine(face.typeLine)) return PALETTES.prismatic;
-	return PALETTES.light;
-}
+/**
+ * Cadrage du `<svg>` tant qu'aucun gabarit n'est résolu.
+ *
+ * Uniquement les dimensions : le rendu, lui, est vide (CardSvg sort tôt). Ce
+ * n'est donc pas une géométrie d'emprunt — aucune zone de texte n'en est
+ * déduite — mais le format 63 × 88 mm, pour que le conteneur garde le bon ratio
+ * pendant le chargement du catalogue au lieu de sauter à l'apparition du cadre.
+ */
+const PLACEHOLDER_VIEWBOX = { width: 744, height: 1039 };
 
 function rectStyle(rect: CardRect, width: number, height: number): CSSProperties {
 	return {
@@ -406,52 +388,6 @@ function Artwork({
 	);
 }
 
-function CardOrnaments({
-	layoutId,
-	palette,
-	width,
-	height,
-}: {
-	layoutId: CardLayoutId;
-	palette: FramePalette;
-	width: number;
-	height: number;
-}) {
-	if (layoutId === 'showcase') {
-		return (
-			<path
-				d={`M 18 ${height * 0.28} L ${width * 0.16} 18 H ${width * 0.84} L ${width - 18} ${height * 0.28} L ${width * 0.9} ${height - 20} H ${width * 0.1} Z`}
-				fill="none"
-				stroke={palette.light}
-				strokeWidth="7"
-				opacity="0.72"
-			/>
-		);
-	}
-	if (layoutId === 'saga') {
-		return (
-			<path
-				d={`M ${width * 0.46} 120 V ${height - 100}`}
-				stroke={palette.light}
-				strokeWidth="8"
-				opacity="0.8"
-			/>
-		);
-	}
-	if (layoutId === 'adventure') {
-		return (
-			<path
-				d={`M 55 ${height * 0.63} H 210 V ${height * 0.88} H 55 Z`}
-				fill={palette.dark}
-				stroke={palette.light}
-				strokeWidth="4"
-				opacity="0.88"
-			/>
-		);
-	}
-	return null;
-}
-
 function SetMark({ x, y, rarity }: { x: number; y: number; rarity: CardRarity }) {
 	const rarityColors: Record<CardRarity, string> = {
 		common: '#342f2c',
@@ -472,62 +408,13 @@ function SetMark({ x, y, rarity }: { x: number; y: number; rarity: CardRarity })
 	);
 }
 
-function FrameSurface({
-	geometry,
-	palette,
-	clipId,
-}: {
-	geometry: ReturnType<typeof getCardLayout>['geometry'];
-	palette: FramePalette;
-	clipId: string;
-}) {
-	return (
-		<>
-			<rect
-				x="3"
-				y="3"
-				width={geometry.width - 6}
-				height={geometry.height - 6}
-				rx="42"
-				fill="#080808"
-			/>
-			<rect
-				x="27"
-				y="27"
-				width={geometry.width - 54}
-				height={geometry.height - 54}
-				rx="28"
-				fill={`url(#${clipId}-frame)`}
-				stroke="#020303"
-				strokeWidth="5"
-			/>
-			<rect
-				x="34"
-				y="34"
-				width={geometry.width - 68}
-				height={geometry.height - 68}
-				rx="22"
-				fill={`url(#${clipId}-grain)`}
-				opacity="0.1"
-			/>
-			<rect
-				x="38"
-				y="38"
-				width={geometry.width - 76}
-				height={geometry.height - 76}
-				rx="19"
-				fill="none"
-				stroke={palette.light}
-				strokeWidth="3"
-				opacity="0.52"
-			/>
-		</>
-	);
-}
-
+/**
+ * Le rendu ne prend PAS `layoutId` : tout ce qu'il dessine vient de la géométrie
+ * mesurée du gabarit et de son PNG. Le layout ne pilotait que le cadre maison
+ * (ornements, pleine illustration), qui n'existe plus.
+ */
 function CardSvg({
 	face,
-	layoutId,
 	rarity,
 	finish,
 	setCode,
@@ -537,13 +424,15 @@ function CardSvg({
 	mseTemplate,
 	labels,
 	clipId,
-}: Omit<CardCanvasProps, 'onFieldChange' | 'onArtworkChange'> & { clipId: string }) {
-	// Géométrie MESURÉE du gabarit quand elle existe ; sinon celle du layout
-	// maison. Ce n'est pas un repli de secours : un gabarit vendor sans
-	// géométrie n'est pas proposé (cf. spec « aucun fallback »), donc ce cas
-	// ne concerne que les 8 gabarits maison.
-	const geometry = templateGeometry(mseTemplate) ?? houseGeometry(layoutId);
-	const palette = resolvePalette(face);
+}: Omit<CardCanvasProps, 'onFieldChange' | 'onArtworkChange' | 'layoutId'> & { clipId: string }) {
+	const geometry = templateGeometry(mseTemplate);
+	// Pas de géométrie mesurée => on ne peint rien. Le studio ne propose que des
+	// gabarits mesurés (cf. « aucun fallback » dans frame-choices), donc ce cas
+	// ne se produit qu'en transit : catalogue en cours de chargement, ou vieux
+	// brouillon pointant un cadre retiré — que CardEditorStudio répare aussitôt.
+	// Emprunter des coordonnées ici est précisément le défaut que ce chantier a
+	// corrigé.
+	if (!geometry) return null;
 	const title = face.name || labels.namePlaceholder;
 	// Le titre court jusqu'au premier symbole de mana, pas jusqu'au bord de sa
 	// propre zone : les symboles sont alignés à DROITE de la zone mana, donc un
@@ -557,50 +446,11 @@ function CardSvg({
 		geometry.mana.x + geometry.mana.width - manaCostWidth(getManaSymbols(face.manaCost).length);
 	const fittedTitle = fitTitle(title, manaLeftEdge - TITLE_MANA_GUTTER - titleStart);
 	const typeLine = face.typeLine || labels.typePlaceholder;
-	const isFullArt = layoutId === 'full-art';
 	const isNarrowRules = geometry.rules.width < 500;
-	const panelOpacity = isFullArt ? 0.88 : 0.98;
 	const showStats = geometry.stats.width > 0 && (face.power || face.toughness || face.loyalty);
-	const titlePanel = {
-		x: geometry.title.x - 5,
-		y: geometry.title.y,
-		width: geometry.mana.x + geometry.mana.width - geometry.title.x + 5,
-		height: geometry.title.height,
-	};
 	return (
 		<>
 			<defs>
-				<linearGradient id={`${clipId}-frame`} x1="0" y1="0" x2="1" y2="1">
-					<stop offset="0" stopColor={palette.dark} />
-					<stop offset="0.3" stopColor={palette.mid} />
-					<stop offset="0.58" stopColor={palette.dark} />
-					<stop offset="0.82" stopColor={palette.mid} />
-					<stop offset="1" stopColor={palette.dark} />
-				</linearGradient>
-				<linearGradient id={`${clipId}-bar`} x1="0" y1="0" x2="1" y2="1">
-					<stop offset="0" stopColor={palette.light} />
-					<stop offset="0.48" stopColor="#eee3c8" />
-					<stop offset="1" stopColor={palette.mid} />
-				</linearGradient>
-				<linearGradient id={`${clipId}-panel`} x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0" stopColor="#f4efdf" />
-					<stop offset="0.52" stopColor="#e7dfca" />
-					<stop offset="1" stopColor="#cec4aa" />
-				</linearGradient>
-				<pattern
-					id={`${clipId}-grain`}
-					width="16"
-					height="16"
-					patternUnits="userSpaceOnUse"
-					patternTransform="rotate(28)"
-				>
-					<path d="M 0 1 H 16 M 0 8 H 16" stroke={palette.light} strokeWidth="2" />
-					<path d="M 0 4 H 16 M 0 13 H 16" stroke="#050505" strokeWidth="1" />
-				</pattern>
-				<radialGradient id={`${clipId}-panel-light`} cx="50%" cy="15%" r="85%">
-					<stop offset="0" stopColor={palette.light} />
-					<stop offset="1" stopColor={palette.mid} />
-				</radialGradient>
 				<linearGradient id={`${clipId}-foil`} x1="0" y1="0" x2="1" y2="1">
 					<stop offset="0" stopColor="#70d5ff" stopOpacity="0" />
 					<stop offset="0.3" stopColor="#f3a8ff" stopOpacity="0.28" />
@@ -615,17 +465,17 @@ function CardSvg({
 			{/*
 			 * Ordre de peinture : en SVG le dernier élément passe au-dessus.
 			 *
-			 * Un gabarit vendor (CardConjurer/MSE) est un PNG PLEINE CARTE à fenêtre
-			 * d'illustration transparente : il doit donc être peint APRÈS l'image,
-			 * pour que ses bordures et ses ornements mordent dessus — c'est ce
-			 * recouvrement qui donne une carte finie.
+			 * Un gabarit (CardConjurer/MSE) est un PNG PLEINE CARTE à fenêtre
+			 * d'illustration transparente : il est donc peint APRÈS l'image, pour que
+			 * ses bordures et ses ornements mordent dessus — c'est ce recouvrement qui
+			 * donne une carte finie.
 			 *
-			 * Le cadre intégré (FrameSurface), lui, est fait de rectangles OPAQUES
-			 * couvrant toute la carte : peint après, il masquerait complètement
-			 * l'illustration. Il reste donc dessous, et ce sont les tracés qui
-			 * suivent (bordure de la fenêtre, ornements) qui l'encadrent.
+			 * Rien n'est dessiné SOUS l'illustration : le studio ne peint plus de cadre
+			 * maison. Tant que le PNG n'est pas résolu (catalogue en cours de
+			 * chargement), la carte reste volontairement nue plutôt que d'afficher un
+			 * cadre de substitution — même raison que la règle « aucun fallback » sur
+			 * la géométrie : une carte à moitié fausse est pire qu'une carte en attente.
 			 */}
-			{!mseFramePath && <FrameSurface geometry={geometry} palette={palette} clipId={clipId} />}
 			<Artwork artwork={face.artwork} rect={geometry.art} clipId={clipId} />
 			{mseFramePath && (
 				<image
@@ -637,63 +487,13 @@ function CardSvg({
 					preserveAspectRatio="none"
 				/>
 			)}
-			{!mseFramePath && (
-				<>
-					{!isFullArt && (
-						<rect {...geometry.art} rx="3" fill="none" stroke="#090908" strokeWidth="10" />
-					)}
-					<CardOrnaments
-						layoutId={layoutId}
-						palette={palette}
-						width={geometry.width}
-						height={geometry.height}
-					/>
-					<rect
-						{...titlePanel}
-						rx="18"
-						fill={`url(#${clipId}-bar)`}
-						opacity={panelOpacity}
-						stroke="#0d0d0c"
-						strokeWidth="5"
-					/>
-					{layoutId !== 'saga' && (
-						<rect
-							{...geometry.typeLine}
-							rx="11"
-							fill={`url(#${clipId}-bar)`}
-							opacity={panelOpacity}
-							stroke="#0d0d0c"
-							strokeWidth="5"
-						/>
-					)}
-					<rect
-						{...geometry.rules}
-						rx="5"
-						fill={`url(#${clipId}-panel)`}
-						opacity={panelOpacity}
-						stroke="#0d0d0c"
-						strokeWidth="6"
-					/>
-					<rect
-						x={geometry.rules.x + 8}
-						y={geometry.rules.y + 8}
-						width={Math.max(0, geometry.rules.width - 16)}
-						height={Math.max(0, geometry.rules.height - 16)}
-						rx="2"
-						fill="none"
-						stroke={palette.light}
-						strokeWidth="2"
-						opacity="0.38"
-					/>
-				</>
-			)}
 			<text
 				x={geometry.title.x + 18}
 				y={geometry.title.y + 39}
 				fontFamily="Georgia, 'Times New Roman', serif"
 				fontSize={fittedTitle.fontSize}
 				fontWeight="800"
-				fill={mseTextColors?.title ?? palette.ink}
+				fill={mseTextColors?.title ?? DEFAULT_INK}
 				opacity={face.name ? 1 : 0.46}
 			>
 				{fittedTitle.text}
@@ -710,7 +510,7 @@ function CardSvg({
 				fontFamily="Georgia, 'Times New Roman', serif"
 				fontSize="25"
 				fontWeight="800"
-				fill={mseTextColors?.type ?? palette.ink}
+				fill={mseTextColors?.type ?? DEFAULT_INK}
 				opacity={face.typeLine ? 1 : 0.46}
 			>
 				{typeLine}
@@ -727,15 +527,16 @@ function CardSvg({
 				isNarrow={isNarrowRules}
 				textColor={mseTextColors?.rules ?? '#181512'}
 			/>
+			{/*
+			 * Force/endurance : le TEXTE seul. Le panneau lui-même est peint par le
+			 * PNG du gabarit, à l'emplacement que `geometry.stats` a mesuré — y
+			 * ajouter un rectangle le recouvrirait.
+			 *
+			 * Le corpus ne déclare pas de couleur propre à la P/T : on reprend celle
+			 * du titre, qui est l'encre sombre du gabarit.
+			 */}
 			{showStats && (
 				<g>
-					<rect
-						{...geometry.stats}
-						rx="15"
-						fill={`url(#${clipId}-panel-light)`}
-						stroke="#0d0d0c"
-						strokeWidth="6"
-					/>
 					<text
 						x={geometry.stats.x + geometry.stats.width / 2}
 						y={geometry.stats.y + geometry.stats.height * 0.68}
@@ -743,7 +544,7 @@ function CardSvg({
 						fontFamily="Georgia, 'Times New Roman', serif"
 						fontSize="32"
 						fontWeight="800"
-						fill={palette.ink}
+						fill={mseTextColors?.title ?? DEFAULT_INK}
 					>
 						{/* Une créature a TOUJOURS deux valeurs : renseigner la force sans
 						    l'endurance donne « 3 / 0 », pas « 3 / — ». Le tiret laissait
@@ -802,11 +603,14 @@ function DirectEditingLayer({
 	'face' | 'layoutId' | 'mseTemplate' | 'labels' | 'onFieldChange' | 'onArtworkChange'
 >) {
 	const drag = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(null);
-	// Géométrie MESURÉE si disponible, sinon celle du gabarit maison (cf.
-	// CardSvg) : les zones cliquables doivent rester alignées avec le rendu,
-	// pas avec l'ancienne géométrie du layout.
-	const geometry = templateGeometry(mseTemplate) ?? houseGeometry(layoutId);
+	// Même géométrie que CardSvg, et même sortie anticipée : les zones cliquables
+	// doivent rester alignées sur ce qui est RENDU. Sans cadre mesuré, CardSvg ne
+	// peint rien — poser des champs sur une carte vide les rendrait injoignables.
+	const geometry = templateGeometry(mseTemplate);
+	// `layoutId` ne sert plus au rendu (la géométrie vient du gabarit mesuré),
+	// seulement à savoir qu'un planeswalker saisit une loyauté, pas une P/T.
 	const isLoyaltyLayout = layoutId === 'planeswalker';
+	if (!geometry) return null;
 	const baseField = (field: EditableCardField) => (value: string) => onFieldChange(field, value);
 	function handleArtPointerDown(event: PointerEvent<HTMLButtonElement>) {
 		event.currentTarget.setPointerCapture(event.pointerId);
@@ -935,24 +739,24 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 	},
 	ref
 ) {
-	// Géométrie MESURÉE si disponible : le viewBox doit refléter le ratio NATIF
-	// du gabarit (27 cadres du catalogue sont en paysage), pas celui du layout
-	// maison sous-jacent.
-	const geometry = templateGeometry(mseTemplate) ?? houseGeometry(layoutId);
-	const orientation = geometry.width >= geometry.height ? 'landscape' : 'portrait';
+	// Le viewBox reflète le ratio NATIF du gabarit mesuré (27 cadres du catalogue
+	// sont en paysage). Pas de gabarit résolu (catalogue en vol) : on conserve un
+	// viewBox portrait standard, car le <svg> porte la ref d'export et doit
+	// exister même vide — CardSvg, lui, ne peindra rien.
+	const viewBox = templateGeometry(mseTemplate) ?? PLACEHOLDER_VIEWBOX;
+	const orientation = viewBox.width >= viewBox.height ? 'landscape' : 'portrait';
 	const clipId = `card-art-${useId().replaceAll(':', '')}`;
 	return (
 		<div className={styles.canvas} data-orientation={orientation}>
 			<svg
 				ref={ref}
 				className={styles.svg}
-				viewBox={`0 0 ${geometry.width} ${geometry.height}`}
+				viewBox={`0 0 ${viewBox.width} ${viewBox.height}`}
 				role="img"
 				aria-label={face.name || labels.namePlaceholder}
 			>
 				<CardSvg
 					face={face}
-					layoutId={layoutId}
 					rarity={rarity}
 					finish={finish}
 					setCode={setCode}

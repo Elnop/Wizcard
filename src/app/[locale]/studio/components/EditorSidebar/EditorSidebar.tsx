@@ -10,7 +10,6 @@ import {
 	UploadSimple,
 } from '@phosphor-icons/react';
 import { useTranslations } from 'next-intl';
-import { CARD_LAYOUT_LIST } from '@/lib/card-editor/layout-registry';
 import { prepareArtwork } from '@/lib/card-editor/image';
 import { type MseTemplate } from '@/lib/card-editor/mse-assets';
 import { getManaSymbols, MAX_MANA_PIPS, type RulesCapacity } from '@/lib/card-editor/text-layout';
@@ -155,9 +154,6 @@ function writeGenericMana(manaCost: string, amount: number | null): string {
 	return `{${amount}}${rest}`;
 }
 const LANGUAGE_CODES = ['en', 'fr', 'de', 'es', 'it', 'pt', 'ja', 'ko', 'ru', 'zhs'] as const;
-
-/** Gabarits maison proposés, dans l'ordre. `landscape` reste exclu (cf. CARD_LAYOUT_LIST). */
-const HOUSE_LAYOUT_IDS = CARD_LAYOUT_LIST.map((layout) => layout.id);
 
 function PanelTabs({
 	activePanel,
@@ -604,8 +600,6 @@ function StylePanel({
 			</div>
 			<MseTemplatePicker
 				templates={mseTemplates}
-				houseLayoutIds={HOUSE_LAYOUT_IDS}
-				layoutId={draft.layoutId}
 				mseTemplateId={draft.mseTemplateId}
 				isLoading={isMseCatalogLoading}
 				hasError={hasMseCatalogError}

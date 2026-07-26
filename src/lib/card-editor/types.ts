@@ -1,13 +1,20 @@
-export const DEFAULT_FRAME_TEMPLATE_ID = 'cardconjurer-m15-regular';
-
 /**
- * Gabarit « maison » : la carte est rendue avec les cadres intégrés de Wizcard,
- * sans cadre vendor. Ce n'est PAS un id du catalogue — le préfixe `wizcard:` est
- * réservé (aucun id du catalogue ne contient « : »), ce qui garantit que
- * `useSelectedMseTemplate` ne le résoudra jamais et que `resolveMseFramePath`
- * retombera sur le rendu intégré.
+ * Cadre par défaut d'un nouveau brouillon, et cible de l'auto-réparation.
+ *
+ * DOIT être un gabarit dont la géométrie est MESURÉE : le studio ne propose et
+ * ne peint plus que ceux-là (cf. frame-choices.ts), et l'effet d'auto-réparation
+ * de CardEditorStudio boucle sur un défaut qu'il juge lui-même invalide.
+ *
+ * C'était `cardconjurer-m15-regular`, qui se rend mais n'est PAS mesuré : aucun
+ * id préfixé `cardconjurer` n'a de géométrie (les clés de l'extracteur sont des
+ * id de style MSE). Il était donc déjà absent du sélecteur tout en étant servi à
+ * chaque nouveau brouillon.
+ *
+ * `magic-m15` est la référence du corpus : ses six zones sont mesurées, et c'est
+ * le style sur lequel l'extracteur est validé (à ~1 px de l'ancien gabarit
+ * maison `arcana`, cf. docs/card-studio.md).
  */
-export const HOUSE_FRAME_TEMPLATE_ID = 'wizcard:house';
+export const DEFAULT_FRAME_TEMPLATE_ID = 'magic-m15';
 
 export const CARD_LAYOUT_IDS = [
 	'arcana',

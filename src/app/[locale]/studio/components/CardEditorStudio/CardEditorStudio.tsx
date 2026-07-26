@@ -13,15 +13,15 @@ import {
 	resolveMseTextColors,
 	useMseTemplateCatalog,
 	useSelectedMseTemplate,
+	type MseTemplate,
 } from '@/lib/card-editor/mse-assets';
 import { validateCardDraft } from '@/lib/card-editor/draft';
-import { getCardLayout } from '@/lib/card-editor/layout-registry';
-import { clampManaCost, getRulesCapacity } from '@/lib/card-editor/text-layout';
+import { templateGeometry } from '@/lib/card-editor/template-geometry';
+import { clampManaCost, getRulesCapacity, type RulesCapacity } from '@/lib/card-editor/text-layout';
 import {
 	CARD_FIELD_MAX_LENGTH,
 	DEFAULT_FRAME_TEMPLATE_ID,
 	DRAFT_FIELD_MAX_LENGTH,
-	HOUSE_FRAME_TEMPLATE_ID,
 	type CardCanvasLabels,
 	type EditableCardField,
 } from '@/lib/card-editor/types';
@@ -32,6 +32,31 @@ import { EditorToolbar } from '../EditorToolbar/EditorToolbar';
 import styles from './CardEditorStudio.module.css';
 
 type Notice = { type: 'info' | 'error' | 'success'; message: string } | null;
+
+/**
+ * Capacité de la zone de règles du gabarit, mesurée à la même source que le
+ * rendu (`templateGeometry`) et non plus sur le registre des layouts maison.
+ *
+ * Gabarit non encore résolu — catalogue en vol, ou brouillon pointant un cadre
+ * que l'auto-réparation n'a pas encore corrigé : on retourne la capacité du
+ * cadre PAR DÉFAUT, qui est mesuré par construction (cf.
+ * DEFAULT_FRAME_TEMPLATE_ID). Rendre la capacité nullable serait contagieux
+ * (quatre points d'affichage la lisent), et une capacité nulle TRONQUERAIT le
+ * texte de l'utilisateur à chaque rendu pendant le chargement.
+ */
+function capacityForTemplate(
+	template: MseTemplate | undefined,
+	templates: MseTemplate[]
+): RulesCapacity {
+	const rules =
+		templateGeometry(template)?.rules ??
+		templateGeometry(templates.find((row) => row.id === DEFAULT_FRAME_TEMPLATE_ID))?.rules;
+	// Catalogue vide (chargement, erreur réseau) : la zone de règles du cadre M15
+	// de référence, en repère canvas. Une valeur généreuse et fixe qui ne coupe
+	// aucune saisie ; le bornage réel s'applique dès que le catalogue arrive.
+	if (!rules) return getRulesCapacity(630, 294);
+	return getRulesCapacity(rules.width, rules.height);
+}
 
 function NoticeIcon({ type }: { type: NonNullable<Notice>['type'] }) {
 	if (type === 'error') return <WarningCircle size={20} />;
@@ -50,10 +75,14 @@ export function CardEditorStudio() {
 		mseCatalog.templates,
 		editor.draft.mseTemplateId
 	);
-	// Capacité de la zone de texte du layout courant : elle borne la saisie des
-	// règles et de l'ambiance, et alimente le compteur affiché sous les champs.
-	const rulesGeometry = getCardLayout(editor.draft.layoutId).geometry.rules;
-	const rulesCapacity = getRulesCapacity(rulesGeometry.width, rulesGeometry.height);
+	// Capacité de la zone de texte : elle borne la saisie des règles et de
+	// l'ambiance, et alimente le compteur affiché sous les champs.
+	//
+	// Elle se lisait sur `layoutId` via le registre maison, qui ne décrit plus ce
+	// qui est peint : le canvas rend la géométrie MESURÉE du gabarit. Le compteur
+	// annonçait donc la capacité d'un gabarit maison retiré, pour un cadre aux
+	// proportions différentes. On lit désormais la même source que le rendu.
+	const rulesCapacity = capacityForTemplate(selectedMseTemplate, mseCatalog.templates);
 	const [activePanel, setActivePanel] = useState<EditorPanel>('card');
 	const [validationErrors, setValidationErrors] = useState<string[]>([]);
 	const [notice, setNotice] = useState<Notice>(null);
@@ -62,14 +91,21 @@ export function CardEditorStudio() {
 	const frontSvg = useRef<SVGSVGElement>(null);
 	const backSvg = useRef<SVGSVGElement>(null);
 
+	// Auto-réparation : ramène vers un cadre rendable tout brouillon qui n'en
+	// désigne pas un.
+	//
+	// Cet effet épargnait auparavant le sentinel maison (`wizcard:house`), qui ne
+	// résout volontairement aucun gabarit du catalogue. Depuis le retrait des
+	// gabarits maison, ce sentinel ne peint plus RIEN : il doit donc être
+	// récupéré, pas protégé. Un brouillon autosauvegardé d'avant le retrait passe
+	// ici et bascule sur le cadre par défaut.
+	//
+	// Couvre aussi la géométrie : un gabarit non MESURÉ n'est plus proposé par le
+	// sélecteur, mais un vieux brouillon peut encore en porter un — sans
+	// géométrie, le canvas ne peindrait rien.
 	useEffect(() => {
 		if (mseCatalog.isLoading || mseCatalog.error) return;
-		// Le gabarit maison n'a délibérément pas de cadre vendor :
-		// `selectedMseTemplate` est donc `undefined`, ce qui SANS ce garde ferait
-		// tomber l'effet dans la branche de secours et réécrirait le brouillon avec
-		// le cadre par défaut — annulant le choix de l'utilisateur à chaque rendu.
-		if (editor.draft.mseTemplateId === HOUSE_FRAME_TEMPLATE_ID) return;
-		if (selectedMseTemplate?.renderMode === 'frame') return;
+		if (selectedMseTemplate?.renderMode === 'frame' && selectedMseTemplate.geometry) return;
 		const fallback = mseCatalog.templates.find(
 			(template) => template.id === DEFAULT_FRAME_TEMPLATE_ID
 		);
@@ -217,14 +253,19 @@ export function CardEditorStudio() {
 		) as typeof values;
 		editor.updateDraft(bounded);
 
-		// Changer de layout change la capacité de la zone de texte : passer d'une
+		// Changer de cadre change la capacité de la zone de texte : passer d'une
 		// saga (1023) à un jeton (116) laisserait sinon un texte trop long, que le
 		// rendu tronquerait silencieusement à l'affichage. On le recadre tout de
 		// suite pour que le compteur et la carte disent la même chose.
-		if (bounded.layoutId && bounded.layoutId !== editor.draft.layoutId) {
-			const next = getRulesCapacity(
-				getCardLayout(bounded.layoutId).geometry.rules.width,
-				getCardLayout(bounded.layoutId).geometry.rules.height
+		//
+		// Le déclencheur est `mseTemplateId` et non `layoutId` : c'est le gabarit
+		// qui porte la géométrie mesurée. Deux cadres peuvent partager un layoutId
+		// tout en ayant des zones de texte très différentes — se fier au layout
+		// laissait passer ces changements-là.
+		if (bounded.mseTemplateId && bounded.mseTemplateId !== editor.draft.mseTemplateId) {
+			const next = capacityForTemplate(
+				mseCatalog.templates.find((row) => row.id === bounded.mseTemplateId),
+				mseCatalog.templates
 			);
 			for (const field of ['oracleText', 'flavorText'] as const) {
 				const current = editor.activeFace[field];

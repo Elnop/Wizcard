@@ -1063,53 +1063,13 @@
 				"oversized": "Grand format",
 				"packaging": "Packaging"
 			},
-			"houseFrame": "Cadre Wizcard intégré",
 			"sections": {
-				"house": "Gabarits Wizcard",
 				"card": "Cartes",
 				"planeswalker": "Planeswalkers",
 				"split": "Split",
 				"double-faced": "Double face",
 				"token": "Jetons",
 				"other": "Autres"
-			}
-		},
-		"layouts": {
-			"arcana": {
-				"name": "Classique",
-				"description": "Carte standard au format 63 × 88 mm"
-			},
-			"modern": {
-				"name": "Moderne",
-				"description": "Cadre contemporain et illustration agrandie"
-			},
-			"full-art": {
-				"name": "Full art",
-				"description": "Illustration sur toute la carte"
-			},
-			"showcase": {
-				"name": "Showcase",
-				"description": "Traitement collector angulaire"
-			},
-			"token": {
-				"name": "Jeton",
-				"description": "Grande illustration, texte compact"
-			},
-			"planeswalker": {
-				"name": "Planeswalker",
-				"description": "Capacités et zone de loyauté"
-			},
-			"saga": {
-				"name": "Saga",
-				"description": "Composition narrative verticale"
-			},
-			"adventure": {
-				"name": "Aventure",
-				"description": "Traitement narratif secondaire"
-			},
-			"landscape": {
-				"name": "Paysage hérité",
-				"description": "Compatibilité avec les anciens brouillons"
 			}
 		},
 		"details": {
