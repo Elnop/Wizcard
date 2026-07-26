@@ -1042,9 +1042,35 @@ Put the real before/after numbers in the commit message — the progression is t
 
 ---
 
-### Task 6: Builtin tier 2 — font metrics
+### Task 6: Builtin tier 2 — font metrics AND `content_width`
 
 `*_font_vertical()` derives from the rendered metrics of the TTFs shipped in `full-magic-pack/fonts/` (15 files). `opentype.js` is already a dependency (see `scripts/generate-logo.ts`).
+
+**Scope expanded after Task 5 measured the corpus.** `content_width` is the single
+biggest blocker in the whole effort:
+
+| Fact                                           | Measured  |
+| ---------------------------------------------- | --------- |
+| Styles blocked by `card_style.*.content_width` | **185**   |
+| …of which use it inside `max(N, …)`            | 169       |
+| …of which use it unguarded                     | 16        |
+| `casting_cost` / `rarity` occurrences          | 412 / 219 |
+
+Task 5's tier-1 builtins were implemented correctly but the resolved count stayed at
+15/376, because `evaluate.ts:97` evaluates a call's arguments **eagerly**: in
+`max(30, card_style.casting_cost.content_width)` the unresolvable operand throws before
+`max` ever runs.
+
+`content_width` is the **rendered width of a field's content**. It is measurable rather
+than assumable: each field block declares its own `font` (name + size) and, for mana
+costs, a `symbol font`. Measuring it — instead of making `max` lazy — keeps the
+no-fallback rule intact, because a measured width is a fact rather than an assumption
+about the canonical card.
+
+Implement `content_width` for the two fields that matter (`casting_cost` at 412 uses and
+`rarity` at 219; `illustrator` at 101 is optional-field-only and may be deferred), reading
+the font name and size from the field's own block. Where a field's font cannot be resolved
+to a shipped TTF, throw `Unresolved` — do not approximate.
 
 **Files:**
 
