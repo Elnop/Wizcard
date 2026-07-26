@@ -89,6 +89,15 @@ function tryParseReservedLiteral(token: Token): Node | null {
 /** Précédences, du plus faible au plus fort. */
 const BINDING: Record<string, number> = {
 	or: 1,
+	// « or else » (tâche 6h) : PAS un simple « or » booléen — c'est l'opérateur
+	// de repli de MSE (« évalue la gauche ; si elle échoue ou vaut nil, prends
+	// la droite »), utilisé 139 fois dans magic.mse-game/script pour des
+	// valeurs optionnelles (ex. `styling.rarity_offsets or else ""`,
+	// `to_number(input) or else to_number(trim(input)) or else 0`). Même
+	// précédence que « or » : les deux sont mutuellement exclusifs dans le
+	// corpus (aucune expression mesurée ne mélange « or » nu et « or else »),
+	// donc le choix ne peut jamais créer d'ambiguïté d'associativité.
+	'or else': 1,
 	and: 2,
 	'==': 3,
 	'!=': 3,
@@ -401,15 +410,32 @@ export function parseExpression(source: string): Node {
 		}
 	}
 
+	/**
+	 * Lit l'opérateur binaire à la position courante, en repérant D'ABORD la
+	 * forme à DEUX mots « or else » (tâche 6h) — le lexer ne la distingue pas
+	 * de deux `ident` consécutifs (`or` puis `else`), cf. commentaire de
+	 * `BINDING`. Renvoie le texte d'opérateur à utiliser pour la précédence ET
+	 * le nombre de jetons qu'il consomme (1 ou 2), pour que l'appelant avance
+	 * `pos` du bon nombre de crans.
+	 */
+	function readBinaryOperator(): { op: string; tokenCount: 1 | 2 } | null {
+		const token = peek();
+		if (!token) return null;
+		if (token.value === 'or' && tokens[pos + 1]?.value === 'else') {
+			return { op: 'or else', tokenCount: 2 };
+		}
+		return { op: token.value, tokenCount: 1 };
+	}
+
 	function parseBinary(minBinding: number): Node {
 		let left = parsePostfix();
 		for (;;) {
-			const token = peek();
-			if (!token) return left;
-			const binding = BINDING[token.value];
+			const operator = readBinaryOperator();
+			if (!operator) return left;
+			const binding = BINDING[operator.op];
 			if (binding === undefined || binding < minBinding) return left;
-			pos += 1;
-			left = { type: 'binary', op: token.value, left, right: parseBinary(binding + 1) };
+			pos += operator.tokenCount;
+			left = { type: 'binary', op: operator.op, left, right: parseBinary(binding + 1) };
 		}
 	}
 

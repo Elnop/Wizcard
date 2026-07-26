@@ -377,6 +377,34 @@ export function evaluate(node: Node, scope: Scope, depth = 0, locals: Locals = n
 			return !evaluate(node.operand, scope, depth + 1, locals);
 		}
 		case 'binary': {
+			// « or else » (tâche 6h) DOIT être traité avant l'évaluation à-priori
+			// de `left`/`right` ci-dessous : sa sémantique est justement de
+			// RATTRAPER un échec d'évaluation de la gauche (`Unresolved`, ou une
+			// erreur de builtin comme `to_number` sur une chaîne non numérique,
+			// cf. `to_number_lax := { to_number(input) or else to_number(trim(
+			// input)) or else 0 }`) ou un `nil` explicite, pour retomber sur la
+			// droite — jamais un défaut DEVINÉ : c'est l'opérateur du LANGAGE
+			// MSE lui-même, mesuré 139 fois dans magic.mse-game/script, pas une
+			// substitution qu'on invente ici (cf. « aucun fallback », qui porte
+			// sur les VALEURS de géométrie, pas sur la grammaire du langage
+			// qu'on interprète). Si la gauche réussit et ne vaut pas nil, la
+			// droite n'est JAMAIS évaluée (court-circuit, cf. `to_number_lax`
+			// dont le dernier repli `0` ne doit pas s'exécuter si le premier
+			// `to_number(input)` réussit déjà).
+			if (node.op === 'or else') {
+				try {
+					const left = evaluate(node.left, scope, depth + 1, locals);
+					if (left !== null) return left;
+				} catch (error) {
+					// Toute erreur d'évaluation compte comme un échec de la gauche
+					// (`Unresolved`, ou un `TypeError` de builtin comme `to_number` sur
+					// une entrée non numérique — les deux seules classes que ce module
+					// lève, cf. commentaire ci-dessus) : on retombe sur la droite plutôt
+					// que de la laisser remonter.
+					if (!(error instanceof Error)) throw error;
+				}
+				return evaluate(node.right, scope, depth + 1, locals);
+			}
 			const left = evaluate(node.left, scope, depth + 1, locals);
 			const right = evaluate(node.right, scope, depth + 1, locals);
 			// eslint-disable-next-line sonarjs/max-switch-cases -- safe: un cas par opérateur binaire MSE, la liste est fixée par la grammaire du parseur

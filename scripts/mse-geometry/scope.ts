@@ -1,6 +1,6 @@
 import { Unresolved, evaluate } from './evaluate';
 import { manaCostWidth } from './font-metrics';
-import { parseExpression, parseParamList, type ParamList } from './parser';
+import { parseExpression, parseParamList, unwrapFieldValue, type ParamList } from './parser';
 import type { FieldFontInfo } from './style-file';
 
 /**
@@ -328,7 +328,17 @@ function castingCostContentWidth(info: FieldFontInfo | undefined): number {
  */
 function rarityContentWidth(info: FieldFontInfo | undefined, scope: Scope): number {
 	if (info?.width === undefined) throw new Unresolved(RARITY_CONTENT_WIDTH);
-	const node = parseExpression(info.width);
+	// La valeur brute est encore enveloppée dans les accolades MSE (« { … } »)
+	// ou peut être un bloc `script:` — ni l'une ni l'autre ne fait partie de la
+	// grammaire de `parseExpression`. `unwrapFieldValue` retire cette enveloppe
+	// (même fonction que `extract.ts` applique aux AUTRES champs de géométrie) ;
+	// sans cet appel, `parseExpression("{ rarity_width_1() + … }")` échouait
+	// systématiquement sur le premier caractère « { », ce qui laissait
+	// `card_style.rarity.content_width` non résolu pour TOUT style utilisant une
+	// expression ici (nombre nu uniquement en pratique déjà géré, cf. 174/195).
+	const source = unwrapFieldValue(info.width);
+	if (source === null) throw new Unresolved(RARITY_CONTENT_WIDTH);
+	const node = parseExpression(source);
 	const value = evaluate(node, scope);
 	if (typeof value !== 'number') throw new Unresolved(RARITY_CONTENT_WIDTH);
 	return value;
