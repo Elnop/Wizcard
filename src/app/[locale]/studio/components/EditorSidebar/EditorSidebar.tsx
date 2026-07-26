@@ -12,7 +12,7 @@ import { useTranslations } from 'next-intl';
 import { CARD_LAYOUT_LIST } from '@/lib/card-editor/layout-registry';
 import { prepareArtwork } from '@/lib/card-editor/image';
 import { layoutForMseTemplate, type MseTemplate } from '@/lib/card-editor/mse-assets';
-import { getManaSymbols } from '@/lib/card-editor/text-layout';
+import { getManaSymbols, MAX_MANA_PIPS } from '@/lib/card-editor/text-layout';
 import { ManaSymbol } from '@/lib/scryfall/components/ManaSymbol/ManaSymbol';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import {
@@ -144,6 +144,10 @@ function ManaCostField({
 	const symbolMap = useScryfallSymbols();
 	const generic = readGenericMana(manaCost);
 	const preview = getManaSymbols(manaCost);
+	const isPipLimitReached = preview.length >= MAX_MANA_PIPS;
+	// Passer de « pas de générique » à un générique AJOUTE un pip ; le modifier
+	// quand il existe déjà n'en ajoute aucun.
+	const genericWouldAddPip = generic === null;
 
 	// `fieldset` plutôt que le `label` de FormField : ce bloc contient plusieurs
 	// contrôles (texte, compteur, boutons), qu'un unique <label> ne peut pas
@@ -204,7 +208,7 @@ function ManaCostField({
 					<button
 						type="button"
 						onClick={() => onChange(writeGenericMana(manaCost, Math.min(20, (generic ?? 0) + 1)))}
-						disabled={(generic ?? 0) >= 20}
+						disabled={(generic ?? 0) >= 20 || (isPipLimitReached && genericWouldAddPip)}
 						aria-label={t('genericIncrease')}
 					>
 						+
@@ -217,6 +221,9 @@ function ManaCostField({
 						key={symbol}
 						type="button"
 						onClick={() => onChange(`${manaCost}${symbol}`)}
+						// À la limite de pips, l'ajout serait retiré par clampManaCost :
+						// mieux vaut désactiver que laisser cliquer sans effet.
+						disabled={isPipLimitReached}
 						aria-label={t('insertSymbol', { symbol })}
 						title={symbolMap[symbol]?.english ?? symbol}
 					>

@@ -15,6 +15,7 @@ import {
 	useSelectedMseTemplate,
 } from '@/lib/card-editor/mse-assets';
 import { validateCardDraft } from '@/lib/card-editor/draft';
+import { clampManaCost } from '@/lib/card-editor/text-layout';
 import {
 	CARD_FIELD_MAX_LENGTH,
 	DEFAULT_FRAME_TEMPLATE_ID,
@@ -172,7 +173,10 @@ export function CardEditorStudio() {
 		// champ pré-rempli passent tout droit — 300 caractères atteignaient le
 		// state avec un maxLength de 80. Ce handler est le point de passage unique
 		// de la sidebar ET de l'édition directe sur la carte.
-		editor.updateFace(field, value.slice(0, CARD_FIELD_MAX_LENGTH[field]));
+		const bounded = value.slice(0, CARD_FIELD_MAX_LENGTH[field]);
+		// Le coût de mana se borne en NOMBRE DE PIPS, pas en caractères : {15}{W}
+		// est court mais {W}×20 déborde de la ligne de titre.
+		editor.updateFace(field, field === 'manaCost' ? clampManaCost(bounded) : bounded);
 	}
 
 	function handleArtworkChange(artwork: Parameters<typeof editor.updateArtwork>[0]) {

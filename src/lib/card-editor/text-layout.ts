@@ -165,6 +165,31 @@ export function getManaSymbols(manaCost: string): string[] {
 		.filter((symbol): symbol is string => Boolean(symbol));
 }
 
+/**
+ * Nombre maximal de pips (symboles) dans un coût de mana.
+ *
+ * 17 est la limite retenue : au-delà les symboles ne tiennent plus sur la ligne
+ * de titre, et aucune carte réelle n'en approche. Le générique compte pour UN
+ * pip quelle que soit sa valeur — {15} est un seul symbole dessiné.
+ */
+export const MAX_MANA_PIPS = 17;
+
+/**
+ * Tronque un coût de mana à MAX_MANA_PIPS symboles, en préservant la syntaxe.
+ *
+ * On reconstruit depuis les symboles reconnus plutôt que de couper la chaîne :
+ * un `slice` brut pourrait laisser une accolade orpheline ({W}{U}{ ), que le
+ * parseur retomberait ensuite silencieusement.
+ */
+export function clampManaCost(manaCost: string): string {
+	const symbols = getManaSymbols(manaCost);
+	if (symbols.length <= MAX_MANA_PIPS) return manaCost;
+	return symbols
+		.slice(0, MAX_MANA_PIPS)
+		.map((symbol) => `{${symbol}}`)
+		.join('');
+}
+
 export function expandCardNameShortcut(text: string, cardName: string): string {
 	return text.replaceAll('~', cardName || 'CARDNAME');
 }
