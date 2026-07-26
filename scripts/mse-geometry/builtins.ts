@@ -1,3 +1,5 @@
+import { verticalOffset } from './font-metrics';
+
 export type Value = number | string | boolean;
 export type Builtin = (args: Value[], named: Record<string, Value>) => Value;
 
@@ -32,3 +34,18 @@ BUILTINS.set('contains', (args, named) => {
 BUILTINS.set('to_int', (args) => Math.trunc(num(args[0])));
 BUILTINS.set('to_number', (args) => num(args[0]));
 BUILTINS.set('ifside', (args, named) => num(named.left ?? args[0]));
+
+/**
+ * Palier 2 : métriques de police. MSE dérive ces décalages de la police
+ * effectivement rendue ; on lit donc les TTF livrés plutôt que d'approximer.
+ * Les tailles proviennent du corpus (mplantin pour le corps, beleren pour le
+ * titre et la force/endurance) — `size: 1` sert de base unitaire, le décalage
+ * réel est ensuite mis à l'échelle par l'appelant selon sa propre taille de
+ * police (cf. usages dans magic.mse-game/script : `X_font_vertical() * size`).
+ */
+const BELEREN_BOLD = 'beleren-bold_P1.01.ttf';
+BUILTINS.set('pt_font_vertical', () => verticalOffset(BELEREN_BOLD, 1));
+BUILTINS.set('pt2_font_vertical', () => verticalOffset(BELEREN_BOLD, 1));
+BUILTINS.set('name_font_vertical', () => verticalOffset(BELEREN_BOLD, 1));
+BUILTINS.set('type_font_vertical', () => verticalOffset(BELEREN_BOLD, 1));
+BUILTINS.set('body_font_vertical', () => verticalOffset('mplantin.ttf', 1));
