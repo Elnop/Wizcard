@@ -49,14 +49,11 @@ export function wrapCardText(
 			lines.push({ text: line, isParagraphEnd: index === wrapped.length - 1 });
 		});
 	}
-	if (lines.length <= maxLines) return lines;
-	const clipped = lines.slice(0, maxLines);
-	const last = clipped[maxLines - 1];
-	while (last.text.endsWith('.') || last.text.endsWith('…')) {
-		last.text = last.text.slice(0, -1);
-	}
-	last.text = `${last.text}…`;
-	return clipped;
+	// Débordement : on coupe net aux lignes disponibles, SANS ellipse — une carte
+	// imprimée n'en met pas, et le « … » consommait en plus la largeur d'un W.
+	// (La saisie est de toute façon bornée par la capacité du layout en amont ;
+	// ce garde-fou ne joue plus que pour un contenu hérité.)
+	return lines.slice(0, maxLines);
 }
 
 export interface RulesCapacity {
