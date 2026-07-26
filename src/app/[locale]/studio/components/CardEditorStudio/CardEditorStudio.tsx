@@ -21,6 +21,7 @@ import {
 	CARD_FIELD_MAX_LENGTH,
 	DEFAULT_FRAME_TEMPLATE_ID,
 	DRAFT_FIELD_MAX_LENGTH,
+	HOUSE_FRAME_TEMPLATE_ID,
 	type CardCanvasLabels,
 	type EditableCardField,
 } from '@/lib/card-editor/types';
@@ -63,6 +64,11 @@ export function CardEditorStudio() {
 
 	useEffect(() => {
 		if (mseCatalog.isLoading || mseCatalog.error) return;
+		// Le gabarit maison n'a délibérément pas de cadre vendor :
+		// `selectedMseTemplate` est donc `undefined`, ce qui SANS ce garde ferait
+		// tomber l'effet dans la branche de secours et réécrirait le brouillon avec
+		// le cadre par défaut — annulant le choix de l'utilisateur à chaque rendu.
+		if (editor.draft.mseTemplateId === HOUSE_FRAME_TEMPLATE_ID) return;
 		if (selectedMseTemplate?.renderMode === 'frame') return;
 		const fallback = mseCatalog.templates.find(
 			(template) => template.id === DEFAULT_FRAME_TEMPLATE_ID
