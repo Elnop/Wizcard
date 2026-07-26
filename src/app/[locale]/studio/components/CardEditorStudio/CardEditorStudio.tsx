@@ -238,80 +238,76 @@ export function CardEditorStudio() {
 
 	return (
 		<main className={styles.page}>
-			<EditorToolbar
-				hasBackFace={Boolean(editor.draft.faces[1])}
-				activeFace={editor.draft.activeFace}
-				canUndo={editor.canUndo}
-				canRedo={editor.canRedo}
-				isSaving={isSaving}
-				isAuthLoading={isAuthLoading}
-				autosaveStatus={editor.autosaveStatus}
-				onFaceChange={editor.setActiveFace}
-				onAddBackFace={editor.addBackFace}
-				onRemoveBackFace={editor.removeBackFace}
-				onUndo={editor.undo}
-				onRedo={editor.redo}
-				onReset={handleReset}
-				onExport={() => void handleExport()}
-				onSave={() => void handleSave()}
+			<EditorSidebar
+				draft={editor.draft}
+				face={editor.activeFace}
+				activePanel={activePanel}
+				validationErrors={validationErrors}
+				rulesCapacity={rulesCapacity}
+				mseTemplates={mseCatalog.templates}
+				isMseCatalogLoading={mseCatalog.isLoading}
+				hasMseCatalogError={mseCatalog.error}
+				onPanelChange={setActivePanel}
+				onFieldChange={handleFieldChange}
+				onArtworkChange={handleArtworkChange}
+				onFaceAppearanceChange={editor.updateFaceAppearance}
+				onDraftChange={handleDraftChange}
 			/>
 
-			{notice && (
-				<div
-					className={styles.notice}
-					data-type={notice.type}
-					role={notice.type === 'error' ? 'alert' : 'status'}
-				>
-					<NoticeIcon type={notice.type} />
-					<span>{notice.message}</span>
-					{notice.type === 'info' && !user && (
-						<Link href="/auth/login">{t('notices.loginAction')}</Link>
-					)}
-				</div>
-			)}
-
-			<div className={styles.workspace}>
-				<EditorSidebar
-					draft={editor.draft}
-					face={editor.activeFace}
-					activePanel={activePanel}
-					validationErrors={validationErrors}
-					rulesCapacity={rulesCapacity}
-					mseTemplates={mseCatalog.templates}
-					isMseCatalogLoading={mseCatalog.isLoading}
-					hasMseCatalogError={mseCatalog.error}
-					onPanelChange={setActivePanel}
-					onFieldChange={handleFieldChange}
-					onArtworkChange={handleArtworkChange}
-					onFaceAppearanceChange={editor.updateFaceAppearance}
-					onDraftChange={handleDraftChange}
+			{/* La barre d'outils et le bandeau vivent dans la colonne de droite :
+			    la sidebar doit toucher le haut de la page, donc plus rien ne peut
+			    s'étendre au-dessus d'elle. */}
+			<section
+				className={styles.previewColumn}
+				aria-label={t('preview.title')}
+				onDragOver={(event) => event.preventDefault()}
+				onDrop={handlePreviewDrop}
+			>
+				<EditorToolbar
+					hasBackFace={Boolean(editor.draft.faces[1])}
+					activeFace={editor.draft.activeFace}
+					canUndo={editor.canUndo}
+					canRedo={editor.canRedo}
+					isSaving={isSaving}
+					isAuthLoading={isAuthLoading}
+					autosaveStatus={editor.autosaveStatus}
+					onFaceChange={editor.setActiveFace}
+					onAddBackFace={editor.addBackFace}
+					onRemoveBackFace={editor.removeBackFace}
+					onUndo={editor.undo}
+					onRedo={editor.redo}
+					onReset={handleReset}
+					onExport={() => void handleExport()}
+					onSave={() => void handleSave()}
 				/>
 
-				<section
-					className={styles.previewColumn}
-					aria-label={t('preview.title')}
-					onDragOver={(event) => event.preventDefault()}
-					onDrop={handlePreviewDrop}
-				>
-					<div className={styles.previewStage}>
-						<div className={styles.stageGlow} aria-hidden />
-						<CardCanvas
-							ref={activeSvg}
-							{...canvasProps}
-							face={editor.activeFace}
-							mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.activeFace)}
-							mseTextColors={resolveMseTextColors(selectedMseTemplate, editor.activeFace)}
-							onFieldChange={handleFieldChange}
-							onArtworkChange={handleArtworkChange}
-						/>
+				{notice && (
+					<div
+						className={styles.notice}
+						data-type={notice.type}
+						role={notice.type === 'error' ? 'alert' : 'status'}
+					>
+						<NoticeIcon type={notice.type} />
+						<span>{notice.message}</span>
+						{notice.type === 'info' && !user && (
+							<Link href="/auth/login">{t('notices.loginAction')}</Link>
+						)}
 					</div>
-					<div className={styles.previewFooter}>
-						<span>{t('preview.directEdit')}</span>
-						<span>{t('preview.dropImage')}</span>
-						<span>{t('preview.highResolution')}</span>
-					</div>
-				</section>
-			</div>
+				)}
+
+				<div className={styles.previewStage}>
+					<div className={styles.stageGlow} aria-hidden />
+					<CardCanvas
+						ref={activeSvg}
+						{...canvasProps}
+						face={editor.activeFace}
+						mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.activeFace)}
+						mseTextColors={resolveMseTextColors(selectedMseTemplate, editor.activeFace)}
+						onFieldChange={handleFieldChange}
+						onArtworkChange={handleArtworkChange}
+					/>
+				</div>
+			</section>
 
 			<div className={styles.hiddenRenders} aria-hidden="true">
 				<CardCanvas

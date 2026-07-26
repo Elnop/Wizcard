@@ -3,61 +3,30 @@
  * pas de dégradé local. Il avait le sien, ce qui le faisait lire comme une app
  * à part au milieu du site.
  *
- * La page occupe exactement la hauteur du viewport et ne défile pas : barre
- * d'outils en haut, atelier qui prend tout le reste. Une colonne flex plutôt
- * qu'une hauteur calculée sur une constante — l'ancien
- * `calc(100vh - navbar - 132px)` codait en dur la hauteur de la barre et
- * dérivait dès qu'elle changeait (elle passe sur deux lignes sous 1100px).
+ * Atelier plein écran, bord à bord : la page EST la grille à deux colonnes, sans
+ * marge ni gouttière. La sidebar touche donc le haut et le bord gauche, ce qui
+ * impose que plus rien ne s'étende au-dessus d'elle — la barre d'outils est
+ * passée dans la colonne de droite (cf. CardEditorStudio.tsx).
  */
 .page {
 	position: relative;
-	display: flex;
-	flex-direction: column;
-	height: calc(100vh - var(--navbar-height));
-	padding: 1rem;
-	gap: 0.75rem;
-	/* Largeur commune de la barre d'outils, du bandeau et de l'atelier. Héritée
-	   plutôt que répétée : la barre vit dans un autre module CSS et ne peut pas
-	   être ciblée d'ici, elle resterait donc bornée pendant que l'atelier
-	   s'élargit au-delà de 1680px. */
-	--studio-max-width: 1680px;
-}
-
-@media (min-width: 1680px) {
-	.page {
-		--studio-max-width: none;
-	}
-}
-
-.workspace {
 	display: grid;
 	grid-template-columns: minmax(400px, 460px) minmax(0, 1fr);
-	gap: 1rem;
-	width: 100%;
-	max-width: var(--studio-max-width);
-	/* Prend toute la hauteur restante sous la barre d'outils. `min-height: 0` est
-	   indispensable : sans lui un élément flex ne peut pas rétrécir sous la
-	   taille de son contenu, et la sidebar déborderait au lieu de faire défiler
-	   son panneau. */
-	flex: 1;
-	min-height: 0;
-	margin-inline: auto;
+	/* `min-height: 0` sur les pistes est indispensable : sans lui une piste ne
+	   peut pas rétrécir sous la taille de son contenu, et la sidebar déborderait
+	   au lieu de faire défiler son panneau. */
+	grid-template-rows: minmax(0, 1fr);
+	height: calc(100vh - var(--navbar-height));
 }
 
+/* Séparateurs : sans gouttière, ce sont les bordures qui découpent les zones. */
 .notice {
 	display: flex;
 	align-items: center;
 	gap: 0.6rem;
-	width: 100%;
-	max-width: var(--studio-max-width);
 	flex-shrink: 0;
-	margin-inline: auto;
-	padding: 10px 14px;
-	border: 1px solid var(--border);
-	border-radius: 10px;
-	background: var(--glass-bg);
-	backdrop-filter: blur(var(--glass-blur));
-	-webkit-backdrop-filter: blur(var(--glass-blur));
+	padding: 10px 16px;
+	border-bottom: 1px solid var(--border);
 	color: var(--foreground);
 	font-size: var(--text-sm);
 }
@@ -85,17 +54,19 @@
 	white-space: nowrap;
 }
 
-/* Même chrome que .section des réglages : verre, bordure or discrète, r=14. */
+/* Sans fond ni cadre : la carte se détache directement sur le motif global, et
+   c'est elle l'objet de la page — un panneau autour ne faisait que la boîter. */
 .previewColumn {
 	display: flex;
 	min-width: 0;
+	min-height: 0;
 	flex-direction: column;
 	overflow: hidden;
-	border: 1px solid var(--glass-border);
-	border-radius: 14px;
-	background: var(--glass-bg);
-	backdrop-filter: blur(var(--glass-blur));
-	-webkit-backdrop-filter: blur(var(--glass-blur));
+	/* Conteneur nommé sur lequel la barre d'outils cale ses ruptures : sa largeur
+	   n'est plus celle du viewport depuis qu'elle vit dans cette colonne.
+	   `inline-size` et non `size` — borner la hauteur ici casserait le `flex: 1`
+	   de .previewStage. */
+	container: studio-preview / inline-size;
 }
 
 .previewStage {
@@ -141,17 +112,6 @@
 	pointer-events: none;
 }
 
-.previewFooter {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: center;
-	gap: 1.25rem;
-	padding: 10px 18px;
-	border-top: 1px solid var(--border);
-	font-size: var(--text-xs);
-	color: var(--text-muted);
-}
-
 .hiddenRenders {
 	position: fixed;
 	inset-inline-start: -10000px;
@@ -164,32 +124,26 @@
  * En colonne unique, les deux panneaux empilés ne tiennent plus dans un
  * viewport : la page redevient haute et défilante, et chacun reprend une
  * hauteur minimale propre plutôt que de se partager l'écran.
+ *
+ * La carte passe en premier : c'est elle qu'on veut voir en arrivant, et elle
+ * porte désormais la barre d'outils.
  */
 @media (max-width: 960px) {
 	.page {
-		display: block;
+		grid-template-columns: 1fr;
+		grid-template-rows: auto auto;
 		height: auto;
 		min-height: calc(100vh - var(--navbar-height));
-		padding: 1rem 0.75rem;
-	}
-
-	.notice {
-		margin-top: 0.75rem;
-	}
-
-	.workspace {
-		grid-template-columns: 1fr;
-		height: auto;
-		min-height: 0;
-		margin-top: 0.75rem;
 	}
 
 	.previewColumn {
 		grid-row: 1;
 		min-height: 700px;
+		border-bottom: 1px solid var(--border);
 	}
 
-	.workspace > :first-child {
+	.page > :first-child {
+		grid-row: 2;
 		min-height: 660px;
 	}
 }
@@ -206,9 +160,5 @@
 		--stage-padding-y: 44px;
 
 		padding: 22px 12px;
-	}
-
-	.previewFooter {
-		display: none;
 	}
 }

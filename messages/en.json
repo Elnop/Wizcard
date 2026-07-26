@@ -1168,10 +1168,7 @@
 			"editStats": "Edit card statistic"
 		},
 		"preview": {
-			"title": "Card preview",
-			"directEdit": "Direct text editing",
-			"dropImage": "Drop or paste artwork",
-			"highResolution": "3× high-resolution export"
+			"title": "Card preview"
 		},
 		"notices": {
 			"imageError": "The image could not be imported. Use PNG, JPG, WebP, or AVIF under 15 MB.",

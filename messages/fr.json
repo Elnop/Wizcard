@@ -1168,10 +1168,7 @@
 			"editStats": "Modifier une statistique de la carte"
 		},
 		"preview": {
-			"title": "Aperçu de la carte",
-			"directEdit": "Édition directe du texte",
-			"dropImage": "Déposer ou coller une illustration",
-			"highResolution": "Export haute résolution 3×"
+			"title": "Aperçu de la carte"
 		},
 		"notices": {
 			"imageError": "Impossible d'importer l'image. Utilisez un PNG, JPG, WebP ou AVIF de moins de 15 Mo.",
