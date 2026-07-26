@@ -50,11 +50,23 @@ type ContentWidthField = (typeof CONTENT_WIDTH_FIELDS)[number];
 type TrackedField = GeometryField | ContentWidthField;
 
 /** Valeurs BRUTES : un nombre (« 29 ») ou une expression (« { max(30, …) } »). */
+/**
+ * Ancres BRUTES d'une boîte.
+ *
+ * MSE positionne une boîte avec n'importe quelle paire suffisante : `left` +
+ * `width`, mais aussi `left` + `right`, ou `right` + `width` sans `left`.
+ * `right` et `bottom` sont des COORDONNÉES ABSOLUES du bord (pas des marges),
+ * d'où `width = right - left`. Les ignorer revenait à jeter 341 gabarits qui
+ * ancrent à droite et 162 qui ancrent en bas — dont `magic-m15`, notre
+ * référence, dont le champ `name` n'a pas de `width`.
+ */
 export interface RawBox {
 	left?: string;
 	top?: string;
 	width?: string;
 	height?: string;
+	right?: string;
+	bottom?: string;
 }
 
 /** Un sous-bloc `font:` / `symbol font:` : nom et taille, tels qu'écrits dans le style. */
@@ -80,7 +92,7 @@ export interface StyleFile {
 	fontFields: Partial<Record<ContentWidthField, FieldFontInfo>>;
 }
 
-const BOX_KEYS = ['left', 'top', 'width', 'height'] as const;
+const BOX_KEYS = ['left', 'top', 'width', 'height', 'right', 'bottom'] as const;
 
 /**
  * Une ligne de commentaire MSE : `#` en tout début de section (éventuellement
@@ -198,10 +210,18 @@ function handleFontSubBlock(line: string, state: ParseState): boolean {
 	return true;
 }
 
-/** Ligne « left/top/width/height: … » directement sous un champ racine. */
+/**
+ * Motif des lignes d'ancre, DÉRIVÉ de `BOX_KEYS`.
+ *
+ * La liste des clés était auparavant recopiée à la main dans la regex : y
+ * ajouter `right`/`bottom` sans toucher à la regex les rendait invisibles,
+ * `BOX_KEYS` et le motif ayant silencieusement divergé. Une seule source.
+ */
+const BOX_PROPERTY = new RegExp(`^\\t\\t(${BOX_KEYS.join('|')})\\s*:\\s*(.+?)\\s*$`);
+
+/** Ligne « left/top/width/height/right/bottom: … » directement sous un champ racine. */
 function handleBoxProperty(line: string, state: ParseState): void {
-	// eslint-disable-next-line sonarjs/super-linear-regex -- safe: une ligne de style, longueur bornée
-	const prop = /^\t\t(left|top|width|height)\s*:\s*(.+?)\s*$/.exec(line);
+	const prop = BOX_PROPERTY.exec(line);
 	if (!prop) return;
 	if (GEOMETRY_FIELDS.includes(state.current as GeometryField)) {
 		state.fields[state.current as GeometryField]![prop[1] as (typeof BOX_KEYS)[number]] = prop[2];
