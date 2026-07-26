@@ -119,8 +119,19 @@ export function buildFrameChoices(
 		template: null,
 	}));
 
-	const labels = disambiguateLabels(templates);
-	const vendor: FrameChoice[] = templates.map((template) => ({
+	// « Aucun fallback » appliqué à la liste : un cadre vendor sans géométrie
+	// MESURÉE n'est pas proposé. Mieux vaut une bibliothèque plus courte que des
+	// cartes dont le texte tombe à côté — c'est précisément le défaut que ce
+	// chantier corrige. Les gabarits maison ne sont pas concernés : leur
+	// géométrie est dessinée à la main, elle leur appartient.
+	//
+	// Le filtrage précède `disambiguateLabels` : désambiguïser sur l'ensemble
+	// complet collerait un suffixe « · variante » à des cadres dont l'homonyme
+	// n'est même pas affiché.
+	const measured = templates.filter((template) => template.geometry !== null);
+
+	const labels = disambiguateLabels(measured);
+	const vendor: FrameChoice[] = measured.map((template) => ({
 		key: `mse:${template.id}`,
 		kind: sectionKindFor(template),
 		label: labels.get(template.id) ?? template.name,
