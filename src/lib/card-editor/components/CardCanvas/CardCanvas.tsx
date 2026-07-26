@@ -14,6 +14,7 @@ import {
 	splitRulesSegments,
 	wrapCardText,
 } from '@/lib/card-editor/text-layout';
+import { isLandTypeLine } from '@/lib/card-editor/type-line';
 import {
 	CARD_FIELD_MAX_LENGTH,
 	type CardArtworkDraft,
@@ -75,7 +76,11 @@ function resolvePalette(face: CardFaceDraft): FramePalette {
 	};
 	if (colors[0]) return paletteByColor[colors[0]];
 	if (symbols.includes('C')) return PALETTES.artifact;
-	if (/\b(land|terrain)\b/i.test(face.typeLine)) return PALETTES.prismatic;
+	// Terrain. PALETTES n'a pas d'entrée 'land' (contrairement à MseFrameKey, qui
+	// en a une pour les frames MSE) : on retombe sur le doré, le plus proche du
+	// cadre terrain. Les deux chemins s'accordent au moins sur la DÉTECTION, qui
+	// se faisait auparavant par regex de part et d'autre.
+	if (isLandTypeLine(face.typeLine)) return PALETTES.prismatic;
 	return PALETTES.light;
 }
 

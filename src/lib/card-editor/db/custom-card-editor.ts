@@ -81,7 +81,7 @@ function buildRow(
 		source_type: 'user_created',
 		is_public: draft.isPublic,
 		created_by: userId,
-		card_type: getCardTypeForLayout(draft.layoutId),
+		card_type: getCardTypeForLayout(draft.layoutId, face.typeLine),
 		language: draft.language,
 		tags: ['custom:wizcard', ...parseCardTags(draft.tags)],
 		set_code: normalizeSetCode(draft.setCode),

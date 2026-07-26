@@ -84,6 +84,36 @@ export function splitTypeInput(raw: string): string[] {
 }
 
 /**
+ * Teste la présence d'un type/supertype, sur les MOTS de la ligne.
+ *
+ * Les appelants utilisaient des regex du genre `/\b(land|terrain)\b/i` sur la
+ * ligne entière : « Creature — Landwalker » ou un sous-type contenant le mot
+ * déclenchait alors le cas terrain. On compare ici des entrées ventilées, en
+ * ignorant les sous-types — « Elemental Shaman » n'est pas un terrain.
+ */
+export function hasCardType(typeLine: string, type: string): boolean {
+	const { supertypes, types } = parseTypeLine(typeLine, null);
+	const needle = type.toLowerCase();
+	return [...supertypes, ...types].some((entry) => entry.toLowerCase() === needle);
+}
+
+/**
+ * Terrain ? Accepte l'anglais et le français, la saisie n'étant pas contrainte
+ * à une langue.
+ */
+export function isLandTypeLine(typeLine: string): boolean {
+	return hasCardType(typeLine, 'land') || hasCardType(typeLine, 'terrain');
+}
+
+/**
+ * Jeton ? Se lit sur le SUPERTYPE (« Token Creature — Soldier »), pas sur le
+ * layout : on peut dessiner un jeton avec n'importe quel gabarit.
+ */
+export function isTokenTypeLine(typeLine: string): boolean {
+	return hasCardType(typeLine, 'token') || hasCardType(typeLine, 'jeton');
+}
+
+/**
  * Normalise la casse sur le vocabulaire officiel.
  *
  * « human » saisi à la main devient « Human », pour que la ligne composée

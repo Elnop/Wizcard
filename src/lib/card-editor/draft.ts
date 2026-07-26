@@ -1,3 +1,4 @@
+import { isTokenTypeLine } from './type-line';
 import {
 	DEFAULT_FRAME_TEMPLATE_ID,
 	type CardEditorPayload,
@@ -90,7 +91,17 @@ export function normalizeSetCode(value: string): string {
 		.toUpperCase();
 }
 
-export function getCardTypeForLayout(layoutId: CardLayoutId): 'card' | 'token' {
+/**
+ * card_type stocké en base ('card' | 'token'), qui pilote le filtrage côté
+ * recherche et collection.
+ *
+ * Le layout ne suffit pas : un jeton se déclare d'abord par son SUPERTYPE
+ * (« Token Creature — Soldier »), et rien n'oblige à lui donner le gabarit
+ * « token » — on peut dessiner un jeton sur un cadre classique. À l'inverse, le
+ * gabarit token reste un indice valable quand la ligne de type est vide.
+ */
+export function getCardTypeForLayout(layoutId: CardLayoutId, typeLine = ''): 'card' | 'token' {
+	if (isTokenTypeLine(typeLine)) return 'token';
 	return layoutId === 'token' ? 'token' : 'card';
 }
 

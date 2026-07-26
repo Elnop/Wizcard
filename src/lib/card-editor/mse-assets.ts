@@ -8,6 +8,7 @@ import {
 } from '@/lib/supabase/queries/card-templates';
 import type { CardFaceDraft, CardLayoutId, FrameStyleId } from './types';
 import { getManaSymbols } from './text-layout';
+import { isLandTypeLine } from './type-line';
 
 export type MseFrameKey = Exclude<FrameStyleId, 'auto'> | 'land';
 
@@ -133,7 +134,7 @@ function resolveAutomaticFrame(face: CardFaceDraft): MseFrameKey {
 	};
 	if (colors[0]) return frameByColor[colors[0]];
 	if (symbols.includes('C')) return 'artifact';
-	if (/\b(land|terrain)\b/i.test(face.typeLine)) return 'land';
+	if (isLandTypeLine(face.typeLine)) return 'land';
 	return 'light';
 }
 
