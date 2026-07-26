@@ -124,8 +124,14 @@ function evaluateDefinition(
 	depth: number,
 	locals: Locals
 ): Value {
+	// Garde-fou (cf. `evaluate`) : chaque entrée dans une définition doit
+	// incrémenter `depth`, curry ou pas — sans quoi une chaîne pathologique
+	// « nom := nom@(...) » (jamais vue dans le corpus réel, mais rien ne
+	// l'exclut structurellement) boucle jusqu'au débordement de la pile JS
+	// plutôt que de lever Unresolved proprement.
+	if (depth > 32) throw new Unresolved('profondeur d’évaluation dépassée');
 	const body = parseExpression(definition.body);
-	if (body.type === 'curry') return evaluateCurry(body, args, named, scope, depth, locals);
+	if (body.type === 'curry') return evaluateCurry(body, args, named, scope, depth + 1, locals);
 	const callLocals = bindArguments(definition, args, named, scope, depth);
 	return evaluate(body, scope, depth + 1, callLocals);
 }
