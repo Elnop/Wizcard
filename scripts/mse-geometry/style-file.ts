@@ -83,16 +83,32 @@ export interface StyleFile {
 const BOX_KEYS = ['left', 'top', 'width', 'height'] as const;
 
 /**
+ * Une ligne de commentaire MSE : `#` en tout début de section (éventuellement
+ * précédé d'espaces/tabulations pour les commentaires imbriqués dans un
+ * champ). MSE les utilise pour titrer des groupes de champs SANS les
+ * indenter d'une tabulation, ex. `############# Background stuff` juste après
+ * `card style:` — cf. `magic-m15-saga.mse-style`. Une telle ligne ne doit
+ * jamais être confondue avec l'ouverture de la section suivante (`extra card
+ * style:`, `styling style:`), qui n'est ni vide ni un commentaire.
+ */
+function isCommentLine(line: string): boolean {
+	return /^\s*#/.test(line);
+}
+
+/**
  * Découpe le bloc `card style:` : ses enfants sont indentés d'UNE tabulation,
- * leurs propriétés de deux. On s'arrête à la première ligne non indentée, qui
- * ouvre la section suivante du fichier.
+ * leurs propriétés de deux. On s'arrête à la première ligne non indentée QUI
+ * N'EST PAS un commentaire — un commentaire en colonne 0 (titre de section,
+ * cf. `isCommentLine`) est ignoré mais ne termine pas le bloc, sans quoi un
+ * style qui commente ainsi ses sections perdrait TOUS ses champs (bug
+ * constaté sur `magic-m15-saga.mse-style` : bloc capturé vide).
  */
 function cardStyleBlock(lines: string[]): string[] {
 	const start = lines.findIndex((line) => line.trimEnd().startsWith('card style:'));
 	if (start === -1) return [];
 	const block: string[] = [];
 	for (const line of lines.slice(start + 1)) {
-		if (line.trim() && !line.startsWith('\t')) break;
+		if (line.trim() && !line.startsWith('\t') && !isCommentLine(line)) break;
 		block.push(line);
 	}
 	return block;
