@@ -1,5 +1,14 @@
 export const DEFAULT_FRAME_TEMPLATE_ID = 'cardconjurer-m15-regular';
 
+/**
+ * Gabarit « maison » : la carte est rendue avec les cadres intégrés de Wizcard,
+ * sans cadre vendor. Ce n'est PAS un id du catalogue — le préfixe `wizcard:` est
+ * réservé (aucun id du catalogue ne contient « : »), ce qui garantit que
+ * `useSelectedMseTemplate` ne le résoudra jamais et que `resolveMseFramePath`
+ * retombera sur le rendu intégré.
+ */
+export const HOUSE_FRAME_TEMPLATE_ID = 'wizcard:house';
+
 export const CARD_LAYOUT_IDS = [
 	'arcana',
 	'modern',
