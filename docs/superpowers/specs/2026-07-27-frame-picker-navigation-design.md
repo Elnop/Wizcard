@@ -47,25 +47,67 @@ On ne réinterprète donc pas la source, on l'expose.
 
 ## Modèle de données
 
-Trois colonnes sur `card_templates`, remplies à l'ingestion par
-`scripts/card-assets/upload-templates.ts`.
+### `kind` est retiré
 
-| Colonne           | Type     | Contenu                                                         |
-| ----------------- | -------- | --------------------------------------------------------------- |
-| `installer_group` | `text`   | Le chemin BRUT, tel que déclaré : `magic/m15 style/split cards` |
-| `position_hint`   | `text`   | L'ordre déclaré : `010`, `301`, `907`                           |
-| `traits`          | `text[]` | Segments 3+ normalisés : `['split']`                            |
+`kind` n'est pas de la donnée : c'est une cascade de regex sur `id + name`
+(`generate-manifests.mjs:112`) dont le résultat dépend de l'ordre des tests. L'audit sur
+les 109 cadres montre trois défauts rédhibitoires :
 
-### Pourquoi le chemin brut
+- **Faux positifs.** `magic-planeshifted` est classé `oversized` parce que `/planar/`
+  matche son nom « **Planar** Chaos Timeshifts » — alors que son chemin déclaré dit
+  `magic/Planeshifted/Normal Cards`, soit des cartes normales. `magic-m15-bigtext` est
+  classé `packaging` parce que `/box/` matche « After M15 with Taller Text**box** ». Ces
+  deux catégories ne comptent qu'un cadre chacune, et **les deux sont des erreurs**.
+- **Confusion flip / double-face.** La regex `/double|transform|flip|meld/` range les flip
+  cards avec les DFC. Ce sont deux mécaniques distinctes : un flip a **une seule face**
+  qu'on pivote, une DFC en a deux imprimées. Le corpus les sépare correctement
+  (`magic/Future/flip cards` vs `magic/new style/double faced`) ; c'est `classify` qui les
+  mélange.
+- **Un fourre-tout de 69 cadres sur 109** — le regroupement principal ne regroupe rien.
 
-`installer_group` est stocké **entier et non découpé**. La famille et les traits sont des
-projections de ce chemin, calculées à la lecture. Découper à l'ingestion perdrait
-l'information de hiérarchie (`magic/m15 style/planeswalkers/planeshifted` a 4 niveaux, un
-autre en a 2) et rendrait toute correction dépendante d'un nouveau passage `card-assets`.
+`kind` n'est lu que par le studio (vérifié : aucun consommateur ailleurs) et ne pilote
+aucun rendu — la géométrie vient de `geometry`. Il est donc remplacé, pas migré.
 
-`traits` est dénormalisé en plus du chemin, parce qu'il doit être filtrable et
-cherchable ; c'est une commodité de requête, pas une seconde source de vérité — il est
-toujours re-dérivable de `installer_group`.
+**Un point d'attention au retrait** : `layoutForTemplate` / `layoutForMseTemplate` lisent
+`kind` pour dériver `layoutId`, qui sert encore à savoir qu'un planeswalker saisit une
+loyauté plutôt qu'une force/endurance (`DirectEditingLayer`). Ces deux fonctions doivent
+lire `is_planeswalker` / `is_token` à la place. C'est le seul comportement fonctionnel qui
+dépende encore de `kind`, et il doit être re-vérifié dans le navigateur.
+
+### Ce qui le remplace
+
+| Colonne           | Type      | Contenu                                                         |
+| ----------------- | --------- | --------------------------------------------------------------- |
+| `installer_group` | `text`    | Le chemin BRUT, tel que déclaré : `magic/m15 style/split cards` |
+| `position_hint`   | `text`    | L'ordre déclaré : `010`, `301`, `907`                           |
+| `is_*` (36)       | `boolean` | Une par mot-clé **documenté** (cf. ci-dessous)                  |
+| `tags`            | `text[]`  | Les mots-clés non documentés                                    |
+
+**Une colonne par mot-clé documenté.** Un mot-clé est « documenté » quand une source du
+corpus l'atteste — le chemin déclaré **ou** l'id du style. Les deux sont de la donnée
+source ; n'en retenir qu'une perd des cadres, ce qui a été vérifié :
+
+| Cadre                                 | Chemin déclaré | Sauvé par l'id    |
+| ------------------------------------- | -------------- | ----------------- |
+| `magic-m15-token-invention`           | `devoid cards` | `is_token`        |
+| `magic-m15-scroll-demon-planeswalker` | `normal cards` | `is_planeswalker` |
+| `magic-m15-outlaws-planeswalker`      | `normal cards` | `is_planeswalker` |
+
+`magic-m15-token-invention` porte alors `is_token` **et** `is_devoid` — les deux sources
+s'ajoutent au lieu de s'écraser. Un cadre à la fois planeswalker et double-face porte les
+deux colonnes, ce que `kind`, mono-valué, rendait impossible.
+
+Les 36 colonnes vont de `is_planeswalker` (21 cadres) à `is_greater_morphling` (1). Pas de
+`is_oversized` ni `is_packaging` : ces catégories n'existent que par les deux faux
+positifs ci-dessus.
+
+### Pourquoi le chemin brut est conservé en plus
+
+`installer_group` est stocké **entier et non découpé**, en plus des colonnes qu'on en
+dérive. La famille est une projection de ce chemin, calculée à la lecture. Le découper à
+l'ingestion perdrait la hiérarchie (`magic/m15 style/planeswalkers/planeshifted` a 4
+niveaux, un autre en a 2) et rendrait toute correction dépendante d'un nouveau passage
+`card-assets`. C'est le filet : tout est re-dérivable.
 
 ### Ce qui n'est PAS stocké
 
@@ -77,30 +119,37 @@ toujours re-dérivable de `installer_group`.
   « custom » sinon. C'est le seul jugement de valeur du design ; il reste en code, dans
   une table explicite, pour être corrigeable en un commit sans toucher la prod.
 
-### Normalisation des traits
+### Normalisation des mots-clés
 
 Les segments déclarés comportent des doublons d'écriture : `token`/`tokens`,
 `promotional`/`promo cards`/`promo style`, `gods`/`god cards`,
-`planeswalkers`/`planeswalker cards`. Sans normalisation le select afficherait trois
-entrées « promo ».
+`planeswalkers`/`planeswalker cards`. Sans normalisation on créerait trois colonnes pour
+« promo ».
 
 Règle : minuscules, suppression du suffixe ` cards`, singularisation, puis table de
 synonymes explicite. Le segment `normal cards` (22 occurrences) est **écarté** : il ne
 distingue rien.
+
+`flip` et `double_faced` restent **distincts** — mécaniques différentes, cf. ci-dessus.
 
 ## Facettes exposées
 
 Six `<select>` dans une modale de filtres, alignée sur le `FilterModal` existant de
 l'app.
 
-| Champ               | Source                        | Cardinalité            |
-| ------------------- | ----------------------------- | ---------------------- |
-| Famille             | `installer_group`, 2e segment | 30 valeurs             |
-| Type                | `kind`                        | 7 valeurs              |
-| Origine             | dérivé de la famille          | 2 valeurs (78 / 31)    |
-| Trait               | `traits`                      | 39 après normalisation |
-| Orientation         | `orientation`                 | 2 valeurs (91 / 18)    |
-| Compatible créature | `geometry.boxes.pt`           | 2 valeurs (74 / 35)    |
+| Champ               | Source                        | Cardinalité           |
+| ------------------- | ----------------------------- | --------------------- |
+| Famille             | `installer_group`, 2e segment | 30 valeurs            |
+| Mot-clé             | les 36 colonnes `is_*`        | 36 valeurs            |
+| Origine             | dérivé de la famille          | 2 valeurs (78 / 31)   |
+| Orientation         | `orientation`                 | 2 valeurs (91 / 18)   |
+| Compatible créature | `geometry.boxes.pt`           | 2 valeurs (74 / 35)   |
+| Tag                 | `tags`                        | traîne non documentée |
+
+Il n'y a plus de champ « Type » : `kind` étant retiré, le type de carte est porté par les
+colonnes `is_planeswalker`, `is_split`, `is_token`, `is_double_faced`, `is_flip`, qui
+figurent parmi les 36 mots-clés. Un cadre peut donc apparaître sous plusieurs types à la
+fois — ce que le champ mono-valué interdisait.
 
 **Les 30 familles sont listées à plat**, sans regroupement, telles que déclarées. 24
 d'entre elles ne comptent qu'un ou deux cadres ; chaque option porte son compte
@@ -125,10 +174,11 @@ supprimée.
   remplacement du bouton « Afficher 30 de plus ».
 - **Vignettes agrandies** en grille. Sur une bibliothèque de cadres, l'aperçu _est_
   l'information : « Buttock1234 style » ne dit rien, son image dit tout.
-- **Badges** sur la vignette : famille · type · traits.
+- **Badges** sur la vignette : famille · mots-clés actifs.
 - **Libellés d'origine conservés**, avec `short_name` en sous-titre — c'est lui qui
   distingue les 4 « After 8th edition ».
-- **Recherche élargie** à `name` + `short_name` + `id` + `traits` + `installer_group`.
+- **Recherche élargie** à `name` + `short_name` + `id` + mots-clés + `tags` +
+  `installer_group`.
   Taper « m15 » doit sortir les 22 cadres M15 ; aujourd'hui la recherche ne porte que sur
   le libellé affiché et n'en sort presque aucun.
 
@@ -143,9 +193,10 @@ hauteur d'écran.
 | Fichier                                      | Rôle                                           |
 | -------------------------------------------- | ---------------------------------------------- |
 | `supabase/migrations/2026…_frame_facets.sql` | Les 3 colonnes + index                         |
-| `scripts/card-assets/frame-facets.ts`        | Parse `style`, normalise les traits (pur)      |
+| `scripts/card-assets/frame-facets.ts`        | Parse `style`, normalise les mots-clés (pur)   |
+| `scripts/card-assets/generate-manifests.mjs` | `classify()` supprimé (remplacé par ci-dessus) |
 | `scripts/card-assets/upload-templates.ts`    | Remplit les colonnes à l'ingestion             |
-| `src/lib/card-editor/frame-facets.ts`        | Projections lecture : famille, origine, traits |
+| `src/lib/card-editor/frame-facets.ts`        | Projections lecture : famille, origine         |
 | `src/lib/card-editor/frame-choices.ts`       | Tri par `position_hint`, filtrage              |
 | `…/MseTemplatePicker/FrameFilterModal.tsx`   | La modale de filtres                           |
 | `…/MseTemplatePicker/MseTemplatePicker.tsx`  | Grille, badges, scroll infini                  |
