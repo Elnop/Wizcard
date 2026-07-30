@@ -23,7 +23,23 @@ const FRAME_FILE_STEMS = {
 	ember: ['rcard', 'redcard', 'rframe', 'redframe'],
 	grove: ['gcard', 'greencard', 'gframe', 'greenframe'],
 	prismatic: ['mcard', 'goldcard', 'multicard', 'mframe', 'goldframe'],
+	// `ccard` reste en repli : 1 gabarit du corpus fournit ccard SANS acard, et
+	// le retirer le laisserait sans cadre artefact. `acard` d'abord, donc il
+	// gagne partout où les deux existent (96 gabarits).
 	artifact: ['acard', 'ccard', 'artifactcard', 'colorlesscard', 'aframe', 'cframe'],
+	// Incolore, distinct de l'artefact : `ccard` est un gris-brun, `acard` un
+	// bleu-métal. `resolveAutomaticFrame` renvoyait `artifact` pour du mana {C},
+	// qui est pourtant INCOLORE — cette clé lui donne la bonne cible.
+	colorless: ['ccard', 'colorlesscard', 'cframe'],
+	// Terrains : même code couleur que ci-dessus, suffixé `l`. Présents sur 73 à
+	// 82 des 109 gabarits proposés, en .jpg comme en .png.
+	'land-light': ['wlcard'],
+	'land-tide': ['ulcard'],
+	'land-void': ['blcard'],
+	'land-ember': ['rlcard'],
+	'land-grove': ['glcard'],
+	'land-prismatic': ['mlcard'],
+	'land-colorless': ['clcard'],
 };
 const frameColorCache = new Map();
 
@@ -110,7 +126,7 @@ function numericValue(source, key) {
 	return Number.isFinite(value) ? value : null;
 }
 
-async function resolveFramePaths(source, styleDirectory) {
+async function listCandidateImages(source, styleDirectory) {
 	const referencedDirectories = [...source.matchAll(/["']\/(.+?\/)["']/g)]
 		.map((match) => match[1])
 		.filter((relative) => !relative.includes('..'))
@@ -131,6 +147,12 @@ async function resolveFramePaths(source, styleDirectory) {
 		}
 	}
 
+	return available;
+}
+
+async function resolveFramePaths(source, styleDirectory) {
+	const available = await listCandidateImages(source, styleDirectory);
+
 	return Object.fromEntries(
 		Object.entries(FRAME_FILE_STEMS).flatMap(([frame, stems]) => {
 			const match = available.find((file) => {
@@ -143,6 +165,35 @@ async function resolveFramePaths(source, styleDirectory) {
 			return match ? [[frame, normalize(path.relative(PUBLIC_ROOT, match))]] : [];
 		})
 	);
+}
+
+/**
+ * Masques de fondu bicolore, s'ils existent.
+ *
+ * Ce ne sont PAS des cadres : ce sont des masques quasi-binaires (mesuré : 0,2 à
+ * 0,4 % de pixels intermédiaires) que MSE combine avec DEUX cadres colorés, via
+ * masked_blend(mask, dark, light). Peint seul, un masque donne une carte
+ * blanche — d'où leur stockage à part de framePaths.
+ *
+ * Seuls les masques `_card` sont retenus : le corpus en fournit aussi pour la
+ * P/T, la ligne de type, la zone de texte et le sceau, qui masquent des
+ * sous-éléments hors de ce chantier.
+ */
+const BLEND_MASK_FILES = {
+	multicolor: 'multicolor_blend_card.png',
+	hybrid: 'hybrid_blend_card.png',
+	artifact: 'artifact_blend_card.png',
+};
+
+async function resolveBlendMasks(source, styleDirectory) {
+	const available = await listCandidateImages(source, styleDirectory);
+	const found = Object.fromEntries(
+		Object.entries(BLEND_MASK_FILES).flatMap(([key, file]) => {
+			const match = available.find((path_) => path_.toLowerCase().endsWith(`/${file}`));
+			return match ? [[key, normalize(path.relative(PUBLIC_ROOT, match))]] : [];
+		})
+	);
+	return Object.keys(found).length > 0 ? found : null;
 }
 
 async function buildTemplate(styleDirectory) {
@@ -215,6 +266,7 @@ async function buildTemplate(styleDirectory) {
 		framePaths,
 		frameTextColors,
 		sampleTextColors,
+		blendMasks: await resolveBlendMasks(source, styleDirectory),
 		renderMode: Object.keys(framePaths).length >= 3 ? 'frame' : 'sample',
 		version: topLevelValue(source, 'version'),
 		source: 'mse',
@@ -269,6 +321,7 @@ async function buildCardConjurerTemplate(definition) {
 		framePaths,
 		frameTextColors,
 		sampleTextColors: frameTextColors.light ?? null,
+		blendMasks: null,
 		renderMode: 'frame',
 		version: CARD_CONJURER_VERSION,
 		source: 'cardconjurer',
