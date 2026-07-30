@@ -17,22 +17,36 @@ const dashIndex = typeLine.search(/[—-]/);
 La classe `[—-]` contient le tiret cadratin **et** le trait d'union. Trois défauts en
 découlent, tous reproduits en exécutant la fonction :
 
-| Entrée                  | Résultat actuel                                       | Attendu                                             |
-| ----------------------- | ----------------------------------------------------- | --------------------------------------------------- |
-| `Non-Creature Artifact` | types `["Non"]`, sous-types `["Creature","Artifact"]` | types `["Artifact"]`, sous-types `["Non-Creature"]` |
-| `Terrain Non-Base`      | types `["Terrain","Non"]`, sous-types `["Base"]`      | `Non-Base` reste entier                             |
-| `Humain Sorcier`        | types `["Humain","Sorcier"]`, sous-types vides        | sous-types `["Humain","Sorcier"]`                   |
+Le vocabulaire officiel ne contient que **deux** entrées à trait d'union, relevées sur
+l'API Scryfall (339 types de créature, 18 types de terrain, 19 types de carte,
+7 supertypes) :
 
-Le premier cas est le plus grave : un trait d'union **à gauche** du tiret cadratin déchire
-la ligne en deux au mauvais endroit. Le troisième est celui qu'on observe dans le studio —
-des sous-types tapés seuls restent bloqués dans le champ Types.
+- **`Assembly-Worker`** — type de créature (_Urza's Battle Thopter_, _Self-Assembler_) ;
+- **`Power-Plant`** — type de terrain (_Urza's Power-Plant_).
 
-**Ce qui n'est PAS un bug**, contrairement à une lecture rapide : `Blood-Soaked Zombie`
-donne bien deux sous-types `["Blood-Soaked","Zombie"]`, et c'est juste — les sous-types
-sont découpés sur les espaces parce que ce sont des jetons indépendants (`Artifact
-Creature — Blood-Soaked Zombie` porte réellement les deux). Seul le trait d'union INTERNE
-à un jeton (`Blood-Soaked`, `Will-o'-the-Wisp`) doit être préservé, et c'est ce que le
-correctif garantit.
+Aucun trait d'union dans `card-types` ni dans `supertypes`. Le trait d'union n'apparaît
+donc **jamais** comme séparateur, et toujours à l'intérieur d'un sous-type.
+
+| Entrée               | Résultat actuel                                | Attendu                               |
+| -------------------- | ---------------------------------------------- | ------------------------------------- |
+| `Assembly-Worker`    | types `["Assembly"]`, sous-types `["Worker"]`  | sous-types `["Assembly-Worker"]`      |
+| `Power-Plant`        | types `["Power"]`, sous-types `["Plant"]`      | sous-types `["Power-Plant"]`          |
+| `Urza's Power-Plant` | types `["Urza's","Power"]`, s.-t. `["Plant"]`  | sous-types `["Urza's","Power-Plant"]` |
+| `Humain Sorcier`     | types `["Humain","Sorcier"]`, sous-types vides | sous-types `["Humain","Sorcier"]`     |
+
+Les trois premiers cassent avec des sous-types **réellement imprimés** : saisir
+`Assembly-Worker` dans le champ Sous-types produit deux tags, `Assembly` et `Worker`. Le
+quatrième est celui qu'on observe dans le studio — des sous-types tapés seuls restent
+bloqués dans le champ Types.
+
+Deux précisions sur ce qui n'est **pas** en cause :
+
+- `Artifact Creature — Assembly-Worker` fonctionne aujourd'hui **par accident** : le tiret
+  cadratin précède le trait d'union, donc `search` tombe sur le bon. Le défaut se
+  manifeste dès que le trait d'union est à gauche, ou qu'il n'y a pas de tiret du tout.
+- Un sous-type composé de plusieurs MOTS (`Urza's Power-Plant`) donne bien deux entrées :
+  ce sont deux sous-types distincts, découpés sur les espaces. Seul le trait d'union
+  **interne à un mot** doit être préservé.
 
 Reproduction dans le navigateur : saisir « Humain » puis « Sorcier » dans Sous-types
 produit deux tags dans **Types**, et la ligne rendue est `Humain Sorcier` au lieu de
@@ -61,10 +75,9 @@ const dashIndex = typeLine.search(/[—–]/);
 ```
 
 Tiret cadratin (`—`) et demi-cadratin (`–`) seulement. `composeTypeLine` n'écrit jamais
-que `—` ; le repli sur `-` était censé rattraper une saisie manuelle, mais il casse plus
-de cartes réelles qu'il n'en sauve — les traits d'union sont fréquents dans les sous-types
-imprimés (`Blood-Soaked Zombie`, `Will-o'-the-Wisp`, `Ali-Baba`) et ne servent jamais de
-séparateur.
+que `—` ; le repli sur `-` était censé rattraper une saisie manuelle, mais il casse des
+sous-types officiels (`Assembly-Worker`, `Power-Plant`) sans jamais servir de séparateur
+dans le vocabulaire réel.
 
 Le demi-cadratin est conservé : c'est une confusion de saisie plausible, et aucun type
 Magic ne le contient.
@@ -81,11 +94,12 @@ C'est ce qui fait revenir `Humain Sorcier` dans le champ Sous-types.
 
 ### Le piège du vocabulaire anglais
 
-Vérifié en exécutant la règle : `Terrain Non-Base` (sans tiret, en français) donne
-`subtypes: ["Terrain","Non-Base"]`, parce que « Terrain » est **absent du vocabulaire
-Scryfall, qui est anglais**. `isLandTypeLine` ne trouverait alors plus rien dans
-supertypes+types et **le cadre de terrain serait perdu** — une régression réelle, sur le
-chemin même que ce studio doit peindre juste.
+Vérifié en exécutant la règle : `Terrain` seul, sans tiret, donne
+`subtypes: ["Terrain"]` — parce que « Terrain » est **absent du vocabulaire Scryfall, qui
+est anglais**. Idem pour `Créature`, `Enchantement`, `Terrain de base`.
+`isLandTypeLine` ne trouverait alors plus rien dans supertypes+types et **le cadre de
+terrain serait perdu** — une régression réelle, sur le chemin même que ce studio doit
+peindre juste, et déclenchée par la saisie française la plus banale.
 
 Le correctif : `hasCardType` ne se limite pas à supertypes+types, mais cherche aussi dans
 `subtypes` **quand la ligne n'a pas de tiret**. Sans tiret, la distinction type/sous-type
@@ -164,7 +178,7 @@ juste sans vocabulaire — et il l'est : sans vocabulaire tout part à gauche da
 et le mot cherché (`land`, `terrain`, `token`, `jeton`) s'y trouve.
 
 Les deux régimes ont été exécutés sur les cas limites. Terrain reconnu :
-`Terrain`, `Terrain Non-Base`, `Terrain de base`, `Basic Land`, `Land`,
+`Terrain`, `Terrain de base`, `Basic Land`, `Land`, `Land — Urza's Power-Plant`,
 `Legendary Land — Urza's Saga`. Terrain **non** reconnu, comme il se doit :
 `Creature — Elemental Shaman`, `Creature — Landwalker`, `Creature — Land Golem`,
 `Enchantment`. Jeton reconnu : `Token Creature — Soldier`, `Jeton` ; non reconnu :
@@ -182,7 +196,9 @@ Pas de framework de test dans ce dépôt. Les portes :
 - Navigateur, dans le studio :
   - saisir « Humain » puis « Sorcier » dans **Sous-types** → deux tags dans Sous-types,
     ligne rendue `Humain Sorcier` ; ajouter « Créature » dans Types → `Créature — Humain Sorcier`
-  - saisir un sous-type composé « Blood-Soaked Zombie » → **un** tag, pas deux
+  - saisir « Assembly-Worker » dans **Sous-types** → **un** tag, pas `Assembly` + `Worker`
+  - saisir « Power-Plant » → **un** tag ; « Urza's Power-Plant » → **deux** tags
+    (`Urza's` et `Power-Plant`), le découpage sur les espaces étant correct
   - « Légendaire » + « Créature » → couronne légendaire toujours peinte
   - une ligne « Terrain » → cadre de terrain toujours choisi
 
