@@ -140,9 +140,8 @@ export function buildFrameChoices(templates: MseTemplate[]): FrameChoice[] {
 }
 
 /**
- * Géométrie déduite du cadre. Reprend la règle de `layoutForMseTemplate`, mais
- * sans dépendre de mse-assets (qui est un module client) : ce fichier reste pur
- * pour rester lisible et réutilisable.
+ * Géométrie déduite du cadre. Ne dépend pas de mse-assets (qui est un module
+ * client) : ce fichier reste pur pour rester lisible et réutilisable.
  */
 function layoutForTemplate(template: MseTemplate): CardLayoutId {
 	if (template.layoutId && template.layoutId in CARD_LAYOUTS) return template.layoutId;

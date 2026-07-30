@@ -51,7 +51,14 @@ export function MseTemplatePicker({
 		[templates]
 	);
 	const choices = useMemo(() => buildFrameChoices(renderableTemplates), [renderableTemplates]);
-	const tagCounts = useMemo(() => countTags(renderableTemplates), [renderableTemplates]);
+	// La modale de filtres et le calcul de rareté des badges DOIVENT porter sur la
+	// même population que la grille (les `choices`), pas sur `renderableTemplates`
+	// (206 lignes) : buildFrameChoices en retire encore celles sans géométrie
+	// mesurée (-> 109). Sans ce filtre partagé, la modale propose des familles et
+	// mots-clés dont la grille ne peut jamais rendre un seul résultat — exactement
+	// l'impasse que cette refonte doit supprimer.
+	const filterableTemplates = useMemo(() => choices.map((choice) => choice.template), [choices]);
+	const tagCounts = useMemo(() => countTags(filterableTemplates), [filterableTemplates]);
 
 	const filtered = useMemo(() => {
 		const byFilters = applyFrameFilters(choices, filters);
@@ -201,7 +208,7 @@ export function MseTemplatePicker({
 
 			{isFilterOpen && (
 				<FrameFilterModal
-					templates={renderableTemplates}
+					templates={filterableTemplates}
 					initialFilters={filters}
 					onApply={setFilters}
 					onClose={() => setFilterOpen(false)}

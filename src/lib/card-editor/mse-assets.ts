@@ -164,20 +164,6 @@ export function resolveMseTextColors(
 	return template.frameTextColors?.[frame] ?? template.sampleTextColors ?? null;
 }
 
-export function layoutForMseTemplate(template: MseTemplate): CardLayoutId {
-	if (template.layoutId) return template.layoutId;
-	// `kind` est retiré (heuristique regex à faux positifs, cf. le spec). Le type
-	// de carte vient désormais des mots-clés, qui sont CUMULABLES : un gabarit à
-	// la fois planeswalker et double-face porte les deux, ce que `kind`,
-	// mono-valué, ne pouvait pas exprimer. L'ordre des tests fixe donc la
-	// priorité — planeswalker d'abord, parce que c'est lui qui change la saisie
-	// (loyauté au lieu de force/endurance).
-	if (template.tags.includes('planeswalker')) return 'planeswalker';
-	if (template.tags.includes('token')) return 'token';
-	if (template.tags.includes('saga')) return 'saga';
-	return template.orientation === 'landscape' ? 'landscape' : 'arcana';
-}
-
 export function useSelectedMseTemplate(templates: MseTemplate[], templateId: string) {
 	return useMemo(
 		() => templates.find((template) => template.id === templateId),

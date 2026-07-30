@@ -8,8 +8,8 @@ import type { CardLayoutDefinition, CardLayoutId } from './types';
  * a été MESURÉE depuis le corpus MSE (cf. frame-choices.ts). Il ne reste ici
  * qu'une table de correspondance, à deux usages :
  *
- * 1. `layoutForTemplate` / `layoutForMseTemplate` classent un cadre vendor dans
- *    une famille (token, planeswalker, saga…) — `layoutId` est persisté sur le
+ * 1. `layoutForTemplate` (frame-choices.ts) classe un cadre vendor dans une
+ *    famille (token, planeswalker, saga…) — `layoutId` est persisté sur le
  *    brouillon et sert de discriminant de comportement, pas de source de rendu ;
  * 2. `DirectEditingLayer` s'en sert pour savoir qu'un planeswalker saisit une
  *    loyauté plutôt qu'une force/endurance.

@@ -688,6 +688,33 @@ select pg_temp.chk(
   'colonne card_templates.geometry absente ou de mauvais type'
 );
 
+-- Taxonomie déclarée par le corpus MSE (20260727130000), remplace `kind`. Le
+-- studio lit ces trois colonnes pour la bibliothèque de cadres ; leur absence
+-- ferait échouer le chargement du catalogue en silence côté client.
+select pg_temp.chk(
+  'catalog', 'card_templates.installer_group column',
+  exists (select 1 from information_schema.columns
+          where table_schema='public' and table_name='card_templates'
+            and column_name='installer_group' and data_type='text'),
+  'colonne card_templates.installer_group absente ou de mauvais type'
+);
+
+select pg_temp.chk(
+  'catalog', 'card_templates.position_hint column',
+  exists (select 1 from information_schema.columns
+          where table_schema='public' and table_name='card_templates'
+            and column_name='position_hint' and data_type='text'),
+  'colonne card_templates.position_hint absente ou de mauvais type'
+);
+
+select pg_temp.chk(
+  'catalog', 'card_templates.tags column',
+  exists (select 1 from information_schema.columns
+          where table_schema='public' and table_name='card_templates'
+            and column_name='tags' and data_type='ARRAY'),
+  'colonne card_templates.tags absente ou de mauvais type'
+);
+
 -- Colonnes exhaustives (nom + type), source : DB locale à jour.
 with expected(t, col, typ) as (
   values

@@ -27,6 +27,13 @@ comment on column public.card_templates.tags is
 alter table public.card_templates
   drop column if exists kind;
 
+-- `card_templates_browse_idx` (quality, kind, name), créé par 20260726130000,
+-- a été supprimé en cascade par le `drop column kind` ci-dessus. On le
+-- recrée sans `kind` : la colonne qui portait l'index a disparu, pas le besoin
+-- de parcourir par qualité puis par nom.
+create index if not exists card_templates_browse_idx
+  on public.card_templates (quality, name);
+
 -- Le filtre par mot-clé interroge un tableau : index GIN.
 create index if not exists card_templates_tags_idx
   on public.card_templates using gin (tags);
