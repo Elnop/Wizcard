@@ -11,7 +11,17 @@ import type { CardFaceDraft, CardLayoutId, FrameStyleId } from './types';
 import { getManaSymbols } from './text-layout';
 import { isLandTypeLine } from './type-line';
 
-export type MseFrameKey = Exclude<FrameStyleId, 'auto'> | 'land';
+/** Couleur de base d'un cadre : les 7 pastilles de la palette. */
+export type MseColorKey = Exclude<FrameStyleId, 'auto'>;
+
+/**
+ * Clé de cadre. Les terrains préfixent la couleur de base : `land-tide` est le
+ * cadre terrain bleu.
+ *
+ * `land` seul a DISPARU : c'était une clé qu'aucun gabarit ne fournissait, donc
+ * `isLandTypeLine` la renvoyait dans le vide.
+ */
+export type MseFrameKey = MseColorKey | 'colorless' | `land-${MseColorKey | 'colorless'}`;
 
 export interface MseTemplate {
 	id: string;
@@ -31,6 +41,8 @@ export interface MseTemplate {
 	framePaths: Partial<Record<MseFrameKey, string>>;
 	/** Couronnes légendaires par clé de couleur ; null = gabarit incompatible. */
 	crownPaths: Partial<Record<MseFrameKey, string>> | null;
+	/** Masques de fondu bicolore ; null = ce gabarit n'en fournit pas. */
+	blendMasks: Record<string, string> | null;
 	frameTextColors?: Partial<Record<MseFrameKey, MseTextColors>>;
 	sampleTextColors?: MseTextColors | null;
 	renderMode: 'frame' | 'sample';
@@ -87,6 +99,7 @@ function rowToTemplate(row: CardTemplateRow): MseTemplate {
 		assetCount: 0,
 		framePaths: (row.frame_paths ?? {}) as Partial<Record<MseFrameKey, string>>,
 		crownPaths: (row.crown_paths ?? null) as Partial<Record<MseFrameKey, string>> | null,
+		blendMasks: (row.blend_masks ?? null) as Record<string, string> | null,
 		frameTextColors: (row.frame_text_colors ?? {}) as Partial<Record<MseFrameKey, MseTextColors>>,
 		sampleTextColors: (row.sample_text_colors ?? null) as MseTextColors | null,
 		renderMode: row.render_mode as MseTemplate['renderMode'],
@@ -127,20 +140,52 @@ export function useMseTemplateCatalog(): MseCatalogState {
 	return state;
 }
 
-function resolveAutomaticFrame(face: CardFaceDraft): MseFrameKey {
+/** Ordre canonique des couleurs de Magic. Une carte {U}{W} s'imprime blanc-bleu. */
+const WUBRG = ['W', 'U', 'B', 'R', 'G'] as const;
+
+const COLOR_TO_FRAME: Record<string, MseColorKey> = {
+	W: 'light',
+	U: 'tide',
+	B: 'void',
+	R: 'ember',
+	G: 'grove',
+};
+
+/** Couleurs du coût, dans l'ordre WUBRG et non dans l'ordre de saisie. */
+function faceColors(face: CardFaceDraft): string[] {
 	const symbols = getManaSymbols(face.manaCost).join('');
-	const colors = ['W', 'U', 'B', 'R', 'G'].filter((color) => symbols.includes(color));
+	return WUBRG.filter((color) => symbols.includes(color));
+}
+
+function resolveAutomaticFrame(face: CardFaceDraft): MseFrameKey {
+	const colors = faceColors(face);
+	const symbols = getManaSymbols(face.manaCost).join('');
+
+	// Un terrain se décide AVANT la couleur, et pas sur le coût de mana : une
+	// vraie carte terrain n'en a pas. Sa couleur vient du mana qu'elle PRODUIT,
+	// que le studio ne modélise pas — donc un terrain sans coût prend le cadre
+	// terre incolore, qui est aussi celui des terrains non-base.
+	//
+	// Un coût reste possible et significatif : la ligne de type d'un artefact-
+	// terrain ou d'un terrain coloré porte alors sa couleur.
+	if (isLandTypeLine(face.typeLine)) {
+		if (colors.length > 1) return 'land-prismatic';
+		if (colors[0]) return `land-${COLOR_TO_FRAME[colors[0]]}` as MseFrameKey;
+		return 'land-colorless';
+	}
+
+	// Hors terrain : la couleur si elle est unique, l'or si la carte est
+	// multicolore, l'incolore sinon. `{C}` est du mana INCOLORE, pas de
+	// l'artefact — le studio renvoyait `artifact` ici, ce qui confondait deux
+	// cadres visuellement distincts (gris-brun contre bleu-métal).
+	//
+	// Une carte BICOLORE renvoie quand même `prismatic` : cette fonction choisit
+	// un cadre unique, et `resolveMseBlend` décide séparément s'il y a de quoi
+	// composer un fondu. Le canvas peint le fondu quand il existe, `prismatic`
+	// sinon — c'est le repli, pas une contradiction.
 	if (colors.length > 1) return 'prismatic';
-	const frameByColor: Record<string, Exclude<FrameStyleId, 'auto'>> = {
-		W: 'light',
-		U: 'tide',
-		B: 'void',
-		R: 'ember',
-		G: 'grove',
-	};
-	if (colors[0]) return frameByColor[colors[0]];
-	if (symbols.includes('C')) return 'artifact';
-	if (isLandTypeLine(face.typeLine)) return 'land';
+	if (colors[0]) return COLOR_TO_FRAME[colors[0]];
+	if (symbols.includes('C')) return 'colorless';
 	return 'light';
 }
 
@@ -148,14 +193,58 @@ function resolveFrameStyle(face: CardFaceDraft): MseFrameKey {
 	return face.frameStyle === 'auto' ? resolveAutomaticFrame(face) : face.frameStyle;
 }
 
+/**
+ * Cadre à peindre.
+ *
+ * Repli en DEUX temps pour les nouvelles clés : `land-tide` absent retombe sur
+ * `tide`, pas sur un cadre d'une autre couleur. C'est une dégradation vers moins
+ * SPÉCIFIQUE, pas vers faux — un cadre bleu là où on attendait un terrain bleu
+ * reste juste. Le dernier repli sur la première clé disponible est conservé pour
+ * les gabarits exotiques qui ne fournissent qu'une variante.
+ */
 export function resolveMseFramePath(
 	template: MseTemplate | undefined,
 	face: CardFaceDraft
 ): string | null {
 	if (!template) return null;
 	const frame = resolveFrameStyle(face);
-	const path = template.framePaths[frame] ?? Object.values(template.framePaths)[0];
-	return cardAssetUrl(path);
+	const direct = template.framePaths[frame];
+	if (direct) return cardAssetUrl(direct);
+	// `land-tide` -> `tide`
+	const base = frame.startsWith('land-') ? (frame.slice(5) as MseFrameKey) : null;
+	const degraded = base ? template.framePaths[base] : undefined;
+	return cardAssetUrl(degraded ?? Object.values(template.framePaths)[0]);
+}
+
+/**
+ * Fondu bicolore, ou `null`.
+ *
+ * MSE compose `masked_blend(mask, dark, light)` : le masque décide par pixel
+ * lequel des DEUX cadres colorés apparaît. On renvoie donc les trois URL, jamais
+ * une seule — peindre le masque seul donnerait une carte blanche.
+ *
+ * `null` dès qu'une pièce manque : carte pas exactement bicolore, gabarit sans
+ * masque, ou cadre manquant pour l'une des deux couleurs. Le rendu retombe alors
+ * sur le cadre simple, qui reste juste.
+ */
+export function resolveMseBlend(
+	template: MseTemplate | undefined,
+	face: CardFaceDraft
+): { base: string; overlay: string; mask: string } | null {
+	if (!template?.blendMasks) return null;
+	if (face.frameStyle !== 'auto') return null;
+	const colors = faceColors(face);
+	if (colors.length !== 2) return null;
+	const maskPath = template.blendMasks.multicolor;
+	if (!maskPath) return null;
+	const first = template.framePaths[COLOR_TO_FRAME[colors[0]]];
+	const second = template.framePaths[COLOR_TO_FRAME[colors[1]]];
+	if (!first || !second) return null;
+	const base = cardAssetUrl(first);
+	const overlay = cardAssetUrl(second);
+	const mask = cardAssetUrl(maskPath);
+	if (!base || !overlay || !mask) return null;
+	return { base, overlay, mask };
 }
 
 /**

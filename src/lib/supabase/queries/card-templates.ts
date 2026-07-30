@@ -51,10 +51,11 @@ export interface CardTemplateRow {
 	position_hint: string | null;
 	tags: string[];
 	crown_paths: Record<string, string> | null;
+	blend_masks: Record<string, string> | null;
 }
 
 export const CARD_TEMPLATE_SELECT =
-	'id, name, short_name, source, quality, orientation, layout_id, sample_path, icon_path, frame_paths, frame_text_colors, sample_text_colors, render_mode, width, height, dpi, asset_version, version, geometry, installer_group, position_hint, tags, crown_paths';
+	'id, name, short_name, source, quality, orientation, layout_id, sample_path, icon_path, frame_paths, frame_text_colors, sample_text_colors, render_mode, width, height, dpi, asset_version, version, geometry, installer_group, position_hint, tags, crown_paths, blend_masks';
 
 /** Bucket public hébergeant les frames ; les chemins des rows y sont relatifs. */
 export const CARD_TEMPLATE_BUCKET = 'card-templates';
