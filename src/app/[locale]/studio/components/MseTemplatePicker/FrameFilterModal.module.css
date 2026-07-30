@@ -87,26 +87,48 @@
 }
 
 /*
- * Les deux modales du site n'ont pas de <select>. On reprend donc celui de la
- * sidebar du studio, en ramenant son rayon aux 2px des modales pour ne pas
- * réintroduire un écart de forme.
+ * FilterModal et DeckFilterModal n'ont pas de <select> ; on reprend donc la
+ * convention des selects du site (SortFilter, ImportDeckModal, CreateDeckModal),
+ * en gardant la bordure et le rayon 2px des modales pour rester dans leur forme.
+ *
+ * `appearance: none` + chevron en background-image : le chevron natif est rendu
+ * par l'OS et ignore le thème, il tranchait donc en clair sur le fond sombre.
+ * Le padding droit lui réserve sa place.
  */
 .field select {
 	width: 100%;
 	min-width: 0;
-	padding: 9px 12px;
-	background: rgba(255, 255, 255, 0.04);
+	padding: 9px 32px 9px 12px;
+	background-color: rgba(255, 255, 255, 0.04);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 12px center;
 	border: 1px solid var(--glass-border);
 	border-radius: 2px;
 	color: var(--foreground);
 	font-size: var(--text-base);
 	outline: none;
+	appearance: none;
 	cursor: pointer;
 	transition: border-color 0.2s;
 }
 
 .field select:focus {
 	border-color: var(--gold);
+}
+
+/*
+ * Le menu déroulant natif ne suit PAS le thème : sans cette règle il s'ouvre en
+ * blanc sur le reste de l'interface sombre.
+ *
+ * CardModal, AddToDeckModal et DeckBulkEditModal écrivent `var(--card-bg,
+ * #1a1a2e)`, mais `--card-bg` n'est pas déclarée dans ce projet — ils tournent
+ * donc sur le repli. On vise `--surface`, qui vaut exactement ce #1a1a2e et
+ * existe, plutôt que de propager une variable fantôme.
+ */
+.field select option {
+	background: var(--surface);
+	color: var(--foreground);
 }
 
 /*
