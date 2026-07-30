@@ -13,9 +13,6 @@ import { isLandTypeLine } from './type-line';
 
 export type MseFrameKey = Exclude<FrameStyleId, 'auto'> | 'land';
 
-export type MseTemplateKind =
-	'card' | 'token' | 'planeswalker' | 'saga' | 'split' | 'double-faced' | 'oversized' | 'packaging';
-
 export interface MseTemplate {
 	id: string;
 	name: string;
@@ -24,10 +21,11 @@ export interface MseTemplate {
 	stylePath: string;
 	samplePath: string | null;
 	iconPath: string | null;
-	kind: MseTemplateKind;
 	orientation: 'portrait' | 'landscape' | 'unknown';
 	dimensions: { width: number | null; height: number | null; dpi: number | null };
 	installerGroup: string | null;
+	positionHint: string | null;
+	tags: string[];
 	dependencies: string[];
 	assetCount: number;
 	framePaths: Partial<Record<MseFrameKey, string>>;
@@ -78,10 +76,11 @@ function rowToTemplate(row: CardTemplateRow): MseTemplate {
 		stylePath: '',
 		samplePath: row.sample_path,
 		iconPath: row.icon_path,
-		kind: row.kind as MseTemplateKind,
 		orientation: row.orientation as MseTemplate['orientation'],
 		dimensions: { width: row.width, height: row.height, dpi: row.dpi },
-		installerGroup: null,
+		installerGroup: row.installer_group as string | null,
+		positionHint: row.position_hint as string | null,
+		tags: (row.tags ?? []) as string[],
 		dependencies: [],
 		assetCount: 0,
 		framePaths: (row.frame_paths ?? {}) as Partial<Record<MseFrameKey, string>>,
@@ -167,9 +166,15 @@ export function resolveMseTextColors(
 
 export function layoutForMseTemplate(template: MseTemplate): CardLayoutId {
 	if (template.layoutId) return template.layoutId;
-	if (template.kind === 'token') return 'token';
-	if (template.kind === 'planeswalker') return 'planeswalker';
-	if (template.kind === 'saga') return 'saga';
+	// `kind` est retiré (heuristique regex à faux positifs, cf. le spec). Le type
+	// de carte vient désormais des mots-clés, qui sont CUMULABLES : un gabarit à
+	// la fois planeswalker et double-face porte les deux, ce que `kind`,
+	// mono-valué, ne pouvait pas exprimer. L'ordre des tests fixe donc la
+	// priorité — planeswalker d'abord, parce que c'est lui qui change la saisie
+	// (loyauté au lieu de force/endurance).
+	if (template.tags.includes('planeswalker')) return 'planeswalker';
+	if (template.tags.includes('token')) return 'token';
+	if (template.tags.includes('saga')) return 'saga';
 	return template.orientation === 'landscape' ? 'landscape' : 'arcana';
 }
 

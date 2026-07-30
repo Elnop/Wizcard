@@ -33,7 +33,6 @@ export interface CardTemplateRow {
 	short_name: string | null;
 	source: string;
 	quality: string;
-	kind: string;
 	orientation: string;
 	layout_id: string | null;
 	sample_path: string | null;
@@ -48,10 +47,13 @@ export interface CardTemplateRow {
 	asset_version: string | null;
 	version: string | null;
 	geometry: TemplateGeometryRow | null;
+	installer_group: string | null;
+	position_hint: string | null;
+	tags: string[];
 }
 
 export const CARD_TEMPLATE_SELECT =
-	'id, name, short_name, source, quality, kind, orientation, layout_id, sample_path, icon_path, frame_paths, frame_text_colors, sample_text_colors, render_mode, width, height, dpi, asset_version, version, geometry';
+	'id, name, short_name, source, quality, orientation, layout_id, sample_path, icon_path, frame_paths, frame_text_colors, sample_text_colors, render_mode, width, height, dpi, asset_version, version, geometry, installer_group, position_hint, tags';
 
 /** Bucket public hébergeant les frames ; les chemins des rows y sont relatifs. */
 export const CARD_TEMPLATE_BUCKET = 'card-templates';
