@@ -31,6 +31,7 @@
 		"seed:catalog": "NODE_ENV=production $(command -v systemd-inhibit || true) npx tsx scripts/seed/seed-catalog.ts",
 		"seed:sets": "NODE_ENV=production npx tsx scripts/seed/seed-sets.ts",
 		"card-assets": "NODE_ENV=production npx tsx scripts/card-assets/upload-templates.ts",
+		"card-assets:seed-local": "node scripts/card-assets/seed-local-missing-assets.mjs",
 		"logo:generate": "tsx scripts/generate-logo.ts",
 		"mse:geometry": "NODE_ENV=production npx tsx scripts/mse-geometry/extract.ts",
 		"clean": "rm -rf node_modules .next",
