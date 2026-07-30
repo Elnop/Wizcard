@@ -51,10 +51,13 @@ export const CROWN_FOLDER = `card-assets/v/${ASSET_VERSION}/full-magic-pack/data
 /**
  * Fichier de couronne par clé de couleur du studio.
  *
- * Mêmes clés que FRAME_FILE_STEMS, à une exception : `land` n'y figure PAS. Le
- * corpus ne fournit aucune couronne terrain, alors que les terrains légendaires
- * existent (Dark Depths, Urborg). Mieux vaut ne rien peindre que de pointer un
- * `lcrown.png` inexistant.
+ * Seulement les 7 clés de couleur de base : aucune des clés `land-*` (une par
+ * couleur, plus `land-colorless`) ni `colorless` n'y figure. Le corpus ne
+ * fournit aucune couronne terrain ni incolore, alors que les terrains
+ * légendaires existent (Dark Depths, Urborg). L'appelant doit ramener ces
+ * clés à leur couleur de base avant le lookup (cf. resolveMseCrownPath côté
+ * client) ; mieux vaut ne rien peindre — ou peindre la couronne de la couleur
+ * de base — que de pointer un fichier inexistant.
  */
 const CROWN_FILE_BY_FRAME = {
 	light: 'wcrown.png',

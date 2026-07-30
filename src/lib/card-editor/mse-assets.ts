@@ -41,7 +41,15 @@ export interface MseTemplate {
 	framePaths: Partial<Record<MseFrameKey, string>>;
 	/** Couronnes légendaires par clé de couleur ; null = gabarit incompatible. */
 	crownPaths: Partial<Record<MseFrameKey, string>> | null;
-	/** Masques de fondu bicolore ; null = ce gabarit n'en fournit pas. */
+	/**
+	 * Masques de fondu bicolore ; null = ce gabarit n'en fournit pas.
+	 *
+	 * Trois clés possibles (`multicolor`, `hybrid`, `artifact`) sont ingérées,
+	 * stockées et téléversées, mais seule `multicolor` est lue aujourd'hui (cf.
+	 * `resolveMseBlend`). `hybrid` et `artifact` attendent une règle de
+	 * déclenchement qui n'est pas encore spécifiée — hors périmètre de ce
+	 * chantier, pas un oubli.
+	 */
 	blendMasks: Record<string, string> | null;
 	frameTextColors?: Partial<Record<MseFrameKey, MseTextColors>>;
 	sampleTextColors?: MseTextColors | null;
@@ -194,12 +202,32 @@ function resolveFrameStyle(face: CardFaceDraft): MseFrameKey {
 }
 
 /**
+ * Chaîne de dégradation « moins spécifique, jamais une autre couleur » pour une
+ * clé de cadre : `land-<couleur>` -> `<couleur>` ; `land-colorless` ->
+ * `colorless` -> `artifact` (le corpus n'a pas de couronne/masque `colorless`,
+ * `artifact` est le cadre incolore le plus proche) ; `colorless` -> `artifact`.
+ * Une clé de couleur de base (`tide`, `light`, ...) n'a pas de repli, elle est
+ * déjà la forme la plus générique.
+ */
+function frameDegradationChain(frame: MseFrameKey): MseFrameKey[] {
+	if (frame.startsWith('land-')) {
+		const base = frame.slice(5) as MseColorKey | 'colorless';
+		return base === 'colorless' ? ['colorless', 'artifact'] : [base];
+	}
+	if (frame === 'colorless') return ['artifact'];
+	return [];
+}
+
+/**
  * Cadre à peindre.
  *
- * Repli en DEUX temps pour les nouvelles clés : `land-tide` absent retombe sur
- * `tide`, pas sur un cadre d'une autre couleur. C'est une dégradation vers moins
- * SPÉCIFIQUE, pas vers faux — un cadre bleu là où on attendait un terrain bleu
- * reste juste. Le dernier repli sur la première clé disponible est conservé pour
+ * Dégradation en CHAÎNE pour les nouvelles clés, jamais un seul repli : `land-
+ * tide` absent retombe sur `tide` ; `land-colorless` ou `colorless` absents
+ * retombent sur `artifact` avant de risquer autre chose. C'est une dégradation
+ * vers moins SPÉCIFIQUE au sein de la MÊME couleur, pas vers faux — un cadre
+ * bleu là où on attendait un terrain bleu reste juste, mais `colorless` ne doit
+ * jamais atterrir sur `tide` faute de mieux. Le dernier repli sur la première
+ * clé disponible n'est atteint qu'une fois la chaîne de couleur épuisée, pour
  * les gabarits exotiques qui ne fournissent qu'une variante.
  */
 export function resolveMseFramePath(
@@ -210,10 +238,11 @@ export function resolveMseFramePath(
 	const frame = resolveFrameStyle(face);
 	const direct = template.framePaths[frame];
 	if (direct) return cardAssetUrl(direct);
-	// `land-tide` -> `tide`
-	const base = frame.startsWith('land-') ? (frame.slice(5) as MseFrameKey) : null;
-	const degraded = base ? template.framePaths[base] : undefined;
-	return cardAssetUrl(degraded ?? Object.values(template.framePaths)[0]);
+	for (const candidate of frameDegradationChain(frame)) {
+		const degraded = template.framePaths[candidate];
+		if (degraded) return cardAssetUrl(degraded);
+	}
+	return cardAssetUrl(Object.values(template.framePaths)[0]);
 }
 
 /**
@@ -255,12 +284,19 @@ export function resolveMseBlend(
  * 1. la carte n'est pas légendaire ;
  * 2. le gabarit n'accepte pas la couronne (`crownPaths` à null) — sa barre de
  *    titre n'a pas la géométrie pour laquelle les couronnes sont dessinées ;
- * 3. la clé de couleur n'a pas de couronne : c'est le cas de `land`, que le
- *    corpus ne fournit pas alors que les terrains légendaires existent.
+ * 3. même ramenée à sa couleur de base, la clé n'a pas de couronne dans ce
+ *    gabarit précis.
  *
- * Contrairement à `resolveMseFramePath`, AUCUN repli sur une autre clé : une
- * couronne de la mauvaise couleur se verrait immédiatement, alors qu'un cadre de
- * repli reste plausible. C'est la règle « aucun fallback » du studio.
+ * `crown_paths` ne connaît que les 7 clés de couleur d'origine (vérifié en
+ * base : `artifact, ember, grove, light, prismatic, tide, void`) — jamais de
+ * `land-*` ni de `colorless`. Il faut donc ramener la clé à sa couleur de base
+ * AVANT le lookup : `land-tide` -> `tide`, `land-colorless` -> `artifact`,
+ * `colorless` -> `artifact` (pas de couronne incolore dans le corpus,
+ * `artifact` est la plus proche). C'est la même dégradation « moins
+ * spécifique, jamais une autre couleur » que `resolveMseFramePath`, pas un
+ * repli vers une couleur différente : la règle « aucun fallback » du studio
+ * interdit d'inventer une mauvaise couleur, pas de résoudre vers une forme
+ * moins spécifique de la même couleur.
  */
 export function resolveMseCrownPath(
 	template: MseTemplate | undefined,
@@ -270,8 +306,13 @@ export function resolveMseCrownPath(
 	if (!isLegendary) return null;
 	if (!template?.crownPaths) return null;
 	const frame = resolveFrameStyle(face);
-	const path = template.crownPaths[frame];
-	return path ? cardAssetUrl(path) : null;
+	const direct = template.crownPaths[frame];
+	if (direct) return cardAssetUrl(direct);
+	for (const candidate of frameDegradationChain(frame)) {
+		const degraded = template.crownPaths[candidate];
+		if (degraded) return cardAssetUrl(degraded);
+	}
+	return null;
 }
 
 export function resolveMseTextColors(
