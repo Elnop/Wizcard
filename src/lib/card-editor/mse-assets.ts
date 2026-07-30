@@ -271,20 +271,18 @@ export function resolveMseFramePath(
 }
 
 /**
- * Fondu bicolore, ou `null`.
+ * Fondu HYBRIDE, ou `null`.
+ *
+ * Réservé aux coûts hybrides (`{W/U}`). Une carte bicolore ordinaire (`{W}{U}`)
+ * n'est PAS fondue : elle porte le cadre or, comme une tricolore.
  *
  * MSE compose `masked_blend(mask, dark, light)` : le masque décide par pixel
  * lequel des DEUX cadres colorés apparaît. On renvoie donc les trois URL, jamais
  * une seule — peindre le masque seul donnerait une carte blanche.
  *
- * DEUX masques, selon la nature du coût (cf. `hasHybridCost`) : `hybrid` pour un
- * `{W/U}`, `multicolor` pour un `{W}{U}`. Les confondre donnait à une carte
- * hybride le cadre d'une bicolore ordinaire.
- *
- * `null` dès qu'une pièce manque : carte pas exactement bicolore, gabarit sans
- * le masque VOULU, ou cadre manquant pour l'une des deux couleurs. Le rendu
- * retombe alors sur le cadre simple, qui reste juste — jamais sur l'autre
- * masque, qui donnerait un cadre faux.
+ * `null` dès qu'une pièce manque : coût non hybride, carte pas exactement
+ * bicolore, gabarit sans masque `hybrid`, ou cadre manquant pour l'une des deux
+ * couleurs. Le rendu retombe alors sur le cadre simple, qui reste juste.
  */
 export function resolveMseBlend(
 	template: MseTemplate | undefined,
@@ -294,14 +292,17 @@ export function resolveMseBlend(
 	if (face.frameStyle !== 'auto') return null;
 	const colors = faceColors(face);
 	if (colors.length !== 2) return null;
-	// Le masque dépend de la NATURE du coût, pas du nombre de couleurs : un
-	// `{W/U}` hybride et un `{W}{U}` bicolore ont tous deux deux couleurs mais
-	// des cadres différents sur les cartes imprimées. `multicolor` protège la
-	// barre de titre et la ligne de type, `hybrid` ne protège que les barres.
-	// Pas de repli de l'un sur l'autre : ils ne sont pas interchangeables.
-	const maskPath = hasHybridCost(face)
-		? template.blendMasks.hybrid
-		: template.blendMasks.multicolor;
+	// SEUL l'hybride est fondu. Une carte bicolore ORDINAIRE porte le cadre or,
+	// exactement comme une tricolore — c'est ce qu'imprime Wizards.
+	//
+	// MSE fond les bicolores par défaut, mais c'est une facilité de l'éditeur et
+	// non l'imprimé : le réglage `use gradient multicolor` (magic.mse-game/
+	// set_fields) existe précisément pour la désactiver, et sa description dit
+	// « Use gradients on multicolor cards BY DEFAULT », pas « comme les vraies
+	// cartes ». On suit l'imprimé, donc `multicolor` n'est jamais peint et
+	// `resolveAutomaticFrame` renvoie `prismatic` pour les bicolores.
+	if (!hasHybridCost(face)) return null;
+	const maskPath = template.blendMasks.hybrid;
 	if (!maskPath) return null;
 	const first = template.framePaths[COLOR_TO_FRAME[colors[0]]];
 	const second = template.framePaths[COLOR_TO_FRAME[colors[1]]];
