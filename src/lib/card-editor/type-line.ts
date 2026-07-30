@@ -93,33 +93,51 @@ export function composeTypeLine(parts: TypeLineParts): string {
  * Lit une ligne existante et la ventile dans les trois listes.
  *
  * Sert à réhydrater l'éditeur depuis un brouillon ou une carte enregistrée :
- * seule la chaîne est stockée, il faut donc savoir la relire. Un mot inconnu du
- * vocabulaire est classé en `types` s'il est à gauche du tiret, en `subtypes`
- * sinon — de cette façon une saisie libre survit à un aller-retour.
+ * seule la chaîne est stockée, il faut donc savoir la relire.
+ *
+ * Deux régimes, selon que la ligne porte un tiret ou non :
+ *
+ * - AVEC tiret, la grammaire est explicite — gauche = supertypes puis types,
+ *   droite = sous-types. Un mot inconnu à gauche reste un type.
+ * - SANS tiret, la ventilation est une déduction : on s'appuie sur le
+ *   vocabulaire. « Creature » est un type, « Humain » un sous-type. Sans cette
+ *   règle, des sous-types saisis seuls restaient bloqués dans le champ Types et
+ *   n'en ressortaient jamais.
+ *
+ * Sans vocabulaire (chemin serveur, ou premier rendu avant que le store soit
+ * rempli), on retombe sur l'ancien comportement : tout à gauche dans `types`.
  */
 export function parseTypeLine(
 	typeLine: string,
 	vocabulary: { supertypes: string[]; types: string[] } | null
 ): TypeLineParts {
-	// Accepte aussi le tiret simple, courant quand la ligne est tapée à la main.
-	// On coupe sur le premier tiret trouvé plutôt qu'avec une regex encadrée
-	// d'espaces optionnels, qui backtracke (sonarjs/super-linear-regex).
-	const dashIndex = typeLine.search(/[—-]/);
-	const leftRaw = dashIndex === -1 ? typeLine : typeLine.slice(0, dashIndex);
-	const rightRaw = dashIndex === -1 ? '' : typeLine.slice(dashIndex + 1);
+	// Seuls les tirets de SÉPARATION coupent la ligne : cadratin (celui
+	// qu'écrit `composeTypeLine`) et demi-cadratin (confusion de saisie
+	// plausible). PAS le trait d'union : le vocabulaire officiel contient
+	// `Assembly-Worker` et `Power-Plant`, et couper dessus les déchirait en
+	// deux. On cherche l'index plutôt qu'une regex encadrée d'espaces
+	// optionnels, qui backtracke (sonarjs/super-linear-regex).
+	const dashIndex = typeLine.search(/[—–]/);
+	const hasDash = dashIndex !== -1;
+	const leftRaw = hasDash ? typeLine.slice(0, dashIndex) : typeLine;
+	const rightRaw = hasDash ? typeLine.slice(dashIndex + 1) : '';
 	const knownSupertypes = new Set((vocabulary?.supertypes ?? []).map((v) => v.toLowerCase()));
+	const knownTypes = new Set((vocabulary?.types ?? []).map((v) => v.toLowerCase()));
 
 	const supertypes: string[] = [];
 	const types: string[] = [];
+	const looseSubtypes: string[] = [];
 	for (const word of leftRaw.split(/\s+/).filter(Boolean)) {
 		if (knownSupertypes.has(word.toLowerCase())) supertypes.push(word);
-		else types.push(word);
+		else if (hasDash || !vocabulary) types.push(word);
+		else if (knownTypes.has(word.toLowerCase())) types.push(word);
+		else looseSubtypes.push(word);
 	}
 
 	return {
 		supertypes,
 		types,
-		subtypes: rightRaw.split(/\s+/).filter(Boolean),
+		subtypes: [...looseSubtypes, ...rightRaw.split(/\s+/).filter(Boolean)],
 	};
 }
 
