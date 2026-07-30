@@ -73,7 +73,6 @@ interface ManifestTemplate {
 	id: string;
 	name: string;
 	shortName: string | null;
-	kind: string;
 	orientation: string;
 	dimensions: { width: number | null; height: number | null; dpi: number | null };
 	samplePath: string | null;
@@ -86,6 +85,9 @@ interface ManifestTemplate {
 	source?: string;
 	quality?: string;
 	layoutId?: string;
+	installerGroup?: string | null;
+	positionHint?: string | null;
+	tags?: string[];
 }
 
 interface Manifest {
@@ -100,7 +102,6 @@ interface CardTemplateRow {
 	short_name: string | null;
 	source: string;
 	quality: string;
-	kind: string;
 	orientation: string;
 	layout_id: string | null;
 	sample_path: string | null;
@@ -117,6 +118,9 @@ interface CardTemplateRow {
 	// Géométrie mesurée depuis le corpus MSE (scripts/mse-geometry/extract.ts).
 	// NULL = non mesuré : jamais de géométrie empruntée à un autre gabarit.
 	geometry: TemplateGeometry | null;
+	installer_group: string | null;
+	position_hint: string | null;
+	tags: string[];
 }
 
 let _sb: SupabaseClient | null = null;
@@ -182,7 +186,6 @@ function toRow(
 		short_name: template.shortName,
 		source: template.source === 'cardconjurer' ? 'cardconjurer' : 'mse',
 		quality: template.quality === 'accurate' ? 'accurate' : 'legacy',
-		kind: template.kind,
 		orientation: template.orientation,
 		layout_id: template.layoutId ?? null,
 		sample_path: template.samplePath,
@@ -199,6 +202,9 @@ function toRow(
 		// Les clés de la Map == template.id (vérifié : 109 hits directs, aucune
 		// normalisation). Pas de géométrie mesurée -> NULL, jamais de fallback.
 		geometry: geometries.get(template.id) ?? null,
+		installer_group: template.installerGroup ?? null,
+		position_hint: template.positionHint ?? null,
+		tags: template.tags ?? [],
 	};
 }
 
