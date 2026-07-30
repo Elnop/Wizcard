@@ -72,35 +72,57 @@ aucun rendu — la géométrie vient de `geometry`. Il est donc remplacé, pas m
 **Un point d'attention au retrait** : `layoutForTemplate` / `layoutForMseTemplate` lisent
 `kind` pour dériver `layoutId`, qui sert encore à savoir qu'un planeswalker saisit une
 loyauté plutôt qu'une force/endurance (`DirectEditingLayer`). Ces deux fonctions doivent
-lire `is_planeswalker` / `is_token` à la place. C'est le seul comportement fonctionnel qui
+tester les mots-clés `planeswalker` / `token` de `tags` à la place. C'est le seul
+comportement fonctionnel qui
 dépende encore de `kind`, et il doit être re-vérifié dans le navigateur.
 
 ### Ce qui le remplace
 
-| Colonne           | Type      | Contenu                                                         |
-| ----------------- | --------- | --------------------------------------------------------------- |
-| `installer_group` | `text`    | Le chemin BRUT, tel que déclaré : `magic/m15 style/split cards` |
-| `position_hint`   | `text`    | L'ordre déclaré : `010`, `301`, `907`                           |
-| `is_*` (36)       | `boolean` | Une par mot-clé **documenté** (cf. ci-dessous)                  |
-| `tags`            | `text[]`  | Les mots-clés non documentés                                    |
+| Colonne           | Type     | Contenu                                                         |
+| ----------------- | -------- | --------------------------------------------------------------- |
+| `installer_group` | `text`   | Le chemin BRUT, tel que déclaré : `magic/m15 style/split cards` |
+| `position_hint`   | `text`   | L'ordre déclaré : `010`, `301`, `907`                           |
+| `tags`            | `text[]` | **Tous** les mots-clés, toutes sources confondues               |
 
-**Une colonne par mot-clé documenté.** Un mot-clé est « documenté » quand une source du
-corpus l'atteste — le chemin déclaré **ou** l'id du style. Les deux sont de la donnée
-source ; n'en retenir qu'une perd des cadres, ce qui a été vérifié :
+**Tout est stocké, rien n'est arbitré.** `tags` reçoit l'union des mots-clés de l'id, du
+nom, du `short_name` et du chemin déclaré : **200 mots-clés distincts** sur les 109 cadres.
 
-| Cadre                                 | Chemin déclaré | Sauvé par l'id    |
+Aucune colonne booléenne n'est créée à ce stade. Une version antérieure de ce spec en
+prévoyait 36, choisies sur une liste que l'auteur du spec avait décidée — ce qui était à
+la fois de la sur-interprétation (le seuil était arbitraire) et une perte : `textless`,
+`fullart`, `commander`, `kaladesh`, `japanese`, `russian`, `nyx`, `hires`, `keyword`,
+`snow` en étaient absents alors que ce sont exactement des critères de recherche.
+
+Des colonnes pourront être extraites plus tard, par une migration dédiée, **quand l'UI en
+démontrera le besoin**. Le choix sera alors guidé par un usage constaté et non par un
+seuil supposé, et `tags` restant la source, l'extraction sera un simple recalcul.
+
+**Les deux sources s'ajoutent, elles ne s'écrasent pas.** Le chemin seul perdrait trois
+cadres, vérifié :
+
+| Cadre                                 | Chemin déclaré | Rattrapé par l'id |
 | ------------------------------------- | -------------- | ----------------- |
-| `magic-m15-token-invention`           | `devoid cards` | `is_token`        |
-| `magic-m15-scroll-demon-planeswalker` | `normal cards` | `is_planeswalker` |
-| `magic-m15-outlaws-planeswalker`      | `normal cards` | `is_planeswalker` |
+| `magic-m15-token-invention`           | `devoid cards` | `token`           |
+| `magic-m15-scroll-demon-planeswalker` | `normal cards` | `planeswalker`    |
+| `magic-m15-outlaws-planeswalker`      | `normal cards` | `planeswalker`    |
 
-`magic-m15-token-invention` porte alors `is_token` **et** `is_devoid` — les deux sources
-s'ajoutent au lieu de s'écraser. Un cadre à la fois planeswalker et double-face porte les
-deux colonnes, ce que `kind`, mono-valué, rendait impossible.
+`magic-m15-token-invention` porte donc `token` **et** `devoid`. Un cadre à la fois
+planeswalker et double-face porte les deux — ce que `kind`, mono-valué, rendait
+impossible.
 
-Les 36 colonnes vont de `is_planeswalker` (21 cadres) à `is_greater_morphling` (1). Pas de
-`is_oversized` ni `is_packaging` : ces catégories n'existent que par les deux faux
-positifs ci-dessus.
+### Ce qui est écarté de `tags`
+
+Le seul filtrage est celui des jetons sans pouvoir discriminant, mesuré et non supposé :
+
+- `magic` — présent sur 107 des 109 cadres ;
+- `card` / `cards` / `style` / `normal` — mots de structure du chemin ;
+- les jetons d'un seul caractère et purement numériques (`1`, `2`, `4`, `d`, `n`, `s`,
+  `w`).
+
+Restent **188 mots-clés**. Les mots de phrase (`after`, `edition`, `frame`, `template`)
+sont **conservés** : les écarter demanderait de juger ce qui est un mot-clé, exactement
+l'arbitrage qu'on veut éviter. Ils sont inoffensifs dans un champ cherchable, et
+n'apparaîtront pas en badge (cf. § Liste).
 
 ### Pourquoi le chemin brut est conservé en plus
 
@@ -140,46 +162,64 @@ donc réintroduite.
 
 Corollaire à ne pas manquer : ces deux cadres se nomment « Planeswalker -> Creature » et
 « Creature -> Planeswalker » — des DFC qui se transforment entre planeswalker et créature.
-Ils portent donc **`is_double_faced` (par le chemin) ET `is_planeswalker` (par le nom)**,
+Ils portent donc **`double_faced` (par le chemin) ET `planeswalker` (par le nom)**,
 ce qui est exact. `kind`, mono-valué, en choisissait un et jetait l'autre.
 
 ### Normalisation des mots-clés
 
-Les segments déclarés comportent des doublons d'écriture : `token`/`tokens`,
-`promotional`/`promo cards`/`promo style`, `gods`/`god cards`,
-`planeswalkers`/`planeswalker cards`. Sans normalisation on créerait trois colonnes pour
-« promo ».
+Les sources écrivent la même notion de plusieurs façons : `token`/`tokens`,
+`promo`/`promotional`, `god`/`gods`, `planeswalker`/`planeswalkers`/`walkers`,
+`fpm`/`firepenguinmaster`, `split`/`splits`. Sans fusion, le champ Mot-clé afficherait
+trois entrées « promo » renvoyant à des sous-ensembles différents.
 
-Règle : minuscules, suppression du suffixe ` cards`, singularisation, puis table de
-synonymes explicite, et enfin `_` comme liant pour les mots-clés composés
-(`double faced` → `double_faced`, `four abilities` → `four_abilities`). Le segment
-`normal cards` (22 occurrences) est **écarté** : il ne distingue rien.
+Règle : minuscules, suppression du suffixe ` cards`, singularisation, puis **table de
+synonymes explicite** — une table lisible et éditable, pas une heuristique. Le segment
+`normal cards` (22 occurrences) est écarté : il ne distingue rien.
+
+La fusion est **conservatrice** : elle ne rapproche que des variantes d'écriture d'une
+même notion, jamais deux notions voisines. `flip` et `double_faced` restent donc
+**distincts** — un flip a une seule face imprimée qu'on pivote, une DFC en a deux.
 
 Un segment de chemin est pris **en entier** comme mot-clé (`double faced` est un mot-clé,
-pas deux). Le découpage en mots entiers de la section précédente s'applique à la
-détection dans l'id et le nom, qui sont du texte libre — pas aux segments du chemin, qui
-sont déjà des unités déclarées.
+pas deux). Le découpage en mots entiers de la section précédente s'applique à la détection
+dans l'id et le nom, qui sont du texte libre — pas aux segments du chemin, qui sont déjà
+des unités déclarées.
 
-`flip` et `double_faced` restent **distincts** — mécaniques différentes, cf. ci-dessus.
+Cette normalisation ne fait perdre aucune information : la forme brute reste disponible
+dans `installer_group`, le `name` et l'`id`, tous conservés.
 
 ## Facettes exposées
 
-Six `<select>` dans une modale de filtres, alignée sur le `FilterModal` existant de
-l'app.
+Cinq champs dans une modale de filtres, alignée sur le `FilterModal` existant de l'app :
+quatre `<select>` et une liste filtrable pour les mots-clés (cf. plus bas).
 
-| Champ               | Source                        | Cardinalité           |
-| ------------------- | ----------------------------- | --------------------- |
-| Famille             | `installer_group`, 2e segment | 30 valeurs            |
-| Mot-clé             | les 36 colonnes `is_*`        | 36 valeurs            |
-| Origine             | dérivé de la famille          | 2 valeurs (78 / 31)   |
-| Orientation         | `orientation`                 | 2 valeurs (91 / 18)   |
-| Compatible créature | `geometry.boxes.pt`           | 2 valeurs (74 / 35)   |
-| Tag                 | `tags`                        | traîne non documentée |
+| Champ               | Source                        | Cardinalité         |
+| ------------------- | ----------------------------- | ------------------- |
+| Famille             | `installer_group`, 2e segment | 30 valeurs          |
+| Mot-clé             | `tags`                        | 188 valeurs         |
+| Origine             | dérivé de la famille          | 2 valeurs (78 / 31) |
+| Orientation         | `orientation`                 | 2 valeurs (91 / 18) |
+| Compatible créature | `geometry.boxes.pt`           | 2 valeurs (74 / 35) |
 
 Il n'y a plus de champ « Type » : `kind` étant retiré, le type de carte est porté par les
-colonnes `is_planeswalker`, `is_split`, `is_token`, `is_double_faced`, `is_flip`, qui
-figurent parmi les 36 mots-clés. Un cadre peut donc apparaître sous plusieurs types à la
-fois — ce que le champ mono-valué interdisait.
+mots-clés `planeswalker`, `split`, `token`, `double_faced`, `flip`. Un cadre peut donc
+apparaître sous plusieurs types à la fois — ce que le champ mono-valué interdisait.
+
+### Le champ Mot-clé expose les 188
+
+Un `<select>` de 188 options serait aussi impraticable que la liste qu'on corrige. Le
+champ est donc une **liste filtrable** : une saisie qui réduit les options à mesure, la
+sélection s'ajoutant comme une puce retirable (plusieurs mots-clés cumulables en ET).
+
+Trois règles rendent les 188 parcourables sans en cacher aucun :
+
+1. **Tri par nombre de cadres décroissant** — `planeswalker` (21) avant `nyx` (1).
+2. **Compte sur chaque option** — « planeswalker (21) », « textless (1) ».
+3. **Options à zéro résultat masquées** quand d'autres filtres sont actifs.
+
+Aucun mot-clé n'est retiré de la liste : les 127 qui ne concernent qu'un seul cadre
+restent atteignables, ce sont même souvent les plus discriminants quand on sait ce qu'on
+cherche (`nyx`, `kaladesh`, `outlaws`).
 
 **Les 30 familles sont listées à plat**, sans regroupement, telles que déclarées. 24
 d'entre elles ne comptent qu'un ou deux cadres ; chaque option porte son compte
@@ -204,7 +244,12 @@ supprimée.
   remplacement du bouton « Afficher 30 de plus ».
 - **Vignettes agrandies** en grille. Sur une bibliothèque de cadres, l'aperçu _est_
   l'information : « Buttock1234 style » ne dit rien, son image dit tout.
-- **Badges** sur la vignette : famille · mots-clés actifs.
+- **Badges** sur la vignette : la famille, puis les mots-clés du cadre. Un cadre en porte
+  jusqu'à une dizaine, ce qui ne tient pas sous une vignette : on affiche les plus
+  **rares** d'abord (un mot-clé porté par 1 cadre le caractérise, `planeswalker` porté par
+  21 beaucoup moins), plafonnés à 3, le reste au survol. Les mots de phrase (`after`,
+  `edition`, `frame`, `template`) sont exclus de l'affichage — ils restent dans `tags`
+  pour la recherche, mais ne caractérisent aucun cadre.
 - **Libellés d'origine conservés**, avec `short_name` en sous-titre — c'est lui qui
   distingue les 4 « After 8th edition ».
 - **Recherche élargie** à `name` + `short_name` + `id` + mots-clés + `tags` +
@@ -254,8 +299,9 @@ Pas de framework de test dans ce dépôt. Les portes :
 - `npm run check` — aucun NOUVEAU problème (base ~60 dans des fichiers sans rapport)
 - `npm run build`
 - `npm run sb:verify` après migration
-- Navigateur : les 6 filtres, le scroll infini, la recherche « m15 », et le tri conforme
-  à `position_hint`
+- Navigateur : les 5 filtres, le scroll infini, la recherche « m15 » (24 résultats), le
+  tri conforme à `position_hint`, et la saisie de loyauté sur un planeswalker — seul
+  comportement fonctionnel touché par le retrait de `kind`
 
 ## Hors périmètre
 
