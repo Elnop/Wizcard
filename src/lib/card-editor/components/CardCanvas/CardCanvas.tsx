@@ -37,7 +37,7 @@ interface CardCanvasProps {
 	setCode: string;
 	collectorNumber: string;
 	mseFramePath?: string | null;
-	mseBlend?: { base: string; overlay: string; mask: string } | null;
+	mseBlend?: { base: string; overlay: string; mask: string; plate: string } | null;
 	mseCrownPath?: string | null;
 	mseTextColors?: MseTextColors | null;
 	mseTemplate?: MseTemplate;
@@ -482,17 +482,63 @@ function CardSvg({
 			 */}
 			<Artwork artwork={face.artwork} rect={geometry.art} clipId={clipId} />
 			{/*
-			 * Cadre. Un fondu bicolore remplace l'image unique par une composition :
-			 * MSE fait `masked_blend(mask, dark, light)`, où le masque choisit par
-			 * pixel lequel des DEUX cadres colorés apparaît. Le masque est
-			 * quasi-binaire, donc la découpe est franche.
+			 * Cadre hybride bicolore, composé comme MSE : trois entrées superposées.
+			 * Le fond gris porte les plaques, le masque `hybrid_blend_card` découpe la
+			 * bordure, et le dégradé fait passer la bordure d'une couleur à l'autre de
+			 * gauche à droite. Le masque étant quasi-binaire (0,17 % de pixels
+			 * intermédiaires), c'est bien le dégradé — et non lui — qui produit la
+			 * transition.
 			 *
 			 * L'export PNG suit sans modification : `inlineSvgImages` parcourt
-			 * `querySelectorAll('image')`, ce qui inclut l'image DANS le <mask>.
+			 * `querySelectorAll('image')`, ce qui inclut les images DANS les <mask>.
+			 * Le <linearGradient> n'est pas une image et n'a rien à inliner.
 			 */}
 			{mseBlend ? (
 				<>
-					<mask id={`${clipId}-blend`}>
+					{/*
+					 * Dégradé horizontal de la première couleur vers la seconde. Les
+					 * bornes 45 % / 55 % viennent de `card_hybrid_2` dans
+					 * magic-m15-showcase-capenna-art-deco.mse-style, le seul style du
+					 * corpus qui les déclare :
+					 *   linear_blend(couleur₁, couleur₂, x1: 0.45, y1: 0, x2: 0.55, y2: 0)
+					 * `y1 = y2 = 0` — la transition est horizontale, sur une bande de
+					 * 10 % centrée. On garde les pourcentages : `linearGradient` est en
+					 * `objectBoundingBox` par défaut, donc les bornes suivent la largeur
+					 * du gabarit, les 27 cadres en paysage compris.
+					 */}
+					<linearGradient id={`${clipId}-hygrad`} x1="45%" y1="0%" x2="55%" y2="0%">
+						<stop offset="0" stopColor="black" />
+						<stop offset="1" stopColor="white" />
+					</linearGradient>
+					{/*
+					 * `maskUnits="userSpaceOnUse"` explicite sur les deux masques : le
+					 * défaut est `objectBoundingBox`, qui recadrerait le masque sur la
+					 * boîte de l'élément masqué au lieu de la carte.
+					 */}
+					<mask
+						id={`${clipId}-hygrad-mask`}
+						maskUnits="userSpaceOnUse"
+						x="0"
+						y="0"
+						width={geometry.width}
+						height={geometry.height}
+					>
+						<rect
+							x="0"
+							y="0"
+							width={geometry.width}
+							height={geometry.height}
+							fill={`url(#${clipId}-hygrad)`}
+						/>
+					</mask>
+					<mask
+						id={`${clipId}-hyplate`}
+						maskUnits="userSpaceOnUse"
+						x="0"
+						y="0"
+						width={geometry.width}
+						height={geometry.height}
+					>
 						<image
 							href={mseBlend.mask}
 							x="0"
@@ -502,23 +548,41 @@ function CardSvg({
 							preserveAspectRatio="none"
 						/>
 					</mask>
+					{/*
+					 * MSE compose `masked_blend(mask: hybrid_blend_card, light:
+					 * linear_blend(c₁, c₂), dark: clcard)`. Les parties SOMBRES du masque
+					 * — les plaques de titre et de ligne de type — prennent le cadre gris,
+					 * ce qui donne les plaques neutres d'un hybride imprimé. Il est donc
+					 * peint en fond, sans masque, et les couleurs viennent par-dessus
+					 * seulement là où le masque est clair.
+					 */}
 					<image
-						href={mseBlend.base}
+						href={mseBlend.plate}
 						x="0"
 						y="0"
 						width={geometry.width}
 						height={geometry.height}
 						preserveAspectRatio="none"
 					/>
-					<image
-						href={mseBlend.overlay}
-						x="0"
-						y="0"
-						width={geometry.width}
-						height={geometry.height}
-						preserveAspectRatio="none"
-						mask={`url(#${clipId}-blend)`}
-					/>
+					<g mask={`url(#${clipId}-hyplate)`}>
+						<image
+							href={mseBlend.base}
+							x="0"
+							y="0"
+							width={geometry.width}
+							height={geometry.height}
+							preserveAspectRatio="none"
+						/>
+						<image
+							href={mseBlend.overlay}
+							x="0"
+							y="0"
+							width={geometry.width}
+							height={geometry.height}
+							preserveAspectRatio="none"
+							mask={`url(#${clipId}-hygrad-mask)`}
+						/>
+					</g>
 				</>
 			) : (
 				mseFramePath && (
