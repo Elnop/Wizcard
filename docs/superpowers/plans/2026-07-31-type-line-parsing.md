@@ -216,18 +216,29 @@ Claude-Session: https://claude.ai/code/session_015hF7jdXAcFnXF2uDLwBr4q"
 
 ---
 
-### Task 2 : `hasCardType` sensible au tiret
+### Task 2 : `hasCardType` sensible au tiret, branché sur le vrai vocabulaire
 
 **Files:**
 
-- Modify: `src/lib/card-editor/type-line.ts` (fonction `hasCardType`, ~lignes 147-151)
+- Modify: `src/lib/card-editor/type-line.ts` (resolver + fonction `hasCardType`, ~lignes 147-151)
+- Create: `src/lib/card-editor/useTypeVocabularyBridge.ts`
+- Modify: `src/app/[locale]/studio/useCardEditor.ts` (appeler le hook)
 
 **Interfaces:**
 
 - Consumes: `parseTypeLine` (Task 1).
-- Produces: `hasCardType(typeLine: string, type: string): boolean` — signature inchangée. `isLandTypeLine` et `isTokenTypeLine` l'appellent déjà et n'ont pas à changer.
+- Produces:
+  - `hasCardType(typeLine: string, type: string): boolean` — signature inchangée. `isLandTypeLine` et `isTokenTypeLine` l'appellent déjà et n'ont pas à changer.
+  - `TypeVocabularySource = { supertypes: string[]; types: string[] } | null`
+  - `setTypeVocabularyResolver(resolver: () => TypeVocabularySource): void`
+  - `resolveTypeVocabulary(): TypeVocabularySource`
+  - `useTypeVocabularyBridge(): void`
 
 **Pourquoi cette tâche existe.** Task 1 introduit une régression que le script rend visible : `Terrain` seul part désormais en `subtypes`, parce que le vocabulaire Scryfall est **anglais** et ne connaît pas « Terrain ». `hasCardType` ne cherchant que dans supertypes+types, le cadre de terrain serait perdu sur la saisie française la plus banale.
+
+**Pourquoi le vivier ET le câblage dans la même tâche.** `hasCardType` a besoin du vrai vocabulaire pour être juste. Les livrer séparément obligerait à écrire un `parseTypeLine(typeLine, null)` provisoire, remplacé aussitôt après : du code mort-né dans l'historique. Les deux arrivent donc ensemble, et la fonction est correcte dès son premier commit.
+
+**Pourquoi un hook et pas un effet de module.** Le spec proposait de brancher le resolver par un `setTypeVocabularyResolver(...)` au niveau module de `mse-assets.ts`. C'est fragile : un effet de bord au niveau module dépend de l'ordre d'import, ne se rejoue pas, et ne se teste pas. Un hook appelé pendant le rendu est explicite et rejouable. Le résultat pour l'utilisateur est identique.
 
 - [ ] **Step 1 : Constater l'échec ciblé**
 
@@ -238,7 +249,35 @@ npx tsx /tmp/claude-1000/-home-elthinkbuntu-Documents-Wizcard/fcade87f-2b5d-4554
 
 Attendu : des FAIL sur `isLandTypeLine("Terrain")` et `isLandTypeLine("Terrain de base")`, et rien d'autre.
 
-- [ ] **Step 2 : Élargir le vivier quand la ligne n'a pas de tiret**
+- [ ] **Step 2 : Ajouter le resolver dans `type-line.ts`**
+
+Insérer juste avant `parseTypeLine` :
+
+```ts
+/** Forme minimale du vocabulaire dont la lecture a besoin. */
+export type TypeVocabularySource = { supertypes: string[]; types: string[] } | null;
+
+/**
+ * Source de vocabulaire, injectée depuis le client.
+ *
+ * Ce module est atteint CÔTÉ SERVEUR (`db/custom-card-editor.ts` importe
+ * `draft.ts`, qui importe `isTokenTypeLine`). Un import de store Zustand au
+ * niveau module casserait alors le build Turbopack — un piège que ni `tsc` ni
+ * ESLint n'attrapent, seul `npm run build`. D'où cette injection : le serveur
+ * ne branche rien et lit `null`, ce qui est le repli sûr.
+ */
+let vocabularyResolver: () => TypeVocabularySource = () => null;
+
+export function setTypeVocabularyResolver(resolver: () => TypeVocabularySource): void {
+	vocabularyResolver = resolver;
+}
+
+export function resolveTypeVocabulary(): TypeVocabularySource {
+	return vocabularyResolver();
+}
+```
+
+- [ ] **Step 3 : Élargir le vivier quand la ligne n'a pas de tiret**
 
 Remplacer `hasCardType` et sa docstring :
 
@@ -270,107 +309,9 @@ export function hasCardType(typeLine: string, type: string): boolean {
 }
 ```
 
-Cette version appelle `resolveTypeVocabulary()`, qui n'existe pas encore — Task 3 l'ajoute. **Pour cette tâche uniquement**, écrire `parseTypeLine(typeLine, null)` (le comportement actuel) afin que le fichier compile, et Task 3 le remplacera. Ne pas inventer d'autre provisoire.
+La ligne `parseTypeLine(typeLine, resolveTypeVocabulary())` s'appuie sur le resolver ajouté au Step 2 : la fonction est donc juste dès son premier commit, sans passer par un provisoire.
 
-- [ ] **Step 3 : Ré-exécuter le script**
-
-```bash
-cd /home/elthinkbuntu/Documents/Wizcard
-npx tsx /tmp/claude-1000/-home-elthinkbuntu-Documents-Wizcard/fcade87f-2b5d-4554-baa3-129f3ee2368f/scratchpad/check-type-line.ts
-```
-
-Attendu : **TOUT PASSE**. En particulier `Creature — Land Golem` et `Creature — Landwalker` restent `false` — c'est le garde-fou historique, et il ne tient que grâce au tiret.
-
-- [ ] **Step 4 : Types et lint**
-
-```bash
-cd /home/elthinkbuntu/Documents/Wizcard
-npx tsc --noEmit -p tsconfig.json 2>&1 | grep -F 'type-line.ts'
-npx eslint src/lib/card-editor/type-line.ts
-```
-
-Attendu : les deux muets.
-
-- [ ] **Step 5 : Commit**
-
-```bash
-cd /home/elthinkbuntu/Documents/Wizcard
-git add src/lib/card-editor/type-line.ts
-git commit -m "fix(studio): keep the land frame on a dash-less type line
-
-The Scryfall vocabulary is English, so 'Terrain' now lands in subtypes and
-hasCardType stopped seeing it — the land frame was lost on the most ordinary
-French input. Without a dash the type/subtype split is a deduction, so the
-lookup spans all three lists; with a dash the grammar is explicit and
-subtypes stay excluded.
-
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_015hF7jdXAcFnXF2uDLwBr4q"
-```
-
----
-
-### Task 3 : Brancher le vocabulaire réel
-
-**Files:**
-
-- Modify: `src/lib/card-editor/type-line.ts` (ajouter le resolver, brancher `hasCardType`)
-- Create: `src/lib/card-editor/useTypeVocabularyBridge.ts`
-- Modify: `src/app/[locale]/studio/useCardEditor.ts` (appeler le hook)
-
-**Interfaces:**
-
-- Consumes: `hasCardType` (Task 2), `parseTypeLine` (Task 1).
-- Produces:
-  - `setTypeVocabularyResolver(resolver: () => { supertypes: string[]; types: string[] } | null): void`
-  - `resolveTypeVocabulary(): { supertypes: string[]; types: string[] } | null`
-  - `useTypeVocabularyBridge(): void`
-
-**Pourquoi un hook et pas un effet de module.** Le spec proposait de brancher le resolver par un `setTypeVocabularyResolver(...)` au niveau module de `mse-assets.ts`. C'est fragile : un effet de bord au niveau module dépend de l'ordre d'import, ne se rejoue pas, et ne se teste pas. Un hook appelé pendant le rendu est explicite et rejouable. Le résultat pour l'utilisateur est identique.
-
-- [ ] **Step 1 : Ajouter le resolver dans `type-line.ts`**
-
-Insérer juste avant `parseTypeLine` :
-
-```ts
-/** Forme minimale du vocabulaire dont la lecture a besoin. */
-export type TypeVocabularySource = { supertypes: string[]; types: string[] } | null;
-
-/**
- * Source de vocabulaire, injectée depuis le client.
- *
- * Ce module est atteint CÔTÉ SERVEUR (`db/custom-card-editor.ts` importe
- * `draft.ts`, qui importe `isTokenTypeLine`). Un import de store Zustand au
- * niveau module casserait alors le build Turbopack — un piège que ni `tsc` ni
- * ESLint n'attrapent, seul `npm run build`. D'où cette injection : le serveur
- * ne branche rien et lit `null`, ce qui est le repli sûr.
- */
-let vocabularyResolver: () => TypeVocabularySource = () => null;
-
-export function setTypeVocabularyResolver(resolver: () => TypeVocabularySource): void {
-	vocabularyResolver = resolver;
-}
-
-export function resolveTypeVocabulary(): TypeVocabularySource {
-	return vocabularyResolver();
-}
-```
-
-- [ ] **Step 2 : Brancher `hasCardType` sur le resolver**
-
-Dans `hasCardType`, remplacer la ligne provisoire de Task 2 :
-
-```ts
-const parts = parseTypeLine(typeLine, null);
-```
-
-par :
-
-```ts
-const parts = parseTypeLine(typeLine, resolveTypeVocabulary());
-```
-
-- [ ] **Step 3 : Créer le hook de branchement**
+- [ ] **Step 4 : Créer le hook de branchement**
 
 ```ts
 // src/lib/card-editor/useTypeVocabularyBridge.ts
@@ -404,7 +345,7 @@ export function useTypeVocabularyBridge(): void {
 }
 ```
 
-- [ ] **Step 4 : Appeler le hook depuis le studio**
+- [ ] **Step 5 : Appeler le hook depuis le studio**
 
 Dans `src/app/[locale]/studio/useCardEditor.ts`, ajouter l'import puis l'appel au tout début du corps de `useCardEditor` :
 
@@ -420,7 +361,7 @@ export function useCardEditor(language: string) {
 	const [state, setState] = useState<CardEditorState>(() => ({
 ```
 
-- [ ] **Step 5 : Types, lint et build**
+- [ ] **Step 6 : Types, lint et build**
 
 ```bash
 cd /home/elthinkbuntu/Documents/Wizcard
@@ -431,7 +372,7 @@ npm run build
 
 Attendu : `tsc` et `eslint` muets, `npm run build` en succès. **Le build est la porte critique de cette tâche** : c'est lui, et lui seul, qui dirait qu'un import Zustand a fui dans un chemin serveur. S'il échoue sur une frontière client/serveur, ne pas contourner en ajoutant `'use client'` à `type-line.ts` — ce serait casser le chemin serveur ; revenir au resolver injecté.
 
-- [ ] **Step 6 : Vérifier que le repli tient toujours**
+- [ ] **Step 7 : Vérifier que le repli tient toujours**
 
 ```bash
 cd /home/elthinkbuntu/Documents/Wizcard
@@ -440,12 +381,18 @@ npx tsx /tmp/claude-1000/-home-elthinkbuntu-Documents-Wizcard/fcade87f-2b5d-4554
 
 Attendu : **TOUT PASSE** encore. Ce script s'exécute hors React, donc le resolver n'est jamais branché et rend `null` : il prouve exactement le comportement du chemin serveur.
 
-- [ ] **Step 7 : Commit**
+- [ ] **Step 8 : Commit**
 
 ```bash
 cd /home/elthinkbuntu/Documents/Wizcard
 git add src/lib/card-editor/type-line.ts src/lib/card-editor/useTypeVocabularyBridge.ts "src/app/[locale]/studio/useCardEditor.ts"
-git commit -m "feat(studio): give the type line parser the real vocabulary
+git commit -m "fix(studio): keep the land frame on a dash-less type line
+
+The Scryfall vocabulary is English, so 'Terrain' now lands in subtypes and
+hasCardType stopped seeing it — the land frame was lost on the most ordinary
+French input. Without a dash the type/subtype split is a deduction, so the
+lookup spans all three lists; with a dash the grammar is explicit and
+subtypes stay excluded.
 
 hasCardType runs from pure functions that cannot consume a hook, so it takes
 an injected resolver reading the Zustand store via getState(). type-line.ts
@@ -459,13 +406,13 @@ Claude-Session: https://claude.ai/code/session_015hF7jdXAcFnXF2uDLwBr4q"
 
 ---
 
-### Task 4 : Vérification navigateur
+### Task 3 : Vérification navigateur
 
-**Files:** aucun (vérification seule ; si elle échoue, corriger dans les fichiers des tâches 1-3).
+**Files:** aucun (vérification seule ; si elle échoue, corriger dans les fichiers des tâches 1-2).
 
 **Interfaces:**
 
-- Consumes: le comportement livré par les tâches 1 à 3.
+- Consumes: le comportement livré par les tâches 1 et 2.
 - Produces: rien.
 
 C'est la porte qui compte : le bug a été trouvé dans le navigateur, il doit y être constaté résolu.
