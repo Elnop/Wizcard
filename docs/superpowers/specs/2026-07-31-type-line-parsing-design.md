@@ -98,8 +98,9 @@ la raison d'être de `hasCardType` documentée dans le fichier.
 gauche = supertypes+types, droite = sous-types. Le vocabulaire ne sert qu'à lever
 l'ambiguïté d'une ligne sans tiret.
 
-**Sans vocabulaire** (`null`), on garde le comportement actuel : tout à gauche dans
-`types`. C'est le repli sûr — voir ci-dessous.
+**Sans vocabulaire** (`null` — chemin serveur, ou premier rendu avant que le store soit
+rempli), on garde le comportement actuel : tout à gauche dans `types`. C'est le repli sûr,
+vérifié sur les cas limites en fin de document.
 
 ## L'accès au vocabulaire
 
@@ -134,9 +135,15 @@ export function setTypeVocabularyResolver(resolver: () => TypeVocabulary): void 
 }
 
 export function hasCardType(typeLine: string, type: string): boolean {
-	const { supertypes, types } = parseTypeLine(typeLine, vocabularyResolver());
+	const parts = parseTypeLine(typeLine, vocabularyResolver());
+	// Sans tiret, la ventilation type/sous-type est une déduction : on cherche
+	// donc dans les trois listes. Avec tiret, la grammaire est explicite et les
+	// sous-types sont ignorés — « Creature — Land Golem » n'est pas un terrain.
+	const pool = /[—–]/.test(typeLine)
+		? [...parts.supertypes, ...parts.types]
+		: [...parts.supertypes, ...parts.types, ...parts.subtypes];
 	const needle = type.toLowerCase();
-	return [...supertypes, ...types].some((entry) => entry.toLowerCase() === needle);
+	return pool.some((entry) => entry.toLowerCase() === needle);
 }
 ```
 
@@ -153,13 +160,18 @@ est conservé, et rien n'importe Zustand dans un chemin serveur.
 ## Ce que ça ne change pas
 
 Le store est asynchrone et vaut `null` au premier rendu. `hasCardType` doit donc rester
-juste sans vocabulaire — et il l'est : il cherche un mot précis (`land`, `terrain`,
-`token`, `jeton`) parmi supertypes+types, et la règle sans vocabulaire laisse tout à
-gauche dans `types`. `Terrain`, `Basic Land`, `Token Creature — Soldier` continuent d'être
-reconnus exactement comme aujourd'hui.
+juste sans vocabulaire — et il l'est : sans vocabulaire tout part à gauche dans `types`,
+et le mot cherché (`land`, `terrain`, `token`, `jeton`) s'y trouve.
 
-Autrement dit : **le point 2 profite à l'UI, pas au choix de cadre**, et c'est voulu. Le
-point 1, lui, corrige les deux — `Terrain Non-Base` ne sera plus déchiré.
+Les deux régimes ont été exécutés sur les cas limites. Terrain reconnu :
+`Terrain`, `Terrain Non-Base`, `Terrain de base`, `Basic Land`, `Land`,
+`Legendary Land — Urza's Saga`. Terrain **non** reconnu, comme il se doit :
+`Creature — Elemental Shaman`, `Creature — Landwalker`, `Creature — Land Golem`,
+`Enchantment`. Jeton reconnu : `Token Creature — Soldier`, `Jeton` ; non reconnu :
+`Creature — Token Beast`.
+
+C'est bien le garde-fou historique de `hasCardType` qui tient : les trois derniers cas
+ne passent que parce que le tiret rend la grammaire explicite.
 
 ## Vérification
 
