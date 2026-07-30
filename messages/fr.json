@@ -1052,25 +1052,23 @@
 			"searchPlaceholder": "M15, full art, snow…",
 			"results": "{count, plural, =0 {Aucun résultat} one {# layout} other {# layouts}}",
 			"empty": "Aucun cadre ne correspond à cette recherche.",
-			"loadMore": "Afficher {count} layouts de plus",
-			"kinds": {
-				"card": "Carte",
-				"token": "Jeton",
-				"planeswalker": "Planeswalker",
-				"saga": "Saga",
-				"split": "Split",
-				"double-faced": "Double face",
-				"oversized": "Grand format",
-				"packaging": "Packaging"
-			},
-			"sections": {
-				"card": "Cartes",
-				"planeswalker": "Planeswalkers",
-				"split": "Split",
-				"double-faced": "Double face",
-				"token": "Jetons",
-				"other": "Autres"
-			}
+			"filters": "Filtres",
+			"filtersApply": "Appliquer",
+			"filtersReset": "Réinitialiser",
+			"filterFamily": "Famille",
+			"filterKeyword": "Mot-clé",
+			"filterOrigin": "Origine",
+			"filterOrientation": "Orientation",
+			"filterCreature": "Compatible créature",
+			"filterAny": "Indifférent",
+			"originOfficial": "Cadres officiels",
+			"originCustom": "Cadres communautaires",
+			"orientationPortrait": "Portrait",
+			"orientationLandscape": "Paysage",
+			"creatureYes": "Avec zone F/E",
+			"creatureNo": "Sans zone F/E",
+			"keywordSearch": "Filtrer les mots-clés",
+			"activeFilters": "{count, plural, =0 {Aucun filtre} one {# filtre} other {# filtres}}"
 		},
 		"details": {
 			"title": "Détails",

@@ -1052,25 +1052,23 @@
 			"searchPlaceholder": "M15, full art, snow…",
 			"results": "{count, plural, =0 {No results} one {# layout} other {# layouts}}",
 			"empty": "No frame matches this search.",
-			"loadMore": "Show {count} more layouts",
-			"kinds": {
-				"card": "Card",
-				"token": "Token",
-				"planeswalker": "Planeswalker",
-				"saga": "Saga",
-				"split": "Split",
-				"double-faced": "Double-faced",
-				"oversized": "Oversized",
-				"packaging": "Packaging"
-			},
-			"sections": {
-				"card": "Cards",
-				"planeswalker": "Planeswalkers",
-				"split": "Split",
-				"double-faced": "Double-faced",
-				"token": "Tokens",
-				"other": "Other"
-			}
+			"filters": "Filters",
+			"filtersApply": "Apply",
+			"filtersReset": "Reset",
+			"filterFamily": "Family",
+			"filterKeyword": "Keyword",
+			"filterOrigin": "Origin",
+			"filterOrientation": "Orientation",
+			"filterCreature": "Creature-capable",
+			"filterAny": "Any",
+			"originOfficial": "Official frames",
+			"originCustom": "Community frames",
+			"orientationPortrait": "Portrait",
+			"orientationLandscape": "Landscape",
+			"creatureYes": "Has a P/T box",
+			"creatureNo": "No P/T box",
+			"keywordSearch": "Filter keywords",
+			"activeFilters": "{count, plural, =0 {No filters} one {# filter} other {# filters}}"
 		},
 		"details": {
 			"title": "Details",

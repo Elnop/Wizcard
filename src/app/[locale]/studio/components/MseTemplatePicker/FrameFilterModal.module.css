@@ -1,0 +1,107 @@
+/* FrameFilterModal.module.css */
+.panel {
+	display: flex;
+	flex-direction: column;
+	max-width: 34rem;
+	width: 100%;
+	max-height: 85vh;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 1rem 1.25rem;
+	border-bottom: 1px solid var(--border, #2a2a2a);
+}
+
+.title {
+	font-weight: 700;
+}
+
+.close {
+	background: none;
+	border: none;
+	color: inherit;
+	cursor: pointer;
+	padding: 0.25rem;
+}
+
+.body {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	padding: 1.25rem;
+	overflow-y: auto;
+}
+
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	border: none;
+	padding: 0;
+	margin: 0;
+}
+
+.field > span,
+.field > legend {
+	font-size: 0.85rem;
+	opacity: 0.75;
+}
+
+/* La liste de mots-clés défile : elle en contient jusqu'à 188. */
+.keywordList {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+	max-height: 14rem;
+	overflow-y: auto;
+	margin-top: 0.5rem;
+}
+
+.keyword,
+.keywordActive {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	padding: 0.25rem 0.55rem;
+	border-radius: 999px;
+	border: 1px solid var(--border, #2a2a2a);
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+	font-size: 0.8rem;
+}
+
+.keywordActive {
+	border-color: var(--accent, #c9a84c);
+	background: color-mix(in srgb, var(--accent, #c9a84c) 18%, transparent);
+}
+
+.count {
+	opacity: 0.6;
+	font-variant-numeric: tabular-nums;
+}
+
+.footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.5rem;
+	padding: 1rem 1.25rem;
+	border-top: 1px solid var(--border, #2a2a2a);
+}
+
+.footer button {
+	padding: 0.45rem 0.9rem;
+	border-radius: 0.4rem;
+	border: 1px solid var(--border, #2a2a2a);
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+
+.apply {
+	border-color: var(--accent, #c9a84c);
+	font-weight: 600;
+}
