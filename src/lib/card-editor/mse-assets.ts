@@ -287,7 +287,7 @@ export function resolveMseFramePath(
 export function resolveMseBlend(
 	template: MseTemplate | undefined,
 	face: CardFaceDraft
-): { base: string; overlay: string; mask: string } | null {
+): { base: string; overlay: string; mask: string; plate: string } | null {
 	if (!template?.blendMasks) return null;
 	if (face.frameStyle !== 'auto') return null;
 	const colors = faceColors(face);
@@ -307,11 +307,25 @@ export function resolveMseBlend(
 	const first = template.framePaths[COLOR_TO_FRAME[colors[0]]];
 	const second = template.framePaths[COLOR_TO_FRAME[colors[1]]];
 	if (!first || !second) return null;
+	// Les plaques (titre, ligne de type) d'un hybride sont grises, pas colorées.
+	// MSE les prend dans le cadre TERRAIN : `color_combination` fait
+	// `mode := "hybrid" ; dark := land_template` (magic-blends.mse-include/
+	// new-blends). On suit la même chaîne de dégradation que le reste du module :
+	// on descend vers moins spécifique AU SEIN DU GRIS, jamais vers une autre
+	// couleur — sans gris disponible on ne fond pas, et le cadre or s'applique.
+	const landColorless: MseFrameKey = 'land-colorless';
+	const plateKey = [landColorless, ...frameDegradationChain(landColorless)].find(
+		(key) => template.framePaths[key]
+	);
+	if (!plateKey) return null;
+	const platePath = template.framePaths[plateKey];
+	if (!platePath) return null;
 	const base = cardAssetUrl(first);
 	const overlay = cardAssetUrl(second);
 	const mask = cardAssetUrl(maskPath);
-	if (!base || !overlay || !mask) return null;
-	return { base, overlay, mask };
+	const plate = cardAssetUrl(platePath);
+	if (!base || !overlay || !mask || !plate) return null;
+	return { base, overlay, mask, plate };
 }
 
 /**
