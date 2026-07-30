@@ -9,6 +9,7 @@ import { saveCustomCard } from '@/lib/card-editor/db/custom-card-editor';
 import { buildCardFileName, downloadBlob, renderCardPng } from '@/lib/card-editor/export';
 import { prepareArtwork } from '@/lib/card-editor/image';
 import {
+	resolveMseCrownPath,
 	resolveMseFramePath,
 	resolveMseTextColors,
 	useMseTemplateCatalog,
@@ -18,13 +19,16 @@ import {
 import { validateCardDraft } from '@/lib/card-editor/draft';
 import { templateGeometry } from '@/lib/card-editor/template-geometry';
 import { clampManaCost, getRulesCapacity, type RulesCapacity } from '@/lib/card-editor/text-layout';
+import { parseTypeLine } from '@/lib/card-editor/type-line';
 import {
 	CARD_FIELD_MAX_LENGTH,
 	DEFAULT_FRAME_TEMPLATE_ID,
 	DRAFT_FIELD_MAX_LENGTH,
 	type CardCanvasLabels,
+	type CardFaceDraft,
 	type EditableCardField,
 } from '@/lib/card-editor/types';
+import { useCardTypeVocabulary } from '@/lib/scryfall/hooks/useCardTypeVocabulary';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useCardEditor } from '../../useCardEditor';
 import { EditorSidebar, type EditorPanel } from '../EditorSidebar/EditorSidebar';
@@ -83,6 +87,13 @@ export function CardEditorStudio() {
 	// annonçait donc la capacité d'un gabarit maison retiré, pour un cadre aux
 	// proportions différentes. On lit désormais la même source que le rendu.
 	const rulesCapacity = capacityForTemplate(selectedMseTemplate, mseCatalog.templates);
+	// La couronne se déclenche sur le SUPERTYPE, comme MSE
+	// (`match(card.super_type, "Legendary")`) — pas sur une case à cocher. La
+	// ligne de type reste la source unique, donc rien ne peut diverger entre ce
+	// qui est écrit et ce qui est peint.
+	const typeVocabulary = useCardTypeVocabulary();
+	const isLegendary = (face: CardFaceDraft) =>
+		parseTypeLine(face.typeLine, typeVocabulary).supertypes.includes('Legendary');
 	const [activePanel, setActivePanel] = useState<EditorPanel>('card');
 	const [validationErrors, setValidationErrors] = useState<string[]>([]);
 	const [notice, setNotice] = useState<Notice>(null);
@@ -349,6 +360,11 @@ export function CardEditorStudio() {
 						{...canvasProps}
 						face={editor.activeFace}
 						mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.activeFace)}
+						mseCrownPath={resolveMseCrownPath(
+							selectedMseTemplate,
+							editor.activeFace,
+							isLegendary(editor.activeFace)
+						)}
 						mseTextColors={resolveMseTextColors(selectedMseTemplate, editor.activeFace)}
 						mseTemplate={selectedMseTemplate}
 						onFieldChange={handleFieldChange}
@@ -363,6 +379,11 @@ export function CardEditorStudio() {
 					{...canvasProps}
 					face={editor.draft.faces[0]}
 					mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.draft.faces[0])}
+					mseCrownPath={resolveMseCrownPath(
+						selectedMseTemplate,
+						editor.draft.faces[0],
+						isLegendary(editor.draft.faces[0])
+					)}
 					mseTextColors={resolveMseTextColors(selectedMseTemplate, editor.draft.faces[0])}
 					mseTemplate={selectedMseTemplate}
 					onFieldChange={() => undefined}
@@ -375,6 +396,11 @@ export function CardEditorStudio() {
 						{...canvasProps}
 						face={editor.draft.faces[1]}
 						mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.draft.faces[1])}
+						mseCrownPath={resolveMseCrownPath(
+							selectedMseTemplate,
+							editor.draft.faces[1],
+							isLegendary(editor.draft.faces[1])
+						)}
 						mseTextColors={resolveMseTextColors(selectedMseTemplate, editor.draft.faces[1])}
 						mseTemplate={selectedMseTemplate}
 						onFieldChange={() => undefined}

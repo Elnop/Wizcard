@@ -37,6 +37,7 @@ interface CardCanvasProps {
 	setCode: string;
 	collectorNumber: string;
 	mseFramePath?: string | null;
+	mseCrownPath?: string | null;
 	mseTextColors?: MseTextColors | null;
 	mseTemplate?: MseTemplate;
 	labels: CardCanvasLabels;
@@ -420,6 +421,7 @@ function CardSvg({
 	setCode,
 	collectorNumber,
 	mseFramePath,
+	mseCrownPath,
 	mseTextColors,
 	mseTemplate,
 	labels,
@@ -480,6 +482,23 @@ function CardSvg({
 			{mseFramePath && (
 				<image
 					href={mseFramePath}
+					x="0"
+					y="0"
+					width={geometry.width}
+					height={geometry.height}
+					preserveAspectRatio="none"
+				/>
+			)}
+			{/*
+			 * Couronne légendaire, peinte APRÈS le cadre : elle mord sur le haut de
+			 * la barre de titre, c'est ce recouvrement qui fait la couronne.
+			 *
+			 * Même `preserveAspectRatio="none"` que le cadre — le PNG est déjà cadré
+			 * aux dimensions du gabarit.
+			 */}
+			{mseCrownPath && (
+				<image
+					href={mseCrownPath}
 					x="0"
 					y="0"
 					width={geometry.width}
@@ -730,6 +749,7 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 		setCode,
 		collectorNumber,
 		mseFramePath,
+		mseCrownPath,
 		mseTextColors,
 		mseTemplate,
 		labels,
@@ -762,6 +782,7 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 					setCode={setCode}
 					collectorNumber={collectorNumber}
 					mseFramePath={mseFramePath}
+					mseCrownPath={mseCrownPath}
 					mseTextColors={mseTextColors}
 					mseTemplate={mseTemplate}
 					labels={labels}
