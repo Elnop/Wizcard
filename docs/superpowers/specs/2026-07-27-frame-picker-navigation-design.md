@@ -53,11 +53,12 @@ On ne réinterprète donc pas la source, on l'expose.
 (`generate-manifests.mjs:112`) dont le résultat dépend de l'ordre des tests. L'audit sur
 les 109 cadres montre trois défauts rédhibitoires :
 
-- **Faux positifs.** `magic-planeshifted` est classé `oversized` parce que `/planar/`
-  matche son nom « **Planar** Chaos Timeshifts » — alors que son chemin déclaré dit
-  `magic/Planeshifted/Normal Cards`, soit des cartes normales. `magic-m15-bigtext` est
-  classé `packaging` parce que `/box/` matche « After M15 with Taller Text**box** ». Ces
-  deux catégories ne comptent qu'un cadre chacune, et **les deux sont des erreurs**.
+- **Faux positifs.** `magic-m15-bigtext` est classé `packaging` parce que `/box/` matche
+  la **sous-chaîne** de « After M15 with Taller Text**box** ». `magic-planeshifted` est
+  classé `oversized` parce que `/planar/` matche son nom « Planar Chaos Timeshifts » —
+  un mot entier cette fois, mais un mauvais indice : c'est un nom d'extension, et son
+  chemin déclaré dit `magic/Planeshifted/Normal Cards`. Ces deux catégories ne comptent
+  qu'un cadre chacune, et **les deux sont des erreurs**.
 - **Confusion flip / double-face.** La regex `/double|transform|flip|meld/` range les flip
   cards avec les DFC. Ce sont deux mécaniques distinctes : un flip a **une seule face**
   qu'on pivote, une DFC en a deux imprimées. Le corpus les sépare correctement
@@ -119,6 +120,29 @@ niveaux, un autre en a 2) et rendrait toute correction dépendante d'un nouveau 
   « custom » sinon. C'est le seul jugement de valeur du design ; il reste en code, dans
   une table explicite, pour être corrigeable en un commit sans toucher la prod.
 
+### Découpage en mots entiers
+
+**Le parsing compare des mots entiers, jamais des sous-chaînes.** Les chaînes sources
+(id, nom, chemin) sont découpées sur tout ce qui n'est pas alphanumérique — `-`, `_`, `/`,
+espace — et chaque jeton est comparé en entier.
+
+C'est ce qui distingue un vrai indice d'une collision : `box` ne doit pas matcher
+« Text**box** », ni `pack` matcher « **pack**aging » dans un mot qui ne parle pas
+d'emballage. La cascade `classify()` actuelle teste des sous-chaînes, d'où le faux positif
+`packaging` ci-dessus.
+
+Vérifié sur les 109 cadres : le passage aux mots entiers ne fait perdre **aucun** rattrapage
+pour `token`, `planeswalker`, `split`, `flip`, `promo`, `god`, `tapped`, `leveler`. Un seul
+cas change — `doublefaced`, écrit collé dans deux id (`magic-new-doublefaced-sacrificer`,
+`…-sparker`), n'est plus atteint par le mot `double`. Ces deux cadres restent couverts par
+leur chemin déclaré, où « double faced » est bien en deux mots. Aucune sous-chaîne n'est
+donc réintroduite.
+
+Corollaire à ne pas manquer : ces deux cadres se nomment « Planeswalker -> Creature » et
+« Creature -> Planeswalker » — des DFC qui se transforment entre planeswalker et créature.
+Ils portent donc **`is_double_faced` (par le chemin) ET `is_planeswalker` (par le nom)**,
+ce qui est exact. `kind`, mono-valué, en choisissait un et jetait l'autre.
+
 ### Normalisation des mots-clés
 
 Les segments déclarés comportent des doublons d'écriture : `token`/`tokens`,
@@ -127,8 +151,14 @@ Les segments déclarés comportent des doublons d'écriture : `token`/`tokens`,
 « promo ».
 
 Règle : minuscules, suppression du suffixe ` cards`, singularisation, puis table de
-synonymes explicite. Le segment `normal cards` (22 occurrences) est **écarté** : il ne
-distingue rien.
+synonymes explicite, et enfin `_` comme liant pour les mots-clés composés
+(`double faced` → `double_faced`, `four abilities` → `four_abilities`). Le segment
+`normal cards` (22 occurrences) est **écarté** : il ne distingue rien.
+
+Un segment de chemin est pris **en entier** comme mot-clé (`double faced` est un mot-clé,
+pas deux). Le découpage en mots entiers de la section précédente s'applique à la
+détection dans l'id et le nom, qui sont du texte libre — pas aux segments du chemin, qui
+sont déjà des unités déclarées.
 
 `flip` et `double_faced` restent **distincts** — mécaniques différentes, cf. ci-dessus.
 
@@ -178,8 +208,13 @@ supprimée.
 - **Libellés d'origine conservés**, avec `short_name` en sous-titre — c'est lui qui
   distingue les 4 « After 8th edition ».
 - **Recherche élargie** à `name` + `short_name` + `id` + mots-clés + `tags` +
-  `installer_group`.
-  Taper « m15 » doit sortir les 22 cadres M15 ; aujourd'hui la recherche ne porte que sur
+  `installer_group`. Elle reste en **préfixe de mot**, et non en mot entier : on cherche
+  pendant la frappe, donc « plan » doit remonter « planeswalker ». La règle du mot entier
+  vaut pour la CLASSIFICATION (qui décide d'une colonne et doit être exacte), pas pour la
+  recherche (qui propose et doit être permissive). Ancrer sur le début du mot suffit à
+  écarter le cas « box » / « Textbox ».
+  Taper « m15 » doit sortir 24 cadres (les 22 de la famille `m15 style`, plus 2 qui la
+  citent sans y appartenir) ; aujourd'hui la recherche ne porte que sur
   le libellé affiché et n'en sort presque aucun.
 
 ### Sections ou grille plate
