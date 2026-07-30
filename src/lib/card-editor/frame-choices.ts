@@ -1,4 +1,5 @@
 import { CARD_LAYOUTS } from './layout-registry';
+import { frameFamily, frameOrigin, supportsCreature } from './frame-facets';
 import type { MseTemplate } from './mse-assets';
 import type { CardLayoutId } from './types';
 
@@ -17,7 +18,8 @@ import type { CardLayoutId } from './types';
 export interface FrameChoice {
 	/** Identité stable dans la liste (clé React et cible de comparaison). */
 	key: string;
-	kind: FrameChoiceKind;
+	/** Famille déclarée, 2e segment du chemin MSE. Remplace `kind`. */
+	family: string;
 	/** Libellé affiché, déjà désambiguïsé (cf. buildFrameChoices). */
 	label: string;
 	layoutId: CardLayoutId;
@@ -25,40 +27,56 @@ export interface FrameChoice {
 	template: MseTemplate;
 }
 
-export type FrameChoiceKind =
-	'card' | 'planeswalker' | 'split' | 'double-faced' | 'token' | 'other';
-
 export interface FrameChoiceSection {
-	kind: FrameChoiceKind;
+	family: string;
 	choices: FrameChoice[];
 }
 
+export interface FrameFilters {
+	family: string | null;
+	/** Mots-clés cumulés en ET. */
+	tags: string[];
+	origin: 'official' | 'custom' | null;
+	orientation: 'portrait' | 'landscape' | null;
+	creature: boolean | null;
+}
+
+export const DEFAULT_FRAME_FILTERS: FrameFilters = {
+	family: null,
+	tags: [],
+	origin: null,
+	orientation: null,
+	creature: null,
+};
+
+export function hasActiveFilters(filters: FrameFilters): boolean {
+	return (
+		filters.family !== null ||
+		filters.tags.length > 0 ||
+		filters.origin !== null ||
+		filters.orientation !== null ||
+		filters.creature !== null
+	);
+}
+
 /**
- * Ordre des sections. `other` ferme la marche : il absorbe la traîne (packaging,
- * saga, oversized — 1 à 2 entrées chacun), pour ne pas afficher un en-tête de
- * section au-dessus d'une seule ligne.
+ * Tri : `position_hint` croissant, puis libellé en départage.
+ *
+ * C'est l'ordre DÉCLARÉ par les auteurs du corpus, présent sur les 109 gabarits
+ * (001-907). Le tri alphabétique précédent l'écrasait et éclatait la chronologie
+ * des cadres sur tout l'alphabet. La règle « CardConjurer d'abord » qui le
+ * précédait ne triait rien : les 109 gabarits proposés sont tous `mse`.
+ *
+ * Un `position_hint` absent passe en fin de liste plutôt qu'en tête : `''` se
+ * trierait avant `'001'`, ce qui remonterait les gabarits non déclarés.
  */
-const SECTION_ORDER: FrameChoiceKind[] = [
-	'card',
-	'planeswalker',
-	'split',
-	'double-faced',
-	'token',
-	'other',
-];
-
-const VENDOR_KINDS = new Set<FrameChoiceKind>([
-	'card',
-	'planeswalker',
-	'split',
-	'double-faced',
-	'token',
-]);
-
-function sectionKindFor(template: MseTemplate): FrameChoiceKind {
-	return VENDOR_KINDS.has(template.kind as FrameChoiceKind)
-		? (template.kind as FrameChoiceKind)
-		: 'other';
+function sortByDeclaredOrder(choices: FrameChoice[]): void {
+	choices.sort((a, b) => {
+		const aHint = a.template.positionHint ?? '￿';
+		const bHint = b.template.positionHint ?? '￿';
+		if (aHint !== bHint) return aHint.localeCompare(bHint);
+		return a.label.localeCompare(b.label);
+	});
 }
 
 /**
@@ -102,57 +120,23 @@ function disambiguateLabels(templates: MseTemplate[]): Map<string, string> {
 
 /** Construit la liste des apparences proposées : les cadres vendor mesurés. */
 export function buildFrameChoices(templates: MseTemplate[]): FrameChoice[] {
-	// « Aucun fallback » appliqué à la liste : un cadre sans géométrie MESURÉE
-	// n'est pas proposé. Mieux vaut une bibliothèque plus courte que des cartes
-	// dont le texte tombe à côté — c'est précisément le défaut que ce chantier
-	// corrige.
-	//
+	// « Aucun fallback » : un cadre sans géométrie MESURÉE n'est pas proposé.
 	// Depuis le retrait des gabarits maison, cette règle décide de la totalité de
-	// la liste : plus rien n'est rendu en dehors d'un cadre mesuré.
-	//
-	// Le filtrage précède `disambiguateLabels` : désambiguïser sur l'ensemble
-	// complet collerait un suffixe « · variante » à des cadres dont l'homonyme
-	// n'est même pas affiché.
+	// la liste — plus rien n'est rendu en dehors d'un cadre mesuré.
 	const measured = templates.filter((template) => template.geometry !== null);
-
 	const labels = disambiguateLabels(measured);
-	const vendor: FrameChoice[] = measured.map((template) => ({
+
+	const choices: FrameChoice[] = measured.map((template) => ({
 		key: `mse:${template.id}`,
-		kind: sectionKindFor(template),
+		family: frameFamily(template),
 		label: labels.get(template.id) ?? template.name,
 		layoutId: layoutForTemplate(template),
 		mseTemplateId: template.id,
 		template,
 	}));
 
-	// La liste est paginée par tranche sur SA position brute (voir le composant) :
-	// si l'ordre ne suit pas déjà SECTION_ORDER, une tranche coupe une section en
-	// plein milieu et en fait disparaître d'autres entièrement sans même afficher
-	// leur en-tête. Trier ici garantit qu'une vue tronquée reste un PRÉFIXE correct
-	// de la séquence des sections.
-	const bySection = new Map<FrameChoiceKind, FrameChoice[]>();
-	for (const choice of vendor) {
-		const bucket = bySection.get(choice.kind);
-		if (bucket) bucket.push(choice);
-		else bySection.set(choice.kind, [choice]);
-	}
-	for (const bucket of bySection.values()) sortWithinSection(bucket);
-
-	return SECTION_ORDER.flatMap((kind) => bySection.get(kind) ?? []);
-}
-
-/**
- * Tri intra-section : cadres CardConjurer d'abord, puis alphabétique sur le
- * libellé désambiguïsé (celui qu'on affiche — pas `name`, qui peut être un
- * doublon que le libellé a déjà résolu).
- */
-function sortWithinSection(choices: FrameChoice[]): void {
-	choices.sort((a, b) => {
-		const aIsCardConjurer = a.template.source === 'cardconjurer';
-		const bIsCardConjurer = b.template.source === 'cardconjurer';
-		if (aIsCardConjurer !== bIsCardConjurer) return aIsCardConjurer ? -1 : 1;
-		return a.label.localeCompare(b.label);
-	});
+	sortByDeclaredOrder(choices);
+	return choices;
 }
 
 /**
@@ -162,18 +146,71 @@ function sortWithinSection(choices: FrameChoice[]): void {
  */
 function layoutForTemplate(template: MseTemplate): CardLayoutId {
 	if (template.layoutId && template.layoutId in CARD_LAYOUTS) return template.layoutId;
-	if (template.kind === 'token') return 'token';
-	if (template.kind === 'planeswalker') return 'planeswalker';
-	if (template.kind === 'saga') return 'saga';
+	if (template.tags.includes('planeswalker')) return 'planeswalker';
+	if (template.tags.includes('token')) return 'token';
+	if (template.tags.includes('saga')) return 'saga';
 	return template.orientation === 'landscape' ? 'landscape' : 'arcana';
 }
 
-/** Regroupe en sections, dans l'ordre fixe ci-dessus ; les vides sont omises. */
+export function applyFrameFilters(choices: FrameChoice[], filters: FrameFilters): FrameChoice[] {
+	return choices.filter((choice) => {
+		if (filters.family !== null && choice.family !== filters.family) return false;
+		// Mots-clés cumulés en ET : chaque mot-clé ajouté restreint.
+		if (!filters.tags.every((tag) => choice.template.tags.includes(tag))) return false;
+		if (filters.origin !== null && frameOrigin(choice.template) !== filters.origin) return false;
+		if (filters.orientation !== null && choice.template.orientation !== filters.orientation) {
+			return false;
+		}
+		if (filters.creature !== null && supportsCreature(choice.template) !== filters.creature) {
+			return false;
+		}
+		return true;
+	});
+}
+
+/**
+ * Sections par famille, dans l'ordre d'apparition — donc celui de
+ * `position_hint`, puisque la liste est déjà triée. Pas d'ordre codé en dur : le
+ * corpus déclare 30 familles et en ajouter une ne doit demander aucun code.
+ */
 export function groupFrameChoices(choices: FrameChoice[]): FrameChoiceSection[] {
-	return SECTION_ORDER.map((kind) => ({
-		kind,
-		choices: choices.filter((choice) => choice.kind === kind),
-	})).filter((section) => section.choices.length > 0);
+	const sections: FrameChoiceSection[] = [];
+	const byFamily = new Map<string, FrameChoice[]>();
+	for (const choice of choices) {
+		const bucket = byFamily.get(choice.family);
+		if (bucket) {
+			bucket.push(choice);
+		} else {
+			const created = [choice];
+			byFamily.set(choice.family, created);
+			sections.push({ family: choice.family, choices: created });
+		}
+	}
+	return sections;
+}
+
+/**
+ * Recherche en PRÉFIXE DE MOT, sur toutes les sources.
+ *
+ * Volontairement plus permissive que la classification : on cherche pendant la
+ * frappe, donc « plan » doit remonter « planeswalker ». Ancrer sur le début du
+ * mot suffit à écarter la collision qui a motivé ce chantier (« box » ne doit
+ * pas remonter « Textbox »).
+ */
+export function matchesQuery(choice: FrameChoice, query: string): boolean {
+	const needle = query.trim().toLocaleLowerCase();
+	if (!needle) return true;
+	const haystack = [
+		choice.label,
+		choice.template.name,
+		choice.template.shortName ?? '',
+		choice.template.id,
+		choice.template.installerGroup ?? '',
+		choice.template.tags.join(' '),
+	]
+		.join(' ')
+		.toLocaleLowerCase();
+	return haystack.split(/[^a-z0-9]+/).some((word) => word.startsWith(needle));
 }
 
 /**
