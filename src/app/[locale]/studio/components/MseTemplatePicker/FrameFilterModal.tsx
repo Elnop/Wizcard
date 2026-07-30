@@ -1,5 +1,6 @@
 'use client';
 
+import { X } from '@phosphor-icons/react';
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/Modal/Modal';
@@ -14,6 +15,9 @@ import { DEFAULT_FRAME_FILTERS, type FrameFilters } from '@/lib/card-editor/fram
 import type { MseTemplate } from '@/lib/card-editor/mse-assets';
 import styles from './FrameFilterModal.module.css';
 
+/** Propositions affichées sous le champ mot-clé. */
+const MAX_KEYWORD_SUGGESTIONS = 8;
+
 interface FrameFilterModalProps {
 	templates: MseTemplate[];
 	initialFilters: FrameFilters;
@@ -24,13 +28,18 @@ interface FrameFilterModalProps {
 /**
  * Modale de filtres de la bibliothèque de cadres.
  *
- * Cinq champs : quatre `<select>` et une liste filtrable pour les mots-clés —
- * un `<select>` de 188 options serait aussi impraticable que la liste qu'on
- * corrige.
+ * Cinq champs : quatre `<select>` et un champ de saisie à propositions pour les
+ * mots-clés. Ni un `<select>` de 188 options ni un mur de 188 puces ne seraient
+ * praticables — on tape, on choisit dans une courte liste, le mot-clé retenu
+ * devient une puce retirable.
  *
- * Chaque option porte son COMPTE, et les options à zéro résultat sont masquées :
- * c'est ce qui rend 30 familles et 188 mots-clés parcourables sans en cacher
- * aucun.
+ * Le champ suit le motif du studio (cf. `TypeLineField`) plutôt que le
+ * `TagInput` de `@/lib/mpc` : ce dernier est câblé sur la taxonomie MPC au
+ * niveau module et n'affiche pas de compte par entrée.
+ *
+ * Chaque option de `<select>` porte son COMPTE et les options à zéro résultat
+ * sont masquées : c'est ce qui rend 30 familles parcourables sans en cacher
+ * aucune.
  */
 export function FrameFilterModal({
 	templates,
@@ -53,22 +62,33 @@ export function FrameFilterModal({
 
 	const tagCounts = useMemo(() => countTags(templates), [templates]);
 
-	// Tri par nombre de cadres décroissant : `planeswalker` (21) avant `nyx` (1).
-	// Aucun mot-clé CARACTÉRISANT n'est retiré — les plus rares sont souvent les
-	// plus discriminants quand on sait ce qu'on cherche. Les mots de phrase
-	// (« after », « edition »…) restent dans `tags` pour la recherche mais ne
-	// caractérisent aucun cadre : displayableTags() les exclut de la liste de
-	// puces, sans toucher aux comptes.
+	// Les mots de phrase (« after », « edition »…) restent dans `tags` pour la
+	// recherche mais ne caractérisent aucun cadre : displayableTags() les exclut
+	// des propositions, sans toucher aux comptes.
 	const displayableTagSet = useMemo(
 		() => new Set(displayableTags([...tagCounts.keys()])),
 		[tagCounts]
 	);
-	const keywords = useMemo(() => {
+
+	/**
+	 * Propositions du champ mot-clé.
+	 *
+	 * Vides tant que rien n'est saisi : dérouler 188 entrées à l'ouverture
+	 * remplacerait le mur de puces qu'on retire. Le tri reste le nombre de cadres
+	 * décroissant — `planeswalker` (21) avant `nyx` (1) — et aucun mot-clé
+	 * caractérisant n'est écarté : les plus rares sont souvent les plus
+	 * discriminants quand on sait ce qu'on cherche.
+	 */
+	const suggestions = useMemo(() => {
 		const needle = keywordQuery.trim().toLocaleLowerCase();
+		if (!needle) return [];
 		return [...tagCounts.entries()]
-			.filter(([tag]) => displayableTagSet.has(tag) && (!needle || tag.startsWith(needle)))
-			.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-	}, [keywordQuery, tagCounts, displayableTagSet]);
+			.filter(
+				([tag]) => displayableTagSet.has(tag) && tag.includes(needle) && !draft.tags.includes(tag)
+			)
+			.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+			.slice(0, MAX_KEYWORD_SUGGESTIONS);
+	}, [keywordQuery, tagCounts, displayableTagSet, draft.tags]);
 
 	const originCounts = useMemo(() => {
 		let official = 0;
@@ -95,6 +115,14 @@ export function FrameFilterModal({
 				? current.tags.filter((value) => value !== tag)
 				: [...current.tags, tag],
 		}));
+
+	/** Retient un mot-clé et vide la saisie, pour enchaîner sur le suivant. */
+	function addTag(tag: string) {
+		setDraft((current) =>
+			current.tags.includes(tag) ? current : { ...current, tags: [...current.tags, tag] }
+		);
+		setKeywordQuery('');
+	}
 
 	return (
 		<Modal onClose={onClose} className={styles.panel}>
@@ -200,24 +228,58 @@ export function FrameFilterModal({
 
 				<fieldset className={styles.field}>
 					<legend>{t('filterKeyword')}</legend>
-					<input
-						type="search"
-						value={keywordQuery}
-						placeholder={t('keywordSearch')}
-						onChange={(event) => setKeywordQuery(event.target.value)}
-					/>
-					<div className={styles.keywordList}>
-						{keywords.map(([tag, count]) => (
-							<button
-								key={tag}
-								type="button"
-								aria-pressed={draft.tags.includes(tag)}
-								className={draft.tags.includes(tag) ? styles.keywordActive : styles.keyword}
-								onClick={() => toggleTag(tag)}
-							>
-								{tag} <span className={styles.count}>{count}</span>
-							</button>
-						))}
+					{draft.tags.length > 0 && (
+						<div className={styles.keywordList}>
+							{draft.tags.map((tag) => (
+								<span key={tag} className={styles.keywordActive}>
+									{tag}
+									<button
+										type="button"
+										className={styles.keywordRemove}
+										onClick={() => toggleTag(tag)}
+										aria-label={`${t('filterKeyword')} — ${tag}`}
+									>
+										<X size={11} weight="bold" />
+									</button>
+								</span>
+							))}
+						</div>
+					)}
+					<div className={styles.keywordInput}>
+						<input
+							type="text"
+							value={keywordQuery}
+							placeholder={t('keywordSearch')}
+							autoComplete="off"
+							onChange={(event) => setKeywordQuery(event.target.value)}
+							onKeyDown={(event) => {
+								// Entrée retient la première proposition : le cas courant est de
+								// taper trois lettres puis valider sans quitter le clavier.
+								if (event.key === 'Enter') {
+									event.preventDefault();
+									const first = suggestions[0];
+									if (first) addTag(first[0]);
+								}
+								// Retour arrière sur un champ vide retire le dernier mot-clé,
+								// raccourci attendu de ce type de champ (cf. TypeLineField).
+								if (event.key === 'Backspace' && !keywordQuery && draft.tags.length > 0) {
+									toggleTag(draft.tags[draft.tags.length - 1]);
+								}
+							}}
+						/>
+						{suggestions.length > 0 && (
+							<ul className={styles.suggestions}>
+								{suggestions.map(([tag, count]) => (
+									<li key={tag}>
+										{/* onMouseDown et non onClick : le blur de l'input ne doit pas
+										    fermer la liste avant que le clic n'aboutisse. */}
+										<button type="button" onMouseDown={() => addTag(tag)}>
+											{tag} <span className={styles.count}>{count}</span>
+										</button>
+									</li>
+								))}
+							</ul>
+						)}
 					</div>
 				</fieldset>
 			</div>

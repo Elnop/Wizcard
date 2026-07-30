@@ -109,7 +109,55 @@
 	border-color: var(--gold);
 }
 
-.field input[type='search'] {
+/*
+ * Mots-clés RETENUS. Sans contrainte de hauteur, contrairement à la liste de
+ * 188 puces qu'elle remplace : on n'en garde ici qu'une poignée, le catalogue
+ * complet se parcourt par la saisie ci-dessous.
+ */
+.keywordList {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+/* Reprend .chip de DeckFilterModal, plus la croix de retrait. */
+.keywordActive {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	background: var(--primary);
+	border: 1px solid var(--primary);
+	border-radius: 999px;
+	color: var(--primary-text);
+	font-size: var(--text-sm);
+}
+
+.keywordRemove {
+	display: inline-flex;
+	align-items: center;
+	padding: 0;
+	background: transparent;
+	border: none;
+	color: inherit;
+	cursor: pointer;
+	opacity: 0.7;
+	transition: opacity 0.15s;
+}
+
+.keywordRemove:hover {
+	opacity: 1;
+}
+
+/* Champ de saisie + propositions. */
+.keywordInput {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.keywordInput input {
+	width: 100%;
 	padding: 9px 12px;
 	background: rgba(255, 255, 255, 0.04);
 	border: 1px solid var(--glass-border);
@@ -119,52 +167,49 @@
 	transition: border-color 0.2s;
 }
 
-.field input[type='search']:focus {
+.keywordInput input:focus {
 	outline: none;
 	border-color: var(--gold);
 }
 
 /*
- * Seule règle sans équivalent dans les modales du site : leur liste de puces
- * est courte (14 formats) et tient sans contrainte, celle-ci porte jusqu'à 188
- * mots-clés et doit donc défiler.
+ * Les propositions s'insèrent DANS le flux plutôt qu'en `position: absolute`.
+ *
+ * Le champ mot-clé est le dernier de la modale, dont le corps défile
+ * (`.body { overflow-y: auto }`) : une liste flottante y était rognée par le bas
+ * du panneau, donc illisible dès la deuxième proposition. En flux, elle
+ * allonge le corps et reste entièrement atteignable au défilement.
+ *
+ * Le coût est que le contenu suivant se décale — nul ici, puisqu'il n'y a rien
+ * après ce champ.
  */
-.keywordList {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	max-height: 224px;
-	overflow-y: auto;
-	padding-right: 4px;
+.suggestions {
+	margin: 0;
+	padding: 4px;
+	list-style: none;
+	background: var(--surface);
+	border: 1px solid var(--glass-border);
+	border-radius: 2px;
 }
 
-.keyword,
-.keywordActive {
-	display: inline-flex;
+.suggestions button {
+	display: flex;
 	align-items: center;
-	gap: 6px;
-	padding: 6px 12px;
+	justify-content: space-between;
+	gap: 12px;
+	width: 100%;
+	padding: 7px 10px;
 	background: transparent;
-	border: 1px solid var(--glass-border);
-	border-radius: 999px;
+	border: none;
+	border-radius: 2px;
 	color: var(--foreground);
 	font-size: var(--text-sm);
+	text-align: start;
 	cursor: pointer;
-	transition:
-		border-color 0.2s,
-		background-color 0.2s,
-		color 0.2s;
 }
 
-.keyword:hover,
-.keywordActive:hover {
-	border-color: var(--gold);
-}
-
-.keywordActive {
-	background: var(--primary);
-	border-color: var(--primary);
-	color: var(--primary-text);
+.suggestions button:hover {
+	background: var(--surface-hover);
 }
 
 .count {

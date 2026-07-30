@@ -1068,7 +1068,7 @@
 			"orientationLandscape": "Landscape",
 			"creatureYes": "Has a P/T box",
 			"creatureNo": "No P/T box",
-			"keywordSearch": "Filter keywords",
+			"keywordSearch": "Type to search keywords…",
 			"activeFilters": "{count, plural, =0 {No filters} one {# filter} other {# filters}}"
 		},
 		"details": {
