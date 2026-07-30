@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
+import { extractKeywords } from './frame-keywords.mjs';
 
 const ASSET_VERSION = 'bcdf4190b4bf';
 const SNAPSHOT_ROOT = `card-assets/v/${ASSET_VERSION}/full-magic-pack`;
@@ -109,18 +110,6 @@ function numericValue(source, key) {
 	return Number.isFinite(value) ? value : null;
 }
 
-function classify(id, name) {
-	const haystack = `${id} ${name}`.toLowerCase();
-	if (/token|emblem/.test(haystack)) return 'token';
-	if (/planeswalker/.test(haystack)) return 'planeswalker';
-	if (/saga/.test(haystack)) return 'saga';
-	if (/split|aftermath/.test(haystack)) return 'split';
-	if (/double|transform|flip|meld/.test(haystack)) return 'double-faced';
-	if (/planechase|planar|scheme|vanguard/.test(haystack)) return 'oversized';
-	if (/booster|box|pack|wrapper/.test(haystack)) return 'packaging';
-	return 'card';
-}
-
 async function resolveFramePaths(source, styleDirectory) {
 	const referencedDirectories = [...source.matchAll(/["']\/(.+?\/)["']/g)]
 		.map((match) => match[1])
@@ -161,7 +150,8 @@ async function buildTemplate(styleDirectory) {
 	const source = (await fs.readFile(stylePath, 'utf8')).replace(/^\uFEFF/, '');
 	const directory = normalize(path.relative(DATA_ROOT, styleDirectory));
 	const id = path.basename(styleDirectory, '.mse-style');
-	const name = topLevelValue(source, 'full name') ?? topLevelValue(source, 'short name') ?? id;
+	const shortName = topLevelValue(source, 'short name');
+	const name = topLevelValue(source, 'full name') ?? shortName ?? id;
 	const width = numericValue(source, 'card width');
 	const height = numericValue(source, 'card height');
 	const icon = topLevelValue(source, 'icon');
@@ -198,16 +188,28 @@ async function buildTemplate(styleDirectory) {
 	return {
 		id,
 		name,
-		shortName: topLevelValue(source, 'short name'),
+		shortName,
 		directory,
 		stylePath: `${SNAPSHOT_ROOT}/data/${directory}/style`,
 		samplePath: sample ? `${SNAPSHOT_ROOT}/data/${directory}/${sample}` : null,
 		iconPath:
 			icon && ownRelativeFiles.includes(icon) ? `${SNAPSHOT_ROOT}/data/${directory}/${icon}` : null,
-		kind: classify(id, name),
 		orientation,
 		dimensions: { width, height, dpi: numericValue(source, 'card dpi') },
 		installerGroup,
+		// Ordre déclaré par les auteurs du corpus (001–907). C'est le tri du
+		// sélecteur : l'ordre alphabétique précédent éclatait la chronologie des
+		// cadres (« 10th edition » sous 1, « After M15 » sous A).
+		positionHint: topLevelValue(source, 'position hint'),
+		// Tous les mots-clés, toutes sources confondues. Remplace `kind`, dont la
+		// cascade de regex produisait des faux positifs (« Textbox » -> packaging)
+		// et écrasait la distinction flip / double-face.
+		tags: extractKeywords({
+			id,
+			name,
+			shortName,
+			installerGroup,
+		}),
 		dependencies,
 		assetCount: ownFiles.length,
 		framePaths,
@@ -257,10 +259,11 @@ async function buildCardConjurerTemplate(definition) {
 		stylePath: `${CARD_CONJURER_ROOT}/js/frames/groupAccurate.js`,
 		samplePath: path.posix.join(CARD_CONJURER_ROOT, relativeDirectory, thumbnail),
 		iconPath: null,
-		kind: 'card',
 		orientation: 'portrait',
 		dimensions: { width: 2010, height: 2814, dpi: 600 },
 		installerGroup: 'Accurate Frames',
+		positionHint: null,
+		tags: [],
 		dependencies: [],
 		assetCount: availableFiles.size,
 		framePaths,
@@ -304,11 +307,13 @@ const assets = await Promise.all(
 
 const generatedAt = new Date().toISOString();
 const totalBytes = assets.reduce((sum, asset) => sum + asset.size, 0);
-const byKind = Object.fromEntries(
-	Object.entries(Object.groupBy(templates, (template) => template.kind)).map(([kind, entries]) => [
-		kind,
-		entries.length,
-	])
+const byFamily = Object.fromEntries(
+	Object.entries(
+		Object.groupBy(
+			templates,
+			(template) => template.installerGroup?.split('/')[1]?.trim() ?? 'unknown'
+		)
+	).map(([family, entries]) => [family, entries.length])
 );
 const shared = {
 	schemaVersion: 1,
@@ -331,7 +336,7 @@ const shared = {
 
 await fs.writeFile(
 	path.join(MANIFEST_ROOT, 'templates.json'),
-	`${JSON.stringify({ ...shared, stats: { templates: templates.length, byKind }, templates }, null, 2)}\n`
+	`${JSON.stringify({ ...shared, stats: { templates: templates.length, byFamily }, templates }, null, 2)}\n`
 );
 await fs.writeFile(
 	path.join(MANIFEST_ROOT, 'assets.json'),
