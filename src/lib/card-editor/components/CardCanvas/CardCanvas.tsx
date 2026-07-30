@@ -37,6 +37,7 @@ interface CardCanvasProps {
 	setCode: string;
 	collectorNumber: string;
 	mseFramePath?: string | null;
+	mseBlend?: { base: string; overlay: string; mask: string } | null;
 	mseCrownPath?: string | null;
 	mseTextColors?: MseTextColors | null;
 	mseTemplate?: MseTemplate;
@@ -421,6 +422,7 @@ function CardSvg({
 	setCode,
 	collectorNumber,
 	mseFramePath,
+	mseBlend,
 	mseCrownPath,
 	mseTextColors,
 	mseTemplate,
@@ -479,15 +481,56 @@ function CardSvg({
 			 * la géométrie : une carte à moitié fausse est pire qu'une carte en attente.
 			 */}
 			<Artwork artwork={face.artwork} rect={geometry.art} clipId={clipId} />
-			{mseFramePath && (
-				<image
-					href={mseFramePath}
-					x="0"
-					y="0"
-					width={geometry.width}
-					height={geometry.height}
-					preserveAspectRatio="none"
-				/>
+			{/*
+			 * Cadre. Un fondu bicolore remplace l'image unique par une composition :
+			 * MSE fait `masked_blend(mask, dark, light)`, où le masque choisit par
+			 * pixel lequel des DEUX cadres colorés apparaît. Le masque est
+			 * quasi-binaire, donc la découpe est franche.
+			 *
+			 * L'export PNG suit sans modification : `inlineSvgImages` parcourt
+			 * `querySelectorAll('image')`, ce qui inclut l'image DANS le <mask>.
+			 */}
+			{mseBlend ? (
+				<>
+					<mask id={`${clipId}-blend`}>
+						<image
+							href={mseBlend.mask}
+							x="0"
+							y="0"
+							width={geometry.width}
+							height={geometry.height}
+							preserveAspectRatio="none"
+						/>
+					</mask>
+					<image
+						href={mseBlend.base}
+						x="0"
+						y="0"
+						width={geometry.width}
+						height={geometry.height}
+						preserveAspectRatio="none"
+					/>
+					<image
+						href={mseBlend.overlay}
+						x="0"
+						y="0"
+						width={geometry.width}
+						height={geometry.height}
+						preserveAspectRatio="none"
+						mask={`url(#${clipId}-blend)`}
+					/>
+				</>
+			) : (
+				mseFramePath && (
+					<image
+						href={mseFramePath}
+						x="0"
+						y="0"
+						width={geometry.width}
+						height={geometry.height}
+						preserveAspectRatio="none"
+					/>
+				)
 			)}
 			{/*
 			 * Couronne légendaire, peinte APRÈS le cadre : elle mord sur le haut de
@@ -749,6 +792,7 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 		setCode,
 		collectorNumber,
 		mseFramePath,
+		mseBlend,
 		mseCrownPath,
 		mseTextColors,
 		mseTemplate,
@@ -782,6 +826,7 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 					setCode={setCode}
 					collectorNumber={collectorNumber}
 					mseFramePath={mseFramePath}
+					mseBlend={mseBlend}
 					mseCrownPath={mseCrownPath}
 					mseTextColors={mseTextColors}
 					mseTemplate={mseTemplate}
