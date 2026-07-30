@@ -30,6 +30,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { resolveSupabaseEnv } from '../lib/load-env';
 import { createLogger } from '../lib/logger';
 import { extractAll, type TemplateGeometry } from '../mse-geometry/extract';
+import { buildCrownPaths } from './crown-compat.mjs';
 
 const log = createLogger('card-assets');
 const execFileAsync = promisify(execFile);
@@ -118,6 +119,7 @@ interface CardTemplateRow {
 	// Géométrie mesurée depuis le corpus MSE (scripts/mse-geometry/extract.ts).
 	// NULL = non mesuré : jamais de géométrie empruntée à un autre gabarit.
 	geometry: TemplateGeometry | null;
+	crown_paths: Record<string, string> | null;
 	installer_group: string | null;
 	position_hint: string | null;
 	tags: string[];
@@ -202,6 +204,10 @@ function toRow(
 		// Les clés de la Map == template.id (vérifié : 109 hits directs, aucune
 		// normalisation). Pas de géométrie mesurée -> NULL, jamais de fallback.
 		geometry: geometries.get(template.id) ?? null,
+		// Couronne légendaire : dérivée de la MÊME géométrie que la ligne
+		// ci-dessus, donc les deux ne peuvent pas diverger. NULL = ce gabarit
+		// n'accepte pas la couronne (cf. crown-compat.mjs).
+		crown_paths: buildCrownPaths(geometries.get(template.id) ?? null),
 		installer_group: template.installerGroup ?? null,
 		position_hint: template.positionHint ?? null,
 		tags: template.tags ?? [],
