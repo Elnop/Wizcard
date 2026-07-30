@@ -63,16 +63,15 @@
 
 .grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-	gap: 6px;
+	grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+	gap: 0.75rem;
 }
 
 .template,
 .templateSelected {
-	display: grid;
+	display: flex;
 	min-width: 0;
-	grid-template-columns: 42px minmax(0, 1fr);
-	align-items: center;
+	flex-direction: column;
 	gap: 8px;
 	padding: 7px;
 	border: 1px solid var(--border);
@@ -95,20 +94,19 @@
 .preview {
 	position: relative;
 	display: flex;
-	width: 42px;
-	height: 58px;
 	align-items: center;
 	justify-content: center;
+	/* Ratio d'une carte 63 x 88 mm : la vignette annonce la forme réelle. */
+	aspect-ratio: 63 / 88;
 	overflow: hidden;
-	border-radius: 4px;
-	background: var(--surface);
+	border-radius: 0.4rem;
+	background: var(--surface-2, #16161a);
 }
 
 .preview img {
-	display: block;
 	width: 100%;
 	height: 100%;
-	object-fit: contain;
+	object-fit: cover;
 }
 
 .check {
@@ -149,6 +147,21 @@
 	white-space: nowrap;
 }
 
+.badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.2rem;
+	margin-top: 0.2rem;
+}
+
+.badge {
+	font-size: 0.65rem;
+	padding: 0.05rem 0.35rem;
+	border-radius: 999px;
+	background: var(--surface-3, #23232a);
+	opacity: 0.85;
+}
+
 .loading,
 .error,
 .empty {
@@ -171,20 +184,16 @@
 	color: var(--error);
 }
 
-.loadMore {
-	padding: 9px 10px;
-	border: 1px solid var(--border);
-	border-radius: 8px;
-	background: rgba(255, 255, 255, 0.04);
-	color: var(--primary);
-	font-size: var(--text-sm);
-	font-weight: 500;
+.filterButton {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.35rem 0.7rem;
+	border-radius: 0.4rem;
+	border: 1px solid var(--border, #2a2a2a);
+	background: transparent;
+	color: inherit;
 	cursor: pointer;
-	transition: border-color 0.15s ease;
-}
-
-.loadMore:hover {
-	border-color: var(--primary);
 }
 
 .srOnly {
@@ -194,6 +203,12 @@
 	overflow: hidden;
 	clip: rect(0, 0, 0, 0);
 	white-space: nowrap;
+}
+
+/* Cible du IntersectionObserver : invisible, mais doit avoir une hauteur pour
+   être observable. */
+.sentinel {
+	height: 1px;
 }
 
 /* Les sections remplacent la ligne de filtres : le regroupement est le même, mais

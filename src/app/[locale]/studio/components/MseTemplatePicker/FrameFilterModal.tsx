@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/Modal/Modal';
 import {
 	countTags,
+	displayableTags,
 	frameFamily,
 	frameOrigin,
 	supportsCreature,
@@ -53,14 +54,21 @@ export function FrameFilterModal({
 	const tagCounts = useMemo(() => countTags(templates), [templates]);
 
 	// Tri par nombre de cadres décroissant : `planeswalker` (21) avant `nyx` (1).
-	// Aucun mot-clé n'est retiré — les plus rares sont souvent les plus
-	// discriminants quand on sait ce qu'on cherche.
+	// Aucun mot-clé CARACTÉRISANT n'est retiré — les plus rares sont souvent les
+	// plus discriminants quand on sait ce qu'on cherche. Les mots de phrase
+	// (« after », « edition »…) restent dans `tags` pour la recherche mais ne
+	// caractérisent aucun cadre : displayableTags() les exclut de la liste de
+	// puces, sans toucher aux comptes.
+	const displayableTagSet = useMemo(
+		() => new Set(displayableTags([...tagCounts.keys()])),
+		[tagCounts]
+	);
 	const keywords = useMemo(() => {
 		const needle = keywordQuery.trim().toLocaleLowerCase();
 		return [...tagCounts.entries()]
-			.filter(([tag]) => !needle || tag.startsWith(needle))
+			.filter(([tag]) => displayableTagSet.has(tag) && (!needle || tag.startsWith(needle)))
 			.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-	}, [keywordQuery, tagCounts]);
+	}, [keywordQuery, tagCounts, displayableTagSet]);
 
 	const originCounts = useMemo(() => {
 		let official = 0;
