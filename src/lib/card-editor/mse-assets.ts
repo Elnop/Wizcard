@@ -165,6 +165,31 @@ function faceColors(face: CardFaceDraft): string[] {
 	return WUBRG.filter((color) => symbols.includes(color));
 }
 
+/**
+ * Le coût contient-il un symbole hybride bicolore (`{W/U}`) ?
+ *
+ * La distinction est celle que fait le script du jeu MSE
+ * (`magic.mse-game/script`), qui termine la combinaison de couleurs par
+ * « hybrid » plutôt que « multicolor » selon la NATURE du coût :
+ *
+ *     #### hybrid, not artifact
+ *     else if count == 2 then  color_names_2() + ", hybrid"
+ *
+ * Les deux masques découpent des zones différentes : `multicolor` protège la
+ * barre de titre ET la ligne de type, `hybrid` ne protège que les deux barres.
+ * Les confondre donnait à une carte hybride le cadre d'une bicolore ordinaire.
+ *
+ * Deux formes ressemblantes ne sont PAS hybrides et doivent rester exclues :
+ * `{U/P}` (phyrexian, une seule couleur) et `{2/W}` (hybride monocolore).
+ * D'où le test sur DEUX moitiés qui sont toutes deux des couleurs.
+ */
+function hasHybridCost(face: CardFaceDraft): boolean {
+	return getManaSymbols(face.manaCost).some((symbol) => {
+		const halves = symbol.split('/');
+		return halves.length === 2 && halves.every((half) => WUBRG.includes(half as never));
+	});
+}
+
 function resolveAutomaticFrame(face: CardFaceDraft): MseFrameKey {
 	const colors = faceColors(face);
 	const symbols = getManaSymbols(face.manaCost).join('');
@@ -252,9 +277,14 @@ export function resolveMseFramePath(
  * lequel des DEUX cadres colorés apparaît. On renvoie donc les trois URL, jamais
  * une seule — peindre le masque seul donnerait une carte blanche.
  *
+ * DEUX masques, selon la nature du coût (cf. `hasHybridCost`) : `hybrid` pour un
+ * `{W/U}`, `multicolor` pour un `{W}{U}`. Les confondre donnait à une carte
+ * hybride le cadre d'une bicolore ordinaire.
+ *
  * `null` dès qu'une pièce manque : carte pas exactement bicolore, gabarit sans
- * masque, ou cadre manquant pour l'une des deux couleurs. Le rendu retombe alors
- * sur le cadre simple, qui reste juste.
+ * le masque VOULU, ou cadre manquant pour l'une des deux couleurs. Le rendu
+ * retombe alors sur le cadre simple, qui reste juste — jamais sur l'autre
+ * masque, qui donnerait un cadre faux.
  */
 export function resolveMseBlend(
 	template: MseTemplate | undefined,
@@ -264,7 +294,14 @@ export function resolveMseBlend(
 	if (face.frameStyle !== 'auto') return null;
 	const colors = faceColors(face);
 	if (colors.length !== 2) return null;
-	const maskPath = template.blendMasks.multicolor;
+	// Le masque dépend de la NATURE du coût, pas du nombre de couleurs : un
+	// `{W/U}` hybride et un `{W}{U}` bicolore ont tous deux deux couleurs mais
+	// des cadres différents sur les cartes imprimées. `multicolor` protège la
+	// barre de titre et la ligne de type, `hybrid` ne protège que les barres.
+	// Pas de repli de l'un sur l'autre : ils ne sont pas interchangeables.
+	const maskPath = hasHybridCost(face)
+		? template.blendMasks.hybrid
+		: template.blendMasks.multicolor;
 	if (!maskPath) return null;
 	const first = template.framePaths[COLOR_TO_FRAME[colors[0]]];
 	const second = template.framePaths[COLOR_TO_FRAME[colors[1]]];
