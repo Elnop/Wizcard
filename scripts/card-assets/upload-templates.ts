@@ -79,6 +79,7 @@ interface ManifestTemplate {
 	samplePath: string | null;
 	iconPath: string | null;
 	framePaths: Record<string, string>;
+	blendMasks?: Record<string, string> | null;
 	frameTextColors?: Record<string, unknown>;
 	sampleTextColors?: unknown;
 	renderMode: string;
@@ -108,6 +109,7 @@ interface CardTemplateRow {
 	sample_path: string | null;
 	icon_path: string | null;
 	frame_paths: Record<string, string>;
+	blend_masks: Record<string, string> | null;
 	frame_text_colors: Record<string, unknown>;
 	sample_text_colors: unknown;
 	render_mode: string;
@@ -171,6 +173,7 @@ function collectReferencedPaths(templates: ManifestTemplate[]): string[] {
 	const referenced = new Set<string>();
 	for (const template of templates) {
 		for (const framePath of Object.values(template.framePaths ?? {})) referenced.add(framePath);
+		for (const maskPath of Object.values(template.blendMasks ?? {})) referenced.add(maskPath);
 		if (template.samplePath) referenced.add(template.samplePath);
 		if (template.iconPath) referenced.add(template.iconPath);
 	}
@@ -200,6 +203,7 @@ function toRow(
 		sample_path: template.samplePath,
 		icon_path: template.iconPath,
 		frame_paths: template.framePaths ?? {},
+		blend_masks: template.blendMasks ?? null,
 		frame_text_colors: (template.frameTextColors ?? {}) as Record<string, unknown>,
 		sample_text_colors: template.sampleTextColors ?? null,
 		render_mode: template.renderMode,
