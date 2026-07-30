@@ -1,9 +1,9 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
+import { ASSET_VERSION } from './asset-version.mjs';
 import { extractKeywords } from './frame-keywords.mjs';
 
-const ASSET_VERSION = 'bcdf4190b4bf';
 const SNAPSHOT_ROOT = `card-assets/v/${ASSET_VERSION}/full-magic-pack`;
 const CARD_CONJURER_VERSION = '2fcddba89661';
 const CARD_CONJURER_ROOT = `card-assets/v/${CARD_CONJURER_VERSION}/cardconjurer`;

@@ -30,7 +30,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { resolveSupabaseEnv } from '../lib/load-env';
 import { createLogger } from '../lib/logger';
 import { extractAll, type TemplateGeometry } from '../mse-geometry/extract';
-import { buildCrownPaths } from './crown-compat.mjs';
+import { ALL_CROWN_PATHS, buildCrownPaths } from './crown-compat.mjs';
 
 const log = createLogger('card-assets');
 const execFileAsync = promisify(execFile);
@@ -174,6 +174,13 @@ function collectReferencedPaths(templates: ManifestTemplate[]): string[] {
 		if (template.samplePath) referenced.add(template.samplePath);
 		if (template.iconPath) referenced.add(template.iconPath);
 	}
+	// Les couronnes vivent dans un dossier de module MSE partagé
+	// (magic-modules.mse-include/crowns/375), pas sous le dossier d'un
+	// gabarit : aucun template.framePaths ne les référence jamais, alors que
+	// crown_paths pointe dessus pour les 27 gabarits compatibles. Ajoutées ici
+	// sans dépendre d'une géométrie précise puisqu'elles sont identiques pour
+	// tous les gabarits compatibles (cf. crown-compat.mjs).
+	for (const crownPath of ALL_CROWN_PATHS) referenced.add(crownPath);
 	return [...referenced].sort();
 }
 

@@ -3,6 +3,11 @@
 // Décide quels gabarits acceptent la couronne légendaire, et construit leurs
 // chemins d'assets.
 //
+// Module pur : aucun accès filesystem ou réseau. Importé aussi bien par
+// upload-templates.ts (production) que par seed-local-crowns.mjs (base
+// locale, jetable) — ce dernier ne doit jamais déclencher d'écriture avant
+// d'en décider lui-même.
+//
 // La couronne du corpus est dessinée pour la barre de titre M15. Elle occupe la
 // bande y=10..102 (mesuré sur l'alpha de wcrown.png), c'est-à-dire exactement la
 // zone du titre — donc c'est la BOÎTE DU NOM qui décide de l'alignement, pas la
@@ -16,6 +21,8 @@
 // Contre-exemple utile : les cadres PRÉ-M15 ne sont pas tous incompatibles.
 // `new style` et `tenth` réutilisent la géométrie de titre M15 et acceptent la
 // couronne. Filtrer par nom de famille donnerait un mauvais périmètre.
+
+import { ASSET_VERSION } from './asset-version.mjs';
 
 /** Dimensions natives des couronnes du corpus. */
 const CROWN_CARD_WIDTH = 375;
@@ -32,9 +39,14 @@ export const CROWN_REFERENCE_NAME_BOX = {
 /** Tolérance de comparaison : les valeurs viennent du même extracteur. */
 const BOX_TOLERANCE = 0.5;
 
-/** Dossier des couronnes 375, relatif à la racine des assets. */
-export const CROWN_FOLDER =
-	'card-assets/v/bcdf4190b4bf/full-magic-pack/data/magic-modules.mse-include/crowns/375';
+/**
+ * Dossier des couronnes 375, relatif à la racine des assets.
+ *
+ * Dérivé de la même ASSET_VERSION que generate-manifests.mjs (cf.
+ * asset-version.mjs) : bumper le pack déplace frame_paths ET crown_paths
+ * ensemble, aucun des deux ne peut rester pointé sur un dossier retiré.
+ */
+export const CROWN_FOLDER = `card-assets/v/${ASSET_VERSION}/full-magic-pack/data/magic-modules.mse-include/crowns/375`;
 
 /**
  * Fichier de couronne par clé de couleur du studio.
@@ -53,6 +65,21 @@ const CROWN_FILE_BY_FRAME = {
 	prismatic: 'mcrown.png',
 	artifact: 'acrown.png',
 };
+
+/**
+ * Tous les chemins de couronnes, indépendamment de tout gabarit.
+ *
+ * Les 7 fichiers vivent dans un dossier de module MSE partagé
+ * (magic-modules.mse-include/crowns/375), pas sous le dossier d'un gabarit
+ * précis : aucun `template.framePaths` ne les référence jamais. Dérivé de la
+ * MÊME table que buildCrownPaths, donc les deux ne peuvent pas diverger.
+ * upload-templates.ts doit ajouter cette liste à l'ensemble uploadé de façon
+ * inconditionnelle (pas par gabarit), sans quoi les couronnes ne sont jamais
+ * téléversées alors que crown_paths pointe déjà dessus.
+ */
+export const ALL_CROWN_PATHS = Object.values(CROWN_FILE_BY_FRAME).map(
+	(file) => `${CROWN_FOLDER}/${file}`
+);
 
 /** Le gabarit accepte-t-il la couronne ? */
 export function acceptsCrown(geometry) {
