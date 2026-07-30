@@ -1,22 +1,31 @@
 /**
- * Téléverse dans le Storage LOCAL les assets de gabarits référencés par la DB
- * mais absents du bucket.
+ * Téléverse dans le Storage les assets de gabarits référencés par la DB mais
+ * absents du bucket. Ne touche jamais à la DB : il ne fait que combler.
  *
  * Pourquoi ce script existe. `npm run card-assets` fait ce travail, mais il
- * charge `.env.seed` avec `override: true` et vise donc la PRODUCTION : on ne
- * peut pas s'en servir pour réparer une base locale. Le bucket local, lui,
- * date d'avant l'ajout des clés `land-colorless` / `colorless` et des
- * `blend_masks` : les cadres de couleur y sont tous, les plaques grises et les
- * masques de fondu presque jamais. Résultat, un coût hybride affiche une carte
- * VIDE sur la plupart des gabarits — le masque ne se charge pas, donc il
+ * charge `.env.seed` avec `override: true` et vise donc toujours la même
+ * cible : on ne peut pas s'en servir pour réparer une base locale. Le bucket
+ * local, lui, datait d'avant l'ajout des clés `land-colorless` / `colorless`
+ * et des `blend_masks` : les cadres de couleur y étaient tous, les plaques
+ * grises et les masques de fondu presque jamais. Résultat, un coût hybride
+ * affichait une carte VIDE sur 80 gabarits sur 85 — le masque 404, donc il
  * masque tout.
  *
- * Ce script ne lit QUE `.env.local`, refuse toute URL non locale, et ne
- * téléverse que ce qui manque. Il ne touche jamais à la DB.
+ * CIBLE. Choisie par `--env <fichier>`, défaut `.env.local`. Le fichier doit
+ * définir SUPABASE_URL (ou NEXT_PUBLIC_SUPABASE_URL) et
+ * SUPABASE_SERVICE_ROLE_KEY. Aucun autre fichier d'environnement n'est lu, et
+ * l'environnement du shell est ignoré : la cible ne peut donc pas être
+ * détournée par un `export` restant d'une commande précédente.
+ *
+ * GARDE-FOU. Toute cible NON locale exige `--yes-i-mean-it` en plus. Sans ce
+ * drapeau le script refuse, pour qu'on ne téléverse jamais en production par
+ * simple inattention.
  *
  * Usage :
  *   node scripts/card-assets/seed-local-missing-assets.mjs --dry-run
  *   node scripts/card-assets/seed-local-missing-assets.mjs
+ *   node scripts/card-assets/seed-local-missing-assets.mjs --env .env.seed --dry-run
+ *   node scripts/card-assets/seed-local-missing-assets.mjs --env .env.seed --yes-i-mean-it
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -27,6 +36,16 @@ import process from 'node:process';
 const BUCKET = 'card-templates';
 const ASSETS_ROOT = path.resolve('assets/card-templates');
 const DRY_RUN = process.argv.includes('--dry-run');
+const CONFIRMED = process.argv.includes('--yes-i-mean-it');
+
+/** `--env <fichier>`, défaut `.env.local`. */
+function parseEnvFile() {
+	const index = process.argv.indexOf('--env');
+	if (index === -1) return '.env.local';
+	const value = process.argv[index + 1];
+	if (!value || value.startsWith('--')) throw new Error('--env attend un chemin de fichier.');
+	return value;
+}
 
 /** Types MIME par extension. Storage sert le fichier tel quel : un mauvais
  * Content-Type et le navigateur refuse de décoder l'image. */
@@ -39,10 +58,15 @@ const MIME = {
 	'.svg': 'image/svg+xml',
 };
 
-/** Lit .env.local sans dépendance : on veut être certain de ne charger NI
- * .env.seed NI .env.supabase.prod, qui pointent tous deux sur la production. */
-function readLocalEnv() {
-	const raw = fs.readFileSync(path.resolve('.env.local'), 'utf8');
+/**
+ * Lit UN fichier d'environnement, sans dépendance et sans jamais consulter
+ * `process.env` : la cible vient exclusivement du fichier demandé, donc un
+ * `export SUPABASE_URL=…` laissé dans le shell ne peut pas la détourner.
+ */
+function readEnvFile(file) {
+	const resolved = path.resolve(file);
+	if (!fs.existsSync(resolved)) throw new Error(`Fichier d'environnement introuvable : ${file}`);
+	const raw = fs.readFileSync(resolved, 'utf8');
 	const env = {};
 	for (const line of raw.split('\n')) {
 		const separator = line.indexOf('=');
@@ -57,19 +81,28 @@ function readLocalEnv() {
 	return env;
 }
 
-function assertLocal(url) {
+function isLocalUrl(url) {
 	let host;
 	try {
 		host = new URL(url).hostname;
 	} catch {
 		throw new Error(`URL Supabase illisible : ${url}`);
 	}
-	if (host !== '127.0.0.1' && host !== 'localhost' && host !== '[::1]') {
-		throw new Error(
-			`REFUS : ${url} n'est pas une instance locale. Ce script ne téléverse ` +
-				`qu'en local — pour la production, passer par npm run card-assets en connaissance de cause.`
-		);
-	}
+	return host === '127.0.0.1' || host === 'localhost' || host === '[::1]';
+}
+
+/**
+ * Une cible distante n'est jamais implicite : elle exige `--yes-i-mean-it`.
+ * `--dry-run` reste autorisé sans le drapeau — inspecter ce qui manque en
+ * production n'écrit rien et doit rester facile.
+ */
+function assertTargetAllowed(url, local) {
+	if (local || DRY_RUN || CONFIRMED) return;
+	throw new Error(
+		`REFUS : ${url} n'est pas une instance locale.\n` +
+			`  Pour inspecter sans rien écrire : ajouter --dry-run\n` +
+			`  Pour téléverser réellement    : ajouter --yes-i-mean-it`
+	);
 }
 
 /** Tous les chemins d'assets référencés par la DB : cadres, masques, couronnes. */
@@ -139,20 +172,25 @@ function reportUntransferable(missing) {
 }
 
 async function main() {
-	const env = readLocalEnv();
+	const envFile = parseEnvFile();
+	const env = readEnvFile(envFile);
 	const url = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
 	const key = env.SUPABASE_SERVICE_ROLE_KEY;
 	if (!url || !key) {
 		throw new Error(
-			'.env.local doit définir NEXT_PUBLIC_SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY.'
+			`${envFile} doit définir SUPABASE_URL (ou NEXT_PUBLIC_SUPABASE_URL) et SUPABASE_SERVICE_ROLE_KEY.`
 		);
 	}
-	assertLocal(url);
+	const local = isLocalUrl(url);
+	assertTargetAllowed(url, local);
+
+	console.log(`Cible : ${url}  [${local ? 'LOCAL' : '⚠ DISTANT'}]  (depuis ${envFile})`);
+	if (!local && !DRY_RUN) console.log('⚠ Téléversement RÉEL sur une cible distante.');
 
 	const client = createClient(url, key, { auth: { persistSession: false } });
 	const referenced = await collectReferencedPaths(client);
 
-	console.log('Inventaire du bucket local…');
+	console.log('Inventaire du bucket…');
 	const present = await collectPresentObjects(client);
 	console.log(`  ${present.size} objets déjà présents`);
 
