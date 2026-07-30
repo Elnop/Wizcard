@@ -28,6 +28,38 @@ const OFFICIAL_FAMILIES = new Set([
 export const UNKNOWN_FAMILY = 'unknown';
 
 /**
+ * Priorité d'affichage des familles : les plus classiques d'abord.
+ *
+ * `position_hint` est un ordre déclaré LOCAL à chaque famille, pas global — le
+ * lire seul mettait `space-standard` (001, Sci-Fi) et `Xerent's Space Template`
+ * (002) en tête de la bibliothèque, devant le cadre M15. On ordonne donc les
+ * familles ici, et `position_hint` garde son rôle : trier À L'INTÉRIEUR d'une
+ * famille, là où il est fiable.
+ *
+ * L'ordre va du cadre le plus courant au plus exotique : M15 est celui de toutes
+ * les cartes imprimées depuis 2014, donc le point de départ attendu quand on
+ * crée une carte aujourd'hui ; puis on remonte le temps, puis les variantes
+ * officielles, et enfin les styles communautaires.
+ *
+ * Une famille absente de cette table prend `FAMILY_RANK_FALLBACK` : ajouter un
+ * style au corpus ne demande donc aucun code, il atterrit simplement après les
+ * familles officielles.
+ */
+const FAMILY_ORDER = [
+	'm15 style',
+	'new style',
+	'old style',
+	'tenth edition packaging style',
+	'4th edition style',
+	'classicshifted',
+	'planeshifted',
+	'future',
+];
+
+/** Rang des familles non listées : après toutes les officielles. */
+const FAMILY_RANK_FALLBACK = FAMILY_ORDER.length;
+
+/**
  * Famille déclarée : 2e segment du chemin (`magic/m15 style/...` -> `m15 style`).
  *
  * Le 1er segment est le namespace de jeu (`magic`, `Space`), constant ou
@@ -39,6 +71,19 @@ export function frameFamily(template: MseTemplate): string {
 		.map((segment) => segment.trim())
 		.filter(Boolean);
 	return segments[1] ?? segments[0] ?? UNKNOWN_FAMILY;
+}
+
+/**
+ * Rang de tri d'une famille. Plus petit = plus classique, donc plus haut.
+ *
+ * Les familles communautaires partagent toutes le même rang : elles ne sont pas
+ * hiérarchisées entre elles (ce serait un jugement de valeur sur le travail
+ * d'auteurs), seulement placées après les officielles. À rang égal, c'est
+ * `position_hint` puis le libellé qui départagent.
+ */
+export function familyRank(template: MseTemplate): number {
+	const index = FAMILY_ORDER.indexOf(frameFamily(template).toLowerCase());
+	return index === -1 ? FAMILY_RANK_FALLBACK : index;
 }
 
 /**

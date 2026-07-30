@@ -1,5 +1,5 @@
 import { CARD_LAYOUTS } from './layout-registry';
-import { frameFamily, frameOrigin, supportsCreature } from './frame-facets';
+import { familyRank, frameFamily, frameOrigin, supportsCreature } from './frame-facets';
 import type { MseTemplate } from './mse-assets';
 import type { CardLayoutId } from './types';
 
@@ -60,18 +60,33 @@ export function hasActiveFilters(filters: FrameFilters): boolean {
 }
 
 /**
- * Tri : `position_hint` croissant, puis libellé en départage.
+ * Tri : famille d'abord (la plus classique en tête), puis `position_hint`
+ * croissant, puis libellé en départage.
  *
- * C'est l'ordre DÉCLARÉ par les auteurs du corpus, présent sur les 109 gabarits
- * (001-907). Le tri alphabétique précédent l'écrasait et éclatait la chronologie
- * des cadres sur tout l'alphabet. La règle « CardConjurer d'abord » qui le
- * précédait ne triait rien : les 109 gabarits proposés sont tous `mse`.
+ * `position_hint` est l'ordre DÉCLARÉ par les auteurs du corpus, présent sur les
+ * 109 gabarits (001-907). Le tri alphabétique d'origine l'écrasait et éclatait
+ * la chronologie des cadres sur tout l'alphabet.
  *
- * Un `position_hint` absent passe en fin de liste plutôt qu'en tête : `''` se
- * trierait avant `'001'`, ce qui remonterait les gabarits non déclarés.
+ * Mais cet ordre est LOCAL à chaque famille, pas global : s'y fier seul plaçait
+ * `space-standard` (001, un cadre Sci-Fi) et `Xerent's Space Template` (002) en
+ * tête de la bibliothèque, devant le cadre M15 — et intercalait `Ultima Spells`
+ * au milieu des M15. D'où le rang de famille en clé primaire (cf. `familyRank`),
+ * qui remet les cadres les plus courants en premier ; `position_hint` garde son
+ * rôle à l'intérieur d'une famille, là où il est fiable.
+ *
+ * Un `position_hint` absent passe en fin de SA famille plutôt qu'en tête : `''`
+ * se trierait avant `'001'`, ce qui remonterait les gabarits non déclarés.
  */
 function sortByDeclaredOrder(choices: FrameChoice[]): void {
 	choices.sort((a, b) => {
+		const rankDelta = familyRank(a.template) - familyRank(b.template);
+		if (rankDelta !== 0) return rankDelta;
+		// Même rang : familles officielles distinctes impossibles (chaque famille a
+		// son rang), donc on est soit dans la même famille, soit entre deux
+		// communautaires. On regroupe alors par nom de famille pour que les
+		// sections restent contiguës.
+		const familyDelta = a.family.localeCompare(b.family);
+		if (familyDelta !== 0) return familyDelta;
 		const aHint = a.template.positionHint ?? '￿';
 		const bHint = b.template.positionHint ?? '￿';
 		if (aHint !== bHint) return aHint.localeCompare(bHint);
