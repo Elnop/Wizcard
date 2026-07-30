@@ -227,8 +227,7 @@ d'entre elles ne comptent qu'un ou deux cadres ; chaque option porte son compte
 là où 30 cases à cocher ne le seraient pas.
 
 Les options à zéro résultat sont masquées : c'est ce qui empêche un select de 30 entrées
-de devenir une impasse quand d'autres filtres sont actifs. Le champ Trait en compte 39,
-soit davantage que les familles — le masquage y est donc encore plus déterminant.
+de devenir une impasse quand d'autres filtres sont actifs.
 
 ## Tri
 
