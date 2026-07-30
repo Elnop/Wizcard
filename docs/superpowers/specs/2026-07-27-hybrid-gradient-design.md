@@ -114,16 +114,20 @@ lors du chantier précédent. Le `<linearGradient>` n'est pas une image et n'a r
 
 ## Cadres sans `clcard`
 
-Mesuré sur les 109 cadres proposés :
+Mesuré sur les 140 cadres proposés (`geometry is not null`, le seul filtre de
+`buildFrameChoices`) :
 
 | Situation                      | Cadres | Comportement              |
 | ------------------------------ | ------ | ------------------------- |
 | masque + `land-colorless`      | 66     | formule fidèle            |
 | masque + `colorless` seulement | 17     | même formule avec `ccard` |
-| masque, ni l'un ni l'autre     | 2      | pas de fondu — cadre or   |
-| pas de masque `hybrid`         | 24     | pas de fondu — cadre or   |
+| masque + `artifact` seulement  | 2      | même formule avec `acard` |
+| pas de masque `hybrid`         | 55     | pas de fondu — cadre or   |
 
-La chaîne `land-colorless` → `colorless` → rien reprend celle de `frameDegradationChain` :
+Les 85 cadres qui portent un masque `hybrid` résolvent donc **tous** un fond gris :
+aucun ne traverse la chaîne sans rien trouver.
+
+La chaîne `land-colorless` → `colorless` → `artifact` reprend celle de `frameDegradationChain` :
 on dégrade vers moins spécifique **au sein du gris**, jamais vers une autre couleur. Un
 cadre or sur un hybride reste juste, seulement moins fidèle ; un fond coloré serait faux.
 

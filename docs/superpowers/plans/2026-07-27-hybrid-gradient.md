@@ -119,17 +119,21 @@ Attendu : `tsc` ne signale **rien** pour ce fichier — sauf, possiblement, une 
 
 - [ ] **Step 4 : Vérifier à la main que la chaîne trouve bien un gris**
 
-Ce dépôt n'a pas de framework de test ; on interroge donc directement la DB locale, qui porte les 109 gabarits mesurés. Vérifier que la répartition correspond à celle mesurée dans le spec (66 avec `land-colorless`, 17 avec `colorless` seul, 2 avec aucun des deux, 24 sans masque `hybrid`) :
+Ce dépôt n'a pas de framework de test ; on interroge donc directement la DB locale, qui porte les 140 gabarits mesurés (`geometry is not null` est le seul filtre de `buildFrameChoices`). Vérifier que la répartition correspond à celle du spec : 66 avec `land-colorless`, 17 avec `colorless` seul, 2 avec `artifact` seul, 55 sans masque `hybrid`.
+
+Il n'y a pas de `psql` sur l'hôte : passer par le conteneur, dont le nom est généré (`docker ps --format '{{.Names}}' | grep supabase_db`).
 
 ```bash
 cd /home/elthinkbuntu/Documents/Wizcard
-PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -c "
+DB=$(docker ps --format '{{.Names}}' | grep -i supabase_db | head -1)
+docker exec "$DB" psql -U postgres -d postgres -c "
 select
   case
     when blend_masks->>'hybrid' is null then 'pas de masque hybrid'
     when frame_paths ? 'land-colorless' then 'masque + land-colorless'
     when frame_paths ? 'colorless'      then 'masque + colorless seul'
-    else 'masque, ni l''un ni l''autre'
+    when frame_paths ? 'artifact'       then 'masque + artifact seul'
+    else 'masque, aucun gris'
   end as situation,
   count(*)
 from card_templates
@@ -137,7 +141,7 @@ where geometry is not null
 group by 1 order by 2 desc;"
 ```
 
-Attendu : les quatre lignes du tableau du spec. Si Supabase local n'est pas démarré, `npm run sb:start` d'abord. Si les nombres diffèrent de plus d'une unité ou deux, **s'arrêter et le signaler** — cela veut dire que la DB locale n'est pas dans l'état sur lequel le spec a été mesuré, et la suite du chantier reposerait sur du sable.
+Attendu : `land-colorless` 66, `pas de masque hybrid` 55, `colorless seul` 17, `artifact seul` 2 — et **zéro** ligne « masque, aucun gris ». Si Supabase local n'est pas démarré, `npm run sb:start` d'abord. Si une ligne « masque, aucun gris » apparaît, ce n'est pas un blocage : ces cadres-là ne fondront pas et porteront le cadre or, ce que le code gère déjà par son `return null`. Si les nombres diffèrent largement, le signaler dans le rapport mais **poursuivre** — la répartition documente le comportement, elle ne le conditionne pas.
 
 - [ ] **Step 5 : Commit**
 
@@ -437,7 +441,7 @@ Revenir à `{G/U}`, déclencher l'export PNG depuis le studio, et ouvrir le fich
 
 - [ ] **Step 7 : Vérifier un gabarit du tiers dégradé**
 
-Choisir un gabarit qui n'a **que** `colorless` (sans `land-colorless`) — la requête SQL du Step 4 de Task 1 permet d'en nommer un. Attendu : même rendu, plaques grises issues de `ccard`. Puis un gabarit **sans masque `hybrid`** : attendu, cadre or uni, aucun fondu — et surtout **pas** de carte cassée ou de zone transparente.
+Choisir un gabarit qui n'a **que** `colorless` (sans `land-colorless`) — la requête SQL du Step 4 de Task 1 permet d'en nommer un, en remplaçant le `group by` par `select id`. Attendu : même rendu, plaques grises issues de `ccard`. Puis un des 55 gabarits **sans masque `hybrid`** : attendu, cadre or uni, aucun fondu — et surtout **pas** de carte cassée ou de zone transparente.
 
 - [ ] **Step 8 : Consigner le résultat**
 
