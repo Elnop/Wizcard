@@ -29,6 +29,8 @@ export interface MseTemplate {
 	dependencies: string[];
 	assetCount: number;
 	framePaths: Partial<Record<MseFrameKey, string>>;
+	/** Couronnes légendaires par clé de couleur ; null = gabarit incompatible. */
+	crownPaths: Partial<Record<MseFrameKey, string>> | null;
 	frameTextColors?: Partial<Record<MseFrameKey, MseTextColors>>;
 	sampleTextColors?: MseTextColors | null;
 	renderMode: 'frame' | 'sample';
@@ -84,6 +86,7 @@ function rowToTemplate(row: CardTemplateRow): MseTemplate {
 		dependencies: [],
 		assetCount: 0,
 		framePaths: (row.frame_paths ?? {}) as Partial<Record<MseFrameKey, string>>,
+		crownPaths: (row.crown_paths ?? null) as Partial<Record<MseFrameKey, string>> | null,
 		frameTextColors: (row.frame_text_colors ?? {}) as Partial<Record<MseFrameKey, MseTextColors>>,
 		sampleTextColors: (row.sample_text_colors ?? null) as MseTextColors | null,
 		renderMode: row.render_mode as MseTemplate['renderMode'],
@@ -153,6 +156,33 @@ export function resolveMseFramePath(
 	const frame = resolveFrameStyle(face);
 	const path = template.framePaths[frame] ?? Object.values(template.framePaths)[0];
 	return cardAssetUrl(path);
+}
+
+/**
+ * Chemin de la couronne légendaire, ou `null`.
+ *
+ * Trois raisons de ne rien peindre, toutes légitimes :
+ *
+ * 1. la carte n'est pas légendaire ;
+ * 2. le gabarit n'accepte pas la couronne (`crownPaths` à null) — sa barre de
+ *    titre n'a pas la géométrie pour laquelle les couronnes sont dessinées ;
+ * 3. la clé de couleur n'a pas de couronne : c'est le cas de `land`, que le
+ *    corpus ne fournit pas alors que les terrains légendaires existent.
+ *
+ * Contrairement à `resolveMseFramePath`, AUCUN repli sur une autre clé : une
+ * couronne de la mauvaise couleur se verrait immédiatement, alors qu'un cadre de
+ * repli reste plausible. C'est la règle « aucun fallback » du studio.
+ */
+export function resolveMseCrownPath(
+	template: MseTemplate | undefined,
+	face: CardFaceDraft,
+	isLegendary: boolean
+): string | null {
+	if (!isLegendary) return null;
+	if (!template?.crownPaths) return null;
+	const frame = resolveFrameStyle(face);
+	const path = template.crownPaths[frame];
+	return path ? cardAssetUrl(path) : null;
 }
 
 export function resolveMseTextColors(
