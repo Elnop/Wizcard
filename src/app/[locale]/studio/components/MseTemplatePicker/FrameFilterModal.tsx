@@ -100,7 +100,12 @@ export function FrameFilterModal({
 		<Modal onClose={onClose} className={styles.panel}>
 			<div className={styles.header}>
 				<span className={styles.title}>{t('filters')}</span>
-				<button type="button" className={styles.close} onClick={onClose} aria-label={t('filters')}>
+				<button
+					type="button"
+					className={styles.closeButton}
+					onClick={onClose}
+					aria-label={t('filtersClose')}
+				>
 					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 						<path
 							d="M12 4L4 12M4 4l8 8"
@@ -218,12 +223,16 @@ export function FrameFilterModal({
 			</div>
 
 			<div className={styles.footer}>
-				<button type="button" onClick={() => setDraft(DEFAULT_FRAME_FILTERS)}>
+				<button
+					type="button"
+					className={styles.resetButton}
+					onClick={() => setDraft(DEFAULT_FRAME_FILTERS)}
+				>
 					{t('filtersReset')}
 				</button>
 				<button
 					type="button"
-					className={styles.apply}
+					className={styles.applyButton}
 					onClick={() => {
 						onApply(draft);
 						onClose();

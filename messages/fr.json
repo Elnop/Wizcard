@@ -1053,6 +1053,7 @@
 			"results": "{count, plural, =0 {Aucun résultat} one {# layout} other {# layouts}}",
 			"empty": "Aucun cadre ne correspond à cette recherche.",
 			"filters": "Filtres",
+			"filtersClose": "Fermer les filtres",
 			"filtersApply": "Appliquer",
 			"filtersReset": "Réinitialiser",
 			"filterFamily": "Famille",
