@@ -1047,7 +1047,7 @@
 			"title": "Magic frame library",
 			"count": "{count} render-ready layouts",
 			"loading": "Loading high-definition frames…",
-			"error": "The frame library could not be loaded. Wizcard frames remain available.",
+			"error": "The frame library could not be loaded. Try again in a moment.",
 			"searchLabel": "Search frames",
 			"searchPlaceholder": "M15, full art, snow…",
 			"results": "{count, plural, =0 {No results} one {# layout} other {# layouts}}",
@@ -1069,7 +1069,16 @@
 			"creatureYes": "Has a P/T box",
 			"creatureNo": "No P/T box",
 			"keywordSearch": "Type to search keywords…",
-			"activeFilters": "{count, plural, =0 {No filters} one {# filter} other {# filters}}"
+			"activeFilters": "{count, plural, =0 {No filters} one {# filter} other {# filters}}",
+			"familyM15": "Modern frames (2014-present)",
+			"familyModern": "8th Edition frames (2003-2014)",
+			"familyOriginal": "Original frames (pre-2003)",
+			"familyTenth": "10th Edition frames",
+			"familyFourth": "4th Edition frames",
+			"familyClassicshifted": "Classic timeshifted",
+			"familyPlaneshifted": "Planar timeshifted",
+			"familyFuture": "Future-shifted frames",
+			"familyOther": "Other frames"
 		},
 		"details": {
 			"title": "Details",

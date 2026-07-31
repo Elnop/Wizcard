@@ -1047,7 +1047,7 @@
 			"title": "Bibliothèque de cadres Magic",
 			"count": "{count} layouts prêts à rendre",
 			"loading": "Chargement des cadres haute définition…",
-			"error": "La bibliothèque de cadres n'a pas pu être chargée. Les cadres Wizcard restent disponibles.",
+			"error": "La bibliothèque de cadres n'a pas pu être chargée. Réessaie dans un instant.",
 			"searchLabel": "Rechercher un cadre",
 			"searchPlaceholder": "M15, full art, snow…",
 			"results": "{count, plural, =0 {Aucun résultat} one {# layout} other {# layouts}}",
@@ -1069,7 +1069,16 @@
 			"creatureYes": "Avec zone F/E",
 			"creatureNo": "Sans zone F/E",
 			"keywordSearch": "Tapez pour chercher un mot-clé…",
-			"activeFilters": "{count, plural, =0 {Aucun filtre} one {# filtre} other {# filtres}}"
+			"activeFilters": "{count, plural, =0 {Aucun filtre} one {# filtre} other {# filtres}}",
+			"familyM15": "Cadres modernes (depuis 2014)",
+			"familyModern": "Cadres 8e édition (2003-2014)",
+			"familyOriginal": "Cadres d'origine (avant 2003)",
+			"familyTenth": "Cadres 10e édition",
+			"familyFourth": "Cadres 4e édition",
+			"familyClassicshifted": "Décalage classique",
+			"familyPlaneshifted": "Décalage planaire",
+			"familyFuture": "Cadres du futur",
+			"familyOther": "Autres cadres"
 		},
 		"details": {
 			"title": "Détails",

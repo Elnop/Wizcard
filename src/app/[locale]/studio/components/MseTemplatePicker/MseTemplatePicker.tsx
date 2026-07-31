@@ -14,7 +14,12 @@ import {
 	type FrameChoice,
 	type FrameFilters,
 } from '@/lib/card-editor/frame-choices';
-import { countTags, displayableTags, rankTagsByRarity } from '@/lib/card-editor/frame-facets';
+import {
+	countTags,
+	displayableTags,
+	familyLabelKey,
+	rankTagsByRarity,
+} from '@/lib/card-editor/frame-facets';
 import { cardAssetUrl, type MseTemplate } from '@/lib/card-editor/mse-assets';
 import { FrameFilterModal } from './FrameFilterModal';
 import styles from './MseTemplatePicker.module.css';
@@ -40,6 +45,15 @@ export function MseTemplatePicker({
 	onSelect,
 }: MseTemplatePickerProps) {
 	const t = useTranslations('cardEditor.mseLibrary');
+	/**
+	 * Titre de section : traduit pour les familles officielles, chaîne du corpus
+	 * telle quelle pour les autres — renommer un style communautaire reviendrait
+	 * à rebaptiser le travail de son auteur.
+	 */
+	const familyLabel = (family: string): string => {
+		const key = familyLabelKey(family);
+		return key ? t(key) : family;
+	};
 	const [query, setQuery] = useState('');
 	const [filters, setFilters] = useState<FrameFilters>(DEFAULT_FRAME_FILTERS);
 	const [isFilterOpen, setFilterOpen] = useState(false);
@@ -198,8 +212,14 @@ export function MseTemplatePicker({
 			{sections
 				? sections.map((section) => (
 						<section key={section.family} className={styles.section}>
+							{/*
+							 * Familles officielles traduites ; les communautaires gardent le
+							 * nom de leur auteur (cf. `familyLabelKey`). Le corpus écrit
+							 * « m15 style » / « new style », du jargon anglais à la casse
+							 * incohérente, dans une interface par ailleurs traduite.
+							 */}
 							<h4 className={styles.sectionTitle}>
-								{section.family}
+								{familyLabel(section.family)}
 								<span className={styles.sectionCount}>{section.choices.length}</span>
 							</h4>
 							<div className={styles.grid}>{section.choices.map(renderCard)}</div>

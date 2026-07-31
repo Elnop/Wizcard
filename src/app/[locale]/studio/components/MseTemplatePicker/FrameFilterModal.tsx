@@ -7,6 +7,7 @@ import { Modal } from '@/components/Modal/Modal';
 import {
 	countTags,
 	displayableTags,
+	familyLabelKey,
 	frameFamily,
 	frameOrigin,
 	supportsCreature,
@@ -48,6 +49,11 @@ export function FrameFilterModal({
 	onClose,
 }: FrameFilterModalProps) {
 	const t = useTranslations('cardEditor.mseLibrary');
+	/** Cf. le même helper dans MseTemplatePicker : officielles traduites, autres brutes. */
+	const familyLabel = (family: string): string => {
+		const key = familyLabelKey(family);
+		return key ? t(key) : family;
+	};
 	const [draft, setDraft] = useState<FrameFilters>(initialFilters);
 	const [keywordQuery, setKeywordQuery] = useState('');
 
@@ -155,9 +161,11 @@ export function FrameFilterModal({
 						}
 					>
 						<option value="">{t('filterAny')}</option>
+						{/* Même traduction que les titres de section du sélecteur : la
+						    valeur envoyée reste la chaîne du corpus, seul l'affichage change. */}
 						{families.map(([family, count]) => (
 							<option key={family} value={family}>
-								{family} ({count})
+								{familyLabel(family)} ({count})
 							</option>
 						))}
 					</select>

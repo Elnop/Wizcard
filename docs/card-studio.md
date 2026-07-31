@@ -202,6 +202,52 @@ Serving them as webfonts exposes them to direct download — this widens the exi
 free substitutes means editing the table in `fonts.ts` alone; the pipeline, the database
 and the canvas are unaffected.
 
+## Frame labelling
+
+`frame-facets.ts` holds the two judgements the corpus does **not** declare, so both live
+in code and change in one commit — no migration, no `card-assets` run.
+
+**Origin** (`OFFICIAL_FAMILIES`, 8 entries) decides the entire library since `ec4425e0`:
+99 of the 140 measured templates classify as official, and the picker offers **40** of
+them (it also requires `render_mode === 'frame'`). Only one template lacks
+`installer_group` — `magic-testprint-8th`, a test print, excluded on its own merits — so
+the "no data falls through to custom" caveat is real but affects a single row.
+
+**Family** is the first path segment that is not a game namespace. It used to be
+"segment [1]", which assumed the namespace was always present. The corpus writes
+`magic/...` lowercase for the 129 Magic templates but capitalises other products
+(`Magic Planes/`, `Magic Archenemy/`, `Space/`, `Magic Vanguard/`). The old rule already
+returned the right answer for those, so **this fix changes nothing on screen today** — it
+matters for a namespace-less path like `m15 style/normal cards`, which previously
+resolved to the sub-variant `normal cards` instead of the family. Cheap insurance for the
+day community frames reopen.
+
+`GAME_NAMESPACES` is a closed, corpus-verified list. An unknown prefix is treated as a
+family, which is the safe direction: inventing a namespace would erase a real family,
+while keeping one too many only makes a heading slightly long.
+
+### Headings are localized, frame names are not
+
+Section titles used to render the raw corpus string — `m15 style`, `new style`, mixed
+casing, English jargon inside a fully translated UI. The 8 official families now map to
+i18n keys (`familyLabelKey` → `cardEditor.mseLibrary.family*`), naming the printing era
+rather than the corpus slug:
+
+| Corpus      | FR                            | EN                             |
+| ----------- | ----------------------------- | ------------------------------ |
+| `m15 style` | Cadres modernes (depuis 2014) | Modern frames (2014-present)   |
+| `new style` | Cadres 8e édition (2003-2014) | 8th Edition frames (2003-2014) |
+| `old style` | Cadres d'origine (avant 2003) | Original frames (pre-2003)     |
+
+Community families keep the name their author gave them — translating those would be
+renaming someone else's work. `familyLabelKey` returns a **literal union**, not `string`:
+`next-intl` types its message keys, and casting around that would discard the check that
+every key rendered here exists in both locales.
+
+Individual frame labels (`Jinx After M15`, `Sci-Fi for Sync permanents`) are still raw
+corpus names. Naming them usefully is editorial work, not extraction — the corpus does
+not carry that information.
+
 ## Geometry: measured, never guessed
 
 The studio had 8 hand-built layouts but ships ~200 vendor frames. There was no mapping
