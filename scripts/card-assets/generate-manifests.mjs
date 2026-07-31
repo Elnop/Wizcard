@@ -3,6 +3,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { ASSET_VERSION } from './asset-version.mjs';
 import { extractKeywords } from './frame-keywords.mjs';
+import { imageMaskNameFrom } from '../mse-geometry/image-mask.mjs';
 
 const SNAPSHOT_ROOT = `card-assets/v/${ASSET_VERSION}/full-magic-pack`;
 const CARD_CONJURER_VERSION = '2fcddba89661';
@@ -196,6 +197,27 @@ async function resolveBlendMasks(source, styleDirectory) {
 	return Object.keys(found).length > 0 ? found : null;
 }
 
+/**
+ * Masque de la fenêtre d'illustration.
+ *
+ * Contrairement aux masques de fondu, son nom de fichier n'est pas stable dans
+ * le corpus (`image_mask.png`, `imagemask.png`, `mask_image.png`, …) : on ne
+ * peut pas le deviner. Le nom vient de la DÉCLARATION `mask:` du bloc `image:`,
+ * lue par `imageMaskNameFrom` (partagée avec le parseur de géométrie via
+ * `image-mask.mjs`), et on ne fait ici que le localiser sur le disque.
+ * Introuvable ⇒ pas de masque, et le rendu retombe sur la géométrie.
+ */
+async function resolveImageMask(styleDirectory, imageMask) {
+	if (!imageMask) return null;
+	const candidate = path.join(styleDirectory, imageMask);
+	try {
+		await fs.access(candidate);
+	} catch {
+		return null;
+	}
+	return normalize(path.relative(PUBLIC_ROOT, candidate));
+}
+
 async function buildTemplate(styleDirectory) {
 	const stylePath = path.join(styleDirectory, 'style');
 	const source = (await fs.readFile(stylePath, 'utf8')).replace(/^\uFEFF/, '');
@@ -233,6 +255,9 @@ async function buildTemplate(styleDirectory) {
 	const sampleTextColors = sample
 		? await analyzeTextColors(path.join(styleDirectory, sample))
 		: null;
+	const blendMasks = await resolveBlendMasks(source, styleDirectory);
+	const imageMaskPath = await resolveImageMask(styleDirectory, imageMaskNameFrom(source));
+	const masks = imageMaskPath ? { ...(blendMasks ?? {}), image: imageMaskPath } : blendMasks;
 	let orientation = 'unknown';
 	if (width && height) orientation = width > height ? 'landscape' : 'portrait';
 
@@ -266,7 +291,7 @@ async function buildTemplate(styleDirectory) {
 		framePaths,
 		frameTextColors,
 		sampleTextColors,
-		blendMasks: await resolveBlendMasks(source, styleDirectory),
+		blendMasks: masks,
 		renderMode: Object.keys(framePaths).length >= 3 ? 'frame' : 'sample',
 		version: topLevelValue(source, 'version'),
 		source: 'mse',

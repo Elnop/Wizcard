@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
+import { IMAGE_MASK_LINE, IMAGE_MASK_SCRIPT_LINE, maskFileFrom } from './image-mask.mjs';
 
 /** Les zones dont le studio a besoin. Tout autre bloc du style est ignoré. */
 export const GEOMETRY_FIELDS = ['image', 'name', 'type', 'text', 'pt', 'casting cost'] as const;
@@ -165,46 +166,6 @@ function collectIncludeTargets(lines: string[]): string[] {
 	return targets;
 }
 
-/**
- * Masque déclaré par un champ. SEULES deux formes résolvent, dans le corpus :
- *
- *   mask: image_mask.png
- *   mask:
- *     script: if styling.image_size == "extended" then "imagemask_extended.png"
- *             else "imagemask_standard.png"
- *
- * Le studio n'expose pas l'option `image_size` de MSE : on retient la branche
- * `else`, qui est le défaut de MSE lui-même.
- *
- * Toute autre forme d'expression donne délibérément AUCUN masque — le rendu
- * retombe alors sur la géométrie mesurée, plutôt que d'inventer un nom de
- * fichier. Deux cas concrets du corpus ont montré qu'une troisième passe
- * générique (« n'importe quel `.png` entre guillemets ») est un pari, pas une
- * extraction :
- * - une concaténation, ex. `{ "image_" + (if … then "extended_" else "") +
- *   … + "mask.png" }` (`magic-genevensis-10-saga`, `-20-battle`,
- *   `-80-planechase`, `magic-the-ring-rule-card_744`) : la passe générique y
- *   attrapait le fragment littéral `"mask.png"`, un fichier qui n'existe même
- *   pas sur disque (les vrais fichiers sont `image_mask.png`,
- *   `image_extended_mask.png`, `image_extended_leaf_mask.png`) ;
- * - `else nil` (pas de masque applicable), ex. `if styling.image_size ==
- *   "extended" then "imagemask_extended.png" else nil`
- *   (`magic-new-omega-doublefaced`, `magic-new-unset-gmorph`) : la regex
- *   `else "..."` ne matchait pas `nil` (non cité), donc la passe générique
- *   retombait sur la PREMIÈRE chaîne citée du script — la branche `then`,
- *   exactement l'inverse de la branche applicable.
- *
- * Les variantes `_inv` sont écartées : leur polarité est inversée (centre noir,
- * coins blancs), les appliquer effacerait le cadre au lieu de la fenêtre.
- */
-function maskFileFrom(raw: string): string | undefined {
-	const literal = /^\s*([\w.-]+\.png)\s*$/i.exec(raw);
-	const candidate = literal ? literal[1] : /else\s+"([\w.-]+\.png)"/i.exec(raw)?.[1];
-	if (!candidate) return undefined;
-	if (/_inv\d*\.png$/i.test(candidate)) return undefined;
-	return candidate;
-}
-
 /** Accumulateur mutable rempli ligne par ligne par `readStyleFile`. */
 interface ParseState {
 	fields: Partial<Record<GeometryField, RawBox>>;
@@ -283,14 +244,11 @@ function handleBoxProperty(line: string, state: ParseState): void {
 /**
  * Ligne « mask: … » du champ `image` UNIQUEMENT — `border_mask` et
  * `foil_mask` répondent à d'autres besoins et sont hors périmètre (cf.
- * `maskFileFrom`). Deux formes : littérale sur la même ligne, ou un sous-bloc
- * `script:` à trois tabulations quand la déclaration est pilotée par script.
+ * `maskFileFrom`, partagé avec `generate-manifests.mjs` via
+ * `image-mask.mjs`). Deux formes : littérale sur la même ligne, ou un
+ * sous-bloc `script:` à trois tabulations quand la déclaration est pilotée
+ * par script.
  */
-// eslint-disable-next-line sonarjs/super-linear-regex -- safe: une ligne de style, longueur bornée
-const IMAGE_MASK_LINE = /^\t\tmask\s*:\s*(.*)$/;
-// eslint-disable-next-line sonarjs/super-linear-regex -- safe: une ligne de style, longueur bornée
-const IMAGE_MASK_SCRIPT_LINE = /^\t\t\tscript\s*:\s*(.+?)\s*$/;
-
 function handleImageMask(line: string, state: ParseState): void {
 	if (state.current !== 'image') return;
 	const literal = IMAGE_MASK_LINE.exec(line);
