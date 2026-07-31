@@ -56,7 +56,14 @@ conserver.
 **Sauf `image_mask_inv.png`, qui est inversé** — centre 0, coin 255, mesuré sur
 `magic-m15-Kaladesh` et `magic-m15-devoid`. Le prendre pour un masque normal peindrait la
 carte à l'envers : le cadre disparaîtrait et seule la fenêtre resterait. Ces fichiers sont
-donc **exclus**, et les gabarits concernés retombent sur le repli géométrique.
+donc **exclus**.
+
+Précision établie à l'implémentation : **aucun bloc `image:` du corpus ne déclare de
+masque `_inv`**. Ces fichiers appartiennent à des blocs `card color:` (arrière-plan pleine
+carte, 375×523), que ce chantier ne lit pas. `magic-m15-Kaladesh` en est l'exemple : son
+bloc `card color:` porte `image_mask_inv.png`, tandis que son bloc `image:` déclare un
+`image_mask.png` normal (343×492, centre 255). L'exclusion reste comme garde-fou contre
+une évolution du corpus, mais elle ne retire aujourd'hui aucun gabarit.
 
 ### Le masque se positionne sur la boîte `image`
 

@@ -15,7 +15,7 @@
 - **`npm run build` est obligatoire** avant de déclarer le rendu terminé.
 - **`npm run card-assets` écrit en PRODUCTION** tant que `.env.seed` est présent — il le charge après `.env.local` et cette cible l'emporte. Ne jamais le lancer tel quel. La Task 2 en a besoin pour écrire la colonne en local : elle passe par le retrait temporaire de `.env.seed` documenté dans `upload-templates.ts` (lignes 11-13), avec contrôle de l'URL loggée avant toute écriture, et restauration systématique. Le simple téléversement de fichiers, lui, se fait par `npm run card-assets:seed`, qui lit `.env.local` et refuse toute cible non locale.
 - **Polarité du masque : blanc = la fenêtre**, noir = le cadre conservé.
-- **`image_mask_inv.png` et toute variante `_inv` sont EXCLUS** : leur polarité est inversée (centre 0, coin 255, mesuré sur `magic-m15-Kaladesh` et `magic-m15-devoid`). Les traiter comme les autres effacerait le cadre et ne garderait que la fenêtre. Ces gabarits prennent le repli géométrique.
+- **`image_mask_inv.png` et toute variante `_inv` sont EXCLUS** : leur polarité est inversée (centre 0, coin 255, mesuré sur `magic-m15-Kaladesh` et `magic-m15-devoid`). Les traiter comme les autres effacerait le cadre et ne garderait que la fenêtre. **Vérifié depuis : aucun bloc `image:` du corpus ne déclare de `_inv`** — ces fichiers n'apparaissent que sur des blocs `card color:` / arrière-plan, hors périmètre. L'exclusion reste comme garde-fou, mais elle ne retire aujourd'hui aucun gabarit.
 - **`maskUnits="userSpaceOnUse"` explicite** sur le masque, avec les dimensions du gabarit. Le défaut `objectBoundingBox` recadrerait sur la boîte de l'élément masqué.
 - **Règle « pas de fallback » du projet :** ne jamais inventer une valeur. Un masque non résolu ⇒ repli géométrique explicite, jamais un chemin deviné.
 - Le repli géométrique n'a **besoin d'aucune donnée nouvelle** : `boxes.image` est déjà mappé sur `geometry.art` (`template-geometry.ts:48`) et déjà utilisé par le `clipPath` de l'illustration (`CardCanvas.tsx:466`).
@@ -90,8 +90,9 @@ eq('commander', read('magic-m15-commander')?.imageMask, 'image_mask.png');
 eq('m15 (aucun)', read('magic-m15')?.imageMask, undefined);
 // Déclaration pilotée par script : on retient la branche `else` (= standard).
 eq('leveler (script)', read('magic-classicshifted-leveler')?.imageMask, 'imagemask_standard.png');
-// Polarité inversée : exclu.
-eq('Kaladesh (_inv exclu)', read('magic-m15-Kaladesh')?.imageMask, undefined);
+// Kaladesh porte un `image_mask_inv.png`, mais sur son bloc `card color:` —
+// hors périmètre. Son bloc `image:` déclare un masque normal, qu'on retient.
+eq('Kaladesh (bloc image normal)', read('magic-m15-Kaladesh')?.imageMask, 'image_mask.png');
 
 console.log(failed === 0 ? '\nTOUT PASSE' : `\n${failed} ÉCHEC(S)`);
 process.exit(failed === 0 ? 0 : 1);
