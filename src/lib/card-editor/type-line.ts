@@ -154,18 +154,52 @@ export function splitTypeInput(raw: string): string[] {
 		.filter(Boolean);
 }
 
+/** Forme minimale du vocabulaire dont la lecture a besoin. */
+export type TypeVocabularySource = { supertypes: string[]; types: string[] } | null;
+
+/**
+ * Source de vocabulaire, injectée depuis le client.
+ *
+ * Ce module est atteint CÔTÉ SERVEUR (`db/custom-card-editor.ts` importe
+ * `draft.ts`, qui importe `isTokenTypeLine`). Un import de store Zustand au
+ * niveau module casserait alors le build Turbopack — un piège que ni `tsc` ni
+ * ESLint n'attrapent, seul `npm run build`. D'où cette injection : le serveur
+ * ne branche rien et lit `null`, ce qui est le repli sûr.
+ */
+let vocabularyResolver: () => TypeVocabularySource = () => null;
+
+export function setTypeVocabularyResolver(resolver: () => TypeVocabularySource): void {
+	vocabularyResolver = resolver;
+}
+
+export function resolveTypeVocabulary(): TypeVocabularySource {
+	return vocabularyResolver();
+}
+
 /**
  * Teste la présence d'un type/supertype, sur les MOTS de la ligne.
  *
  * Les appelants utilisaient des regex du genre `/\b(land|terrain)\b/i` sur la
  * ligne entière : « Creature — Landwalker » ou un sous-type contenant le mot
- * déclenchait alors le cas terrain. On compare ici des entrées ventilées, en
- * ignorant les sous-types — « Elemental Shaman » n'est pas un terrain.
+ * déclenchait alors le cas terrain. On compare ici des entrées ventilées.
+ *
+ * Le vivier dépend de la présence d'un tiret :
+ *
+ * - AVEC tiret, la grammaire est explicite : on ignore les sous-types, sinon
+ *   « Creature — Land Golem » passerait pour un terrain.
+ * - SANS tiret, la ventilation n'est qu'une déduction fondée sur un
+ *   vocabulaire ANGLAIS : « Terrain » y est inconnu et atterrit en sous-type.
+ *   S'y fier pour choisir un cadre reviendrait à donner à une heuristique le
+ *   poids d'une certitude, et ferait perdre le cadre de terrain sur une
+ *   saisie française. On cherche donc dans les trois listes.
  */
 export function hasCardType(typeLine: string, type: string): boolean {
-	const { supertypes, types } = parseTypeLine(typeLine, null);
+	const parts = parseTypeLine(typeLine, resolveTypeVocabulary());
+	const pool = /[—–]/.test(typeLine)
+		? [...parts.supertypes, ...parts.types]
+		: [...parts.supertypes, ...parts.types, ...parts.subtypes];
 	const needle = type.toLowerCase();
-	return [...supertypes, ...types].some((entry) => entry.toLowerCase() === needle);
+	return pool.some((entry) => entry.toLowerCase() === needle);
 }
 
 /**

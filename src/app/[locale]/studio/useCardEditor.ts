@@ -14,6 +14,7 @@ import {
 	type CustomCardDraft,
 	type EditableCardField,
 } from '@/lib/card-editor/types';
+import { useTypeVocabularyBridge } from '@/lib/card-editor/useTypeVocabularyBridge';
 
 const MAX_HISTORY = 30;
 
@@ -30,6 +31,7 @@ function isStoredDraft(value: unknown): value is CustomCardDraft {
 }
 
 export function useCardEditor(language: string) {
+	useTypeVocabularyBridge();
 	const [state, setState] = useState<CardEditorState>(() => ({
 		draft: createInitialCardDraft(language),
 		past: [],
