@@ -13,7 +13,7 @@
 - **Aucun framework de test dans ce dépôt.** Ne pas ajouter vitest/jest ; ne pas écrire de fichier `*.test.ts`. Les vérifications se font par script Node jetable dans le scratchpad, requête SQL, et navigateur.
 - **`npm run check` n'est PAS vert à la base** (~60 problèmes préexistants dans des fichiers sans rapport). Le critère est **aucun NOUVEAU problème** — vérifier avec `npx eslint <fichiers modifiés>`.
 - **`npm run build` est obligatoire** avant de déclarer le rendu terminé.
-- **`npm run card-assets` écrit en PRODUCTION** tant que `.env.seed` est présent — il le charge après `.env.local` et cette cible l'emporte. Ne jamais le lancer tel quel. La Task 2 en a besoin pour écrire la colonne en local : elle passe par le retrait temporaire de `.env.seed` documenté dans `upload-templates.ts` (lignes 11-13), avec contrôle de l'URL loggée avant toute écriture, et restauration systématique. Le simple téléversement de fichiers, lui, se fait par `npm run card-assets:seed`, qui lit `.env.local` et refuse toute cible non locale.
+- **`npm run card-assets` vise ce que résout `.env.local` + `.env.seed`.** Au 2026-07-31, `.env.seed` a été rebasculé sur la base LOCALE (sa ligne `SUPABASE_URL` de prod est commentée) : vérifié en exécutant `resolveSupabaseEnv`, qui journalise `http://127.0.0.1:54321`. Le script est donc sûr à lancer tel quel — **mais contrôler l'URL qu'il journalise au démarrage à chaque exécution** : si `.env.seed` repointe un jour sur la production, la même commande y écrirait sans avertissement. Le simple téléversement de fichiers passe par `npm run card-assets:seed`, qui lit `.env.local` et refuse toute cible non locale.
 - **Polarité du masque : blanc = la fenêtre**, noir = le cadre conservé.
 - **`image_mask_inv.png` et toute variante `_inv` sont EXCLUS** : leur polarité est inversée (centre 0, coin 255, mesuré sur `magic-m15-Kaladesh` et `magic-m15-devoid`). Les traiter comme les autres effacerait le cadre et ne garderait que la fenêtre. **Vérifié depuis : aucun bloc `image:` du corpus ne déclare de `_inv`** — ces fichiers n'apparaissent que sur des blocs `card color:` / arrière-plan, hors périmètre. L'exclusion reste comme garde-fou, mais elle ne retire aujourd'hui aucun gabarit.
 - **`maskUnits="userSpaceOnUse"` explicite** sur le masque, avec les dimensions du gabarit. Le défaut `objectBoundingBox` recadrerait sur la boîte de l'élément masqué.
@@ -293,18 +293,16 @@ npm run card-assets:seed
 
 **Ne PAS lancer `npm run card-assets`** — il vise la production.
 
-`card-assets:seed` téléverse les fichiers mais **n'écrit pas** la colonne `blend_masks`. C'est `upload-templates.ts` qui fait l'upsert de la table — et il choisit sa cible via `resolveSupabaseEnv`, qui lit `.env.local` **puis** `.env.seed`, ce dernier gagnant et pointant sur la PRODUCTION.
+`card-assets:seed` téléverse les fichiers mais **n'écrit pas** la colonne `blend_masks`. C'est `upload-templates.ts` qui fait l'upsert de la table, en résolvant sa cible par `resolveSupabaseEnv` (`scripts/lib/load-env.ts:36`), dans l'ordre `SUPABASE_URL` → `NEXT_PUBLIC_SUPABASE_URL` → défaut local.
 
-Le fichier documente lui-même (lignes 11-13) la seule façon sûre de viser le local : **retirer temporairement `.env.seed`**, jamais un flag.
+**`.env.seed` vise désormais la base LOCALE** : sa ligne `SUPABASE_URL` de production est commentée, donc la résolution retombe sur `.env.local`. Vérifié en exécutant `resolveSupabaseEnv`, qui journalise `supabase_url=http://127.0.0.1:54321`. `npm run card-assets` écrit donc en local, sans manipulation de fichier.
 
 ```bash
 cd /home/elthinkbuntu/Documents/Wizcard
-mv .env.seed .env.seed.off
-npm run card-assets          # vise le LOCAL tant que .env.seed est absent
-mv .env.seed.off .env.seed   # À FAIRE IMPÉRATIVEMENT, même en cas d'échec
+npm run card-assets
 ```
 
-**Vérifier l'URL loggée avant de laisser le script écrire** : il journalise sa cible au démarrage. Si elle n'est pas `127.0.0.1`, interrompre immédiatement et restaurer `.env.seed`.
+**Contrôler malgré tout l'URL loggée au démarrage** — le script l'affiche (`env resolved … supabase_url=…`). Si elle n'est pas `127.0.0.1`, **interrompre immédiatement** : cela signifierait que `.env.seed` a été rebasculé sur la production, et le script écrirait en prod.
 
 Puis contrôler :
 
