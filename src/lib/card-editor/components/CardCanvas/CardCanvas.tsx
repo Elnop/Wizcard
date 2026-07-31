@@ -37,6 +37,7 @@ interface CardCanvasProps {
 	setCode: string;
 	collectorNumber: string;
 	mseFramePath?: string | null;
+	artWindowMask?: string | null;
 	mseBlend?: { base: string; overlay: string; mask: string; plate: string } | null;
 	mseCrownPath?: string | null;
 	mseTextColors?: MseTextColors | null;
@@ -422,6 +423,7 @@ function CardSvg({
 	setCode,
 	collectorNumber,
 	mseFramePath,
+	artWindowMask,
 	mseBlend,
 	mseCrownPath,
 	mseTextColors,
@@ -493,6 +495,48 @@ function CardSvg({
 			 * `querySelectorAll('image')`, ce qui inclut les images DANS les <mask>.
 			 * Le <linearGradient> n'est pas une image et n'a rien à inliner.
 			 */}
+			{/*
+			 * Fenêtre d'illustration. Les cadres du corpus sont opaques et
+			 * peignent la zone d'illustration en noir : sans ce masque, le cadre
+			 * recouvre l'illustration peinte juste avant lui.
+			 *
+			 * Le <rect> blanc rend tout le cadre visible ; le masque, blanc dans
+			 * sa fenêtre, y creuse le trou. Sans masque déclaré, un rectangle
+			 * noir aux dimensions de la zone mesurée fait le même office — c'est
+			 * ce que MSE fait pour ces styles, qui ne déclarent aucun masque.
+			 *
+			 * `maskUnits="userSpaceOnUse"` est explicite : le défaut
+			 * `objectBoundingBox` recadrerait le masque sur la boîte de
+			 * l'élément masqué au lieu de la carte.
+			 */}
+			<mask
+				id={`${clipId}-artwin`}
+				maskUnits="userSpaceOnUse"
+				x="0"
+				y="0"
+				width={geometry.width}
+				height={geometry.height}
+			>
+				<rect x="0" y="0" width={geometry.width} height={geometry.height} fill="white" />
+				{artWindowMask ? (
+					<image
+						href={artWindowMask}
+						x={geometry.art.x}
+						y={geometry.art.y}
+						width={geometry.art.width}
+						height={geometry.art.height}
+						preserveAspectRatio="none"
+					/>
+				) : (
+					<rect
+						x={geometry.art.x}
+						y={geometry.art.y}
+						width={geometry.art.width}
+						height={geometry.art.height}
+						fill="black"
+					/>
+				)}
+			</mask>
 			{mseBlend ? (
 				<>
 					{/*
@@ -556,32 +600,34 @@ function CardSvg({
 					 * peint en fond, sans masque, et les couleurs viennent par-dessus
 					 * seulement là où le masque est clair.
 					 */}
-					<image
-						href={mseBlend.plate}
-						x="0"
-						y="0"
-						width={geometry.width}
-						height={geometry.height}
-						preserveAspectRatio="none"
-					/>
-					<g mask={`url(#${clipId}-hyplate)`}>
+					<g mask={`url(#${clipId}-artwin)`}>
 						<image
-							href={mseBlend.base}
+							href={mseBlend.plate}
 							x="0"
 							y="0"
 							width={geometry.width}
 							height={geometry.height}
 							preserveAspectRatio="none"
 						/>
-						<image
-							href={mseBlend.overlay}
-							x="0"
-							y="0"
-							width={geometry.width}
-							height={geometry.height}
-							preserveAspectRatio="none"
-							mask={`url(#${clipId}-hygrad-mask)`}
-						/>
+						<g mask={`url(#${clipId}-hyplate)`}>
+							<image
+								href={mseBlend.base}
+								x="0"
+								y="0"
+								width={geometry.width}
+								height={geometry.height}
+								preserveAspectRatio="none"
+							/>
+							<image
+								href={mseBlend.overlay}
+								x="0"
+								y="0"
+								width={geometry.width}
+								height={geometry.height}
+								preserveAspectRatio="none"
+								mask={`url(#${clipId}-hygrad-mask)`}
+							/>
+						</g>
 					</g>
 				</>
 			) : (
@@ -593,6 +639,7 @@ function CardSvg({
 						width={geometry.width}
 						height={geometry.height}
 						preserveAspectRatio="none"
+						mask={`url(#${clipId}-artwin)`}
 					/>
 				)
 			)}
@@ -856,6 +903,7 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 		setCode,
 		collectorNumber,
 		mseFramePath,
+		artWindowMask,
 		mseBlend,
 		mseCrownPath,
 		mseTextColors,
@@ -890,6 +938,7 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 					setCode={setCode}
 					collectorNumber={collectorNumber}
 					mseFramePath={mseFramePath}
+					artWindowMask={artWindowMask}
 					mseBlend={mseBlend}
 					mseCrownPath={mseCrownPath}
 					mseTextColors={mseTextColors}

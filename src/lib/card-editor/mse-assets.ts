@@ -350,6 +350,24 @@ export function resolveMseBlend(
  * interdit d'inventer une mauvaise couleur, pas de résoudre vers une forme
  * moins spécifique de la même couleur.
  */
+/**
+ * Masque de la fenêtre d'illustration.
+ *
+ * Les cadres du corpus sont des JPEG OPAQUES qui peignent la zone
+ * d'illustration en noir : peints par-dessus l'illustration, ils la
+ * recouvrent. Ce masque sert à y creuser la fenêtre.
+ *
+ * `null` quand le gabarit n'en déclare pas — l'appelant retombe alors sur la
+ * géométrie mesurée, qui ouvre une fenêtre rectangulaire. C'est ce que fait
+ * MSE lui-même pour ces styles : `magic-m15.mse-style` ne déclare aucun masque
+ * sur son champ image.
+ */
+export function resolveArtWindowMask(template: MseTemplate | undefined): string | null {
+	const maskPath = template?.blendMasks?.image;
+	if (!maskPath) return null;
+	return cardAssetUrl(maskPath) ?? null;
+}
+
 export function resolveMseCrownPath(
 	template: MseTemplate | undefined,
 	face: CardFaceDraft,
