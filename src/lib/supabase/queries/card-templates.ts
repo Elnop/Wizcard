@@ -26,6 +26,22 @@ import { createClient } from '@/lib/supabase/client';
 export interface TemplateFontRow {
 	name: string;
 	size: number;
+	/** Ascendante/descendante en fraction de la taille, lues dans le TTF. */
+	ascent?: number;
+	descent?: number;
+}
+
+/**
+ * Où poser le texte dans sa boîte, tel que le style le déclare.
+ *
+ * Le canvas utilisait des décalages constants (`boîte + 36`) qui ne
+ * correspondaient à aucun ancrage MSE : 125 gabarits sur 136 débordaient de
+ * leur boîte de ligne de type. Le corpus déclare pourtant l'ancrage pour les
+ * 140 gabarits mesurés, et une marge pour 120 d'entre eux.
+ */
+export interface TemplateLayoutRow {
+	anchor?: 'top' | 'middle' | 'bottom';
+	padding?: { top?: number; left?: number; right?: number; bottom?: number };
 }
 
 export interface TemplateGeometryRow {
@@ -45,6 +61,8 @@ export interface TemplateGeometryRow {
 	 * pile générique.
 	 */
 	fonts?: Partial<Record<'name' | 'type' | 'text' | 'pt', TemplateFontRow>>;
+	/** Ancrage et marges mesurés, par champ. Même statut partiel que `fonts`. */
+	layout?: Partial<Record<'name' | 'type' | 'text' | 'pt', TemplateLayoutRow>>;
 }
 
 export interface CardTemplateRow {

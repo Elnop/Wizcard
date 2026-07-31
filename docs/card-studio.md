@@ -140,15 +140,59 @@ The footer keeps `Arial` deliberately: MSE splits that line across fields the ex
 does not measure (`illustrator`, `copyright line`, `card number`), the same reason
 `FOOTER_BOTTOM_OFFSET` is derived. Lending it the title's font would be a borrow.
 
+### Placement: anchored, not offset
+
+Same story as the fonts, one layer down. The canvas positioned text with constants —
+`box + 39` for the title, `box + 36` for the type line, `box.x + 18/16/24` horizontally —
+calibrated by eye against M15.
+
+**125 of 136 measured frames overflowed their type box**, by up to 17.6px, always
+downward. That is the signature of a fixed baseline that ignores box height and font
+size: it cannot stay aligned once the font size varies per frame.
+
+MSE does not offset text, it **anchors** it, and declares how:
+
+```
+alignment: top shrink-overflow      padding top: 2
+```
+
+Corpus counts per field: `name` bottom 219, `pt` middle 243, `type` top 187 / middle 58.
+Two frames of the same era can differ — `magic-m15` anchors its type line `top`, while
+`magic-old` anchors it `middle`.
+
+The baseline is derived from the box, the declared anchor, the declared padding, and the
+font's **real ascender**, read from the TTF (`fontRatios`). Those ratios vary too much for
+a constant to work: Beleren 0.936, MPlantin 0.774, MagicMedieval 0.746.
+
+```
+top    → box.top + padding.top + size × ascent
+bottom → box.bottom − padding.bottom − size × descent
+middle → box.top + (box.h − size×(ascent+descent))/2 + size × ascent
+```
+
+After the change, every measured frame fits its box: **title 111/111, type 122/122,
+P/T 74/74**, zero overflow.
+
+Two things worth knowing:
+
+- The baseline is computed in `template-geometry.ts`, where the scale factor lives, and
+  handed to the canvas ready to paint. The canvas keeps the old constants **only** as the
+  no-data fallback — not correct, but exactly what shipped before, so no regression.
+- The rules text wrap width is derived from the measured left inset. It used to subtract
+  a hardcoded `44` (2 × 24); the corpus declares `padding left: 6`, so keeping 44 would
+  have wrapped lines short on narrow-margin frames.
+
 ### Where it lives
 
 | Path                                       | Role                                                             |
 | ------------------------------------------ | ---------------------------------------------------------------- |
-| `scripts/mse-geometry/style-file.ts`       | Parses `font:` blocks for every renderable field                 |
-| `scripts/mse-geometry/extract.ts`          | Resolves names/sizes, emits `geometry.fonts`                     |
+| `scripts/mse-geometry/style-file.ts`       | Parses `font:`, `alignment:`, `padding:` per renderable field    |
+| `scripts/mse-geometry/extract.ts`          | Resolves them, emits `geometry.fonts` + `geometry.layout`        |
+| `scripts/mse-geometry/font-metrics.ts`     | `fontRatios` — real ascender/descender read from the TTF         |
+| `src/lib/card-editor/template-geometry.ts` | Computes the absolute baseline (the scale factor lives here)     |
 | `src/lib/card-editor/fonts.ts`             | **MSE font name → CSS family.** The one place licensing switches |
 | `src/fonts/mse.ts`                         | Serves the 8 TTFs via `next/font/local`                          |
-| `scripts/card-assets/seed-local-fonts.mjs` | Backfills `geometry.fonts` **locally**                           |
+| `scripts/card-assets/seed-local-fonts.mjs` | Backfills `geometry.fonts` + `layout` **locally**                |
 
 `geometry` is a JSON column, so adding `fonts` needed **no migration**.
 

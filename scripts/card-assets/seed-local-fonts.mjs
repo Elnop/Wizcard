@@ -1,13 +1,14 @@
 // scripts/card-assets/seed-local-fonts.mjs
 //
-// Renseigne `geometry.fonts` sur la base LOCALE, à partir du corpus MSE.
+// Renseigne `geometry.fonts` et `geometry.layout` sur la base LOCALE, à partir
+// du corpus MSE.
 // Script jetable, sur le modèle de seed-local-crowns.mjs : `npm run card-assets`
 // charge .env.seed avec override:true et écrit donc en PRODUCTION, ce qu'on ne
 // veut pas ici (cf. docs/card-studio.md § Operational notes).
 //
-// Ne touche QUE la clé `fonts` : les boîtes et l'AST déjà stockés sont relus et
-// réécrits tels quels, pour qu'une erreur ici ne puisse pas dégrader une
-// géométrie correcte.
+// Ne touche QUE les clés `fonts` et `layout` : les boîtes et l'AST déjà
+// stockés sont relus et réécrits tels quels, pour qu'une erreur ici ne puisse
+// pas dégrader une géométrie correcte.
 //
 // Usage : SUPABASE_SERVICE_ROLE_KEY=... node scripts/card-assets/seed-local-fonts.mjs
 import { extractAll } from '../mse-geometry/extract.ts';
@@ -45,14 +46,15 @@ for (const row of rows) {
 	// On ne CRÉE pas de géométrie ici, ce n'est pas le rôle de ce script.
 	if (!measured || !row.geometry) continue;
 	const fonts = measured.fonts ?? {};
-	if (Object.keys(fonts).length === 0) continue;
+	const layout = measured.layout ?? {};
+	if (Object.keys(fonts).length === 0 && Object.keys(layout).length === 0) continue;
 
 	const response = await fetch(
 		`${URL_BASE}/rest/v1/card_templates?id=eq.${encodeURIComponent(row.id)}`,
 		{
 			method: 'PATCH',
 			headers: { ...headers, Prefer: 'return=minimal' },
-			body: JSON.stringify({ geometry: { ...row.geometry, fonts } }),
+			body: JSON.stringify({ geometry: { ...row.geometry, fonts, layout } }),
 		}
 	);
 	if (!response.ok) {

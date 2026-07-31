@@ -59,15 +59,71 @@ export function cssFamilyFor(mseName: string): string | null {
  * ailleurs.
  */
 export function toCardTextFont(
-	font: { name: string; size: number } | undefined,
-	scale: number
+	font: MseFont | undefined,
+	scale: number,
+	box?: { top: number; height: number; left: number },
+	layout?: MseLayout
 ): CardTextFont | undefined {
 	if (!font) return undefined;
 	const family = cssFamilyFor(font.name);
 	if (!family) return undefined;
 	const size = font.size * scale;
 	if (!Number.isFinite(size) || size <= 0) return undefined;
-	return { family, size };
+	return {
+		family,
+		size,
+		baseline: baselineFor(size, box, layout, font, scale),
+		left: box ? (box.left + (layout?.padding?.left ?? 0)) * scale : undefined,
+	};
+}
+
+/** Police telle qu'elle arrive du corpus, avant mise à l'échelle. */
+interface MseFont {
+	name: string;
+	size: number;
+	ascent?: number;
+	descent?: number;
+}
+
+/** Ancrage et marges tels qu'ils arrivent du corpus. */
+interface MseLayout {
+	anchor?: 'top' | 'middle' | 'bottom';
+	padding?: { top?: number; left?: number; right?: number; bottom?: number };
+}
+
+/**
+ * Ligne de base du texte dans sa boîte.
+ *
+ * MSE ancre le texte, il ne le décale pas d'une constante. Les trois ancrages
+ * du corpus se traduisent directement, `asc`/`desc` étant les métriques réelles
+ * de la police (elles varient beaucoup : Beleren 0.936, MPlantin 0.774,
+ * MagicMedieval 0.746, d'où l'impossibilité d'une constante) :
+ *
+ *   top    → haut de boîte + marge, puis descendre de l'ascendante
+ *   bottom → bas de boîte − marge, puis remonter de la descendante
+ *   middle → hauteur de glyphe centrée dans la boîte
+ *
+ * Rend `undefined` s'il manque la boîte, l'ancrage ou les métriques : le canvas
+ * garde alors son décalage générique plutôt qu'une position devinée.
+ */
+function baselineFor(
+	size: number,
+	box: { top: number; height: number } | undefined,
+	layout: MseLayout | undefined,
+	font: MseFont,
+	scale: number
+): number | undefined {
+	const anchor = layout?.anchor;
+	if (!box || !anchor || font.ascent === undefined || font.descent === undefined) {
+		return undefined;
+	}
+	const top = box.top * scale;
+	const height = box.height * scale;
+	const ascent = size * font.ascent;
+	const descent = size * font.descent;
+	if (anchor === 'top') return top + (layout.padding?.top ?? 0) * scale + ascent;
+	if (anchor === 'bottom') return top + height - (layout.padding?.bottom ?? 0) * scale - descent;
+	return top + (height - (ascent + descent)) / 2 + ascent;
 }
 
 /**

@@ -112,11 +112,35 @@ export interface RawFont {
 	size?: string;
 }
 
+/** Marges INTÉRIEURES d'un champ, telles qu'écrites dans le style. */
+export interface RawPadding {
+	top?: string;
+	left?: string;
+	right?: string;
+	bottom?: string;
+}
+
 /** Ce dont un champ a besoin pour que `content_width` soit mesurable (tâche 6). */
 export interface FieldFontInfo {
 	width?: string;
 	font?: RawFont;
 	symbolFont?: RawFont;
+	/**
+	 * `alignment:` du champ, brut. MSE y met l'horizontale et la verticale dans
+	 * la même chaîne (« top shrink-overflow », « middle left »), parfois pilotée
+	 * par script. C'est elle qui dit où poser le texte DANS la boîte — le canvas
+	 * utilisait un décalage constant, qui ne correspond ni à `top` ni à `middle`.
+	 *
+	 * Le corpus est très régulier par champ : `name` bottom (219), `pt` middle
+	 * (243), `type` top (187).
+	 */
+	alignment?: string;
+	/**
+	 * `padding top/left/right/bottom:`. 1253 littéraux contre 5 expressions dans
+	 * le corpus, d'où l'intérêt de les lire plutôt que de garder les marges
+	 * codées en dur du canvas (+18, +16, +24…).
+	 */
+	padding?: RawPadding;
 }
 
 export interface StyleFile {
@@ -274,6 +298,41 @@ function handleFontSubBlock(line: string, state: ParseState): boolean {
  */
 const BOX_PROPERTY = new RegExp(`^\\t\\t(${BOX_KEYS.join('|')})\\s*:\\s*(.+?)\\s*$`);
 
+/** Côtés de marge intérieure lus, dérivés de `RawPadding`. */
+const PADDING_SIDES = ['top', 'left', 'right', 'bottom'] as const;
+const PADDING_PROPERTY = new RegExp(
+	`^\\t\\tpadding (${PADDING_SIDES.join('|')})\\s*:\\s*(.+?)\\s*$`
+);
+// eslint-disable-next-line sonarjs/super-linear-regex -- safe: une ligne de style, longueur bornée
+const ALIGNMENT_PROPERTY = /^\t\talignment\s*:\s*(.+?)\s*$/;
+
+/**
+ * Ligne « alignment: … » ou « padding top: … » d'un champ porteur de police.
+ *
+ * Ces deux propriétés disent où poser le texte DANS sa boîte. Le canvas les
+ * remplaçait par des constantes (+16, +36…) calibrées sur un seul gabarit, d'où
+ * 125 gabarits sur 136 dont la ligne de type débordait de sa boîte.
+ *
+ * Même profondeur que les ancres (deux tabulations), donc lue au même endroit.
+ */
+function handleLayoutProperty(line: string, state: ParseState): void {
+	if (!bearsFont(state.current)) return;
+	const info = (state.fontFields[state.current] ??= {});
+	const alignment = ALIGNMENT_PROPERTY.exec(line);
+	// Une valeur vide (`alignment:` suivi de rien) n'est pas une déclaration :
+	// 267 champs `text` du corpus sont dans ce cas. On ne la retient pas, sans
+	// quoi elle écraserait une valeur héritée par `include file:`.
+	if (alignment?.[1]) {
+		info.alignment = alignment[1];
+		return;
+	}
+	const padding = PADDING_PROPERTY.exec(line);
+	if (padding) {
+		info.padding ??= {};
+		info.padding[padding[1] as (typeof PADDING_SIDES)[number]] = padding[2];
+	}
+}
+
 /** Ligne « left/top/width/height/right/bottom: … » directement sous un champ racine. */
 function handleBoxProperty(line: string, state: ParseState): void {
 	const prop = BOX_PROPERTY.exec(line);
@@ -335,6 +394,7 @@ function parseCardStyleFields(lines: string[]): ParsedFields {
 		// bien jusqu'à `handleBoxProperty`.
 		if (bearsFont(state.current) && handleFontSubBlock(line, state)) continue;
 		handleImageMask(line, state);
+		handleLayoutProperty(line, state);
 		handleBoxProperty(line, state);
 	}
 	return { fields: state.fields, fontFields: state.fontFields, imageMask: state.imageMask };
@@ -381,6 +441,15 @@ function mergeFontFields(own: ParsedFields, inherited: ParsedFields): void {
 		own.fontFields[field] ??= {};
 		const into = own.fontFields[field];
 		if (into.width === undefined && from.width !== undefined) into.width = from.width;
+		// `alignment` et `padding` s'héritent comme le reste : de nombreux styles
+		// ne les déclarent que dans le fichier qu'ils incluent.
+		if (into.alignment === undefined && from.alignment !== undefined) {
+			into.alignment = from.alignment;
+		}
+		if (from.padding) {
+			into.padding ??= {};
+			fillMissing(into.padding, from.padding);
+		}
 		for (const sub of ['font', 'symbolFont'] as const) {
 			if (!from[sub]) continue;
 			into[sub] ??= {};

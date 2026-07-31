@@ -25,6 +25,7 @@ import {
 	type CardLayoutId,
 	type CardRarity,
 	type CardRect,
+	type CardTextFont,
 	type EditableCardField,
 } from '@/lib/card-editor/types';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
@@ -71,6 +72,29 @@ const DEFAULT_INK = '#17140d';
  * pendant le chargement du catalogue au lieu de sauter à l'apparition du cadre.
  */
 const PLACEHOLDER_VIEWBOX = { width: 744, height: 1039 };
+
+/**
+ * Position d'un champ texte : mesurée si le corpus la donne, décalage
+ * historique sinon.
+ *
+ * MSE ancre le texte dans sa boîte (`alignment:` + `padding:`) ; le canvas
+ * posait des constantes calibrées sur un seul gabarit, et 125 des 136 cadres
+ * mesurés débordaient de leur boîte de ligne de type, jusqu'à 17.6 px.
+ *
+ * Les valeurs de repli sont les anciennes constantes, conservées telles quelles
+ * pour les rares champs sans ancrage ni métriques : elles ne sont pas justes,
+ * mais elles sont ce que le studio affichait déjà, donc aucune régression.
+ */
+function textPosition(
+	rect: CardRect,
+	font: CardTextFont | undefined,
+	fallback: { dx: number; dy: number }
+): { x: number; y: number } {
+	return {
+		x: font?.left ?? rect.x + fallback.dx,
+		y: font?.baseline ?? rect.y + fallback.dy,
+	};
+}
 
 function rectStyle(rect: CardRect, width: number, height: number): CSSProperties {
 	return {
@@ -285,6 +309,7 @@ function RulesText({
 	isNarrow,
 	textColor,
 	fontFamily,
+	textLeft,
 }: {
 	face: CardFaceDraft;
 	rect: CardRect;
@@ -293,6 +318,8 @@ function RulesText({
 	textColor: string;
 	/** Police mesurée du gabarit (MPlantin dans la quasi-totalité du corpus). */
 	fontFamily: string;
+	/** Bord gauche mesuré (marge intérieure du corpus), `rect.x + 24` en repli. */
+	textLeft: number;
 }) {
 	const symbolMap = useScryfallSymbols();
 	const oracle = expandCardNameShortcut(face.oracleText, face.name);
@@ -301,7 +328,13 @@ function RulesText({
 	// L'ambiance est légèrement plus petite que les règles, comme sur une carte.
 	const flavorFontSize = Math.max(17, fontSize - 2);
 	const lineHeight = fontSize * 1.28;
-	const maxCharacters = Math.max(15, Math.floor((rect.width - 44) / (fontSize * 0.53)));
+	// Largeur utile DÉRIVÉE du bord gauche effectif : le `- 44` d'origine valait
+	// 2 × 24, les deux marges codées en dur. Le bord gauche venant désormais du
+	// corpus, garder 44 ferait déborder les lignes des gabarits à marge étroite
+	// (le corpus déclare `padding left: 6`, pas 24).
+	const leftInset = textLeft - rect.x;
+	const usableWidth = rect.width - leftInset * 2;
+	const maxCharacters = Math.max(15, Math.floor(usableWidth / (fontSize * 0.53)));
 	const maxLines = Math.max(2, Math.floor((rect.height - 46) / lineHeight));
 	const lines = wrapCardText(content, maxCharacters, maxLines);
 	const positionedLines = lines.reduce<Array<{ line: (typeof lines)[number]; offset: number }>>(
@@ -321,7 +354,7 @@ function RulesText({
 				<RulesLine
 					key={`${line.text}-${index}`}
 					line={line.text}
-					x={rect.x + 24}
+					x={textLeft}
 					y={rect.y + 34 + offset * lineHeight}
 					fontSize={fontSize}
 					textColor={textColor}
@@ -344,7 +377,7 @@ function RulesText({
 					<RulesLine
 						key={`${flavorLine.text}-${index}`}
 						line={flavorLine.text}
-						x={rect.x + 24}
+						x={textLeft}
 						y={rect.y + 40 + (flavorOffset + 1.3 + index) * lineHeight}
 						fontSize={flavorFontSize}
 						textColor={textColor}
@@ -473,6 +506,13 @@ function CardSvg({
 	// corrigé.
 	if (!geometry) return null;
 	const title = face.name || labels.namePlaceholder;
+	// Positions mesurées (ancrage + marge du corpus), décalages historiques en
+	// repli. Cf. `textPosition`.
+	const titlePosition = textPosition(geometry.title, geometry.fonts?.title, { dx: 18, dy: 39 });
+	const typePosition = textPosition(geometry.typeLine, geometry.fonts?.typeLine, {
+		dx: 16,
+		dy: 36,
+	});
 	// Le titre court jusqu'au premier symbole de mana, pas jusqu'au bord de sa
 	// propre zone : les symboles sont alignés à DROITE de la zone mana, donc un
 	// coût court laisse beaucoup de place que le titre peut occuper.
@@ -480,7 +520,11 @@ function CardSvg({
 	// Soustraire manaCostWidth de la zone titre comptait la réserve deux fois
 	// (les zones title et mana sont déjà adjacentes : 61+468=529 vs mana à 523)
 	// et arrêtait le texte très en deçà des symboles.
-	const titleStart = geometry.title.x + 18;
+	//
+	// Part du bord GAUCHE effectif du titre : s'il vient du corpus, la largeur
+	// disponible doit être mesurée depuis là, sinon le texte serait ajusté pour
+	// une position qu'il n'occupe pas.
+	const titleStart = titlePosition.x;
 	const manaLeftEdge =
 		geometry.mana.x + geometry.mana.width - manaCostWidth(getManaSymbols(face.manaCost).length);
 	const fittedTitle = fitTitle(title, manaLeftEdge - TITLE_MANA_GUTTER - titleStart);
@@ -691,8 +735,8 @@ function CardSvg({
 				/>
 			)}
 			<text
-				x={geometry.title.x + 18}
-				y={geometry.title.y + 39}
+				x={titlePosition.x}
+				y={titlePosition.y}
 				fontFamily={geometry.fonts?.title?.family ?? GENERIC_SERIF}
 				fontSize={fittedTitle.fontSize}
 				// La graisse vient de la POLICE (Beleren Bold, Matrix, MagicMedieval
@@ -713,14 +757,13 @@ function CardSvg({
 				width={geometry.mana.width}
 			/>
 			{/*
-			 * Taille MESURÉE, plus le 25 en dur d'avant : le corpus déclare de 6.93
-			 * à 32 unités de style selon le gabarit. 25 px correspondait au 13 de
-			 * magic-m15 une fois mis à l'échelle (13 × 1039/523 ≈ 25.8) — juste pour
-			 * ce cadre-là, faux pour tous les autres.
+			 * Taille et POSITION mesurées. Le 25 en dur correspondait au 13 de
+			 * magic-m15 mis à l'échelle (13 × 1039/523 ≈ 25.8), et le `+36` de ligne
+			 * de base à ce même gabarit : les deux étaient justes pour lui seul.
 			 */}
 			<text
-				x={geometry.typeLine.x + 16}
-				y={geometry.typeLine.y + 36}
+				x={typePosition.x}
+				y={typePosition.y}
 				fontFamily={geometry.fonts?.typeLine?.family ?? GENERIC_SERIF}
 				fontSize={geometry.fonts?.typeLine?.size ?? 25}
 				fontWeight={geometry.fonts?.typeLine ? undefined : '800'}
@@ -741,6 +784,7 @@ function CardSvg({
 				isNarrow={isNarrowRules}
 				textColor={mseTextColors?.rules ?? '#181512'}
 				fontFamily={geometry.fonts?.rules?.family ?? GENERIC_SERIF}
+				textLeft={geometry.fonts?.rules?.left ?? geometry.rules.x + 24}
 			/>
 			{/*
 			 * Force/endurance : le TEXTE seul. Le panneau lui-même est peint par le
@@ -754,7 +798,10 @@ function CardSvg({
 				<g>
 					<text
 						x={geometry.stats.x + geometry.stats.width / 2}
-						y={geometry.stats.y + geometry.stats.height * 0.68}
+						// Ligne de base mesurée (le corpus déclare `middle` pour 243
+						// champs `pt`) ; le 0.68 historique en repli. Le X reste centré
+						// sur la boîte : c'est l'horizontale, que `textAnchor` gère.
+						y={geometry.fonts?.stats?.baseline ?? geometry.stats.y + geometry.stats.height * 0.68}
 						textAnchor="middle"
 						fontFamily={geometry.fonts?.stats?.family ?? GENERIC_SERIF}
 						fontSize={geometry.fonts?.stats?.size ?? 32}

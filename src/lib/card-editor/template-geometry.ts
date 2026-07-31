@@ -75,11 +75,15 @@ export function templateGeometry(template: MseTemplate | undefined): CardGeometr
 		// gabarit), pas en pixels du canvas. Un champ dont la police n'est ni
 		// déclarée ni servie reste absent — le canvas garde alors sa pile
 		// générique, cf. « aucun fallback ».
+		// La boîte et l'ancrage sont passés avec la police : c'est ici qu'on
+		// connaît l'échelle, donc ici qu'on calcule la ligne de base. Le canvas
+		// n'a plus qu'à peindre — il posait auparavant `boîte.y + 36`, une
+		// constante calibrée sur M15 dont 125 des 136 cadres débordaient.
 		fonts: {
-			title: toCardTextFont(source.fonts?.name, scale),
-			typeLine: toCardTextFont(source.fonts?.type, scale),
-			rules: toCardTextFont(source.fonts?.text, scale),
-			stats: toCardTextFont(source.fonts?.pt, scale),
+			title: toCardTextFont(source.fonts?.name, scale, boxes.name, source.layout?.name),
+			typeLine: toCardTextFont(source.fonts?.type, scale, boxes.type, source.layout?.type),
+			rules: toCardTextFont(source.fonts?.text, scale, boxes.text, source.layout?.text),
+			stats: toCardTextFont(source.fonts?.pt, scale, boxes.pt, source.layout?.pt),
 		},
 	};
 }

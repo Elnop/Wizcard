@@ -21,6 +21,14 @@ const TTF_BY_NAME: Record<string, string> = {
 	MatrixBold: 'MatrixBold.ttf',
 	'Matrix-Bold': 'MatrixBold.ttf',
 	Matrix: 'matrixb.ttf',
+	// Ajoutés pour les métriques de ligne de base (`fontRatios`) : ce sont les
+	// noms tels que le corpus les écrit dans `name`/`type`/`text`/`pt`, alors
+	// que les entrées ci-dessus couvraient les noms vus dans `casting cost` et
+	// les builtins. « Beleren Bold » (espace) est la forme la plus fréquente du
+	// corpus — 186 déclarations — et manquait, seule « Beleren-Bold » figurait.
+	'Beleren Bold': 'beleren-bold_P1.01.ttf',
+	ModMatrix: 'ModMatrix.ttf',
+	MagicMedieval: 'MagicMedieval.ttf',
 };
 
 const fontCache = new Map<string, opentype.Font>();
@@ -44,9 +52,21 @@ function loadFont(fontFile: string): opentype.Font {
 	return font;
 }
 
+/**
+ * Table de recherche insensible à la casse, dérivée de `TTF_BY_NAME`.
+ *
+ * Le corpus écrit « MPlantin » et « Mplantin » pour la même police (3 gabarits
+ * sur la seconde forme). Énumérer les variantes de casse à la main serait une
+ * source d'oublis silencieux — un nom non résolu ne lève pas d'erreur visible,
+ * il retire juste la métrique.
+ */
+const TTF_BY_LOWER_NAME = new Map(
+	Object.entries(TTF_BY_NAME).map(([name, file]) => [name.toLowerCase(), file])
+);
+
 /** Résout un nom de police MSE vers son fichier TTF livré, ou lève `Unresolved`. */
 function resolveFontFile(mseName: string): string {
-	const file = TTF_BY_NAME[mseName];
+	const file = TTF_BY_LOWER_NAME.get(mseName.trim().toLowerCase());
 	if (!file) throw new Unresolved(`police non résolue ${mseName}`);
 	return file;
 }
@@ -69,6 +89,33 @@ export function verticalOffset(fontFile: string, size: number): number {
 	return offset;
 }
 const verticalOffsetCache = new Map<string, number>();
+
+/**
+ * Ascendante et descendante d'une police, en fraction de sa taille.
+ *
+ * C'est ce qui permet au canvas de POSER la ligne de base : le haut des glyphes
+ * est à `baseline - size × ascent`, le bas à `baseline + size × descent`. Ces
+ * ratios varient beaucoup d'une police à l'autre (mesuré : Beleren 0.939,
+ * MPlantin 0.774, MagicMedieval 0.749), donc aucune constante ne peut convenir
+ * aux trois — ce qui est précisément le défaut des décalages codés en dur.
+ *
+ * `descender` est négatif dans un TTF ; on le rend positif, plus naturel à
+ * l'usage (`baseline + size × descent`).
+ *
+ * Rend `undefined` pour une police non livrée : l'appelant omet alors la
+ * métrique plutôt que d'en inventer une.
+ */
+export function fontRatios(mseName: string): { ascent: number; descent: number } | undefined {
+	try {
+		const font = loadFont(resolveFontFile(mseName));
+		return {
+			ascent: font.ascender / font.unitsPerEm,
+			descent: Math.abs(font.descender) / font.unitsPerEm,
+		};
+	} catch {
+		return undefined;
+	}
+}
 
 /** Largeur du texte rendu avec la police MSE nommée `mseFontName`, à la taille `size`. */
 export function textWidth(mseFontName: string, size: number, text: string): number {

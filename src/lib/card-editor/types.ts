@@ -203,6 +203,20 @@ export interface CardRect {
 export interface CardTextFont {
 	family: string;
 	size: number;
+	/**
+	 * Ligne de base ABSOLUE, en pixels du canvas.
+	 *
+	 * Calculée à partir de la boîte mesurée, de l'ancrage déclaré (top/middle/
+	 * bottom) et de l'ascendante réelle de la police. Le canvas posait
+	 * auparavant `boîte.y + 36`, une constante calibrée sur un seul gabarit :
+	 * 125 des 136 cadres débordaient alors de leur boîte, jusqu'à 17.6 px.
+	 *
+	 * Absente quand l'ancrage ou les métriques manquent — le canvas retombe
+	 * alors sur son décalage générique, jamais sur une valeur devinée.
+	 */
+	baseline?: number;
+	/** Bord gauche du texte, marge intérieure déclarée comprise. */
+	left?: number;
 }
 
 /**

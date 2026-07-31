@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import { evaluate, Unresolved } from './evaluate';
+import { fontRatios } from './font-metrics';
 import { parseExpression, unwrapFieldValue } from './parser';
 import { buildScope } from './scope';
 import {
@@ -7,6 +8,7 @@ import {
 	readStyleFile,
 	type FieldFontInfo,
 	type GeometryField,
+	type RawPadding,
 } from './style-file';
 import type { Scope } from './scope';
 
@@ -93,11 +95,47 @@ export interface ResolvedBox {
 export interface ResolvedFont {
 	name: string;
 	size: number;
+	/**
+	 * Ascendante/descendante en fraction de la taille, lues dans le TTF livré.
+	 *
+	 * Publiées avec la police pour que le canvas puisse POSER la ligne de base
+	 * sans embarquer un lecteur de TTF : le haut des glyphes est à
+	 * `baseline - size × ascent`, le bas à `baseline + size × descent`.
+	 *
+	 * Absentes si la police n'est pas livrée (styles exotiques du corpus) — le
+	 * canvas retombe alors sur son placement générique.
+	 */
+	ascent?: number;
+	descent?: number;
 }
 
 /** Champs dont la police est publiée, c.-à-d. ceux que le canvas ÉCRIT. */
 export const FONT_OUTPUT_FIELDS = ['name', 'type', 'text', 'pt'] as const;
 export type FontOutputField = (typeof FONT_OUTPUT_FIELDS)[number];
+
+/**
+ * Ancrage vertical du texte dans sa boîte, tel que MSE le déclare.
+ *
+ * Le corpus est très régulier par champ : `name` bottom (219), `pt` middle
+ * (243), `type` top (187). Le canvas, lui, posait une ligne de base constante
+ * (`boîte + 36`) qui ne correspond à AUCUN de ces trois ancrages — d'où 125
+ * gabarits sur 136 dont la ligne de type débordait par le bas.
+ */
+export type VerticalAnchor = 'top' | 'middle' | 'bottom';
+
+/** Marges intérieures résolues, en unités de style. */
+export interface ResolvedPadding {
+	top?: number;
+	left?: number;
+	right?: number;
+	bottom?: number;
+}
+
+/** Où poser le texte dans sa boîte : ancrage + marges. */
+export interface ResolvedLayout {
+	anchor?: VerticalAnchor;
+	padding?: ResolvedPadding;
+}
 
 export interface TemplateGeometry {
 	cardWidth: number;
@@ -120,6 +158,11 @@ export interface TemplateGeometry {
 	 * bibliothèque sans nécessité.
 	 */
 	fonts: Partial<Record<FontOutputField, ResolvedFont>>;
+	/**
+	 * Ancrage et marges, par champ. Même statut que `fonts` : partiel, et une
+	 * valeur non résolue est absente plutôt que devinée.
+	 */
+	layout: Partial<Record<FontOutputField, ResolvedLayout>>;
 }
 
 /**
@@ -174,7 +217,51 @@ function resolveFieldFont(info: FieldFontInfo | undefined, scope: Scope): Resolv
 	if (!trimmedName) return undefined;
 	const numericSize = typeof size === 'number' ? size : Number(size);
 	if (!Number.isFinite(numericSize) || numericSize <= 0) return undefined;
-	return { name: trimmedName, size: numericSize };
+	// Métriques lues dans le TTF livré. Absentes pour une police non livrée :
+	// la police reste publiée (le nom sert au rendu), seul le calcul de ligne
+	// de base retombe alors sur le placement générique.
+	const ratios = fontRatios(trimmedName);
+	return { name: trimmedName, size: numericSize, ...ratios };
+}
+
+/**
+ * Ancrage vertical lu dans une chaîne `alignment:`.
+ *
+ * MSE mélange horizontale et verticale dans la même chaîne (« top
+ * shrink-overflow », « center middle shrink-overflow », « middle left »), dans
+ * un ordre libre. On ne cherche donc que le mot-clé vertical.
+ *
+ * Les formes pilotées par script (40 champs) sont évaluées comme le reste ; si
+ * l'évaluation échoue, l'ancrage reste absent — jamais deviné.
+ */
+function resolveAnchor(raw: string | undefined, scope: Scope): VerticalAnchor | undefined {
+	const value =
+		typeof raw === 'string' && !raw.trim().startsWith('{') ? raw : resolveFontValue(raw, scope);
+	if (typeof value !== 'string') return undefined;
+	const words = value.toLowerCase();
+	// `middle` d'abord : « center middle » contient les deux, et c'est `middle`
+	// qui porte la verticale — `center` est l'horizontale.
+	if (words.includes('middle')) return 'middle';
+	if (words.includes('bottom')) return 'bottom';
+	if (words.includes('top')) return 'top';
+	return undefined;
+}
+
+/** Marges intérieures résolues ; un côté non résolu est simplement absent. */
+function resolvePadding(raw: RawPadding | undefined, scope: Scope): ResolvedPadding | undefined {
+	if (!raw) return undefined;
+	const out: ResolvedPadding = {};
+	for (const side of ['top', 'left', 'right', 'bottom'] as const) {
+		// Côté non déclaré : on passe. `Number(null)` vaut 0, ce qui aurait
+		// publié une marge nulle là où le style n'en déclare AUCUNE — un
+		// fallback déguisé, et le même piège que `nil` sur les ancres.
+		if (raw[side] === undefined) continue;
+		const value = resolveFontValue(raw[side], scope);
+		if (value === null) continue;
+		const numeric = typeof value === 'number' ? value : Number(value);
+		if (Number.isFinite(numeric)) out[side] = numeric;
+	}
+	return Object.keys(out).length > 0 ? out : undefined;
 }
 
 export interface ExtractionReport {
@@ -273,9 +360,15 @@ export function extractAll(corpusRoot: string): {
 			// Résolue APRÈS les boîtes : `buildScope` a pu injecter des variables
 			// (content_width) dont une expression de police peut dépendre.
 			const fonts: TemplateGeometry['fonts'] = {};
+			const layout: TemplateGeometry['layout'] = {};
 			for (const field of FONT_OUTPUT_FIELDS) {
-				const font = resolveFieldFont(style.fontFields[field], scope);
+				const info = style.fontFields[field];
+				const font = resolveFieldFont(info, scope);
 				if (font) fonts[field] = font;
+				const anchor = resolveAnchor(info?.alignment, scope);
+				const padding = resolvePadding(info?.padding, scope);
+				if (anchor || padding)
+					layout[field] = { ...(anchor && { anchor }), ...(padding && { padding }) };
 			}
 			geometries.set(style.id, {
 				cardWidth: style.cardWidth,
@@ -283,6 +376,7 @@ export function extractAll(corpusRoot: string): {
 				boxes,
 				ast,
 				fonts,
+				layout,
 			});
 		}
 	}
