@@ -18,6 +18,7 @@ import {
 	type MseTemplate,
 } from '@/lib/card-editor/mse-assets';
 import { validateCardDraft } from '@/lib/card-editor/draft';
+import { isUnsupportedFrame } from '@/lib/card-editor/frame-choices';
 import { templateGeometry } from '@/lib/card-editor/template-geometry';
 import { clampManaCost, getRulesCapacity, type RulesCapacity } from '@/lib/card-editor/text-layout';
 import { parseTypeLine } from '@/lib/card-editor/type-line';
@@ -115,9 +116,21 @@ export function CardEditorStudio() {
 	// Couvre aussi la géométrie : un gabarit non MESURÉ n'est plus proposé par le
 	// sélecteur, mais un vieux brouillon peut encore en porter un — sans
 	// géométrie, le canvas ne peindrait rien.
+	//
+	// Et les cadres retirés provisoirement (planeswalker, flip, recto-verso) :
+	// eux se peignent, mais faux, et n'ont plus d'entrée dans la bibliothèque. Un
+	// brouillon qui en porte un serait donc peint sans que le sélecteur puisse le
+	// désigner — on le ramène au cadre par défaut, avec LE MÊME critère que la
+	// liste (`isUnsupportedFrame`), pour qu'ils ne puissent pas diverger.
 	useEffect(() => {
 		if (mseCatalog.isLoading || mseCatalog.error) return;
-		if (selectedMseTemplate?.renderMode === 'frame' && selectedMseTemplate.geometry) return;
+		if (
+			selectedMseTemplate?.renderMode === 'frame' &&
+			selectedMseTemplate.geometry &&
+			!isUnsupportedFrame(selectedMseTemplate)
+		) {
+			return;
+		}
 		const fallback = mseCatalog.templates.find(
 			(template) => template.id === DEFAULT_FRAME_TEMPLATE_ID
 		);

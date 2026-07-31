@@ -54,7 +54,9 @@ export function MseTemplatePicker({
 	// La modale de filtres et le calcul de rareté des badges DOIVENT porter sur la
 	// même population que la grille (les `choices`), pas sur `renderableTemplates`
 	// (206 lignes) : buildFrameChoices en retire encore celles sans géométrie
-	// mesurée (-> 109). Sans ce filtre partagé, la modale propose des familles et
+	// mesurée (-> 109) ET celles portant un mot-clé non pris en charge
+	// (planeswalker, flip, recto-verso : -24, -> 85). Sans ce filtre partagé, la
+	// modale propose des familles et
 	// mots-clés dont la grille ne peut jamais rendre un seul résultat — exactement
 	// l'impasse que cette refonte doit supprimer.
 	const filterableTemplates = useMemo(() => choices.map((choice) => choice.template), [choices]);

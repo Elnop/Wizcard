@@ -133,12 +133,46 @@ function disambiguateLabels(templates: MseTemplate[]): Map<string, string> {
 	return labels;
 }
 
+/**
+ * Mots-clés dont les cadres sont retirés de la bibliothèque, PROVISOIREMENT.
+ *
+ * Ces trois familles supposent une carte que le studio ne sait pas encore
+ * décrire : un planeswalker a des capacités à loyauté et une boîte de texte
+ * segmentée, un flip et un recto-verso ont DEUX faces là où le brouillon n'en
+ * porte qu'une. Leur géométrie est bien mesurée — ils passaient donc le filtre
+ * `geometry !== null` — mais le rendu qui en sortait était faux, pas dégradé.
+ *
+ * L'exclusion vit en code, comme `frameOrigin` et pour la même raison : elle se
+ * lève en un commit, sans migration ni passage `card-assets` (qui écrit en
+ * PROD). Les lignes restent en base, intactes et toujours mesurées.
+ *
+ * Les mots-clés sont ceux DÉCLARÉS par le corpus, pas un motif de nom : 24 des
+ * 109 gabarits que la bibliothèque proposait en portent au moins un, d'où les 85
+ * restants. `flips` n'est pas listé — aucun gabarit ne le porte sans porter
+ * aussi `flip`.
+ */
+const UNSUPPORTED_TAGS = ['planeswalker', 'flip', 'double_faced'];
+
+/**
+ * Ce gabarit est-il retiré de la bibliothèque ? (cf. `UNSUPPORTED_TAGS`)
+ *
+ * Exporté pour que l'auto-réparation du studio partage LE MÊME critère que la
+ * liste : un brouillon resté sur un cadre exclu doit être ramené vers le cadre
+ * par défaut. Sans ça il continuerait d'être peint tout en étant introuvable
+ * dans le sélecteur — donc impossible à retrouver après en avoir changé.
+ */
+export function isUnsupportedFrame(template: MseTemplate): boolean {
+	return UNSUPPORTED_TAGS.some((tag) => template.tags.includes(tag));
+}
+
 /** Construit la liste des apparences proposées : les cadres vendor mesurés. */
 export function buildFrameChoices(templates: MseTemplate[]): FrameChoice[] {
 	// « Aucun fallback » : un cadre sans géométrie MESURÉE n'est pas proposé.
 	// Depuis le retrait des gabarits maison, cette règle décide de la totalité de
 	// la liste — plus rien n'est rendu en dehors d'un cadre mesuré.
-	const measured = templates.filter((template) => template.geometry !== null);
+	const measured = templates.filter(
+		(template) => template.geometry !== null && !isUnsupportedFrame(template)
+	);
 	const labels = disambiguateLabels(measured);
 
 	const choices: FrameChoice[] = measured.map((template) => ({
@@ -157,6 +191,11 @@ export function buildFrameChoices(templates: MseTemplate[]): FrameChoice[] {
 /**
  * Géométrie déduite du cadre. Ne dépend pas de mse-assets (qui est un module
  * client) : ce fichier reste pur pour rester lisible et réutilisable.
+ *
+ * La branche `planeswalker` est INJOIGNABLE tant que `UNSUPPORTED_TAGS` la
+ * retire en amont — elle est gardée telle quelle parce qu'elle redeviendra la
+ * classification juste le jour où l'exclusion sera levée. La supprimer ferait
+ * silencieusement tomber ces cadres en `arcana`.
  */
 function layoutForTemplate(template: MseTemplate): CardLayoutId {
 	if (template.layoutId && template.layoutId in CARD_LAYOUTS) return template.layoutId;
