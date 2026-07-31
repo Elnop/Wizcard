@@ -372,8 +372,6 @@ function Artwork({
 			</g>
 		);
 	}
-	const centerX = rect.x + rect.width / 2;
-	const centerY = rect.y + rect.height / 2;
 	// Borné AUSSI au rendu, pas seulement pendant le glisser : réduire le zoom
 	// rétrécit la marge, et un offset enregistré à un zoom plus élevé laisserait
 	// alors du vide dans la carte. Le glisser et le rendu partagent la même
@@ -381,16 +379,35 @@ function Artwork({
 	const bounds = artPanBounds(rect, artwork.width, artwork.height, artwork.zoom);
 	const translateX = (clampOffset(artwork.offsetX, bounds.maxOffsetX) / 100) * rect.width;
 	const translateY = (clampOffset(artwork.offsetY, bounds.maxOffsetY) / 100) * rect.height;
+
+	// L'élément est dimensionné à la taille RÉELLE de l'image mise à l'échelle, et
+	// c'est le `clipPath` qui découpe la fenêtre.
+	//
+	// Il portait auparavant `preserveAspectRatio="xMidYMid slice"` sur une boîte de
+	// la taille de la fenêtre. Piège : `slice` ne fait PAS déborder l'élément — il
+	// remplit la boîte et JETTE le surplus (bbox mesurée = la boîte exacte). Il n'y
+	// avait donc aucune matière à faire défiler : translater ne sortait l'image du
+	// champ qu'en laissant du vide derrière elle.
+	//
+	// Sans `width`/`height` connus, on ne peut pas calculer l'échelle : on retombe
+	// sur `slice`, qui remplit correctement mais reste infaisable à déplacer — d'où
+	// la marge nulle que `artPanBounds` rend dans ce cas.
+	const canSize = Boolean(artwork.width && artwork.height);
+	const scale = canSize
+		? Math.max(rect.width / artwork.width!, rect.height / artwork.height!) * artwork.zoom
+		: 1;
+	const paintedWidth = canSize ? artwork.width! * scale : rect.width;
+	const paintedHeight = canSize ? artwork.height! * scale : rect.height;
+
 	return (
 		<g clipPath={`url(#${clipId})`}>
 			<image
 				href={artwork.dataUrl}
-				x={rect.x}
-				y={rect.y}
-				width={rect.width}
-				height={rect.height}
-				preserveAspectRatio="xMidYMid slice"
-				transform={`translate(${centerX + translateX} ${centerY + translateY}) scale(${artwork.zoom}) translate(${-centerX} ${-centerY})`}
+				x={rect.x + (rect.width - paintedWidth) / 2 + translateX}
+				y={rect.y + (rect.height - paintedHeight) / 2 + translateY}
+				width={paintedWidth}
+				height={paintedHeight}
+				preserveAspectRatio={canSize ? 'none' : 'xMidYMid slice'}
 			/>
 		</g>
 	);
