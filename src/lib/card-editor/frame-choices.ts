@@ -175,7 +175,23 @@ const UNSUPPORTED_TAGS = [
 ];
 
 /**
- * Ce gabarit est-il retiré de la bibliothèque ? (cf. `UNSUPPORTED_TAGS`)
+ * Ce gabarit est-il retiré de la bibliothèque ?
+ *
+ * Deux motifs DISTINCTS, gardés séparés parce qu'ils ne se lèveront pas en même
+ * temps :
+ *
+ * 1. `UNSUPPORTED_TAGS` — le studio ne sait pas rendre ce cadre correctement.
+ *    Se lève quand le brouillon saura décrire ces cartes.
+ * 2. Origine communautaire — le cadre se rendrait bien, mais la bibliothèque ne
+ *    propose que les cadres reproduisant un cadre officiel Wizards. C'est un
+ *    choix de contenu, pas une limite technique.
+ *
+ * Attention à la portée du 2e : `frameOrigin` n'est PAS déclaré par le corpus,
+ * c'est la table écrite à la main dans `frame-facets.ts`. Un gabarit sans
+ * `installer_group` y tombe en « communautaire » par défaut faute de donnée, et
+ * non parce qu'il l'est — `magic-testprint-8th` (« 8th Edition Test Prints ») est
+ * dans ce cas. Il est retiré quand même : un cadre d'épreuve n'a pas sa place
+ * dans une bibliothèque destinée aux utilisateurs.
  *
  * Exporté pour que l'auto-réparation du studio partage LE MÊME critère que la
  * liste : un brouillon resté sur un cadre exclu doit être ramené vers le cadre
@@ -183,6 +199,7 @@ const UNSUPPORTED_TAGS = [
  * dans le sélecteur — donc impossible à retrouver après en avoir changé.
  */
 export function isUnsupportedFrame(template: MseTemplate): boolean {
+	if (frameOrigin(template) === 'custom') return true;
 	return UNSUPPORTED_TAGS.some((tag) => template.tags.includes(tag));
 }
 

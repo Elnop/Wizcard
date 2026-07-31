@@ -55,8 +55,9 @@ export function MseTemplatePicker({
 	// même population que la grille (les `choices`), pas sur `renderableTemplates`
 	// (206 lignes) : buildFrameChoices en retire encore celles sans géométrie
 	// mesurée (-> 109) ET celles portant un mot-clé non pris en charge
-	// (planeswalker, flip, recto-verso, leveler, split, tapped, tome : -43, -> 66).
-	// Sans ce filtre partagé, la modale propose des familles et
+	// (planeswalker, flip, recto-verso, leveler, split, tapped, tome : -43, -> 66)
+	// ET les cadres communautaires (-26, -> 40). Sans ce filtre partagé, la modale
+	// propose des familles et
 	// mots-clés dont la grille ne peut jamais rendre un seul résultat — exactement
 	// l'impasse que cette refonte doit supprimer.
 	const filterableTemplates = useMemo(() => choices.map((choice) => choice.template), [choices]);
