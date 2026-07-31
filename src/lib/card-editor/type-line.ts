@@ -21,6 +21,22 @@ export interface TypeLineParts {
 /** Le tiret cadratin sépare types et sous-types. */
 const DASH = '—';
 
+/**
+ * Séparateurs reconnus entre types et sous-types : cadratin (celui qu'écrit
+ * `composeTypeLine`) et demi-cadratin (confusion de saisie plausible). PAS le
+ * trait d'union : le vocabulaire officiel de Scryfall ne contient que deux
+ * entrées avec un trait d'union — « Assembly-Worker » (type de créature) et
+ * « Power-Plant » (type de terrain) — et aucune dans `card-types` ni
+ * `supertypes` ; le trait d'union n'est donc jamais un séparateur. Partagée
+ * par `parseTypeLine` et `hasCardType` pour que la lecture et la sélection du
+ * vivier restent synchronisées si un séparateur est ajouté un jour.
+ *
+ * Pas de flag `g` : cette regex est module-level et testée avec `.test()`
+ * (voir plus bas) ; un flag global ferait persister `lastIndex` entre deux
+ * appels et renverrait des résultats alternativement faux.
+ */
+const SEPARATOR = /[—–]/;
+
 export const EMPTY_TYPE_LINE: TypeLineParts = { supertypes: [], types: [], subtypes: [] };
 
 /**
@@ -111,13 +127,10 @@ export function parseTypeLine(
 	typeLine: string,
 	vocabulary: { supertypes: string[]; types: string[] } | null
 ): TypeLineParts {
-	// Seuls les tirets de SÉPARATION coupent la ligne : cadratin (celui
-	// qu'écrit `composeTypeLine`) et demi-cadratin (confusion de saisie
-	// plausible). PAS le trait d'union : le vocabulaire officiel contient
-	// `Assembly-Worker` et `Power-Plant`, et couper dessus les déchirait en
-	// deux. On cherche l'index plutôt qu'une regex encadrée d'espaces
-	// optionnels, qui backtracke (sonarjs/super-linear-regex).
-	const dashIndex = typeLine.search(/[—–]/);
+	// Seuls les tirets de SÉPARATION coupent la ligne (voir `SEPARATOR`). On
+	// cherche l'index plutôt qu'une regex encadrée d'espaces optionnels, qui
+	// backtracke (sonarjs/super-linear-regex).
+	const dashIndex = typeLine.search(SEPARATOR);
 	const hasDash = dashIndex !== -1;
 	const leftRaw = hasDash ? typeLine.slice(0, dashIndex) : typeLine;
 	const rightRaw = hasDash ? typeLine.slice(dashIndex + 1) : '';
@@ -195,7 +208,7 @@ export function resolveTypeVocabulary(): TypeVocabularySource {
  */
 export function hasCardType(typeLine: string, type: string): boolean {
 	const parts = parseTypeLine(typeLine, resolveTypeVocabulary());
-	const pool = /[—–]/.test(typeLine)
+	const pool = SEPARATOR.test(typeLine)
 		? [...parts.supertypes, ...parts.types]
 		: [...parts.supertypes, ...parts.types, ...parts.subtypes];
 	const needle = type.toLowerCase();
