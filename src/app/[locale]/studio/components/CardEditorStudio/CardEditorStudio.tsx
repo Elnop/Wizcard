@@ -7,7 +7,7 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { CardCanvas } from '@/lib/card-editor/components/CardCanvas/CardCanvas';
 import { saveCustomCard } from '@/lib/card-editor/db/custom-card-editor';
 import { buildCardFileName, downloadBlob, renderCardPng } from '@/lib/card-editor/export';
-import { prepareArtwork } from '@/lib/card-editor/image';
+import { measureArtwork, prepareArtwork } from '@/lib/card-editor/image';
 import {
 	resolveMseBlend,
 	resolveMseCrownPath,
@@ -17,6 +17,7 @@ import {
 	useSelectedMseTemplate,
 	type MseTemplate,
 } from '@/lib/card-editor/mse-assets';
+import { clampArtwork } from '@/lib/card-editor/art-pan';
 import { validateCardDraft } from '@/lib/card-editor/draft';
 import { isUnsupportedFrame } from '@/lib/card-editor/frame-choices';
 import { templateGeometry } from '@/lib/card-editor/template-geometry';
@@ -141,6 +142,40 @@ export function CardEditorStudio() {
 		});
 	}, [editor, mseCatalog.error, mseCatalog.isLoading, mseCatalog.templates, selectedMseTemplate]);
 
+	// Mesure rétroactive : un brouillon enregistré avant que l'import ne conserve
+	// les dimensions n'en porte pas, et sans elles le déplacement est FIGÉ (la
+	// seule marge qui ne peut pas ouvrir de vide). On relit l'image du brouillon
+	// pour lever ce blocage — sa taille est un fait, pas une hypothèse.
+	//
+	// `dataUrl` en dépendance : l'effet ne se redéclenche qu'au changement
+	// d'illustration, et la garde sur `width` l'arrête dès la mesure écrite.
+	const activeArtwork = editor.draft.faces[editor.draft.activeFace]?.artwork;
+	const artworkDataUrl = activeArtwork?.dataUrl;
+	const artworkHasSize = Boolean(activeArtwork?.width && activeArtwork.height);
+	// Mémoïsé : `templateGeometry` reconstruit son objet à chaque appel, et une
+	// référence neuve à chaque rendu ferait boucler l'effet ci-dessous.
+	const artRect = useMemo(() => templateGeometry(selectedMseTemplate)?.art, [selectedMseTemplate]);
+	useEffect(() => {
+		// On ATTEND la géométrie : sans elle, le re-bornage ci-dessous ramènerait le
+		// cadrage à zéro au lieu de le corriger, et écrire les dimensions sans
+		// re-borner laisserait l'ancien décalage hors marge. L'effet se rejoue quand
+		// le catalogue arrive, `artRect` étant en dépendance.
+		if (!artworkDataUrl || artworkHasSize || !artRect) return;
+		let cancelled = false;
+		void measureArtwork(artworkDataUrl).then((size) => {
+			if (cancelled || !size) return;
+			const current = editor.draft.faces[editor.draft.activeFace]?.artwork;
+			if (!current) return;
+			// Re-borné dans la foulée : l'offset avait été enregistré à une époque où
+			// la marge était inconnue, il peut donc dépasser la marge qu'on vient de
+			// calculer. L'écrire tel quel rouvrirait le vide qu'on ferme ici.
+			editor.updateArtwork(clampArtwork({ ...current, ...size }, artRect));
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [artRect, artworkDataUrl, artworkHasSize, editor]);
+
 	const labels = useMemo<CardCanvasLabels>(
 		() => ({
 			namePlaceholder: t('canvas.namePlaceholder'),
@@ -162,7 +197,10 @@ export function CardEditorStudio() {
 		if (!file?.type.startsWith('image/')) return;
 		try {
 			const prepared = await prepareArtwork(file);
-			editor.updateArtwork({ ...prepared, zoom: 1, offsetX: 0, offsetY: 0 });
+			// Passe par handleArtworkChange comme les autres écritures : un cadrage
+			// neutre est déjà valide, mais router l'import ailleurs rouvrirait la porte
+			// qu'on vient de fermer.
+			handleArtworkChange({ ...prepared, zoom: 1, offsetX: 0, offsetY: 0 });
 			setActivePanel('art');
 		} catch {
 			setNotice({ type: 'error', message: t('notices.imageError') });
@@ -261,7 +299,11 @@ export function CardEditorStudio() {
 	function handleArtworkChange(artwork: Parameters<typeof editor.updateArtwork>[0]) {
 		setValidationErrors([]);
 		setNotice(null);
-		editor.updateArtwork(artwork);
+		// Garantie « pas de vide », posée sur le point de passage UNIQUE de toute
+		// modification d'illustration (glisser, curseurs, zoom, import). La valeur
+		// enregistrée est donc toujours valide — borner au seul affichage laisserait
+		// partir un cadrage faux vers la sauvegarde, l'export PNG et le rechargement.
+		editor.updateArtwork(clampArtwork(artwork, artRect));
 	}
 
 	function handleDraftChange(values: Parameters<typeof editor.updateDraft>[0]) {

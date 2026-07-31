@@ -52,6 +52,16 @@ export interface CardArtworkDraft {
 	zoom: number;
 	offsetX: number;
 	offsetY: number;
+	/**
+	 * Dimensions de l'image peinte, renseignées à l'import par `prepareArtwork`.
+	 *
+	 * OPTIONNELLES, et elles doivent le rester : les brouillons enregistrés avant
+	 * leur introduction n'en portent pas, et `editor_payload` est un `jsonb` — ils
+	 * se rechargent donc tels quels, sans migration. Sans elles, `artPanBounds`
+	 * retombe sur la borne historique de ±50 % au lieu d'inventer un ratio.
+	 */
+	width?: number;
+	height?: number;
 }
 
 export interface CardFaceDraft {

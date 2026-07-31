@@ -7,6 +7,14 @@ export interface PreparedArtwork {
 	dataUrl: string;
 	fileName: string;
 	mimeType: string;
+	/**
+	 * Dimensions de l'image PRODUITE (après la réduction à `MAX_IMAGE_EDGE`), pas
+	 * du fichier d'origine : c'est celle-ci qui est peinte, donc elle seule décrit
+	 * le débordement hors de la boîte d'art. Le ratio est le même, mais le calcul
+	 * de `artPanBounds` reste ainsi exact quelle que soit l'échelle.
+	 */
+	width: number;
+	height: number;
 }
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -46,10 +54,35 @@ export async function prepareArtwork(file: File): Promise<PreparedArtwork> {
 			dataUrl: canvas.toDataURL(outputType, 0.92),
 			fileName: file.name,
 			mimeType: outputType,
+			width: canvas.width,
+			height: canvas.height,
 		};
 	} catch (error) {
 		if (error instanceof Error && ['unsupported', 'tooLarge'].includes(error.message)) throw error;
 		throw new Error('unreadable');
+	}
+}
+
+/**
+ * Mesure une illustration déjà présente dans un brouillon.
+ *
+ * Les brouillons enregistrés avant que `prepareArtwork` ne conserve les
+ * dimensions n'en portent pas, et sans elles le déplacement est figé (cf.
+ * `UNKNOWN_PAN_LIMIT`). Plutôt que de deviner un ratio, on relit l'image : elle
+ * est dans le brouillon, sa taille est un FAIT, pas une hypothèse.
+ *
+ * `null` si l'image ne se décode pas — le déplacement reste alors figé, ce qui
+ * est le comportement sûr.
+ */
+export async function measureArtwork(
+	dataUrl: string
+): Promise<{ width: number; height: number } | null> {
+	try {
+		const image = await loadImage(dataUrl);
+		if (!image.naturalWidth || !image.naturalHeight) return null;
+		return { width: image.naturalWidth, height: image.naturalHeight };
+	} catch {
+		return null;
 	}
 }
 

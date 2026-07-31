@@ -1,6 +1,7 @@
 'use client';
 
 import { forwardRef, useId, useRef, type CSSProperties, type PointerEvent } from 'react';
+import { artPanBounds, clampOffset } from '@/lib/card-editor/art-pan';
 import type { MseTemplate, MseTextColors } from '@/lib/card-editor/mse-assets';
 import { templateGeometry } from '@/lib/card-editor/template-geometry';
 import {
@@ -373,8 +374,13 @@ function Artwork({
 	}
 	const centerX = rect.x + rect.width / 2;
 	const centerY = rect.y + rect.height / 2;
-	const translateX = (artwork.offsetX / 100) * rect.width;
-	const translateY = (artwork.offsetY / 100) * rect.height;
+	// Borné AUSSI au rendu, pas seulement pendant le glisser : réduire le zoom
+	// rétrécit la marge, et un offset enregistré à un zoom plus élevé laisserait
+	// alors du vide dans la carte. Le glisser et le rendu partagent la même
+	// fonction, donc ils ne peuvent pas diverger.
+	const bounds = artPanBounds(rect, artwork.width, artwork.height, artwork.zoom);
+	const translateX = (clampOffset(artwork.offsetX, bounds.maxOffsetX) / 100) * rect.width;
+	const translateY = (clampOffset(artwork.offsetY, bounds.maxOffsetY) / 100) * rect.height;
 	return (
 		<g clipPath={`url(#${clipId})`}>
 			<image
@@ -779,6 +785,9 @@ function DirectEditingLayer({
 	// seulement à savoir qu'un planeswalker saisit une loyauté, pas une P/T.
 	const isLoyaltyLayout = layoutId === 'planeswalker';
 	if (!geometry) return null;
+	// Capturé APRÈS le garde : les `function` ci-dessous sont hissées, donc le
+	// narrowing de `geometry` ne les atteint pas.
+	const artRect = geometry.art;
 	const baseField = (field: EditableCardField) => (value: string) => onFieldChange(field, value);
 	function handleArtPointerDown(event: PointerEvent<HTMLButtonElement>) {
 		event.currentTarget.setPointerCapture(event.pointerId);
@@ -791,21 +800,25 @@ function DirectEditingLayer({
 	}
 	function handleArtPointerMove(event: PointerEvent<HTMLButtonElement>) {
 		if (!drag.current) return;
-		const nextX = Math.max(
-			-50,
-			Math.min(
-				50,
-				drag.current.offsetX +
-					((event.clientX - drag.current.x) / event.currentTarget.clientWidth) * 100
-			)
+		// Bornes DÉRIVÉES de l'image et du zoom, pas ±50 en dur : la marge utile est
+		// la part de l'image qui déborde de la boîte. Un axe sans débordement a une
+		// marge nulle, et le déplacement y est donc simplement inopérant — c'est ce
+		// qui empêche le vide d'entrer dans la carte.
+		const bounds = artPanBounds(
+			artRect,
+			face.artwork.width,
+			face.artwork.height,
+			face.artwork.zoom
 		);
-		const nextY = Math.max(
-			-50,
-			Math.min(
-				50,
-				drag.current.offsetY +
-					((event.clientY - drag.current.y) / event.currentTarget.clientHeight) * 100
-			)
+		const nextX = clampOffset(
+			drag.current.offsetX +
+				((event.clientX - drag.current.x) / event.currentTarget.clientWidth) * 100,
+			bounds.maxOffsetX
+		);
+		const nextY = clampOffset(
+			drag.current.offsetY +
+				((event.clientY - drag.current.y) / event.currentTarget.clientHeight) * 100,
+			bounds.maxOffsetY
 		);
 		onArtworkChange({ ...face.artwork, offsetX: nextX, offsetY: nextY });
 	}

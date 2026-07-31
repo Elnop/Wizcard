@@ -10,8 +10,10 @@ import {
 	UploadSimple,
 } from '@phosphor-icons/react';
 import { useTranslations } from 'next-intl';
+import { artPanBounds, clampOffset, UNKNOWN_PAN_LIMIT } from '@/lib/card-editor/art-pan';
 import { prepareArtwork } from '@/lib/card-editor/image';
 import { type MseTemplate } from '@/lib/card-editor/mse-assets';
+import { templateGeometry } from '@/lib/card-editor/template-geometry';
 import { getManaSymbols, MAX_MANA_PIPS, type RulesCapacity } from '@/lib/card-editor/text-layout';
 import { ManaSymbol } from '@/lib/scryfall/components/ManaSymbol/ManaSymbol';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
@@ -448,14 +450,32 @@ function CardFieldsPanel({
 }
 
 function ArtworkPanel({
+	draft,
 	face,
+	mseTemplates,
 	validationErrors,
 	onArtworkChange,
-}: Pick<EditorSidebarProps, 'face' | 'validationErrors' | 'onArtworkChange'>) {
+}: Pick<
+	EditorSidebarProps,
+	'draft' | 'face' | 'mseTemplates' | 'validationErrors' | 'onArtworkChange'
+>) {
 	const t = useTranslations('cardEditor.art');
 	const fileInput = useRef<HTMLInputElement>(null);
 	const [error, setError] = useState('');
 	const [isDragging, setIsDragging] = useState(false);
+	// Mêmes bornes que le glisser sur la carte, calculées depuis la MÊME fonction :
+	// les curseurs ne peuvent donc pas écrire une valeur que le rendu refuserait.
+	// Sans ça, tirer le curseur au-delà de la marge faisait monter le nombre sans
+	// que l'image bouge.
+	//
+	// La marge est un POURCENTAGE de la boîte, donc invariante à l'échelle : la
+	// géométrie du canvas et celle du style MSE donnent le même résultat.
+	const artRect = templateGeometry(
+		mseTemplates.find((template) => template.id === draft.mseTemplateId)
+	)?.art;
+	const panBounds = artRect
+		? artPanBounds(artRect, face.artwork.width, face.artwork.height, face.artwork.zoom)
+		: { maxOffsetX: UNKNOWN_PAN_LIMIT, maxOffsetY: UNKNOWN_PAN_LIMIT };
 
 	async function processFile(file?: File) {
 		if (!file) return;
@@ -537,10 +557,11 @@ function ArtworkPanel({
 						<FormField label={t('horizontal')}>
 							<input
 								type="range"
-								min="-50"
-								max="50"
-								step="1"
-								value={face.artwork.offsetX}
+								min={-panBounds.maxOffsetX}
+								max={panBounds.maxOffsetX}
+								step="0.1"
+								disabled={panBounds.maxOffsetX === 0}
+								value={clampOffset(face.artwork.offsetX, panBounds.maxOffsetX)}
 								onChange={(event) =>
 									onArtworkChange({ ...face.artwork, offsetX: Number(event.target.value) })
 								}
@@ -549,10 +570,11 @@ function ArtworkPanel({
 						<FormField label={t('vertical')}>
 							<input
 								type="range"
-								min="-50"
-								max="50"
-								step="1"
-								value={face.artwork.offsetY}
+								min={-panBounds.maxOffsetY}
+								max={panBounds.maxOffsetY}
+								step="0.1"
+								disabled={panBounds.maxOffsetY === 0}
+								value={clampOffset(face.artwork.offsetY, panBounds.maxOffsetY)}
 								onChange={(event) =>
 									onArtworkChange({ ...face.artwork, offsetY: Number(event.target.value) })
 								}

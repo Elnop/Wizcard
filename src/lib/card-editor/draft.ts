@@ -132,6 +132,11 @@ export function toCardEditorPayload(
 					zoom: face.artwork.zoom,
 					offsetX: face.artwork.offsetX,
 					offsetY: face.artwork.offsetY,
+					// Champs LISTÉS un à un ici (pas de spread) : oublier width/height
+					// perdrait les bornes de déplacement au rechargement, et la carte
+					// retomberait silencieusement sur l'ancien ±50.
+					width: face.artwork.width,
+					height: face.artwork.height,
 					storagePath: artStoragePaths[index] ?? null,
 				},
 			})),
