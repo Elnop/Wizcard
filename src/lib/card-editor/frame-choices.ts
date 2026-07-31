@@ -136,22 +136,30 @@ function disambiguateLabels(templates: MseTemplate[]): Map<string, string> {
 /**
  * Mots-clés dont les cadres sont retirés de la bibliothèque, PROVISOIREMENT.
  *
- * Ces trois familles supposent une carte que le studio ne sait pas encore
- * décrire : un planeswalker a des capacités à loyauté et une boîte de texte
- * segmentée, un flip et un recto-verso ont DEUX faces là où le brouillon n'en
- * porte qu'une. Leur géométrie est bien mesurée — ils passaient donc le filtre
+ * Chacune de ces familles suppose une carte que le studio ne sait pas encore
+ * décrire, pour l'une de trois raisons :
+ *
+ * - DEUX FACES là où le brouillon n'en porte qu'une : `flip`, `double_faced`.
+ * - UNE BOÎTE DE TEXTE SEGMENTÉE, qu'un seul champ de règles ne peut pas
+ *   remplir : `planeswalker` (capacités à loyauté), `leveler` (paliers de
+ *   niveau, chacun avec ses propres P/T), `split` (deux moitiés, chacune avec
+ *   son nom, son coût et ses règles).
+ * - UN ÉTAT DE JEU qu'aucun champ ne porte : `tapped`, dont le cadre est dessiné
+ *   incliné pour une carte engagée.
+ *
+ * Leur géométrie est bien mesurée — ils passaient donc le filtre
  * `geometry !== null` — mais le rendu qui en sortait était faux, pas dégradé.
  *
  * L'exclusion vit en code, comme `frameOrigin` et pour la même raison : elle se
  * lève en un commit, sans migration ni passage `card-assets` (qui écrit en
  * PROD). Les lignes restent en base, intactes et toujours mesurées.
  *
- * Les mots-clés sont ceux DÉCLARÉS par le corpus, pas un motif de nom : 24 des
- * 109 gabarits que la bibliothèque proposait en portent au moins un, d'où les 85
- * restants. `flips` n'est pas listé — aucun gabarit ne le porte sans porter
- * aussi `flip`.
+ * Les mots-clés sont ceux DÉCLARÉS par le corpus, pas un motif de nom : 42 des
+ * 109 gabarits que la bibliothèque proposait en portent au moins un, d'où les 67
+ * restants. Les pluriels (`flips`, `levelers`, `splits`) ne sont pas listés —
+ * aucun gabarit ne les porte sans porter aussi le singulier.
  */
-const UNSUPPORTED_TAGS = ['planeswalker', 'flip', 'double_faced'];
+const UNSUPPORTED_TAGS = ['planeswalker', 'flip', 'double_faced', 'leveler', 'split', 'tapped'];
 
 /**
  * Ce gabarit est-il retiré de la bibliothèque ? (cf. `UNSUPPORTED_TAGS`)
