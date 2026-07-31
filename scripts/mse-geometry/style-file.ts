@@ -90,6 +90,13 @@ export interface StyleFile {
 	fields: Partial<Record<GeometryField, RawBox>>;
 	/** Polices déclarées pour `casting cost` / `rarity`, cf. FieldFontInfo. */
 	fontFields: Partial<Record<ContentWidthField, FieldFontInfo>>;
+	/**
+	 * Nom du fichier de masque déclaré par `mask:` dans le bloc `image:`, s'il
+	 * y en a un. Sert à creuser la fenêtre d'illustration dans un cadre opaque.
+	 * Absent quand le style n'en déclare pas — le rendu retombe alors sur la
+	 * géométrie mesurée.
+	 */
+	imageMask?: string;
 }
 
 const BOX_KEYS = ['left', 'top', 'width', 'height', 'right', 'bottom'] as const;
@@ -158,6 +165,32 @@ function collectIncludeTargets(lines: string[]): string[] {
 	return targets;
 }
 
+/**
+ * Masque déclaré par un champ. Deux formes dans le corpus :
+ *
+ *   mask: image_mask.png
+ *   mask:
+ *     script: if styling.image_size == "extended" then "imagemask_extended.png"
+ *             else "imagemask_standard.png"
+ *
+ * Le studio n'expose pas l'option `image_size` de MSE : on retient la branche
+ * `else`, qui est le défaut de MSE lui-même. Un script dont on ne sait pas
+ * extraire une constante ne donne AUCUN masque — le rendu retombe alors sur la
+ * géométrie, plutôt que d'inventer un nom de fichier.
+ *
+ * Les variantes `_inv` sont écartées : leur polarité est inversée (centre noir,
+ * coins blancs), les appliquer effacerait le cadre au lieu de la fenêtre.
+ */
+function maskFileFrom(raw: string): string | undefined {
+	const literal = /^\s*([\w.-]+\.png)\s*$/i.exec(raw);
+	const candidate = literal
+		? literal[1]
+		: (/else\s+"([\w.-]+\.png)"/i.exec(raw)?.[1] ?? /"([\w.-]+\.png)"/i.exec(raw)?.[1]);
+	if (!candidate) return undefined;
+	if (/_inv\d*\.png$/i.test(candidate)) return undefined;
+	return candidate;
+}
+
 /** Accumulateur mutable rempli ligne par ligne par `readStyleFile`. */
 interface ParseState {
 	fields: Partial<Record<GeometryField, RawBox>>;
@@ -165,6 +198,8 @@ interface ParseState {
 	current: TrackedField | null;
 	/** Sous-bloc `font:` / `symbol font:` en cours (deux tabulations), le cas échéant. */
 	subBlock: 'font' | 'symbolFont' | null;
+	/** Masque du champ `image`, capté par `handleImageMask` — hors périmètre pour les autres champs. */
+	imageMask?: string;
 }
 
 /** Ligne ouvrant un champ racine (« \tcasting cost: ») : bascule le champ courant. */
@@ -231,10 +266,35 @@ function handleBoxProperty(line: string, state: ParseState): void {
 	}
 }
 
+/**
+ * Ligne « mask: … » du champ `image` UNIQUEMENT — `border_mask` et
+ * `foil_mask` répondent à d'autres besoins et sont hors périmètre (cf.
+ * `maskFileFrom`). Deux formes : littérale sur la même ligne, ou un sous-bloc
+ * `script:` à trois tabulations quand la déclaration est pilotée par script.
+ */
+// eslint-disable-next-line sonarjs/super-linear-regex -- safe: une ligne de style, longueur bornée
+const IMAGE_MASK_LINE = /^\t\tmask\s*:\s*(.*)$/;
+// eslint-disable-next-line sonarjs/super-linear-regex -- safe: une ligne de style, longueur bornée
+const IMAGE_MASK_SCRIPT_LINE = /^\t\t\tscript\s*:\s*(.+?)\s*$/;
+
+function handleImageMask(line: string, state: ParseState): void {
+	if (state.current !== 'image') return;
+	const literal = IMAGE_MASK_LINE.exec(line);
+	if (literal && literal[1].trim()) {
+		state.imageMask = maskFileFrom(literal[1]) ?? state.imageMask;
+		return;
+	}
+	const script = IMAGE_MASK_SCRIPT_LINE.exec(line);
+	if (script) {
+		state.imageMask = maskFileFrom(script[1]) ?? state.imageMask;
+	}
+}
+
 /** Champs bruts d'un bloc `card style:`, sans la largeur/hauteur de carte. */
 interface ParsedFields {
 	fields: Partial<Record<GeometryField, RawBox>>;
 	fontFields: Partial<Record<ContentWidthField, FieldFontInfo>>;
+	imageMask?: string;
 }
 
 /**
@@ -254,9 +314,10 @@ function parseCardStyleFields(lines: string[]): ParsedFields {
 		if (!line.startsWith('\t\t\t')) state.subBlock = null;
 		const isContentWidthField = CONTENT_WIDTH_FIELDS.includes(state.current as ContentWidthField);
 		if (isContentWidthField && handleFontSubBlock(line, state)) continue;
+		handleImageMask(line, state);
 		handleBoxProperty(line, state);
 	}
-	return { fields: state.fields, fontFields: state.fontFields };
+	return { fields: state.fields, fontFields: state.fontFields, imageMask: state.imageMask };
 }
 
 /** Complète `into` avec les clés de `from` qu'il n'a pas déjà — jamais l'inverse. */
@@ -312,6 +373,7 @@ function mergeFontFields(own: ParsedFields, inherited: ParsedFields): void {
 function mergeFields(own: ParsedFields, inherited: ParsedFields): void {
 	mergeGeometryFields(own, inherited);
 	mergeFontFields(own, inherited);
+	own.imageMask ??= inherited.imageMask;
 }
 
 /**
@@ -402,5 +464,6 @@ export function readStyleFile(path: string, corpusRoot: string): StyleFile | nul
 		cardHeight: Number(height[1]),
 		fields: own.fields,
 		fontFields: own.fontFields,
+		imageMask: own.imageMask,
 	};
 }
