@@ -37,7 +37,6 @@ interface CardCanvasProps {
 	setCode: string;
 	collectorNumber: string;
 	mseFramePath?: string | null;
-	artWindowMask?: string | null;
 	mseBlend?: { base: string; overlay: string; mask: string; plate: string } | null;
 	mseCrownPath?: string | null;
 	mseTextColors?: MseTextColors | null;
@@ -423,7 +422,6 @@ function CardSvg({
 	setCode,
 	collectorNumber,
 	mseFramePath,
-	artWindowMask,
 	mseBlend,
 	mseCrownPath,
 	mseTextColors,
@@ -496,14 +494,22 @@ function CardSvg({
 			 * Le <linearGradient> n'est pas une image et n'a rien à inliner.
 			 */}
 			{/*
-			 * Fenêtre d'illustration. Les cadres du corpus sont opaques et
-			 * peignent la zone d'illustration en noir : sans ce masque, le cadre
-			 * recouvre l'illustration peinte juste avant lui.
+			 * Fenêtre d'illustration. Les cadres du corpus sont peints par-dessus
+			 * l'illustration et la recouvrent : ce masque y creuse la fenêtre.
 			 *
-			 * Le <rect> blanc rend tout le cadre visible ; le masque, blanc dans
-			 * sa fenêtre, y creuse le trou. Sans masque déclaré, un rectangle
-			 * noir aux dimensions de la zone mesurée fait le même office — c'est
-			 * ce que MSE fait pour ces styles, qui ne déclarent aucun masque.
+			 * Le <rect> blanc rend tout le cadre visible, le <rect> noir retire la
+			 * zone d'illustration mesurée. C'est exactement ce que MSE fait pour
+			 * les styles qui ne déclarent aucun masque sur leur champ image.
+			 *
+			 * La découpe est GÉOMÉTRIQUE pour tous les gabarits, y compris ceux
+			 * qui déclarent un masque. Une version antérieure utilisait ce masque
+			 * du corpus comme pochoir, à tort : dans MSE il s'applique à
+			 * l'ILLUSTRATION (il lui donne sa forme), pas au cadre. C'est pourquoi
+			 * 30 des 142 masques ingérés sont uniformément blancs — parfaitement
+			 * normal pour une fenêtre rectangulaire, mais inutilisable comme
+			 * pochoir : blanc sur blanc ne retire rien, et le cadre restait opaque
+			 * au-dessus de l'illustration. `blend_masks.image` reste ingéré pour
+			 * un usage futur conforme à son rôle réel.
 			 *
 			 * `maskUnits="userSpaceOnUse"` est explicite : le défaut
 			 * `objectBoundingBox` recadrerait le masque sur la boîte de
@@ -518,24 +524,13 @@ function CardSvg({
 				height={geometry.height}
 			>
 				<rect x="0" y="0" width={geometry.width} height={geometry.height} fill="white" />
-				{artWindowMask ? (
-					<image
-						href={artWindowMask}
-						x={geometry.art.x}
-						y={geometry.art.y}
-						width={geometry.art.width}
-						height={geometry.art.height}
-						preserveAspectRatio="none"
-					/>
-				) : (
-					<rect
-						x={geometry.art.x}
-						y={geometry.art.y}
-						width={geometry.art.width}
-						height={geometry.art.height}
-						fill="black"
-					/>
-				)}
+				<rect
+					x={geometry.art.x}
+					y={geometry.art.y}
+					width={geometry.art.width}
+					height={geometry.art.height}
+					fill="black"
+				/>
 			</mask>
 			{mseBlend ? (
 				<>
@@ -903,7 +898,6 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 		setCode,
 		collectorNumber,
 		mseFramePath,
-		artWindowMask,
 		mseBlend,
 		mseCrownPath,
 		mseTextColors,
@@ -938,7 +932,6 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 					setCode={setCode}
 					collectorNumber={collectorNumber}
 					mseFramePath={mseFramePath}
-					artWindowMask={artWindowMask}
 					mseBlend={mseBlend}
 					mseCrownPath={mseCrownPath}
 					mseTextColors={mseTextColors}

@@ -9,7 +9,6 @@ import { saveCustomCard } from '@/lib/card-editor/db/custom-card-editor';
 import { buildCardFileName, downloadBlob, renderCardPng } from '@/lib/card-editor/export';
 import { prepareArtwork } from '@/lib/card-editor/image';
 import {
-	resolveArtWindowMask,
 	resolveMseBlend,
 	resolveMseCrownPath,
 	resolveMseFramePath,
@@ -362,7 +361,6 @@ export function CardEditorStudio() {
 						{...canvasProps}
 						face={editor.activeFace}
 						mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.activeFace)}
-						artWindowMask={resolveArtWindowMask(selectedMseTemplate)}
 						mseBlend={resolveMseBlend(selectedMseTemplate, editor.activeFace)}
 						mseCrownPath={resolveMseCrownPath(
 							selectedMseTemplate,
@@ -383,7 +381,6 @@ export function CardEditorStudio() {
 					{...canvasProps}
 					face={editor.draft.faces[0]}
 					mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.draft.faces[0])}
-					artWindowMask={resolveArtWindowMask(selectedMseTemplate)}
 					mseBlend={resolveMseBlend(selectedMseTemplate, editor.draft.faces[0])}
 					mseCrownPath={resolveMseCrownPath(
 						selectedMseTemplate,
@@ -402,7 +399,6 @@ export function CardEditorStudio() {
 						{...canvasProps}
 						face={editor.draft.faces[1]}
 						mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.draft.faces[1])}
-						artWindowMask={resolveArtWindowMask(selectedMseTemplate)}
 						mseBlend={resolveMseBlend(selectedMseTemplate, editor.draft.faces[1])}
 						mseCrownPath={resolveMseCrownPath(
 							selectedMseTemplate,

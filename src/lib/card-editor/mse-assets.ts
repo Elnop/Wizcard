@@ -350,23 +350,22 @@ export function resolveMseBlend(
  * interdit d'inventer une mauvaise couleur, pas de résoudre vers une forme
  * moins spécifique de la même couleur.
  */
-/**
- * Masque de la fenêtre d'illustration.
+/*
+ * Pas de résolveur pour `blendMasks.image`, et c'est délibéré.
  *
- * Les cadres du corpus sont des JPEG OPAQUES qui peignent la zone
- * d'illustration en noir : peints par-dessus l'illustration, ils la
- * recouvrent. Ce masque sert à y creuser la fenêtre.
+ * Ce masque est ingéré (cf. scripts/mse-geometry/image-mask.mjs) mais AUCUN
+ * rendu ne le lit : la fenêtre d'illustration est découpée géométriquement,
+ * pour tous les gabarits, à partir de `geometry.art`.
  *
- * `null` quand le gabarit n'en déclare pas — l'appelant retombe alors sur la
- * géométrie mesurée, qui ouvre une fenêtre rectangulaire. C'est ce que fait
- * MSE lui-même pour ces styles : `magic-m15.mse-style` ne déclare aucun masque
- * sur son champ image.
+ * Une version antérieure s'en servait comme pochoir pour creuser le cadre. À
+ * tort : dans MSE ce masque s'applique à l'ILLUSTRATION — il lui donne sa
+ * forme — et non au cadre. D'où le symptôme qui l'a révélé : 30 des 142
+ * masques ingérés sont uniformément blancs, ce qui est parfaitement normal
+ * pour une fenêtre rectangulaire mais ne retire rien quand on l'emploie comme
+ * pochoir, laissant le cadre opaque au-dessus de l'illustration.
+ *
+ * La donnée reste en base pour un usage futur conforme à son rôle réel.
  */
-export function resolveArtWindowMask(template: MseTemplate | undefined): string | null {
-	const maskPath = template?.blendMasks?.image;
-	if (!maskPath) return null;
-	return cardAssetUrl(maskPath) ?? null;
-}
 
 export function resolveMseCrownPath(
 	template: MseTemplate | undefined,
