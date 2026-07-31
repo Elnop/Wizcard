@@ -2,6 +2,7 @@
 
 import { forwardRef, useId, useRef, type CSSProperties, type PointerEvent } from 'react';
 import { artPanBounds, clampOffset } from '@/lib/card-editor/art-pan';
+import { FLAVOR_ITALIC_FAMILY, GENERIC_SANS, GENERIC_SERIF } from '@/lib/card-editor/fonts';
 import type { MseTemplate, MseTextColors } from '@/lib/card-editor/mse-assets';
 import { templateGeometry } from '@/lib/card-editor/template-geometry';
 import {
@@ -192,6 +193,7 @@ function RulesLine({
 	fontSize,
 	textColor,
 	symbolMap,
+	fontFamily,
 	isItalic = false,
 }: {
 	line: string;
@@ -200,6 +202,8 @@ function RulesLine({
 	fontSize: number;
 	textColor: string;
 	symbolMap: Record<string, ScryfallCardSymbol>;
+	/** Police mesurée du gabarit ; pile générique à défaut. */
+	fontFamily: string;
 	/** Le texte d'ambiance est en italique ; les symboles, eux, restent droits. */
 	isItalic?: boolean;
 }) {
@@ -247,9 +251,12 @@ function RulesLine({
 							key={index}
 							x={at}
 							y={y}
-							fontFamily="Georgia, serif"
+							// Ambiance : la VRAIE fonte italique du corpus
+							// (MPlantin-Italic, déclarée par `swap_fonts_body_default`)
+							// plutôt qu'un `font-style: italic` synthétique, que le
+							// navigateur obtient en penchant les glyphes droits.
+							fontFamily={isItalic ? FLAVOR_ITALIC_FAMILY : fontFamily}
 							fontSize={fontSize}
-							fontStyle={isItalic ? 'italic' : undefined}
 							fill={textColor}
 						>
 							{segment.value}
@@ -277,12 +284,15 @@ function RulesText({
 	placeholder,
 	isNarrow,
 	textColor,
+	fontFamily,
 }: {
 	face: CardFaceDraft;
 	rect: CardRect;
 	placeholder: string;
 	isNarrow: boolean;
 	textColor: string;
+	/** Police mesurée du gabarit (MPlantin dans la quasi-totalité du corpus). */
+	fontFamily: string;
 }) {
 	const symbolMap = useScryfallSymbols();
 	const oracle = expandCardNameShortcut(face.oracleText, face.name);
@@ -316,6 +326,7 @@ function RulesText({
 					fontSize={fontSize}
 					textColor={textColor}
 					symbolMap={symbolMap}
+					fontFamily={fontFamily}
 				/>
 			))}
 			{/*
@@ -338,6 +349,7 @@ function RulesText({
 						fontSize={flavorFontSize}
 						textColor={textColor}
 						symbolMap={symbolMap}
+						fontFamily={fontFamily}
 						isItalic
 					/>
 				))}
@@ -681,9 +693,14 @@ function CardSvg({
 			<text
 				x={geometry.title.x + 18}
 				y={geometry.title.y + 39}
-				fontFamily="Georgia, 'Times New Roman', serif"
+				fontFamily={geometry.fonts?.title?.family ?? GENERIC_SERIF}
 				fontSize={fittedTitle.fontSize}
-				fontWeight="800"
+				// La graisse vient de la POLICE (Beleren Bold, Matrix, MagicMedieval
+				// sont déjà des fontes de titre) : forcer 800 par-dessus déclenchait
+				// une graisse synthétique du navigateur, qui épaissit et déforme les
+				// glyphes. Sans police mesurée, on garde le gras — la pile générique
+				// n'a pas de graisse propre.
+				fontWeight={geometry.fonts?.title ? undefined : '800'}
 				fill={mseTextColors?.title ?? DEFAULT_INK}
 				opacity={face.name ? 1 : 0.46}
 			>
@@ -695,12 +712,18 @@ function CardSvg({
 				y={geometry.mana.y}
 				width={geometry.mana.width}
 			/>
+			{/*
+			 * Taille MESURÉE, plus le 25 en dur d'avant : le corpus déclare de 6.93
+			 * à 32 unités de style selon le gabarit. 25 px correspondait au 13 de
+			 * magic-m15 une fois mis à l'échelle (13 × 1039/523 ≈ 25.8) — juste pour
+			 * ce cadre-là, faux pour tous les autres.
+			 */}
 			<text
 				x={geometry.typeLine.x + 16}
 				y={geometry.typeLine.y + 36}
-				fontFamily="Georgia, 'Times New Roman', serif"
-				fontSize="25"
-				fontWeight="800"
+				fontFamily={geometry.fonts?.typeLine?.family ?? GENERIC_SERIF}
+				fontSize={geometry.fonts?.typeLine?.size ?? 25}
+				fontWeight={geometry.fonts?.typeLine ? undefined : '800'}
 				fill={mseTextColors?.type ?? DEFAULT_INK}
 				opacity={face.typeLine ? 1 : 0.46}
 			>
@@ -717,6 +740,7 @@ function CardSvg({
 				placeholder={labels.rulesPlaceholder}
 				isNarrow={isNarrowRules}
 				textColor={mseTextColors?.rules ?? '#181512'}
+				fontFamily={geometry.fonts?.rules?.family ?? GENERIC_SERIF}
 			/>
 			{/*
 			 * Force/endurance : le TEXTE seul. Le panneau lui-même est peint par le
@@ -732,9 +756,9 @@ function CardSvg({
 						x={geometry.stats.x + geometry.stats.width / 2}
 						y={geometry.stats.y + geometry.stats.height * 0.68}
 						textAnchor="middle"
-						fontFamily="Georgia, 'Times New Roman', serif"
-						fontSize="32"
-						fontWeight="800"
+						fontFamily={geometry.fonts?.stats?.family ?? GENERIC_SERIF}
+						fontSize={geometry.fonts?.stats?.size ?? 32}
+						fontWeight={geometry.fonts?.stats ? undefined : '800'}
 						fill={mseTextColors?.title ?? DEFAULT_INK}
 					>
 						{/* Une créature a TOUJOURS deux valeurs : renseigner la force sans
@@ -744,10 +768,17 @@ function CardSvg({
 					</text>
 				</g>
 			)}
+			{/*
+			 * Pied de carte : pile générique ASSUMÉE, pas un oubli. Le corpus éclate
+			 * cette ligne en champs que l'extracteur ne mesure pas (`illustrator`,
+			 * `copyright line`, `card number`) — même raison que FOOTER_BOTTOM_OFFSET,
+			 * qui est dérivé et non mesuré. Lui prêter la police du titre serait un
+			 * emprunt, précisément ce que la règle « aucun fallback » interdit.
+			 */}
 			<text
 				x={geometry.footer.x}
 				y={geometry.footer.y + 20}
-				fontFamily="Arial, sans-serif"
+				fontFamily={GENERIC_SANS}
 				fontSize="14"
 				fontWeight="700"
 				fill={mseTextColors?.footer ?? '#f8f1df'}
@@ -758,7 +789,7 @@ function CardSvg({
 				x={geometry.footer.x + geometry.footer.width}
 				y={geometry.footer.y + 20}
 				textAnchor="end"
-				fontFamily="Arial, sans-serif"
+				fontFamily={GENERIC_SANS}
 				fontSize="12"
 				fontWeight="700"
 				letterSpacing="2"

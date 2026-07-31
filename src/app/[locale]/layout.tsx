@@ -12,6 +12,7 @@ import { LocaleSync } from '@/lib/profile/components/LocaleSync';
 import { SITE_URL, SITE_NAME, TITLE_TEMPLATE } from '@/lib/seo/site';
 import { buildAlternates } from '@/lib/seo/alternates';
 import { BRAND_FONT_VARIABLES } from '@/fonts/brand';
+import { MSE_FONT_VARIABLES } from '@/fonts/mse';
 import '../globals.css';
 
 const geistSans = Geist({
@@ -91,7 +92,7 @@ export default async function LocaleLayout({
 	return (
 		<html lang={locale}>
 			<body
-				className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} ${BRAND_FONT_VARIABLES}`}
+				className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} ${BRAND_FONT_VARIABLES} ${MSE_FONT_VARIABLES}`}
 			>
 				{/* App Router hoists <link> rendered anywhere in the tree into <head>. */}
 				<link rel="preconnect" href="https://cards.scryfall.io" />

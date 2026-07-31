@@ -2,7 +2,13 @@ import * as fs from 'node:fs';
 import { evaluate, Unresolved } from './evaluate';
 import { parseExpression, unwrapFieldValue } from './parser';
 import { buildScope } from './scope';
-import { GEOMETRY_FIELDS, readStyleFile, type GeometryField } from './style-file';
+import {
+	GEOMETRY_FIELDS,
+	readStyleFile,
+	type FieldFontInfo,
+	type GeometryField,
+} from './style-file';
+import type { Scope } from './scope';
 
 const { readFileSync } = fs;
 // `globSync` existe à l'exécution (Node 22) mais @types/node reste figé sur
@@ -80,12 +86,95 @@ export interface ResolvedBox {
 	height: number;
 }
 
+/**
+ * Police RÉSOLUE d'un champ : le nom tel que MSE l'écrit, et la taille en
+ * unités de style (le repère de la carte, ex. 375x523 — pas des pixels canvas).
+ */
+export interface ResolvedFont {
+	name: string;
+	size: number;
+}
+
+/** Champs dont la police est publiée, c.-à-d. ceux que le canvas ÉCRIT. */
+export const FONT_OUTPUT_FIELDS = ['name', 'type', 'text', 'pt'] as const;
+export type FontOutputField = (typeof FONT_OUTPUT_FIELDS)[number];
+
 export interface TemplateGeometry {
 	cardWidth: number;
 	cardHeight: number;
 	boxes: Partial<Record<GeometryField, ResolvedBox>>;
 	/** AST conservé pour permettre une évaluation dynamique plus tard. */
 	ast: Partial<Record<GeometryField, Record<string, unknown>>>;
+	/**
+	 * Polices déclarées par le style, par champ.
+	 *
+	 * Le canvas écrivait Georgia et Arial en dur, qui n'apparaissent nulle part
+	 * dans le corpus pour ces champs : le style déclare Beleren Bold, Matrix,
+	 * ModMatrix, MPlantin ou MagicMedieval selon son époque.
+	 *
+	 * PARTIEL, et volontairement : un champ dont la police ne se résout pas est
+	 * ABSENT plutôt que comblé — même règle « aucun fallback » que les boîtes.
+	 * Contrairement à elles, une police manquante ne disqualifie PAS le gabarit :
+	 * sa géométrie reste juste, et le rendu retombe sur la pile générique du
+	 * canvas. Refuser le cadre entier pour une police non lue le retirerait de la
+	 * bibliothèque sans nécessité.
+	 */
+	fonts: Partial<Record<FontOutputField, ResolvedFont>>;
+}
+
+/**
+ * Résout une valeur de police (nom ou taille), littérale ou pilotée par script.
+ *
+ * Le corpus écrit les deux formes pour un même champ :
+ *   name: Beleren Bold          <- littéral, la majorité
+ *   name: { name_font() }       <- expression, ~180 déclarations
+ *
+ * Les formes pilotées appellent des fonctions du script de la partie
+ * (`name_font`, `type_font`, `body_font`, `pt_font`), déjà chargées dans la
+ * portée par `buildScope`. Elles retombent sur `swap_fonts_*_default`, soit
+ * « Beleren Bold » 16 / « Beleren Bold » 13 / « MPlantin » 13 / « Beleren Bold »
+ * 16 — les valeurs de la carte canonique, l'utilisateur MSE n'ayant surchargé
+ * aucun `styling.custom_*_font`.
+ *
+ * Une valeur non résoluble rend `null` : l'appelant OMET alors le champ. On ne
+ * devine pas de police, conformément à « aucun fallback ».
+ */
+function resolveFontValue(raw: string | undefined, scope: Scope): unknown {
+	if (raw === undefined) return null;
+	const trimmed = raw.trim();
+	if (!trimmed) return null;
+	// `unwrapFieldValue` rend le contenu d'un `{ … }` et `null` pour un bloc
+	// `script:` multi-ligne, qu'on ne sait pas évaluer ici.
+	const source = unwrapFieldValue(trimmed);
+	// Pas d'accolades : le littéral est la valeur elle-même (« Beleren Bold »),
+	// pas une expression — l'analyser en tomberait sur un identifiant inconnu.
+	if (source === null) return null;
+	if (source === trimmed && !trimmed.startsWith('{')) return trimmed;
+	try {
+		return evaluate(parseExpression(source), scope);
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Police d'un champ : nom + taille, ou `undefined` si l'un des deux manque.
+ *
+ * Les deux sont exigés ensemble. Un nom sans taille laisserait le canvas
+ * inventer un corps, et une taille sans nom l'appliquerait à une police
+ * générique : dans les deux cas le rendu serait faux d'une manière que
+ * l'utilisateur ne pourrait pas expliquer. Mieux vaut l'absence, qui laisse le
+ * canvas sur sa pile générique assumée.
+ */
+function resolveFieldFont(info: FieldFontInfo | undefined, scope: Scope): ResolvedFont | undefined {
+	const name = resolveFontValue(info?.font?.name, scope);
+	const size = resolveFontValue(info?.font?.size, scope);
+	if (typeof name !== 'string') return undefined;
+	const trimmedName = name.trim();
+	if (!trimmedName) return undefined;
+	const numericSize = typeof size === 'number' ? size : Number(size);
+	if (!Number.isFinite(numericSize) || numericSize <= 0) return undefined;
+	return { name: trimmedName, size: numericSize };
 }
 
 export interface ExtractionReport {
@@ -181,11 +270,19 @@ export function extractAll(corpusRoot: string): {
 		}
 
 		if (ok) {
+			// Résolue APRÈS les boîtes : `buildScope` a pu injecter des variables
+			// (content_width) dont une expression de police peut dépendre.
+			const fonts: TemplateGeometry['fonts'] = {};
+			for (const field of FONT_OUTPUT_FIELDS) {
+				const font = resolveFieldFont(style.fontFields[field], scope);
+				if (font) fonts[field] = font;
+			}
 			geometries.set(style.id, {
 				cardWidth: style.cardWidth,
 				cardHeight: style.cardHeight,
 				boxes,
 				ast,
+				fonts,
 			});
 		}
 	}

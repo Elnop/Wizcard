@@ -2,8 +2,14 @@ import { readFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { IMAGE_MASK_LINE, IMAGE_MASK_SCRIPT_LINE, maskFileFrom } from './image-mask.mjs';
 
+/**
+ * Nommé parce qu'il apparaît dans les trois listes ci-dessous : c'est à la fois
+ * une zone géométrique, un champ à `content_width` et un champ porteur de police.
+ */
+const CASTING_COST = 'casting cost';
+
 /** Les zones dont le studio a besoin. Tout autre bloc du style est ignoré. */
-export const GEOMETRY_FIELDS = ['image', 'name', 'type', 'text', 'pt', 'casting cost'] as const;
+export const GEOMETRY_FIELDS = ['image', 'name', 'type', 'text', 'pt', CASTING_COST] as const;
 export type GeometryField = (typeof GEOMETRY_FIELDS)[number];
 
 /**
@@ -46,9 +52,39 @@ function resolveFieldName(raw: string): GeometryField | ContentWidthField | null
  * bloc doit quand même être lu pour calculer la largeur que d'AUTRES champs
  * référencent via `card_style.rarity.content_width`.
  */
-const CONTENT_WIDTH_FIELDS = ['casting cost', 'rarity'] as const;
+const CONTENT_WIDTH_FIELDS = [CASTING_COST, 'rarity'] as const;
 type ContentWidthField = (typeof CONTENT_WIDTH_FIELDS)[number];
 type TrackedField = GeometryField | ContentWidthField;
+
+/**
+ * Champs dont la POLICE est lue, en plus de la boîte.
+ *
+ * `content_width` n'en avait besoin que pour `casting cost` / `rarity` (mesurer
+ * une largeur de texte). Le canvas, lui, doit ÉCRIRE avec la bonne police : il
+ * lui faut donc aussi celles des champs qu'il peint.
+ *
+ * Le corpus les déclare toutes — vérifié : sur les seules familles officielles,
+ * `name`/`type`/`text`/`pt` totalisent 178 MPlantin, 166 Beleren Bold, 156
+ * Matrix, 67 ModMatrix, plus les formes pilotées par script. Le canvas écrivait
+ * jusqu'ici Georgia et Arial en dur, qui n'apparaissent NULLE PART dans le
+ * corpus pour ces champs.
+ *
+ * `rarity` reste hors liste : c'est une icône, pas du texte que le studio écrit.
+ */
+const FONT_FIELDS = ['name', 'type', 'text', 'pt', CASTING_COST] as const;
+type FontField = (typeof FONT_FIELDS)[number];
+
+/** Champ portant un sous-bloc `font:`, quelle qu'en soit la raison. */
+export type FontBearingField = ContentWidthField | FontField;
+
+/** Ce champ ouvre-t-il un sous-bloc `font:` à lire ? */
+function bearsFont(field: TrackedField | null): field is FontBearingField {
+	return (
+		field !== null &&
+		(CONTENT_WIDTH_FIELDS.includes(field as ContentWidthField) ||
+			FONT_FIELDS.includes(field as FontField))
+	);
+}
 
 /**
  * Ancres BRUTES d'une boîte : un nombre (« 29 ») ou une expression
@@ -89,8 +125,15 @@ export interface StyleFile {
 	cardWidth: number;
 	cardHeight: number;
 	fields: Partial<Record<GeometryField, RawBox>>;
-	/** Polices déclarées pour `casting cost` / `rarity`, cf. FieldFontInfo. */
-	fontFields: Partial<Record<ContentWidthField, FieldFontInfo>>;
+	/**
+	 * Polices déclarées, par champ (cf. FieldFontInfo).
+	 *
+	 * Deux usages distincts partagent cette structure : `content_width` la lit
+	 * pour `casting cost` / `rarity` (mesure de largeur), et le canvas pour
+	 * `name` / `type` / `text` / `pt` (écriture du texte). D'où une clé élargie
+	 * à l'union des deux ensembles.
+	 */
+	fontFields: Partial<Record<FontBearingField, FieldFontInfo>>;
 	/**
 	 * Nom du fichier de masque déclaré par `mask:` dans le bloc `image:`, s'il
 	 * y en a un. Sert à creuser la fenêtre d'illustration dans un cadre opaque.
@@ -169,7 +212,7 @@ function collectIncludeTargets(lines: string[]): string[] {
 /** Accumulateur mutable rempli ligne par ligne par `readStyleFile`. */
 interface ParseState {
 	fields: Partial<Record<GeometryField, RawBox>>;
-	fontFields: Partial<Record<ContentWidthField, FieldFontInfo>>;
+	fontFields: Partial<Record<FontBearingField, FieldFontInfo>>;
 	current: TrackedField | null;
 	/** Sous-bloc `font:` / `symbol font:` en cours (deux tabulations), le cas échéant. */
 	subBlock: 'font' | 'symbolFont' | null;
@@ -187,21 +230,23 @@ function handleFieldOpener(line: string, state: ParseState): boolean {
 	// cf. FIELD_ALIASES.
 	const name = resolveFieldName(opener[1].trim());
 	const isGeometry = name !== null && GEOMETRY_FIELDS.includes(name as GeometryField);
-	const isContentWidth = name !== null && CONTENT_WIDTH_FIELDS.includes(name as ContentWidthField);
-	state.current = isGeometry || isContentWidth ? name : null;
+	// `bearsFont` couvre désormais name/type/text/pt en plus de casting cost et
+	// rarity : leur police est lue pour que le canvas écrive avec, pas seulement
+	// pour mesurer une largeur.
+	const hasFont = bearsFont(name);
+	state.current = isGeometry || hasFont ? name : null;
 	if (isGeometry) state.fields[name as GeometryField] ??= {};
-	if (isContentWidth) state.fontFields[name as ContentWidthField] ??= {};
+	if (hasFont) state.fontFields[name] ??= {};
 	state.subBlock = null;
 	return true;
 }
 
 /**
- * Ligne à l'intérieur d'un champ « casting cost » / « rarity » : ouvre ou
- * peuple un sous-bloc `font:` / `symbol font:`. Un sous-bloc ne concerne QUE
- * ces deux champs — cf. FieldFontInfo, seule structure qui les porte.
+ * Ligne à l'intérieur d'un champ porteur de police : ouvre ou peuple un
+ * sous-bloc `font:` / `symbol font:` (cf. `bearsFont` pour la liste).
  */
 function handleFontSubBlock(line: string, state: ParseState): boolean {
-	const current = state.current as ContentWidthField;
+	const current = state.current as FontBearingField;
 	// Un sous-bloc `font:` / `symbol font:` s'ouvre à DEUX tabulations, sans
 	// valeur derrière les deux-points — même forme que les champs racine,
 	// mais un niveau plus profond.
@@ -265,7 +310,7 @@ function handleImageMask(line: string, state: ParseState): void {
 /** Champs bruts d'un bloc `card style:`, sans la largeur/hauteur de carte. */
 interface ParsedFields {
 	fields: Partial<Record<GeometryField, RawBox>>;
-	fontFields: Partial<Record<ContentWidthField, FieldFontInfo>>;
+	fontFields: Partial<Record<FontBearingField, FieldFontInfo>>;
 	imageMask?: string;
 }
 
@@ -284,8 +329,11 @@ function parseCardStyleFields(lines: string[]): ParsedFields {
 		// précédent — d'où le test de profondeur AVANT de chercher un nouvel
 		// ouvreur, plutôt qu'une fermeture au cas par cas.
 		if (!line.startsWith('\t\t\t')) state.subBlock = null;
-		const isContentWidthField = CONTENT_WIDTH_FIELDS.includes(state.current as ContentWidthField);
-		if (isContentWidthField && handleFontSubBlock(line, state)) continue;
+		// `handleFontSubBlock` rend `false` tant qu'aucun sous-bloc n'est ouvert :
+		// les lignes d'ancre d'un champ porteur de police (name/type/text/pt ont
+		// une boîte ET une police, contrairement à `casting cost`) continuent donc
+		// bien jusqu'à `handleBoxProperty`.
+		if (bearsFont(state.current) && handleFontSubBlock(line, state)) continue;
 		handleImageMask(line, state);
 		handleBoxProperty(line, state);
 	}
@@ -314,11 +362,20 @@ function mergeGeometryFields(own: ParsedFields, inherited: ParsedFields): void {
 }
 
 /**
- * Fusionne les blocs `casting cost` / `rarity` (largeur + sous-blocs
- * `font:` / `symbol font:`) — même règle de priorité que `mergeGeometryFields`.
+ * Fusionne les blocs porteurs de police (largeur + sous-blocs `font:` /
+ * `symbol font:`) — même règle de priorité que `mergeGeometryFields`.
+ *
+ * Parcourt l'UNION des deux ensembles : de nombreux styles ne déclarent leurs
+ * polices que dans le fichier qu'ils incluent (`include file:`). S'en tenir à
+ * `CONTENT_WIDTH_FIELDS` aurait laissé tomber la police héritée de
+ * name/type/text/pt, c'est-à-dire précisément celle que le canvas doit écrire.
  */
+const FONT_BEARING_FIELDS: readonly FontBearingField[] = [
+	...new Set<FontBearingField>([...CONTENT_WIDTH_FIELDS, ...FONT_FIELDS]),
+];
+
 function mergeFontFields(own: ParsedFields, inherited: ParsedFields): void {
-	for (const field of CONTENT_WIDTH_FIELDS) {
+	for (const field of FONT_BEARING_FIELDS) {
 		const from = inherited.fontFields[field];
 		if (!from) continue;
 		own.fontFields[field] ??= {};

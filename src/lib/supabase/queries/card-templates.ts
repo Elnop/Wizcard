@@ -15,6 +15,19 @@ import { createClient } from '@/lib/supabase/client';
  * scripts/mse-geometry/extract.ts::TemplateGeometry). `boxes` n'a que 4 clés
  * garanties (image/name/type/text) ; `pt` et `casting cost` sont optionnelles.
  */
+/**
+ * Police déclarée par le style pour un champ.
+ *
+ * `size` est en UNITÉS DE STYLE (repère de la carte, ex. 375x523), pas en pixels
+ * du canvas : c'est `templateGeometry` qui lui applique la même échelle qu'aux
+ * boîtes. Le corpus va de 6.93 à 32 selon le gabarit — d'où l'inutilité d'une
+ * taille codée en dur.
+ */
+export interface TemplateFontRow {
+	name: string;
+	size: number;
+}
+
 export interface TemplateGeometryRow {
 	cardWidth: number;
 	cardHeight: number;
@@ -25,6 +38,13 @@ export interface TemplateGeometryRow {
 		>
 	>;
 	ast: Record<string, unknown>;
+	/**
+	 * Polices mesurées, par champ. Optionnel : les lignes écrites avant
+	 * l'extraction des polices n'en ont pas, et un champ dont la police ne s'est
+	 * pas résolue est absent (« aucun fallback »). Le canvas retombe alors sur sa
+	 * pile générique.
+	 */
+	fonts?: Partial<Record<'name' | 'type' | 'text' | 'pt', TemplateFontRow>>;
 }
 
 export interface CardTemplateRow {

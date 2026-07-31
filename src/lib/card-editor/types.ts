@@ -194,6 +194,32 @@ export interface CardRect {
 	height: number;
 }
 
+/**
+ * Police d'un champ, prête à peindre : famille CSS et corps en pixels canvas.
+ *
+ * `family` est une pile CSS complète (`'Beleren Bold', Georgia, serif`), pas un
+ * nom nu : la dernière police reste lisible si la webfont n'est pas chargée.
+ */
+export interface CardTextFont {
+	family: string;
+	size: number;
+}
+
+/**
+ * Polices du gabarit, par champ.
+ *
+ * PARTIEL : un champ dont le corpus ne déclare pas de police lisible est absent,
+ * et le canvas retombe sur sa pile générique. C'est la règle « aucun fallback »
+ * appliquée à la typographie — on n'invente pas une police, mais son absence ne
+ * disqualifie pas le cadre (contrairement à une boîte manquante).
+ */
+export interface CardLayoutFonts {
+	title?: CardTextFont;
+	typeLine?: CardTextFont;
+	rules?: CardTextFont;
+	stats?: CardTextFont;
+}
+
 export interface CardLayoutGeometry {
 	width: number;
 	height: number;
@@ -204,6 +230,15 @@ export interface CardLayoutGeometry {
 	rules: CardRect;
 	stats: CardRect;
 	footer: CardRect;
+	/**
+	 * Polices mesurées du corpus, déjà mises à l'échelle du canvas.
+	 *
+	 * OPTIONNEL parce que `CARD_LAYOUTS` (layout-registry.ts) satisfait aussi ce
+	 * type sans en fournir : cette table est devenue une simple correspondance
+	 * dont les rectangles ne peignent plus rien. Seul le chemin mesuré
+	 * (`templateGeometry`) renseigne les polices, et c'est lui seul qui peint.
+	 */
+	fonts?: CardLayoutFonts;
 }
 
 export interface CardLayoutDefinition {

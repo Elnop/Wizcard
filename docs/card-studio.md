@@ -84,6 +84,80 @@ what it was inserting.
   removed house layout. The re-clamp on appearance change keys on `mseTemplateId` for the
   same reason — two frames can share a `layoutId` with very different text boxes.
 
+## Typography: measured, never guessed
+
+The same rule as geometry, applied to type. The canvas used to hardcode `Georgia` for
+the title, type line, P/T and rules, and `Arial` for the footer — **none of which appear
+anywhere in the corpus** for those fields. Sizes were literals too (`25` for the type
+line, `32` for P/T).
+
+The corpus declares a font per field, and the styles fall into two eras:
+
+| Field       | Modern (M15)   | Older                     | Body                                        |
+| ----------- | -------------- | ------------------------- | ------------------------------------------- |
+| name / type | `Beleren Bold` | `Matrix`, `MagicMedieval` | —                                           |
+| pt          | `Beleren Bold` | `ModMatrix`               | —                                           |
+| text        | —              | —                         | `MPlantin` (+ `MPlantin-Italic` for flavor) |
+
+Matrix-era frames **outnumber** Beleren-era ones, so a single hardcoded pair was wrong
+for the majority of the library.
+
+### Sizes are in style units, not pixels
+
+This is what made the old literals look almost-right. The corpus declares sizes in the
+style's own frame (e.g. 375×523), so they go through the **same `scale`** as the boxes:
+
+```
+magic-m15 type line: 13 × (1039/523) ≈ 25.8   <- the hardcoded 25
+magic-new type line: 14 × (1039/523) ≈ 27.8
+magic-old type line: 12 × (1039/523) ≈ 23.8
+```
+
+`25` was the M15 value frozen in place. Across the corpus, declared sizes span 6.93 to 32.
+
+### Script-driven fonts
+
+~180 declarations are expressions (`{ name_font() }`, `{ body_font() }`, `{ pt_font() }`)
+rather than literals. They resolve through the game script to `swap_fonts_*_default`,
+since the canonical card overrides no `styling.custom_*_font`:
+
+```
+name → Beleren Bold 16    type → Beleren Bold 13
+text → MPlantin 13        pt   → Beleren Bold 16
+```
+
+### No-fallback, with one difference
+
+A font that does not resolve is **omitted**, and the field keeps the canvas's generic
+stack. Unlike a missing box, a missing font does **not** disqualify the frame: its
+geometry is still correct, so removing it from the library would cost more than it buys.
+
+Coverage on the 140 measured templates: type 136, text 134, name 127, pt 76 (the 48
+templates with no measured `pt` box have no P/T font either — `showStats` already hides
+them).
+
+The footer keeps `Arial` deliberately: MSE splits that line across fields the extractor
+does not measure (`illustrator`, `copyright line`, `card number`), the same reason
+`FOOTER_BOTTOM_OFFSET` is derived. Lending it the title's font would be a borrow.
+
+### Where it lives
+
+| Path                                       | Role                                                             |
+| ------------------------------------------ | ---------------------------------------------------------------- |
+| `scripts/mse-geometry/style-file.ts`       | Parses `font:` blocks for every renderable field                 |
+| `scripts/mse-geometry/extract.ts`          | Resolves names/sizes, emits `geometry.fonts`                     |
+| `src/lib/card-editor/fonts.ts`             | **MSE font name → CSS family.** The one place licensing switches |
+| `src/fonts/mse.ts`                         | Serves the 8 TTFs via `next/font/local`                          |
+| `scripts/card-assets/seed-local-fonts.mjs` | Backfills `geometry.fonts` **locally**                           |
+
+`geometry` is a JSON column, so adding `fonts` needed **no migration**.
+
+⚠ **Licences.** Beleren, Matrix, ModMatrix and MPlantin are proprietary (Wizards).
+Serving them as webfonts exposes them to direct download — this widens the existing
+"Frame licences" blocker below, and fonts are more identifiable than frames. Switching to
+free substitutes means editing the table in `fonts.ts` alone; the pipeline, the database
+and the canvas are unaffected.
+
 ## Geometry: measured, never guessed
 
 The studio had 8 hand-built layouts but ships ~200 vendor frames. There was no mapping
@@ -203,7 +277,11 @@ rules text, and the first fix for it landed on the card's black border.
 
 - **Frame licences** (CardConjurer / Full Magic Pack) — the real blocker before public
   distribution. Not addressed, and now **unavoidable**: removing the house templates
-  left no rendering path that avoids third-party assets.
+  left no rendering path that avoids third-party assets. **Now also covers fonts**:
+  Beleren, Matrix, ModMatrix and MPlantin are served as webfonts from `src/fonts/mse/`,
+  which exposes the files to direct download. Fonts are easier to identify than frames,
+  so this widens the exposure. The escape hatch is one table
+  (`src/lib/card-editor/fonts.ts`) — see § Typography.
 - **Save redirect** — the studio creates cards private by default and redirects to
   `/card/[id]`, which is cookieless ISR, so it 404s. Product decision needed.
 - **TRUNCATE grants** on 16 other public tables (see `project_default_acl_client_writes`

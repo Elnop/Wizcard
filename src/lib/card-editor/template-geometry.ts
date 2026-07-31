@@ -1,3 +1,4 @@
+import { toCardTextFont } from './fonts';
 import type { MseTemplate } from './mse-assets';
 import type { CardLayoutGeometry, CardRect } from './types';
 
@@ -68,6 +69,17 @@ export function templateGeometry(template: MseTemplate | undefined): CardGeometr
 			y: cardHeight * scale - FOOTER_BOTTOM_OFFSET,
 			width: boxes.text.width * scale,
 			height: FOOTER_HEIGHT,
+		},
+		// Polices mesurées, passées par la MÊME échelle que les boîtes : leurs
+		// tailles sont déclarées dans le repère du style (6.93 à 32 selon le
+		// gabarit), pas en pixels du canvas. Un champ dont la police n'est ni
+		// déclarée ni servie reste absent — le canvas garde alors sa pile
+		// générique, cf. « aucun fallback ».
+		fonts: {
+			title: toCardTextFont(source.fonts?.name, scale),
+			typeLine: toCardTextFont(source.fonts?.type, scale),
+			rules: toCardTextFont(source.fonts?.text, scale),
+			stats: toCardTextFont(source.fonts?.pt, scale),
 		},
 	};
 }
