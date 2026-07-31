@@ -146,6 +146,9 @@ function disambiguateLabels(templates: MseTemplate[]): Map<string, string> {
  *   son nom, son coût et ses règles).
  * - UN ÉTAT DE JEU qu'aucun champ ne porte : `tapped`, dont le cadre est dessiné
  *   incliné pour une carte engagée.
+ * - PAS DE PLACE POUR LE TEXTE : `tome`/`tomes`, dont la boîte de règles MESURÉE
+ *   fait 29 px de haut (contre ~200 sur un cadre normal). Le cadre est conçu
+ *   pour une seule ligne ; tout texte de règles ordinaire déborde.
  *
  * Leur géométrie est bien mesurée — ils passaient donc le filtre
  * `geometry !== null` — mais le rendu qui en sortait était faux, pas dégradé.
@@ -154,12 +157,22 @@ function disambiguateLabels(templates: MseTemplate[]): Map<string, string> {
  * lève en un commit, sans migration ni passage `card-assets` (qui écrit en
  * PROD). Les lignes restent en base, intactes et toujours mesurées.
  *
- * Les mots-clés sont ceux DÉCLARÉS par le corpus, pas un motif de nom : 42 des
- * 109 gabarits que la bibliothèque proposait en portent au moins un, d'où les 67
- * restants. Les pluriels (`flips`, `levelers`, `splits`) ne sont pas listés —
- * aucun gabarit ne les porte sans porter aussi le singulier.
+ * Les mots-clés sont ceux DÉCLARÉS par le corpus, pas un motif de nom : 43 des
+ * 109 gabarits que la bibliothèque proposait en portent au moins un, d'où les 66
+ * restants. `flips`, `levelers` et `splits` ne sont pas listés — aucun gabarit ne
+ * les porte sans porter aussi le singulier. `tomes` l'est parce que le seul
+ * gabarit concerné (`magic-new-tome`) déclare les deux formes.
  */
-const UNSUPPORTED_TAGS = ['planeswalker', 'flip', 'double_faced', 'leveler', 'split', 'tapped'];
+const UNSUPPORTED_TAGS = [
+	'planeswalker',
+	'flip',
+	'double_faced',
+	'leveler',
+	'split',
+	'tapped',
+	'tome',
+	'tomes',
+];
 
 /**
  * Ce gabarit est-il retiré de la bibliothèque ? (cf. `UNSUPPORTED_TAGS`)
