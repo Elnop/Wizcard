@@ -166,7 +166,7 @@ function collectIncludeTargets(lines: string[]): string[] {
 }
 
 /**
- * Masque déclaré par un champ. Deux formes dans le corpus :
+ * Masque déclaré par un champ. SEULES deux formes résolvent, dans le corpus :
  *
  *   mask: image_mask.png
  *   mask:
@@ -174,18 +174,32 @@ function collectIncludeTargets(lines: string[]): string[] {
  *             else "imagemask_standard.png"
  *
  * Le studio n'expose pas l'option `image_size` de MSE : on retient la branche
- * `else`, qui est le défaut de MSE lui-même. Un script dont on ne sait pas
- * extraire une constante ne donne AUCUN masque — le rendu retombe alors sur la
- * géométrie, plutôt que d'inventer un nom de fichier.
+ * `else`, qui est le défaut de MSE lui-même.
+ *
+ * Toute autre forme d'expression donne délibérément AUCUN masque — le rendu
+ * retombe alors sur la géométrie mesurée, plutôt que d'inventer un nom de
+ * fichier. Deux cas concrets du corpus ont montré qu'une troisième passe
+ * générique (« n'importe quel `.png` entre guillemets ») est un pari, pas une
+ * extraction :
+ * - une concaténation, ex. `{ "image_" + (if … then "extended_" else "") +
+ *   … + "mask.png" }` (`magic-genevensis-10-saga`, `-20-battle`,
+ *   `-80-planechase`, `magic-the-ring-rule-card_744`) : la passe générique y
+ *   attrapait le fragment littéral `"mask.png"`, un fichier qui n'existe même
+ *   pas sur disque (les vrais fichiers sont `image_mask.png`,
+ *   `image_extended_mask.png`, `image_extended_leaf_mask.png`) ;
+ * - `else nil` (pas de masque applicable), ex. `if styling.image_size ==
+ *   "extended" then "imagemask_extended.png" else nil`
+ *   (`magic-new-omega-doublefaced`, `magic-new-unset-gmorph`) : la regex
+ *   `else "..."` ne matchait pas `nil` (non cité), donc la passe générique
+ *   retombait sur la PREMIÈRE chaîne citée du script — la branche `then`,
+ *   exactement l'inverse de la branche applicable.
  *
  * Les variantes `_inv` sont écartées : leur polarité est inversée (centre noir,
  * coins blancs), les appliquer effacerait le cadre au lieu de la fenêtre.
  */
 function maskFileFrom(raw: string): string | undefined {
 	const literal = /^\s*([\w.-]+\.png)\s*$/i.exec(raw);
-	const candidate = literal
-		? literal[1]
-		: (/else\s+"([\w.-]+\.png)"/i.exec(raw)?.[1] ?? /"([\w.-]+\.png)"/i.exec(raw)?.[1]);
+	const candidate = literal ? literal[1] : /else\s+"([\w.-]+\.png)"/i.exec(raw)?.[1];
 	if (!candidate) return undefined;
 	if (/_inv\d*\.png$/i.test(candidate)) return undefined;
 	return candidate;
