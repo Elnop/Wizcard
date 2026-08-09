@@ -395,11 +395,19 @@ function Artwork({
 	rect,
 	clipId,
 }: {
-	artwork: CardArtworkDraft;
+	artwork: CardArtworkDraft | null | undefined;
 	rect: CardRect;
 	clipId: string;
 }) {
-	if (!artwork.dataUrl) {
+	// `artwork` est typé non-nul, mais il vient d'un BROUILLON RÉHYDRATÉ (
+	// localStorage, ligne en base) que rien ne revalide au chargement. Un
+	// brouillon écrit par une version antérieure — ou tronqué — porte un
+	// `artwork` absent, et le studio tombait alors tout entier sur l'écran
+	// « Une erreur est survenue », sans moyen de revenir à un état sain.
+	//
+	// L'absence se rend donc comme une illustration vide, qui est déjà l'état
+	// prévu et réparable par l'utilisateur.
+	if (!artwork?.dataUrl) {
 		return (
 			<g clipPath={`url(#${clipId})`}>
 				<rect {...rect} fill="#111722" />

@@ -208,8 +208,9 @@ and the canvas are unaffected.
 in code and change in one commit — no migration, no `card-assets` run.
 
 **Origin** (`OFFICIAL_FAMILIES`, 8 entries) decides the entire library since `ec4425e0`:
-99 of the 140 measured templates classify as official, and the picker offers **40** of
-them (it also requires `render_mode === 'frame'`). Only one template lacks
+99 of the 140 measured templates classify as official, and the picker offers **26** of
+them (it also requires `render_mode === 'frame'`, and excludes the frames listed in
+§ "Frames the renderer cannot paint"). Only one template lacks
 `installer_group` — `magic-testprint-8th`, a test print, excluded on its own merits — so
 the "no data falls through to custom" caveat is real but affects a single row.
 
@@ -225,6 +226,39 @@ day community frames reopen.
 `GAME_NAMESPACES` is a closed, corpus-verified list. An unknown prefix is treated as a
 family, which is the safe direction: inventing a namespace would erase a real family,
 while keeping one too many only makes a heading slightly long.
+
+### Frames the renderer cannot paint
+
+Measured geometry is necessary but **not sufficient**: 14 of the 40 frames the library
+used to offer rendered as broken cards. They were removed in `frame-choices.ts`, next to
+`UNSUPPORTED_TAGS` and for the same reason — the studio cannot yet paint them correctly.
+
+The root cause is one line of the canvas. `CardCanvas` paints the frame PNG **over** the
+artwork, then cuts the measured `image` box out of it (the `-artwin` mask). That is right
+for an ordinary frame, where the hole _is_ the art window. It is wrong for any frame whose
+art box covers the card, because the mask then erases the frame itself, leaving bare
+artwork with text floating on it — a blank-looking card.
+
+Three rules, all derived from measured geometry rather than from names:
+
+| Rule                     | Threshold                    | Removes                                                                              |
+| ------------------------ | ---------------------------- | ------------------------------------------------------------------------------------ |
+| `isFullArtFrame`         | art > 55 % of the card       | `magic-old-artbg` (100 %), `magic-m15-Kaladesh` (86 %), the 4 full-art promos        |
+| `artWindowCoversTextBar` | art overlaps name/type > 5 % | `magic-m15-scroll`, `magic-future`, `magic-future-mirrored`, `magic-m15-clear-color` |
+| `hasInvertedTypeLine`    | `type.top > text.top`        | back-stop for extended-art layouts (type line printed _below_ the rules box)         |
+
+Plus three tags the corpus does declare: `token` (no mana cost, no rules text),
+`textless` and `extended_art` (no textbox at all — their measured `text` box lands on bare
+artwork).
+
+**The 55 % threshold is measured, not chosen.** Across the 40 frames the art share splits
+into two clearly separated groups — ordinary frames 13–46 %, full-art frames 59.6–100 %.
+The threshold sits in the empty gap, more than 6 points from any observed value, so it
+arbitrates no borderline case. Re-check it if the corpus changes rather than nudging it.
+
+These are **provisional**, like `UNSUPPORTED_TAGS`: the rows stay in the database, fully
+measured. Teaching the canvas the inverse model (artwork behind a translucent frame, no
+cut-out) would bring most of them back in one commit.
 
 ### Headings are localized, frame names are not
 

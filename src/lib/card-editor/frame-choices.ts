@@ -149,6 +149,12 @@ function disambiguateLabels(templates: MseTemplate[]): Map<string, string> {
  * - PAS DE PLACE POUR LE TEXTE : `tome`/`tomes`, dont la boîte de règles MESURÉE
  *   fait 29 px de haut (contre ~200 sur un cadre normal). Le cadre est conçu
  *   pour une seule ligne ; tout texte de règles ordinaire déborde.
+ * - PAS DE COÛT NI DE RÈGLES : `token`, dont la carte n'a par nature ni coût de
+ *   mana ni texte de règles ordinaire. Le brouillon en porte toujours, et les
+ *   peindre sur un cadre de jeton donne une carte qui n'existe pas.
+ * - PAS DE BOÎTE DE TEXTE DU TOUT : `textless`, `extended_art`. Leur boîte
+ *   `text` est bien MESURÉE, mais elle tombe sur l'illustration nue — le corpus
+ *   la déclare pour un usage promotionnel sans règles.
  *
  * Leur géométrie est bien mesurée — ils passaient donc le filtre
  * `geometry !== null` — mais le rendu qui en sortait était faux, pas dégradé.
@@ -172,7 +178,132 @@ const UNSUPPORTED_TAGS = [
 	'tapped',
 	'tome',
 	'tomes',
+	'token',
+	'textless',
+	'extended_art',
 ];
+
+/**
+ * Part de la carte occupée par la fenêtre d'illustration, au-delà de laquelle le
+ * gabarit est traité comme PLEINE ILLUSTRATION.
+ *
+ * Ce seuil n'est pas un réglage esthétique, il décrit une limite du RENDU.
+ * `CardCanvas` peint le PNG du cadre PAR-DESSUS l'illustration, puis y creuse la
+ * fenêtre mesurée (masque `-artwin`). Sur un cadre normal cette fenêtre est le
+ * panneau d'illustration et le reste du cadre subsiste. Sur un cadre pleine
+ * illustration, la fenêtre couvre presque toute la carte : le masque efface donc
+ * le cadre, et il ne reste que l'illustration nue avec le texte posé dessus.
+ *
+ * Ces cadres supposent le modèle INVERSE — illustration au fond, cadre
+ * semi-transparent par-dessus SANS découpe — que le canvas ne sait pas rendre
+ * aujourd'hui. Les retirer est donc la même règle « aucun repli » que le reste
+ * du studio : un cadre qu'on ne sait pas peindre juste n'est pas proposé.
+ *
+ * La valeur vient du corpus, pas d'un choix : mesurée sur les 40 gabarits que la
+ * bibliothèque proposait, la part d'illustration se répartit en deux groupes
+ * nettement séparés — les cadres ordinaires occupent 13 % à 46 %, les cadres
+ * pleine illustration 59,6 % à 100 %. Le seuil est posé dans le vide entre les
+ * deux, et non sur une valeur observée : aucun gabarit ne s'en approche à moins
+ * de 6 points de part et d'autre, donc il ne départage aucun cas limite.
+ */
+const FULL_ART_AREA_RATIO = 0.55;
+
+/**
+ * Le cadre est-il pleine illustration ?
+ *
+ * Dérivé de la géométrie MESURÉE, jamais d'un mot-clé : les promos pleine
+ * illustration du corpus (`magic-old-artbg`, `magic-new-promo`,
+ * `magic-old-promo`, `magic-future-promo`) ne déclarent AUCUN mot-clé qui les
+ * distingue d'un cadre ordinaire. Seule leur boîte `image` les trahit.
+ *
+ * Un gabarit non mesuré rend `false` : il est déjà écarté en amont par la règle
+ * « aucun repli » (`geometry !== null`), et lui inventer ici un second motif
+ * d'exclusion masquerait la vraie raison.
+ */
+function isFullArtFrame(template: MseTemplate): boolean {
+	const geometry = template.geometry;
+	const image = geometry?.boxes?.image;
+	if (!geometry || !image) return false;
+	const cardArea = geometry.cardWidth * geometry.cardHeight;
+	if (cardArea <= 0) return false;
+	return (image.width * image.height) / cardArea > FULL_ART_AREA_RATIO;
+}
+
+/**
+ * Part d'une barre de texte que la fenêtre d'illustration peut recouvrir.
+ *
+ * Même cause que `FULL_ART_AREA_RATIO`, appliquée localement : le masque
+ * `-artwin` creuse la fenêtre d'illustration DANS le cadre. Quand cette fenêtre
+ * mord sur la barre de nom ou sur la ligne de type, elle en efface le fond, et
+ * le texte se retrouve posé sur l'illustration au lieu de son bandeau.
+ *
+ * C'est le défaut observé sur `magic-m15-scroll` : titre illisible sur
+ * l'illustration, ligne de type flottant par-dessus.
+ *
+ * Le seuil est bas (5 %) parce qu'un chevauchement légitime n'existe pas : sur
+ * un cadre ordinaire du corpus, l'illustration et les bandeaux sont disjoints
+ * (0 % de recouvrement). Une tolérance de quelques pour cent absorbe seulement
+ * les arrondis de mesure.
+ */
+const MAX_TEXT_BAR_OVERLAP_RATIO = 0.05;
+
+/** Part de `box` recouverte par `window`, entre 0 et 1. */
+function overlapRatio(
+	window: { left: number; top: number; width: number; height: number },
+	box: { left: number; top: number; width: number; height: number }
+): number {
+	const area = box.width * box.height;
+	if (area <= 0) return 0;
+	const overlapWidth = Math.max(
+		0,
+		Math.min(window.left + window.width, box.left + box.width) - Math.max(window.left, box.left)
+	);
+	const overlapHeight = Math.max(
+		0,
+		Math.min(window.top + window.height, box.top + box.height) - Math.max(window.top, box.top)
+	);
+	return (overlapWidth * overlapHeight) / area;
+}
+
+/**
+ * La fenêtre d'illustration mange-t-elle une barre de texte ?
+ *
+ * On ne teste QUE le nom et la ligne de type, jamais la boîte de règles : sur
+ * les cadres à illustration étendue légitimes, l'illustration passe derrière le
+ * texte de règles sans que ce soit un défaut (le corpus les dessine ainsi), et
+ * la boîte de règles des gabarits vraiment cassés est déjà rattrapée par
+ * `isFullArtFrame`.
+ */
+function artWindowCoversTextBar(template: MseTemplate): boolean {
+	const boxes = template.geometry?.boxes;
+	const image = boxes?.image;
+	if (!image) return false;
+	return (['name', 'type'] as const).some((field) => {
+		const box = boxes?.[field];
+		return box ? overlapRatio(image, box) > MAX_TEXT_BAR_OVERLAP_RATIO : false;
+	});
+}
+
+/**
+ * La ligne de type est-elle sous la boîte de règles ?
+ *
+ * Sur une vraie carte Magic, la ligne de type sépare l'illustration du texte de
+ * règles : elle est TOUJOURS au-dessus. Un gabarit qui l'a mesurée en dessous
+ * décrit une autre mise en page (bandeau de bas de carte des cadres « extended
+ * art »), où le champ `text` ne désigne pas un panneau de règles.
+ *
+ * Le studio y peindrait le texte de règles au milieu de l'illustration et la
+ * ligne de type tout en bas — géométriquement fidèle au corpus, mais ne
+ * ressemblant à aucune carte imprimée.
+ *
+ * Dérivé de la géométrie, pas d'un mot-clé, pour la même raison que
+ * `isFullArtFrame` : c'est la mesure qui porte l'information.
+ */
+function hasInvertedTypeLine(template: MseTemplate): boolean {
+	const boxes = template.geometry?.boxes;
+	if (!boxes?.type || !boxes.text) return false;
+	return boxes.type.top > boxes.text.top;
+}
 
 /**
  * Ce gabarit est-il retiré de la bibliothèque ?
@@ -200,7 +331,14 @@ const UNSUPPORTED_TAGS = [
  */
 export function isUnsupportedFrame(template: MseTemplate): boolean {
 	if (frameOrigin(template) === 'custom') return true;
-	return UNSUPPORTED_TAGS.some((tag) => template.tags.includes(tag));
+	if (UNSUPPORTED_TAGS.some((tag) => template.tags.includes(tag))) return true;
+	// Motifs GÉOMÉTRIQUES, à garder après les mots-clés : ils rattrapent les
+	// gabarits que le corpus ne mot-clé pas (cf. `isFullArtFrame`). Les deux
+	// vivent dans la même fonction pour que la liste et l'auto-réparation
+	// partagent exactement le même critère.
+	if (isFullArtFrame(template)) return true;
+	if (artWindowCoversTextBar(template)) return true;
+	return hasInvertedTypeLine(template);
 }
 
 /** Construit la liste des apparences proposées : les cadres vendor mesurés. */
