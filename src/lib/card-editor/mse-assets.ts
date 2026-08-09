@@ -271,6 +271,36 @@ export function resolveMseFramePath(
 }
 
 /**
+ * Le PNG du cadre porte-t-il DÉJÀ sa fenêtre d'illustration ?
+ *
+ * `CardCanvas` peint le cadre par-dessus l'illustration puis y creuse la boîte
+ * `image` mesurée (masque `-artwin`). Cette découpe est la SEULE fenêtre des
+ * gabarits servis en JPEG — 102 des 140 mesurés — qui n'ont pas de canal alpha.
+ *
+ * Mais quelques gabarits sont servis en PNG avec une fenêtre déjà transparente.
+ * Y appliquer la découpe géométrique est au mieux redondant, au pire
+ * destructeur : quand la fenêtre couvre 60 à 68 % de la carte (`magic-m15-
+ * textless`, `magic-old-promo`), le masque efface le cadre lui-même et il ne
+ * reste que l'illustration nue avec le texte posé dessus.
+ *
+ * On se fie à l'EXTENSION et non au contenu : décoder le PNG au rendu pour y
+ * mesurer l'alpha coûterait un aller-retour par cadre, à chaque rendu. La
+ * correspondance a été vérifiée sur les 112 gabarits lisibles du corpus —
+ * l'extension prédit le format réel sans une seule divergence.
+ *
+ * Attention : « PNG » n'implique pas « fenêtre transparente ». Certains PNG du
+ * corpus sont opaques dans leur boîte `image` (`magic-cbg-planeswalker`, 0 % de
+ * transparence). Pour eux, sauter la découpe cacherait l'illustration derrière
+ * un cadre opaque. C'est pourquoi ce test ne suffit pas seul et n'est consulté
+ * que pour les cadres PLEINE ILLUSTRATION, dont `frame-choices.ts` a vérifié
+ * qu'ils ne sont proposés que si leur fenêtre est réellement transparente.
+ */
+export function frameCarriesOwnArtWindow(path: string | null): boolean {
+	if (!path) return false;
+	return path.split('?')[0].toLowerCase().endsWith('.png');
+}
+
+/**
  * Fondu HYBRIDE, ou `null`.
  *
  * Réservé aux coûts hybrides (`{W/U}`). Une carte bicolore ordinaire (`{W}{U}`)

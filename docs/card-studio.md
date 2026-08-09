@@ -257,8 +257,44 @@ The threshold sits in the empty gap, more than 6 points from any observed value,
 arbitrates no borderline case. Re-check it if the corpus changes rather than nudging it.
 
 These are **provisional**, like `UNSUPPORTED_TAGS`: the rows stay in the database, fully
-measured. Teaching the canvas the inverse model (artwork behind a translucent frame, no
-cut-out) would bring most of them back in one commit.
+measured.
+
+#### Why the "inverse model" recovers almost nothing
+
+The obvious next move is to teach the canvas MSE's other compositing model — artwork
+behind the frame, no cut-out — and bring these frames back. It was investigated; it
+recovers **zero** frames. Worth recording so nobody re-derives it.
+
+What the mask does depends on the **asset format**, which splits the corpus:
+
+| Frame assets                       | Count (of 140 measured) | The `-artwin` mask is…              |
+| ---------------------------------- | ----------------------- | ----------------------------------- |
+| JPEG — no alpha channel            | 102                     | the **only** art window. Required.  |
+| PNG with a transparent `image` box | 3                       | redundant, and destructive if large |
+| PNG opaque inside its `image` box  | 7                       | still the only window. Required.    |
+
+So the mask is load-bearing for the vast majority and cannot simply be dropped. It is now
+skipped **only** for `.png` frames (`frameCarriesOwnArtWindow`) — a real latent bug fix,
+since those carry their own window.
+
+But that does not re-admit anything, for two independent reasons:
+
+- Of the 3 PNGs with a transparent window, one is a planeswalker (excluded on its own
+  merits). The other two are `magic-m15-textless` and `magic-old-promo`.
+- Those two **have no textbox panel**. Sampling their alpha inside their own measured
+  `text` box gives **0 % opaque pixels over ~2 200 samples** — the rules text would land
+  on bare artwork, which is exactly the defect they were removed for. Skipping the mask
+  fixes their _frame_ (border and title bar survive, verified on canvas) but not their
+  _textbox_, because there isn't one.
+
+`z index` is a red herring here. MSE does declare it per field, and it genuinely encodes
+layer order (`magic-m15-textless` puts `image` at 2, above `pt box` at 3's neighbours and
+`card color` at 0). But `image > card color` holds for **106 of 114** styles, `magic-m15`
+included — it does not separate working frames from broken ones, so no rule should be
+built on it.
+
+Recovering these frames needs the studio to model a card **without** a rules textbox
+(promo/full-art cards), which is a draft-model change, not a renderer change.
 
 ### Headings are localized, frame names are not
 

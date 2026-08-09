@@ -219,6 +219,18 @@ const FULL_ART_AREA_RATIO = 0.55;
  * Un gabarit non mesuré rend `false` : il est déjà écarté en amont par la règle
  * « aucun repli » (`geometry !== null`), et lui inventer ici un second motif
  * d'exclusion masquerait la vraie raison.
+ *
+ * Le correctif du masque (cf. `frameCarriesOwnArtWindow`) ne les ramène PAS, et
+ * c'est vérifié plutôt que supposé. Il répare bien le CADRE des deux gabarits
+ * PNG à fenêtre transparente (`magic-m15-textless`, `magic-old-promo`) : sans la
+ * découpe, bordure et barre de titre survivent. Mais un échantillonnage de leur
+ * canal alpha DANS leur boîte `text` mesurée donne 0 % de pixels opaques sur
+ * ~2 200 points : ces cadres n'ont aucun panneau de règles, conformément à leur
+ * usage promotionnel. Le texte y tomberait sur l'illustration nue — le défaut
+ * même pour lequel on les écarte.
+ *
+ * La règle reste donc géométrique et sans exception : la pleine illustration
+ * suffit à exclure.
  */
 function isFullArtFrame(template: MseTemplate): boolean {
 	const geometry = template.geometry;

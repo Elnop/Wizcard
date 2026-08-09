@@ -3,7 +3,11 @@
 import { forwardRef, useId, useRef, type CSSProperties, type PointerEvent } from 'react';
 import { artPanBounds, clampOffset } from '@/lib/card-editor/art-pan';
 import { FLAVOR_ITALIC_FAMILY, GENERIC_SANS, GENERIC_SERIF } from '@/lib/card-editor/fonts';
-import type { MseTemplate, MseTextColors } from '@/lib/card-editor/mse-assets';
+import {
+	frameCarriesOwnArtWindow,
+	type MseTemplate,
+	type MseTextColors,
+} from '@/lib/card-editor/mse-assets';
 import { templateGeometry } from '@/lib/card-editor/template-geometry';
 import {
 	expandCardNameShortcut,
@@ -721,7 +725,14 @@ function CardSvg({
 						width={geometry.width}
 						height={geometry.height}
 						preserveAspectRatio="none"
-						mask={`url(#${clipId}-artwin)`}
+						/*
+						 * Un cadre servi en PNG porte déjà sa fenêtre d'illustration dans
+						 * son canal alpha : lui appliquer EN PLUS la découpe géométrique
+						 * efface le cadre au lieu de l'ouvrir (cf.
+						 * `frameCarriesOwnArtWindow`). Les JPEG, eux, n'ont pas d'alpha —
+						 * la découpe est leur seule fenêtre et reste indispensable.
+						 */
+						mask={frameCarriesOwnArtWindow(mseFramePath) ? undefined : `url(#${clipId}-artwin)`}
 					/>
 				)
 			)}
