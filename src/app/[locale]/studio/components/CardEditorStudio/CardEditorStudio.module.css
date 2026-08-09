@@ -11,7 +11,17 @@
 .page {
 	position: relative;
 	display: grid;
-	grid-template-columns: minmax(400px, 460px) minmax(0, 1fr);
+	/*
+	 * Sidebar DOUBLÉE (400-460 -> 800-920) : la bibliothèque de cadres est le
+	 * panneau qui en profite, sa grille passe de 2 à 5 vignettes par ligne.
+	 *
+	 * `min()` borne la piste à la moitié du viewport : à 800px fixes, un écran de
+	 * 1280 ne laissait que 480px à la carte, qui est pourtant ce qu'on regarde.
+	 * En dessous de ~1600px la sidebar reprend donc la moitié disponible, et le
+	 * plancher de 400px reste celui d'avant — la colonne ne peut jamais devenir
+	 * plus étroite qu'elle ne l'était.
+	 */
+	grid-template-columns: minmax(400px, min(920px, 50vw)) minmax(0, 1fr);
 	/* `min-height: 0` sur les pistes est indispensable : sans lui une piste ne
 	   peut pas rétrécir sous la taille de son contenu, et la sidebar déborderait
 	   au lieu de faire défiler son panneau. */

@@ -202,8 +202,34 @@ export function rankTagsByRarity(tags: string[], counts: Map<string, number>): s
  */
 const PHRASE_WORDS = new Set(['after', 'edition', 'frame', 'template', 'before', 'with']);
 
-export function displayableTags(tags: string[]): string[] {
-	return tags.filter((tag) => !PHRASE_WORDS.has(tag));
+/**
+ * Mots-clés à afficher en badge sous une vignette.
+ *
+ * Le corpus ne rédige pas ses `tags` : il DÉCOUPE le nom du gabarit en mots.
+ * « Sci-Fi for Sync permanents » donne `fi, for, permanents, sci, sync`, « Name
+ * on Right » donne `name, on, right`. Affichés tels quels sous le libellé, ces
+ * badges répètent en fragments le nom écrit juste au-dessus, et occupent deux
+ * lignes pour ne rien apprendre.
+ *
+ * On écarte donc tout mot déjà présent dans le libellé affiché. Ce qui reste est
+ * la seule information que le nom ne porte pas : le mot-clé de forme composée
+ * (`name_on_right`, `cards_with_big_text`) et les mots-clés de famille (`m15`).
+ *
+ * Le libellé est passé en paramètre plutôt que relu du gabarit : l'appelant l'a
+ * déjà désambiguïsé (`buildFrameChoices` peut y ajouter le `short_name` ou
+ * l'id), et c'est CE texte-là que l'utilisateur voit — c'est donc lui qui doit
+ * décider de la redondance.
+ */
+export function displayableTags(tags: string[], label = ''): string[] {
+	const lowered = label.toLocaleLowerCase();
+	const labelWords = new Set(lowered.split(/[^\p{L}\p{Nd}]+/u).filter(Boolean));
+	// Forme compacte du libellé, pour reconnaître aussi les mots-clés composés :
+	// `name_on_right` et `nameonright` disent tous deux « Name on Right », que la
+	// boucle par mot ne rattrape pas puisqu'aucun des deux n'est un mot du nom.
+	const squashed = lowered.replaceAll(/[^\p{L}\p{Nd}]+/gu, '');
+	const isRedundant = (tag: string): boolean =>
+		labelWords.has(tag) || (squashed.length > 0 && squashed.includes(tag.replaceAll('_', '')));
+	return tags.filter((tag) => !PHRASE_WORDS.has(tag) && !isRedundant(tag));
 }
 
 /** Compte d'occurrences de chaque mot-clé, pour le tri et les libellés. */

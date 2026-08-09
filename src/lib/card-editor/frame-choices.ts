@@ -27,11 +27,6 @@ export interface FrameChoice {
 	template: MseTemplate;
 }
 
-export interface FrameChoiceSection {
-	family: string;
-	choices: FrameChoice[];
-}
-
 export interface FrameFilters {
 	family: string | null;
 	/** Mots-clés cumulés en ET. */
@@ -48,16 +43,6 @@ export const DEFAULT_FRAME_FILTERS: FrameFilters = {
 	orientation: null,
 	creature: null,
 };
-
-export function hasActiveFilters(filters: FrameFilters): boolean {
-	return (
-		filters.family !== null ||
-		filters.tags.length > 0 ||
-		filters.origin !== null ||
-		filters.orientation !== null ||
-		filters.creature !== null
-	);
-}
 
 /**
  * Tri : famille d'abord (la plus classique en tête), puis `position_hint`
@@ -407,27 +392,6 @@ export function applyFrameFilters(choices: FrameChoice[], filters: FrameFilters)
 		}
 		return true;
 	});
-}
-
-/**
- * Sections par famille, dans l'ordre d'apparition — donc celui de
- * `position_hint`, puisque la liste est déjà triée. Pas d'ordre codé en dur : le
- * corpus déclare 30 familles et en ajouter une ne doit demander aucun code.
- */
-export function groupFrameChoices(choices: FrameChoice[]): FrameChoiceSection[] {
-	const sections: FrameChoiceSection[] = [];
-	const byFamily = new Map<string, FrameChoice[]>();
-	for (const choice of choices) {
-		const bucket = byFamily.get(choice.family);
-		if (bucket) {
-			bucket.push(choice);
-		} else {
-			const created = [choice];
-			byFamily.set(choice.family, created);
-			sections.push({ family: choice.family, choices: created });
-		}
-	}
-	return sections;
 }
 
 /**

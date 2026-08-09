@@ -8,18 +8,11 @@ import {
 	buildFrameChoices,
 	DEFAULT_FRAME_FILTERS,
 	findActiveChoice,
-	groupFrameChoices,
-	hasActiveFilters,
 	matchesQuery,
 	type FrameChoice,
 	type FrameFilters,
 } from '@/lib/card-editor/frame-choices';
-import {
-	countTags,
-	displayableTags,
-	familyLabelKey,
-	rankTagsByRarity,
-} from '@/lib/card-editor/frame-facets';
+import { countTags, displayableTags, rankTagsByRarity } from '@/lib/card-editor/frame-facets';
 import { cardAssetUrl, type MseTemplate } from '@/lib/card-editor/mse-assets';
 import { FrameFilterModal } from './FrameFilterModal';
 import styles from './MseTemplatePicker.module.css';
@@ -45,15 +38,6 @@ export function MseTemplatePicker({
 	onSelect,
 }: MseTemplatePickerProps) {
 	const t = useTranslations('cardEditor.mseLibrary');
-	/**
-	 * Titre de section : traduit pour les familles officielles, chaîne du corpus
-	 * telle quelle pour les autres — renommer un style communautaire reviendrait
-	 * à rebaptiser le travail de son auteur.
-	 */
-	const familyLabel = (family: string): string => {
-		const key = familyLabelKey(family);
-		return key ? t(key) : family;
-	};
 	const [query, setQuery] = useState('');
 	const [filters, setFilters] = useState<FrameFilters>(DEFAULT_FRAME_FILTERS);
 	const [isFilterOpen, setFilterOpen] = useState(false);
@@ -111,14 +95,6 @@ export function MseTemplatePicker({
 
 	const visible = filtered.slice(0, limit);
 	const active = findActiveChoice(choices, mseTemplateId);
-	// Sections par famille tant qu'aucun filtre n'est actif ; grille plate dès
-	// qu'il y en a un — un en-tête unique au-dessus de résultats déjà filtrés
-	// n'apporte rien et coûte une hauteur d'écran.
-	const isFiltering = hasActiveFilters(filters) || query.trim() !== '';
-	const sections = useMemo(
-		() => (isFiltering ? null : groupFrameChoices(visible)),
-		[isFiltering, visible]
-	);
 
 	if (isLoading) {
 		return (
@@ -134,7 +110,12 @@ export function MseTemplatePicker({
 		const isSelected = active?.key === choice.key;
 		// Mots-clés les plus RARES d'abord : un mot-clé porté par un seul cadre le
 		// caractérise, `planeswalker` porté par 21 beaucoup moins.
-		const badges = rankTagsByRarity(displayableTags(choice.template.tags), tagCounts);
+		// Le libellé est passé pour écarter les badges qui ne font que le répéter :
+		// le corpus dérive ses `tags` du NOM du gabarit (cf. `displayableTags`).
+		const badges = rankTagsByRarity(
+			displayableTags(choice.template.tags, `${choice.label} ${choice.template.shortName ?? ''}`),
+			tagCounts
+		);
 		return (
 			<button
 				key={choice.key}
@@ -209,23 +190,19 @@ export function MseTemplatePicker({
 
 			{filtered.length === 0 && <p className={styles.empty}>{t('empty')}</p>}
 
-			{sections
-				? sections.map((section) => (
-						<section key={section.family} className={styles.section}>
-							{/*
-							 * Familles officielles traduites ; les communautaires gardent le
-							 * nom de leur auteur (cf. `familyLabelKey`). Le corpus écrit
-							 * « m15 style » / « new style », du jargon anglais à la casse
-							 * incohérente, dans une interface par ailleurs traduite.
-							 */}
-							<h4 className={styles.sectionTitle}>
-								{familyLabel(section.family)}
-								<span className={styles.sectionCount}>{section.choices.length}</span>
-							</h4>
-							<div className={styles.grid}>{section.choices.map(renderCard)}</div>
-						</section>
-					))
-				: visible.length > 0 && <div className={styles.grid}>{visible.map(renderCard)}</div>}
+			{/*
+			 * Grille PLATE, sans regroupement par famille.
+			 *
+			 * Les sections coûtaient une hauteur d'en-tête tous les 1 à 16 cadres
+			 * pour une information déjà portée par la vignette et par le filtre
+			 * « famille » de la modale. Sur une bibliothèque de 26 entrées, elles
+			 * hachaient la grille plus qu'elles ne la rangeaient.
+			 *
+			 * L'ORDRE, lui, est conservé : `buildFrameChoices` trie déjà par rang de
+			 * famille puis `position_hint`, donc les cadres d'une même époque restent
+			 * contigus — on retire les titres, pas le classement.
+			 */}
+			{visible.length > 0 && <div className={styles.grid}>{visible.map(renderCard)}</div>}
 
 			{limit < filtered.length && <div ref={sentinel} className={styles.sentinel} aria-hidden />}
 
