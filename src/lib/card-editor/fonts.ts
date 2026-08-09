@@ -74,6 +74,19 @@ export function toCardTextFont(
 		size,
 		baseline: baselineFor(size, box, layout, font, scale),
 		left: box ? (box.left + (layout?.padding?.left ?? 0)) * scale : undefined,
+		...(font.color ? { color: font.color } : {}),
+		// Le déplacement de l'ombre est déclaré en unités de style, comme les
+		// tailles et les boîtes : il passe donc par le MÊME facteur d'échelle.
+		// L'oublier collerait l'ombre au texte sur les grands gabarits.
+		...(font.shadow
+			? {
+					shadow: {
+						color: font.shadow.color,
+						dx: font.shadow.dx * scale,
+						dy: font.shadow.dy * scale,
+					},
+				}
+			: {}),
 	};
 }
 
@@ -83,6 +96,8 @@ interface MseFont {
 	size: number;
 	ascent?: number;
 	descent?: number;
+	color?: string;
+	shadow?: { color: string; dx: number; dy: number };
 }
 
 /** Ancrage et marges tels qu'ils arrivent du corpus. */

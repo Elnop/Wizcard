@@ -29,6 +29,23 @@ export interface TemplateFontRow {
 	/** Ascendante/descendante en fraction de la taille, lues dans le TTF. */
 	ascent?: number;
 	descent?: number;
+	/**
+	 * Couleur MESURÉE du texte (`rgb(r,g,b)` ou nom CSS), quand le style la
+	 * déclare — 132 des 140 gabarits mesurés.
+	 *
+	 * À ne pas confondre avec `frame_text_colors`, qui porte la MÊME valeur
+	 * (`#17140d`) pour tous les gabarits : cette colonne-là est une constante
+	 * d'ingestion, pas une mesure. Le canvas préfère donc celle-ci quand elle
+	 * existe.
+	 */
+	color?: string;
+	/**
+	 * Ombre portée, quand le style en déclare une (37 gabarits).
+	 *
+	 * `dx`/`dy` sont en unités de style : ils passent par le même facteur
+	 * d'échelle que les boîtes et les tailles de police.
+	 */
+	shadow?: { color: string; dx: number; dy: number };
 }
 
 /**

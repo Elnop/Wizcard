@@ -8,6 +8,7 @@ import {
 	readStyleFile,
 	type FieldFontInfo,
 	type GeometryField,
+	type RawFont,
 	type RawPadding,
 } from './style-file';
 import type { Scope } from './scope';
@@ -107,6 +108,37 @@ export interface ResolvedFont {
 	 */
 	ascent?: number;
 	descent?: number;
+	/**
+	 * Couleur du texte, telle que le style la déclare (137 gabarits sur 140).
+	 *
+	 * Le studio écrivait tout en `#17140d`, une constante du canvas, et
+	 * `frame_text_colors` stocke la MÊME valeur pour tous les gabarits — donc une
+	 * donnée inventée, pas mesurée. `magic-extended-art` déclare pourtant
+	 * `rgb(255,255,255)` : son texte était quasi invisible.
+	 *
+	 * Absente si le style n'en déclare pas : le canvas garde alors son encre par
+	 * défaut, qui reste ce qu'il affichait déjà.
+	 */
+	color?: string;
+	/** Ombre portée, quand le style en déclare une (40 gabarits sur 140). */
+	shadow?: ResolvedShadow;
+}
+
+/**
+ * Ombre portée du texte.
+ *
+ * C'est ce qui rend lisible le texte des cadres SANS panneau de règles : MSE n'y
+ * dessine aucune boîte, il pose du texte clair souligné d'une ombre directement
+ * sur l'illustration. Publier la couleur sans l'ombre donnerait du blanc sur une
+ * illustration claire — illisible.
+ *
+ * Le déplacement est en unités de style, comme les tailles : il passe par le
+ * même facteur d'échelle que les boîtes.
+ */
+export interface ResolvedShadow {
+	color: string;
+	dx: number;
+	dy: number;
 }
 
 /** Champs dont la police est publiée, c.-à-d. ceux que le canvas ÉCRIT. */
@@ -221,7 +253,63 @@ function resolveFieldFont(info: FieldFontInfo | undefined, scope: Scope): Resolv
 	// la police reste publiée (le nom sert au rendu), seul le calcul de ligne
 	// de base retombe alors sur le placement générique.
 	const ratios = fontRatios(trimmedName);
-	return { name: trimmedName, size: numericSize, ...ratios };
+	const color = resolveColor(info?.font?.color, scope);
+	const shadow = resolveShadow(info?.font, scope);
+	return {
+		name: trimmedName,
+		size: numericSize,
+		...ratios,
+		...(color ? { color } : {}),
+		...(shadow ? { shadow } : {}),
+	};
+}
+
+/**
+ * Couleur MSE (`rgb(r,g,b)` ou un nom comme `white`) vers une couleur CSS.
+ *
+ * Les deux formes sont valides en CSS telles quelles — `rgb(0,0,0)` et `white`
+ * s'écrivent pareil des deux côtés. On se contente donc de valider la forme et
+ * de normaliser les espaces, sans réécrire : convertir en hexadécimal ferait
+ * perdre les noms et n'apporterait rien au canvas.
+ *
+ * Une valeur qu'on ne reconnaît pas est REJETÉE plutôt que passée telle quelle :
+ * une couleur invalide rendrait le texte noir par défaut du navigateur, ce qui
+ * ressemble à un rendu correct tout en étant faux. L'absence, elle, laisse le
+ * canvas sur son encre assumée.
+ */
+function resolveColor(raw: string | undefined, scope: Scope): string | undefined {
+	const value =
+		typeof raw === 'string' && !raw.trim().startsWith('{') ? raw : resolveFontValue(raw, scope);
+	if (typeof value !== 'string') return undefined;
+	const trimmed = value.trim();
+	const rgb = /^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/.exec(trimmed);
+	if (rgb) {
+		const channels = [rgb[1], rgb[2], rgb[3]].map(Number);
+		if (channels.some((channel) => channel > 255)) return undefined;
+		return `rgb(${channels.join(',')})`;
+	}
+	// Noms CSS : le corpus n'écrit que des mots simples (`white`, `black`).
+	return /^[a-z]+$/i.test(trimmed) ? trimmed.toLowerCase() : undefined;
+}
+
+/**
+ * Ombre portée, ou `undefined`.
+ *
+ * Les trois composantes sont exigées ENSEMBLE. Une couleur sans déplacement
+ * peindrait l'ombre exactement sous le texte (donc invisible, et inutilement
+ * coûteuse), et un déplacement sans couleur n'a rien à peindre. Le corpus les
+ * déclare toujours groupées.
+ */
+function resolveShadow(font: RawFont | undefined, scope: Scope): ResolvedShadow | undefined {
+	const color = resolveColor(font?.shadowColor, scope);
+	if (!color) return undefined;
+	const dx = resolveFontValue(font?.shadowDx, scope);
+	const dy = resolveFontValue(font?.shadowDy, scope);
+	const numericDx = Number(dx);
+	const numericDy = Number(dy);
+	if (!Number.isFinite(numericDx) || !Number.isFinite(numericDy)) return undefined;
+	if (numericDx === 0 && numericDy === 0) return undefined;
+	return { color, dx: numericDx, dy: numericDy };
 }
 
 /**

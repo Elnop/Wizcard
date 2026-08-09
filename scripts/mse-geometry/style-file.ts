@@ -110,6 +110,25 @@ export interface RawBox {
 export interface RawFont {
 	name?: string;
 	size?: string;
+	/**
+	 * `color:` du texte. 137 des 140 gabarits mesurés en déclarent une.
+	 *
+	 * Sans elle, le studio écrivait TOUT en `#17140d` (`DEFAULT_INK`), y compris
+	 * les cadres que MSE écrit en blanc — `magic-extended-art` déclare
+	 * `rgb(255,255,255)`. Le texte y était donc quasi invisible.
+	 */
+	color?: string;
+	/**
+	 * `shadow color:` et son déplacement. 40 gabarits mesurés en déclarent une.
+	 *
+	 * C'est ce qui rend le texte lisible sur les cadres SANS panneau de règles :
+	 * MSE n'y dessine pas de boîte, il pose du texte clair souligné d'une ombre
+	 * portée directement sur l'illustration. Ignorer l'ombre en gardant la
+	 * couleur donnerait du blanc sur illustration claire, donc illisible.
+	 */
+	shadowColor?: string;
+	shadowDx?: string;
+	shadowDy?: string;
 }
 
 /** Marges INTÉRIEURES d'un champ, telles qu'écrites dans le style. */
@@ -281,13 +300,38 @@ function handleFontSubBlock(line: string, state: ParseState): boolean {
 		return true;
 	}
 	if (!state.subBlock) return false;
-	// eslint-disable-next-line sonarjs/super-linear-regex -- safe: une ligne de style, longueur bornée
-	const fontProp = /^\t\t\t(name|size)\s*:\s*(.+?)\s*$/.exec(line);
+	const fontProp = FONT_PROPERTY.exec(line);
 	if (fontProp) {
-		state.fontFields[current]![state.subBlock]![fontProp[1] as 'name' | 'size'] = fontProp[2];
+		const key = FONT_PROPERTY_KEYS[fontProp[1] as keyof typeof FONT_PROPERTY_KEYS];
+		state.fontFields[current]![state.subBlock]![key] = fontProp[2];
 	}
 	return true;
 }
+
+/**
+ * Propriétés lues dans un sous-bloc `font:`, du nom MSE vers la clé `RawFont`.
+ *
+ * Le motif en est DÉRIVÉ, jamais recopié : c'est la leçon de `BOX_KEYS`, où la
+ * constante et la regex avaient divergé et masqué 106 gabarits pendant toute
+ * une session. Ajouter une propriété ici suffit à la rendre lisible.
+ *
+ * Les noms MSE contiennent des espaces (`shadow displacement x`), d'où
+ * l'échappement du motif plutôt qu'une simple jonction.
+ */
+const FONT_PROPERTY_KEYS = {
+	name: 'name',
+	size: 'size',
+	color: 'color',
+	'shadow color': 'shadowColor',
+	'shadow displacement x': 'shadowDx',
+	'shadow displacement y': 'shadowDy',
+} as const satisfies Record<string, keyof RawFont>;
+
+const FONT_PROPERTY = new RegExp(
+	`^\\t\\t\\t(${Object.keys(FONT_PROPERTY_KEYS)
+		.map((key) => key.replaceAll(' ', '\\s'))
+		.join('|')})\\s*:\\s*(.+?)\\s*$`
+);
 
 /**
  * Motif des lignes d'ancre, DÉRIVÉ de `BOX_KEYS`.

@@ -140,6 +140,46 @@ The footer keeps `Arial` deliberately: MSE splits that line across fields the ex
 does not measure (`illustrator`, `copyright line`, `card number`), the same reason
 `FOOTER_BOTTOM_OFFSET` is derived. Lending it the title's font would be a borrow.
 
+### Colour and shadow: measured too
+
+The last field property that was still invented. The canvas painted **every** field of
+**every** frame in `DEFAULT_INK` (`#17140d`), and `frame_text_colors` was no better — it
+stores the _same_ `#17140d` for all 140 templates, so it is an ingestion constant, not a
+measurement.
+
+The corpus declares a colour per field on **132 of 140** templates, and they genuinely
+differ:
+
+```
+magic-m15          name/type/text  black
+magic-old          name/type       rgb(255,255,255) + shadow rgb(0,0,0) @ 1,1
+magic-extended-art text            rgb(255,255,255) + shadow rgb(0,0,0) @ -1,1
+```
+
+`magic-old` prints its card name **white on a dark shadow**; the studio painted it near
+black on a gold bar. That was wrong on a frame the library ships today, not only on the
+exotic ones.
+
+**Shadows are what make panel-less frames legible.** 37 templates declare one. MSE draws
+no textbox on a full-art frame — it writes light text with a hard drop shadow straight
+onto the artwork. Publishing the colour without the shadow would give white-on-light, so
+`resolveShadow` requires colour **and** both displacements together, or emits nothing.
+
+Rendered as a `drop-shadow()` filter rather than a duplicated `<text>`, so it follows the
+glyphs actually painted — including a title shrunk to fit, and rules lines that interleave
+mana-symbol `<image>` elements. The filter sits on the rules **group**, so text, flavour
+and symbols share one shadow, as MSE shadows the whole field. Displacements are in style
+units and go through the same `scale` as the boxes.
+
+Precedence is the same three-tier rule as the rest: **measured > ingested > constant**
+(`inkFor`). A colour that does not parse is rejected rather than passed through — an
+invalid CSS colour renders as browser-default black, which looks plausible while being
+wrong.
+
+`FONT_PROPERTY` is derived from `FONT_PROPERTY_KEYS`, for the reason the extractor README
+gives about `BOX_KEYS`: a hand-copied regex silently diverged once already and hid 106
+styles. Adding a font property means adding one entry.
+
 ### Placement: anchored, not offset
 
 Same story as the fonts, one layer down. The canvas positioned text with constants —

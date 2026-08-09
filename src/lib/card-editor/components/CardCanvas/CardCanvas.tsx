@@ -68,6 +68,39 @@ interface CardCanvasProps {
 const DEFAULT_INK = '#17140d';
 
 /**
+ * Encre d'un champ : la couleur MESURÉE d'abord, l'ingérée ensuite.
+ *
+ * `frame_text_colors` porte la MÊME valeur (`#17140d`) pour les 140 gabarits :
+ * c'est une constante d'ingestion, pas une mesure. Le corpus, lui, déclare une
+ * couleur par champ sur 132 d'entre eux, et elle diffère vraiment — `magic-old`
+ * écrit son titre en blanc, `magic-extended-art` son texte de règles en blanc
+ * sur ombre noire. Les peindre en sombre les rendait illisibles.
+ *
+ * L'ordre est donc « mesuré > ingéré > constante », la même hiérarchie que la
+ * géométrie et les polices.
+ */
+function inkFor(font: CardTextFont | undefined, ingested: string | undefined): string {
+	return font?.color ?? ingested ?? DEFAULT_INK;
+}
+
+/**
+ * Ombre portée d'un champ, au format `filter` SVG.
+ *
+ * MSE dessine le texte deux fois : l'ombre décalée, puis le texte. On utilise
+ * `drop-shadow` plutôt qu'un second <text>, pour que l'ombre suive exactement
+ * les glyphes RÉELLEMENT rendus — y compris quand le titre est rétréci pour
+ * tenir dans sa boîte, ou quand la ligne de règles intercale des symboles de
+ * mana en <image>.
+ *
+ * Le flou est nul : MSE pose une copie nette, pas un halo.
+ */
+function shadowFilter(font: CardTextFont | undefined): string | undefined {
+	const shadow = font?.shadow;
+	if (!shadow) return undefined;
+	return `drop-shadow(${shadow.dx}px ${shadow.dy}px 0 ${shadow.color})`;
+}
+
+/**
  * Cadrage du `<svg>` tant qu'aucun gabarit n'est résolu.
  *
  * Uniquement les dimensions : le rendu, lui, est vide (CardSvg sort tôt). Ce
@@ -312,6 +345,7 @@ function RulesText({
 	placeholder,
 	isNarrow,
 	textColor,
+	textShadow,
 	fontFamily,
 	textLeft,
 }: {
@@ -320,6 +354,11 @@ function RulesText({
 	placeholder: string;
 	isNarrow: boolean;
 	textColor: string;
+	/**
+	 * Ombre portée mesurée, en `filter` SVG. Les cadres sans panneau de règles
+	 * (`magic-extended-art`) écrivent en blanc ombré à même l'illustration.
+	 */
+	textShadow?: string;
 	/** Police mesurée du gabarit (MPlantin dans la quasi-totalité du corpus). */
 	fontFamily: string;
 	/** Bord gauche mesuré (marge intérieure du corpus), `rect.x + 24` en repli. */
@@ -353,7 +392,12 @@ function RulesText({
 	);
 	const flavorOffset = positionedLines.at(-1)?.offset ?? 0;
 	return (
-		<g opacity={oracle ? 1 : 0.48}>
+		/*
+		 * L'ombre est portée par le GROUPE et non ligne par ligne : elle couvre
+		 * ainsi le texte de règles, l'ambiance et les symboles de mana en <image>
+		 * d'un seul filtre, exactement comme MSE ombre le champ entier.
+		 */
+		<g opacity={oracle ? 1 : 0.48} filter={textShadow}>
 			{positionedLines.map(({ line, offset }, index) => (
 				<RulesLine
 					key={`${line.text}-${index}`}
@@ -764,7 +808,8 @@ function CardSvg({
 				// glyphes. Sans police mesurée, on garde le gras — la pile générique
 				// n'a pas de graisse propre.
 				fontWeight={geometry.fonts?.title ? undefined : '800'}
-				fill={mseTextColors?.title ?? DEFAULT_INK}
+				fill={inkFor(geometry.fonts?.title, mseTextColors?.title)}
+				filter={shadowFilter(geometry.fonts?.title)}
 				opacity={face.name ? 1 : 0.46}
 			>
 				{fittedTitle.text}
@@ -786,7 +831,8 @@ function CardSvg({
 				fontFamily={geometry.fonts?.typeLine?.family ?? GENERIC_SERIF}
 				fontSize={geometry.fonts?.typeLine?.size ?? 25}
 				fontWeight={geometry.fonts?.typeLine ? undefined : '800'}
-				fill={mseTextColors?.type ?? DEFAULT_INK}
+				fill={inkFor(geometry.fonts?.typeLine, mseTextColors?.type)}
+				filter={shadowFilter(geometry.fonts?.typeLine)}
 				opacity={face.typeLine ? 1 : 0.46}
 			>
 				{typeLine}
@@ -801,7 +847,8 @@ function CardSvg({
 				rect={geometry.rules}
 				placeholder={labels.rulesPlaceholder}
 				isNarrow={isNarrowRules}
-				textColor={mseTextColors?.rules ?? '#181512'}
+				textColor={inkFor(geometry.fonts?.rules, mseTextColors?.rules ?? '#181512')}
+				textShadow={shadowFilter(geometry.fonts?.rules)}
 				fontFamily={geometry.fonts?.rules?.family ?? GENERIC_SERIF}
 				textLeft={geometry.fonts?.rules?.left ?? geometry.rules.x + 24}
 			/>
@@ -810,8 +857,9 @@ function CardSvg({
 			 * PNG du gabarit, à l'emplacement que `geometry.stats` a mesuré — y
 			 * ajouter un rectangle le recouvrirait.
 			 *
-			 * Le corpus ne déclare pas de couleur propre à la P/T : on reprend celle
-			 * du titre, qui est l'encre sombre du gabarit.
+			 * La couleur vient du champ `pt` quand le style la déclare, et retombe
+			 * sur celle du titre sinon — le cas des gabarits sans police `pt`
+			 * mesurée (48 n'ont même pas de boîte `pt`).
 			 */}
 			{showStats && (
 				<g>
@@ -825,7 +873,8 @@ function CardSvg({
 						fontFamily={geometry.fonts?.stats?.family ?? GENERIC_SERIF}
 						fontSize={geometry.fonts?.stats?.size ?? 32}
 						fontWeight={geometry.fonts?.stats ? undefined : '800'}
-						fill={mseTextColors?.title ?? DEFAULT_INK}
+						fill={inkFor(geometry.fonts?.stats, mseTextColors?.title)}
+						filter={shadowFilter(geometry.fonts?.stats)}
 					>
 						{/* Une créature a TOUJOURS deux valeurs : renseigner la force sans
 						    l'endurance donne « 3 / 0 », pas « 3 / — ». Le tiret laissait

@@ -217,6 +217,22 @@ export interface CardTextFont {
 	baseline?: number;
 	/** Bord gauche du texte, marge intérieure déclarée comprise. */
 	left?: number;
+	/**
+	 * Couleur MESURÉE du champ, quand le style la déclare.
+	 *
+	 * Prioritaire sur `frame_text_colors`, qui porte la même constante
+	 * (`#17140d`) pour TOUS les gabarits et n'est donc pas une mesure :
+	 * `magic-old` écrit son titre en blanc, `magic-extended-art` son texte de
+	 * règles en blanc — les deux étaient peints en sombre.
+	 */
+	color?: string;
+	/**
+	 * Ombre portée, déjà mise à l'échelle du canvas.
+	 *
+	 * C'est elle qui rend le texte lisible sur les cadres sans panneau : MSE n'y
+	 * dessine aucune boîte, il pose du texte clair ombré sur l'illustration.
+	 */
+	shadow?: { color: string; dx: number; dy: number };
 }
 
 /**
