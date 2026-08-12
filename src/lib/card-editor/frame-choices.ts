@@ -303,9 +303,66 @@ function hasInvertedTypeLine(template: MseTemplate): boolean {
 }
 
 /**
+ * Cadres proposés par la bibliothèque, désignés UN PAR UN.
+ *
+ * Tous les autres critères de ce fichier sont techniques : ils décrivent ce que
+ * le canvas ne sait pas peindre juste (non mesuré, pleine illustration, barre de
+ * texte recouverte…). Aucun ne dit si un cadre est CLASSIQUE — et le corpus ne
+ * le déclare nulle part. Sans cette liste, les 27 cadres qui passaient les
+ * filtres techniques arrivaient donc tous au même rang : le cadre M15 de base
+ * voisinait avec `magic-new-pokemon`, `magic-sync` (Sci-Fi) et
+ * `magic-new-unset-gmorph`, qui sont des curiosités et non des cadres attendus.
+ *
+ * La liste se limite aux cadres de BASE de chaque époque d'impression. Un cadre
+ * authentique n'y suffit donc pas : les variantes d'une seule édition (4th, 10th,
+ * les timeshifts) en sont écartées comme les styles d'auteur.
+ *
+ * L'allowlist est donc un choix ÉDITORIAL, délibérément séparé de
+ * `UNSUPPORTED_TAGS` et des règles géométriques : ces dernières se lèveront
+ * quand le rendu progressera, celle-ci quand on décidera d'élargir le
+ * catalogue. Les confondre ferait qu'élargir la bibliothèque obligerait à
+ * rouvrir des cadres que le studio peint mal.
+ *
+ * Une liste EXPLICITE plutôt qu'un motif (préfixe d'id, rang de famille) : les
+ * variantes gardées et écartées partagent leurs préfixes (`magic-m15` est gardé,
+ * `magic-m15-jinx` non) et leur famille. Tout motif trierait donc à côté, et se
+ * mettrait silencieusement à rattraper de nouvelles variantes à chaque
+ * enrichissement du corpus. Ici, un cadre ajouté au corpus n'apparaît jamais
+ * sans décision.
+ *
+ * Un id absent du catalogue est sans effet — la liste est une intersection, pas
+ * une garantie de présence.
+ */
+const CURATED_FRAME_IDS = new Set([
+	// M15 — le cadre courant depuis 2014, et sa variante à boîte haute.
+	//
+	// `magic-m15-commander` a été retiré après examen de son image : malgré son
+	// nom et sa famille `m15 style`, il ne reproduit AUCUN cadre imprimé. Il ajoute
+	// au M15 un ruban dessiné par l'auteur du style ; les vraies cartes Commander
+	// utilisent le cadre M15 ordinaire, leur seule marque étant le tampon
+	// holographique ovale (module `stamps`, commun à tous les M15).
+	//
+	// Il illustre pourquoi cette liste est explicite : `frameOrigin` juge à la
+	// FAMILLE, donc un style d'auteur rangé sous `m15 style` passe pour officiel.
+	// Seule l'inspection de l'image le distingue — le nom du gabarit ne suffit pas.
+	'magic-m15', // défaut (cf. DEFAULT_FRAME_TEMPLATE_ID)
+	'magic-m15-bigtext', // même cadre, boîte de règles haute
+	// Les deux époques précédentes.
+	'magic-new', // 2003-2014
+	'magic-old', // 1993-2003
+	'magic-old-abu', // Alpha/Beta/Unlimited
+	//
+	// Écartés bien qu'authentiques : `magic-veryold` (4th Edition) et
+	// `magic-tenth` (10th Edition), variantes d'époque que `magic-old` et
+	// `magic-new` couvrent déjà à l'œil ; `magic-classicshifted` (Time Spiral) et
+	// `magic-planeshifted` (Planar Chaos), qui sont des cadres d'une seule
+	// édition. La bibliothèque s'en tient aux quatre cadres de base.
+]);
+
+/**
  * Ce gabarit est-il retiré de la bibliothèque ?
  *
- * Deux motifs DISTINCTS, gardés séparés parce qu'ils ne se lèveront pas en même
+ * Trois motifs DISTINCTS, gardés séparés parce qu'ils ne se lèveront pas en même
  * temps :
  *
  * 1. `UNSUPPORTED_TAGS` — le studio ne sait pas rendre ce cadre correctement.
@@ -313,6 +370,8 @@ function hasInvertedTypeLine(template: MseTemplate): boolean {
  * 2. Origine communautaire — le cadre se rendrait bien, mais la bibliothèque ne
  *    propose que les cadres reproduisant un cadre officiel Wizards. C'est un
  *    choix de contenu, pas une limite technique.
+ * 3. `CURATED_FRAME_IDS` — le cadre est officiel ET se rend bien, mais n'est pas
+ *    retenu (variante cosmétique, curiosité). Choix éditorial, cf. ci-dessus.
  *
  * Attention à la portée du 2e : `frameOrigin` n'est PAS déclaré par le corpus,
  * c'est la table écrite à la main dans `frame-facets.ts`. Un gabarit sans
@@ -327,6 +386,10 @@ function hasInvertedTypeLine(template: MseTemplate): boolean {
  * dans le sélecteur — donc impossible à retrouver après en avoir changé.
  */
 export function isUnsupportedFrame(template: MseTemplate): boolean {
+	// La curation d'abord : c'est le critère le plus restrictif, et le seul qui ne
+	// dépende d'aucune donnée du gabarit. Les règles suivantes restent en place
+	// derrière elle — elles redeviennent décisives dès que la liste s'élargit.
+	if (!CURATED_FRAME_IDS.has(template.id)) return true;
 	if (frameOrigin(template) === 'custom') return true;
 	if (UNSUPPORTED_TAGS.some((tag) => template.tags.includes(tag))) return true;
 	// Motifs GÉOMÉTRIQUES, à garder après les mots-clés : ils rattrapent les

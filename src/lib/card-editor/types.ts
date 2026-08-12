@@ -204,6 +204,14 @@ export interface CardTextFont {
 	family: string;
 	size: number;
 	/**
+	 * Hauteur de capitale, en fraction de la taille.
+	 *
+	 * Publiée avec la police pour permettre un centrage vertical sur la bande des
+	 * capitales — c'est ainsi qu'une carte imprimée cale son texte, cf.
+	 * `baselineFor`. Absente pour les polices dont le TTF n'est pas livré.
+	 */
+	capHeight?: number;
+	/**
 	 * Ligne de base ABSOLUE, en pixels du canvas.
 	 *
 	 * Calculée à partir de la boîte mesurée, de l'ancrage déclaré (top/middle/
@@ -269,6 +277,20 @@ export interface CardLayoutGeometry {
 	 * (`templateGeometry`) renseigne les polices, et c'est lui seul qui peint.
 	 */
 	fonts?: CardLayoutFonts;
+	/**
+	 * Bandeau PEINT de la ligne de type, déjà mis à l'échelle du canvas.
+	 *
+	 * Distinct de `typeLine`, qui est la boîte de FLUX du texte : MSE la rétrécit
+	 * de la largeur du symbole d'extension (`width: … - card_style.rarity.
+	 * content_width`) pour lui réserver la place. Le symbole se pose donc DANS le
+	 * bandeau mais À DROITE de la boîte — sur M15, boîte jusqu'à 298 u quand le
+	 * bandeau va jusqu'à 359 u, et le symbole d'une carte imprimée est centré à
+	 * ~350 u.
+	 *
+	 * Optionnel comme `fonts`, et pour la même raison : seul le chemin mesuré le
+	 * renseigne. Absent, le canvas garde son placement d'avant.
+	 */
+	typeBar?: { left: number; right: number };
 }
 
 export interface CardLayoutDefinition {

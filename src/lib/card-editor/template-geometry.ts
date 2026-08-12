@@ -79,11 +79,39 @@ export function templateGeometry(template: MseTemplate | undefined): CardGeometr
 		// connaît l'échelle, donc ici qu'on calcule la ligne de base. Le canvas
 		// n'a plus qu'à peindre — il posait auparavant `boîte.y + 36`, une
 		// constante calibrée sur M15 dont 125 des 136 cadres débordaient.
+		// Bandeau de la ligne de type, pour poser le symbole d'extension hors de la
+		// boîte de flux (cf. `CardLayoutGeometry.typeBar`).
+		...(source.bars?.type
+			? {
+					typeBar: {
+						left: source.bars.type.left * scale,
+						// Le symbole d'extension est centré SUR ce bord (mesuré à 349.6 u
+						// pour un bandeau finissant à 350 u sur une carte imprimée), donc
+						// on publie le bord tel quel et le canvas y pose le centre.
+						right: source.bars.type.right * scale,
+					},
+				}
+			: {}),
+		// Le bandeau mesuré est passé avec la boîte : c'est lui qui porte le
+		// centrage vertical quand il existe (cf. `baselineFor`). `text` n'en a
+		// jamais — son contenu s'écoule sur plusieurs lignes depuis le haut.
 		fonts: {
-			title: toCardTextFont(source.fonts?.name, scale, boxes.name, source.layout?.name),
-			typeLine: toCardTextFont(source.fonts?.type, scale, boxes.type, source.layout?.type),
+			title: toCardTextFont(
+				source.fonts?.name,
+				scale,
+				boxes.name,
+				source.layout?.name,
+				source.bars?.name
+			),
+			typeLine: toCardTextFont(
+				source.fonts?.type,
+				scale,
+				boxes.type,
+				source.layout?.type,
+				source.bars?.type
+			),
 			rules: toCardTextFont(source.fonts?.text, scale, boxes.text, source.layout?.text),
-			stats: toCardTextFont(source.fonts?.pt, scale, boxes.pt, source.layout?.pt),
+			stats: toCardTextFont(source.fonts?.pt, scale, boxes.pt, source.layout?.pt, source.bars?.pt),
 		},
 	};
 }

@@ -117,6 +117,87 @@ export function fontRatios(mseName: string): { ascent: number; descent: number }
 	}
 }
 
+/**
+ * Chaîne de référence pour mesurer l'ENCRE d'une police.
+ *
+ * Volontairement FIXE et indépendante de la carte : mesurer l'encre du texte
+ * réel ferait bouger la ligne de type selon les caractères présents — la même
+ * carte en français et en anglais ne s'aligneraient plus.
+ *
+ * `Hb` = capitale + hampe de bas-de-casse, soit la hauteur d'ASCENDANTE. C'est
+ * la mesure vérifiée sur le corpus : elle rend exactement la même valeur que les
+ * lignes de type réelles, française comme anglaise (Beleren 0.7402, Matrix
+ * 0.6330, MPlantin 0.6990 dans les trois cas).
+ *
+ * Les capitales ACCENTUÉES en sont délibérément exclues : `É` monte bien plus
+ * haut (Beleren 0.9268 contre 0.7402) mais MSE ne descend pas la ligne pour
+ * autant — l'accent déborde vers le haut, comme sur les cartes imprimées. La
+ * faire entrer dans la référence enfoncerait toutes les lignes de type de
+ * ~2.5 unités, soit le défaut inverse de celui qu'on corrige.
+ */
+const INK_REFERENCE = 'Hb';
+
+/** Glyphes descendants, pour le bas de l'encre (`INK_REFERENCE` n'en a aucun). */
+const DESCENDER_REFERENCE = 'gpqy';
+
+/**
+ * Ascendante et descendante de l'ENCRE, en fraction de la taille.
+ *
+ * Distinctes de `fontRatios`, et c'est tout l'objet de cette fonction : `hhea`
+ * décrit la LIGNE (accents et interligne interne compris), l'encre décrit les
+ * GLYPHES. MSE aligne ses champs `alignment: top` sur l'encre, pas sur la ligne.
+ *
+ * L'écart n'est pas anecdotique et varie par police (mesuré sur les TTF du
+ * corpus) : Beleren Bold réserve 0.196 em d'interligne au-dessus de son encre,
+ * MPlantin 0.075, Matrix zéro. Aucune constante ne peut donc corriger les trois,
+ * ce qui est la raison même de lire le TTF ici plutôt que d'ajuster au canvas.
+ *
+ * Repère : `getPath` dessine à la ligne de base en coordonnées écran (y vers le
+ * BAS), donc l'encre au-dessus de la ligne de base a un y négatif — d'où le
+ * signe sur `y1`.
+ *
+ * Rend `undefined` pour une police non livrée, comme `fontRatios` : l'appelant
+ * omet la métrique plutôt que d'en inventer une.
+ */
+/**
+ * Hauteur de CAPITALE, en fraction de la taille.
+ *
+ * C'est la bande que l'œil lit comme « le texte » : sur une carte imprimée, le
+ * nom et la ligne de type sont centrés sur elle, la descendante étant laissée
+ * libre de pendre en dessous. Centrer le bloc complet (ascendante + descendante)
+ * réserve au contraire une place vide sous les mots qui n'ont pas de jambage —
+ * « Ekthi, Contaminator Priest » n'en a aucun — et remonte visiblement le texte.
+ *
+ * Mesurée sur le `H`, présent dans toutes les polices du corpus, plutôt que lue
+ * dans `OS/2.sCapHeight` : Matrix et MPlantin ne renseignent pas ce champ.
+ */
+export function capRatio(mseName: string): number | undefined {
+	try {
+		const font = loadFont(resolveFontFile(mseName));
+		const box = font.getPath('H', 0, 0, 100).getBoundingBox();
+		if (!Number.isFinite(box.y1)) return undefined;
+		return -box.y1 / 100;
+	} catch {
+		return undefined;
+	}
+}
+
+export function inkRatios(mseName: string): { ascent: number; descent: number } | undefined {
+	try {
+		const font = loadFont(resolveFontFile(mseName));
+		// Taille de mesure arbitraire : les ratios rendus sont sans dimension, elle
+		// s'annule à la division. 100 garde simplement la lecture facile en debug.
+		const size = 100;
+		const ascentBox = font.getPath(INK_REFERENCE, 0, 0, size).getBoundingBox();
+		// La descendante se mesure sur ses propres glyphes : `Hb` n'en a aucun.
+		const descentBox = font.getPath(DESCENDER_REFERENCE, 0, 0, size).getBoundingBox();
+		if (!Number.isFinite(ascentBox.y1) || !Number.isFinite(descentBox.y2)) return undefined;
+		return { ascent: -ascentBox.y1 / size, descent: descentBox.y2 / size };
+	} catch {
+		return undefined;
+	}
+}
+
 /** Largeur du texte rendu avec la police MSE nommée `mseFontName`, à la taille `size`. */
 export function textWidth(mseFontName: string, size: number, text: string): number {
 	const font = loadFont(resolveFontFile(mseFontName));

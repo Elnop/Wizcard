@@ -1138,6 +1138,17 @@
 			"saving": "Rendu et sauvegarde de votre carte…",
 			"saved": "Carte sauvegardée. Ouverture en cours…",
 			"saveError": "Impossible de sauvegarder la carte. Votre brouillon local n'est pas perdu."
+		},
+		"quality": {
+			"label": "Qualité",
+			"previewLabel": "Qualité de l'aperçu",
+			"exportLabel": "Qualité de l'export",
+			"preview": "Rapide",
+			"hq": "Haute",
+			"source": "Maximale",
+			"previewHint": "Aperçu fluide, adapté à la taille actuelle",
+			"hqHint": "Plus net si l’aperçu est agrandi",
+			"sourceHint": "Résolution native des cadres, pour l’impression"
 		}
 	}
 }

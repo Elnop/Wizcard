@@ -190,3 +190,22 @@
 		margin: 0;
 	}
 }
+
+/* Rangée des paliers de qualité.
+   `grid-column: 1 / -1` : elle traverse les trois colonnes de la barre, sinon
+   elle irait se loger dans la première et se ferait écraser comme les boutons
+   d'action l'ont été. */
+.qualityRow {
+	display: flex;
+	grid-column: 1 / -1;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: flex-end;
+	gap: 1rem;
+	padding-top: 0.5rem;
+	border-top: 1px solid var(--border);
+}
+
+.qualityRow > * {
+	min-width: 190px;
+}

@@ -28,6 +28,16 @@ async function inlineSvgImages(svg: SVGSVGElement): Promise<void> {
 	);
 }
 
+/**
+ * Rend la carte en PNG.
+ *
+ * `scale` multiplie le viewBox du canvas (~745 px de large) pour donner la
+ * largeur finale. Il vient du palier choisi (cf. `QUALITY_EXPORT_SCALE`) plutôt
+ * que d'une constante : tirer à 2.7x sur un cadre servi en 750 px n'apporterait
+ * rien qu'un agrandissement flou, et rester à 1x sur un cadre 2010 px
+ * gâcherait la résolution qu'on vient d'aller chercher. Les deux doivent donc
+ * bouger ensemble.
+ */
 export async function renderCardPng(svg: SVGSVGElement, scale = 3): Promise<Blob> {
 	await document.fonts.ready;
 	const viewBox = svg.viewBox.baseVal;

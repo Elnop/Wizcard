@@ -7,11 +7,18 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { CardCanvas } from '@/lib/card-editor/components/CardCanvas/CardCanvas';
 import { saveCustomCard } from '@/lib/card-editor/db/custom-card-editor';
 import { buildCardFileName, downloadBlob, renderCardPng } from '@/lib/card-editor/export';
+import {
+	DEFAULT_EXPORT_QUALITY,
+	DEFAULT_PREVIEW_QUALITY,
+	QUALITY_EXPORT_SCALE,
+	type CardQuality,
+} from '@/lib/card-editor/quality';
 import { measureArtwork, prepareArtwork } from '@/lib/card-editor/image';
 import {
 	resolveMseBlend,
 	resolveMseCrownPath,
 	resolveMseFramePath,
+	resolveMsePtPath,
 	resolveMseTextColors,
 	useMseTemplateCatalog,
 	useSelectedMseTemplate,
@@ -101,6 +108,10 @@ export function CardEditorStudio() {
 	const [validationErrors, setValidationErrors] = useState<string[]>([]);
 	const [notice, setNotice] = useState<Notice>(null);
 	const [isSaving, setIsSaving] = useState(false);
+	// Deux paliers SÉPARÉS : l'aperçu privilégie la fluidité, l'export la
+	// résolution. Les lier obligerait à dégrader l'un pour servir l'autre.
+	const [previewQuality, setPreviewQuality] = useState<CardQuality>(DEFAULT_PREVIEW_QUALITY);
+	const [exportQuality, setExportQuality] = useState<CardQuality>(DEFAULT_EXPORT_QUALITY);
 	const activeSvg = useRef<SVGSVGElement>(null);
 	const frontSvg = useRef<SVGSVGElement>(null);
 	const backSvg = useRef<SVGSVGElement>(null);
@@ -231,7 +242,7 @@ export function CardEditorStudio() {
 	async function handleExport() {
 		if (!activeSvg.current) return;
 		try {
-			const blob = await renderCardPng(activeSvg.current);
+			const blob = await renderCardPng(activeSvg.current, QUALITY_EXPORT_SCALE[exportQuality]);
 			downloadBlob(blob, buildCardFileName(editor.activeFace.name, editor.draft.activeFace));
 			setNotice({ type: 'success', message: t('notices.exported') });
 		} catch {
@@ -393,6 +404,10 @@ export function CardEditorStudio() {
 					onReset={handleReset}
 					onExport={() => void handleExport()}
 					onSave={() => void handleSave()}
+					previewQuality={previewQuality}
+					exportQuality={exportQuality}
+					onPreviewQualityChange={setPreviewQuality}
+					onExportQualityChange={setExportQuality}
 				/>
 
 				{notice && (
@@ -415,13 +430,19 @@ export function CardEditorStudio() {
 						ref={activeSvg}
 						{...canvasProps}
 						face={editor.activeFace}
-						mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.activeFace)}
-						mseBlend={resolveMseBlend(selectedMseTemplate, editor.activeFace)}
+						mseFramePath={resolveMseFramePath(
+							selectedMseTemplate,
+							editor.activeFace,
+							previewQuality
+						)}
+						mseBlend={resolveMseBlend(selectedMseTemplate, editor.activeFace, previewQuality)}
 						mseCrownPath={resolveMseCrownPath(
 							selectedMseTemplate,
 							editor.activeFace,
-							isLegendary(editor.activeFace)
+							isLegendary(editor.activeFace),
+							previewQuality
 						)}
+						msePtPath={resolveMsePtPath(selectedMseTemplate, editor.activeFace, previewQuality)}
 						mseTextColors={resolveMseTextColors(selectedMseTemplate, editor.activeFace)}
 						mseTemplate={selectedMseTemplate}
 						onFieldChange={handleFieldChange}
@@ -435,13 +456,19 @@ export function CardEditorStudio() {
 					ref={frontSvg}
 					{...canvasProps}
 					face={editor.draft.faces[0]}
-					mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.draft.faces[0])}
-					mseBlend={resolveMseBlend(selectedMseTemplate, editor.draft.faces[0])}
+					mseFramePath={resolveMseFramePath(
+						selectedMseTemplate,
+						editor.draft.faces[0],
+						exportQuality
+					)}
+					mseBlend={resolveMseBlend(selectedMseTemplate, editor.draft.faces[0], exportQuality)}
 					mseCrownPath={resolveMseCrownPath(
 						selectedMseTemplate,
 						editor.draft.faces[0],
-						isLegendary(editor.draft.faces[0])
+						isLegendary(editor.draft.faces[0]),
+						exportQuality
 					)}
+					msePtPath={resolveMsePtPath(selectedMseTemplate, editor.draft.faces[0], exportQuality)}
 					mseTextColors={resolveMseTextColors(selectedMseTemplate, editor.draft.faces[0])}
 					mseTemplate={selectedMseTemplate}
 					onFieldChange={() => undefined}
@@ -453,13 +480,19 @@ export function CardEditorStudio() {
 						ref={backSvg}
 						{...canvasProps}
 						face={editor.draft.faces[1]}
-						mseFramePath={resolveMseFramePath(selectedMseTemplate, editor.draft.faces[1])}
-						mseBlend={resolveMseBlend(selectedMseTemplate, editor.draft.faces[1])}
+						mseFramePath={resolveMseFramePath(
+							selectedMseTemplate,
+							editor.draft.faces[1],
+							exportQuality
+						)}
+						mseBlend={resolveMseBlend(selectedMseTemplate, editor.draft.faces[1], exportQuality)}
 						mseCrownPath={resolveMseCrownPath(
 							selectedMseTemplate,
 							editor.draft.faces[1],
-							isLegendary(editor.draft.faces[1])
+							isLegendary(editor.draft.faces[1]),
+							exportQuality
 						)}
+						msePtPath={resolveMsePtPath(selectedMseTemplate, editor.draft.faces[1], exportQuality)}
 						mseTextColors={resolveMseTextColors(selectedMseTemplate, editor.draft.faces[1])}
 						mseTemplate={selectedMseTemplate}
 						onFieldChange={() => undefined}

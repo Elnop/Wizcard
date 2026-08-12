@@ -7,6 +7,7 @@ import {
 	type CardTemplateRow,
 	type TemplateGeometryRow,
 } from '@/lib/supabase/queries/card-templates';
+import type { CardQuality } from './quality';
 import type { CardFaceDraft, CardLayoutId, FrameStyleId } from './types';
 import { getManaSymbols } from './text-layout';
 import { isLandTypeLine } from './type-line';
@@ -41,6 +42,14 @@ export interface MseTemplate {
 	framePaths: Partial<Record<MseFrameKey, string>>;
 	/** Couronnes légendaires par clé de couleur ; null = gabarit incompatible. */
 	crownPaths: Partial<Record<MseFrameKey, string>> | null;
+	/**
+	 * Panneaux force/endurance servis à part du cadre ; null = le cadre l'intègre.
+	 *
+	 * Les gabarits MSE peignent ce panneau dans leur image de cadre, donc le
+	 * canvas n'a que le TEXTE à poser. Les cadres CardConjurer le livrent en
+	 * asset séparé : sans lui, la force/endurance s'écrit sur le vide.
+	 */
+	ptPaths: Partial<Record<MseFrameKey, string>> | null;
 	/**
 	 * Masques de fondu bicolore ; null = ce gabarit n'en fournit pas.
 	 *
@@ -80,8 +89,35 @@ interface MseCatalogState {
  * client les résout en URL CDN. Retourne null quand le chemin est absent, ce
  * qui laisse l'appelant retomber sur son fallback (sample, puis rien).
  */
-export function cardAssetUrl(path: string | null | undefined): string | null {
-	return cardTemplateAssetUrl(path);
+export function cardAssetUrl(
+	path: string | null | undefined,
+	quality?: CardQuality
+): string | null {
+	return cardTemplateAssetUrl(qualityVariantPath(path, quality));
+}
+
+/**
+ * Chemin du même asset au palier demandé.
+ *
+ * Les variantes CardConjurer vivent sous `cc/<palier>/…`, une par palier, donc
+ * changer de qualité revient à changer un segment du chemin. C'est fait ICI
+ * plutôt qu'à chaque appel parce que toutes les URLs de cadre passent par
+ * `cardAssetUrl` : un seul point à traverser, donc aucun appelant ne peut
+ * oublier le palier.
+ *
+ * Un chemin qui ne commence pas par `cc/` est rendu TEL QUEL : les assets MSE
+ * n'existent qu'en une seule résolution, et leur inventer un palier produirait
+ * une URL morte. Les deux jeux cohabitent ainsi pendant la migration.
+ *
+ * `source` ne rend pas un WebP mais le PNG d'origine, sous `cc/source/…` : c'est
+ * l'export imprimable, qui ne doit pas partir d'une image déjà compressée.
+ */
+function qualityVariantPath(
+	path: string | null | undefined,
+	quality: CardQuality | undefined
+): string | null | undefined {
+	if (!path || !quality || !path.startsWith('cc/')) return path;
+	return path.replace(/^cc\/[^/]+\//, `cc/${quality}/`);
 }
 
 /** Ligne DB -> modèle du studio. Les colonnes texte libres sont contraintes par
@@ -107,6 +143,7 @@ function rowToTemplate(row: CardTemplateRow): MseTemplate {
 		assetCount: 0,
 		framePaths: (row.frame_paths ?? {}) as Partial<Record<MseFrameKey, string>>,
 		crownPaths: (row.crown_paths ?? null) as Partial<Record<MseFrameKey, string>> | null,
+		ptPaths: (row.pt_paths ?? null) as Partial<Record<MseFrameKey, string>> | null,
 		blendMasks: (row.blend_masks ?? null) as Record<string, string> | null,
 		frameTextColors: (row.frame_text_colors ?? {}) as Partial<Record<MseFrameKey, MseTextColors>>,
 		sampleTextColors: (row.sample_text_colors ?? null) as MseTextColors | null,
@@ -257,17 +294,18 @@ function frameDegradationChain(frame: MseFrameKey): MseFrameKey[] {
  */
 export function resolveMseFramePath(
 	template: MseTemplate | undefined,
-	face: CardFaceDraft
+	face: CardFaceDraft,
+	quality?: CardQuality
 ): string | null {
 	if (!template) return null;
 	const frame = resolveFrameStyle(face);
 	const direct = template.framePaths[frame];
-	if (direct) return cardAssetUrl(direct);
+	if (direct) return cardAssetUrl(direct, quality);
 	for (const candidate of frameDegradationChain(frame)) {
 		const degraded = template.framePaths[candidate];
-		if (degraded) return cardAssetUrl(degraded);
+		if (degraded) return cardAssetUrl(degraded, quality);
 	}
-	return cardAssetUrl(Object.values(template.framePaths)[0]);
+	return cardAssetUrl(Object.values(template.framePaths)[0], quality);
 }
 
 /**
@@ -297,6 +335,18 @@ export function resolveMseFramePath(
  */
 export function frameCarriesOwnArtWindow(path: string | null): boolean {
 	if (!path) return false;
+	// Les cadres CardConjurer portent TOUS leur fenêtre, quel que soit le format
+	// dans lequel on les sert. Mesuré sur `m15FrameW` : 37.3 % de pixels
+	// totalement transparents, alpha 0 au centre de la fenêtre d'illustration et
+	// 255 sur la bordure. Le test d'extension ci-dessous les manquait, puisque nos
+	// variantes d'aperçu sont en WebP — la découpe géométrique s'appliquait alors
+	// à un cadre qui a déjà sa fenêtre, et effaçait sa bordure noire (carte au
+	// contour blanc, couronne détachée).
+	//
+	// On cherche le segment DANS l'URL et non en préfixe : l'appelant passe
+	// l'URL CDN complète (`http://…/card-templates/cc/preview/…`), pas le chemin
+	// relatif stocké en base.
+	if (path.includes('/cc/')) return true;
 	return path.split('?')[0].toLowerCase().endsWith('.png');
 }
 
@@ -316,7 +366,8 @@ export function frameCarriesOwnArtWindow(path: string | null): boolean {
  */
 export function resolveMseBlend(
 	template: MseTemplate | undefined,
-	face: CardFaceDraft
+	face: CardFaceDraft,
+	quality?: CardQuality
 ): { base: string; overlay: string; mask: string; plate: string } | null {
 	if (!template?.blendMasks) return null;
 	if (face.frameStyle !== 'auto') return null;
@@ -350,10 +401,10 @@ export function resolveMseBlend(
 	if (!plateKey) return null;
 	const platePath = template.framePaths[plateKey];
 	if (!platePath) return null;
-	const base = cardAssetUrl(first);
-	const overlay = cardAssetUrl(second);
-	const mask = cardAssetUrl(maskPath);
-	const plate = cardAssetUrl(platePath);
+	const base = cardAssetUrl(first, quality);
+	const overlay = cardAssetUrl(second, quality);
+	const mask = cardAssetUrl(maskPath, quality);
+	const plate = cardAssetUrl(platePath, quality);
 	if (!base || !overlay || !mask || !plate) return null;
 	return { base, overlay, mask, plate };
 }
@@ -400,16 +451,44 @@ export function resolveMseBlend(
 export function resolveMseCrownPath(
 	template: MseTemplate | undefined,
 	face: CardFaceDraft,
-	isLegendary: boolean
+	isLegendary: boolean,
+	quality?: CardQuality
 ): string | null {
 	if (!isLegendary) return null;
 	if (!template?.crownPaths) return null;
 	const frame = resolveFrameStyle(face);
 	const direct = template.crownPaths[frame];
-	if (direct) return cardAssetUrl(direct);
+	if (direct) return cardAssetUrl(direct, quality);
 	for (const candidate of frameDegradationChain(frame)) {
 		const degraded = template.crownPaths[candidate];
-		if (degraded) return cardAssetUrl(degraded);
+		if (degraded) return cardAssetUrl(degraded, quality);
+	}
+	return null;
+}
+
+/**
+ * Panneau force/endurance à peindre, ou `null`.
+ *
+ * `null` couvre DEUX cas qui n'ont pas la même cause mais le même effet :
+ * le gabarit intègre son panneau dans l'image du cadre (tous les MSE), ou la
+ * carte n'a pas de force/endurance à afficher. Dans les deux cas le canvas n'a
+ * rien à peindre en plus, et c'est l'appelant qui sait s'il y a des stats.
+ *
+ * Même chaîne de dégradation que le cadre : une couleur absente retombe sur la
+ * plus proche plutôt que de laisser le texte sur le vide.
+ */
+export function resolveMsePtPath(
+	template: MseTemplate | undefined,
+	face: CardFaceDraft,
+	quality?: CardQuality
+): string | null {
+	if (!template?.ptPaths) return null;
+	const frame = resolveFrameStyle(face);
+	const direct = template.ptPaths[frame];
+	if (direct) return cardAssetUrl(direct, quality);
+	for (const candidate of frameDegradationChain(frame)) {
+		const degraded = template.ptPaths[candidate];
+		if (degraded) return cardAssetUrl(degraded, quality);
 	}
 	return null;
 }

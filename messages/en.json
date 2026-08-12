@@ -1138,6 +1138,17 @@
 			"saving": "Rendering and saving your card…",
 			"saved": "Card saved. Opening it now…",
 			"saveError": "The card could not be saved. Your local draft has not been lost."
+		},
+		"quality": {
+			"label": "Quality",
+			"previewLabel": "Preview quality",
+			"exportLabel": "Export quality",
+			"preview": "Fast",
+			"hq": "High",
+			"source": "Maximum",
+			"previewHint": "Smooth preview, matches the current size",
+			"hqHint": "Sharper when the preview is enlarged",
+			"sourceHint": "Native frame resolution, for printing"
 		}
 	}
 }

@@ -85,6 +85,48 @@ export function getRulesCapacity(width: number, height: number): RulesCapacity {
 	return { charactersPerLine, lines, total: charactersPerLine * lines };
 }
 
+/**
+ * Corps du texte de règles : le corps MESURÉ, rétréci juste ce qu'il faut pour
+ * que le texte tienne dans sa boîte.
+ *
+ * C'est la règle du corpus, pas une invention : le champ `text` déclare à la
+ * fois `size: 14` et `scale down to: 6` — un corps plein ET un plancher de
+ * rétrécissement. Une carte au texte court s'imprime donc à 14, une carte
+ * bavarde descend, exactement comme ici.
+ *
+ * L'estimation du nombre de lignes reprend celle du rendu (cf. `RulesText`) :
+ * largeur utile ÷ largeur moyenne d'un glyphe, puis hauteur ÷ interligne. Elle
+ * est approximative — le rendu réel fait un vrai retour à la ligne par mot —
+ * mais elle sert seulement à choisir un corps, et l'erreur va dans le sens sûr
+ * (on sous-estime la capacité, donc on rétrécit un peu trop tôt plutôt que de
+ * déborder).
+ */
+export function fitRulesFontSize(
+	measuredSize: number,
+	characterCount: number,
+	rect: { width: number; height: number },
+	isNarrow: boolean
+): number {
+	const floor = measuredSize * RULES_SCALE_DOWN_FLOOR;
+	const usableWidth = rect.width - (isNarrow ? 28 : 44);
+	for (let size = measuredSize; size > floor; size -= 0.5) {
+		const perLine = Math.max(15, Math.floor(usableWidth / (size * 0.53)));
+		const lines = Math.max(1, Math.floor((rect.height - 46) / (size * 1.28)));
+		if (Math.ceil(characterCount / perLine) <= lines) return size;
+	}
+	return floor;
+}
+
+/**
+ * Plancher de rétrécissement, en fraction du corps déclaré.
+ *
+ * Le corpus écrit `scale down to: 6` pour un `size: 14`, soit 0.43. La valeur
+ * est reprise telle quelle plutôt que codée en absolu : les gabarits déclarent
+ * des corps différents (6.93 à 32), et un plancher absolu de 6 serait déjà
+ * au-dessus du corps plein des plus petits.
+ */
+const RULES_SCALE_DOWN_FLOOR = 6 / 14;
+
 export function getRulesFontSize(characterCount: number, isNarrow: boolean): number {
 	if (isNarrow) {
 		if (characterCount > 520) return 17;
@@ -189,14 +231,19 @@ export interface FittedTitle {
  *  2. si ça ne suffit toujours pas, couper net (pas d'ellipse : une carte
  *     imprimée n'en met pas).
  */
-export function fitTitle(title: string, availableWidth: number): FittedTitle {
-	if (!title) return { text: title, fontSize: TITLE_MAX_FONT_SIZE };
+export function fitTitle(title: string, availableWidth: number, maxFontSize?: number): FittedTitle {
+	// Corps plein = celui MESURÉ dans le corpus quand on l'a. `TITLE_MAX_FONT_SIZE`
+	// n'est qu'un repli pour les gabarits sans police mesurée : c'était une
+	// constante calibrée sur M15, qui ignorait le corps déclaré par le style et
+	// annulait au passage le facteur d'échelle des polices.
+	const ceiling = maxFontSize ?? TITLE_MAX_FONT_SIZE;
+	if (!title) return { text: title, fontSize: ceiling };
 
 	// Largeur à corps 1 : la largeur à n'importe quel corps s'en déduit par
 	// produit, ce qui donne le corps idéal sans boucler.
 	const unitWidth = measureTitle(title, 1);
-	if (unitWidth * TITLE_MAX_FONT_SIZE <= availableWidth) {
-		return { text: title, fontSize: TITLE_MAX_FONT_SIZE };
+	if (unitWidth * ceiling <= availableWidth) {
+		return { text: title, fontSize: ceiling };
 	}
 
 	const ideal = Math.floor(availableWidth / unitWidth);

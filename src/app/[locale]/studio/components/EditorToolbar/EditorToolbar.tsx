@@ -10,6 +10,8 @@ import {
 } from '@phosphor-icons/react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/Button/Button';
+import type { CardQuality } from '@/lib/card-editor/quality';
+import { QualitySelect } from '../QualitySelect/QualitySelect';
 import styles from './EditorToolbar.module.css';
 
 interface EditorToolbarProps {
@@ -28,6 +30,10 @@ interface EditorToolbarProps {
 	onReset: () => void;
 	onExport: () => void;
 	onSave: () => void;
+	previewQuality: CardQuality;
+	exportQuality: CardQuality;
+	onPreviewQualityChange: (quality: CardQuality) => void;
+	onExportQualityChange: (quality: CardQuality) => void;
 }
 
 export function EditorToolbar({
@@ -46,8 +52,13 @@ export function EditorToolbar({
 	onReset,
 	onExport,
 	onSave,
+	previewQuality,
+	exportQuality,
+	onPreviewQualityChange,
+	onExportQualityChange,
 }: EditorToolbarProps) {
 	const t = useTranslations('cardEditor.toolbar');
+	const tQuality = useTranslations('cardEditor.quality');
 	return (
 		<header className={styles.toolbar}>
 			<div className={styles.brandBlock}>
@@ -126,6 +137,30 @@ export function EditorToolbar({
 					<FloppyDisk size={18} />
 					{t('save')}
 				</Button>
+			</div>
+
+			{/*
+			 * Rangée PROPRE pour les paliers, et non dans `.actions` : la grille du
+			 * haut a trois colonnes déjà pleines, et y glisser deux champs les
+			 * écrasait à 21 px de large avec des libellés empilés.
+			 *
+			 * Deux sélecteurs plutôt qu'un : l'aperçu se redessine à chaque frappe
+			 * et privilégie la fluidité, l'export est ponctuel et privilégie la
+			 * résolution. Un réglage commun forcerait à dégrader l'un pour l'autre.
+			 */}
+			<div className={styles.qualityRow}>
+				<QualitySelect
+					id="preview-quality"
+					value={previewQuality}
+					onChange={onPreviewQualityChange}
+					label={tQuality('previewLabel')}
+				/>
+				<QualitySelect
+					id="export-quality"
+					value={exportQuality}
+					onChange={onExportQualityChange}
+					label={tQuality('exportLabel')}
+				/>
 			</div>
 		</header>
 	);

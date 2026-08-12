@@ -8,11 +8,18 @@ import {
 	type MseTemplate,
 	type MseTextColors,
 } from '@/lib/card-editor/mse-assets';
+import {
+	CC_CROWN_BOUNDS,
+	CC_PT_BOUNDS,
+	CC_PT_PANEL_INSET,
+	CC_PT_TEXT,
+} from '@/lib/card-editor/quality';
 import { templateGeometry } from '@/lib/card-editor/template-geometry';
 import {
 	expandCardNameShortcut,
 	fitTitle,
 	getManaSymbols,
+	fitRulesFontSize,
 	getRulesFontSize,
 	manaSymbolProxyUrl,
 	measureText,
@@ -26,6 +33,7 @@ import {
 	type CardCanvasLabels,
 	type CardFaceDraft,
 	type CardFinish,
+	type CardLayoutGeometry,
 	type CardLayoutId,
 	type CardRarity,
 	type CardRect,
@@ -46,6 +54,8 @@ interface CardCanvasProps {
 	mseFramePath?: string | null;
 	mseBlend?: { base: string; overlay: string; mask: string; plate: string } | null;
 	mseCrownPath?: string | null;
+	/** Panneau P/T servi à part du cadre ; absent = le cadre l'intègre déjà. */
+	msePtPath?: string | null;
 	mseTextColors?: MseTextColors | null;
 	mseTemplate?: MseTemplate;
 	labels: CardCanvasLabels;
@@ -133,6 +143,83 @@ function textPosition(
 	};
 }
 
+/**
+ * Emprise de la couronne légendaire.
+ *
+ * Les deux corpus ne la livrent pas sous la même forme :
+ *
+ * - MSE : une image PLEINE CARTE, contenu déjà en place dans un fond
+ *   transparent. Elle se peint donc en 0,0 → largeur, hauteur.
+ * - CardConjurer : un BANDEAU seul (750x185 au palier d'aperçu, contre 750x1050
+ *   pour un cadre), accompagné de sa position déclarée. Le peindre en pleine
+ *   carte l'étirait sur toute la hauteur et noyait la carte sous du blanc.
+ *
+ * On distingue par la PROVENANCE du chemin et non par le rapport de l'image :
+ * lire les dimensions demanderait de décoder l'asset au rendu, alors que le
+ * préfixe suffit et ne peut pas se tromper.
+ */
+function crownRect(
+	crownPath: string,
+	geometry: CardLayoutGeometry
+): { x: number; y: number; width: number; height: number } {
+	if (!crownPath.includes('/cc/')) {
+		return { x: 0, y: 0, width: geometry.width, height: geometry.height };
+	}
+	return {
+		x: CC_CROWN_BOUNDS.x * geometry.width,
+		y: CC_CROWN_BOUNDS.y * geometry.height,
+		width: CC_CROWN_BOUNDS.width * geometry.width,
+		height: CC_CROWN_BOUNDS.height * geometry.height,
+	};
+}
+
+/**
+ * Centre horizontal du texte force/endurance.
+ *
+ * Le texte se centre sur ce qui est PEINT sous lui. Pour un gabarit MSE, le
+ * panneau est dans l'image du cadre et la boîte `pt` mesurée le décrit fidèlement.
+ * Pour un gabarit CardConjurer, le panneau est un sprite posé selon
+ * `CC_PT_BOUNDS`, dont le centre diffère de la boîte mesurée (319.2 u contre
+ * 316 u) — s'en tenir à la boîte décalait le texte vers la gauche du panneau.
+ */
+function statsCenter(ptPath: string | null | undefined, geometry: CardLayoutGeometry): number {
+	if (ptPath?.includes('/cc/')) {
+		return (CC_PT_TEXT.x + CC_PT_TEXT.width / 2) * geometry.width;
+	}
+	return geometry.stats.x + geometry.stats.width / 2;
+}
+
+/**
+ * Ligne de base du texte force/endurance, et corps associé.
+ *
+ * Pour un gabarit CardConjurer, les deux viennent de la zone de texte DÉCLARÉE
+ * (`CC_PT_TEXT`) et non du corpus MSE : la boîte `pt` mesurée décrit le panneau
+ * du cadre MSE, pas l'endroit où CardConjurer écrit.
+ *
+ * La ligne de base reprend la formule du moteur (`js/creator-23.js`), qui pose
+ * chaque ligne à `textY + textSize × textFontHeightRatio` avec un ratio fixé à
+ * 0.7 — c'est le HAUT de la zone qui sert d'origine, pas son centre. Centrer sur
+ * le milieu de la zone descendait le texte de 3 unités de style.
+ *
+ * La taille est déjà en unités de carte : elle ne passe PAS par le facteur dpi
+ * appliqué aux polices MSE, qui corrige une convention propre à MSE.
+ */
+function statsFont(
+	ptPath: string | null | undefined,
+	geometry: CardLayoutGeometry,
+	capHeight: number
+): { size: number; baseline: number } | null {
+	if (!ptPath?.includes('/cc/')) return null;
+	const size = CC_PT_TEXT.height * geometry.height;
+	// Centré sur le panneau PEINT, pas sur la zone déclarée : cf.
+	// `CC_PT_PANEL_INSET`. La bande des capitales est ce que l'œil centre, comme
+	// pour le nom et la ligne de type (cf. `baselineFor`).
+	const boxTop = CC_PT_BOUNDS.y * geometry.height;
+	const boxHeight = CC_PT_BOUNDS.height * geometry.height;
+	const panelMiddle = boxTop + ((CC_PT_PANEL_INSET.top + CC_PT_PANEL_INSET.bottom) / 2) * boxHeight;
+	return { size, baseline: panelMiddle + (size * capHeight) / 2 };
+}
+
 function rectStyle(rect: CardRect, width: number, height: number): CSSProperties {
 	return {
 		insetInlineStart: `${(rect.x / width) * 100}%`,
@@ -147,6 +234,14 @@ const MANA_SYMBOL_SIZE = 34;
 const MANA_SYMBOL_GAP = 3;
 /** Gouttière entre la fin du titre et le premier symbole de mana. */
 const TITLE_MANA_GUTTER = 12;
+
+/**
+ * Demi-largeur du losange de `SetMark`, en pixels du canvas.
+ *
+ * Le tracé va de `x - 16` à `x + 16` : la constante doit suivre ce tracé, elle
+ * sert à aligner le BORD du symbole sur celui du bandeau (cf. son appel).
+ */
+const SET_MARK_RADIUS = 16;
 
 /** Largeur occupée par un coût de n symboles, gouttières comprises. */
 function manaCostWidth(symbolCount: number): number {
@@ -348,6 +443,7 @@ function RulesText({
 	textShadow,
 	fontFamily,
 	textLeft,
+	measuredFontSize,
 }: {
 	face: CardFaceDraft;
 	rect: CardRect;
@@ -363,11 +459,20 @@ function RulesText({
 	fontFamily: string;
 	/** Bord gauche mesuré (marge intérieure du corpus), `rect.x + 24` en repli. */
 	textLeft: number;
+	/** Corps mesuré du corpus (`size: 14` sur M15), avant rétrécissement. */
+	measuredFontSize?: number;
 }) {
 	const symbolMap = useScryfallSymbols();
 	const oracle = expandCardNameShortcut(face.oracleText, face.name);
 	const content = oracle || placeholder;
-	const fontSize = getRulesFontSize(oracle.length + face.flavorText.length, isNarrow);
+	// Corps de départ = celui MESURÉ, puis rétréci pour tenir dans la boîte —
+	// c'est ce que fait MSE, qui déclare `size: 14` ET `scale down to: 6` sur ce
+	// champ. L'échelle par nombre de caractères (`getRulesFontSize`) reste le
+	// repli des gabarits sans police mesurée : c'était une table calibrée à la
+	// main qui ignorait le corps déclaré.
+	const fontSize = measuredFontSize
+		? fitRulesFontSize(measuredFontSize, content.length + face.flavorText.length, rect, isNarrow)
+		: getRulesFontSize(oracle.length + face.flavorText.length, isNarrow);
 	// L'ambiance est légèrement plus petite que les règles, comme sur une carte.
 	const flavorFontSize = Math.max(17, fontSize - 2);
 	const lineHeight = fontSize * 1.28;
@@ -548,6 +653,7 @@ function CardSvg({
 	mseFramePath,
 	mseBlend,
 	mseCrownPath,
+	msePtPath,
 	mseTextColors,
 	mseTemplate,
 	labels,
@@ -583,7 +689,11 @@ function CardSvg({
 	const titleStart = titlePosition.x;
 	const manaLeftEdge =
 		geometry.mana.x + geometry.mana.width - manaCostWidth(getManaSymbols(face.manaCost).length);
-	const fittedTitle = fitTitle(title, manaLeftEdge - TITLE_MANA_GUTTER - titleStart);
+	const fittedTitle = fitTitle(
+		title,
+		manaLeftEdge - TITLE_MANA_GUTTER - titleStart,
+		geometry.fonts?.title?.size
+	);
 	const typeLine = face.typeLine || labels.typePlaceholder;
 	const isNarrowRules = geometry.rules.width < 500;
 	const showStats = geometry.stats.width > 0 && (face.power || face.toughness || face.loyalty);
@@ -784,16 +894,13 @@ function CardSvg({
 			 * Couronne légendaire, peinte APRÈS le cadre : elle mord sur le haut de
 			 * la barre de titre, c'est ce recouvrement qui fait la couronne.
 			 *
-			 * Même `preserveAspectRatio="none"` que le cadre — le PNG est déjà cadré
-			 * aux dimensions du gabarit.
+			 * Son emprise dépend de la PROVENANCE de l'asset, cf. `crownRect` — les
+			 * deux corpus ne livrent pas la couronne sous la même forme.
 			 */}
 			{mseCrownPath && (
 				<image
 					href={mseCrownPath}
-					x="0"
-					y="0"
-					width={geometry.width}
-					height={geometry.height}
+					{...crownRect(mseCrownPath, geometry)}
 					preserveAspectRatio="none"
 				/>
 			)}
@@ -837,8 +944,27 @@ function CardSvg({
 			>
 				{typeLine}
 			</text>
+			{/*
+			 * Le symbole se pose dans le BANDEAU mesuré, pas dans la boîte de texte :
+			 * MSE rétrécit celle-ci de la largeur du symbole pour lui réserver la
+			 * place (`width: … - card_style.rarity.content_width`), donc le symbole
+			 * tombe à DROITE de la boîte (boîte jusqu'à 298 u sur M15, bandeau
+			 * jusqu'à 359).
+			 *
+			 * C'est son BORD DROIT qui s'aligne sur celui du bandeau, pas son centre :
+			 * mesuré sur une carte imprimée, le symbole occupe 340.5..358.6 u pour un
+			 * bandeau finissant à 359. D'où le retrait d'un demi-glyphe — l'y centrer
+			 * le poussait d'autant trop à droite.
+			 *
+			 * Sans bandeau mesuré, on garde le placement d'avant (bord droit de la
+			 * boîte), qui reste ce que le studio affichait.
+			 */}
 			<SetMark
-				x={geometry.typeLine.x + geometry.typeLine.width - 27}
+				x={
+					geometry.typeBar
+						? geometry.typeBar.right - SET_MARK_RADIUS
+						: geometry.typeLine.x + geometry.typeLine.width - 27
+				}
 				y={geometry.typeLine.y + geometry.typeLine.height / 2}
 				rarity={rarity}
 			/>
@@ -851,6 +977,7 @@ function CardSvg({
 				textShadow={shadowFilter(geometry.fonts?.rules)}
 				fontFamily={geometry.fonts?.rules?.family ?? GENERIC_SERIF}
 				textLeft={geometry.fonts?.rules?.left ?? geometry.rules.x + 24}
+				measuredFontSize={geometry.fonts?.rules?.size}
 			/>
 			{/*
 			 * Force/endurance : le TEXTE seul. Le panneau lui-même est peint par le
@@ -861,25 +988,59 @@ function CardSvg({
 			 * sur celle du titre sinon — le cas des gabarits sans police `pt`
 			 * mesurée (48 n'ont même pas de boîte `pt`).
 			 */}
+			{/*
+			 * Panneau force/endurance, quand le gabarit le sert à PART du cadre.
+			 * Les cadres MSE le peignent dans leur image, donc `msePtPath` est
+			 * absent pour eux et rien n'est ajouté ici. Peint avant le texte, qui
+			 * doit rester au-dessus.
+			 */}
+			{showStats && msePtPath && (
+				<image
+					href={msePtPath}
+					x={CC_PT_BOUNDS.x * geometry.width}
+					y={CC_PT_BOUNDS.y * geometry.height}
+					width={CC_PT_BOUNDS.width * geometry.width}
+					height={CC_PT_BOUNDS.height * geometry.height}
+					preserveAspectRatio="none"
+				/>
+			)}
 			{showStats && (
 				<g>
 					<text
-						x={geometry.stats.x + geometry.stats.width / 2}
+						// Centré sur le PANNEAU réellement peint, pas sur la boîte
+						// mesurée : quand le gabarit sert son panneau à part
+						// (CardConjurer), les deux ne coïncident pas — boîte MSE
+						// centrée à 316 u contre panneau à 319.2 u — et le texte
+						// débordait vers la droite.
+						x={statsCenter(msePtPath, geometry)}
 						// Ligne de base mesurée (le corpus déclare `middle` pour 243
 						// champs `pt`) ; le 0.68 historique en repli. Le X reste centré
 						// sur la boîte : c'est l'horizontale, que `textAnchor` gère.
-						y={geometry.fonts?.stats?.baseline ?? geometry.stats.y + geometry.stats.height * 0.68}
+						y={
+							statsFont(msePtPath, geometry, geometry.fonts?.stats?.capHeight ?? 0.7)?.baseline ??
+							geometry.fonts?.stats?.baseline ??
+							geometry.stats.y + geometry.stats.height * 0.68
+						}
 						textAnchor="middle"
 						fontFamily={geometry.fonts?.stats?.family ?? GENERIC_SERIF}
-						fontSize={geometry.fonts?.stats?.size ?? 32}
+						fontSize={
+							statsFont(msePtPath, geometry, geometry.fonts?.stats?.capHeight ?? 0.7)?.size ??
+							geometry.fonts?.stats?.size ??
+							32
+						}
 						fontWeight={geometry.fonts?.stats ? undefined : '800'}
 						fill={inkFor(geometry.fonts?.stats, mseTextColors?.title)}
 						filter={shadowFilter(geometry.fonts?.stats)}
 					>
 						{/* Une créature a TOUJOURS deux valeurs : renseigner la force sans
-						    l'endurance donne « 3 / 0 », pas « 3 / — ». Le tiret laissait
-						    croire à une valeur absente, qui n'existe pas sur une carte. */}
-						{face.loyalty || `${face.power || '0'} / ${face.toughness || '0'}`}
+						    l'endurance donne « 3/0 », pas « 3/— ». Le tiret laissait
+						    croire à une valeur absente, qui n'existe pas sur une carte.
+
+						    SANS espaces autour de la barre : une carte imprimée écrit
+						    « 3/3 ». Les espaces élargissaient le bloc de 5 unités de
+						    style (56 mesurées contre 51 sur une carte réelle), au point
+						    de venir toucher les bords du panneau. */}
+						{face.loyalty || `${face.power || '0'}/${face.toughness || '0'}`}
 					</text>
 				</g>
 			)}
@@ -1076,6 +1237,7 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 		mseFramePath,
 		mseBlend,
 		mseCrownPath,
+		msePtPath,
 		mseTextColors,
 		mseTemplate,
 		labels,
@@ -1110,6 +1272,7 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 					mseFramePath={mseFramePath}
 					mseBlend={mseBlend}
 					mseCrownPath={mseCrownPath}
+					msePtPath={msePtPath}
 					mseTextColors={mseTextColors}
 					mseTemplate={mseTemplate}
 					labels={labels}

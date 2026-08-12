@@ -26,9 +26,24 @@ import { createClient } from '@/lib/supabase/client';
 export interface TemplateFontRow {
 	name: string;
 	size: number;
-	/** Ascendante/descendante en fraction de la taille, lues dans le TTF. */
+	/** Ascendante/descendante de LIGNE (`hhea`), en fraction de la taille. */
 	ascent?: number;
 	descent?: number;
+	/**
+	 * Ascendante/descendante de l'ENCRE, en fraction de la taille.
+	 *
+	 * C'est sur elles que se cale un champ `alignment: top` — MSE aligne les
+	 * glyphes, pas la ligne. L'écart entre les deux jeux est l'interligne interne
+	 * de la police (0 pour Matrix, 0.196 em pour Beleren Bold).
+	 */
+	inkAscent?: number;
+	inkDescent?: number;
+	/**
+	 * Hauteur de capitale, en fraction de la taille. C'est la bande centrée dans
+	 * un bandeau : une carte imprimée y centre les capitales et laisse pendre la
+	 * descendante, au lieu de centrer le bloc ascendante+descendante.
+	 */
+	capHeight?: number;
 	/**
 	 * Couleur MESURÉE du texte (`rgb(r,g,b)` ou nom CSS), quand le style la
 	 * déclare — 132 des 140 gabarits mesurés.
@@ -80,6 +95,22 @@ export interface TemplateGeometryRow {
 	fonts?: Partial<Record<'name' | 'type' | 'text' | 'pt', TemplateFontRow>>;
 	/** Ancrage et marges mesurés, par champ. Même statut partiel que `fonts`. */
 	layout?: Partial<Record<'name' | 'type' | 'text' | 'pt', TemplateLayoutRow>>;
+	/**
+	 * Bandeau PEINT de chaque champ d'une ligne, mesuré dans l'image du cadre.
+	 *
+	 * À ne pas confondre avec `boxes` : la boîte déclarée par MSE est une zone de
+	 * FLUX (retour à la ligne, `shrink-overflow`) calée sur le bord porté par
+	 * l'ancrage, pas le panneau visible. Sur `magic-m15`, la ligne de type est
+	 * déclarée 296..316 alors que son bandeau va de 295 à 319.
+	 *
+	 * Présent uniquement pour les champs ancrés `top`/`bottom` sur un panneau
+	 * clair détectable : un champ `middle` est déjà centré dans sa boîte, et un
+	 * texte posé à même l'illustration n'a pas de bandeau. Absent = le canvas
+	 * garde l'ancrage déclaré.
+	 */
+	bars?: Partial<
+		Record<'name' | 'type' | 'pt', { top: number; bottom: number; left: number; right: number }>
+	>;
 }
 
 export interface CardTemplateRow {
@@ -106,11 +137,19 @@ export interface CardTemplateRow {
 	position_hint: string | null;
 	tags: string[];
 	crown_paths: Record<string, string> | null;
+	/**
+	 * Panneaux force/endurance servis SÉPARÉMENT du cadre.
+	 *
+	 * Les cadres MSE intègrent ce panneau dans leur image ; ceux de CardConjurer
+	 * le livrent à part, avec sa position déclarée. `null` = le cadre porte déjà
+	 * son panneau, et le canvas n'a rien à peindre en plus.
+	 */
+	pt_paths: Record<string, string> | null;
 	blend_masks: Record<string, string> | null;
 }
 
 export const CARD_TEMPLATE_SELECT =
-	'id, name, short_name, source, quality, orientation, layout_id, sample_path, icon_path, frame_paths, frame_text_colors, sample_text_colors, render_mode, width, height, dpi, asset_version, version, geometry, installer_group, position_hint, tags, crown_paths, blend_masks';
+	'id, name, short_name, source, quality, orientation, layout_id, sample_path, icon_path, frame_paths, frame_text_colors, sample_text_colors, render_mode, width, height, dpi, asset_version, version, geometry, installer_group, position_hint, tags, crown_paths, pt_paths, blend_masks';
 
 /** Bucket public hébergeant les frames ; les chemins des rows y sont relatifs. */
 export const CARD_TEMPLATE_BUCKET = 'card-templates';

@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import { evaluate, Unresolved } from './evaluate';
-import { fontRatios } from './font-metrics';
+import { capRatio, fontRatios, inkRatios } from './font-metrics';
 import { parseExpression, unwrapFieldValue } from './parser';
 import { buildScope } from './scope';
 import {
@@ -108,6 +108,25 @@ export interface ResolvedFont {
 	 */
 	ascent?: number;
 	descent?: number;
+	/**
+	 * Ascendante/descendante de l'ENCRE (hauteur d'ascendante `Hb`, descendantes
+	 * `gpqy`), distinctes de `ascent`/`descent` qui décrivent la LIGNE.
+	 *
+	 * MSE aligne un champ `alignment: top` sur l'encre, pas sur la ligne : la
+	 * différence est l'interligne interne de la police, qui varie de 0 (Matrix) à
+	 * 0.196 em (Beleren Bold). Publier les deux jeux permet au canvas d'ancrer
+	 * chaque cas sur la bonne métrique sans relire les TTF.
+	 */
+	inkAscent?: number;
+	inkDescent?: number;
+	/**
+	 * Hauteur de capitale, en fraction de la taille.
+	 *
+	 * C'est elle qui porte le centrage vertical dans un bandeau : les cartes
+	 * imprimées centrent la bande des capitales, pas le bloc ascendante+descendante
+	 * (cf. `capRatio`).
+	 */
+	capHeight?: number;
 	/**
 	 * Couleur du texte, telle que le style la déclare (137 gabarits sur 140).
 	 *
@@ -253,12 +272,16 @@ function resolveFieldFont(info: FieldFontInfo | undefined, scope: Scope): Resolv
 	// la police reste publiée (le nom sert au rendu), seul le calcul de ligne
 	// de base retombe alors sur le placement générique.
 	const ratios = fontRatios(trimmedName);
+	const ink = inkRatios(trimmedName);
+	const cap = capRatio(trimmedName);
 	const color = resolveColor(info?.font?.color, scope);
 	const shadow = resolveShadow(info?.font, scope);
 	return {
 		name: trimmedName,
 		size: numericSize,
 		...ratios,
+		...(ink ? { inkAscent: ink.ascent, inkDescent: ink.descent } : {}),
+		...(cap !== undefined ? { capHeight: cap } : {}),
 		...(color ? { color } : {}),
 		...(shadow ? { shadow } : {}),
 	};

@@ -50,6 +50,35 @@ export function cssFamilyFor(mseName: string): string | null {
 }
 
 /**
+ * Résolution d'écran à laquelle MSE exprime ses tailles de police, rapportée à
+ * celle de la carte.
+ *
+ * Les BOÎTES du corpus sont en pixels à `card dpi` (150 : 375 u pour 2.48" de
+ * large, soit 151 u/pouce — la mesure colle au déclaratif). Les TAILLES DE
+ * POLICE, elles, sont exprimées à 120 dpi, la résolution d'écran « grandes
+ * polices » de Windows sous laquelle MSE a été écrit. D'où un rapport 150/120
+ * entre les deux, qu'il faut appliquer aux polices et à elles seules.
+ *
+ * Sans ce facteur, tout le texte sortait 20 % trop petit alors que les panneaux
+ * étaient justes. Vérifié en comparant une carte IMPRIMÉE (Ekthi, MBC) au rendu
+ * du studio, même texte et même cadre M15, normalisé sur la largeur de carte :
+ *
+ *   bandeau de la ligne de type : rapport 1.019  → géométrie déjà juste
+ *   nom / type / règles         : rapport 1.274  → polices trop petites
+ *   1.274 / 1.019               = 1.2502         → exactement 150/120
+ *
+ * Et une fois le facteur appliqué, la prédiction tombe sur la mesure pour les
+ * deux champs à taille FIXE : nom 14.00 u prédit contre 14.25 mesuré, ligne de
+ * type 11.38 contre 11.50 (hauteurs de capitale, en unités de style).
+ *
+ * Le texte de RÈGLES ne sert pas de contrôle : il déclare `scale down to: 6`,
+ * donc MSE le rétrécit pour le faire tenir. Sur Ekthi, dont la boîte est pleine,
+ * il rend une taille effective de ~11.8 au lieu de 14 — l'écart mesuré y est le
+ * rétrécissement, pas une erreur de facteur.
+ */
+const MSE_FONT_DPI_RATIO = 150 / 120;
+
+/**
  * Convertit une police du corpus vers une police prête à peindre.
  *
  * `scale` est le même facteur que celui appliqué aux boîtes : les tailles du
@@ -57,22 +86,27 @@ export function cssFamilyFor(mseName: string): string | null {
  * canvas. C'est précisément ce qui manquait quand le canvas écrivait
  * `fontSize="25"` en dur — une valeur juste pour M15 seul, fausse partout
  * ailleurs.
+ *
+ * S'y ajoute `MSE_FONT_DPI_RATIO`, qui ne s'applique QU'AUX POLICES : boîtes et
+ * tailles ne sont pas exprimées dans le même repère côté MSE.
  */
 export function toCardTextFont(
 	font: MseFont | undefined,
 	scale: number,
 	box?: { top: number; height: number; left: number },
-	layout?: MseLayout
+	layout?: MseLayout,
+	bar?: MseBar
 ): CardTextFont | undefined {
 	if (!font) return undefined;
 	const family = cssFamilyFor(font.name);
 	if (!family) return undefined;
-	const size = font.size * scale;
+	const size = font.size * scale * MSE_FONT_DPI_RATIO;
 	if (!Number.isFinite(size) || size <= 0) return undefined;
 	return {
 		family,
 		size,
-		baseline: baselineFor(size, box, layout, font, scale),
+		...(font.capHeight !== undefined ? { capHeight: font.capHeight } : {}),
+		baseline: baselineFor(size, box, layout, font, scale, bar),
 		left: box ? (box.left + (layout?.padding?.left ?? 0)) * scale : undefined,
 		...(font.color ? { color: font.color } : {}),
 		// Le déplacement de l'ombre est déclaré en unités de style, comme les
@@ -96,6 +130,9 @@ interface MseFont {
 	size: number;
 	ascent?: number;
 	descent?: number;
+	inkAscent?: number;
+	inkDescent?: number;
+	capHeight?: number;
 	color?: string;
 	shadow?: { color: string; dx: number; dy: number };
 }
@@ -106,17 +143,37 @@ interface MseLayout {
 	padding?: { top?: number; left?: number; right?: number; bottom?: number };
 }
 
+/** Bandeau peint mesuré dans l'image du cadre, en unités de style. */
+interface MseBar {
+	top: number;
+	bottom: number;
+}
+
 /**
  * Ligne de base du texte dans sa boîte.
  *
  * MSE ancre le texte, il ne le décale pas d'une constante. Les trois ancrages
- * du corpus se traduisent directement, `asc`/`desc` étant les métriques réelles
- * de la police (elles varient beaucoup : Beleren 0.936, MPlantin 0.774,
- * MagicMedieval 0.746, d'où l'impossibilité d'une constante) :
+ * du corpus se traduisent directement :
  *
  *   top    → haut de boîte + marge, puis descendre de l'ascendante
  *   bottom → bas de boîte − marge, puis remonter de la descendante
  *   middle → hauteur de glyphe centrée dans la boîte
+ *
+ * DEUX jeux de métriques, et le choix entre eux est ce qui rend l'ancrage juste.
+ * `ascent`/`descent` décrivent la LIGNE (`hhea` du TTF, interligne interne
+ * compris) ; `inkAscent`/`inkDescent` décrivent l'ENCRE (hauteur d'ascendante et
+ * descendantes réelles). MSE cale un bord de boîte sur l'ENCRE : c'est le haut
+ * des glyphes qui vient toucher la marge, pas le haut de la ligne.
+ *
+ * Les confondre décalait chaque champ de l'interligne interne de sa police, qui
+ * varie trop pour être compensé globalement : 0.196 em sur Beleren Bold (M15),
+ * 0.075 sur MPlantin, 0 sur Matrix. D'où une ligne de type visiblement mal
+ * calée sur les cadres M15 et intacte sur `magic-new`, pour un même code.
+ *
+ * `middle` reste sur les métriques de LIGNE : il centre un bloc dont la hauteur
+ * est symétrique, et le corpus s'en sert précisément pour que le texte tombe au
+ * milieu du bandeau (cadres pré-8e) — l'encre y donnerait un centrage optique
+ * décalé vers le bas.
  *
  * Rend `undefined` s'il manque la boîte, l'ancrage ou les métriques : le canvas
  * garde alors son décalage générique plutôt qu'une position devinée.
@@ -126,7 +183,8 @@ function baselineFor(
 	box: { top: number; height: number } | undefined,
 	layout: MseLayout | undefined,
 	font: MseFont,
-	scale: number
+	scale: number,
+	bar?: MseBar
 ): number | undefined {
 	const anchor = layout?.anchor;
 	if (!box || !anchor || font.ascent === undefined || font.descent === undefined) {
@@ -136,8 +194,34 @@ function baselineFor(
 	const height = box.height * scale;
 	const ascent = size * font.ascent;
 	const descent = size * font.descent;
-	if (anchor === 'top') return top + (layout.padding?.top ?? 0) * scale + ascent;
-	if (anchor === 'bottom') return top + height - (layout.padding?.bottom ?? 0) * scale - descent;
+	// Repli sur les métriques de ligne quand l'encre n'est pas publiée (gabarits
+	// mesurés avant l'ajout de ces colonnes) : c'est le rendu d'avant, donc pas
+	// de régression sur un catalogue partiellement réextrait.
+	const inkAscent = size * (font.inkAscent ?? font.ascent);
+	const inkDescent = size * (font.inkDescent ?? font.descent);
+
+	// Bandeau mesuré : la bande des CAPITALES s'y centre. Prioritaire sur
+	// l'ancrage déclaré, qui décrit le flux dans la BOÎTE (une zone calée sur un
+	// bord, plus petite que le panneau) et non la position dans le panneau.
+	//
+	// La capitale, et non le bloc ascendante+descendante : ce bloc réserve la
+	// place d'un jambage sous CHAQUE ligne, y compris celles qui n'en ont pas.
+	// « Ekthi, Contaminator Priest » n'a aucune descendante, et le centrer ainsi
+	// laissait 6 px de vide au-dessus contre 15 en dessous — le texte visiblement
+	// haut dans son bandeau. Centrer les capitales laisse au contraire la
+	// descendante pendre librement, ce que fait une carte imprimée (mesurée sur
+	// Ekthi : 10 px au-dessus, 14 en dessous, sur un panneau de 51).
+	if (bar) {
+		const barTop = bar.top * scale;
+		const barHeight = (bar.bottom - bar.top) * scale;
+		const cap = size * (font.capHeight ?? font.inkAscent ?? font.ascent);
+		return barTop + (barHeight - cap) / 2 + cap;
+	}
+
+	if (anchor === 'top') return top + (layout.padding?.top ?? 0) * scale + inkAscent;
+	if (anchor === 'bottom') {
+		return top + height - (layout.padding?.bottom ?? 0) * scale - inkDescent;
+	}
 	return top + (height - (ascent + descent)) / 2 + ascent;
 }
 
