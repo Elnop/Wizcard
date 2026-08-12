@@ -40,97 +40,107 @@ export const QUALITY_WIDTH: Record<CardQuality, number> = {
 };
 
 /**
- * Emprise de la couronne légendaire CardConjurer, en fraction de la carte.
+ * Sprites CardConjurer d'une FAMILLE de cadres, en fraction de la carte.
  *
- * Les couronnes MSE sont des images PLEINE CARTE : le contenu est déjà à sa
- * place dans un cadre transparent, donc le canvas les peint en 0,0 → largeur,
- * hauteur. Celles de CardConjurer sont des BANDEAUX (750x185 au palier
- * d'aperçu, contre 750x1050 pour un cadre), accompagnés de leur position — les
- * peindre en pleine carte les étirait sur toute la hauteur et recouvrait la
- * carte entière de blanc.
+ * Les cadres MSE livrent chaque élément en image PLEINE CARTE (contenu déjà en
+ * place dans un fond transparent) ; CardConjurer livre des SPRITES accompagnés
+ * de leur position. Les peindre en pleine carte les étire — la couronne, bandeau
+ * de 750x185, recouvrait toute la carte de blanc.
  *
- * Les valeurs sont celles que CardConjurer déclare dans
- * `data/scripts/versions/m15/legendCrowns.js`, reprises telles quelles :
+ * Les valeurs sont INDEXÉES PAR FAMILLE et non globales : chaque famille déclare
+ * les siennes dans son propre référentiel. M15 écrit en 1500x2100
+ * (`data/scripts/versions/m15/*.js`), la 8e édition en 2010x2814
+ * (`js/frames/pack8th.js`), et leurs bornes ne se recouvrent pas — le cache de
+ * couronne du M15 est encadré (59/1500 … 1382/1500) là où celui de la 8e couvre
+ * toute la largeur. Appliquer les constantes M15 à la 8e donnerait un rendu faux.
  *
- *     x 41/1500   y 40/2100   w 1418/1500   h 350/2100
- *
- * Elles tombent sur y 10.0 → 97.1 en unités de style, ce que confirme la
- * couronne MSE correspondante (contenu opaque y 10 → 102).
+ * Les fractions étant sans dimension, le référentiel d'origine n'a pas besoin
+ * d'être conservé : seul compte le rapport, identique dans les deux repères.
  */
-export const CC_CROWN_BOUNDS = {
-	x: 41 / 1500,
-	y: 40 / 2100,
-	width: 1418 / 1500,
-	height: 350 / 2100,
+export interface CcSpriteBounds {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+}
+
+export interface CcFrameGeometry {
+	/** Couronne légendaire, ou `null` si la famille n'en a pas (ABU). */
+	crown: CcSpriteBounds | null;
+	/**
+	 * Cache noir posé SOUS la couronne.
+	 *
+	 * Le cadre a sa propre barre de titre claire (dès y 15.0 sur M15) qui
+	 * remplirait les creux entre les pointes. Une carte légendaire imprimée y
+	 * montre du noir : sans ce cache la silhouette plafonne au bord du cadre au
+	 * lieu d'onduler (amplitude 6.0 au lieu de 12.6, pour 12.3 mesurés sur une
+	 * carte réelle).
+	 */
+	crownCover: CcSpriteBounds | null;
+	/** Panneau force/endurance, ou `null` si le cadre l'intègre (ABU). */
+	pt: CcSpriteBounds | null;
+	/**
+	 * Part VERTICALE de `pt` réellement opaque dans l'asset.
+	 *
+	 * Le PNG n'est pas plein cadre : sa marge et son ombre portée débordent du
+	 * panneau clair. C'est cette part qu'il faut viser pour centrer le texte —
+	 * s'appuyer sur la boîte entière posait la ligne de base sous le panneau.
+	 */
+	ptPanelInset: { top: number; bottom: number };
+}
+
+/**
+ * Géométrie par famille. La clé est le préfixe de chemin sous `cc/<palier>/`,
+ * donc elle se lit directement dans l'URL de l'asset servi.
+ */
+export const CC_FRAME_GEOMETRY: Record<string, CcFrameGeometry> = {
+	// M15 — `data/scripts/versions/m15/{legendCrowns,regular}.js`, repère 1500x2100.
+	m15: {
+		crown: { x: 41 / 1500, y: 40 / 2100, width: 1418 / 1500, height: 350 / 2100 },
+		crownCover: { x: 59 / 1500, y: 58 / 2100, width: 1382 / 1500, height: 37 / 2100 },
+		pt: { x: 1136 / 1500, y: 1858 / 2100, width: 282 / 1500, height: 154 / 2100 },
+		ptPanelInset: { top: 0.0485, bottom: 0.801 },
+	},
+	// 8e édition — `js/frames/pack8th{,LegendCrowns}.js`, repère 2010x2814.
+	// Le cache y couvre toute la largeur de la carte, contrairement au M15.
+	'8th': {
+		crown: { x: 64 / 2010, y: 81 / 2814, width: 1886 / 2010, height: 482 / 2814 },
+		crownCover: { x: 0, y: 0, width: 1, height: 160 / 2814 },
+		pt: { x: 1461 / 2010, y: 2481 / 2814, width: 414 / 2010, height: 218 / 2814 },
+		ptPanelInset: { top: 0.0485, bottom: 0.801 },
+	},
+	// ABU — `js/frames/packABU.js`. Cadres COMPLETS : ni couronne ni panneau P/T
+	// séparés, tout est peint dans l'image du cadre.
+	old: {
+		crown: null,
+		crownCover: null,
+		pt: null,
+		ptPanelInset: { top: 0, bottom: 1 },
+	},
+	// 7e édition — `js/frames/packSeventh.js`. Cadres COMPLETS comme ABU : le
+	// panneau force/endurance est peint dans l'image, et les cartes légendaires
+	// d'avant la 8e n'avaient pas de couronne. Le fichier ne déclare qu'une zone
+	// de TEXTE pour la P/T (`x:0.8074, y:0.9043`), pas un sprite à poser.
+	seventh: {
+		crown: null,
+		crownCover: null,
+		pt: null,
+		ptPanelInset: { top: 0, bottom: 1 },
+	},
 };
 
 /**
- * Emprise du panneau force/endurance CardConjurer, en fraction de la carte.
+ * Géométrie de la famille dont relève un chemin d'asset, ou `null`.
  *
- * Même partage que la couronne : les cadres MSE peignent ce panneau dans leur
- * image, ceux de CardConjurer le livrent à part avec sa position.
- *
- * Valeurs déclarées dans `data/scripts/versions/m15/regular.js`, reprises TELLES
- * QUELLES :
- *
- *     x 1136/1500   y 1858/2100   w 282/1500   h 154/2100
- *
- * Elles préservent le rapport du PNG (`m15PTW.png` fait 377x206, soit 1.83 ;
- * la boîte donne 70.5 x 38.4 unités de style, soit 1.84). Les recalculer depuis
- * le panneau MESURÉ sur une carte imprimée (280..355 x, 469..492 y) donnerait un
- * rapport de 2.98 : le panneau y serait écrasé d'un tiers en hauteur.
- *
- * L'écart apparent en HAUTEUR avec l'impression vient de la marge TRANSPARENTE
- * de l'asset — il n'est opaque que de 3.9 % à 95.6 % de sa hauteur — et non
- * d'une erreur de position : le contenu visible tombe bien dans le bandeau,
- * c'est la boîte qui le déborde. Il ne faut donc pas la corriger d'après ce
- * qu'on voit imprimé, sous peine d'écraser le panneau (une boîte recalculée sur
- * le panneau visible donnait un rapport de 2.98 pour une image de 1.83).
+ * Le chemin porte la famille juste après le palier (`cc/preview/m15/…`), donc on
+ * la lit là plutôt que de la passer de main en main depuis le catalogue.
+ * `null` pour un asset MSE : il n'a pas de sprite à placer.
  */
-export const CC_PT_BOUNDS = {
-	x: 1136 / 1500,
-	y: 1858 / 2100,
-	width: 282 / 1500,
-	height: 154 / 2100,
-};
-
-/**
- * Zone de TEXTE force/endurance, distincte du panneau qui la porte.
- *
- * Déclarée dans `data/scripts/versions/m15/version.js` :
- *
- *     new cardText('Power/Toughness', '', 1191/1500, 1954/2100, 205/1500,
- *                  78/2100, 'belerenbsc', 78/2100, 'black',
- *                  ['oneLine=true,textAlign="center"'])
- *
- * Soit une boîte à x 297.8..349.0, y 486.6..506.1 en unités de style, un corps
- * de 19.4 u, et un texte CENTRÉ dans cette boîte (`textAlign="center"`).
- *
- * C'est la source à suivre plutôt que la boîte `pt` du corpus MSE ou le centre
- * du panneau : les trois ne coïncident pas, et seule celle-ci décrit ce que
- * CardConjurer peint réellement. La taille y est déjà en unités de carte, donc
- * elle ne passe PAS par le facteur dpi des polices MSE.
- */
-export const CC_PT_TEXT = {
-	x: 1191 / 1500,
-	y: 1954 / 2100,
-	width: 205 / 1500,
-	height: 78 / 2100,
-};
-
-/**
- * Part de `CC_PT_BOUNDS` réellement OPAQUE dans l'asset, verticalement.
- *
- * `m15PTW.png` n'est pas plein cadre : son panneau clair occupe 4.85 % à 80.1 %
- * de la hauteur du fichier, le reste étant la marge et l'ombre portée. La boîte
- * déclarée décrit donc le fichier, pas le bandeau visible.
- *
- * C'est cette part qu'il faut viser pour centrer le texte : la zone déclarée
- * (`CC_PT_TEXT`) est calée sur le repère de CardConjurer, où le panneau ne tombe
- * pas au même endroit que chez nous. S'y fier posait la ligne de base à 500.2
- * pour un panneau peint de 464.6 à 493.5 — le texte sortait par le bas.
- */
-export const CC_PT_PANEL_INSET = { top: 0.0485, bottom: 0.801 };
+export function ccFrameGeometry(path: string | null | undefined): CcFrameGeometry | null {
+	if (!path) return null;
+	const match = /\/cc\/[^/]+\/([^/]+)\//.exec(path);
+	return match ? (CC_FRAME_GEOMETRY[match[1]] ?? null) : null;
+}
 
 /**
  * Facteur d'échelle du rendu PNG à l'export.

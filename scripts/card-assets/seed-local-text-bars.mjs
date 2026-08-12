@@ -16,6 +16,7 @@
 // tel quel, pour qu'une erreur ici ne puisse pas dégrader une mesure correcte.
 //
 // Usage : SUPABASE_SERVICE_ROLE_KEY=... node scripts/card-assets/seed-local-text-bars.mjs
+import { existsSync } from 'node:fs';
 import { measureTextBar } from '../mse-geometry/text-bar.ts';
 
 const CORPUS_ROOT = 'assets/card-templates/card-assets/v/bcdf4190b4bf/full-magic-pack/data';
@@ -43,7 +44,10 @@ const headers = {
 const BAR_FIELDS = ['name', 'type', 'pt'];
 
 /** Racine locale des variantes CardConjurer converties (cf. build-webp.mjs). */
-const CC_ROOT = '/home/elthinkbuntu/Documents/wizcard-assets-cardconjurer/out-webp';
+const CC_ROOTS = [
+	'/home/elthinkbuntu/Documents/wizcard-assets-cardconjurer/out-webp',
+	'/home/elthinkbuntu/Documents/wizcard-assets-cardconjurer/out-webp-old',
+];
 
 /**
  * Fichier LOCAL correspondant à un chemin stocké en base.
@@ -59,7 +63,13 @@ const CC_ROOT = '/home/elthinkbuntu/Documents/wizcard-assets-cardconjurer/out-we
  * style, donc indépendantes de la résolution. On lit `preview`, le plus léger.
  */
 function localFileFor(storagePath) {
-	if (storagePath.startsWith('cc/')) return `${CC_ROOT}/${storagePath.slice('cc/'.length)}`;
+	if (storagePath.startsWith('cc/')) {
+		const rel = storagePath.slice('cc/'.length);
+		// Les variantes sont réparties sur plusieurs racines selon la vague de
+		// conversion : on prend la première qui porte le fichier.
+		const found = CC_ROOTS.map((root) => `${root}/${rel}`).find((file) => existsSync(file));
+		return found ?? `${CC_ROOTS[0]}/${rel}`;
+	}
 	return `${CORPUS_ROOT}/${storagePath.replace(/^card-assets\/v\/[^/]+\/full-magic-pack\/data\//, '')}`;
 }
 

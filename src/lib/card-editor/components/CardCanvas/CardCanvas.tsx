@@ -8,12 +8,7 @@ import {
 	type MseTemplate,
 	type MseTextColors,
 } from '@/lib/card-editor/mse-assets';
-import {
-	CC_CROWN_BOUNDS,
-	CC_PT_BOUNDS,
-	CC_PT_PANEL_INSET,
-	CC_PT_TEXT,
-} from '@/lib/card-editor/quality';
+import { ccFrameGeometry } from '@/lib/card-editor/quality';
 import { templateGeometry } from '@/lib/card-editor/template-geometry';
 import {
 	expandCardNameShortcut,
@@ -162,14 +157,15 @@ function crownRect(
 	crownPath: string,
 	geometry: CardLayoutGeometry
 ): { x: number; y: number; width: number; height: number } {
-	if (!crownPath.includes('/cc/')) {
+	const crown = ccFrameGeometry(crownPath)?.crown;
+	if (!crown) {
 		return { x: 0, y: 0, width: geometry.width, height: geometry.height };
 	}
 	return {
-		x: CC_CROWN_BOUNDS.x * geometry.width,
-		y: CC_CROWN_BOUNDS.y * geometry.height,
-		width: CC_CROWN_BOUNDS.width * geometry.width,
-		height: CC_CROWN_BOUNDS.height * geometry.height,
+		x: crown.x * geometry.width,
+		y: crown.y * geometry.height,
+		width: crown.width * geometry.width,
+		height: crown.height * geometry.height,
 	};
 }
 
@@ -183,9 +179,8 @@ function crownRect(
  * 316 u) — s'en tenir à la boîte décalait le texte vers la gauche du panneau.
  */
 function statsCenter(ptPath: string | null | undefined, geometry: CardLayoutGeometry): number {
-	if (ptPath?.includes('/cc/')) {
-		return (CC_PT_TEXT.x + CC_PT_TEXT.width / 2) * geometry.width;
-	}
+	const pt = ccFrameGeometry(ptPath)?.pt;
+	if (pt) return (pt.x + pt.width / 2) * geometry.width;
 	return geometry.stats.x + geometry.stats.width / 2;
 }
 
@@ -209,14 +204,21 @@ function statsFont(
 	geometry: CardLayoutGeometry,
 	capHeight: number
 ): { size: number; baseline: number } | null {
-	if (!ptPath?.includes('/cc/')) return null;
-	const size = CC_PT_TEXT.height * geometry.height;
-	// Centré sur le panneau PEINT, pas sur la zone déclarée : cf.
-	// `CC_PT_PANEL_INSET`. La bande des capitales est ce que l'œil centre, comme
-	// pour le nom et la ligne de type (cf. `baselineFor`).
-	const boxTop = CC_PT_BOUNDS.y * geometry.height;
-	const boxHeight = CC_PT_BOUNDS.height * geometry.height;
-	const panelMiddle = boxTop + ((CC_PT_PANEL_INSET.top + CC_PT_PANEL_INSET.bottom) / 2) * boxHeight;
+	const family = ccFrameGeometry(ptPath);
+	if (!family?.pt) return null;
+	// Centré sur le panneau PEINT, pas sur la boîte entière : l'asset porte une
+	// marge et une ombre qui débordent du panneau clair (cf. `ptPanelInset`). La
+	// bande des capitales est ce que l'œil centre, comme pour le nom et la ligne
+	// de type (cf. `baselineFor`).
+	const boxTop = family.pt.y * geometry.height;
+	const boxHeight = family.pt.height * geometry.height;
+	const inset = family.ptPanelInset;
+	const panelMiddle = boxTop + ((inset.top + inset.bottom) / 2) * boxHeight;
+	// Corps proportionnel à la hauteur du panneau CLAIR. La zone de texte que
+	// déclare `version.js` est calée sur le repère de CardConjurer et tombait
+	// sous le panneau chez nous ; le rapport, lui, se transpose d'une famille à
+	// l'autre. 0.67 reproduit le corps mesuré sur M15 (19.4 u).
+	const size = boxHeight * (inset.bottom - inset.top) * 0.67;
 	return { size, baseline: panelMiddle + (size * capHeight) / 2 };
 }
 
@@ -897,6 +899,20 @@ function CardSvg({
 			 * Son emprise dépend de la PROVENANCE de l'asset, cf. `crownRect` — les
 			 * deux corpus ne livrent pas la couronne sous la même forme.
 			 */}
+			{ccFrameGeometry(mseCrownPath)?.crownCover && (
+				/*
+				 * Cache noir SOUS la couronne (cf. `CC_CROWN_COVER`) : le cadre a sa
+				 * propre barre de titre claire dès y 15.0, qui remplirait les creux
+				 * entre les pointes. Une carte imprimée y montre du noir.
+				 */
+				<rect
+					x={(ccFrameGeometry(mseCrownPath)?.crownCover?.x ?? 0) * geometry.width}
+					y={(ccFrameGeometry(mseCrownPath)?.crownCover?.y ?? 0) * geometry.height}
+					width={(ccFrameGeometry(mseCrownPath)?.crownCover?.width ?? 0) * geometry.width}
+					height={(ccFrameGeometry(mseCrownPath)?.crownCover?.height ?? 0) * geometry.height}
+					fill="black"
+				/>
+			)}
 			{mseCrownPath && (
 				<image
 					href={mseCrownPath}
@@ -997,10 +1013,10 @@ function CardSvg({
 			{showStats && msePtPath && (
 				<image
 					href={msePtPath}
-					x={CC_PT_BOUNDS.x * geometry.width}
-					y={CC_PT_BOUNDS.y * geometry.height}
-					width={CC_PT_BOUNDS.width * geometry.width}
-					height={CC_PT_BOUNDS.height * geometry.height}
+					x={(ccFrameGeometry(msePtPath)?.pt?.x ?? 0) * geometry.width}
+					y={(ccFrameGeometry(msePtPath)?.pt?.y ?? 0) * geometry.height}
+					width={(ccFrameGeometry(msePtPath)?.pt?.width ?? 0) * geometry.width}
+					height={(ccFrameGeometry(msePtPath)?.pt?.height ?? 0) * geometry.height}
 					preserveAspectRatio="none"
 				/>
 			)}
@@ -1029,8 +1045,17 @@ function CardSvg({
 							32
 						}
 						fontWeight={geometry.fonts?.stats ? undefined : '800'}
-						fill={inkFor(geometry.fonts?.stats, mseTextColors?.title)}
-						filter={shadowFilter(geometry.fonts?.stats)}
+						// Repli sur la couleur MESURÉE du titre avant l'ingérée : les
+						// gabarits sans police `pt` (le corpus la déclare par script sur
+						// les cadres pré-8e) tombaient sur `frame_text_colors`, qui vaut
+						// `#17140d` pour TOUS les gabarits. Sur un cadre sombre — ABU,
+						// 7e édition — la force/endurance devenait illisible, alors que le
+						// titre du même cadre est mesuré en `rgb(201,201,201)`.
+						fill={inkFor(
+							geometry.fonts?.stats,
+							geometry.fonts?.title?.color ?? mseTextColors?.title
+						)}
+						filter={shadowFilter(geometry.fonts?.stats ?? geometry.fonts?.title)}
 					>
 						{/* Une créature a TOUJOURS deux valeurs : renseigner la force sans
 						    l'endurance donne « 3/0 », pas « 3/— ». Le tiret laissait
