@@ -1,0 +1,211 @@
+.toolbar {
+	display: grid;
+	grid-template-columns: minmax(200px, 1fr) auto minmax(200px, 1fr);
+	align-items: center;
+	gap: 1rem;
+	/* La colonne d'aperçu est un flex vertical : sans cela la barre se ferait
+	   comprimer par la scène qui réclame le reste de la hauteur. */
+	flex-shrink: 0;
+	padding: 0.75rem 1rem;
+	border-bottom: 1px solid var(--border);
+}
+
+/* Titre de page : même traitement que .title de collection/réglages (display,
+   --text-2xl). L'ancien surtitre or au-dessus faisait doublon avec le titre. */
+.brandBlock {
+	display: flex;
+	min-width: 0;
+	align-items: baseline;
+	gap: 0.75rem;
+}
+
+.brandBlock h1 {
+	font-family: var(--font-display);
+	font-size: var(--text-2xl);
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	color: var(--foreground);
+	white-space: nowrap;
+}
+
+.autosave {
+	display: inline-flex;
+	min-width: 0;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--text-xs);
+	color: var(--text-muted);
+}
+
+.autosave i {
+	width: 6px;
+	height: 6px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background: var(--success);
+}
+
+.autosave[data-status='saving'] i {
+	background: var(--warning);
+	animation: pulse 0.9s infinite;
+}
+
+.autosave[data-status='unavailable'] i {
+	background: var(--error);
+}
+
+.centerTools,
+.historyTools,
+.faceTools,
+.actions {
+	display: flex;
+	align-items: center;
+}
+
+.centerTools {
+	gap: 0.5rem;
+}
+
+.historyTools,
+.faceTools {
+	padding: 3px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: rgba(255, 255, 255, 0.04);
+}
+
+.historyTools button,
+.faceTools button,
+.resetButton {
+	display: inline-flex;
+	min-height: 32px;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+	padding: 6px 12px;
+	border: 0;
+	border-radius: 7px;
+	background: transparent;
+	color: var(--text-muted);
+	font-size: var(--text-sm);
+	font-weight: 500;
+	cursor: pointer;
+	transition:
+		color 0.15s ease,
+		background 0.15s ease;
+}
+
+.historyTools button {
+	width: 34px;
+	padding: 0;
+}
+
+.historyTools button:hover:not(:disabled),
+.faceTools button:hover,
+.resetButton:hover {
+	color: var(--foreground);
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.historyTools button:disabled {
+	opacity: 0.3;
+	cursor: not-allowed;
+}
+
+.faceTools .faceActive {
+	background: rgba(201, 168, 76, 0.12);
+	color: var(--primary);
+}
+
+.faceTools .removeFace {
+	width: 30px;
+	padding: 0;
+	color: var(--error);
+}
+
+.resetButton {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.actions {
+	justify-content: flex-end;
+	gap: 0.5rem;
+}
+
+@keyframes pulse {
+	50% {
+		opacity: 0.35;
+	}
+}
+
+/*
+ * Requêtes de CONTENEUR et non de viewport : la barre vit dans la colonne de
+ * droite, amputée des ~460px de la sidebar. À 1200px de fenêtre elle n'en fait
+ * que 740, et des seuils en `@media` la laissaient sur une seule ligne bien
+ * après qu'elle ait cessé d'y tenir.
+ */
+@container studio-preview (max-width: 900px) {
+	.toolbar {
+		grid-template-columns: 1fr auto;
+	}
+
+	.centerTools {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		justify-content: center;
+	}
+}
+
+@container studio-preview (max-width: 620px) {
+	.toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		padding: 0.75rem;
+	}
+
+	.brandBlock {
+		flex: 1;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.brandBlock h1 {
+		font-size: var(--text-xl);
+	}
+
+	.centerTools {
+		order: 3;
+		width: 100%;
+		flex-wrap: wrap;
+		justify-content: flex-start;
+	}
+
+	.actions :global(button) {
+		padding-inline: 10px;
+		font-size: 0;
+	}
+
+	.actions :global(button svg) {
+		margin: 0;
+	}
+}
+
+/* Rangée des paliers de qualité.
+   `grid-column: 1 / -1` : elle traverse les trois colonnes de la barre, sinon
+   elle irait se loger dans la première et se ferait écraser comme les boutons
+   d'action l'ont été. */
+.qualityRow {
+	display: flex;
+	grid-column: 1 / -1;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: flex-end;
+	gap: 1rem;
+	padding-top: 0.5rem;
+	border-top: 1px solid var(--border);
+}
+
+.qualityRow > * {
+	min-width: 190px;
+}

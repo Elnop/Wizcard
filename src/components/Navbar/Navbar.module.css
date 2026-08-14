@@ -1,3 +1,16 @@
+/*
+ * Hauteur IMPOSÉE, et non déduite du contenu.
+ *
+ * `--navbar-height` sert de décalage à tout le site (padding-top du body, pages
+ * en `calc(100vh - …)`, tiroir mobile). Tant que la barre se dimensionnait sur
+ * son contenu, ce token n'était qu'une estimation : le logo mesure à lui seul
+ * 24px x 1.4 + 0.1em de padding ≈ 38px, ce qui avec les 32px de padding
+ * vertical et le filet du bas donnait ~71px face aux 57px déclarés. Les pages
+ * pleine hauteur passaient donc sous la barre de la différence.
+ *
+ * En fixant la hauteur, le token devient la source de vérité : rien ne peut
+ * plus diverger. Le plus haut élément intérieur (avatar, 36px) tient largement.
+ */
 .navbar {
 	position: fixed;
 	top: 0;
@@ -5,9 +18,11 @@
 	right: 0;
 	z-index: 100;
 	display: flex;
+	box-sizing: border-box;
+	height: var(--navbar-height);
 	align-items: center;
 	gap: 24px;
-	padding: 16px 32px;
+	padding: 0 32px;
 	background: var(--glass-bg);
 	border-bottom: 1px solid var(--glass-border);
 	backdrop-filter: blur(var(--glass-blur));
@@ -384,7 +399,9 @@
 
 @media (max-width: 768px) {
 	.navbar {
-		padding: 10px 12px;
+		/* Seul l'horizontal change : la hauteur reste celle du token, sinon le
+		   décalage du body et des pages pleine hauteur redeviendrait faux. */
+		padding: 0 12px;
 		gap: 10px;
 	}
 

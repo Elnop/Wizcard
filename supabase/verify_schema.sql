@@ -187,6 +187,11 @@ with expected(t, col, typ) as (
     ('custom_cards','oracle_text','text'),('custom_cards','rarity','text'),
     ('custom_cards','set_name','text'),('custom_cards','display_name','text'),
     ('custom_cards','image_hash','text'),('custom_cards','drive_folder_path','text'),
+    -- custom_cards : studio d'édition (20260726120000)
+    ('custom_cards','layout','text'),('custom_cards','editor_payload','jsonb'),
+    ('custom_cards','art_storage_path','text'),
+    ('custom_cards','back_image_storage_path','text'),
+    ('custom_cards','updated_at','timestamp with time zone'),
     -- email_change_requests
     ('email_change_requests','id','uuid'),('email_change_requests','user_id','uuid'),
     ('email_change_requests','token_hash','text'),('email_change_requests','expires_at','timestamp with time zone'),
@@ -268,8 +273,34 @@ select pg_temp.chk('policy', 'storage.objects :: '||p, pg_temp.has_policy('stora
 from unnest(array[
   'public read avatars bucket','users write own avatar',
   'public read custom-cards bucket','service role write custom-cards bucket',
-  'user manage own storage objects','user upload to own folder'
+  'user manage own storage objects','user upload to own folder',
+  'user upload own custom-card-art','user manage own custom-card-art'
 ]) p;
+
+-- Le bucket d'artwork source doit rester PRIVÉ : il contient l'upload original
+-- de l'utilisateur, jamais destiné à être servi publiquement (20260726120000).
+select pg_temp.chk(
+  'security', 'bucket custom-card-art is private',
+  coalesce((select not public from storage.buckets where id='custom-card-art'), false),
+  'bucket custom-card-art absent ou marqué public'
+);
+
+-- SÉCURITÉ : la lecture publique des rendus custom doit être gatée par la
+-- visibilité du profil propriétaire, comme decks/folders/cards (20260713130000).
+-- La qualification de `name` est load-bearing : `custom_cards` possède elle-même
+-- une colonne `name`, donc un `name` nu dans la sous-requête se résout sur la
+-- table INTERNE et rend la branche publique morte (corrigé par 20260726120000).
+-- Postgres normalise `storage.objects.name` en `objects.name` dans le prédicat
+-- stocké : c'est cette forme-là qu'on assert.
+select pg_temp.chk(
+  'security', 'custom-cards bucket read is privacy-gated',
+  exists (select 1 from pg_policies
+          where schemaname='storage' and tablename='objects'
+            and policyname='public read custom-cards bucket'
+            and qual ilike '%profile_is_public%'
+            and qual ilike '%objects.name%'),
+  'policy "public read custom-cards bucket" ne filtre pas par profile_is_public ou compare un `name` non qualifié (se résout sur custom_cards.name)'
+);
 
 -- SÉCURITÉ : "Public can view collection cards" a été RÉINTRODUITE (20260713130000)
 -- pour porter le filtre de confidentialité, MAIS la protection prix ne repose plus
@@ -375,7 +406,8 @@ with fn(name, args) as (
     ('lower_tags','t text[]'),
     ('recompute_user_usage','uid uuid'),
     ('trg_decks_usage',''),('trg_cards_usage',''),
-    ('trg_decks_limit',''),('trg_cards_limit','')
+    ('trg_decks_limit',''),('trg_cards_limit',''),
+    ('trg_custom_cards_limit',''),('trg_custom_cards_touch','')
 )
 select pg_temp.chk('function', fn.name||'('||fn.args||')',
   pg_temp.has_func(fn.name, fn.args), 'fonction absente')
@@ -398,7 +430,9 @@ with tg(schema_, t, name) as (
     ('public','decks','decks_limit_before'),
     ('public','decks','decks_usage_after'),
     ('public','card_entries','cards_limit_before'),
-    ('public','card_entries','cards_usage_after')
+    ('public','card_entries','cards_usage_after'),
+    ('public','custom_cards','custom_cards_limit_before'),
+    ('public','custom_cards','custom_cards_touch_before')
 )
 select pg_temp.chk('trigger', tg.schema_||'.'||tg.t||' :: '||tg.name,
   pg_temp.has_trigger(tg.schema_, tg.t, tg.name), 'trigger absent')
@@ -606,6 +640,80 @@ from unnest(array[
 select pg_temp.chk('catalog', 'localized_cards is dropped',
   not pg_temp.has_table('localized_cards'),
   'table localized_cards toujours présente → 20260723120002 non appliquée');
+
+-- Catalogue des templates du Custom Card Studio (20260726130000). Alimenté par
+-- scripts/card-assets/upload-templates.ts, jamais par une migration : une table
+-- vide est donc normale sur une base fraîche (INFO, pas FAIL).
+select pg_temp.chk('catalog', 'public.card_templates',
+  pg_temp.has_table('card_templates'), 'table absente');
+
+-- Le bucket des frames doit être PUBLIC : ce sont des gabarits vierges servis
+-- par le CDN à tous les utilisateurs du studio.
+select pg_temp.chk(
+  'catalog', 'bucket card-templates is public',
+  coalesce((select public from storage.buckets where id='card-templates'), false),
+  'bucket card-templates absent ou privé'
+);
+
+-- SÉCURITÉ : la default ACL de ce cluster accorde `all` (TRUNCATE compris, qui
+-- CONTOURNE la RLS) à anon/authenticated sur toute nouvelle table. 20260726130000
+-- révoque puis re-grant SELECT seul : on vérifie que la révocation tient.
+select pg_temp.chk(
+  'security', 'card_templates not truncatable by anon',
+  not exists (select 1 from information_schema.role_table_grants
+              where table_schema='public' and table_name='card_templates'
+                and grantee in ('anon','authenticated')
+                and privilege_type in ('TRUNCATE','INSERT','UPDATE','DELETE')),
+  'anon/authenticated ont des privilèges d''écriture sur card_templates'
+);
+
+-- Le script d'upload écrit via la clé service-role : sans ce grant, l'upsert
+-- échoue en 42501 alors que le bucket, lui, a bien reçu les fichiers.
+select pg_temp.chk(
+  'catalog', 'card_templates writable by service_role',
+  exists (select 1 from information_schema.role_table_grants
+          where table_schema='public' and table_name='card_templates'
+            and grantee='service_role' and privilege_type='INSERT'),
+  'service_role ne peut pas écrire dans card_templates'
+);
+
+-- Géométrie mesurée (20260727120000). NULL tant qu'un gabarit n'a pas été
+-- mesuré depuis le corpus MSE : colonne présente et de type jsonb, pas de
+-- contrainte sur son contenu (le studio la traite en NULL = non mesuré).
+select pg_temp.chk(
+  'catalog', 'card_templates.geometry column',
+  exists (select 1 from information_schema.columns
+          where table_schema='public' and table_name='card_templates'
+            and column_name='geometry' and data_type='jsonb'),
+  'colonne card_templates.geometry absente ou de mauvais type'
+);
+
+-- Taxonomie déclarée par le corpus MSE (20260727130000), remplace `kind`. Le
+-- studio lit ces trois colonnes pour la bibliothèque de cadres ; leur absence
+-- ferait échouer le chargement du catalogue en silence côté client.
+select pg_temp.chk(
+  'catalog', 'card_templates.installer_group column',
+  exists (select 1 from information_schema.columns
+          where table_schema='public' and table_name='card_templates'
+            and column_name='installer_group' and data_type='text'),
+  'colonne card_templates.installer_group absente ou de mauvais type'
+);
+
+select pg_temp.chk(
+  'catalog', 'card_templates.position_hint column',
+  exists (select 1 from information_schema.columns
+          where table_schema='public' and table_name='card_templates'
+            and column_name='position_hint' and data_type='text'),
+  'colonne card_templates.position_hint absente ou de mauvais type'
+);
+
+select pg_temp.chk(
+  'catalog', 'card_templates.tags column',
+  exists (select 1 from information_schema.columns
+          where table_schema='public' and table_name='card_templates'
+            and column_name='tags' and data_type='ARRAY'),
+  'colonne card_templates.tags absente ou de mauvais type'
+);
 
 -- Colonnes exhaustives (nom + type), source : DB locale à jour.
 with expected(t, col, typ) as (

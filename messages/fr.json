@@ -122,7 +122,16 @@
 		"add": "Ajouter",
 		"remove": "Retirer",
 		"officialPrints": "Impressions officielles",
-		"customCards": "Cartes custom"
+		"customCards": "Cartes custom",
+		"customType": {
+			"card": "Carte",
+			"token": "Jeton",
+			"cardback": "Dos de carte"
+		},
+		"customSource": {
+			"mpc_ingested": "MPC",
+			"user_created": "Création utilisateur"
+		}
 	},
 	"nav": {
 		"search": "Recherche",
@@ -135,7 +144,8 @@
 		"menu": "Menu",
 		"profile": "Profil",
 		"settings": "Paramètres",
-		"logout": "Se déconnecter"
+		"logout": "Se déconnecter",
+		"studio": "Studio"
 	},
 	"footer": {
 		"legalLinks": "Liens légaux",
@@ -929,5 +939,216 @@
 		"emailChangeInProgress": "Une demande est déjà en cours. Vérifiez votre boîte mail.",
 		"emailSendFailed": "Échec de l’envoi de l’e-mail.",
 		"noEdhrecData": "Aucune donnée EDHREC pour ce commandant"
+	},
+	"cardEditor": {
+		"seo": {
+			"title": "Studio de cartes custom",
+			"description": "Créez, prévisualisez, exportez et sauvegardez des cartes custom originales avec le Studio Wizcard."
+		},
+		"toolbar": {
+			"title": "Studio Wizcard",
+			"undo": "Annuler",
+			"redo": "Rétablir",
+			"front": "Recto",
+			"back": "Verso",
+			"addBack": "Ajouter un verso",
+			"removeBack": "Supprimer le verso",
+			"reset": "Recommencer",
+			"resetConfirm": "Effacer ce brouillon et recommencer ?",
+			"export": "Exporter en PNG",
+			"save": "Sauvegarder",
+			"autosave": {
+				"saving": "Enregistrement du brouillon…",
+				"saved": "Brouillon enregistré",
+				"unavailable": "Sauvegarde locale indisponible"
+			}
+		},
+		"tabs": {
+			"card": "Carte",
+			"style": "Layout",
+			"art": "Illustration",
+			"details": "Détails"
+		},
+		"fields": {
+			"name": "Nom de la carte",
+			"namePlaceholder": "Cartographe de l'Éther",
+			"manaCost": "Coût de mana",
+			"manaHint": "Cliquez les symboles ci-dessous, ou saisissez-les entre accolades — '{2}{U}{R}'.",
+			"insertSymbol": "Insérer {symbol}",
+			"typeLine": "Ligne de type",
+			"typePlaceholder": "Créature — humain et sorcier",
+			"rules": "Texte de règles",
+			"rulesPlaceholder": "Quand cette créature arrive, piochez une carte.",
+			"flavor": "Texte d'ambiance",
+			"flavorPlaceholder": "Chaque horizon soulève une nouvelle question.",
+			"power": "Force",
+			"toughness": "Endurance",
+			"loyalty": "Loyauté initiale",
+			"artist": "Crédit d'illustration",
+			"artistPlaceholder": "Nom de l'artiste",
+			"manaEmpty": "Aucun coût de mana",
+			"genericMana": "Mana générique",
+			"genericIncrease": "Augmenter le mana générique",
+			"genericDecrease": "Diminuer le mana générique",
+			"manaGroups": {
+				"basic": "De base",
+				"hybrid": "Hybride",
+				"phyrexian": "Phyrexian",
+				"exotic": "Exotiques"
+			},
+			"capacityHint": "{lines} lignes d’environ {perLine} caractères, selon le layout.",
+			"supertypes": "Supertypes",
+			"supertypesPlaceholder": "Légendaire…",
+			"types": "Types",
+			"typesPlaceholder": "Créature…",
+			"subtypes": "Sous-types",
+			"subtypesPlaceholder": "Humain, Sorcier…"
+		},
+		"art": {
+			"title": "Illustration",
+			"description": "Importez, collez ou déposez une image. Elle est optimisée localement avant d'être envoyée.",
+			"drop": "Déposez une image ou parcourez vos fichiers",
+			"formats": "PNG, JPG, WebP ou AVIF · 15 Mo maximum",
+			"replace": "Remplacer l'illustration",
+			"zoom": "Zoom",
+			"horizontal": "Horizontal",
+			"vertical": "Vertical",
+			"resetCrop": "Réinitialiser le cadrage",
+			"dragTip": "Astuce : faites glisser l'illustration directement dans la carte pour la recadrer.",
+			"errors": {
+				"tooLarge": "Cette image dépasse la limite de 15 Mo.",
+				"unsupported": "Ce fichier n'est pas une image prise en charge.",
+				"unreadable": "Impossible de lire cette image. Essayez un autre fichier."
+			}
+		},
+		"style": {
+			"title": "Layout",
+			"description": "Le gabarit se change à tout moment sans perdre les textes ni le cadrage.",
+			"frame": "Palette du cadre",
+			"accent": "Accent",
+			"finish": "Finition",
+			"frames": {
+				"auto": "Automatique",
+				"light": "Ivoire",
+				"tide": "Marée",
+				"void": "Néant",
+				"ember": "Braise",
+				"grove": "Bosquet",
+				"prismatic": "Prismatique",
+				"artifact": "Artefact"
+			},
+			"finishes": {
+				"matte": "Mate",
+				"foil": "Foil",
+				"etched": "Etched"
+			}
+		},
+		"mseLibrary": {
+			"title": "Bibliothèque de cadres Magic",
+			"count": "{count} layouts prêts à rendre",
+			"loading": "Chargement des cadres haute définition…",
+			"error": "La bibliothèque de cadres n'a pas pu être chargée. Réessaie dans un instant.",
+			"searchLabel": "Rechercher un cadre",
+			"searchPlaceholder": "M15, full art, snow…",
+			"results": "{count, plural, =0 {Aucun résultat} one {# layout} other {# layouts}}",
+			"empty": "Aucun cadre ne correspond à cette recherche.",
+			"filters": "Filtres",
+			"filtersClose": "Fermer les filtres",
+			"filtersApply": "Appliquer",
+			"filtersReset": "Réinitialiser",
+			"filterFamily": "Famille",
+			"filterKeyword": "Mot-clé",
+			"filterOrigin": "Origine",
+			"filterOrientation": "Orientation",
+			"filterCreature": "Compatible créature",
+			"filterAny": "Indifférent",
+			"originOfficial": "Cadres officiels",
+			"originCustom": "Cadres communautaires",
+			"orientationPortrait": "Portrait",
+			"orientationLandscape": "Paysage",
+			"creatureYes": "Avec zone F/E",
+			"creatureNo": "Sans zone F/E",
+			"keywordSearch": "Tapez pour chercher un mot-clé…",
+			"activeFilters": "{count, plural, =0 {Aucun filtre} one {# filtre} other {# filtres}}",
+			"familyM15": "Cadres modernes (depuis 2014)",
+			"familyModern": "Cadres 8e édition (2003-2014)",
+			"familyOriginal": "Cadres d'origine (avant 2003)",
+			"familyTenth": "Cadres 10e édition",
+			"familyFourth": "Cadres 4e édition",
+			"familyClassicshifted": "Décalage classique",
+			"familyPlaneshifted": "Décalage planaire",
+			"familyFuture": "Cadres du futur",
+			"familyOther": "Autres cadres"
+		},
+		"details": {
+			"title": "Détails",
+			"description": "Métadonnées d'impression et visibilité de la carte.",
+			"setName": "Nom de l'extension",
+			"setCode": "Code de l'extension",
+			"number": "Numéro de collection",
+			"rarity": "Rareté",
+			"language": "Langue",
+			"tags": "Tags",
+			"tagsHint": "Séparez les tags par des virgules.",
+			"tagsPlaceholder": "cube, commander, playtest",
+			"public": "Carte publique",
+			"publicHint": "Les cartes publiques peuvent apparaître dans la recherche custom. Les cartes privées restent dans votre compte.",
+			"rarities": {
+				"common": "Commune",
+				"uncommon": "Peu commune",
+				"rare": "Rare",
+				"mythic": "Mythique"
+			},
+			"languages": {
+				"en": "Anglais",
+				"fr": "Français",
+				"de": "Allemand",
+				"es": "Espagnol",
+				"it": "Italien",
+				"pt": "Portugais",
+				"ja": "Japonais",
+				"ko": "Coréen",
+				"ru": "Russe",
+				"zhs": "Chinois simplifié"
+			}
+		},
+		"canvas": {
+			"namePlaceholder": "Carte sans titre",
+			"typePlaceholder": "Type de carte",
+			"rulesPlaceholder": "Écrivez le texte de règles ici…",
+			"artistPrefix": "Illustration",
+			"customMark": "WIZCARD · CUSTOM",
+			"panArtwork": "Faire glisser pour repositionner l'illustration",
+			"editName": "Modifier le nom de la carte",
+			"editManaCost": "Modifier le coût de mana",
+			"editType": "Modifier la ligne de type",
+			"editRules": "Modifier le texte de règles",
+			"editStats": "Modifier une statistique de la carte"
+		},
+		"preview": {
+			"title": "Aperçu de la carte"
+		},
+		"notices": {
+			"imageError": "Impossible d'importer l'image. Utilisez un PNG, JPG, WebP ou AVIF de moins de 15 Mo.",
+			"exported": "PNG haute résolution exporté.",
+			"exportError": "Impossible d'exporter la carte. Essayez une autre image.",
+			"incomplete": "Ajoutez un nom, une ligne de type et une illustration avant de sauvegarder.",
+			"loginRequired": "Votre brouillon est conservé localement. Connectez-vous pour le sauvegarder dans votre compte Wizcard.",
+			"loginAction": "Se connecter",
+			"saving": "Rendu et sauvegarde de votre carte…",
+			"saved": "Carte sauvegardée. Ouverture en cours…",
+			"saveError": "Impossible de sauvegarder la carte. Votre brouillon local n'est pas perdu."
+		},
+		"quality": {
+			"label": "Qualité",
+			"previewLabel": "Qualité de l'aperçu",
+			"exportLabel": "Qualité de l'export",
+			"preview": "Rapide",
+			"hq": "Haute",
+			"source": "Maximale",
+			"previewHint": "Aperçu fluide, adapté à la taille actuelle",
+			"hqHint": "Plus net si l’aperçu est agrandi",
+			"sourceHint": "Résolution native des cadres, pour l’impression"
+		}
 	}
 }

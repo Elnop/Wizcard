@@ -1,0 +1,152 @@
+/*
+ * La carte doit tenir ENTIÈREMENT dans la scène : sa taille est bornée par la
+ * largeur ET par la hauteur disponibles.
+ *
+ * Un simple `width` ne suffisait pas : la hauteur en découlant via l'aspect
+ * ratio, une scène plus courte que la carte la faisait déborder et
+ * `.previewStage` devenait scrollable. On convertit donc la hauteur disponible
+ * (100% de la scène, padding déduit par box-sizing sur le parent flex) en
+ * largeur équivalente via le ratio, et on prend la plus contraignante.
+ *
+ * --card-aspect : largeur / hauteur. 63 × 88 mm ≈ 0.716 pour une carte
+ * portrait ; les gabarits paysage l'inversent plus bas.
+ *
+ * --stage-padding-y : cqh mesure la boîte du conteneur, padding compris, alors
+ * que la carte vit dans la zone de contenu. Sans cette soustraction, la carte
+ * dépasserait exactement du padding et le débordement reviendrait. La valeur
+ * réelle est fournie par le conteneur (.previewStage la déclare à côté de son
+ * propre `padding`) ; celle ci-dessous n'est qu'un repli pour un usage du canvas
+ * hors de la scène du studio.
+ */
+.canvas {
+	--card-aspect: 0.716;
+	--max-width: 620px;
+	--stage-padding-y: 68px;
+	/* Plancher : en dessous, les champs d'édition directe deviennent inutilisables
+	   et les textes illisibles. Sur une scène plus courte que ça, mieux vaut
+	   laisser la carte déborder (la scène redevient scrollable) que d'afficher
+	   une vignette sur laquelle on ne peut rien faire. */
+	--min-width: 260px;
+
+	position: relative;
+	width: clamp(
+		var(--min-width),
+		min(100%, var(--max-width), (100cqh - var(--stage-padding-y)) * var(--card-aspect)),
+		var(--max-width)
+	);
+	filter: drop-shadow(0 34px 44px rgba(0, 0, 0, 0.48));
+	transition:
+		width 0.2s ease,
+		filter 0.2s ease;
+}
+
+.canvas[data-orientation='landscape'] {
+	/* Gabarits oversized (planechase, schemes…) : le ratio s'inverse. */
+	--card-aspect: 1.397;
+	--max-width: 860px;
+}
+
+.svg {
+	display: block;
+	width: 100%;
+	height: auto;
+	border-radius: 4.4%;
+	background: #0a0b0f;
+}
+
+.editingLayer {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	border-radius: 4.4%;
+	overflow: hidden;
+}
+
+.directField,
+.directRules,
+.statField,
+.artHandle {
+	position: absolute;
+	pointer-events: auto;
+	border: 1px solid transparent;
+	background: transparent;
+	color: transparent;
+	caret-color: #fff;
+	font-family: Georgia, serif;
+	outline: none;
+	transition:
+		border-color 0.15s ease,
+		background 0.15s ease,
+		color 0.15s ease,
+		box-shadow 0.15s ease;
+}
+
+.directField:hover,
+.directRules:hover,
+.statField:hover {
+	border-color: rgba(255, 255, 255, 0.44);
+	box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+.directField:focus,
+.directRules:focus,
+.statField:focus {
+	z-index: 5;
+	background: rgba(7, 9, 14, 0.9);
+	border-color: #e5c76d;
+	box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.24);
+	color: #f8f2e7;
+}
+
+.directField {
+	padding: 0 1.5%;
+	font-size: clamp(11px, 2.25vw, 25px);
+	font-weight: 700;
+}
+
+.manaField {
+	font-family: var(--font-geist-sans), Arial, sans-serif;
+	font-size: clamp(10px, 1.8vw, 18px);
+	text-align: end;
+}
+
+.directRules {
+	padding: 2%;
+	resize: none;
+	font-size: clamp(9px, 1.65vw, 18px);
+	line-height: 1.3;
+}
+
+.statField {
+	padding: 0;
+	font-family: var(--font-geist-sans), Arial, sans-serif;
+	font-size: clamp(10px, 2vw, 22px);
+	font-weight: 800;
+	text-align: center;
+}
+
+.artHandle {
+	cursor: grab;
+	touch-action: none;
+}
+
+.artHandle:hover {
+	border-color: rgba(255, 255, 255, 0.6);
+	box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.25);
+}
+
+.artHandle:active {
+	cursor: grabbing;
+}
+
+@media (max-width: 720px) {
+	/* On abaisse seulement le plafond de largeur et le padding de scène : la
+	   borne sur la hauteur (déclarée dans .canvas) reste active, sinon la carte
+	   redéborderait sur les écrans courts — c'est exactement ce que faisait la
+	   règle `width: min(100%, 520px)` qui écrasait tout ici. */
+	.canvas,
+	.canvas[data-orientation='landscape'] {
+		--max-width: 520px;
+		--stage-padding-y: 44px;
+	}
+}

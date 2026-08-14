@@ -1,0 +1,296 @@
+/*
+ * Aligné sur les modales de filtres du site (FilterModal, DeckFilterModal), qui
+ * partagent déjà un motif commun : mêmes dimensions de panneau, même en-tête,
+ * même pied, mêmes boutons, mêmes puces.
+ *
+ * La version d'origine s'en écartait sur trois points qui la faisaient lire
+ * comme un composant étranger : unités en rem là où le site est en px,
+ * variables inexistantes dans ce projet (`--border`, `--accent` — elle tournait
+ * donc sur ses valeurs de repli), et coins arrondis à 0.4rem au lieu des 2px du
+ * site.
+ */
+
+.panel {
+	width: 560px;
+	max-height: calc(100vh - 64px);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 20px 24px;
+	border-bottom: 1px solid var(--glass-border);
+	flex-shrink: 0;
+}
+
+.title {
+	font-size: var(--text-xl);
+	font-weight: 600;
+	color: var(--foreground);
+}
+
+.closeButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition:
+		background-color 0.15s,
+		color 0.15s,
+		border-color 0.15s;
+}
+
+.closeButton:hover {
+	background: rgba(255, 255, 255, 0.06);
+	color: var(--foreground);
+	border-color: var(--glass-border);
+}
+
+.body {
+	padding: 24px;
+	overflow-y: auto;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+}
+
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	border: none;
+	padding: 0;
+	margin: 0;
+}
+
+.field > span,
+.field > legend {
+	font-size: var(--text-xs);
+	font-weight: 600;
+	font-family: var(--font-display);
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+	padding: 0;
+}
+
+/*
+ * FilterModal et DeckFilterModal n'ont pas de <select> ; on reprend donc la
+ * convention des selects du site (SortFilter, ImportDeckModal, CreateDeckModal),
+ * en gardant la bordure et le rayon 2px des modales pour rester dans leur forme.
+ *
+ * `appearance: none` + chevron en background-image : le chevron natif est rendu
+ * par l'OS et ignore le thème, il tranchait donc en clair sur le fond sombre.
+ * Le padding droit lui réserve sa place.
+ */
+.field select {
+	width: 100%;
+	min-width: 0;
+	padding: 9px 32px 9px 12px;
+	background-color: rgba(255, 255, 255, 0.04);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 12px center;
+	border: 1px solid var(--glass-border);
+	border-radius: 2px;
+	color: var(--foreground);
+	font-size: var(--text-base);
+	outline: none;
+	appearance: none;
+	cursor: pointer;
+	transition: border-color 0.2s;
+}
+
+.field select:focus {
+	border-color: var(--gold);
+}
+
+/*
+ * Le menu déroulant natif ne suit PAS le thème : sans cette règle il s'ouvre en
+ * blanc sur le reste de l'interface sombre.
+ *
+ * CardModal, AddToDeckModal et DeckBulkEditModal écrivent `var(--card-bg,
+ * #1a1a2e)`, mais `--card-bg` n'est pas déclarée dans ce projet — ils tournent
+ * donc sur le repli. On vise `--surface`, qui vaut exactement ce #1a1a2e et
+ * existe, plutôt que de propager une variable fantôme.
+ */
+.field select option {
+	background: var(--surface);
+	color: var(--foreground);
+}
+
+/*
+ * Mots-clés RETENUS. Sans contrainte de hauteur, contrairement à la liste de
+ * 188 puces qu'elle remplace : on n'en garde ici qu'une poignée, le catalogue
+ * complet se parcourt par la saisie ci-dessous.
+ */
+.keywordList {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+/* Reprend .chip de DeckFilterModal, plus la croix de retrait. */
+.keywordActive {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	background: var(--primary);
+	border: 1px solid var(--primary);
+	border-radius: 999px;
+	color: var(--primary-text);
+	font-size: var(--text-sm);
+}
+
+.keywordRemove {
+	display: inline-flex;
+	align-items: center;
+	padding: 0;
+	background: transparent;
+	border: none;
+	color: inherit;
+	cursor: pointer;
+	opacity: 0.7;
+	transition: opacity 0.15s;
+}
+
+.keywordRemove:hover {
+	opacity: 1;
+}
+
+/* Champ de saisie + propositions. */
+.keywordInput {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.keywordInput input {
+	width: 100%;
+	padding: 9px 12px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid var(--glass-border);
+	border-radius: 2px;
+	color: var(--foreground);
+	font-size: var(--text-base);
+	transition: border-color 0.2s;
+}
+
+.keywordInput input:focus {
+	outline: none;
+	border-color: var(--gold);
+}
+
+/*
+ * Les propositions s'insèrent DANS le flux plutôt qu'en `position: absolute`.
+ *
+ * Le champ mot-clé est le dernier de la modale, dont le corps défile
+ * (`.body { overflow-y: auto }`) : une liste flottante y était rognée par le bas
+ * du panneau, donc illisible dès la deuxième proposition. En flux, elle
+ * allonge le corps et reste entièrement atteignable au défilement.
+ *
+ * Le coût est que le contenu suivant se décale — nul ici, puisqu'il n'y a rien
+ * après ce champ.
+ */
+.suggestions {
+	margin: 0;
+	padding: 4px;
+	list-style: none;
+	background: var(--surface);
+	border: 1px solid var(--glass-border);
+	border-radius: 2px;
+}
+
+.suggestions button {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	width: 100%;
+	padding: 7px 10px;
+	background: transparent;
+	border: none;
+	border-radius: 2px;
+	color: var(--foreground);
+	font-size: var(--text-sm);
+	text-align: start;
+	cursor: pointer;
+}
+
+.suggestions button:hover {
+	background: var(--surface-hover);
+}
+
+.count {
+	opacity: 0.6;
+	font-variant-numeric: tabular-nums;
+}
+
+.footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 12px;
+	padding: 16px 24px;
+	border-top: 1px solid var(--glass-border);
+	flex-shrink: 0;
+}
+
+.resetButton {
+	padding: 9px 16px;
+	background: transparent;
+	border: 1px solid var(--glass-border);
+	border-radius: 2px;
+	color: var(--foreground);
+	cursor: pointer;
+	font-size: var(--text-base);
+	font-weight: 500;
+	transition:
+		border-color 0.2s,
+		background-color 0.2s;
+}
+
+.resetButton:hover {
+	border-color: var(--gold);
+	background: rgba(201, 168, 76, 0.06);
+}
+
+.applyButton {
+	padding: 9px 20px;
+	background: var(--primary);
+	border: 1px solid var(--primary);
+	border-radius: 2px;
+	color: var(--primary-text);
+	cursor: pointer;
+	font-size: var(--text-base);
+	font-weight: 600;
+	transition:
+		opacity 0.2s,
+		transform 0.1s;
+}
+
+.applyButton:hover {
+	opacity: 0.9;
+}
+
+.applyButton:active {
+	transform: scale(0.98);
+}
+
+@media (max-width: 600px) {
+	.panel {
+		width: 100%;
+	}
+}

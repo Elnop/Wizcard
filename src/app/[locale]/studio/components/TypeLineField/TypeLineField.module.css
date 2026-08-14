@@ -1,0 +1,173 @@
+/*
+ * Aligné sur les conventions de EditorSidebar.module.css : mêmes tokens de
+ * bordure, de rayon et de fond que .field, pour que ce bloc ne détonne pas au
+ * milieu des autres champs.
+ */
+.field {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 7px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.fieldLabel {
+	padding: 0;
+	font-size: var(--text-sm);
+	font-weight: 500;
+	color: var(--text-muted);
+}
+
+/*
+ * Les trois listes vivent dans un même cadre plutôt que côte à côte : elles
+ * composent UNE ligne, et trois encadrés séparés donnaient l'impression de
+ * trois champs sans rapport.
+ */
+.groups {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	overflow: hidden;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.04);
+	transition: border-color 0.15s ease;
+}
+
+.groups:focus-within {
+	border-color: var(--primary);
+}
+
+.group {
+	display: flex;
+	min-height: 40px;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 5px;
+	padding: 7px 10px;
+	transition: background 0.16s ease;
+}
+
+.group + .group {
+	border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.group:focus-within {
+	background: rgba(201, 168, 76, 0.05);
+}
+
+/* Le libellé tient sur la même ligne que les tags : la colonne est étroite, et
+   trois libellés empilés au-dessus de trois champs mangeaient toute la hauteur. */
+.groupLabel {
+	flex-shrink: 0;
+	width: 78px;
+	font-size: var(--text-xs);
+	color: var(--text-muted);
+}
+
+.tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 4px 2px 9px;
+	border: 1px solid var(--glass-border);
+	border-radius: 999px;
+	background: rgba(201, 168, 76, 0.1);
+	font-size: var(--text-xs);
+	line-height: 1.6;
+	color: var(--foreground);
+}
+
+.tag button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2px;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: color 0.15s ease;
+}
+
+.tag button:hover {
+	color: var(--error);
+}
+
+/* La liste de suggestions se superpose au contenu suivant : le wrapper porte le
+   contexte de positionnement. Il pousse aussi pour occuper la place restante. */
+.inputWrapper {
+	position: relative;
+	min-width: 90px;
+	flex: 1;
+}
+
+/* Champ nu : le cadre est porté par .groups, pas par chaque input — sinon on
+   voyait une bordure dans une bordure. */
+.inputWrapper input {
+	width: 100%;
+	min-width: 0;
+	padding: 2px 0;
+	border: 0;
+	background: transparent;
+	color: var(--foreground);
+	font: 400 var(--text-base) var(--font-body);
+	outline: none;
+}
+
+.inputWrapper input::placeholder {
+	color: rgba(255, 255, 255, 0.26);
+}
+
+.suggestions {
+	position: absolute;
+	z-index: 10;
+	top: calc(100% + 6px);
+	inset-inline: 0;
+	max-height: 212px;
+	margin: 0;
+	padding: 4px;
+	overflow-y: auto;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--surface);
+	box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+	list-style: none;
+}
+
+.suggestions button {
+	display: block;
+	width: 100%;
+	padding: 7px 9px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--foreground);
+	font-size: var(--text-sm);
+	text-align: start;
+	cursor: pointer;
+}
+
+.suggestions button:hover {
+	background: rgba(255, 255, 255, 0.07);
+}
+
+/* Aperçu de la ligne telle qu'elle sera imprimée : en serif, comme sur la carte. */
+.preview {
+	padding: 6px 2px 0;
+	font-family: var(--font-display);
+	font-size: var(--text-sm);
+	color: var(--text-muted);
+}
+
+.preview:empty::before {
+	content: '—';
+	color: var(--text-muted);
+}
+
+.fieldError .groups {
+	border-color: var(--error);
+}

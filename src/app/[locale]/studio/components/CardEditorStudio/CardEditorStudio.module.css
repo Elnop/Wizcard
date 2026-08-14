@@ -1,0 +1,174 @@
+/*
+ * Le studio se pose sur le fond global (body::before) comme les autres pages :
+ * pas de dégradé local. Il avait le sien, ce qui le faisait lire comme une app
+ * à part au milieu du site.
+ *
+ * Atelier plein écran, bord à bord : la page EST la grille à deux colonnes, sans
+ * marge ni gouttière. La sidebar touche donc le haut et le bord gauche, ce qui
+ * impose que plus rien ne s'étende au-dessus d'elle — la barre d'outils est
+ * passée dans la colonne de droite (cf. CardEditorStudio.tsx).
+ */
+.page {
+	position: relative;
+	display: grid;
+	/*
+	 * Sidebar DOUBLÉE (400-460 -> 800-920) : la bibliothèque de cadres est le
+	 * panneau qui en profite, sa grille passe de 2 à 5 vignettes par ligne.
+	 *
+	 * `min()` borne la piste à la moitié du viewport : à 800px fixes, un écran de
+	 * 1280 ne laissait que 480px à la carte, qui est pourtant ce qu'on regarde.
+	 * En dessous de ~1600px la sidebar reprend donc la moitié disponible, et le
+	 * plancher de 400px reste celui d'avant — la colonne ne peut jamais devenir
+	 * plus étroite qu'elle ne l'était.
+	 */
+	grid-template-columns: minmax(400px, min(920px, 50vw)) minmax(0, 1fr);
+	/* `min-height: 0` sur les pistes est indispensable : sans lui une piste ne
+	   peut pas rétrécir sous la taille de son contenu, et la sidebar déborderait
+	   au lieu de faire défiler son panneau. */
+	grid-template-rows: minmax(0, 1fr);
+	height: calc(100vh - var(--navbar-height));
+}
+
+/* Séparateurs : sans gouttière, ce sont les bordures qui découpent les zones. */
+.notice {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	flex-shrink: 0;
+	padding: 10px 16px;
+	border-bottom: 1px solid var(--border);
+	color: var(--foreground);
+	font-size: var(--text-sm);
+}
+
+.notice[data-type='success'] {
+	border-color: rgba(74, 140, 111, 0.4);
+	color: var(--success);
+}
+
+.notice[data-type='error'] {
+	border-color: rgba(192, 57, 43, 0.4);
+	color: var(--error);
+}
+
+.notice[data-type='info'] {
+	border-color: var(--glass-border);
+}
+
+.notice a {
+	margin-inline-start: auto;
+	color: var(--primary);
+	font-weight: 600;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	white-space: nowrap;
+}
+
+/* Sans fond ni cadre : la carte se détache directement sur le motif global, et
+   c'est elle l'objet de la page — un panneau autour ne faisait que la boîter. */
+.previewColumn {
+	display: flex;
+	min-width: 0;
+	min-height: 0;
+	flex-direction: column;
+	overflow: hidden;
+	/* Conteneur nommé sur lequel la barre d'outils cale ses ruptures : sa largeur
+	   n'est plus celle du viewport depuis qu'elle vit dans cette colonne.
+	   `inline-size` et non `size` — borner la hauteur ici casserait le `flex: 1`
+	   de .previewStage. */
+	container: studio-preview / inline-size;
+}
+
+.previewStage {
+	position: relative;
+	display: flex;
+	min-height: 0;
+	flex: 1;
+	align-items: center;
+	justify-content: center;
+	/* Conteneur de requête : .canvas borne sa largeur sur 100cqh (la hauteur
+	   utile de la scène) pour que la carte tienne toujours en entier. Le
+	   container-type `size` est nécessaire — `inline-size` n'expose pas cqh. */
+	container-type: size;
+	/* Doit rester égal au total vertical du `padding` ci-dessous : cqh mesure la
+	   boîte padding comprise, que .canvas soustrait pour se dimensionner. */
+	--stage-padding-y: 64px;
+	/* La carte se met à l'échelle pour tenir dans la scène (cf. .canvas, borné sur
+	   la hauteur disponible) : en usage normal rien ne déborde et aucune barre
+	   n'apparaît. `auto` reste un filet pour le seul cas où la scène descend sous
+	   le plancher de lisibilité de la carte (--min-width), où l'on préfère
+	   scroller plutôt que rogner. */
+	overflow: auto;
+	padding: 32px clamp(20px, 5vw, 72px);
+}
+
+/*
+ * Halo décoratif derrière la carte. `width: 55%` + `aspect-ratio: 1` le rendait
+ * plus HAUT que la scène dès qu'elle était large et courte (ex. 1466 × 785 :
+ * halo de 806px), ce qui suffisait à rendre .previewStage scrollable alors même
+ * que la carte, elle, tenait. On le borne donc aussi sur la hauteur, et on le
+ * sort du flux de calcul du scroll en le centrant en absolu.
+ */
+.stageGlow {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: min(55%, 55cqh);
+	aspect-ratio: 1;
+	transform: translate(-50%, -50%);
+	border-radius: 50%;
+	background: radial-gradient(circle, rgba(201, 168, 76, 0.1), transparent 64%);
+	filter: blur(15px);
+	pointer-events: none;
+}
+
+.hiddenRenders {
+	position: fixed;
+	inset-inline-start: -10000px;
+	top: 0;
+	width: 744px;
+	pointer-events: none;
+}
+
+/*
+ * En colonne unique, les deux panneaux empilés ne tiennent plus dans un
+ * viewport : la page redevient haute et défilante, et chacun reprend une
+ * hauteur minimale propre plutôt que de se partager l'écran.
+ *
+ * La carte passe en premier : c'est elle qu'on veut voir en arrivant, et elle
+ * porte désormais la barre d'outils.
+ */
+@media (max-width: 960px) {
+	.page {
+		grid-template-columns: 1fr;
+		grid-template-rows: auto auto;
+		height: auto;
+		min-height: calc(100vh - var(--navbar-height));
+	}
+
+	.previewColumn {
+		grid-row: 1;
+		min-height: 700px;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.page > :first-child {
+		grid-row: 2;
+		min-height: 660px;
+	}
+}
+
+@media (max-width: 620px) {
+	.previewColumn {
+		min-height: 580px;
+	}
+
+	.previewStage {
+		/* --stage-padding-y doit rester égal au total vertical du padding :
+		   .canvas le soustrait de 100cqh pour se dimensionner. Les deux valeurs
+		   se lisent ici côte à côte pour qu'elles ne divergent pas. */
+		--stage-padding-y: 44px;
+
+		padding: 22px 12px;
+	}
+}

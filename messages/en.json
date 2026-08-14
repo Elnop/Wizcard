@@ -122,7 +122,16 @@
 		"add": "Add",
 		"remove": "Remove",
 		"officialPrints": "Official prints",
-		"customCards": "Custom Cards"
+		"customCards": "Custom Cards",
+		"customType": {
+			"card": "Card",
+			"token": "Token",
+			"cardback": "Card back"
+		},
+		"customSource": {
+			"mpc_ingested": "MPC",
+			"user_created": "User created"
+		}
 	},
 	"nav": {
 		"search": "Search",
@@ -135,7 +144,8 @@
 		"menu": "Menu",
 		"profile": "Profile",
 		"settings": "Settings",
-		"logout": "Log out"
+		"logout": "Log out",
+		"studio": "Studio"
 	},
 	"footer": {
 		"legalLinks": "Legal links",
@@ -929,5 +939,216 @@
 		"emailChangeInProgress": "A request is already in progress. Check your inbox.",
 		"emailSendFailed": "Failed to send the email.",
 		"noEdhrecData": "No EDHREC data found for this commander"
+	},
+	"cardEditor": {
+		"seo": {
+			"title": "Custom Card Studio",
+			"description": "Design, preview, export, and save original custom cards with Wizcard Studio."
+		},
+		"toolbar": {
+			"title": "Wizcard Studio",
+			"undo": "Undo",
+			"redo": "Redo",
+			"front": "Front",
+			"back": "Back",
+			"addBack": "Add back",
+			"removeBack": "Remove back face",
+			"reset": "Start over",
+			"resetConfirm": "Clear this draft and start over?",
+			"export": "Export PNG",
+			"save": "Save card",
+			"autosave": {
+				"saving": "Saving draft…",
+				"saved": "Draft saved",
+				"unavailable": "Local save unavailable"
+			}
+		},
+		"tabs": {
+			"card": "Card",
+			"style": "Layout",
+			"art": "Artwork",
+			"details": "Details"
+		},
+		"fields": {
+			"name": "Card name",
+			"namePlaceholder": "Aether Cartographer",
+			"manaCost": "Mana cost",
+			"manaHint": "Click the symbols below, or type them by hand between braces — '{2}{U}{R}'.",
+			"insertSymbol": "Insert {symbol}",
+			"typeLine": "Type line",
+			"typePlaceholder": "Creature — Human Wizard",
+			"rules": "Rules text",
+			"rulesPlaceholder": "When this creature enters, draw a card.",
+			"flavor": "Flavor text",
+			"flavorPlaceholder": "Every horizon is another question.",
+			"power": "Power",
+			"toughness": "Toughness",
+			"loyalty": "Starting loyalty",
+			"artist": "Artist credit",
+			"artistPlaceholder": "Artist name",
+			"manaEmpty": "No mana cost yet",
+			"genericMana": "Generic mana",
+			"genericIncrease": "Increase generic mana",
+			"genericDecrease": "Decrease generic mana",
+			"manaGroups": {
+				"basic": "Basic",
+				"hybrid": "Hybrid",
+				"phyrexian": "Phyrexian",
+				"exotic": "Exotic"
+			},
+			"capacityHint": "{lines} lines of about {perLine} characters, set by the layout.",
+			"supertypes": "Supertypes",
+			"supertypesPlaceholder": "Legendary…",
+			"types": "Types",
+			"typesPlaceholder": "Creature…",
+			"subtypes": "Subtypes",
+			"subtypesPlaceholder": "Human, Wizard…"
+		},
+		"art": {
+			"title": "Artwork",
+			"description": "Upload, paste, or drop an image. It is optimized locally before being sent.",
+			"drop": "Drop an image or browse",
+			"formats": "PNG, JPG, WebP or AVIF · 15 MB maximum",
+			"replace": "Replace artwork",
+			"zoom": "Zoom",
+			"horizontal": "Horizontal",
+			"vertical": "Vertical",
+			"resetCrop": "Reset crop",
+			"dragTip": "Tip: drag the artwork directly inside the card to reframe it.",
+			"errors": {
+				"tooLarge": "This image exceeds the 15 MB limit.",
+				"unsupported": "This file is not a supported image.",
+				"unreadable": "The image could not be read. Try another file."
+			}
+		},
+		"style": {
+			"title": "Layout",
+			"description": "Switch template at any time without losing text or artwork framing.",
+			"frame": "Frame palette",
+			"accent": "Accent",
+			"finish": "Finish",
+			"frames": {
+				"auto": "Automatic",
+				"light": "Ivory",
+				"tide": "Tide",
+				"void": "Void",
+				"ember": "Ember",
+				"grove": "Grove",
+				"prismatic": "Prismatic",
+				"artifact": "Artifact"
+			},
+			"finishes": {
+				"matte": "Matte",
+				"foil": "Foil",
+				"etched": "Etched"
+			}
+		},
+		"mseLibrary": {
+			"title": "Magic frame library",
+			"count": "{count} render-ready layouts",
+			"loading": "Loading high-definition frames…",
+			"error": "The frame library could not be loaded. Try again in a moment.",
+			"searchLabel": "Search frames",
+			"searchPlaceholder": "M15, full art, snow…",
+			"results": "{count, plural, =0 {No results} one {# layout} other {# layouts}}",
+			"empty": "No frame matches this search.",
+			"filters": "Filters",
+			"filtersClose": "Close filters",
+			"filtersApply": "Apply",
+			"filtersReset": "Reset",
+			"filterFamily": "Family",
+			"filterKeyword": "Keyword",
+			"filterOrigin": "Origin",
+			"filterOrientation": "Orientation",
+			"filterCreature": "Creature-capable",
+			"filterAny": "Any",
+			"originOfficial": "Official frames",
+			"originCustom": "Community frames",
+			"orientationPortrait": "Portrait",
+			"orientationLandscape": "Landscape",
+			"creatureYes": "Has a P/T box",
+			"creatureNo": "No P/T box",
+			"keywordSearch": "Type to search keywords…",
+			"activeFilters": "{count, plural, =0 {No filters} one {# filter} other {# filters}}",
+			"familyM15": "Modern frames (2014-present)",
+			"familyModern": "8th Edition frames (2003-2014)",
+			"familyOriginal": "Original frames (pre-2003)",
+			"familyTenth": "10th Edition frames",
+			"familyFourth": "4th Edition frames",
+			"familyClassicshifted": "Classic timeshifted",
+			"familyPlaneshifted": "Planar timeshifted",
+			"familyFuture": "Future-shifted frames",
+			"familyOther": "Other frames"
+		},
+		"details": {
+			"title": "Details",
+			"description": "Print metadata and card visibility.",
+			"setName": "Set name",
+			"setCode": "Set code",
+			"number": "Collector number",
+			"rarity": "Rarity",
+			"language": "Language",
+			"tags": "Tags",
+			"tagsHint": "Separate tags with commas.",
+			"tagsPlaceholder": "cube, commander, playtest",
+			"public": "Public card",
+			"publicHint": "Public cards can appear in custom-card search. Private cards stay in your account.",
+			"rarities": {
+				"common": "Common",
+				"uncommon": "Uncommon",
+				"rare": "Rare",
+				"mythic": "Mythic"
+			},
+			"languages": {
+				"en": "English",
+				"fr": "French",
+				"de": "German",
+				"es": "Spanish",
+				"it": "Italian",
+				"pt": "Portuguese",
+				"ja": "Japanese",
+				"ko": "Korean",
+				"ru": "Russian",
+				"zhs": "Simplified Chinese"
+			}
+		},
+		"canvas": {
+			"namePlaceholder": "Untitled card",
+			"typePlaceholder": "Card type",
+			"rulesPlaceholder": "Write rules text here…",
+			"artistPrefix": "Art",
+			"customMark": "WIZCARD · CUSTOM",
+			"panArtwork": "Drag to reposition artwork",
+			"editName": "Edit card name",
+			"editManaCost": "Edit mana cost",
+			"editType": "Edit type line",
+			"editRules": "Edit rules text",
+			"editStats": "Edit card statistic"
+		},
+		"preview": {
+			"title": "Card preview"
+		},
+		"notices": {
+			"imageError": "The image could not be imported. Use PNG, JPG, WebP, or AVIF under 15 MB.",
+			"exported": "High-resolution PNG exported.",
+			"exportError": "The card could not be exported. Try another image.",
+			"incomplete": "Add a card name, type line, and artwork before saving.",
+			"loginRequired": "Your draft is safe locally. Log in to save it to your Wizcard account.",
+			"loginAction": "Log in",
+			"saving": "Rendering and saving your card…",
+			"saved": "Card saved. Opening it now…",
+			"saveError": "The card could not be saved. Your local draft has not been lost."
+		},
+		"quality": {
+			"label": "Quality",
+			"previewLabel": "Preview quality",
+			"exportLabel": "Export quality",
+			"preview": "Fast",
+			"hq": "High",
+			"source": "Maximum",
+			"previewHint": "Smooth preview, matches the current size",
+			"hqHint": "Sharper when the preview is enlarged",
+			"sourceHint": "Native frame resolution, for printing"
+		}
 	}
 }

@@ -1,6 +1,9 @@
 :root {
 	color-scheme: dark;
-	--navbar-height: 57px;
+	/* Hauteur RÉELLE de la barre, imposée par .navbar (cf. Navbar.module.css) et
+	   non plus une estimation de son contenu. Tout le site s'en sert comme
+	   décalage : body, pages pleine hauteur, tiroir mobile. */
+	--navbar-height: 64px;
 
 	/* Base palette */
 	--background: #0b0c10;

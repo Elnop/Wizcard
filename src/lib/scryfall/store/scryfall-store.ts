@@ -5,7 +5,11 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import type { ScryfallSet, ScryfallCardSymbol } from '@/lib/scryfall/types/scryfall';
 import { getAllSets } from '@/lib/scryfall/endpoints/sets';
 import { createSymbolDictionary } from '@/lib/scryfall/endpoints/symbols';
-import { getAllCardTypes } from '@/lib/scryfall/endpoints/catalog';
+import {
+	getAllCardTypes,
+	getCardTypeVocabulary,
+	type CardTypeVocabulary,
+} from '@/lib/scryfall/endpoints/catalog';
 
 const SETS_TTL = 3_600_000; // 1 hour
 const SYMBOLS_TTL = 86_400_000; // 24 hours
@@ -17,6 +21,10 @@ type ScryfallStoreState = {
 	sets: ScryfallSet[];
 	symbols: Record<string, ScryfallCardSymbol>;
 	cardTypes: string[];
+	/** Même vocabulaire que cardTypes, mais ventilé par rôle (cf. catalog.ts). */
+	typeVocabulary: CardTypeVocabulary | null;
+	typeVocabularyLoadedAt: number | null;
+	isLoadingTypeVocabulary: boolean;
 	setsLoadedAt: number | null;
 	symbolsLoadedAt: number | null;
 	cardTypesLoadedAt: number | null;
@@ -32,6 +40,7 @@ type ScryfallStoreActions = {
 	fetchSets: () => Promise<void>;
 	fetchSymbols: () => Promise<void>;
 	fetchCardTypes: () => Promise<void>;
+	fetchTypeVocabulary: () => Promise<void>;
 };
 
 export const useScryfallStore = create<ScryfallStoreState & ScryfallStoreActions>()(
@@ -40,6 +49,9 @@ export const useScryfallStore = create<ScryfallStoreState & ScryfallStoreActions
 			sets: [],
 			symbols: {},
 			cardTypes: [],
+			typeVocabulary: null,
+			typeVocabularyLoadedAt: null,
+			isLoadingTypeVocabulary: false,
 			setsLoadedAt: null,
 			symbolsLoadedAt: null,
 			cardTypesLoadedAt: null,
@@ -99,6 +111,31 @@ export const useScryfallStore = create<ScryfallStoreState & ScryfallStoreActions
 				}
 			},
 
+			fetchTypeVocabulary: async () => {
+				const { typeVocabulary, typeVocabularyLoadedAt } = get();
+				if (
+					typeVocabulary !== null &&
+					typeVocabularyLoadedAt !== null &&
+					Date.now() - typeVocabularyLoadedAt < CARD_TYPES_TTL
+				) {
+					return;
+				}
+
+				set({ isLoadingTypeVocabulary: true });
+
+				try {
+					const result = await getCardTypeVocabulary();
+					set({
+						typeVocabulary: result,
+						typeVocabularyLoadedAt: Date.now(),
+						isLoadingTypeVocabulary: false,
+					});
+				} catch {
+					// Silencieux : le champ de type reste utilisable en saisie libre.
+					set({ isLoadingTypeVocabulary: false });
+				}
+			},
+
 			fetchCardTypes: async () => {
 				const { cardTypes, cardTypesLoadedAt } = get();
 				if (
@@ -129,6 +166,8 @@ export const useScryfallStore = create<ScryfallStoreState & ScryfallStoreActions
 				sets: state.sets,
 				symbols: state.symbols,
 				cardTypes: state.cardTypes,
+				typeVocabulary: state.typeVocabulary,
+				typeVocabularyLoadedAt: state.typeVocabularyLoadedAt,
 				setsLoadedAt: state.setsLoadedAt,
 				symbolsLoadedAt: state.symbolsLoadedAt,
 				cardTypesLoadedAt: state.cardTypesLoadedAt,
