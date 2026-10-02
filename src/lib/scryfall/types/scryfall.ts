@@ -404,11 +404,10 @@ export interface ScryfallBulkData {
 	type: 'oracle_cards' | 'unique_artwork' | 'default_cards' | 'all_cards' | 'rulings';
 	name: string;
 	description: string;
-	download_uri: string;
+	/** Gzipped JSON Lines (one card per line). Replaced `download_uri` in 2026-10. */
+	jsonl_download_uri: string;
 	updated_at: string;
-	size: number;
-	content_type: string;
-	content_encoding: string;
+	compressed_size: number;
 }
 
 /**
