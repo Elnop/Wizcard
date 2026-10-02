@@ -22,6 +22,7 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 - `npm run sb:reset` — **destructive** — drop DB and re-apply all migrations
 - `npm run sb:migrate` — apply pending migrations only
 - `npm run sb:verify` — audit the local DB schema against all migrations (read-only; see § Schema Verification)
+- `npm run sb:verify:prod` — same audit against the PROD DB (read-only; see § Schema Verification)
 - `npm run sb:studio` — Supabase Studio (port 54323)
 
 ## Architecture
@@ -202,9 +203,14 @@ Run it in these situations:
   expected schema. Exit code is non-zero if any assertion FAILs, so it also fits
   a pre-commit hook or CI step.
 - **Before/after a prod deploy**: prod is self-hosted Supabase (Coolify) and can
-  be behind on migrations. `npm run sb:verify` only checks **local**; to audit
-  **prod**, paste the entire `supabase/verify_schema.sql` into the prod SQL
-  editor and run it. The report lists exactly which objects are missing. It does
+  be behind on migrations. Run `npm run sb:verify:prod`: it sends the same
+  `verify_schema.sql` over HTTPS to pg-meta (`<kong-url>/pg/query`, guarded by
+  the service-role key) since Postgres itself is not exposed. Credentials come
+  from `.env.supabase.prod` (`SERVICE_URL_SUPABASEKONG` +
+  `SERVICE_SUPABASESERVICE_KEY`) or from `PROD_SUPABASE_URL` +
+  `PROD_SUPABASE_SERVICE_ROLE_KEY` in the environment; same exit codes as local.
+  Fallback without credentials: paste the file into the prod SQL editor.
+  The report lists exactly which objects are missing. It does
   NOT fix anything — remediation follows the usual idempotent-script workflow
   (`docs/…` / prod migration process): apply only the missing objects, then
   `insert into supabase_migrations.schema_migrations` for each applied file.

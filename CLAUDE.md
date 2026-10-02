@@ -10,6 +10,7 @@ Strictly follow the rules in @AGENTS.md.
 - `npm run sb:reset` — **destructive** — drop DB and re-apply all migrations
 - `npm run sb:migrate` — apply pending migrations only
 - `npm run sb:verify` — audit local DB schema vs all migrations (read-only; see AGENTS.md § Schema Verification)
+- `npm run sb:verify:prod` — same audit against PROD via pg-meta (needs `.env.supabase.prod`; read-only)
 - `npm run sb:studio` — Supabase Studio (port 54323)
 - `npm run sb:mail` — Inbucket email inbox (port 54324)
 - `supabase/bootstrap/init_schema.sql` — schema consolide pour DB vierge

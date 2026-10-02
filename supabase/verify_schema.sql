@@ -10,7 +10,9 @@
 -- USAGE :
 --   • Local : `npm run sb:verify` (exécute ce fichier via le conteneur Supabase,
 --     exit code ≠ 0 s'il y a au moins un FAIL).
---   • Prod  : colle ce fichier entier dans le SQL editor prod et exécute.
+--   • Prod  : `npm run sb:verify:prod` (même SQL envoyé à pg-meta via HTTPS,
+--     clé service_role de .env.supabase.prod) ; à défaut, colle ce fichier
+--     entier dans le SQL editor prod et exécute.
 -- Il ne fait AUCUNE écriture (pas de DDL/DML sur les tables métier ; la seule
 -- table créée est TEMPORAIRE, détruite en fin de session). Ré-exécutable.
 --
