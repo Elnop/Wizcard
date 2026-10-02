@@ -42,6 +42,9 @@ yarn-error.log*
 next-env.d.ts
 tmp
 
+# user-data backups (emails + password hashes) — npm run backup
+/backups
+
 # git worktrees
 .worktrees
 
