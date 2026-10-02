@@ -954,6 +954,8 @@
 			"addBack": "Add back",
 			"removeBack": "Remove back face",
 			"reset": "Start over",
+			"importFromCard": "Start from a card",
+			"importing": "Importing…",
 			"resetConfirm": "Clear this draft and start over?",
 			"export": "Export PNG",
 			"save": "Save card",
@@ -1026,6 +1028,7 @@
 			"description": "Switch template at any time without losing text or artwork framing.",
 			"frame": "Frame palette",
 			"accent": "Accent",
+			"blendBicolor": "Blend the two colors",
 			"finish": "Finish",
 			"frames": {
 				"auto": "Automatic",
@@ -1137,7 +1140,9 @@
 			"loginAction": "Log in",
 			"saving": "Rendering and saving your card…",
 			"saved": "Card saved. Opening it now…",
-			"saveError": "The card could not be saved. Your local draft has not been lost."
+			"saveError": "The card could not be saved. Your local draft has not been lost.",
+			"imported": "Card imported. Ctrl+Z to undo.",
+			"importArtError": "Text imported, but the artwork could not be fetched."
 		},
 		"quality": {
 			"label": "Quality",

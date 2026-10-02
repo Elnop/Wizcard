@@ -89,25 +89,41 @@ const MSE_FONT_DPI_RATIO = 150 / 120;
  *
  * S'y ajoute `MSE_FONT_DPI_RATIO`, qui ne s'applique QU'AUX POLICES : boîtes et
  * tailles ne sont pas exprimées dans le même repère côté MSE.
+ *
+ * `applyDpiRatio: false` pour le TEXTE DE RÈGLES, qui ne le suit pas : mesuré
+ * sur l'imprimé who/159, son interligne vaut 2.67 % de la hauteur de carte,
+ * soit un corps de 27.77 px au canvas — exactement le corps déclaré SANS le
+ * ratio (27.81), et non les 34.77 px qu'il donnerait. Le gonfler de 25 %
+ * obligeait l'ajustement à rétrécir le texte, qui finissait deux fois trop
+ * petit. Le titre et la ligne de type gardent le ratio : ils ont été calés
+ * avec lui et rien ne le contredit.
  */
 export function toCardTextFont(
 	font: MseFont | undefined,
 	scale: number,
-	box?: { top: number; height: number; left: number },
+	box?: { top: number; height: number; left: number; width?: number },
 	layout?: MseLayout,
-	bar?: MseBar
+	bar?: MseBar,
+	applyDpiRatio = true
 ): CardTextFont | undefined {
 	if (!font) return undefined;
 	const family = cssFamilyFor(font.name);
 	if (!family) return undefined;
-	const size = font.size * scale * MSE_FONT_DPI_RATIO;
+	const size = font.size * scale * (applyDpiRatio ? MSE_FONT_DPI_RATIO : 1);
 	if (!Number.isFinite(size) || size <= 0) return undefined;
 	return {
 		family,
 		size,
 		...(font.capHeight !== undefined ? { capHeight: font.capHeight } : {}),
+		// `ascent + descent` : l'interligne naturel de la police, mesuré sur son
+		// TTF. Vérifié sur l'imprimé who/159, dont les lignes de règles sont
+		// espacées de 13.96 u pour un corps déclaré de 14.
+		...(font.ascent !== undefined && font.descent !== undefined
+			? { lineHeightRatio: font.ascent + font.descent }
+			: {}),
 		baseline: baselineFor(size, box, layout, font, scale, bar),
 		left: box ? (box.left + (layout?.padding?.left ?? 0)) * scale : undefined,
+		right: box2Right(box, layout, scale),
 		...(font.color ? { color: font.color } : {}),
 		// Le déplacement de l'ombre est déclaré en unités de style, comme les
 		// tailles et les boîtes : il passe donc par le MÊME facteur d'échelle.
@@ -122,6 +138,21 @@ export function toCardTextFont(
 				}
 			: {}),
 	};
+}
+
+/**
+ * Bord droit du texte : bord droit de la boîte moins la marge déclarée.
+ *
+ * `MseFont` ne porte pas la largeur de la boîte, elle vient donc de `box` —
+ * dont seul `left` était lu jusqu'ici.
+ */
+function box2Right(
+	box: { top: number; height: number; left: number; width?: number } | undefined,
+	layout: MseLayout | undefined,
+	scale: number
+): number | undefined {
+	if (!box?.width) return undefined;
+	return (box.left + box.width - (layout?.padding?.right ?? 0)) * scale;
 }
 
 /** Police telle qu'elle arrive du corpus, avant mise à l'échelle. */

@@ -76,6 +76,9 @@
 
 .historyTools button,
 .faceTools button,
+/* Deux actions sur le brouillon ENTIER (repartir d'une carte, tout effacer) :
+   même gabarit discret, à l'écart des actions de sauvegarde. */
+.importButton,
 .resetButton {
 	display: inline-flex;
 	min-height: 32px;
@@ -102,9 +105,15 @@
 
 .historyTools button:hover:not(:disabled),
 .faceTools button:hover,
+.importButton:hover:not(:disabled),
 .resetButton:hover {
 	color: var(--foreground);
 	background: rgba(255, 255, 255, 0.06);
+}
+
+.importButton:disabled {
+	opacity: 0.5;
+	cursor: progress;
 }
 
 .historyTools button:disabled {

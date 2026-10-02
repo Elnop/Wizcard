@@ -40,6 +40,7 @@ function toFace(f: ScryfallCardFace): CardFace {
 		printed_name: f.printed_name,
 		printed_type_line: f.printed_type_line,
 		printed_text: f.printed_text,
+		flavor_text: f.flavor_text,
 	};
 }
 
@@ -89,6 +90,7 @@ export function toCard(s: ScryfallCard): Card {
 		printed_name: s.printed_name,
 		printed_type_line: s.printed_type_line,
 		printed_text: s.printed_text,
+		flavor_text: s.flavor_text,
 		card_faces: s.card_faces?.map(toFace),
 		all_parts: s.all_parts?.map(toPart),
 		produced_mana: s.produced_mana,

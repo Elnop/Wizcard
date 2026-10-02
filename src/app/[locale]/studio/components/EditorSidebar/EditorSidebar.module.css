@@ -157,6 +157,22 @@
 	gap: 12px;
 }
 
+/* Réglage du fondu bicolore, sous la grille des cadres. N'apparaît que sur une
+   carte à deux couleurs (cf. EditorSidebar). */
+.checkboxRow {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 10px;
+	font-size: var(--text-xs);
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.checkboxRow input {
+	cursor: pointer;
+}
+
 /* L'éditeur de mana est un fieldset (plusieurs contrôles) mais doit se fondre
    dans la pile de .field : on neutralise la bordure et la marge natives. */
 fieldset.field {

@@ -12,7 +12,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { artPanBounds, clampOffset, UNKNOWN_PAN_LIMIT } from '@/lib/card-editor/art-pan';
 import { prepareArtwork } from '@/lib/card-editor/image';
-import { type MseTemplate } from '@/lib/card-editor/mse-assets';
+import { isTwoColorCost, type MseTemplate } from '@/lib/card-editor/mse-assets';
 import { templateGeometry } from '@/lib/card-editor/template-geometry';
 import { getManaSymbols, MAX_MANA_PIPS, type RulesCapacity } from '@/lib/card-editor/text-layout';
 import { ManaSymbol } from '@/lib/scryfall/components/ManaSymbol/ManaSymbol';
@@ -46,7 +46,7 @@ interface EditorSidebarProps {
 	onFieldChange: (field: EditableCardField, value: string) => void;
 	onArtworkChange: (artwork: CardArtworkDraft) => void;
 	onFaceAppearanceChange: (
-		values: Partial<Pick<CardFaceDraft, 'frameStyle' | 'accentColor'>>
+		values: Partial<Pick<CardFaceDraft, 'frameStyle' | 'accentColor' | 'blendMode'>>
 	) => void;
 	onDraftChange: (values: Partial<CustomCardDraft>) => void;
 }
@@ -651,6 +651,23 @@ function StylePanel({
 						</button>
 					))}
 				</div>
+				{/*
+				 * Visible seulement sur une bicolore : le fondu ne concerne qu'elles,
+				 * et une case inerte sur toutes les autres cartes serait une promesse
+				 * que le rendu ne tient pas.
+				 */}
+				{isTwoColorCost(face.manaCost) && (
+					<label className={styles.checkboxRow}>
+						<input
+							type="checkbox"
+							checked={face.blendMode !== 'flat'}
+							onChange={(event) =>
+								onFaceAppearanceChange({ blendMode: event.target.checked ? 'blend' : 'flat' })
+							}
+						/>
+						{t('blendBicolor')}
+					</label>
+				)}
 			</fieldset>
 			<div className={styles.fieldRow}>
 				<FormField label={t('accent')}>

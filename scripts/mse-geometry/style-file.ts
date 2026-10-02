@@ -8,8 +8,22 @@ import { IMAGE_MASK_LINE, IMAGE_MASK_SCRIPT_LINE, maskFileFrom } from './image-m
  */
 const CASTING_COST = 'casting cost';
 
+/**
+ * Nommé pour la même raison que CASTING_COST : « rarity » est à la fois une zone
+ * géométrique et un champ à `content_width`.
+ */
+const RARITY = 'rarity';
+
 /** Les zones dont le studio a besoin. Tout autre bloc du style est ignoré. */
-export const GEOMETRY_FIELDS = ['image', 'name', 'type', 'text', 'pt', CASTING_COST] as const;
+export const GEOMETRY_FIELDS = [
+	'image',
+	'name',
+	'type',
+	'text',
+	'pt',
+	CASTING_COST,
+	RARITY,
+] as const;
 export type GeometryField = (typeof GEOMETRY_FIELDS)[number];
 
 /**
@@ -47,12 +61,16 @@ function resolveFieldName(raw: string): GeometryField | ContentWidthField | null
 }
 
 /**
- * Champs supplémentaires lus pour `content_width` (tâche 6) : « rarity » n'est
- * pas une boîte que le studio dessine (absente de GEOMETRY_FIELDS), mais son
- * bloc doit quand même être lu pour calculer la largeur que d'AUTRES champs
- * référencent via `card_style.rarity.content_width`.
+ * Champs dont la LARGEUR est lue pour `content_width`, que d'autres champs
+ * référencent via `card_style.<champ>.content_width`.
+ *
+ * Les deux sont aussi des zones publiées (cf. GEOMETRY_FIELDS) : cette liste ne
+ * dit pas « en plus des boîtes », elle dit « ces largeurs-là sont exposées à la
+ * portée d'évaluation ». `rarity` y est entré d'abord pour cette raison — le
+ * studio ne dessinait alors pas sa boîte — et y reste pour elle, maintenant que
+ * le symbole d'extension se pose dans la boîte mesurée.
  */
-const CONTENT_WIDTH_FIELDS = [CASTING_COST, 'rarity'] as const;
+const CONTENT_WIDTH_FIELDS = [CASTING_COST, RARITY] as const;
 type ContentWidthField = (typeof CONTENT_WIDTH_FIELDS)[number];
 type TrackedField = GeometryField | ContentWidthField;
 

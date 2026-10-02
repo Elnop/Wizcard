@@ -76,8 +76,23 @@ export interface CardFaceDraft {
 	artist: string;
 	frameStyle: FrameStyleId;
 	accentColor: string;
+	/**
+	 * Cadre d'une carte bicolore : fondu des deux couleurs, ou or plein.
+	 *
+	 * `blend` par défaut — c'est ce que fait MSE, et le studio sert d'abord à
+	 * inventer des cartes. `flat` rend l'or plein, qui est ce qu'imprime Wizards
+	 * sur les séries classiques (Despark {W}{B}, mesuré). Sans effet hors des
+	 * bicolores.
+	 *
+	 * Optionnel : les brouillons enregistrés avant ce réglage n'ont pas le champ,
+	 * et doivent continuer à s'ouvrir sur le comportement par défaut.
+	 */
+	blendMode?: CardBlendMode;
 	artwork: CardArtworkDraft;
 }
+
+/** Cf. `CardFaceDraft.blendMode`. */
+export type CardBlendMode = 'blend' | 'flat';
 
 export interface CustomCardDraft {
 	version: 1;
@@ -212,6 +227,18 @@ export interface CardTextFont {
 	 */
 	capHeight?: number;
 	/**
+	 * Interligne, en fraction de la taille — `ascent + descent` du TTF.
+	 *
+	 * Publié parce que l'interligne d'une carte imprimée est celui de SA police,
+	 * pas une constante : M15 donne 0.999 (ascent 0.774 + descent 0.225), soit
+	 * un interligne égal au corps. Le canvas écrivait `taille × 1.28`, ce qui
+	 * étirait le bloc et forçait le texte à rétrécir pour tenir.
+	 *
+	 * Absent pour les polices dont le TTF n'est pas livré ; le canvas retombe
+	 * alors sur son facteur générique.
+	 */
+	lineHeightRatio?: number;
+	/**
 	 * Ligne de base ABSOLUE, en pixels du canvas.
 	 *
 	 * Calculée à partir de la boîte mesurée, de l'ancrage déclaré (top/middle/
@@ -225,6 +252,15 @@ export interface CardTextFont {
 	baseline?: number;
 	/** Bord gauche du texte, marge intérieure déclarée comprise. */
 	left?: number;
+	/**
+	 * Bord DROIT du texte, marge intérieure déclarée comprise.
+	 *
+	 * Publié séparément parce que le corpus déclare deux marges différentes
+	 * (`left: 6`, `right: 4` sur M15). Le canvas dérivait la largeur utile en
+	 * doublant la marge gauche, ce qui retirait 4 px de trop et faisait casser
+	 * les lignes une syllabe trop tôt — assez pour ajouter une ligne de règles.
+	 */
+	right?: number;
 	/**
 	 * Couleur MESURÉE du champ, quand le style la déclare.
 	 *
@@ -291,6 +327,24 @@ export interface CardLayoutGeometry {
 	 * renseigne. Absent, le canvas garde son placement d'avant.
 	 */
 	typeBar?: { left: number; right: number };
+	/**
+	 * Emplacement DÉCLARÉ du symbole d'extension, déjà mis à l'échelle du canvas.
+	 *
+	 * Le style MSE déclare le bloc `rarity:` avec ses propres ancres (ex.
+	 * `magic-old` : left 293, top 290, 44x22). Attention au sens du rectangle :
+	 * le corpus l'accompagne d'`alignment: middle right`, donc l'image est calée
+	 * sur son bord DROIT et centrée verticalement — ce n'est pas une boîte dont
+	 * le symbole occuperait le centre.
+	 *
+	 * Vient APRÈS `typeBar` quand les deux existent : le bandeau est mesuré dans
+	 * l'image du cadre, cette boîte n'est que déclarée. Elle sert les gabarits
+	 * sans bandeau mesurable — ceux dont la ligne de type est ancrée `middle`,
+	 * que `seed-local-text-bars.mjs` ignore volontairement.
+	 *
+	 * Optionnelle comme `fonts` : un style dont les ancres ne se résolvent pas
+	 * n'en a pas, et le canvas ne lui en emprunte aucune (« aucun fallback »).
+	 */
+	setSymbol?: CardRect;
 }
 
 export interface CardLayoutDefinition {

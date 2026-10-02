@@ -81,7 +81,7 @@ export interface TemplateGeometryRow {
 	cardHeight: number;
 	boxes: Partial<
 		Record<
-			'image' | 'name' | 'type' | 'text' | 'pt' | 'casting cost',
+			'image' | 'name' | 'type' | 'text' | 'pt' | 'casting cost' | 'rarity',
 			{ left: number; top: number; width: number; height: number }
 		>
 	>;

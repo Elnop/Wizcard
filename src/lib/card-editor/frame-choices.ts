@@ -334,7 +334,7 @@ function hasInvertedTypeLine(template: MseTemplate): boolean {
  * une garantie de présence.
  */
 const CURATED_FRAME_IDS = new Set([
-	// M15 — le cadre courant depuis 2014, et sa variante à boîte haute.
+	// M15 — le cadre courant depuis 2014.
 	//
 	// `magic-m15-commander` a été retiré après examen de son image : malgré son
 	// nom et sa famille `m15 style`, il ne reproduit AUCUN cadre imprimé. Il ajoute
@@ -346,7 +346,13 @@ const CURATED_FRAME_IDS = new Set([
 	// FAMILLE, donc un style d'auteur rangé sous `m15 style` passe pour officiel.
 	// Seule l'inspection de l'image le distingue — le nom du gabarit ne suffit pas.
 	'magic-m15', // défaut (cf. DEFAULT_FRAME_TEMPLATE_ID)
-	'magic-m15-bigtext', // même cadre, boîte de règles haute
+	//
+	// `magic-m15-bigtext` (« After M15 with Taller Textbox ») est retiré pour le
+	// moment : c'est bien le cadre M15, mais avec une boîte de règles agrandie qui
+	// ne correspond à aucune impression — une commodité d'auteur pour loger un
+	// texte long, pas une mise en page officielle. Il pourra revenir le jour où la
+	// bibliothèque assumera de proposer des variantes de confort.
+	//
 	// Les deux époques précédentes.
 	'magic-new', // 2003-2014
 	'magic-old', // 1993-2003

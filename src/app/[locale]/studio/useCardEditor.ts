@@ -11,12 +11,29 @@ import {
 	DEFAULT_FRAME_TEMPLATE_ID,
 	type CardArtworkDraft,
 	type CardFaceDraft,
+	type CardLayoutId,
 	type CustomCardDraft,
 	type EditableCardField,
 } from '@/lib/card-editor/types';
+import { cardToDraft, importedFaceCount } from '@/lib/card-editor/card-to-draft';
+import { importArtwork } from '@/lib/card-editor/image';
 import { useTypeVocabularyBridge } from '@/lib/card-editor/useTypeVocabularyBridge';
+import type { Card } from '@/types/cards';
 
 const MAX_HISTORY = 30;
+
+/** Un import est-il en cours ? Pilote l'état du bouton de la barre d'outils. */
+export type CardImportStatus = 'idle' | 'importing';
+
+/**
+ * Issue d'un import, rendue à l'appelant.
+ *
+ * `artFailed` n'est PAS un échec de l'import : le texte est posé, seule
+ * l'illustration manque. Le studio ne peut pas inventer une illustration (même
+ * règle que pour la géométrie des cadres), donc il le dit et laisse la boîte
+ * d'art vide — à l'utilisateur d'en téléverser une.
+ */
+export type CardImportOutcome = 'imported' | 'artFailed';
 
 interface CardEditorState {
 	draft: CustomCardDraft;
@@ -39,6 +56,7 @@ export function useCardEditor(language: string) {
 	}));
 	const [autosaveStatus, setAutosaveStatus] = useState<'saving' | 'saved' | 'unavailable'>('saved');
 	const [hasHydrated, setHasHydrated] = useState(false);
+	const [importStatus, setImportStatus] = useState<CardImportStatus>('idle');
 
 	useEffect(() => {
 		const timeout = window.setTimeout(() => {
@@ -111,8 +129,77 @@ export function useCardEditor(language: string) {
 		[commit]
 	);
 
+	/**
+	 * Pose une illustration sur une face DÉSIGNÉE, sans passer par `activeFace`.
+	 *
+	 * L'import récupère l'art après coup : entre la requête et sa réponse,
+	 * l'utilisateur a pu changer de face. Écrire sur la face active poserait
+	 * alors le recto sur le verso.
+	 *
+	 * Ne touche pas à l'historique : l'arrivée de l'illustration prolonge
+	 * l'import déjà enregistré, elle n'est pas une seconde action de
+	 * l'utilisateur. Un Ctrl+Z annule donc l'import entier, texte ET image.
+	 */
+	const setFaceArtwork = useCallback((faceIndex: 0 | 1, artwork: CardArtworkDraft) => {
+		setState((current) => {
+			const face = current.draft.faces[faceIndex];
+			if (!face) return current;
+			const faces = [...current.draft.faces] as CustomCardDraft['faces'];
+			faces[faceIndex] = { ...face, artwork };
+			return { ...current, draft: { ...current.draft, faces } };
+		});
+	}, []);
+
+	/**
+	 * Remplit le brouillon à partir d'une carte existante.
+	 *
+	 * Le texte est posé en UN SEUL commit, donc un Ctrl+Z annule tout l'import
+	 * d'un coup — c'est le filet qui remplace la boîte de dialogue de
+	 * confirmation.
+	 *
+	 * L'illustration suit de façon asynchrone et son échec n'annule rien : une
+	 * carte importée sans art reste une carte importée utilisable.
+	 */
+	const importFromCard = useCallback(
+		async (card: Card, layoutId: CardLayoutId): Promise<CardImportOutcome> => {
+			setImportStatus('importing');
+			// Le nombre de faces se lit sur la CARTE, pas dans le commit : React
+			// diffère le calcul de `setState`, donc une variable renseignée depuis
+			// l'intérieur du callback vaut encore sa valeur initiale au moment de
+			// lancer les requêtes d'illustration. Mesuré : un recto-verso ne
+			// demandait que l'art du recto, et le verso restait vide.
+			const faceCount = importedFaceCount(card);
+			commit((draft) => ({
+				// `layoutId` arrive de l'appelant : `cardToDraft` est un module pur,
+				// sans accès au catalogue de gabarits qui seul sait quelle mise en
+				// page accompagne le cadre. Les deux s'écrivent ici, ensemble.
+				...cardToDraft(card, draft),
+				layoutId,
+			}));
+
+			const results = await Promise.all(
+				Array.from({ length: faceCount }, async (_unused, index) => {
+					try {
+						const artwork = await importArtwork(card.id, index as 0 | 1);
+						setFaceArtwork(index as 0 | 1, { ...artwork, zoom: 1, offsetX: 0, offsetY: 0 });
+						return true;
+					} catch {
+						return false;
+					}
+				})
+			);
+
+			setImportStatus('idle');
+			// Rendu à l'appelant plutôt que laissé dans le state : c'est l'issue
+			// d'UNE action, pas un état durable du studio. Le state ne garde que
+			// `importing`, qui lui pilote l'affichage du bouton.
+			return results.every(Boolean) ? 'imported' : 'artFailed';
+		},
+		[commit, setFaceArtwork]
+	);
+
 	const updateFaceAppearance = useCallback(
-		(values: Partial<Pick<CardFaceDraft, 'frameStyle' | 'accentColor'>>) => {
+		(values: Partial<Pick<CardFaceDraft, 'frameStyle' | 'accentColor' | 'blendMode'>>) => {
 			commit((draft) => {
 				const faces = [...draft.faces] as CustomCardDraft['faces'];
 				faces[draft.activeFace] = { ...getActiveFace(draft), ...values };
@@ -194,8 +281,10 @@ export function useCardEditor(language: string) {
 			activeFace: getActiveFace(state.draft),
 			autosaveStatus,
 			hasHydrated,
+			importStatus,
 			canUndo: state.past.length > 0,
 			canRedo: state.future.length > 0,
+			importFromCard,
 			updateFace,
 			updateArtwork,
 			updateFaceAppearance,
@@ -211,6 +300,8 @@ export function useCardEditor(language: string) {
 			state,
 			autosaveStatus,
 			hasHydrated,
+			importStatus,
+			importFromCard,
 			updateFace,
 			updateArtwork,
 			updateFaceAppearance,

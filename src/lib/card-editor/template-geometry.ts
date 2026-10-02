@@ -81,6 +81,11 @@ export function templateGeometry(template: MseTemplate | undefined): CardGeometr
 		// constante calibrée sur M15 dont 125 des 136 cadres débordaient.
 		// Bandeau de la ligne de type, pour poser le symbole d'extension hors de la
 		// boîte de flux (cf. `CardLayoutGeometry.typeBar`).
+		// Emplacement déclaré du symbole d'extension. Passé par la MÊME échelle que
+		// les autres boîtes : le bloc `rarity:` du style est écrit dans le repère du
+		// gabarit. Absent des styles qui héritent ce bloc d'un include partagé, d'où
+		// le repli sur `typeBar` côté canvas (cf. `CardLayoutGeometry.setSymbol`).
+		...(boxes.rarity ? { setSymbol: to(boxes.rarity) } : {}),
 		...(source.bars?.type
 			? {
 					typeBar: {
@@ -110,7 +115,16 @@ export function templateGeometry(template: MseTemplate | undefined): CardGeometr
 				source.layout?.type,
 				source.bars?.type
 			),
-			rules: toCardTextFont(source.fonts?.text, scale, boxes.text, source.layout?.text),
+			// `false` : le texte de règles ne suit pas le ratio DPI de MSE (cf.
+			// `toCardTextFont`).
+			rules: toCardTextFont(
+				source.fonts?.text,
+				scale,
+				boxes.text,
+				source.layout?.text,
+				undefined,
+				false
+			),
 			stats: toCardTextFont(source.fonts?.pt, scale, boxes.pt, source.layout?.pt, source.bars?.pt),
 		},
 	};

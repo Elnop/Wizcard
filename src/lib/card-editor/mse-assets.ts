@@ -203,6 +203,43 @@ function faceColors(face: CardFaceDraft): string[] {
 }
 
 /**
+ * Couleurs du coût dans leur ORDRE D'APPARITION, pour orienter le fondu.
+ *
+ * L'ordre WUBRG de `faceColors` convient au choix d'un cadre (il n'y en a
+ * qu'un), mais pas au dégradé, qui va de la première couleur à GAUCHE vers la
+ * seconde à DROITE. Mesuré sur les bicolores de WHO en échantillonnant les
+ * bords de l'image imprimée :
+ *
+ *     Growth Spiral      {G}{U}     gauche G, droite U
+ *     Duggan             {2}{G}{U}  gauche G, droite U
+ *     Great Int.'s Plan  {4}{U}{B}  gauche U, droite B
+ *
+ * `{G}{U}` donnerait `[U, G]` en WUBRG — le dégradé serait inversé, bleu à
+ * gauche sur une carte dont le bord gauche est vert.
+ */
+function blendColorOrder(face: CardFaceDraft): string[] {
+	const seen: string[] = [];
+	for (const symbol of getManaSymbols(face.manaCost)) {
+		for (const half of symbol.split('/')) {
+			if (WUBRG.includes(half as never) && !seen.includes(half)) seen.push(half);
+		}
+	}
+	return seen;
+}
+
+/**
+ * Ce coût est-il bicolore ?
+ *
+ * Exporté pour l'UI : le réglage de fondu (`blendMode`) ne s'affiche que sur
+ * une carte à deux couleurs, seul cas où il change quelque chose. Passe par le
+ * même découpage de symboles que `resolveMseBlend`, pour que la case cochée et
+ * le rendu ne puissent pas diverger.
+ */
+export function isTwoColorCost(manaCost: string): boolean {
+	return blendColorOrder({ manaCost } as CardFaceDraft).length === 2;
+}
+
+/**
  * Le coût contient-il un symbole hybride bicolore (`{W/U}`) ?
  *
  * La distinction est celle que fait le script du jeu MSE
@@ -351,18 +388,39 @@ export function frameCarriesOwnArtWindow(path: string | null): boolean {
 }
 
 /**
- * Fondu HYBRIDE, ou `null`.
+ * Fondu bicolore, ou `null`.
  *
- * Réservé aux coûts hybrides (`{W/U}`). Une carte bicolore ordinaire (`{W}{U}`)
- * n'est PAS fondue : elle porte le cadre or, comme une tricolore.
+ * Deux régimes, distingués par la NATURE du coût — c'est la distinction que
+ * fait le script du jeu MSE (`magic.mse-game/script`), qui termine la
+ * combinaison par « hybrid » ou « multicolor » :
+ *
+ *     #### hybrid, not artifact
+ *     else if count == 2 then  color_names_2() + ", hybrid"
+ *
+ * Les deux masques ne protègent PAS les mêmes zones — mesuré sur
+ * `375 m15 simple` (blanc = coloré, noir = plaque) :
+ *
+ *   zone              hybrid   multicolor
+ *   barre de titre    plaque   plaque
+ *   ligne de type     plaque   plaque
+ *   cadre extérieur   COLORÉ   PLAQUE
+ *
+ * D'où deux plaques différentes. `hybrid` prend le cadre TERRAIN gris, comme
+ * MSE (`color_combination` fait `mode := "hybrid" ; dark := land_template`) :
+ * les plaques d'un hybride imprimé sont grises. `multicolor` prend l'OR
+ * (`prismatic`), parce que le noir du masque y couvre aussi le liseré
+ * extérieur — mesuré sur « The Sixth Doctor » (who/159), dont le bord est or
+ * (200,173,82) tandis que la bande intérieure va du vert (16,103,60) au bleu
+ * (13,113,175).
  *
  * MSE compose `masked_blend(mask, dark, light)` : le masque décide par pixel
- * lequel des DEUX cadres colorés apparaît. On renvoie donc les trois URL, jamais
- * une seule — peindre le masque seul donnerait une carte blanche.
+ * lequel des DEUX cadres colorés apparaît. On renvoie donc les quatre URL,
+ * jamais une seule — peindre le masque seul donnerait une carte blanche.
  *
- * `null` dès qu'une pièce manque : coût non hybride, carte pas exactement
- * bicolore, gabarit sans masque `hybrid`, ou cadre manquant pour l'une des deux
- * couleurs. Le rendu retombe alors sur le cadre simple, qui reste juste.
+ * `null` dès qu'une pièce manque : carte pas exactement bicolore, fondu refusé
+ * par l'utilisateur, gabarit sans le masque voulu, ou cadre manquant pour l'une
+ * des deux couleurs. Le rendu retombe alors sur le cadre simple, qui reste
+ * juste.
  */
 export function resolveMseBlend(
 	template: MseTemplate | undefined,
@@ -371,36 +429,33 @@ export function resolveMseBlend(
 ): { base: string; overlay: string; mask: string; plate: string } | null {
 	if (!template?.blendMasks) return null;
 	if (face.frameStyle !== 'auto') return null;
-	const colors = faceColors(face);
+	// Le fondu est le défaut des bicolores ; `blendMode: 'flat'` le refuse et
+	// rend le cadre or plein, qui est ce qu'imprime Wizards sur les séries
+	// classiques (vérifié : Despark {W}{B} est or, mesuré à (192,172,85)).
+	if (face.blendMode === 'flat') return null;
+	const colors = blendColorOrder(face);
 	if (colors.length !== 2) return null;
-	// SEUL l'hybride est fondu. Une carte bicolore ORDINAIRE porte le cadre or,
-	// exactement comme une tricolore — c'est ce qu'imprime Wizards.
-	//
-	// MSE fond les bicolores par défaut, mais c'est une facilité de l'éditeur et
-	// non l'imprimé : le réglage `use gradient multicolor` (magic.mse-game/
-	// set_fields) existe précisément pour la désactiver, et sa description dit
-	// « Use gradients on multicolor cards BY DEFAULT », pas « comme les vraies
-	// cartes ». On suit l'imprimé, donc `multicolor` n'est jamais peint et
-	// `resolveAutomaticFrame` renvoie `prismatic` pour les bicolores.
-	if (!hasHybridCost(face)) return null;
-	const maskPath = template.blendMasks.hybrid;
+
+	const hybrid = hasHybridCost(face);
+	const maskPath = hybrid ? template.blendMasks.hybrid : template.blendMasks.multicolor;
 	if (!maskPath) return null;
+
 	const first = template.framePaths[COLOR_TO_FRAME[colors[0]]];
 	const second = template.framePaths[COLOR_TO_FRAME[colors[1]]];
 	if (!first || !second) return null;
-	// Les plaques (titre, ligne de type) d'un hybride sont grises, pas colorées.
-	// MSE les prend dans le cadre TERRAIN : `color_combination` fait
-	// `mode := "hybrid" ; dark := land_template` (magic-blends.mse-include/
-	// new-blends). On suit la même chaîne de dégradation que le reste du module :
-	// on descend vers moins spécifique AU SEIN DU GRIS, jamais vers une autre
-	// couleur — sans gris disponible on ne fond pas, et le cadre or s'applique.
-	const landColorless: MseFrameKey = 'land-colorless';
-	const plateKey = [landColorless, ...frameDegradationChain(landColorless)].find(
+
+	// On suit la même chaîne de dégradation que le reste du module : on descend
+	// vers moins spécifique AU SEIN de la même famille, jamais vers une autre
+	// couleur — sans plaque disponible on ne fond pas, et le cadre simple
+	// s'applique.
+	const plateSeed: MseFrameKey = hybrid ? 'land-colorless' : 'prismatic';
+	const plateKey = [plateSeed, ...frameDegradationChain(plateSeed)].find(
 		(key) => template.framePaths[key]
 	);
 	if (!plateKey) return null;
 	const platePath = template.framePaths[plateKey];
 	if (!platePath) return null;
+
 	const base = cardAssetUrl(first, quality);
 	const overlay = cardAssetUrl(second, quality);
 	const mask = cardAssetUrl(maskPath, quality);
@@ -464,6 +519,58 @@ export function resolveMseCrownPath(
 		if (degraded) return cardAssetUrl(degraded, quality);
 	}
 	return null;
+}
+
+/**
+ * Les DEUX couronnes d'une carte bicolore fondue, ou `null`.
+ *
+ * Complément de `resolveMseCrownPath` : quand le cadre est fondu, la couronne
+ * l'est aussi. Mesuré sur « The Sixth Doctor » (who/159), dont la couronne est
+ * teintée (10,112,116) au sommet et bleutée à droite, là où le studio la
+ * peignait or uniforme (250,237,182).
+ *
+ * Renvoie `null` dès qu'une pièce manque — couleur sans couronne dans ce
+ * gabarit, fondu non applicable. L'appelant retombe alors sur la couronne
+ * unique de `resolveMseCrownPath`, qui reste juste.
+ *
+ * Les mêmes conditions que `resolveMseBlend` sont revérifiées ici plutôt que
+ * déduites : les deux fonctions sont appelées séparément par le canvas, et une
+ * couronne fondue sur un cadre plat (ou l'inverse) serait pire que les deux
+ * plats.
+ */
+export function resolveMseCrownBlend(
+	template: MseTemplate | undefined,
+	face: CardFaceDraft,
+	isLegendary: boolean,
+	quality?: CardQuality
+): { base: string; overlay: string } | null {
+	if (!isLegendary) return null;
+	if (!template?.crownPaths) return null;
+	if (!resolveMseBlend(template, face, quality)) return null;
+	// PAS l'hybride : sa couronne imprimée est GRISE et uniforme, comme ses
+	// plaques. Mesuré sur quatre légendaires hybrides récentes (Aang, Abigale,
+	// Abomination, Ant-Man), toutes à (211,208,203) d'un bord à l'autre. Seule la
+	// bicolore ordinaire porte une couronne fondue.
+	if (hasHybridCost(face)) return null;
+
+	const colors = blendColorOrder(face);
+	if (colors.length !== 2) return null;
+
+	const crownFor = (color: string): string | null => {
+		const key = COLOR_TO_FRAME[color];
+		const direct = template.crownPaths?.[key];
+		if (direct) return cardAssetUrl(direct, quality);
+		for (const candidate of frameDegradationChain(key)) {
+			const degraded = template.crownPaths?.[candidate];
+			if (degraded) return cardAssetUrl(degraded, quality);
+		}
+		return null;
+	};
+
+	const base = crownFor(colors[0]);
+	const overlay = crownFor(colors[1]);
+	if (!base || !overlay) return null;
+	return { base, overlay };
 }
 
 /**

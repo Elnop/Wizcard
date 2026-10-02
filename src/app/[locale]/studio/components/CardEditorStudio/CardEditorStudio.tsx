@@ -17,6 +17,7 @@ import { measureArtwork, prepareArtwork } from '@/lib/card-editor/image';
 import {
 	resolveMseBlend,
 	resolveMseCrownPath,
+	resolveMseCrownBlend,
 	resolveMseFramePath,
 	resolveMsePtPath,
 	resolveMseTextColors,
@@ -25,11 +26,16 @@ import {
 	type MseTemplate,
 } from '@/lib/card-editor/mse-assets';
 import { clampArtwork } from '@/lib/card-editor/art-pan';
+import { frameTemplateForCard } from '@/lib/card-editor/card-to-draft';
+import { CardSearchPanel } from '@/lib/search/components/CardSearchPanel/CardSearchPanel';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import { isCustomCard, type CustomCard } from '@/lib/mpc/types';
+import type { Card } from '@/types/cards';
 import { validateCardDraft } from '@/lib/card-editor/draft';
 import { isUnsupportedFrame } from '@/lib/card-editor/frame-choices';
 import { templateGeometry } from '@/lib/card-editor/template-geometry';
 import { clampManaCost, getRulesCapacity, type RulesCapacity } from '@/lib/card-editor/text-layout';
-import { parseTypeLine } from '@/lib/card-editor/type-line';
+import { isLegendaryTypeLine } from '@/lib/card-editor/type-line';
 import {
 	CARD_FIELD_MAX_LENGTH,
 	DEFAULT_FRAME_TEMPLATE_ID,
@@ -38,7 +44,6 @@ import {
 	type CardFaceDraft,
 	type EditableCardField,
 } from '@/lib/card-editor/types';
-import { useCardTypeVocabulary } from '@/lib/scryfall/hooks/useCardTypeVocabulary';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useCardEditor } from '../../useCardEditor';
 import { EditorSidebar, type EditorPanel } from '../EditorSidebar/EditorSidebar';
@@ -72,6 +77,19 @@ function capacityForTemplate(
 	return getRulesCapacity(rules.width, rules.height);
 }
 
+/**
+ * Cette carte vient-elle du catalogue officiel ?
+ *
+ * Le panneau de recherche remonte un `AnyCard`, qui couvre aussi les cartes
+ * custom (`object: 'custom_card'`). On ne repart que d'une carte du catalogue :
+ * elle seule a une époque de cadre et une illustration Scryfall à reprendre.
+ * Repartir d'une carte custom n'est pas absurde en soi, mais c'est une autre
+ * fonctionnalité (dupliquer un brouillon), pas celle-ci.
+ */
+function isCatalogCard(card: AnyCard): card is Card {
+	return !isCustomCard(card as Card | CustomCard);
+}
+
 function NoticeIcon({ type }: { type: NonNullable<Notice>['type'] }) {
 	if (type === 'error') return <WarningCircle size={20} />;
 	if (type === 'success') return <CheckCircle size={20} />;
@@ -101,13 +119,12 @@ export function CardEditorStudio() {
 	// (`match(card.super_type, "Legendary")`) — pas sur une case à cocher. La
 	// ligne de type reste la source unique, donc rien ne peut diverger entre ce
 	// qui est écrit et ce qui est peint.
-	const typeVocabulary = useCardTypeVocabulary();
-	const isLegendary = (face: CardFaceDraft) =>
-		parseTypeLine(face.typeLine, typeVocabulary).supertypes.includes('Legendary');
+	const isLegendary = (face: CardFaceDraft) => isLegendaryTypeLine(face.typeLine);
 	const [activePanel, setActivePanel] = useState<EditorPanel>('card');
 	const [validationErrors, setValidationErrors] = useState<string[]>([]);
 	const [notice, setNotice] = useState<Notice>(null);
 	const [isSaving, setIsSaving] = useState(false);
+	const [isSearchOpen, setSearchOpen] = useState(false);
 	// Deux paliers SÉPARÉS : l'aperçu privilégie la fluidité, l'export la
 	// résolution. Les lier obligerait à dégrader l'un pour servir l'autre.
 	const [previewQuality, setPreviewQuality] = useState<CardQuality>(DEFAULT_PREVIEW_QUALITY);
@@ -307,6 +324,42 @@ export function CardEditorStudio() {
 		editor.updateFace(field, bounded);
 	}
 
+	/**
+	 * Repart d'une carte existante : le brouillon est remplacé par la carte
+	 * choisie.
+	 *
+	 * Pas de confirmation avant d'écraser : l'import passe par un seul commit,
+	 * donc Ctrl+Z (ou le bouton Annuler) le défait d'un coup. Le message le
+	 * rappelle.
+	 *
+	 * Le couple cadre/mise en page s'écrit ENSEMBLE : `cardToDraft` ne pose que
+	 * le gabarit (module pur, sans catalogue), on complète ici avec le `layoutId`
+	 * du catalogue chargé. Sans ça, une carte importée garderait la mise en page
+	 * du brouillon précédent.
+	 */
+	async function handleImportCard(card: AnyCard) {
+		setSearchOpen(false);
+		setValidationErrors([]);
+		setNotice(null);
+		// Le panneau peut aussi remonter une carte custom (AnyCard) : on ne repart
+		// que d'une carte du catalogue, qui seule a un cadre et une illustration
+		// Scryfall à reprendre.
+		if (!isCatalogCard(card)) return;
+
+		// Résolu AVANT l'import et passé avec lui, pour que le couple parte en un
+		// seul commit : un `updateDraft` après coup ajouterait une seconde entrée
+		// d'historique, et le premier Ctrl+Z ne défaireait que la mise en page.
+		const template = mseCatalog.templates.find((row) => row.id === frameTemplateForCard(card));
+		const status = await editor.importFromCard(card, template?.layoutId ?? 'arcana');
+
+		// Le texte est posé dans les deux cas ; seule l'illustration peut manquer.
+		setNotice(
+			status === 'artFailed'
+				? { type: 'error', message: t('notices.importArtError') }
+				: { type: 'success', message: t('notices.imported') }
+		);
+	}
+
 	function handleArtworkChange(artwork: Parameters<typeof editor.updateArtwork>[0]) {
 		setValidationErrors([]);
 		setNotice(null);
@@ -394,6 +447,7 @@ export function CardEditorStudio() {
 					canUndo={editor.canUndo}
 					canRedo={editor.canRedo}
 					isSaving={isSaving}
+					isImporting={editor.importStatus === 'importing'}
 					isAuthLoading={isAuthLoading}
 					autosaveStatus={editor.autosaveStatus}
 					onFaceChange={editor.setActiveFace}
@@ -402,6 +456,7 @@ export function CardEditorStudio() {
 					onUndo={editor.undo}
 					onRedo={editor.redo}
 					onReset={handleReset}
+					onImportCard={() => setSearchOpen(true)}
 					onExport={() => void handleExport()}
 					onSave={() => void handleSave()}
 					previewQuality={previewQuality}
@@ -442,6 +497,12 @@ export function CardEditorStudio() {
 							isLegendary(editor.activeFace),
 							previewQuality
 						)}
+						mseCrownBlend={resolveMseCrownBlend(
+							selectedMseTemplate,
+							editor.activeFace,
+							isLegendary(editor.activeFace),
+							previewQuality
+						)}
 						msePtPath={resolveMsePtPath(selectedMseTemplate, editor.activeFace, previewQuality)}
 						mseTextColors={resolveMseTextColors(selectedMseTemplate, editor.activeFace)}
 						mseTemplate={selectedMseTemplate}
@@ -463,6 +524,12 @@ export function CardEditorStudio() {
 					)}
 					mseBlend={resolveMseBlend(selectedMseTemplate, editor.draft.faces[0], exportQuality)}
 					mseCrownPath={resolveMseCrownPath(
+						selectedMseTemplate,
+						editor.draft.faces[0],
+						isLegendary(editor.draft.faces[0]),
+						exportQuality
+					)}
+					mseCrownBlend={resolveMseCrownBlend(
 						selectedMseTemplate,
 						editor.draft.faces[0],
 						isLegendary(editor.draft.faces[0]),
@@ -492,6 +559,12 @@ export function CardEditorStudio() {
 							isLegendary(editor.draft.faces[1]),
 							exportQuality
 						)}
+						mseCrownBlend={resolveMseCrownBlend(
+							selectedMseTemplate,
+							editor.draft.faces[1],
+							isLegendary(editor.draft.faces[1]),
+							exportQuality
+						)}
 						msePtPath={resolveMsePtPath(selectedMseTemplate, editor.draft.faces[1], exportQuality)}
 						mseTextColors={resolveMseTextColors(selectedMseTemplate, editor.draft.faces[1])}
 						mseTemplate={selectedMseTemplate}
@@ -501,6 +574,13 @@ export function CardEditorStudio() {
 					/>
 				)}
 			</div>
+
+			{isSearchOpen && (
+				<CardSearchPanel
+					mode={{ kind: 'studio', onCardClick: (card) => void handleImportCard(card) }}
+					onClose={() => setSearchOpen(false)}
+				/>
+			)}
 		</main>
 	);
 }

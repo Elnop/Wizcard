@@ -954,6 +954,8 @@
 			"addBack": "Ajouter un verso",
 			"removeBack": "Supprimer le verso",
 			"reset": "Recommencer",
+			"importFromCard": "Partir d'une carte",
+			"importing": "Import en cours…",
 			"resetConfirm": "Effacer ce brouillon et recommencer ?",
 			"export": "Exporter en PNG",
 			"save": "Sauvegarder",
@@ -1026,6 +1028,7 @@
 			"description": "Le gabarit se change à tout moment sans perdre les textes ni le cadrage.",
 			"frame": "Palette du cadre",
 			"accent": "Accent",
+			"blendBicolor": "Fondre les deux couleurs",
 			"finish": "Finition",
 			"frames": {
 				"auto": "Automatique",
@@ -1137,7 +1140,9 @@
 			"loginAction": "Se connecter",
 			"saving": "Rendu et sauvegarde de votre carte…",
 			"saved": "Carte sauvegardée. Ouverture en cours…",
-			"saveError": "Impossible de sauvegarder la carte. Votre brouillon local n'est pas perdu."
+			"saveError": "Impossible de sauvegarder la carte. Votre brouillon local n'est pas perdu.",
+			"imported": "Carte importée. Ctrl+Z pour annuler.",
+			"importArtError": "Texte importé, mais l'illustration n'a pas pu être récupérée."
 		},
 		"quality": {
 			"label": "Qualité",

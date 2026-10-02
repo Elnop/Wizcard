@@ -9,8 +9,11 @@ export type CardImageStatus = 'missing' | 'placeholder' | 'lowres' | 'highres_sc
 export type CardCondition = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG';
 
 // Domain image-uris. small/normal/large are always present (the DB catalog seed stores at
-// least these); art_crop/png/border_crop are OPTIONAL — the catalog seed (pick3) drops them,
-// so only Scryfall-fallback-path cards carry them. Same pattern as Card.prices?.
+// least these); art_crop/png/border_crop are OPTIONAL. The seed now stores art_crop too
+// (scripts/seed/normalize-catalog-card.ts), but rows written by an older seed carry only the
+// three sizes — readers that need the crop prefer the stored value and fall back to
+// deriveArtCropUrl (src/lib/deck/utils/derive-art-crop.ts). png/border_crop remain
+// Scryfall-fallback-path only. Same pattern as Card.prices?.
 export interface CardImageUris {
 	small: string;
 	normal: string;
@@ -38,6 +41,9 @@ export interface CardFace {
 	printed_name?: string;
 	printed_type_line?: string;
 	printed_text?: string;
+	// Already in the print's language (there is no printed_flavor_text). Measured:
+	// on a multi-face card the flavour text lives on the FACE, not the card.
+	flavor_text?: string;
 }
 
 // A related card (token / meld part / meld result / combo piece).
@@ -96,6 +102,8 @@ export interface Card {
 	printed_name?: string;
 	printed_type_line?: string;
 	printed_text?: string;
+	// Single-face cards carry it here; a multi-face card carries it per face.
+	flavor_text?: string;
 	// multi-face + relations
 	card_faces?: CardFace[];
 	all_parts?: CardPart[];

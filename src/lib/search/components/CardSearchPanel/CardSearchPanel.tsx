@@ -20,6 +20,18 @@ export type PanelMode =
 			kind: 'collection' | 'wishlist';
 			onCardClick: (card: AnyCard) => void;
 			buildCardMenuItems: (card: AnyCard, close: () => void) => ContextMenuAction[];
+	  }
+	/**
+	 * Studio : choisir une carte dont on repart pour en dessiner une nouvelle.
+	 *
+	 * Variante à part plutôt que `collection` réutilisée : cliquer ne consulte
+	 * pas une carte, il ÉCRASE le brouillon en cours. Et il n'y a pas de menu
+	 * contextuel — aucune des actions de la collection (ajouter, souhaiter) n'a
+	 * de sens dans l'éditeur.
+	 */
+	| {
+			kind: 'studio';
+			onCardClick: (card: AnyCard) => void;
 	  };
 
 export type CardSearchPanelProps = {
@@ -29,10 +41,13 @@ export type CardSearchPanelProps = {
 	onToggleExpand?: () => void;
 };
 
+/** Studio mode has no context menu; declared once so the array identity is stable. */
+const noCardMenuItems = (): ContextMenuAction[] => [];
+
 /**
  * Fixed side panel that searches Scryfall and adds cards. Deck mode keeps the
- * full deck behaviour (zones, EDHREC, legality, commander CI); collection and
- * wishlist modes hide those and delegate add/click to the caller.
+ * full deck behaviour (zones, EDHREC, legality, commander CI); collection,
+ * wishlist and studio modes hide those and delegate the click to the caller.
  */
 export function CardSearchPanel({
 	mode,
@@ -58,7 +73,7 @@ export function CardSearchPanel({
 	return (
 		<PlainCardSearchPanel
 			onCardClick={mode.onCardClick}
-			buildCardMenuItems={mode.buildCardMenuItems}
+			buildCardMenuItems={mode.kind === 'studio' ? noCardMenuItems : mode.buildCardMenuItems}
 			onClose={onClose}
 			expanded={expanded}
 			onToggleExpand={onToggleExpand}

@@ -5,6 +5,7 @@ import {
 	ArrowCounterClockwise,
 	DownloadSimple,
 	FloppyDisk,
+	MagnifyingGlass,
 	Plus,
 	Trash,
 } from '@phosphor-icons/react';
@@ -20,6 +21,7 @@ interface EditorToolbarProps {
 	canUndo: boolean;
 	canRedo: boolean;
 	isSaving: boolean;
+	isImporting: boolean;
 	isAuthLoading: boolean;
 	autosaveStatus: 'saving' | 'saved' | 'unavailable';
 	onFaceChange: (face: 0 | 1) => void;
@@ -28,6 +30,7 @@ interface EditorToolbarProps {
 	onUndo: () => void;
 	onRedo: () => void;
 	onReset: () => void;
+	onImportCard: () => void;
 	onExport: () => void;
 	onSave: () => void;
 	previewQuality: CardQuality;
@@ -42,6 +45,7 @@ export function EditorToolbar({
 	canUndo,
 	canRedo,
 	isSaving,
+	isImporting,
 	isAuthLoading,
 	autosaveStatus,
 	onFaceChange,
@@ -50,6 +54,7 @@ export function EditorToolbar({
 	onUndo,
 	onRedo,
 	onReset,
+	onImportCard,
 	onExport,
 	onSave,
 	previewQuality,
@@ -123,6 +128,15 @@ export function EditorToolbar({
 						</button>
 					)}
 				</div>
+				<button
+					type="button"
+					className={styles.importButton}
+					onClick={onImportCard}
+					disabled={isImporting}
+				>
+					<MagnifyingGlass size={16} />
+					{t(isImporting ? 'importing' : 'importFromCard')}
+				</button>
 				<button type="button" className={styles.resetButton} onClick={onReset}>
 					{t('reset')}
 				</button>

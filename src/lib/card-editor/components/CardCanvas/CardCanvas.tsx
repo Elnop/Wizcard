@@ -13,6 +13,9 @@ import { templateGeometry } from '@/lib/card-editor/template-geometry';
 import {
 	expandCardNameShortcut,
 	fitTitle,
+	fitTypeLineFontSize,
+	DEFAULT_LINE_HEIGHT_RATIO,
+	RULES_VERTICAL_PADDING_RATIO,
 	getManaSymbols,
 	fitRulesFontSize,
 	getRulesFontSize,
@@ -20,7 +23,11 @@ import {
 	measureText,
 	RULES_SYMBOL_SIZE_RATIO,
 	splitRulesSegments,
-	wrapCardText,
+	splitStyledSegments,
+	italicRanges,
+	printedTypography,
+	type RulesSegment,
+	wrapCardTextByWidth,
 } from '@/lib/card-editor/text-layout';
 import {
 	CARD_FIELD_MAX_LENGTH,
@@ -49,6 +56,8 @@ interface CardCanvasProps {
 	mseFramePath?: string | null;
 	mseBlend?: { base: string; overlay: string; mask: string; plate: string } | null;
 	mseCrownPath?: string | null;
+	/** Les deux couronnes d'une bicolore fondue (cf. `resolveMseCrownBlend`). */
+	mseCrownBlend?: { base: string; overlay: string } | null;
 	/** Panneau P/T servi à part du cadre ; absent = le cadre l'intègre déjà. */
 	msePtPath?: string | null;
 	mseTextColors?: MseTextColors | null;
@@ -114,6 +123,27 @@ function shadowFilter(font: CardTextFont | undefined): string | undefined {
  * pendant le chargement du catalogue au lieu de sauter à l'apparition du cadre.
  */
 const PLACEHOLDER_VIEWBOX = { width: 744, height: 1039 };
+
+/**
+ * Saut supplémentaire entre deux paragraphes de règles, en interlignes.
+ *
+ * Mesuré sur l'imprimé who/159 : la ligne qui suit une fin de paragraphe est
+ * posée 1.2 interligne plus bas, là où deux lignes d'un même paragraphe sont à
+ * 1.0. La valeur était 1.28, reprise de l'interligne de base — les deux
+ * grandeurs sont distinctes et n'avaient pas de raison de coïncider.
+ */
+const PARAGRAPH_SPACING = 1.2;
+
+/**
+ * Marge intérieure HAUTE de la boîte de texte, en fraction du corps.
+ *
+ * Le corpus déclare un padding horizontal (`left: 6`, `right: 4`) mais AUCUN
+ * padding vertical, alors que la carte imprimée en a un : sur who/159 la
+ * première ligne d'encre commence 1.07 % de la hauteur de carte sous le haut
+ * de la boîte, ce qui place sa ligne de base à 1.19 corps — soit un interligne
+ * (0.999) plus 0.19.
+ */
+const RULES_TOP_PADDING_RATIO = 0.19;
 
 /**
  * Position d'un champ texte : mesurée si le corpus la donne, décalage
@@ -353,6 +383,8 @@ function RulesLine({
 	symbolMap,
 	fontFamily,
 	isItalic = false,
+	offset = 0,
+	italics,
 }: {
 	line: string;
 	x: number;
@@ -364,35 +396,59 @@ function RulesLine({
 	fontFamily: string;
 	/** Le texte d'ambiance est en italique ; les symboles, eux, restent droits. */
 	isItalic?: boolean;
+	/**
+	 * Position de la ligne dans le texte entier, pour rapporter les plages
+	 * d'italique (nom de capacité, texte de rappel) calculées globalement.
+	 */
+	offset?: number;
+	/** Plages italiques du texte entier (cf. `italicRanges`). */
+	italics?: Array<[number, number]>;
 }) {
+	const segments = italics?.length
+		? splitStyledSegments(line, offset, italics)
+		: splitRulesSegments(line);
 	const symbolSize = fontSize * RULES_SYMBOL_SIZE_RATIO;
 	// Positions calculées en amont : le rendu ne peut pas muter un curseur dans
 	// map() (react-hooks/immutability), et l'avance dépend du segment précédent.
 	// `false` : le texte de règles est en Georgia NORMAL, pas gras comme le titre
 	// sur lequel la table de glyphes est calibrée.
-	const advance = (segment: ReturnType<typeof splitRulesSegments>[number]) =>
-		segment.kind === 'symbol' ? symbolSize : measureText(segment.value, fontSize, false);
+	// L'italique doit être déclaré à la mesure : MPlantin-Italic est plus étroite
+	// que la romaine, et avancer de la largeur romaine décalait tout ce qui suit
+	// un nom de capacité ou un texte de rappel.
+	const advance = (segment: RulesSegment) =>
+		segment.kind === 'symbol'
+			? symbolSize
+			: measureText(segment.value, fontSize, false, isItalic || segment.isItalic);
 
-	const placed = splitRulesSegments(line).reduce<
-		Array<{ segment: ReturnType<typeof splitRulesSegments>[number]; at: number }>
-	>((result, segment) => {
-		const previous = result.at(-1);
-		const start = previous ? previous.at + advance(previous.segment) : x;
-		if (segment.kind === 'symbol') return [...result, { segment, at: start }];
-		// SVG SUPPRIME les espaces en tête d'un <text> au rendu (vérifié : « coule »
-		// et «  coule » mesurent pareil), alors que notre calcul les compte. Sans
-		// correction, le mot qui suit un symbole se colle à lui. On avance donc le
-		// curseur de ces espaces et on les retire du texte effectivement rendu.
-		const leading = /^\s*/.exec(segment.value)?.[0] ?? '';
-		const trimmed = segment.value.slice(leading.length);
-		return [
-			...result,
-			{
-				segment: { kind: 'text', value: trimmed },
-				at: start + measureText(leading, fontSize, false),
-			},
-		];
-	}, []);
+	const placed = segments.reduce<Array<{ segment: RulesSegment; at: number }>>(
+		(result, segment) => {
+			const previous = result.at(-1);
+			const start = previous ? previous.at + advance(previous.segment) : x;
+			if (segment.kind === 'symbol') return [...result, { segment, at: start }];
+			// SVG SUPPRIME les espaces en tête d'un <text> au rendu (vérifié : « coule »
+			// et «  coule » mesurent pareil), alors que notre calcul les compte. Sans
+			// correction, le mot qui suit se colle au précédent. On avance donc le
+			// curseur de la largeur de ces espaces et on les retire du texte
+			// effectivement rendu — l'espacement est PEINT par la position, pas par
+			// le texte.
+			//
+			// Vaut pour TOUT segment, pas seulement après un symbole : chaque segment
+			// ouvre son propre <text>, y compris ceux que créent les frontières
+			// d'italique (« Prérogative de Time Lord » + « — À chaque fois… »).
+			const leading = /^\s*/.exec(segment.value)?.[0] ?? '';
+			return [
+				...result,
+				{
+					// `segment` est réutilisé tel quel : le reconstruire perdait son
+					// `isItalic`, donc aucun nom de capacité ni texte de rappel ne
+					// s'imprimait en italique.
+					segment: { ...segment, value: segment.value.slice(leading.length) },
+					at: start + measureText(leading, fontSize, false),
+				},
+			];
+		},
+		[]
+	);
 
 	return (
 		<>
@@ -413,7 +469,11 @@ function RulesLine({
 							// (MPlantin-Italic, déclarée par `swap_fonts_body_default`)
 							// plutôt qu'un `font-style: italic` synthétique, que le
 							// navigateur obtient en penchant les glyphes droits.
-							fontFamily={isItalic ? FLAVOR_ITALIC_FAMILY : fontFamily}
+							fontFamily={
+								isItalic || (segment.kind === 'text' && segment.isItalic)
+									? FLAVOR_ITALIC_FAMILY
+									: fontFamily
+							}
 							fontSize={fontSize}
 							fill={textColor}
 						>
@@ -445,7 +505,9 @@ function RulesText({
 	textShadow,
 	fontFamily,
 	textLeft,
+	textRight,
 	measuredFontSize,
+	lineHeightRatio = DEFAULT_LINE_HEIGHT_RATIO,
 }: {
 	face: CardFaceDraft;
 	rect: CardRect;
@@ -461,43 +523,73 @@ function RulesText({
 	fontFamily: string;
 	/** Bord gauche mesuré (marge intérieure du corpus), `rect.x + 24` en repli. */
 	textLeft: number;
+	/** Bord droit du texte, marge du corpus comprise (cf. `CardTextFont.right`). */
+	textRight?: number;
 	/** Corps mesuré du corpus (`size: 14` sur M15), avant rétrécissement. */
 	measuredFontSize?: number;
+	/** Interligne de la police mesurée (cf. `CardTextFont.lineHeightRatio`). */
+	lineHeightRatio?: number;
 }) {
 	const symbolMap = useScryfallSymbols();
-	const oracle = expandCardNameShortcut(face.oracleText, face.name);
+	// Typographie d'impression appliquée AVANT le calcul des plages italiques et
+	// du retour à la ligne, pour que tous les index portent sur le même texte.
+	const oracle = printedTypography(expandCardNameShortcut(face.oracleText, face.name));
+	const flavor = printedTypography(face.flavorText);
 	const content = oracle || placeholder;
+	// Largeur utile entre les DEUX marges déclarées par le corpus. La dériver en
+	// doublant la seule marge gauche retirait 4 px de trop sur M15 (`left: 6`,
+	// `right: 4`) et cassait les lignes une syllabe trop tôt — assez pour
+	// ajouter une ligne de règles et rabaisser le corps pour la loger.
+	const usableWidth = (textRight ?? rect.x + rect.width - (textLeft - rect.x)) - textLeft;
 	// Corps de départ = celui MESURÉ, puis rétréci pour tenir dans la boîte —
 	// c'est ce que fait MSE, qui déclare `size: 14` ET `scale down to: 6` sur ce
 	// champ. L'échelle par nombre de caractères (`getRulesFontSize`) reste le
 	// repli des gabarits sans police mesurée : c'était une table calibrée à la
 	// main qui ignorait le corps déclaré.
 	const fontSize = measuredFontSize
-		? fitRulesFontSize(measuredFontSize, content.length + face.flavorText.length, rect, isNarrow)
-		: getRulesFontSize(oracle.length + face.flavorText.length, isNarrow);
+		? fitRulesFontSize(
+				measuredFontSize,
+				content,
+				flavor,
+				{ ...rect, usableWidth },
+				isNarrow,
+				lineHeightRatio
+			)
+		: getRulesFontSize(oracle.length + flavor.length, isNarrow);
 	// L'ambiance est légèrement plus petite que les règles, comme sur une carte.
 	const flavorFontSize = Math.max(17, fontSize - 2);
-	const lineHeight = fontSize * 1.28;
-	// Largeur utile DÉRIVÉE du bord gauche effectif : le `- 44` d'origine valait
-	// 2 × 24, les deux marges codées en dur. Le bord gauche venant désormais du
-	// corpus, garder 44 ferait déborder les lignes des gabarits à marge étroite
-	// (le corpus déclare `padding left: 6`, pas 24).
-	const leftInset = textLeft - rect.x;
-	const usableWidth = rect.width - leftInset * 2;
-	const maxCharacters = Math.max(15, Math.floor(usableWidth / (fontSize * 0.53)));
-	const maxLines = Math.max(2, Math.floor((rect.height - 46) / lineHeight));
-	const lines = wrapCardText(content, maxCharacters, maxLines);
-	const positionedLines = lines.reduce<Array<{ line: (typeof lines)[number]; offset: number }>>(
-		(result, line) => {
-			const previous = result.at(-1);
-			if (!previous) return [{ line, offset: 0 }];
-			const paragraphSpacing = previous.line.isParagraphEnd ? 1.28 : 1;
-			const offset = previous.offset + paragraphSpacing;
-			return [...result, { line, offset }];
-		},
-		[]
+	const lineHeight = fontSize * lineHeightRatio;
+	// Même arithmétique que `fitRulesFontSize` : le corps a été choisi POUR cette
+	// contrainte, alors la peinture doit l'appliquer à l'identique.
+	const maxLines = Math.max(
+		2,
+		Math.floor((rect.height - fontSize * RULES_VERTICAL_PADDING_RATIO) / lineHeight)
 	);
+	// Plages italiques (nom de capacité, texte de rappel) calculées sur le texte
+	// ENTIER : le retour à la ligne coupe ailleurs, et une portion italique
+	// traverse volontiers deux lignes. Elles servent AUSSI au découpage, qui
+	// mesure chaque mot dans son style réel.
+	const italics = italicRanges(content);
+	const lines = wrapCardTextByWidth(content, usableWidth, fontSize, italics).slice(0, maxLines);
+
+	const positionedLines = lines.reduce<
+		Array<{ line: (typeof lines)[number]; offset: number; charOffset: number }>
+	>((result, line) => {
+		const previous = result.at(-1);
+		if (!previous) return [{ line, offset: 0, charOffset: 0 }];
+		const paragraphSpacing = previous.line.isParagraphEnd ? PARAGRAPH_SPACING : 1;
+		// +1 : l'espace (ou le saut de ligne) que `wrapCardText` a consommé entre
+		// les deux lignes. Vérifié : ce cumul retombe exactement sur l'index de
+		// chaque ligne dans le texte source.
+		const charOffset = previous.charOffset + previous.line.text.length + 1;
+		return [...result, { line, offset: previous.offset + paragraphSpacing, charOffset }];
+	}, []);
 	const flavorOffset = positionedLines.at(-1)?.offset ?? 0;
+	// Ligne de base de la PREMIÈRE ligne, sous le haut de la boîte : un
+	// interligne complet plus la marge intérieure du panneau. Mesuré sur
+	// l'imprimé who/159, dont la première ligne d'encre commence à 1.07 % de la
+	// hauteur de carte sous le haut de la boîte — le rendu la collait au bord.
+	const firstBaseline = rect.y + (lineHeightRatio + RULES_TOP_PADDING_RATIO) * fontSize;
 	return (
 		/*
 		 * L'ombre est portée par le GROUPE et non ligne par ligne : elle couvre
@@ -505,16 +597,18 @@ function RulesText({
 		 * d'un seul filtre, exactement comme MSE ombre le champ entier.
 		 */
 		<g opacity={oracle ? 1 : 0.48} filter={textShadow}>
-			{positionedLines.map(({ line, offset }, index) => (
+			{positionedLines.map(({ line, offset, charOffset }, index) => (
 				<RulesLine
 					key={`${line.text}-${index}`}
 					line={line.text}
 					x={textLeft}
-					y={rect.y + 34 + offset * lineHeight}
+					y={firstBaseline + offset * lineHeight}
 					fontSize={fontSize}
 					textColor={textColor}
 					symbolMap={symbolMap}
 					fontFamily={fontFamily}
+					offset={charOffset}
+					italics={italics}
 				/>
 			))}
 			{/*
@@ -522,25 +616,40 @@ function RulesText({
 			 * un vrai retour à la ligne — il était auparavant rendu d'un bloc puis
 			 * tronqué à la première ligne, ce qui coupait la plupart des citations.
 			 */}
-			{face.flavorText &&
+			{/*
+			 * Filet de séparation règles / ambiance, comme sur une carte imprimée.
+			 * Tracé à mi-chemin du saut de 1.3 ligne qui les sépare, et arrêté aux
+			 * mêmes marges que le texte. Très peu contrasté : sur l'imprimé c'est
+			 * un filet fin, pas un trait plein.
+			 */}
+			{flavor && oracle && flavorOffset < maxLines - 1 && (
+				<line
+					x1={textLeft}
+					x2={textLeft + usableWidth}
+					y1={firstBaseline + (flavorOffset + 0.62) * lineHeight}
+					y2={firstBaseline + (flavorOffset + 0.62) * lineHeight}
+					stroke={textColor}
+					strokeOpacity={0.3}
+					strokeWidth={1}
+				/>
+			)}
+			{flavor &&
 				flavorOffset < maxLines - 1 &&
-				wrapCardText(
-					face.flavorText,
-					Math.floor(maxCharacters * (fontSize / flavorFontSize)),
-					Math.max(1, maxLines - Math.ceil(flavorOffset) - 1)
-				).map((flavorLine, index) => (
-					<RulesLine
-						key={`${flavorLine.text}-${index}`}
-						line={flavorLine.text}
-						x={textLeft}
-						y={rect.y + 40 + (flavorOffset + 1.3 + index) * lineHeight}
-						fontSize={flavorFontSize}
-						textColor={textColor}
-						symbolMap={symbolMap}
-						fontFamily={fontFamily}
-						isItalic
-					/>
-				))}
+				wrapCardTextByWidth(flavor, usableWidth, flavorFontSize, [[0, flavor.length]])
+					.slice(0, Math.max(1, maxLines - Math.ceil(flavorOffset) - 1))
+					.map((flavorLine, index) => (
+						<RulesLine
+							key={`${flavorLine.text}-${index}`}
+							line={flavorLine.text}
+							x={textLeft}
+							y={firstBaseline + (flavorOffset + 1.3 + index) * lineHeight}
+							fontSize={flavorFontSize}
+							textColor={textColor}
+							symbolMap={symbolMap}
+							fontFamily={fontFamily}
+							isItalic
+						/>
+					))}
 		</g>
 	);
 }
@@ -621,6 +730,34 @@ function Artwork({
 	);
 }
 
+/**
+ * Initiale de rareté du pied de carte, comme sur l'imprimé (« R · 0159 »).
+ *
+ * `M` pour mythique et non `R` : Wizards distingue les deux depuis Magic 2010,
+ * là où le studio n'a que quatre raretés.
+ */
+const RARITY_INITIAL: Record<CardRarity, string> = {
+	common: 'C',
+	uncommon: 'U',
+	rare: 'R',
+	mythic: 'M',
+};
+
+/**
+ * Numéro de collection au format IMPRIMÉ, complété à quatre chiffres.
+ *
+ * Scryfall stocke le numéro nu (« 159 »), la carte l'imprime paddé (« 0159 ») —
+ * vérifié sur WHO, DSK, BLB et OTJ, dont l'API renvoie toutes des numéros sans
+ * zéro de tête. Quatre chiffres parce que c'est la largeur des extensions
+ * récentes ; un numéro déjà plus long (variantes « 159a », numéros à cinq
+ * chiffres) est rendu tel quel plutôt que tronqué.
+ */
+function paddedCollectorNumber(value: string): string {
+	const trimmed = value.trim();
+	if (!trimmed) return '0001';
+	return /^\d+$/.test(trimmed) ? trimmed.padStart(4, '0') : trimmed;
+}
+
 function SetMark({ x, y, rarity }: { x: number; y: number; rarity: CardRarity }) {
 	const rarityColors: Record<CardRarity, string> = {
 		common: '#342f2c',
@@ -655,6 +792,7 @@ function CardSvg({
 	mseFramePath,
 	mseBlend,
 	mseCrownPath,
+	mseCrownBlend,
 	msePtPath,
 	mseTextColors,
 	mseTemplate,
@@ -669,7 +807,7 @@ function CardSvg({
 	// Emprunter des coordonnées ici est précisément le défaut que ce chantier a
 	// corrigé.
 	if (!geometry) return null;
-	const title = face.name || labels.namePlaceholder;
+	const title = printedTypography(face.name) || labels.namePlaceholder;
 	// Positions mesurées (ancrage + marge du corpus), décalages historiques en
 	// repli. Cf. `textPosition`.
 	const titlePosition = textPosition(geometry.title, geometry.fonts?.title, { dx: 18, dy: 39 });
@@ -696,7 +834,19 @@ function CardSvg({
 		manaLeftEdge - TITLE_MANA_GUTTER - titleStart,
 		geometry.fonts?.title?.size
 	);
-	const typeLine = face.typeLine || labels.typePlaceholder;
+	const typeLine = printedTypography(face.typeLine) || labels.typePlaceholder;
+	// Bord GAUCHE du symbole d'édition : c'est là que la ligne de type doit
+	// s'arrêter. Même expression que `SetMark` plus bas, qui le reçoit centré.
+	const setMarkCenterX =
+		(geometry.typeBar?.right ??
+			(geometry.setSymbol
+				? geometry.setSymbol.x + geometry.setSymbol.width
+				: geometry.typeLine.x + geometry.typeLine.width - 27 + SET_MARK_RADIUS)) - SET_MARK_RADIUS;
+	const typeLineFontSize = fitTypeLineFontSize(
+		typeLine,
+		setMarkCenterX - SET_MARK_RADIUS - typePosition.x,
+		geometry.fonts?.typeLine?.size ?? 25
+	);
 	const isNarrowRules = geometry.rules.width < 500;
 	const showStats = geometry.stats.width > 0 && (face.power || face.toughness || face.loyalty);
 	return (
@@ -899,26 +1049,85 @@ function CardSvg({
 			 * Son emprise dépend de la PROVENANCE de l'asset, cf. `crownRect` — les
 			 * deux corpus ne livrent pas la couronne sous la même forme.
 			 */}
-			{ccFrameGeometry(mseCrownPath)?.crownCover && (
+			{/*
+			 * Le cache se lit sur la couronne RÉELLEMENT peinte : en fondu c'est
+			 * `base`, sinon la couronne unique. Les deux couronnes d'un fondu
+			 * partagent la même géométrie, donc `base` suffit à la décrire.
+			 */}
+			{ccFrameGeometry(mseCrownBlend?.base ?? mseCrownPath)?.crownCover && (
 				/*
 				 * Cache noir SOUS la couronne (cf. `CC_CROWN_COVER`) : le cadre a sa
 				 * propre barre de titre claire dès y 15.0, qui remplirait les creux
 				 * entre les pointes. Une carte imprimée y montre du noir.
 				 */
 				<rect
-					x={(ccFrameGeometry(mseCrownPath)?.crownCover?.x ?? 0) * geometry.width}
-					y={(ccFrameGeometry(mseCrownPath)?.crownCover?.y ?? 0) * geometry.height}
-					width={(ccFrameGeometry(mseCrownPath)?.crownCover?.width ?? 0) * geometry.width}
-					height={(ccFrameGeometry(mseCrownPath)?.crownCover?.height ?? 0) * geometry.height}
+					x={
+						(ccFrameGeometry(mseCrownBlend?.base ?? mseCrownPath)?.crownCover?.x ?? 0) *
+						geometry.width
+					}
+					y={
+						(ccFrameGeometry(mseCrownBlend?.base ?? mseCrownPath)?.crownCover?.y ?? 0) *
+						geometry.height
+					}
+					width={
+						(ccFrameGeometry(mseCrownBlend?.base ?? mseCrownPath)?.crownCover?.width ?? 0) *
+						geometry.width
+					}
+					height={
+						(ccFrameGeometry(mseCrownBlend?.base ?? mseCrownPath)?.crownCover?.height ?? 0) *
+						geometry.height
+					}
 					fill="black"
 				/>
 			)}
-			{mseCrownPath && (
-				<image
-					href={mseCrownPath}
-					{...crownRect(mseCrownPath, geometry)}
-					preserveAspectRatio="none"
-				/>
+			{/*
+			 * Couronne fondue d'une bicolore : la seconde couleur est posée sur la
+			 * première à travers le MÊME dégradé horizontal que le cadre, pour que
+			 * la transition tombe au même endroit. Mesuré sur l'imprimé, la couronne
+			 * suit les couleurs du cadre au lieu d'être or.
+			 */}
+			{mseCrownBlend ? (
+				<>
+					<linearGradient id={`${clipId}-crowngrad`} x1="45%" y1="0%" x2="55%" y2="0%">
+						<stop offset="0" stopColor="black" />
+						<stop offset="1" stopColor="white" />
+					</linearGradient>
+					<mask
+						id={`${clipId}-crownmask`}
+						maskUnits="userSpaceOnUse"
+						x="0"
+						y="0"
+						width={geometry.width}
+						height={geometry.height}
+					>
+						<rect
+							x="0"
+							y="0"
+							width={geometry.width}
+							height={geometry.height}
+							fill={`url(#${clipId}-crowngrad)`}
+						/>
+					</mask>
+					<image
+						href={mseCrownBlend.base}
+						{...crownRect(mseCrownBlend.base, geometry)}
+						preserveAspectRatio="none"
+					/>
+					<image
+						href={mseCrownBlend.overlay}
+						{...crownRect(mseCrownBlend.overlay, geometry)}
+						preserveAspectRatio="none"
+						mask={`url(#${clipId}-crownmask)`}
+					/>
+				</>
+			) : (
+				mseCrownPath && (
+					<image
+						href={mseCrownPath}
+						{...crownRect(mseCrownPath, geometry)}
+						preserveAspectRatio="none"
+					/>
+				)
 			)}
 			<text
 				x={titlePosition.x}
@@ -952,7 +1161,7 @@ function CardSvg({
 				x={typePosition.x}
 				y={typePosition.y}
 				fontFamily={geometry.fonts?.typeLine?.family ?? GENERIC_SERIF}
-				fontSize={geometry.fonts?.typeLine?.size ?? 25}
+				fontSize={typeLineFontSize}
 				fontWeight={geometry.fonts?.typeLine ? undefined : '800'}
 				fill={inkFor(geometry.fonts?.typeLine, mseTextColors?.type)}
 				filter={shadowFilter(geometry.fonts?.typeLine)}
@@ -961,27 +1170,37 @@ function CardSvg({
 				{typeLine}
 			</text>
 			{/*
-			 * Le symbole se pose dans le BANDEAU mesuré, pas dans la boîte de texte :
-			 * MSE rétrécit celle-ci de la largeur du symbole pour lui réserver la
-			 * place (`width: … - card_style.rarity.content_width`), donc le symbole
-			 * tombe à DROITE de la boîte (boîte jusqu'à 298 u sur M15, bandeau
-			 * jusqu'à 359).
+			 * Le symbole est TOUJOURS calé par son BORD DROIT, jamais centré sur une
+			 * boîte : le corpus déclare `alignment: middle right` sur tous les blocs
+			 * `rarity:` mesurés, donc l'image est poussée à droite DANS sa boîte. La
+			 * centrer la décalait vers la gauche d'une demi-boîte.
 			 *
-			 * C'est son BORD DROIT qui s'aligne sur celui du bandeau, pas son centre :
-			 * mesuré sur une carte imprimée, le symbole occupe 340.5..358.6 u pour un
-			 * bandeau finissant à 359. D'où le retrait d'un demi-glyphe — l'y centrer
-			 * le poussait d'autant trop à droite.
+			 * Trois sources pour ce bord droit, dans l'ordre de fiabilité :
 			 *
-			 * Sans bandeau mesuré, on garde le placement d'avant (bord droit de la
-			 * boîte), qui reste ce que le studio affichait.
+			 * 1. `typeBar` — le bandeau PEINT, mesuré dans l'image du cadre. C'est une
+			 *    observation du cadre réel, pas une déclaration : elle prime. Mesuré
+			 *    sur une carte imprimée, le symbole occupe 340.5..358.6 u pour un
+			 *    bandeau finissant à 359.
+			 * 2. `setSymbol` — le bloc `rarity:` du style. Déclaré et non mesuré, donc
+			 *    second ; mais il vise le bon slot, ce que le cas 3 ne fait pas.
+			 * 3. Bord droit de la boîte de type, faute de mieux.
+			 *
+			 * Le cas 3 est FAUX dès que le style réserve la place du symbole en
+			 * rétrécissant la boîte de type (`width: … - card_style.rarity.
+			 * content_width`) : ce bord est alors le bord GAUCHE du slot, et lui
+			 * retirer encore un demi-glyphe ramenait le symbole SUR le texte de type —
+			 * c'est ce qui décalait `magic-old` et `magic-old-abu` d'environ 47 u.
+			 * Ces deux gabarits sont `middle` sur leur ligne de type, donc sans
+			 * bandeau mesurable (cf. seed-local-text-bars.mjs) ; ils passent par le
+			 * cas 2, désormais publié pour eux.
 			 */}
 			<SetMark
-				x={
-					geometry.typeBar
-						? geometry.typeBar.right - SET_MARK_RADIUS
-						: geometry.typeLine.x + geometry.typeLine.width - 27
+				x={setMarkCenterX}
+				y={
+					geometry.setSymbol
+						? geometry.setSymbol.y + geometry.setSymbol.height / 2
+						: geometry.typeLine.y + geometry.typeLine.height / 2
 				}
-				y={geometry.typeLine.y + geometry.typeLine.height / 2}
 				rarity={rarity}
 			/>
 			<RulesText
@@ -993,7 +1212,9 @@ function CardSvg({
 				textShadow={shadowFilter(geometry.fonts?.rules)}
 				fontFamily={geometry.fonts?.rules?.family ?? GENERIC_SERIF}
 				textLeft={geometry.fonts?.rules?.left ?? geometry.rules.x + 24}
+				textRight={geometry.fonts?.rules?.right}
 				measuredFontSize={geometry.fonts?.rules?.size}
+				lineHeightRatio={geometry.fonts?.rules?.lineHeightRatio}
 			/>
 			{/*
 			 * Force/endurance : le TEXTE seul. Le panneau lui-même est peint par le
@@ -1084,7 +1305,8 @@ function CardSvg({
 				fontWeight="700"
 				fill={mseTextColors?.footer ?? '#f8f1df'}
 			>
-				{setCode || 'WIZ'} · {collectorNumber || '001'} · {labels.artistPrefix} {face.artist || '—'}
+				{RARITY_INITIAL[rarity]} · {paddedCollectorNumber(collectorNumber)} · {setCode || 'WIZ'} ·{' '}
+				{labels.artistPrefix} {face.artist || '—'}
 			</text>
 			<text
 				x={geometry.footer.x + geometry.footer.width}
@@ -1262,6 +1484,7 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 		mseFramePath,
 		mseBlend,
 		mseCrownPath,
+		mseCrownBlend,
 		msePtPath,
 		mseTextColors,
 		mseTemplate,
@@ -1297,6 +1520,7 @@ export const CardCanvas = forwardRef<SVGSVGElement, CardCanvasProps>(function Ca
 					mseFramePath={mseFramePath}
 					mseBlend={mseBlend}
 					mseCrownPath={mseCrownPath}
+					mseCrownBlend={mseCrownBlend}
 					msePtPath={msePtPath}
 					mseTextColors={mseTextColors}
 					mseTemplate={mseTemplate}
