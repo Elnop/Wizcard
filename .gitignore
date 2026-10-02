@@ -60,4 +60,4 @@ cosmos-export
 # ops docs containing secrets (Resend API key, etc.)
 /docs/resend-otp-setup.md
 
-assets/cards-templates
+assets/card-templates
