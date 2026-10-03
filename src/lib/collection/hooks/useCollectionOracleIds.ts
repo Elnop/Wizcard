@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { oracleIdsByPrintIds } from '@/lib/card/catalog-db';
+import { oracleIdsByPrintIds, printIdsByOracleIds } from '@/lib/card/catalog-db';
 import { useCollectionIndex } from '@/lib/collection-index/context/CollectionIndexProvider';
 
 type StoredCopy = { scryfallId: string };
@@ -21,10 +21,15 @@ const EMPTY_MAP: ReadonlyMap<string, string> = new Map();
  * (`findFreeCollectionCopy` pass 2), so entries that share no oracle_id with the
  * deck can never match and never needed resolving.
  *
- * The deck side is a narrow catalog query (the deck prints' oracle_ids). The
- * owned side now reads straight from the global collection index — already
- * loaded for every owned/wishlisted print, including ones missing from the
- * catalog via its Scryfall fallback — instead of a second catalog query.
+ * The deck side is always a narrow catalog query (the deck prints' oracle_ids).
+ * The owned side has two modes: once the global collection index is `'ready'`,
+ * it reads straight from `getFacets` (already loaded for every owned/wishlisted
+ * print, including ones missing from the catalog via its Scryfall fallback) —
+ * no second catalog query. While the index is still loading, `getFacets` can be
+ * missing ids that are genuinely owned, so the owned side instead falls back to
+ * the old catalog intersection query (every print id sharing the deck's
+ * oracle_ids, kept where the entries on hand own it) so a substitutable copy is
+ * never missed mid-load.
  *
  * Ids missing from the catalog/index (and `mpc:` custom ids without an
  * oracle_id) are simply absent; callers already treat a missing oracle_id as
@@ -35,7 +40,9 @@ export function useCollectionOracleIds(
 	entries: StoredCopy[]
 ): ReadonlyMap<string, string> {
 	const [map, setMap] = useState<Map<string, string>>(() => new Map());
-	const { getFacets } = useCollectionIndex();
+	const [fallbackOwned, setFallbackOwned] = useState<Map<string, string>>(() => new Map());
+	const { getFacets, status } = useCollectionIndex();
+	const indexReady = status === 'ready';
 
 	// Identity-stable keys: the effect must re-run when the *contents* change,
 	// not on every render (both arrays are rebuilt upstream each time).
@@ -54,22 +61,45 @@ export function useCollectionOracleIds(
 				const deckMap = await oracleIdsByPrintIds(deckIds);
 				if (cancelled) return;
 				setMap(deckMap);
+
+				if (indexReady) {
+					// The index memo below already covers the owned side; drop any
+					// stale fallback from an earlier, still-loading render.
+					setFallbackOwned(new Map());
+					return;
+				}
+
+				// Index not ready yet: every print of the deck's logical cards, then
+				// keep only the ones the user actually owns — the pre-index behaviour.
+				const oracleIds = [...new Set(deckMap.values())];
+				const printsForOracles = await printIdsByOracleIds(oracleIds);
+				if (cancelled) return;
+
+				const owned = new Set(entriesKey ? entriesKey.split(',') : []);
+				const fallback = new Map<string, string>();
+				for (const [printId, oracleId] of printsForOracles) {
+					if (owned.has(printId)) fallback.set(printId, oracleId);
+				}
+				setFallbackOwned(fallback);
 			} catch (err) {
 				// Never break the page over this: an empty map degrades to "no
 				// substitutable copy found", which is the pre-resolution behaviour.
 				console.error('[useCollectionOracleIds] catalog lookup failed:', err);
-				if (!cancelled) setMap(new Map());
+				if (!cancelled) {
+					setMap(new Map());
+					setFallbackOwned(new Map());
+				}
 			}
 		})();
 
 		return () => {
 			cancelled = true;
 		};
-	}, [deckKey]);
+	}, [deckKey, entriesKey, indexReady]);
 
-	// Owned side: straight from the global index (already loaded, includes prints the
-	// catalog lacks via the Scryfall fallback) — no second catalog query.
-	const owned = useMemo(() => {
+	// Owned side, index mode: straight from the global index (already loaded,
+	// includes prints the catalog lacks via the Scryfall fallback).
+	const indexOwned = useMemo(() => {
 		const m = new Map<string, string>();
 		for (const id of entriesKey ? entriesKey.split(',') : []) {
 			const f = getFacets(id);
@@ -77,6 +107,9 @@ export function useCollectionOracleIds(
 		}
 		return m;
 	}, [entriesKey, getFacets]);
+
+	// Owned side, pre-ready mode: the catalog-intersection fallback computed above.
+	const owned = indexReady ? indexOwned : fallbackOwned;
 
 	// Derived at render rather than stored: with no deck prints there is nothing to
 	// match, and this also drops a stale map from a previous deck without an extra
