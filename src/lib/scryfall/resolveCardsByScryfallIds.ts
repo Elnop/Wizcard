@@ -3,6 +3,7 @@ import { BATCH_SIZE } from '@/lib/scryfall/constants';
 import { getCardsFromCache, putCardsInCache } from '@/lib/scryfall/utils/card-cache';
 import { putCards } from '@/lib/scryfall/store/cards-store';
 import { getCustomCardsByIds } from '@/lib/mpc/db/custom-cards';
+import { byPrintIds } from '@/lib/card/catalog-db';
 import type { Card } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 
@@ -48,10 +49,45 @@ async function resolveCustomCards(
 }
 
 /**
+ * Batch-fetch `fallbackIds` through the proxy in `BATCH_SIZE` chunks, mutating
+ * `resolved` in place as each chunk lands. Mirrors `isCancelled`'s contract:
+ * stops before starting the next chunk and reports `cancelled: true` so the
+ * caller can skip the cache-write tail, exactly as the inline loop used to.
+ */
+async function fetchFallbackBatches(
+	fallbackIds: string[],
+	resolved: Map<string, Card | CustomCard>,
+	options: Pick<ResolveOptions, 'isCancelled' | 'onProgress'>
+): Promise<{ fetched: Card[]; cancelled: boolean }> {
+	const { isCancelled, onProgress } = options;
+	const chunks: string[][] = [];
+	for (let i = 0; i < fallbackIds.length; i += BATCH_SIZE) {
+		chunks.push(fallbackIds.slice(i, i + BATCH_SIZE));
+	}
+
+	const fetched: Card[] = [];
+	for (let i = 0; i < chunks.length; i++) {
+		if (isCancelled?.()) return { fetched, cancelled: true };
+		try {
+			const result = await getCardCollection(chunks[i].map((id) => ({ id })));
+			for (const card of result.data) {
+				fetched.push(card);
+				resolved.set(card.id, card);
+			}
+		} catch (err) {
+			console.error(`[resolveCardsByScryfallIds] batch ${i + 1}/${chunks.length} failed:`, err);
+		}
+		onProgress?.({ current: i + 1, total: chunks.length });
+	}
+	return { fetched, cancelled: false };
+}
+
+/**
  * Resolve a set of print IDs into domain `Card` objects (or `CustomCard` for
  * MPC prints, which resolve from the local custom-card table).
  *
- * Pipeline: dedupe ids → read IndexedDB cache → batch-fetch the misses in
+ * Pipeline: dedupe ids → read IndexedDB cache → read the DB catalog directly
+ * (chunked, parallel) → batch-fetch the remaining misses through the proxy in
  * `BATCH_SIZE` chunks → write fetched cards back to cache. Per-batch network
  * failures are logged and skipped (never thrown). Returns a Map of every id
  * that resolved (cache hit OR network hit); unresolved ids are simply absent.
@@ -92,25 +128,20 @@ export async function resolveCardsByScryfallIds(
 
 	if (missIds.length === 0) return resolved;
 
-	const chunks: string[][] = [];
-	for (let i = 0; i < missIds.length; i += BATCH_SIZE) {
-		chunks.push(missIds.slice(i, i + BATCH_SIZE));
+	// 1. Straight from the DB catalog: chunked + parallel, no proxy, no Scryfall throttle.
+	const fetched: Card[] = [];
+	if (isCancelled?.()) return resolved;
+	const fromCatalog = await byPrintIds(missIds);
+	for (const card of fromCatalog.values()) {
+		fetched.push(card);
+		resolved.set(card.id, card);
 	}
 
-	const fetched: Card[] = [];
-	for (let i = 0; i < chunks.length; i++) {
-		if (isCancelled?.()) return resolved;
-		try {
-			const result = await getCardCollection(chunks[i].map((id) => ({ id })));
-			for (const card of result.data) {
-				fetched.push(card);
-				resolved.set(card.id, card);
-			}
-		} catch (err) {
-			console.error(`[resolveCardsByScryfallIds] batch ${i + 1}/${chunks.length} failed:`, err);
-		}
-		onProgress?.({ current: i + 1, total: chunks.length });
-	}
+	// 2. Whatever the catalog lacks (lagging seed, failed chunk) → proxy → Scryfall.
+	const fallbackIds = missIds.filter((id) => !fromCatalog.has(id));
+	const fallback = await fetchFallbackBatches(fallbackIds, resolved, { isCancelled, onProgress });
+	fetched.push(...fallback.fetched);
+	if (fallback.cancelled) return resolved;
 
 	if (!skipCache && fetched.length > 0) {
 		void putCardsInCache(fetched);

@@ -6,6 +6,8 @@ import { rowsToCard } from './assembler';
 import type { DefinitionRow, PrintRow, DefinitionFaceRow, PrintFaceRow, SetRow } from './assembler';
 import type { Card } from '@/types/cards';
 import type { ScryfallCardIdentifier } from '@/lib/scryfall/types/scryfall';
+import { mapWithConcurrency } from '@/lib/async/map-with-concurrency';
+import { isUuid } from './uuid';
 
 const PRINT_COLS =
 	'id, oracle_id, set, collector_number, lang, rarity, released_at, artist, border_color, frame, image_status, image_uris, finishes, promo, reprint, variation, digital, printed_name, printed_type_line, printed_text, multiverse_ids, mtgo_id, arena_id, tcgplayer_id, cardmarket_id';
@@ -378,6 +380,38 @@ export async function byCollection(
 		batchLang: opts?.lang,
 	};
 	return identifiers.map((id) => resolveOne(ctx, id));
+}
+
+// 150 ids keep the PostgREST URL well under the limit (300 already 414s); 6 chunks in
+// flight decouple throughput from latency without hammering PostgREST.
+const PRINT_ID_CHUNK = 150;
+const PRINT_ID_CONCURRENCY = 6;
+
+/**
+ * Print ids → assembled Cards, straight from the catalog. Non-uuid ids are skipped,
+ * a failed chunk is logged and its ids are simply absent: the caller's fallback
+ * picks up whatever is missing. Never throws.
+ */
+export async function byPrintIds(ids: string[]): Promise<Map<string, Card>> {
+	const sb = createCatalogClient();
+	const unique = [...new Set(ids)].filter(isUuid);
+	const chunks: string[][] = [];
+	for (let i = 0; i < unique.length; i += PRINT_ID_CHUNK) {
+		chunks.push(unique.slice(i, i + PRINT_ID_CHUNK));
+	}
+	const out = new Map<string, Card>();
+	await mapWithConcurrency(chunks, PRINT_ID_CONCURRENCY, async (chunk) => {
+		try {
+			const { data, error } = await sb.from('card_prints').select(PRINT_COLS).in('id', chunk);
+			if (error) throw error;
+			for (const card of await assemblePrints(sb, (data ?? []) as PrintRow[])) {
+				out.set(card.id, card);
+			}
+		} catch (err) {
+			console.error('[catalog-db] byPrintIds chunk failed:', err);
+		}
+	});
+	return out;
 }
 
 // A GET with an `in.(…)` list of UUIDs is capped by the server's URI length:
