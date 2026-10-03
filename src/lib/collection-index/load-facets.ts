@@ -11,6 +11,21 @@ export interface LoadFacetsResult {
 	notFound: string[];
 }
 
+/** Custom cards into `found`; false if the lookup itself failed. */
+async function loadCustomInto(
+	customIds: string[],
+	found: Map<string, IndexedCard>
+): Promise<boolean> {
+	if (customIds.length === 0) return true;
+	try {
+		for (const [id, card] of await getCustomCardsByIds(customIds)) found.set(id, card);
+		return true;
+	} catch (err) {
+		console.error('[loadFacets] custom cards failed:', err);
+		return false;
+	}
+}
+
 /**
  * Facts the index needs for `ids`:
  *   mpc: ids        → custom_cards (full CustomCard, light and local)
@@ -24,22 +39,22 @@ export interface LoadFacetsResult {
  */
 export async function loadFacets(
 	ids: string[],
-	opts: { isCancelled?: () => boolean } = {}
+	opts: {
+		isCancelled?: () => boolean;
+		/**
+		 * Called once custom cards + the RPC have answered successfully, BEFORE the
+		 * Scryfall fallback for catalog misses — which waits in the shared Scryfall
+		 * throttle queue (behind filter catalogs etc.) and can take seconds.
+		 */
+		onPrimary?: (found: ReadonlyMap<string, IndexedCard>) => void;
+	} = {}
 ): Promise<LoadFacetsResult> {
 	const found = new Map<string, IndexedCard>();
 	const unique = [...new Set(ids)];
 	const customIds = unique.filter((id) => id.startsWith('mpc:'));
 	const printIds = unique.filter((id) => !id.startsWith('mpc:'));
 
-	let customFailed = false;
-	if (customIds.length > 0) {
-		try {
-			for (const [id, card] of await getCustomCardsByIds(customIds)) found.set(id, card);
-		} catch (err) {
-			customFailed = true;
-			console.error('[loadFacets] custom cards failed:', err);
-		}
-	}
+	const customFailed = !(await loadCustomInto(customIds, found));
 	if (opts.isCancelled?.()) return { found, notFound: [] };
 
 	let rpcFailed = false;
@@ -50,6 +65,7 @@ export async function loadFacets(
 		console.error('[loadFacets] card_facets failed, falling back:', err);
 	}
 	if (opts.isCancelled?.()) return { found, notFound: [] };
+	if (!rpcFailed && !customFailed) opts.onPrimary?.(new Map(found));
 
 	// Non-uuid ids can't be in the catalog nor on Scryfall by id: not found.
 	const malformed = printIds.filter((id) => !isUuid(id));

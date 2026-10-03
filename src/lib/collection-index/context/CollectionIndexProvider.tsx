@@ -43,7 +43,8 @@ const onlyFacets = (m: ReadonlyMap<string, IndexedCard>): CardFacets[] =>
  *
  * Load order per new id: IDB (30-day TTL; stale rows are used then refreshed in
  * background) → card_facets RPC → Scryfall fallback (loadFacets). `status` is
- * 'loading' until the FIRST complete load for the current user; ids added later
+ * 'loading' until the cache + RPC have answered for the current user (or, if the
+ * RPC failed, until the fallback has); catalog misses and ids added later
  * (import, add-to-collection) arrive without flipping it back.
  */
 export function CollectionIndexProvider({ children }: { children: React.ReactNode }) {
@@ -136,6 +137,12 @@ export function CollectionIndexProvider({ children }: { children: React.ReactNod
 
 				const { found, notFound: missing } = await loadFacets(toFetch, {
 					isCancelled: () => cancelled.current,
+					// Catalog answered: the grid can start. The few catalog misses
+					// (Scryfall fallback, slow throttle queue) join like later-added ids.
+					onPrimary: (primary) => {
+						merge(primary);
+						if (!cancelled.current) setCompletedOnce(true);
+					},
 				});
 				merge(found);
 				void putFacetsInCache(onlyFacets(found));
