@@ -109,7 +109,7 @@ so the index stays at parity with today's representative choice.
 - Called from the browser with the shared Supabase client (POST body → no URL limit).
   Chunk client-side at 2 000 ids per call to bound payload.
 - Migration file is idempotent (`create or replace`); mirrored in
-  `supabase/bootstrap/init_schema.sql`; asserted in `supabase/verify_schema.sql`.
+  `supabase/verify_schema.sql` (not in `supabase/bootstrap/init_schema.sql`, which has no catalog tables at all).
 
 ### 3. `CollectionIndexProvider` — global
 
@@ -225,7 +225,8 @@ grid updates in place without returning to skeletons.
 pagination fix + paged grid (collection & wishlist) + card modal + exports.
 
 **Phase 2** — dependents on the index with discreet placeholders: deck collection badges
-(`useCollectionBadge`), `useCollectionOracleIds`, `useDeckCardIndex`. They already work
+(`useCollectionBadge`), `useCollectionOracleIds`. `useDeckCardIndex` is excluded: it indexes
+**deck** copies, not the collection, and already benefits from the faster resolver. They already work
 without full hydration today, so this is an improvement, not a fix.
 
 ## Verification
