@@ -10,6 +10,7 @@ import {
 	useState,
 } from 'react';
 import type { CardFacets, IndexedCard } from '@/types/cards';
+import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { getFacetsFromCache, putFacetsInCache } from '@/lib/scryfall/utils/card-cache';
@@ -42,38 +43,72 @@ const onlyFacets = (m: ReadonlyMap<string, IndexedCard>): CardFacets[] =>
  * (import, add-to-collection) arrive without flipping it back.
  */
 export function CollectionIndexProvider({ children }: { children: React.ReactNode }) {
+	const { user } = useAuth();
+	const userId = user?.id ?? null;
 	const { entries: collectionEntries, isLoaded: collectionLoaded } = useCollectionContext();
 	const { entries: wishlistEntries, isLoaded: wishlistLoaded } = useWishlistContext();
 	const entriesReady = collectionLoaded && wishlistLoaded;
 
 	const [facets, setFacets] = useState<ReadonlyMap<string, IndexedCard>>(() => new Map());
 	const [completedOnce, setCompletedOnce] = useState(false);
+	const [notFound, setNotFound] = useState<ReadonlySet<string>>(() => new Set());
 	const [error, setError] = useState<Error | null>(null);
 	const [attempt, setAttempt] = useState(0);
-	// Ids loaded, in flight, or known to exist nowhere — never re-requested.
+	// Ids loaded, in flight, or known to exist nowhere — never re-requested. Keyed to
+	// `settledUserRef`'s user; reset (in the effect) whenever the user changes.
 	const settledRef = useRef<Set<string>>(new Set());
+	const settledUserRef = useRef<string | null>(userId);
 
 	// Account switch: the collection store drops back to isLoaded=false — the next
 	// user's index must report 'loading' again (render-time reset, not an effect).
 	if (!entriesReady && completedOnce) setCompletedOnce(false);
 
-	const ids = useMemo(() => {
+	// User-keyed reset: a logout→login (or direct account switch) must drop whatever
+	// A's session concluded with, even when `entriesReady` itself never flips false
+	// (handleLogout sets isLoaded:true with empty entries) — render-time, not an effect.
+	const [trackedUser, setTrackedUser] = useState(userId);
+	if (trackedUser !== userId) {
+		setTrackedUser(userId);
+		setCompletedOnce(false);
+		setError(null);
+		setNotFound(new Set());
+	}
+
+	// Content-keyed, not identity-keyed: an entries mutation that doesn't change the
+	// SET of ids (reorders, metadata edits, …) must not restart the effect below.
+	const idsKey = useMemo(() => {
 		const set = new Set<string>();
 		for (const e of collectionEntries) set.add(e.scryfallId);
 		for (const e of wishlistEntries) set.add(e.scryfallId);
-		return [...set];
+		return [...set].sort().join(',');
 	}, [collectionEntries, wishlistEntries]);
+	const ids = useMemo(() => (idsKey ? idsKey.split(',') : []), [idsKey]);
 
 	useEffect(() => {
 		if (!entriesReady) return;
+		// New user: the previous user's settled-ness says nothing about this one —
+		// even ids that happen to coincide must be (re-)requested.
+		if (settledUserRef.current !== userId) {
+			settledRef.current = new Set();
+			settledUserRef.current = userId;
+		}
 		const pending = ids.filter((id) => !settledRef.current.has(id));
 		if (pending.length === 0) return;
 		for (const id of pending) settledRef.current.add(id);
 		const cancelled = { current: false };
+		// Set once the main load's results (success or per-id not-found) have been
+		// recorded. The cleanup only un-settles ids that never got that far — a
+		// finished id stays settled even if the run is torn down right after
+		// (StrictMode double-invoke, or a later id-set change).
+		let finished = false;
 
 		const merge = (add: ReadonlyMap<string, IndexedCard>) => {
 			if (cancelled.current || add.size === 0) return;
 			setFacets((prev) => new Map([...prev, ...add]));
+		};
+		const markNotFound = (missing: string[]) => {
+			if (missing.length === 0) return;
+			setNotFound((prev) => new Set([...prev, ...missing]));
 		};
 
 		void (async () => {
@@ -83,12 +118,16 @@ export function CollectionIndexProvider({ children }: { children: React.ReactNod
 				const toFetch = pending.filter((id) => !cached.has(id));
 				const stale = [...cached].filter(([, v]) => v.stale).map(([id]) => id);
 
-				const { found } = await loadFacets(toFetch, { isCancelled: () => cancelled.current });
+				const { found, notFound: missing } = await loadFacets(toFetch, {
+					isCancelled: () => cancelled.current,
+				});
 				merge(found);
 				void putFacetsInCache(onlyFacets(found));
 				if (cancelled.current) return;
+				finished = true;
 				setError(null);
 				setCompletedOnce(true);
+				markNotFound(missing);
 
 				if (stale.length > 0) {
 					// Background refresh: never changes status, failures are only logged.
@@ -96,12 +135,12 @@ export function CollectionIndexProvider({ children }: { children: React.ReactNod
 						const refreshed = await loadFacets(stale);
 						merge(refreshed.found);
 						void putFacetsInCache(onlyFacets(refreshed.found));
+						markNotFound(refreshed.notFound);
 					} catch (err) {
 						console.error('[CollectionIndex] background refresh failed:', err);
 					}
 				}
 			} catch (err) {
-				for (const id of pending) settledRef.current.delete(id);
 				if (!cancelled.current) setError(err instanceof Error ? err : new Error(String(err)));
 			}
 		})();
@@ -109,17 +148,22 @@ export function CollectionIndexProvider({ children }: { children: React.ReactNod
 		return () => {
 			cancelled.current = true;
 			// Unfinished ids must be requestable by the next run (StrictMode, new entries).
-			// settledRef is a plain Set, not a DOM ref — safe to read/mutate in cleanup.
-			// eslint-disable-next-line react-hooks/exhaustive-deps
-			for (const id of pending) if (!facets.has(id)) settledRef.current.delete(id);
+			if (!finished) for (const id of pending) settledRef.current.delete(id);
 		};
-		// `facets` is read only in the cleanup, to keep finished ids settled.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ids, entriesReady, attempt]);
+	}, [ids, entriesReady, attempt, userId]);
+
+	// Data-derived: 'ready' once every CURRENT id is accounted for (found or
+	// known-missing), not just once the latest effect run happened to finish. Covers
+	// the case where nothing was pending (already known) and the effect bailed early.
+	const allKnown = useMemo(() => {
+		for (const id of ids) if (!facets.has(id) && !notFound.has(id)) return false;
+		return true;
+	}, [ids, facets, notFound]);
 
 	let status: CollectionIndexStatus;
 	if (error) status = 'error';
-	else if (entriesReady && (ids.length === 0 || completedOnce)) status = 'ready';
+	else if (!entriesReady) status = 'loading';
+	else if (completedOnce || allKnown) status = 'ready';
 	else status = 'loading';
 
 	const getFacets = useCallback((id: string) => facets.get(id), [facets]);
