@@ -1,7 +1,7 @@
 // Persistent IndexedDB cache for card data and collection entries.
 // Silently falls back to no-op if IndexedDB is unavailable (private mode, etc.).
 
-import type { Card, CardEntry, CardImageStatus, CardImageUris } from '@/types/cards';
+import type { Card, CardEntry, CardFacets, CardImageStatus, CardImageUris } from '@/types/cards';
 import type { CollectionData } from '@/lib/collection/db/collection-migrations';
 
 // The object store holds a plain JSON blob of the provider-neutral domain `Card`.
@@ -47,11 +47,14 @@ export interface CachedLocalizedImage {
 const DB_NAME = 'wizcard-cache';
 // Bumping this triggers onupgradeneeded, which is where store creation and any
 // format migration (see the `oldVersion < 4` purge below) happens.
-const DB_VERSION = 4;
+// v5: card-facets store (collection index)
+const DB_VERSION = 5;
 const STORE_NAME = 'scryfall-cards';
 const COLLECTION_STORE = 'collection-entries';
 const LOCALIZED_IMAGE_STORE = 'localized-images';
+const FACETS_STORE = 'card-facets';
 const TTL_MS = 86_400_000; // 24 hours — card data (prices change daily)
+const FACETS_TTL_MS = 30 * 86_400_000; // 30 days — a print's facets almost never change
 
 // Localized images are keyed by set/number/lang and point at a specific print's
 // artwork, which does not change once published. A 24h TTL meant every card in
@@ -111,6 +114,9 @@ function openDB(): Promise<IDBDatabase> {
 				// non-Scryfall) à `card_faces` uniforme. Purge l'ancien format ; le cache
 				// se re-remplit au prochain accès (seed serveur ou fallback API).
 				request.transaction!.objectStore(LOCALIZED_IMAGE_STORE).clear();
+			}
+			if (!db.objectStoreNames.contains(FACETS_STORE)) {
+				db.createObjectStore(FACETS_STORE, { keyPath: 'id' });
 			}
 		};
 
@@ -383,6 +389,91 @@ export async function clearCollectionCache(): Promise<void> {
 			try {
 				const tx = db.transaction(COLLECTION_STORE, 'readwrite');
 				tx.objectStore(COLLECTION_STORE).clear();
+				tx.oncomplete = () => resolve();
+				tx.onerror = () => resolve();
+			} catch {
+				resolve();
+			}
+		});
+	} catch {
+		// IndexedDB unavailable — silently skip
+	}
+}
+
+interface CachedFacets {
+	id: string; // keyPath
+	facets: CardFacets;
+	cachedAt: number;
+}
+
+/**
+ * Cached facets for `ids`. Entries past the TTL are still returned, flagged
+ * `stale`, so the index can render immediately and refresh them in background.
+ */
+export async function getFacetsFromCache(
+	ids: string[]
+): Promise<Map<string, { facets: CardFacets; stale: boolean }>> {
+	const result = new Map<string, { facets: CardFacets; stale: boolean }>();
+	if (ids.length === 0) return result;
+	try {
+		const db = await openDB();
+		return new Promise((resolve) => {
+			try {
+				const store = db.transaction(FACETS_STORE, 'readonly').objectStore(FACETS_STORE);
+				const cutoff = Date.now() - FACETS_TTL_MS;
+				let pending = ids.length;
+				const done = () => {
+					pending--;
+					if (pending === 0) resolve(result);
+				};
+				for (const id of ids) {
+					const req = store.get(id);
+					req.onsuccess = () => {
+						const row = req.result as CachedFacets | undefined;
+						if (row) result.set(id, { facets: row.facets, stale: row.cachedAt < cutoff });
+						done();
+					};
+					req.onerror = done;
+				}
+			} catch {
+				resolve(result);
+			}
+		});
+	} catch {
+		return result;
+	}
+}
+
+export async function putFacetsInCache(facets: CardFacets[]): Promise<void> {
+	if (facets.length === 0) return;
+	try {
+		const db = await openDB();
+		return new Promise<void>((resolve) => {
+			try {
+				const tx = db.transaction(FACETS_STORE, 'readwrite');
+				const store = tx.objectStore(FACETS_STORE);
+				const now = Date.now();
+				for (const f of facets)
+					store.put({ id: f.id, facets: f, cachedAt: now } satisfies CachedFacets);
+				tx.oncomplete = () => resolve();
+				tx.onerror = () => resolve();
+			} catch {
+				resolve();
+			}
+		});
+	} catch {
+		// IndexedDB unavailable — silently skip
+	}
+}
+
+/** Logout / account switch: the list of ids reveals what the previous user owns. */
+export async function clearFacetsCache(): Promise<void> {
+	try {
+		const db = await openDB();
+		return new Promise<void>((resolve) => {
+			try {
+				const tx = db.transaction(FACETS_STORE, 'readwrite');
+				tx.objectStore(FACETS_STORE).clear();
 				tx.oncomplete = () => resolve();
 				tx.onerror = () => resolve();
 			} catch {

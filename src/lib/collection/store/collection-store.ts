@@ -11,6 +11,7 @@ import {
 	getCollectionFromCache,
 	replaceCollectionCache,
 	clearCollectionCache,
+	clearFacetsCache,
 } from '@/lib/scryfall/utils/card-cache';
 import { getAnalytics } from '@/lib/analytics/context/AnalyticsContext';
 
@@ -131,6 +132,7 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 			localStorage.removeItem('wizcard-signed-in');
 			clearQueue();
 			void clearCollectionCache();
+			void clearFacetsCache();
 			set({ entries: {}, isLoaded: true, isFullyLoaded: true });
 		} else if (userId === null) {
 			set({ isLoaded: true, isFullyLoaded: true });
