@@ -374,6 +374,7 @@ with fn(name, args) as (
     ('normalize_oauth_nickname','raw text'),
     ('handle_new_user',''),
     ('count_distinct_public_cards','owner uuid'),
+    ('card_facets','p_ids uuid[]'),
     ('lower_tags','t text[]'),
     ('recompute_user_usage','uid uuid'),
     ('trg_decks_usage',''),('trg_cards_usage',''),
