@@ -28,6 +28,7 @@ export function usePagedCards(stacks: FacetStack[], resetKey: string): PagedCard
 	const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 	const [wantMore, setWantMore] = useState(false);
 	const [trackedKey, setTrackedKey] = useState(resetKey);
+	const [shownKey, setShownKey] = useState<string | null>(null);
 	const [attempt, setAttempt] = useState(0);
 	const [error, setError] = useState<Error | null>(null);
 	// Ids requested and NOT returned for 2 consecutive resolver runs are excluded:
@@ -124,6 +125,10 @@ export function usePagedCards(stacks: FacetStack[], resetKey: string): PagedCard
 	);
 
 	const firstEnd = Math.min(PAGE_SIZE, stacks.length);
+	const firstReady = rangeReady(stacks, 0, firstEnd, cards, excludedIds);
+	// Once page 1 has been shown for this resetKey, never fall back to skeletons: a
+	// card joining page 1 later (catalog miss, import) just appears when resolved.
+	if (firstReady && shownKey !== resetKey) setShownKey(resetKey);
 	return {
 		visibleStacks,
 		hasMore: visibleCount < stacks.length,
@@ -132,7 +137,7 @@ export function usePagedCards(stacks: FacetStack[], resetKey: string): PagedCard
 			else setWantMore(true);
 		},
 		isLoadingMore: wantMore,
-		isFirstPageLoading: !rangeReady(stacks, 0, firstEnd, cards, excludedIds) && error === null,
+		isFirstPageLoading: shownKey !== resetKey && !firstReady && error === null,
 		error,
 		retry: () => {
 			setError(null);
