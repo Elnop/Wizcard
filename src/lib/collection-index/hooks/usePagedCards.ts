@@ -43,6 +43,10 @@ export function usePagedCards(stacks: FacetStack[], resetKey: string): PagedCard
 		setVisibleCount(PAGE_SIZE);
 		setWantMore(false);
 		setError(null);
+		// idsKey can come out identical to before the filter change (same ids,
+		// same order) — without bumping attempt the resolver effect wouldn't
+		// re-run, so a page-1 id that previously failed would never be retried.
+		setAttempt((a) => a + 1);
 	}
 
 	const ids = useMemo(() => windowIds(stacks, visibleCount + PAGE_SIZE), [stacks, visibleCount]);
