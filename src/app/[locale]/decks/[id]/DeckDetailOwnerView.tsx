@@ -19,6 +19,7 @@ import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { useCollectionOracleIds } from '@/lib/collection/hooks/useCollectionOracleIds';
+import { useCollectionIndex } from '@/lib/collection-index/context/CollectionIndexProvider';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
 import { findFreeCollectionCopy } from '@/lib/deck/utils/collectionCopyResolver';
 import { useDeckDetail, type ResolvedDeckCard } from './useDeckDetail';
@@ -156,6 +157,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 
 	const { entries } = useCollectionContext();
 	const { addToWishlist, entries: wishlistEntries } = useWishlistContext();
+	const { status: indexStatus } = useCollectionIndex();
 
 	const deckNameById = useMemo(() => new Map(allDecks.map((d) => [d.id, d.name])), [allDecks]);
 
@@ -509,6 +511,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 						toggleDeckCardWishlist(deckCardRowId);
 					}}
 					wishlistEntries={wishlistEntries}
+					ownershipPending={indexStatus === 'loading'}
 					deckCoverArtUrl={deck?.coverArtUrl ?? null}
 					onSetCover={(url) => updateDeck(deckId, { coverArtUrl: url })}
 					onResetCover={() => updateDeck(deckId, { coverArtUrl: null })}
@@ -531,6 +534,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			openDeckCardModal,
 			toggleDeckCardWishlist,
 			wishlistEntries,
+			indexStatus,
 			deck?.coverArtUrl,
 			updateDeck,
 			contextMenuCard,

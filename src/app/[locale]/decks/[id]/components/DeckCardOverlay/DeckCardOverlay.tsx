@@ -155,6 +155,7 @@ type Props = {
 	onAddToCollectionClick?: (req: CollectionAddRequest) => void;
 	onAddToWishlist?: (deckCardRowId: string) => void;
 	wishlistEntries?: Array<{ scryfallId: string; entry: CardEntry }>;
+	ownershipPending?: boolean;
 	deckCoverArtUrl?: string | null;
 	onSetCover?: (artCropUrl: string) => void;
 	onResetCover?: () => void;
@@ -176,6 +177,7 @@ export function DeckCardOverlay({
 	onAddToCollectionClick,
 	onAddToWishlist,
 	wishlistEntries,
+	ownershipPending,
 	deckCoverArtUrl,
 	onSetCover,
 	onResetCover,
@@ -195,7 +197,8 @@ export function DeckCardOverlay({
 			deckId,
 			oracleScryfallIds,
 			deckNameResolver,
-			wishlistEntries
+			wishlistEntries,
+			ownershipPending
 		);
 
 	const closeMenu = useCallback(() => onContextMenuClose?.(), [onContextMenuClose]);

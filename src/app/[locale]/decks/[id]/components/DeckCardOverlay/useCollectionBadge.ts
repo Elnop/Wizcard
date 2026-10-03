@@ -3,7 +3,7 @@ import { useCollectionContext } from '@/lib/collection/context/CollectionContext
 import type { DeckZone, DeckCardGroup } from '@/types/decks';
 import type { CardEntry } from '@/types/cards';
 
-export type BadgeState = 'none' | 'locked' | 'partial' | 'owned' | 'wishlist';
+export type BadgeState = 'none' | 'locked' | 'partial' | 'owned' | 'wishlist' | 'pending';
 
 export type TooltipCopy = {
 	key: string;
@@ -30,7 +30,8 @@ export function useCollectionBadge(
 	currentDeckId: string,
 	oracleScryfallIds: string[],
 	deckNameResolver: (deckId: string) => string | undefined,
-	wishlistEntries?: Array<{ scryfallId: string; entry: CardEntry }>
+	wishlistEntries?: Array<{ scryfallId: string; entry: CardEntry }>,
+	isPending = false
 ): UseCollectionBadgeResult {
 	const { entries: collectionEntries } = useCollectionContext();
 
@@ -45,6 +46,21 @@ export function useCollectionBadge(
 		const ownedCount = zoneCopies.filter((c) => !!c.entry.ownerId).length;
 		// owned and wishlist are mutually exclusive on a copy.
 		const hasWishlistedDeckCopy = zoneCopies.some((c) => c.entry.wishlist);
+
+		// The card's own copies decide the state outright (owned/wishlist) regardless
+		// of index readiness. Otherwise, while the index is still loading, the
+		// collection-availability hints below (partial/locked/none) read data the
+		// index supplies (oracleScryfallIds) and would be unreliable — show a
+		// dimmed "pending" badge instead of a possibly-wrong "none".
+		if (isPending && ownedCount === 0 && !hasWishlistedDeckCopy) {
+			return {
+				badgeState: 'pending',
+				ownedCount,
+				neededCount,
+				tooltipCopies: [],
+				wishlistTooltipCopies: [],
+			};
+		}
 
 		const relevantEntries = collectionEntries.filter((e) => scryfallIdSet.has(e.scryfallId));
 		const availableCopies = relevantEntries.filter((e) => !e.entry.deckId);
@@ -175,5 +191,6 @@ export function useCollectionBadge(
 		oracleScryfallIds,
 		deckNameResolver,
 		wishlistEntries,
+		isPending,
 	]);
 }

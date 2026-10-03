@@ -43,3 +43,10 @@
 	background: rgba(100, 120, 220, 0.92);
 	color: #fff;
 }
+
+.ownershipBadgePending {
+	background: rgba(120, 120, 120, 0.55);
+	color: transparent;
+	opacity: 0.6;
+	cursor: progress;
+}

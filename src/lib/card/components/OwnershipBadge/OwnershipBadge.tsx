@@ -7,9 +7,10 @@ const BADGE_CLASS_MAP: Record<string, string> = {
 	partial: styles.ownershipBadgeOrange,
 	locked: styles.ownershipBadgeLocked,
 	wishlist: styles.ownershipBadgeWishlist,
+	pending: styles.ownershipBadgePending,
 };
 
-const BADGE_TEXT_STATIC: Record<string, string> = { owned: '✓', wishlist: '🛒' };
+const BADGE_TEXT_STATIC: Record<string, string> = { owned: '✓', wishlist: '🛒', pending: '…' };
 
 function getBadgeText(badgeState: BadgeState, ownedCount: number, neededCount: number): string {
 	if (badgeState === 'partial') return `${ownedCount}/${neededCount}`;
@@ -36,18 +37,21 @@ export function OwnershipBadge({
 }: OwnershipBadgeProps) {
 	const badgeClass = BADGE_CLASS_MAP[badgeState] ?? styles.ownershipBadgeGrey;
 	const text = getBadgeText(badgeState, ownedCount, neededCount);
+	const isPending = badgeState === 'pending';
+	const effectiveOnClick = isPending ? undefined : onClick;
 	return (
 		<span
 			className={[styles.ownershipBadge, badgeClass, className].filter(Boolean).join(' ')}
+			aria-busy={isPending ? 'true' : undefined}
 			onClick={
-				onClick
+				effectiveOnClick
 					? (e) => {
 							e.stopPropagation();
-							onClick();
+							effectiveOnClick();
 						}
 					: undefined
 			}
-			style={onClick ? { cursor: 'pointer' } : undefined}
+			style={effectiveOnClick ? { cursor: 'pointer' } : undefined}
 		>
 			{text}
 			{children}
