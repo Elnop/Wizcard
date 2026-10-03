@@ -9,8 +9,9 @@ export type CardImageStatus = 'missing' | 'placeholder' | 'lowres' | 'highres_sc
 export type CardCondition = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG';
 
 // Domain image-uris. small/normal/large are always present (the DB catalog seed stores at
-// least these); art_crop/png/border_crop are OPTIONAL — the catalog seed (pick3) drops them,
-// so only Scryfall-fallback-path cards carry them. Same pattern as Card.prices?.
+// least these); art_crop/png/border_crop are OPTIONAL — the catalog seed stores art_crop and
+// png but rows seeded before that lack them, and border_crop is never stored (only
+// Scryfall-fallback-path cards carry it). Same pattern as Card.prices?.
 export interface CardImageUris {
 	small: string;
 	normal: string;

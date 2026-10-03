@@ -1,9 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-import { getScryfallCardImageUriBySize } from '@/lib/scryfall/utils/scryfall-query';
+import {
+	maxTier,
+	minTier,
+	pickTieredImageUri,
+	tierForDevicePixels,
+} from '@/lib/scryfall/utils/scryfall-image-size';
+import type { CardImageTier } from '@/lib/scryfall/utils/scryfall-image-size';
 import { isScryfallImageUrl, scryfallImageLoader } from '@/lib/scryfall/utils/scryfallImageLoader';
 import { useLocalizedImage, useEnglishFallbackImage } from '@/lib/scryfall/hooks/useLocalizedImage';
 import { useCustomFallbackPrint } from '@/lib/scryfall/hooks/useCustomFallbackPrint';
@@ -15,6 +21,8 @@ import { useProfileStore } from '@/lib/profile/store/profile-store';
 import { getEffectiveIgnoredTags, isIgnored } from '@/lib/mpc/ignored-tags';
 import styles from './CardImage.module.css';
 
+type TieredImageUris = { small?: string; normal?: string; large?: string; png?: string };
+
 type CardImageCard = {
 	name: string;
 	set?: string;
@@ -23,10 +31,10 @@ type CardImageCard = {
 	language?: string;
 	entry?: { language?: string };
 	image_status?: CardImageStatus;
-	image_uris?: { small?: string; normal?: string; large?: string };
+	image_uris?: TieredImageUris;
 	card_faces?: Array<{
 		name?: string;
-		image_uris?: { small?: string; normal?: string; large?: string };
+		image_uris?: TieredImageUris;
 	}>;
 	object?: string;
 	custom?: { image_url: string };
@@ -34,7 +42,15 @@ type CardImageCard = {
 
 export interface CardImageProps {
 	card: CardImageCard;
-	size?: 'small' | 'normal' | 'large';
+	/**
+	 * Size rendered first (server render, and before the element is measured).
+	 * Once measured, the image steps UP to the smallest size covering its rendered
+	 * width × devicePixelRatio, never past `maxSize`. Priority images fetch this
+	 * size immediately, so give them the one they will display at.
+	 */
+	size?: CardImageTier;
+	/** Upper bound for that step-up. `png` (744px, ~0.8 MB) is meant for full-screen views. */
+	maxSize?: CardImageTier;
 	priority?: boolean;
 	className?: string;
 	onClick?: () => void;
@@ -48,6 +64,7 @@ const sizeMap = {
 	small: { width: 146, height: 204 },
 	normal: { width: 488, height: 680 },
 	large: { width: 672, height: 936 },
+	png: { width: 744, height: 1040 },
 };
 
 const TILT_MAX_DEG = 10;
@@ -106,8 +123,8 @@ function computeIsDoubleFaced(card: CardImageCard, isCustom: boolean): boolean {
 function applyImageOverride<T extends CardImageCard>(
 	baseCard: T,
 	override: {
-		image_uris?: { small?: string; normal?: string; large?: string };
-		card_faces?: Array<{ image_uris?: { small?: string; normal?: string; large?: string } }>;
+		image_uris?: TieredImageUris;
+		card_faces?: Array<{ image_uris?: TieredImageUris }>;
 	} | null
 ): T {
 	if (!override) return baseCard;
@@ -120,20 +137,45 @@ function resolveImageUri(args: {
 	isCustom: boolean;
 	isDoubleFaced: boolean;
 	currentFace: number;
-	size: 'small' | 'normal' | 'large';
+	tier: CardImageTier;
 }): string {
-	const { card, isCustom, isDoubleFaced, currentFace, size } = args;
+	const { card, isCustom, isDoubleFaced, currentFace, tier } = args;
 	if (isCustom) return (card as unknown as CustomCard).custom.image_url;
-	if (isDoubleFaced) return card.card_faces![currentFace].image_uris?.[size] ?? '';
-	return getScryfallCardImageUriBySize(
-		{ image_uris: card.image_uris, card_faces: card.card_faces },
-		size
-	);
+	const uris = isDoubleFaced
+		? card.card_faces![currentFace].image_uris
+		: (card.image_uris ?? card.card_faces?.[0]?.image_uris);
+	return pickTieredImageUri(uris, tier, card.image_status);
+}
+
+/**
+ * Tier the element's rendered size calls for, measured on the device: CSS width ×
+ * devicePixelRatio. Only ever grows (a shrink keeps the already-loaded sharper
+ * image instead of fetching a smaller one), and is null until first measured.
+ */
+function useMeasuredTier(ref: React.RefObject<HTMLDivElement | null>): CardImageTier | null {
+	const [tier, setTier] = useState<CardImageTier | null>(null);
+	// Layout effect: the first measurement lands before paint, so a lazy <img> has
+	// its final src before the browser decides to fetch it — no double download.
+	useLayoutEffect(() => {
+		const el = ref.current;
+		if (!el) return;
+		const measure = (width: number) => {
+			if (width <= 0) return;
+			const needed = tierForDevicePixels(width * (window.devicePixelRatio || 1));
+			setTier((prev) => (prev ? maxTier(prev, needed) : needed));
+		};
+		measure(el.getBoundingClientRect().width);
+		const observer = new ResizeObserver(([entry]) => measure(entry.contentRect.width));
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [ref]);
+	return tier;
 }
 
 export function CardImage({
 	card,
 	size = 'normal',
+	maxSize = 'large',
 	priority = false,
 	className,
 	onClick,
@@ -226,14 +268,20 @@ export function CardImage({
 		isCustomCard(effectiveCard as unknown as CustomCard) && !shouldFallbackFromCustom;
 	const isDoubleFaced = computeIsDoubleFaced(effectiveCard, isCustom);
 
+	const measuredTier = useMeasuredTier(containerRef);
+	const tier = measuredTier ? minTier(maxTier(size, measuredTier), maxTier(size, maxSize)) : size;
+
 	const imageUri = resolveImageUri({
 		card: effectiveCard,
 		isCustom,
 		isDoubleFaced,
 		currentFace,
-		size,
+		tier,
 	});
 
+	// Intrinsic size stays that of `size`, whatever tier is loaded: callers whose
+	// container shrinks to fit the image must not change layout when the source
+	// steps up (all tiers share the card's aspect ratio anyway).
 	const { width, height } = sizeMap[size];
 
 	// Derived from the URL-keyed state above: `error`/`isLoading` describe the
