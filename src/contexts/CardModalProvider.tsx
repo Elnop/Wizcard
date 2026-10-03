@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { Card, CardCopy, CardEntry, CardStack } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
@@ -9,10 +9,12 @@ import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { DeckCardModalHost } from '@/app/[locale]/decks/[id]/DeckCardModalHost';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
+import { useCollectionIndex } from '@/lib/collection-index/context/CollectionIndexProvider';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
 import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 import { getCard, putCards } from '@/lib/scryfall/store/cards-store';
 import { putCardsInCache } from '@/lib/scryfall/utils/card-cache';
+import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
 import { isCustomCard } from '@/lib/mpc/types';
 import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
 import { deriveCardModalProps } from '@/lib/card/deriveCardModalProps';
@@ -181,11 +183,13 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 	const viewerMenuLabels = useViewerCardMenuLabels();
 	const collection = useCollectionContext();
 	const wishlist = useWishlistContext();
+	const index = useCollectionIndex();
 	const { openAddToDeck } = useAddToDeckModal();
 	const { openAddCard } = useAddCardModal();
 	const mutations = useCardMutations();
 
 	const [open, setOpen] = useState<OpenState>(null);
+	const [resolveTick, setResolveTick] = useState(0);
 
 	const openCardModal = useCallback(
 		(input: Card | CustomCard | CardCopy[], opts?: { readOnly?: boolean }) => {
@@ -219,6 +223,23 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 	const close = useCallback(() => setOpen(null), []);
 	useCloseOnRouteChange(close);
 
+	// The grid only resolves what it shows, so a stack's OTHER prints (or the
+	// collection copies of a card opened from the wishlist) may not be in the card
+	// store yet. Resolve every print sharing the oracle key, then re-derive.
+	const openOracleKey = open?.kind === 'stack' ? open.oracleKey : null;
+	useEffect(() => {
+		if (!openOracleKey) return;
+		const missing = index.printsForOracle(openOracleKey).filter((id) => !getCard(id));
+		if (missing.length === 0) return;
+		const cancelled = { current: false };
+		void resolveCardsByScryfallIds(missing, { isCancelled: () => cancelled.current }).then(() => {
+			if (!cancelled.current) setResolveTick((t) => t + 1);
+		});
+		return () => {
+			cancelled.current = true;
+		};
+	}, [openOracleKey, index]);
+
 	// Re-resolve the displayed cards on every render so they track store mutations
 	// (increment/decrement/change-print) without the modal losing its target.
 	const resolved = useMemo<{
@@ -245,7 +266,8 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 			rep: cards[0] ?? null,
 			source: isWishlist ? 'wishlist' : 'collection',
 		};
-	}, [open, collection.entries, wishlist.entries]);
+		// resolveTick: re-derive once on-demand resolution lands
+	}, [open, collection.entries, wishlist.entries, resolveTick]);
 
 	// Stateful change-print: persist the print change, then re-target the open
 	// stack to the new print's oracle key so the modal keeps showing it.

@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
-import type { CardStack } from '@/types/cards';
+import { useCallback, useState } from 'react';
+import type { CardCopy } from '@/types/cards';
 import type { PdfSettings } from '@/components/PdfSettingsModal/PdfSettingsModal';
 import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
 import { resolveLocalizedImageUris } from '@/lib/scryfall/utils/resolveLocalizedImageUri';
@@ -12,13 +12,24 @@ import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
  * list of cards (one per copy), and the async image-resolve → render pipeline.
  * The `<PdfSettingsModal>` stays rendered in the page, driven by this state.
  */
-export function useWishlistPdf(stacks: CardStack[]) {
+export function useWishlistPdf(loadCards: () => Promise<CardCopy[]>) {
 	const [isModalOpen, setModalOpen] = useState(false);
 	const [isGenerating, setGenerating] = useState(false);
+	const [isPreparing, setPreparing] = useState(false);
+	const [pdfCards, setPdfCards] = useState<CardCopy[]>([]);
 	const preferredLang = usePreferredCardLang();
 
-	// One card per wishlist copy (e.g. 3x Sol Ring → 3 cards in the PDF).
-	const pdfCards = useMemo(() => stacks.flatMap((stack) => stack.cards), [stacks]);
+	// One card per wishlist copy; every copy must be resolved before the modal opens.
+	const openModal = useCallback(() => {
+		setPreparing(true);
+		void loadCards()
+			.then((cards) => {
+				setPdfCards(cards);
+				setModalOpen(true);
+			})
+			.catch((err) => console.error('[useWishlistPdf] loading cards failed:', err))
+			.finally(() => setPreparing(false));
+	}, [loadCards]);
 
 	const generate = useCallback(
 		(settings: PdfSettings) => {
@@ -44,7 +55,8 @@ export function useWishlistPdf(stacks: CardStack[]) {
 	return {
 		pdfCards,
 		isModalOpen,
-		openModal: useCallback(() => setModalOpen(true), []),
+		isPreparing,
+		openModal,
 		closeModal: useCallback(() => setModalOpen(false), []),
 		isGenerating,
 		generate,

@@ -10,7 +10,8 @@ import { useCardMutations } from '@/lib/card/hooks/useCardMutations';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { useImportContext } from '@/lib/import/context/ImportContext';
-import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
+import { useIndexedCollection } from '@/lib/collection-index/hooks/useIndexedCollection';
+import { loadCardCopies } from '@/lib/collection-index/load-card-copies';
 import { CardList } from '@/lib/card/components/CardList/CardList';
 import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
 import { Button } from '@/components/Button/Button';
@@ -23,19 +24,25 @@ import { useOwnedCardMenuLabels } from '@/lib/card/hooks/useOwnedCardMenuLabels'
 import { useWishlistPdf } from './useWishlistPdf';
 import { useMoveToCollection } from './useMoveToCollection';
 import { WishlistSearchPanel } from './WishlistSearchPanel';
+import { PAGE_SIZE } from '@/lib/collection/constants';
+import collectionViewStyles from '@/app/[locale]/collection/lib/CollectionView/CollectionView.module.css';
 import styles from './page.module.css';
 
 function WishlistPageInner() {
 	const t = useTranslations('wishlist');
+	const tCollection = useTranslations('collection');
+	const tError = useTranslations('error');
 	const menuLabels = useOwnedCardMenuLabels('wishlist');
 	const { entries, isLoaded, clearWishlist, moveToCollection } = useWishlistContext();
 	const { status: importStatus, openModal: openImportModal } = useImportContext();
 
-	const { stacks, isLoading: isHydrating } = useCollectionCards(entries);
+	const model = useIndexedCollection(entries, { filterable: false });
+	const stacks = model.visibleStacks;
 
 	const { openAddToDeck } = useAddToDeckModal();
 	const { openCardModal, close: closeCardModal } = useCardModalContext();
-	const pdf = useWishlistPdf(stacks);
+	const loadAll = useCallback(() => loadCardCopies(entries), [entries]);
+	const pdf = useWishlistPdf(loadAll);
 	const move = useMoveToCollection(stacks, moveToCollection, closeCardModal);
 	const mutations = useCardMutations();
 
@@ -76,9 +83,6 @@ function WishlistPageInner() {
 		return map;
 	}, [stacks]);
 
-	const totalCards = entries.length;
-	const uniqueCards = stacks.length;
-
 	const isImporting =
 		importStatus === 'parsing' ||
 		importStatus === 'previewing' ||
@@ -97,23 +101,19 @@ function WishlistPageInner() {
 						<h1 className={styles.title}>
 							<WishlistIcon size={22} /> {t('title')}
 						</h1>
-						{entries.length > 0 && !isHydrating && (
+						{entries.length > 0 && !model.isInitialLoading && (
 							<p className={styles.statsLine}>
-								{t('stats', { cards: totalCards, unique: uniqueCards })}
+								{t('stats', { cards: entries.length, unique: model.stats.uniqueCards })}
 							</p>
 						)}
 					</div>
 					<div className={styles.actions}>
 						{entries.length > 0 && (
 							<>
-								<Button variant="secondary" onClick={pdf.openModal} disabled={isHydrating}>
-									{t('generatePdf')}
+								<Button variant="secondary" onClick={pdf.openModal} disabled={pdf.isPreparing}>
+									{pdf.isPreparing ? t('preparingPdf') : t('generatePdf')}
 								</Button>
-								<ExportMenu
-									cards={stacks.flatMap((s) => s.cards)}
-									filenameBase="my-wishlist"
-									disabled={isImporting || isHydrating}
-								/>
+								<ExportMenu cards={loadAll} filenameBase="my-wishlist" disabled={isImporting} />
 								<Button variant="danger" onClick={handleClearWishlist} disabled={isImporting}>
 									{t('clear')}
 								</Button>
@@ -141,80 +141,95 @@ function WishlistPageInner() {
 						</Link>
 					</div>
 				) : (
-					<CardList
-						cards={representativeCards}
-						isLoading={isHydrating}
-						onCardClick={(card) => {
-							const stack = stackByCardId.get(card.id);
-							if (stack) handleCardClick(stack);
-						}}
-						buildCardMenuItems={(card, close) => {
-							const stack = stackByCardId.get(card.id);
-							return stack
-								? buildOwnedCardMenu(
-										stack,
-										'wishlist',
-										{
-											onViewDetails: handleCardClick,
-											onAddCopy: (rep) => mutations.wishlist.duplicate(rep.id, rep.entry),
-											onRemoveCopy: (rep) => mutations.wishlist.remove(rep.entry.rowId),
-											onMove: (rep) => move.requestMove(rep.entry.rowId),
-											onAddToDeck: (s) => openAddToDeck(s.cards[0]),
-											onChangePrint: handleCardClick,
-											onRemove: (rep) => mutations.wishlist.remove(rep.entry.rowId),
-										},
-										close,
-										menuLabels
-									)
-								: null;
-						}}
-						renderOverlay={(card) => {
-							const stack = stackByCardId.get(card.id);
-							const count = stack?.cards.length ?? 1;
-							const countBadge =
-								count > 1 ? <span className={styles.cardBadge}>x{count}</span> : undefined;
-							const deckBadge = stack ? <DeckBadge cards={stack.cards} /> : undefined;
-							return withCustomBadge(
-								card,
-								<>
-									{deckBadge}
-									{countBadge}
-								</>
-							);
-						}}
-						tableColumns={[
-							{ key: 'name', label: t('colName') },
-							{
-								key: 'set',
-								label: t('colSet'),
-								render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
-							},
-							{
-								key: 'collector_number',
-								label: t('colCollector'),
-								render: (card) =>
-									'collector_number' in card ? (card.collector_number as string) : '—',
-							},
-							{
-								key: 'condition',
-								label: t('colCondition'),
-								render: (card) => ('entry' in card ? (card.entry.condition ?? '—') : '—'),
-							},
-							{
-								key: 'foil',
-								label: t('colFoil'),
-								render: (card) => ('entry' in card ? (card.entry.foilType ?? '—') : '—'),
-							},
-							{
-								key: 'prices',
-								label: t('colPriceUsd'),
-								render: (card) =>
-									'prices' in card && card.prices && 'usd' in card.prices
-										? (card.prices.usd ?? '—')
-										: '—',
-							},
-						]}
-					/>
+					<>
+						<CardList
+							cards={representativeCards}
+							isLoading={model.isInitialLoading}
+							skeletonCount={Math.min(PAGE_SIZE, entries.length)}
+							pageSize={false}
+							hasMore={model.hasMore && !model.error}
+							onLoadMore={model.loadMore}
+							isLoadingMore={model.isLoadingMore}
+							onCardClick={(card) => {
+								const stack = stackByCardId.get(card.id);
+								if (stack) handleCardClick(stack);
+							}}
+							buildCardMenuItems={(card, close) => {
+								const stack = stackByCardId.get(card.id);
+								return stack
+									? buildOwnedCardMenu(
+											stack,
+											'wishlist',
+											{
+												onViewDetails: handleCardClick,
+												onAddCopy: (rep) => mutations.wishlist.duplicate(rep.id, rep.entry),
+												onRemoveCopy: (rep) => mutations.wishlist.remove(rep.entry.rowId),
+												onMove: (rep) => move.requestMove(rep.entry.rowId),
+												onAddToDeck: (s) => openAddToDeck(s.cards[0]),
+												onChangePrint: handleCardClick,
+												onRemove: (rep) => mutations.wishlist.remove(rep.entry.rowId),
+											},
+											close,
+											menuLabels
+										)
+									: null;
+							}}
+							renderOverlay={(card) => {
+								const stack = stackByCardId.get(card.id);
+								const count = stack?.cards.length ?? 1;
+								const countBadge =
+									count > 1 ? <span className={styles.cardBadge}>x{count}</span> : undefined;
+								const deckBadge = stack ? <DeckBadge cards={stack.cards} /> : undefined;
+								return withCustomBadge(
+									card,
+									<>
+										{deckBadge}
+										{countBadge}
+									</>
+								);
+							}}
+							tableColumns={[
+								{ key: 'name', label: t('colName') },
+								{
+									key: 'set',
+									label: t('colSet'),
+									render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
+								},
+								{
+									key: 'collector_number',
+									label: t('colCollector'),
+									render: (card) =>
+										'collector_number' in card ? (card.collector_number as string) : '—',
+								},
+								{
+									key: 'condition',
+									label: t('colCondition'),
+									render: (card) => ('entry' in card ? (card.entry.condition ?? '—') : '—'),
+								},
+								{
+									key: 'foil',
+									label: t('colFoil'),
+									render: (card) => ('entry' in card ? (card.entry.foilType ?? '—') : '—'),
+								},
+								{
+									key: 'prices',
+									label: t('colPriceUsd'),
+									render: (card) =>
+										'prices' in card && card.prices && 'usd' in card.prices
+											? (card.prices.usd ?? '—')
+											: '—',
+								},
+							]}
+						/>
+						{model.error && (
+							<div className={collectionViewStyles.loadError} role="alert">
+								<p>{tCollection('loadError')}</p>
+								<Button variant="secondary" onClick={model.retry}>
+									{tError('retry')}
+								</Button>
+							</div>
+						)}
+					</>
 				)}
 			</main>
 
