@@ -7,13 +7,15 @@ import { filterStacks } from '@/lib/card/utils/group-cards';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { computeCollectionStats } from './stats';
 import { countActiveFilters } from '@/lib/search/types';
-import type { CardStack } from '@/types/cards';
+import type { FacetCopy } from '@/types/cards';
 
-export function useCollectionFiltering(stacks: CardStack[]) {
+export function useCollectionFiltering<
+	S extends { oracleId: string; name: string; cards: FacetCopy[] },
+>(stacks: S[]) {
 	const [filters, setFilters] = useState<CollectionFilters>(defaultCollectionFilters);
 	const { sets, isLoading: setsLoading } = useScryfallSets();
 
-	const filteredStacks = useMemo(() => filterStacks(stacks, filters), [stacks, filters]);
+	const filteredStacks = useMemo(() => filterStacks(stacks, filters) as S[], [stacks, filters]);
 
 	const stats = useMemo(() => computeCollectionStats(filteredStacks), [filteredStacks]);
 

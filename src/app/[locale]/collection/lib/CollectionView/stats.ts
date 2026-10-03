@@ -1,6 +1,8 @@
-import type { CardStack, CollectionStats } from '@/types/cards';
+import type { CollectionStats } from '@/types/cards';
 
-export function computeCollectionStats(stacks: CardStack[]): CollectionStats {
+export function computeCollectionStats(
+	stacks: Array<{ cards: Array<{ set?: string; rarity?: string }> }>
+): CollectionStats {
 	const sets = new Set<string>();
 	const rarityDistribution: Record<string, number> = {};
 	let totalCards = 0;

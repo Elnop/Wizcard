@@ -1,4 +1,4 @@
-import type { CardCopy, CardStack } from '@/types/cards';
+import type { FacetCopy } from '@/types/cards';
 import { preferPrint } from '@/lib/card/utils/prefer-print';
 import {
 	filterCollectionCards,
@@ -6,8 +6,10 @@ import {
 	type CollectionFilters,
 } from '@/lib/card/utils/filterCollectionCards';
 
+type StackOf<T> = { oracleId: string; name: string; cards: T[] };
+
 /** Logical-card grouping key: oracle_id when known, else the print id. */
-export function cardGroupKey(card: CardCopy): string {
+export function cardGroupKey(card: { oracle_id?: string; id: string }): string {
 	return card.oracle_id ?? card.id;
 }
 
@@ -17,8 +19,8 @@ export function cardGroupKey(card: CardCopy): string {
  * paper > non-promo > normal set > most recent), keeping the chosen vignette
  * consistent between the collection and the import preview.
  */
-export function groupByOracleId(cards: CardCopy[]): CardStack[] {
-	const map = new Map<string, CardCopy[]>();
+export function groupByOracleId<T extends FacetCopy>(cards: T[]): StackOf<T>[] {
+	const map = new Map<string, T[]>();
 	const order: string[] = [];
 	for (const card of cards) {
 		const key = cardGroupKey(card);
@@ -47,7 +49,7 @@ export function groupByOracleId(cards: CardCopy[]): CardStack[] {
 
 /** Keeps only the copies matching the deck-assignment filter (acts per-copy, before stacking). */
 function matchesDeckAssignment(
-	card: CardCopy,
+	card: FacetCopy,
 	deckAssignment: CollectionFilters['deckAssignment']
 ): boolean {
 	if (deckAssignment === 'all') return true;
@@ -65,7 +67,10 @@ function matchesDeckAssignment(
  * the stack count is derived, so a 3-copy stack with one assigned copy shows a
  * single card under "assigned" and two cards under "unassigned".
  */
-export function filterStacks(stacks: CardStack[], filters: CollectionFilters): CardStack[] {
+export function filterStacks<T extends FacetCopy>(
+	stacks: StackOf<T>[],
+	filters: CollectionFilters
+): StackOf<T>[] {
 	// Drop copies that don't match the per-copy assignment filter, then discard
 	// stacks left empty (and re-promote a representative for the survivors).
 	const assignmentFiltered =
@@ -88,7 +93,7 @@ export function filterStacks(stacks: CardStack[], filters: CollectionFilters): C
 
 	return filtered
 		.map((rep) => stackByOracle.get(cardGroupKey(rep)))
-		.filter((s): s is CardStack => Boolean(s))
+		.filter((s): s is StackOf<T> => Boolean(s))
 		.map((stack) => {
 			if (stack.cards.length <= 1) return stack;
 			const sorted = [...stack.cards].sort((a, b) => {

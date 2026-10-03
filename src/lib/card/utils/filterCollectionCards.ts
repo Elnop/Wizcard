@@ -1,6 +1,6 @@
 import type { ScryfallOnlyFields } from '@/lib/scryfall/types/scryfall';
 import type { ScryfallSortOrder } from '@/lib/scryfall/types/sort';
-import type { Card, CardCopy, MtgColor } from '@/types/cards';
+import type { Card, CardEntry, CardFacets, MtgColor } from '@/types/cards';
 import { type CardFilters, DEFAULT_CARD_FILTERS } from '@/lib/search/types';
 import type { MtgLanguage } from '@/lib/mtg/languages';
 import type { CardType, CustomCard } from '@/lib/mpc/types';
@@ -8,7 +8,10 @@ import { isCustomCard } from '@/lib/mpc/types';
 
 export type CollectionSortOrder = ScryfallSortOrder | 'language';
 
-type AnyCard = Card | CardCopy | CustomCard;
+/** Anything the collection filters can read: facets, full Cards, custom cards, ± entry. */
+type BaseCard = CardFacets | CustomCard;
+export type FilterableCard = BaseCard | (BaseCard & { entry: CardEntry });
+type WithEntry = BaseCard & { entry: CardEntry };
 
 export interface CollectionFilters extends Omit<CardFilters, 'order'> {
 	order: CollectionSortOrder;
@@ -106,45 +109,48 @@ const RARITY_ORDER: Record<string, number> = {
 	bonus: 5,
 };
 
-export function getSortValue(card: Card | CardCopy, order: CollectionSortOrder): string | number {
+export function getSortValue(card: FilterableCard, order: CollectionSortOrder): string | number {
 	if (order === 'language') return 'entry' in card ? (card.entry.language ?? '') : '';
 	if (order === 'name') return card.name.toLowerCase();
-	if (order === 'cmc') return (card as Card).cmc ?? 0;
-	if (order === 'rarity') return RARITY_ORDER[(card as Card).rarity ?? ''] ?? 0;
+	if (order === 'cmc') return (card as CardFacets).cmc ?? 0;
+	if (order === 'rarity') return RARITY_ORDER[(card as CardFacets).rarity ?? ''] ?? 0;
 	if (order === 'set')
-		return `${(card as Card).set ?? ''}-${(card as Card).collector_number?.padStart(6, '0') ?? ''}`;
-	if (order === 'released') return (card as Card).released_at ?? '';
-	if (order === 'color') return ((card as Card).colors ?? []).sort().join('');
-	if (order === 'usd') return parseFloat((card as Card).prices?.usd ?? '0');
-	if (order === 'eur') return parseFloat((card as Card).prices?.eur ?? '0');
-	if (order === 'tix') return parseFloat((card as Card).prices?.tix ?? '0');
-	if (order === 'power') return parseFloat((card as Card).power ?? '0');
-	if (order === 'toughness') return parseFloat((card as Card).toughness ?? '0');
-	if (order === 'edhrec') return (card as Card).edhrec_rank ?? 9999999;
+		return `${(card as CardFacets).set ?? ''}-${(card as CardFacets).collector_number?.padStart(6, '0') ?? ''}`;
+	if (order === 'released') return (card as CardFacets).released_at ?? '';
+	if (order === 'color') return ((card as CardFacets).colors ?? []).sort().join('');
+	if (order === 'usd')
+		return parseFloat((card as Partial<Pick<Card, 'prices'>>).prices?.usd ?? '0');
+	if (order === 'eur')
+		return parseFloat((card as Partial<Pick<Card, 'prices'>>).prices?.eur ?? '0');
+	if (order === 'tix')
+		return parseFloat((card as Partial<Pick<Card, 'prices'>>).prices?.tix ?? '0');
+	if (order === 'power') return parseFloat((card as CardFacets).power ?? '0');
+	if (order === 'toughness') return parseFloat((card as CardFacets).toughness ?? '0');
+	if (order === 'edhrec') return (card as CardFacets).edhrec_rank ?? 9999999;
 	// penny_rank is provider-only (not mirrored by the DB catalog) — narrow boundary read.
-	if (order === 'penny') return (card as ScryfallOnlyFields).penny_rank ?? 9999999;
-	if (order === 'artist') return ((card as Card).artist ?? '').toLowerCase();
+	if (order === 'penny') return (card as unknown as ScryfallOnlyFields).penny_rank ?? 9999999;
+	if (order === 'artist') return ((card as CardFacets).artist ?? '').toLowerCase();
 	return card.name.toLowerCase();
 }
 
-function getCardType(card: AnyCard): CardType {
-	if (isCustomCard(card as Card | CustomCard)) {
-		return (card as CustomCard).custom.card_type;
+function getCardType(card: FilterableCard): CardType {
+	if (isCustomCard(card)) {
+		return card.custom.card_type;
 	}
-	const layout = (card as Card).layout;
+	const layout = (card as CardFacets).layout;
 	if (layout === 'token' || layout === 'double_faced_token') return 'token';
 	return 'card';
 }
 
-function getCardLang(card: AnyCard): string | null {
-	if (isCustomCard(card as Card | CustomCard)) {
-		return (card as CustomCard).custom.lang;
+function getCardLang(card: FilterableCard): string | null {
+	if (isCustomCard(card)) {
+		return card.custom.lang;
 	}
-	return (card as Card).lang ?? null;
+	return (card as CardFacets).lang ?? null;
 }
 
 function matchesProxyFilter(
-	card: CardCopy,
+	card: WithEntry,
 	proxyFilter: CollectionFilters['proxyFilter']
 ): boolean {
 	if (proxyFilter === 'all') return true;
@@ -155,7 +161,7 @@ function matchesProxyFilter(
 }
 
 function matchesFoilFilter(
-	card: CardCopy,
+	card: WithEntry,
 	foilTypeFilter: CollectionFilters['foilTypeFilter']
 ): boolean {
 	if (foilTypeFilter === 'all') return true;
@@ -167,7 +173,7 @@ function matchesFoilFilter(
 }
 
 function matchesLanguageFilter(
-	card: AnyCard,
+	card: FilterableCard,
 	languageFilter: CollectionFilters['languageFilter']
 ): boolean {
 	if (languageFilter === 'all') return true;
@@ -176,7 +182,7 @@ function matchesLanguageFilter(
 	// resolved Scryfall print always carries a `lang`, so falling back to it
 	// would mean no entry is ever "undefined".
 	if ('entry' in card) {
-		const entryLanguage = (card as CardCopy).entry.language;
+		const entryLanguage = (card as WithEntry).entry.language;
 		if (languageFilter === 'undefined') return !entryLanguage;
 		return entryLanguage === languageFilter;
 	}
@@ -187,21 +193,21 @@ function matchesLanguageFilter(
 }
 
 function matchesCardTypeFilter(
-	card: AnyCard,
+	card: FilterableCard,
 	cardTypeFilter: CollectionFilters['cardTypeFilter']
 ): boolean {
 	if (cardTypeFilter === 'all') return true;
 	return getCardType(card) === cardTypeFilter;
 }
 
-function matchesMpcTagsFilter(card: AnyCard, mpcTagsFilter: string[]): boolean {
+function matchesMpcTagsFilter(card: FilterableCard, mpcTagsFilter: string[]): boolean {
 	if (mpcTagsFilter.length === 0) return true;
-	if (!isCustomCard(card as Card | CustomCard)) return true;
-	const tags = (card as CustomCard).custom.tags;
+	if (!isCustomCard(card)) return true;
+	const tags = card.custom.tags;
 	return mpcTagsFilter.every((t) => tags.includes(t));
 }
 
-function matchesOracleText(card: Card, oracleText: string): boolean {
+function matchesOracleText(card: CardFacets, oracleText: string): boolean {
 	if (!oracleText) return true;
 	const tokens = parseOracleTokens(oracleText);
 	if (tokens.length === 0) return true;
@@ -216,7 +222,7 @@ function matchesType(typeLine: string | undefined, types: string[]): boolean {
 }
 
 function cardMatchesFilters(
-	card: AnyCard,
+	card: FilterableCard,
 	filters: CollectionFilters,
 	cmcTest: ((v: number) => boolean) | null
 ): boolean {
@@ -224,7 +230,7 @@ function cardMatchesFilters(
 	if (!matchColors(card.colors, filters.colors, filters.colorMatch)) return false;
 	if (
 		!matchColorIdentity(
-			(card as Card).color_identity,
+			(card as CardFacets).color_identity,
 			filters.colorIdentity,
 			filters.colorIdentityMatch
 		)
@@ -238,7 +244,7 @@ function cardMatchesFilters(
 		!filters.rarities.includes(card.rarity)
 	)
 		return false;
-	if (!matchesOracleText(card as Card, filters.oracleText)) return false;
+	if (!matchesOracleText(card as CardFacets, filters.oracleText)) return false;
 	if (cmcTest && card.cmc !== undefined && !cmcTest(card.cmc)) return false;
 	if ('entry' in card) {
 		if (!matchesProxyFilter(card, filters.proxyFilter)) return false;
@@ -250,7 +256,7 @@ function cardMatchesFilters(
 	return true;
 }
 
-export function filterCollectionCards<T extends AnyCard>(
+export function filterCollectionCards<T extends FilterableCard>(
 	cards: T[],
 	filters: CollectionFilters
 ): T[] {
@@ -260,8 +266,8 @@ export function filterCollectionCards<T extends AnyCard>(
 	if (filtered.length <= 1) return filtered;
 
 	return [...filtered].sort((a, b) => {
-		const av = getSortValue(a as Card | CardCopy, filters.order);
-		const bv = getSortValue(b as Card | CardCopy, filters.order);
+		const av = getSortValue(a, filters.order);
+		const bv = getSortValue(b, filters.order);
 		const cmp =
 			typeof av === 'number' && typeof bv === 'number'
 				? av - bv
