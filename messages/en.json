@@ -646,6 +646,8 @@
 		"appliedTo": "Applied to {count, plural, one {# card} other {# cards}}",
 		"export": "Export",
 		"exporting": "Exporting…",
+		"exportPartialConfirm": "{missing} cards could not be loaded and will be missing. Continue anyway?",
+		"exportFailed": "Export failed. Please try again.",
 		"loadError": "Some cards could not be loaded.",
 		"importFile": "Import a file",
 		"parsingFile": "Parsing the file…",

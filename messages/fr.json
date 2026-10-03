@@ -646,6 +646,8 @@
 		"appliedTo": "Appliqué à {count, plural, one {# carte} other {# cartes}}",
 		"export": "Exporter",
 		"exporting": "Export en cours…",
+		"exportPartialConfirm": "{missing} cartes n'ont pas pu être chargées et manqueront. Continuer quand même ?",
+		"exportFailed": "L'export a échoué. Réessayez.",
 		"loadError": "Certaines cartes n'ont pas pu être chargées.",
 		"importFile": "Importer un fichier",
 		"parsingFile": "Analyse du fichier…",

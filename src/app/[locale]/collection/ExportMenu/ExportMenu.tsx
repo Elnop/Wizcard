@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { CardCopy } from '@/types/cards';
+import type { LoadCardCopiesResult } from '@/lib/collection-index/load-card-copies';
 import { Button } from '@/components/Button/Button';
 import { downloadCSV } from '@/lib/csv/download';
 import { serializeToMoxfieldCSV } from '@/lib/moxfield/serialize';
@@ -10,7 +11,7 @@ import { serializeToCardNexusCSV } from '@/lib/cardnexus/serialize';
 import styles from './ExportMenu.module.css';
 
 interface ExportMenuProps {
-	cards: CardCopy[] | (() => Promise<CardCopy[]>);
+	cards: CardCopy[] | (() => Promise<LoadCardCopiesResult>);
 	/** Base filename without extension, e.g. "my-collection". */
 	filenameBase: string;
 	disabled?: boolean;
@@ -32,7 +33,8 @@ export function ExportMenu({ cards, filenameBase, disabled }: ExportMenuProps) {
 	}, [open]);
 
 	const getCards = useCallback(
-		async () => (typeof cards === 'function' ? cards() : cards),
+		async (): Promise<LoadCardCopiesResult> =>
+			typeof cards === 'function' ? cards() : { copies: cards, missing: 0 },
 		[cards]
 	);
 
@@ -41,11 +43,17 @@ export function ExportMenu({ cards, filenameBase, disabled }: ExportMenuProps) {
 			setOpen(false);
 			setBusy(true);
 			void getCards()
-				.then((list) => downloadCSV(serialize(list), `${filenameBase}-${suffix}.csv`))
-				.catch((err) => console.error('[ExportMenu] export failed:', err))
+				.then(({ copies, missing }) => {
+					if (missing > 0 && !window.confirm(t('exportPartialConfirm', { missing }))) return;
+					downloadCSV(serialize(copies), `${filenameBase}-${suffix}.csv`);
+				})
+				.catch((err) => {
+					console.error('[ExportMenu] export failed:', err);
+					window.alert(t('exportFailed'));
+				})
 				.finally(() => setBusy(false));
 		},
-		[getCards, filenameBase]
+		[getCards, filenameBase, t]
 	);
 	const exportMoxfield = useCallback(
 		() => exportWith(serializeToMoxfieldCSV, 'moxfield'),
