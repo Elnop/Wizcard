@@ -4,9 +4,11 @@ import { mapWithConcurrency } from '@/lib/async/map-with-concurrency';
 import type { CardFacets } from '@/types/cards';
 import { facetRowToFacets, type CardFacetsRow } from './facets';
 
-// POST body, so no URL limit; the chunk only bounds a single response's size.
-const FACETS_CHUNK = 2000;
-const FACETS_CONCURRENCY = 3;
+// POST body, so no URL limit — but PostgREST silently truncates any response to
+// `max_rows` (1000, supabase/config.toml), RPCs included. A larger chunk lost every
+// row past 1000 and sent those prints down the slow per-card fallback.
+const FACETS_CHUNK = 1000;
+const FACETS_CONCURRENCY = 6;
 
 /**
  * Facets for print ids from the `card_facets` RPC. Non-uuid ids are skipped (one
