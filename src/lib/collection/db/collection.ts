@@ -7,6 +7,7 @@ import {
 } from '@/lib/card/db/cardRow';
 import {
 	fetchCardRowsPage,
+	fetchAllOwnerRows,
 	insertCardRows,
 	deleteCardRowsByIds,
 	updateCardRow,
@@ -19,16 +20,10 @@ function mapRows(rows: CardDbRow[]): Array<{ scryfallId: string; entry: CardEntr
 	return rows.map((row) => ({ scryfallId: row.scryfall_id, entry: rowToCardEntry(row) }));
 }
 
-export async function fetchCollectionPage(
-	userId: string,
-	from: number
-): Promise<{ rows: Array<{ scryfallId: string; entry: CardEntry }>; hasMore: boolean }> {
-	const { rows, hasMore } = await fetchCardRowsPage('card_entries', {
-		ownerId: userId,
-		from,
-		pageSize: DB_FETCH_PAGE_SIZE,
-	});
-	return { rows: mapRows(rows), hasMore };
+export async function fetchAllCollectionEntries(
+	userId: string
+): Promise<Array<{ scryfallId: string; entry: CardEntry }>> {
+	return mapRows(await fetchAllOwnerRows('collection', userId));
 }
 
 /**

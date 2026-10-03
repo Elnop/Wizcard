@@ -347,6 +347,34 @@ export async function putLocalizedImageInCache(entry: CachedLocalizedImage): Pro
 	}
 }
 
+/**
+ * Replace the whole cached collection with `entries` in ONE transaction, so rows
+ * deleted on another device do not linger in the cache forever.
+ */
+export async function replaceCollectionCache(
+	entries: Array<{ rowId: string; scryfallId: string; entry: CardEntry }>
+): Promise<void> {
+	try {
+		const db = await openDB();
+		return new Promise<void>((resolve) => {
+			try {
+				const tx = db.transaction(COLLECTION_STORE, 'readwrite');
+				const store = tx.objectStore(COLLECTION_STORE);
+				store.clear();
+				for (const e of entries) {
+					store.put({ rowId: e.rowId, scryfallId: e.scryfallId, entry: e.entry });
+				}
+				tx.oncomplete = () => resolve();
+				tx.onerror = () => resolve();
+			} catch {
+				resolve();
+			}
+		});
+	} catch {
+		// IndexedDB unavailable — silently skip
+	}
+}
+
 /** Clear all collection entries from IndexedDB cache (logout / clear collection). */
 export async function clearCollectionCache(): Promise<void> {
 	try {

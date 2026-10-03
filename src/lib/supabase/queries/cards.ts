@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client';
 import type { CardDbRow } from '@/lib/card/db/cardRow';
+import { remainingPageStarts } from './page-starts';
 
 /**
  * Raw Supabase access for the `card_entries` table and its public view. This
@@ -18,6 +19,7 @@ export async function fetchCardRowsPage(
 		.select('*')
 		.eq('owner_id', filter.ownerId)
 		.eq('wishlist', false)
+		.order('id')
 		.range(filter.from, filter.from + filter.pageSize - 1);
 
 	if (error) {
@@ -44,6 +46,7 @@ export async function fetchPublicWishlistCardRowsPage(
 		.select('*')
 		.eq('owner_id', ownerId)
 		.eq('wishlist', true)
+		.order('id')
 		.range(from, from + pageSize - 1);
 
 	if (error) {
@@ -73,24 +76,58 @@ export async function fetchPublicCardCount(ownerId: string, wishlist: boolean): 
 	return count ?? 0;
 }
 
-export async function fetchWishlistCardRowsPage(
+export const CARD_ROWS_PAGE_SIZE = 1000;
+
+/** The signed-in owner's row sets that are always loaded whole. */
+export type OwnerRowSet = 'collection' | 'wishlist';
+
+async function fetchOwnerRowsRange(
+	set: OwnerRowSet,
 	userId: string,
 	from: number,
-	pageSize: number
-): Promise<{ rows: CardDbRow[]; hasMore: boolean }> {
+	withCount: boolean
+): Promise<{ rows: CardDbRow[]; count: number | null }> {
 	const supabase = createClient();
-	const { data, error } = await supabase
+	const base = supabase
 		.from('card_entries')
-		.select('*')
-		.eq('wishlist', true)
-		.or(`owner_id.eq.${userId},deck_id.not.is.null`)
-		.range(from, from + pageSize - 1);
+		.select('*', withCount ? { count: 'exact' } : undefined);
+	// A wishlist row is a standalone wishlist card (owner_id = userId) OR a deck card
+	// flagged wishlist in place (owner_id null, deck_id set); RLS scopes the latter.
+	const scoped =
+		set === 'collection'
+			? base.eq('owner_id', userId).eq('wishlist', false)
+			: base.eq('wishlist', true).or(`owner_id.eq.${userId},deck_id.not.is.null`);
+	const { data, error, count } = await scoped
+		.order('id')
+		.range(from, from + CARD_ROWS_PAGE_SIZE - 1);
+	if (error) throw new Error(`[queries/cards] ${set} rows from ${from}: ${error.message}`);
+	return { rows: (data ?? []) as CardDbRow[], count };
+}
 
-	if (error) {
-		console.error('[queries/cards] fetchWishlistCardRowsPage error:', error);
-		return { rows: [], hasMore: false };
+/**
+ * Every row of the owner's collection or wishlist. The first page carries the exact
+ * count, the remaining pages are fetched in parallel, then any rows inserted after the
+ * count are picked up serially until a short page. Throws on any page error — a
+ * partial set must never be mistaken for the whole collection.
+ */
+export async function fetchAllOwnerRows(set: OwnerRowSet, userId: string): Promise<CardDbRow[]> {
+	const first = await fetchOwnerRowsRange(set, userId, 0, true);
+	if (first.rows.length < CARD_ROWS_PAGE_SIZE) return first.rows;
+
+	const starts = remainingPageStarts(first.count ?? 0, CARD_ROWS_PAGE_SIZE);
+	const pages = await Promise.all(
+		starts.map((from) => fetchOwnerRowsRange(set, userId, from, false))
+	);
+	const rows = [...first.rows, ...pages.flatMap((p) => p.rows)];
+
+	let last = pages.at(-1) ?? first;
+	let next = CARD_ROWS_PAGE_SIZE * (starts.length + 1);
+	while (last.rows.length === CARD_ROWS_PAGE_SIZE) {
+		last = await fetchOwnerRowsRange(set, userId, next, false);
+		rows.push(...last.rows);
+		next += CARD_ROWS_PAGE_SIZE;
 	}
-	return { rows: data as CardDbRow[], hasMore: data.length === pageSize };
+	return rows;
 }
 
 export async function insertCardRows(rows: Record<string, unknown>[]): Promise<void> {

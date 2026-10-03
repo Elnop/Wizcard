@@ -4,12 +4,12 @@ import { create } from 'zustand';
 import type { CardEntry } from '@/types/cards';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { buildEntriesBatch, newEntry } from '@/lib/card/entry/buildEntriesBatch';
-import { fetchCollectionPage } from '../db/collection';
+import { fetchAllCollectionEntries } from '../db/collection';
 import { enqueue, clearQueue } from '@/lib/supabase/sync-queue';
 import type { CollectionData } from '../db/collection-migrations';
 import {
 	getCollectionFromCache,
-	putCollectionEntriesInCache,
+	replaceCollectionCache,
 	clearCollectionCache,
 } from '@/lib/scryfall/utils/card-cache';
 import { getAnalytics } from '@/lib/analytics/context/AnalyticsContext';
@@ -103,27 +103,22 @@ export const useCollectionStore = create<CollectionState & CollectionActions>()(
 			set({ entries: cached, isLoaded: true });
 		}
 
-		// Phase 2: progressive fetch from Supabase, page by page
-		// Rebuild from scratch to avoid merging with a potentially stale cache
-		const fresh: CollectionData = {};
-		let from = 0;
-		while (true) {
-			const { rows, hasMore } = await fetchCollectionPage(userId, from);
+		// Phase 2: the whole collection from Supabase, published ONCE. Publishing page
+		// by page replaced the cache with a partial set and restarted every
+		// downstream resolution on each page.
+		try {
+			const rows = await fetchAllCollectionEntries(userId);
+			const fresh: CollectionData = {};
 			for (const copy of rows) fresh[copy.entry.rowId] = copy;
-			// isFullyLoaded stays false while pages remain: the grid is frozen on
-			// skeletons until entries is complete.
-			set({ entries: { ...fresh }, isLoaded: true, isFullyLoaded: !hasMore });
-			if (rows.length > 0) {
-				void putCollectionEntriesInCache(
-					rows.map((r) => ({ rowId: r.entry.rowId, scryfallId: r.scryfallId, entry: r.entry }))
-				);
-			}
-			if (!hasMore) break;
-			from += 1000;
-		}
-		// If Supabase returns an empty collection, make sure the cache is empty too
-		if (Object.keys(fresh).length === 0) {
-			void clearCollectionCache();
+			set({ entries: fresh, isLoaded: true, isFullyLoaded: true });
+			void replaceCollectionCache(
+				rows.map((r) => ({ rowId: r.entry.rowId, scryfallId: r.scryfallId, entry: r.entry }))
+			);
+		} catch (err) {
+			// Keep whatever the cache showed: a failed page must never truncate the
+			// collection nor overwrite the cache with a partial set.
+			console.error('[collection-store] hydrate failed:', err);
+			set({ isLoaded: true, isFullyLoaded: true });
 		}
 
 		triggerSync();
