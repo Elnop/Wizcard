@@ -33,6 +33,14 @@ export function useIndexedCollection(
 			const f = index.getFacets(scryfallId);
 			if (f) copies.push({ ...f, entry } as FacetCopy);
 		}
+		if (!opts.filterable) {
+			// Wishlist: no sort UI, but entries hydrate in `.order('id')` (random
+			// uuid) order — restore a stable, meaningful order before stacking.
+			copies.sort((a, b) => {
+				const cmp = a.entry.dateAdded.localeCompare(b.entry.dateAdded);
+				return cmp !== 0 ? cmp : a.entry.rowId.localeCompare(b.entry.rowId);
+			});
+		}
 		const grouped = groupByOracleId(copies);
 		return opts.filterable ? filterStacks(grouped, filters) : grouped;
 	}, [entries, index.getFacets, filters, opts.filterable]);
