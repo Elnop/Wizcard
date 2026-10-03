@@ -17,8 +17,9 @@ export interface LoadFacetsResult {
  *   catalog prints  → card_facets RPC
  *   the rest        → resolveCardsByScryfallIds (catalog lag → Scryfall), facets
  *                     derived from the returned Card (which also lands in the cache)
- * An id nobody knows is reported in `notFound`. If the RPC itself failed and the
- * fallback could not cover its ids either, this throws: the index must not claim
+ * An id nobody knows — custom or print — is reported in `notFound`, never
+ * silently dropped. If a lookup itself failed (custom cards, or the RPC) and
+ * that left any of ITS ids unresolved, this throws: the index must not claim
  * `ready` with silent holes.
  */
 export async function loadFacets(
@@ -30,10 +31,12 @@ export async function loadFacets(
 	const customIds = unique.filter((id) => id.startsWith('mpc:'));
 	const printIds = unique.filter((id) => !id.startsWith('mpc:'));
 
+	let customFailed = false;
 	if (customIds.length > 0) {
 		try {
 			for (const [id, card] of await getCustomCardsByIds(customIds)) found.set(id, card);
 		} catch (err) {
+			customFailed = true;
 			console.error('[loadFacets] custom cards failed:', err);
 		}
 	}
@@ -57,7 +60,15 @@ export async function loadFacets(
 			found.set(id, isCustomCard(card) ? card : facetsFromCard(card));
 		}
 	}
-	const notFound = [...malformed, ...misses.filter((id) => !found.has(id))];
+	// Custom ids the lookup didn't return (never thrown, just absent from custom_cards)
+	// are "not found" too — not silently missing from both maps.
+	const customNotFound = customIds.filter((id) => !found.has(id));
+	const notFound = [...customNotFound, ...malformed, ...misses.filter((id) => !found.has(id))];
+	if (customFailed && customNotFound.length > 0) {
+		throw new Error(
+			`[loadFacets] ${customNotFound.length} custom cards unresolved after custom lookup failure`
+		);
+	}
 	if (rpcFailed && notFound.length > 0) {
 		throw new Error(`[loadFacets] ${notFound.length} prints unresolved after card_facets failure`);
 	}
