@@ -148,6 +148,39 @@ export interface CardStack {
 	cards: CardCopy[]; // copies — may be different editions
 }
 
+export type CardFacets = Pick<
+	Card,
+	| 'id'
+	| 'oracle_id'
+	| 'name'
+	| 'lang'
+	| 'layout'
+	| 'set'
+	| 'collector_number'
+	| 'rarity'
+	| 'released_at'
+	| 'artist'
+	| 'promo'
+	| 'digital'
+	| 'cmc'
+	| 'colors'
+	| 'color_identity'
+	| 'type_line'
+	| 'oracle_text'
+	| 'power'
+	| 'toughness'
+	| 'edhrec_rank'
+>;
+/** What the index holds per print: facets for catalog/Scryfall prints, the full
+ *  (already light, local) CustomCard for `mpc:` prints — filters read `custom.*`. */
+export type IndexedCard = CardFacets | CustomCard;
+export type FacetCopy = IndexedCard & { entry: CardEntry };
+export interface FacetStack {
+	oracleId: string;
+	name: string;
+	cards: FacetCopy[];
+}
+
 // Aggregated collection statistics
 export interface CollectionStats {
 	totalCards: number;
