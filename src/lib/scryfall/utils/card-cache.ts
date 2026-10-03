@@ -466,6 +466,27 @@ export async function putFacetsInCache(facets: CardFacets[]): Promise<void> {
 	}
 }
 
+/** Remove specific ids' facets from the cache (e.g. a print no longer found upstream). */
+export async function deleteFacetsFromCache(ids: string[]): Promise<void> {
+	if (ids.length === 0) return;
+	try {
+		const db = await openDB();
+		return new Promise<void>((resolve) => {
+			try {
+				const tx = db.transaction(FACETS_STORE, 'readwrite');
+				const store = tx.objectStore(FACETS_STORE);
+				for (const id of ids) store.delete(id);
+				tx.oncomplete = () => resolve();
+				tx.onerror = () => resolve();
+			} catch {
+				resolve();
+			}
+		});
+	} catch {
+		// IndexedDB unavailable — silently skip
+	}
+}
+
 /** Logout / account switch: the list of ids reveals what the previous user owns. */
 export async function clearFacetsCache(): Promise<void> {
 	try {

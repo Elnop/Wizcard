@@ -13,7 +13,11 @@ import type { CardFacets, IndexedCard } from '@/types/cards';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
-import { getFacetsFromCache, putFacetsInCache } from '@/lib/scryfall/utils/card-cache';
+import {
+	deleteFacetsFromCache,
+	getFacetsFromCache,
+	putFacetsInCache,
+} from '@/lib/scryfall/utils/card-cache';
 import { loadFacets } from '../load-facets';
 import { oracleKeyOf } from '../facets';
 
@@ -110,6 +114,18 @@ export function CollectionIndexProvider({ children }: { children: React.ReactNod
 			if (missing.length === 0) return;
 			setNotFound((prev) => new Set([...prev, ...missing]));
 		};
+		// A stale id the background refresh no longer finds: its cached facets are
+		// gone for good (unmatched/retired print), not just outdated — drop them
+		// from memory and from IDB instead of leaving a stale row to re-serve forever.
+		const dropStale = (missing: string[]) => {
+			if (missing.length === 0) return;
+			setFacets((prev) => {
+				const next = new Map(prev);
+				for (const id of missing) next.delete(id);
+				return next;
+			});
+			void deleteFacetsFromCache(missing);
+		};
 
 		void (async () => {
 			try {
@@ -136,6 +152,7 @@ export function CollectionIndexProvider({ children }: { children: React.ReactNod
 						merge(refreshed.found);
 						void putFacetsInCache(onlyFacets(refreshed.found));
 						markNotFound(refreshed.notFound);
+						dropStale(refreshed.notFound);
 					} catch (err) {
 						console.error('[CollectionIndex] background refresh failed:', err);
 					}

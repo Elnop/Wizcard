@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useCardsStore, getCard } from '@/lib/scryfall/store/cards-store';
 import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
@@ -30,6 +30,13 @@ export function usePagedCards(stacks: FacetStack[], resetKey: string): PagedCard
 	const [trackedKey, setTrackedKey] = useState(resetKey);
 	const [attempt, setAttempt] = useState(0);
 	const [error, setError] = useState<Error | null>(null);
+	// Ids requested and NOT returned for 2 consecutive resolver runs are excluded:
+	// one unresolvable print must not block scrolling forever. `excludedRef` mirrors
+	// `excludedIds` for synchronous reads inside the resolver effect; `failCounts`
+	// is write-only state the effect owns (never read in render).
+	const [excludedIds, setExcludedIds] = useState<ReadonlySet<string>>(() => new Set());
+	const excludedRef = useRef<ReadonlySet<string>>(excludedIds);
+	const failCountsRef = useRef<Map<string, number>>(new Map());
 
 	if (trackedKey !== resetKey) {
 		setTrackedKey(resetKey);
@@ -55,14 +62,38 @@ export function usePagedCards(stacks: FacetStack[], resetKey: string): PagedCard
 	);
 
 	useEffect(() => {
-		const missing = idsKey ? idsKey.split(',').filter((id) => !getCard(id)) : [];
+		const missing = idsKey
+			? idsKey.split(',').filter((id) => !getCard(id) && !excludedRef.current.has(id))
+			: [];
 		if (missing.length === 0) return;
 		const cancelled = { current: false };
 		resolveCardsByScryfallIds(missing, { isCancelled: () => cancelled.current })
 			.then((resolved) => {
 				if (cancelled.current) return;
-				const still = missing.filter((id) => !resolved.has(id));
-				setError(still.length > 0 ? new Error(`${still.length} cards could not be loaded`) : null);
+				for (const id of resolved.keys()) failCountsRef.current.delete(id);
+				const stillMissing = missing.filter((id) => !resolved.has(id));
+				const newlyExcluded: string[] = [];
+				for (const id of stillMissing) {
+					const count = (failCountsRef.current.get(id) ?? 0) + 1;
+					failCountsRef.current.set(id, count);
+					if (count >= 2) newlyExcluded.push(id);
+				}
+				if (newlyExcluded.length > 0) {
+					console.warn(
+						`[usePagedCards] excluding ${newlyExcluded.length} unresolvable card(s):`,
+						newlyExcluded
+					);
+					const next = new Set(excludedRef.current);
+					for (const id of newlyExcluded) next.add(id);
+					excludedRef.current = next;
+					setExcludedIds(next);
+				}
+				const stillFailing = stillMissing.filter((id) => (failCountsRef.current.get(id) ?? 0) < 2);
+				setError(
+					stillFailing.length > 0
+						? new Error(`${stillFailing.length} cards could not be loaded`)
+						: null
+				);
 			})
 			.catch((err) => {
 				if (!cancelled.current) setError(err instanceof Error ? err : new Error(String(err)));
@@ -72,7 +103,7 @@ export function usePagedCards(stacks: FacetStack[], resetKey: string): PagedCard
 		};
 	}, [idsKey, attempt]);
 
-	const nextReady = rangeReady(stacks, visibleCount, visibleCount + PAGE_SIZE, cards);
+	const nextReady = rangeReady(stacks, visibleCount, visibleCount + PAGE_SIZE, cards, excludedIds);
 	// Render-time reveal of a requested page once it is complete.
 	if (wantMore && nextReady && visibleCount < stacks.length) {
 		setVisibleCount(visibleCount + PAGE_SIZE);
@@ -83,9 +114,9 @@ export function usePagedCards(stacks: FacetStack[], resetKey: string): PagedCard
 		() =>
 			stacks
 				.slice(0, visibleCount)
-				.map((s) => toCardStack(s, cards))
+				.map((s) => toCardStack(s, cards, excludedIds))
 				.filter((s): s is CardStack => s !== null),
-		[stacks, visibleCount, cards]
+		[stacks, visibleCount, cards, excludedIds]
 	);
 
 	const firstEnd = Math.min(PAGE_SIZE, stacks.length);
@@ -97,7 +128,7 @@ export function usePagedCards(stacks: FacetStack[], resetKey: string): PagedCard
 			else setWantMore(true);
 		},
 		isLoadingMore: wantMore,
-		isFirstPageLoading: !rangeReady(stacks, 0, firstEnd, cards) && error === null,
+		isFirstPageLoading: !rangeReady(stacks, 0, firstEnd, cards, excludedIds) && error === null,
 		error,
 		retry: () => {
 			setError(null);
