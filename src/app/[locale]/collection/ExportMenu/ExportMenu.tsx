@@ -10,7 +10,7 @@ import { serializeToCardNexusCSV } from '@/lib/cardnexus/serialize';
 import styles from './ExportMenu.module.css';
 
 interface ExportMenuProps {
-	cards: CardCopy[];
+	cards: CardCopy[] | (() => Promise<CardCopy[]>);
 	/** Base filename without extension, e.g. "my-collection". */
 	filenameBase: string;
 	disabled?: boolean;
@@ -19,6 +19,7 @@ interface ExportMenuProps {
 export function ExportMenu({ cards, filenameBase, disabled }: ExportMenuProps) {
 	const t = useTranslations('collection');
 	const [open, setOpen] = useState(false);
+	const [busy, setBusy] = useState(false);
 	const ref = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -30,20 +31,35 @@ export function ExportMenu({ cards, filenameBase, disabled }: ExportMenuProps) {
 		return () => document.removeEventListener('mousedown', onClick);
 	}, [open]);
 
-	const exportMoxfield = useCallback(() => {
-		downloadCSV(serializeToMoxfieldCSV(cards), `${filenameBase}-moxfield.csv`);
-		setOpen(false);
-	}, [cards, filenameBase]);
+	const getCards = useCallback(
+		async () => (typeof cards === 'function' ? cards() : cards),
+		[cards]
+	);
 
-	const exportCardNexus = useCallback(() => {
-		downloadCSV(serializeToCardNexusCSV(cards), `${filenameBase}-cardnexus.csv`);
-		setOpen(false);
-	}, [cards, filenameBase]);
+	const exportWith = useCallback(
+		(serialize: (c: CardCopy[]) => string, suffix: string) => {
+			setOpen(false);
+			setBusy(true);
+			void getCards()
+				.then((list) => downloadCSV(serialize(list), `${filenameBase}-${suffix}.csv`))
+				.catch((err) => console.error('[ExportMenu] export failed:', err))
+				.finally(() => setBusy(false));
+		},
+		[getCards, filenameBase]
+	);
+	const exportMoxfield = useCallback(
+		() => exportWith(serializeToMoxfieldCSV, 'moxfield'),
+		[exportWith]
+	);
+	const exportCardNexus = useCallback(
+		() => exportWith(serializeToCardNexusCSV, 'cardnexus'),
+		[exportWith]
+	);
 
 	return (
 		<div className={styles.wrapper} ref={ref}>
-			<Button variant="secondary" onClick={() => setOpen((v) => !v)} disabled={disabled}>
-				{t('export')} ▾
+			<Button variant="secondary" onClick={() => setOpen((v) => !v)} disabled={disabled || busy}>
+				{busy ? t('exporting') : `${t('export')} ▾`}
 			</Button>
 			{open && (
 				<div className={styles.dropdown}>

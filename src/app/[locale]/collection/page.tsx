@@ -6,7 +6,8 @@ import { Link } from '@/i18n/navigation';
 import type { CardStack } from '@/types/cards';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useImportContext } from '@/lib/import/context/ImportContext';
-import { CollectionCardsProvider, useCollectionCardsContext } from './CollectionCardsContext';
+import { useIndexedCollection } from '@/lib/collection-index/hooks/useIndexedCollection';
+import { loadCardCopies } from '@/lib/collection-index/load-card-copies';
 import { ImportModal } from './lib/ImportModal/ImportModal';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
@@ -22,8 +23,8 @@ import { CollectionSearchPanel } from './lib/CollectionSearchPanel';
 function CollectionPageInner() {
 	const t = useTranslations('collection');
 	const menuLabels = useOwnedCardMenuLabels('collection');
-	const { entries, isLoaded, isFullyLoaded, clearCollection } = useCollectionContext();
-	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCardsContext();
+	const { entries, isLoaded, clearCollection } = useCollectionContext();
+	const model = useIndexedCollection(entries, { filterable: true });
 	const { status, openModal } = useImportContext();
 
 	const { openAddToDeck } = useAddToDeckModal();
@@ -55,8 +56,6 @@ function CollectionPageInner() {
 		status === 'fetching' ||
 		status === 'merging';
 
-	const isLoadingCollection = !isFullyLoaded || isHydrating;
-
 	const emptyState = (
 		<div className={styles.emptyState}>
 			<h2>{t('emptyTitle')}</h2>
@@ -72,9 +71,9 @@ function CollectionPageInner() {
 			{entries.length > 0 && (
 				<>
 					<ExportMenu
-						cards={stacks.flatMap((s) => s.cards)}
+						cards={() => loadCardCopies(entries)}
 						filenameBase="my-collection"
-						disabled={isBusy || isLoadingCollection}
+						disabled={isBusy}
 					/>
 					<Button variant="danger" onClick={handleClearCollection} disabled={isBusy}>
 						{t('clear')}
@@ -92,12 +91,9 @@ function CollectionPageInner() {
 
 	return (
 		<CollectionView
-			stacks={stacks}
+			model={model}
 			entryCount={entries.length}
-			isHydrating={isHydrating}
-			totalExpected={totalExpected}
 			isLoaded={isLoaded}
-			isFullyLoaded={isFullyLoaded}
 			title={t('title')}
 			actions={actions}
 			emptyState={emptyState}
@@ -135,9 +131,5 @@ function CollectionPageInner() {
 }
 
 export default function CollectionPage() {
-	return (
-		<CollectionCardsProvider>
-			<CollectionPageInner />
-		</CollectionCardsProvider>
-	);
+	return <CollectionPageInner />;
 }
