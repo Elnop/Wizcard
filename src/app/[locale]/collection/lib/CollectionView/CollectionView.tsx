@@ -4,7 +4,6 @@ import { useMemo, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { CardStack } from '@/types/cards';
 import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
-import { useCollectionFiltering } from './useCollectionFiltering';
 import { PAGE_SIZE } from '@/lib/collection/constants';
 import { CollectionFiltersAside } from './CollectionFiltersAside/CollectionFiltersAside';
 import { CollectionFiltersBar } from './CollectionFiltersBar/CollectionFiltersBar';
@@ -13,21 +12,17 @@ import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import { Button } from '@/components/Button/Button';
+import type { CollectionModel } from '@/lib/collection-index/collection-model';
 import styles from './CollectionView.module.css';
 
 type Props = {
-	/** Hydrated, grouped stacks (from useCollectionCards in the parent). */
-	stacks: CardStack[];
+	/** View model: filters, sets, stats and the current page of stacks. */
+	model: CollectionModel;
 	/** Number of raw entries (drives empty-state and skeleton count). */
 	entryCount: number;
-	/** Scryfall hydration in progress (from useCollectionCards). */
-	isHydrating: boolean;
-	/** Total entries expected (skeleton count hint). */
-	totalExpected: number;
 	/** True once the first page of entries has been received. */
 	isLoaded: boolean;
-	/** True once every page has been received (grid stays frozen until then). */
-	isFullyLoaded: boolean;
 	/** Heading shown above the grid. */
 	title: string;
 	/** Action buttons (Import/Clear/Export…) rendered in the header. */
@@ -60,12 +55,9 @@ type Props = {
  * the `actions`/`children` slots.
  */
 export function CollectionView({
-	stacks,
+	model,
 	entryCount,
-	isHydrating,
-	totalExpected,
 	isLoaded,
-	isFullyLoaded,
 	title,
 	actions,
 	emptyState,
@@ -77,139 +69,141 @@ export function CollectionView({
 	children,
 }: Props) {
 	const t = useTranslations('collection');
-	// The collection loads in two stages: entries arrive page by page from
-	// Supabase, then each card is hydrated from Scryfall. We only consider loading
-	// done when BOTH are finished, otherwise the revealed grid keeps pushing cards.
-	const isLoadingCollection = !isFullyLoaded || isHydrating;
-
-	const { filters, setFilters, sets, setsLoading, filteredStacks, stats, activeFilterCount } =
-		useCollectionFiltering(stacks);
-
-	// Freeze the grid on skeletons while loading: don't reveal real cards until
-	// everything is loaded/sorted, otherwise cards jump as data arrives.
-	const skeletonCount = isLoadingCollection
-		? Math.min(PAGE_SIZE, Math.max(1, totalExpected ?? PAGE_SIZE))
-		: 0;
+	const tError = useTranslations('error');
+	const { filters, setFilters, sets, setsLoading, stats, activeFilterCount, visibleStacks } = model;
+	const skeletonCount = Math.min(PAGE_SIZE, Math.max(1, entryCount));
 
 	const representativeCards = useMemo(
 		() =>
-			filteredStacks
+			visibleStacks
 				.map((stack) => stack.cards[0])
 				.filter((c): c is NonNullable<typeof c> => c !== undefined),
-		[filteredStacks]
+		[visibleStacks]
 	);
 
 	const stackByCardId = useMemo(() => {
 		const map = new Map<string, CardStack>();
-		for (const stack of filteredStacks) {
+		for (const stack of visibleStacks) {
 			const rep = stack.cards[0];
 			if (rep) map.set(rep.id, stack);
 		}
 		return map;
-	}, [filteredStacks]);
+	}, [visibleStacks]);
+
+	const errorBox = model.error && (
+		<div className={styles.loadError} role="alert">
+			<p>{t('loadError')}</p>
+			<Button variant="secondary" onClick={model.retry}>
+				{tError('retry')}
+			</Button>
+		</div>
+	);
 
 	let body: ReactNode;
 	if (isLoaded && entryCount === 0) {
 		body = emptyState ?? null;
-	} else if (isLoadingCollection) {
-		body = (
-			<CardList
-				cards={[]}
-				isLoading
-				skeletonCount={skeletonCount || undefined}
-				viewModes={['grid']}
-			/>
-		);
+	} else if (model.isInitialLoading || (!isLoaded && entryCount === 0)) {
+		body = <CardList cards={[]} isLoading skeletonCount={skeletonCount} viewModes={['grid']} />;
+	} else if (model.error && visibleStacks.length === 0) {
+		body = errorBox;
 	} else {
 		body = (
-			<CardList
-				cards={representativeCards}
-				isLoading={false}
-				onCardClick={
-					onCardClick
-						? (card: AnyCard) => {
-								const stack = stackByCardId.get(card.id);
-								if (stack) onCardClick(stack);
-							}
-						: undefined
-				}
-				buildCardMenuItems={
-					buildCardMenuItems
-						? (card: AnyCard, close: () => void) => {
-								const stack = stackByCardId.get(card.id);
-								return stack ? buildCardMenuItems(stack, close) : null;
-							}
-						: undefined
-				}
-				renderOverlay={(card) => {
-					const stack = stackByCardId.get(card.id);
-					const count = stack?.cards.length ?? 1;
-					const countBadge =
-						count > 1 ? <span className={styles.cardBadge}>x{count}</span> : undefined;
-					const deckBadge = showDeckBadges && stack ? <DeckBadge cards={stack.cards} /> : undefined;
-					return withCustomBadge(
-						card,
-						<>
-							{deckBadge}
-							{countBadge}
-						</>
-					);
-				}}
-				sortOrder={filters.order}
-				sortDir={filters.dir}
-				onSortChange={(newOrder, newDir) =>
-					setFilters({
-						...filters,
-						order: newOrder as CollectionFilters['order'],
-						dir: newDir,
-					})
-				}
-				tableColumns={[
-					{
-						key: 'qty',
-						label: t('colQty'),
-						render: (card) => stackByCardId.get(card.id)?.cards.length ?? 1,
-					},
-					{ key: 'name', label: t('colName'), sortKey: 'name' },
-					{
-						key: 'set',
-						label: t('colSet'),
-						sortKey: 'set',
-						render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
-					},
-					{
-						key: 'collector_number',
-						label: t('colCollector'),
-						render: (card) =>
-							'collector_number' in card ? (card.collector_number as string) : '—',
-					},
-					{
-						key: 'condition',
-						label: t('colCondition'),
-						render: (card) => ('entry' in card ? (card.entry.condition ?? '—') : '—'),
-					},
-					{
-						key: 'foil',
-						label: t('colFoil'),
-						render: (card) => ('entry' in card ? (card.entry.foilType ?? '—') : '—'),
-					},
-					{
-						key: 'language',
-						label: t('colLanguage'),
-						sortKey: 'language',
-						render: (card) => ('entry' in card ? (card.entry.language ?? '—') : '—'),
-					},
-					{
-						key: 'prices',
-						label: t('colPriceUsd'),
-						sortKey: 'usd',
-						render: (card) =>
-							'prices' in card && card.prices && 'usd' in card.prices
-								? (card.prices.usd ?? '—')
-								: '—',
-					},
-				]}
-			/>
+			<>
+				<CardList
+					cards={representativeCards}
+					isLoading={false}
+					pageSize={false}
+					hasMore={model.hasMore && !model.error}
+					onLoadMore={model.loadMore}
+					isLoadingMore={model.isLoadingMore}
+					onCardClick={
+						onCardClick
+							? (card: AnyCard) => {
+									const stack = stackByCardId.get(card.id);
+									if (stack) onCardClick(stack);
+								}
+							: undefined
+					}
+					buildCardMenuItems={
+						buildCardMenuItems
+							? (card: AnyCard, close: () => void) => {
+									const stack = stackByCardId.get(card.id);
+									return stack ? buildCardMenuItems(stack, close) : null;
+								}
+							: undefined
+					}
+					renderOverlay={(card) => {
+						const stack = stackByCardId.get(card.id);
+						const count = stack?.cards.length ?? 1;
+						const countBadge =
+							count > 1 ? <span className={styles.cardBadge}>x{count}</span> : undefined;
+						const deckBadge =
+							showDeckBadges && stack ? <DeckBadge cards={stack.cards} /> : undefined;
+						return withCustomBadge(
+							card,
+							<>
+								{deckBadge}
+								{countBadge}
+							</>
+						);
+					}}
+					sortOrder={filters.order}
+					sortDir={filters.dir}
+					onSortChange={(newOrder, newDir) =>
+						setFilters({
+							...filters,
+							order: newOrder as CollectionFilters['order'],
+							dir: newDir,
+						})
+					}
+					tableColumns={[
+						{
+							key: 'qty',
+							label: t('colQty'),
+							render: (card) => stackByCardId.get(card.id)?.cards.length ?? 1,
+						},
+						{ key: 'name', label: t('colName'), sortKey: 'name' },
+						{
+							key: 'set',
+							label: t('colSet'),
+							sortKey: 'set',
+							render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
+						},
+						{
+							key: 'collector_number',
+							label: t('colCollector'),
+							render: (card) =>
+								'collector_number' in card ? (card.collector_number as string) : '—',
+						},
+						{
+							key: 'condition',
+							label: t('colCondition'),
+							render: (card) => ('entry' in card ? (card.entry.condition ?? '—') : '—'),
+						},
+						{
+							key: 'foil',
+							label: t('colFoil'),
+							render: (card) => ('entry' in card ? (card.entry.foilType ?? '—') : '—'),
+						},
+						{
+							key: 'language',
+							label: t('colLanguage'),
+							sortKey: 'language',
+							render: (card) => ('entry' in card ? (card.entry.language ?? '—') : '—'),
+						},
+						{
+							key: 'prices',
+							label: t('colPriceUsd'),
+							sortKey: 'usd',
+							render: (card) =>
+								'prices' in card && card.prices && 'usd' in card.prices
+									? (card.prices.usd ?? '—')
+									: '—',
+						},
+					]}
+				/>
+				{errorBox}
+			</>
 		);
 	}
 
@@ -237,7 +231,7 @@ export function CollectionView({
 					<div className={styles.titleSection}>
 						<div className={styles.titleLeft}>
 							<h1 className={styles.title}>{title}</h1>
-							{entryCount > 0 && !isLoadingCollection && (
+							{entryCount > 0 && !model.isInitialLoading && (
 								<p className={styles.statsLine}>
 									{t('stats', {
 										cards: stats.totalCards,

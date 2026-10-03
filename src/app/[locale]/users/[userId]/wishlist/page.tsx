@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
+import { useStackCollectionModel } from '@/lib/collection-index/hooks/useStackCollectionModel';
 import { CollectionView } from '@/app/[locale]/collection/lib/CollectionView/CollectionView';
 import { ExportMenu } from '@/app/[locale]/collection/ExportMenu/ExportMenu';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
@@ -25,15 +26,14 @@ export function PublicWishlistView({
 	isOwner?: boolean;
 }) {
 	const { entries, isLoaded, isFullyLoaded } = usePublicWishlist(ownerId);
-	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
+	const { stacks, isLoading: isHydrating } = useCollectionCards(entries);
+	const model = useStackCollectionModel(stacks, !isFullyLoaded || isHydrating);
 	const { openCardModal } = useCardModalContext();
 	const t = useTranslations('profile');
 	const ownerHandlers = useOwnedCardMenuHandlers(stacks, 'wishlist');
 	const ownerMenuLabels = useOwnedCardMenuLabels('wishlist');
 	const viewerHandlers = useViewerCardMenuHandlers();
 	const viewerMenuLabels = useViewerCardMenuLabels();
-
-	const isLoadingWishlist = !isFullyLoaded || isHydrating;
 
 	const emptyState = (
 		<div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
@@ -46,18 +46,15 @@ export function PublicWishlistView({
 		<ExportMenu
 			cards={stacks.flatMap((s) => s.cards)}
 			filenameBase="wishlist"
-			disabled={isLoadingWishlist}
+			disabled={!isFullyLoaded || isHydrating}
 		/>
 	);
 
 	return (
 		<CollectionView
-			stacks={stacks}
+			model={model}
 			entryCount={entries.length}
-			isHydrating={isHydrating}
-			totalExpected={totalExpected}
 			isLoaded={isLoaded}
-			isFullyLoaded={isFullyLoaded}
 			title={t('wishlistTitle')}
 			actions={actions || undefined}
 			emptyState={emptyState}
