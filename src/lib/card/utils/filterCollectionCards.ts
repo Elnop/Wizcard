@@ -6,7 +6,9 @@ import type { MtgLanguage } from '@/lib/mtg/languages';
 import type { CardType, CustomCard } from '@/lib/mpc/types';
 import { isCustomCard } from '@/lib/mpc/types';
 
-export type CollectionSortOrder = ScryfallSortOrder | 'language';
+// 'quantity' sorts STACKS by copy count — it has no per-card meaning, so filterStacks
+// applies it after filtering (getSortValue returns a constant for it).
+export type CollectionSortOrder = ScryfallSortOrder | 'language' | 'quantity';
 
 /** Anything the collection filters can read: facets, full Cards, custom cards, ± entry. */
 type BaseCard = CardFacets | CustomCard;
@@ -111,6 +113,7 @@ const RARITY_ORDER: Record<string, number> = {
 
 export function getSortValue(card: FilterableCard, order: CollectionSortOrder): string | number {
 	if (order === 'language') return 'entry' in card ? (card.entry.language ?? '') : '';
+	if (order === 'quantity') return 0;
 	if (order === 'name') return card.name.toLowerCase();
 	if (order === 'cmc') return (card as CardFacets).cmc ?? 0;
 	if (order === 'rarity') return RARITY_ORDER[(card as CardFacets).rarity ?? ''] ?? 0;

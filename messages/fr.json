@@ -621,6 +621,7 @@
 		"deckAssigned": "Assignées à un deck",
 		"deckUnassigned": "Non assignées",
 		"sortLanguage": "Langue",
+		"sortQuantity": "Quantité",
 		"resetFilters": "Réinitialiser les filtres",
 		"colQty": "Qté",
 		"colName": "Nom",

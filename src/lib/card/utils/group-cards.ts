@@ -91,24 +91,33 @@ export function filterStacks<T extends FacetCopy>(
 	const stackByOracle = new Map(assignmentFiltered.map((s) => [s.oracleId, s]));
 	const { order, dir } = filters;
 
-	return filtered
+	const ordered = filtered
 		.map((rep) => stackByOracle.get(cardGroupKey(rep)))
-		.filter((s): s is StackOf<T> => Boolean(s))
-		.map((stack) => {
-			if (stack.cards.length <= 1) return stack;
-			const sorted = [...stack.cards].sort((a, b) => {
-				const av = getSortValue(a, order);
-				const bv = getSortValue(b, order);
-				let cmp: number;
-				if (typeof av === 'number' && typeof bv === 'number') {
-					cmp = av - bv;
-				} else {
-					cmp = String(av).localeCompare(String(bv));
-				}
-				if (dir === 'desc') cmp = -cmp;
-				if (cmp === 0) cmp = a.entry.dateAdded.localeCompare(b.entry.dateAdded);
-				return cmp;
-			});
-			return { ...stack, cards: sorted };
+		.filter((s): s is StackOf<T> => Boolean(s));
+	if (order === 'quantity') {
+		// Most copies first by default ('auto'), like a "how many do I own" view;
+		// ties fall back to name so equal counts stay alphabetical.
+		const sign = dir === 'asc' ? 1 : -1;
+		ordered.sort(
+			(a, b) => sign * (a.cards.length - b.cards.length) || a.name.localeCompare(b.name)
+		);
+	}
+
+	return ordered.map((stack) => {
+		if (stack.cards.length <= 1) return stack;
+		const sorted = [...stack.cards].sort((a, b) => {
+			const av = getSortValue(a, order);
+			const bv = getSortValue(b, order);
+			let cmp: number;
+			if (typeof av === 'number' && typeof bv === 'number') {
+				cmp = av - bv;
+			} else {
+				cmp = String(av).localeCompare(String(bv));
+			}
+			if (dir === 'desc') cmp = -cmp;
+			if (cmp === 0) cmp = a.entry.dateAdded.localeCompare(b.entry.dateAdded);
+			return cmp;
 		});
+		return { ...stack, cards: sorted };
+	});
 }

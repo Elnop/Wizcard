@@ -157,13 +157,16 @@ export function CollectionView({
 						setFilters({
 							...filters,
 							order: newOrder as CollectionFilters['order'],
-							dir: newDir,
+							// Switching TO quantity starts at "most copies first"; later
+							// clicks on the same column toggle as usual.
+							dir: newOrder === 'quantity' && filters.order !== 'quantity' ? 'desc' : newDir,
 						})
 					}
 					tableColumns={[
 						{
 							key: 'qty',
 							label: t('colQty'),
+							sortKey: 'quantity',
 							render: (card) => stackByCardId.get(card.id)?.cards.length ?? 1,
 						},
 						{ key: 'name', label: t('colName'), sortKey: 'name' },

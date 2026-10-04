@@ -36,7 +36,10 @@ export function CollectionFiltersAside({
 	const t = useTranslations('collection');
 	const symbolMap = useScryfallSymbols();
 	const [mobileOpen, setMobileOpen] = useState(false);
-	const extraSortOptions = [{ value: 'language', label: t('sortLanguage') }];
+	const extraSortOptions = [
+		{ value: 'quantity', label: t('sortQuantity') },
+		{ value: 'language', label: t('sortLanguage') },
+	];
 
 	function patch<K extends keyof CollectionFilters>(key: K, value: CollectionFilters[K]) {
 		onChange({ ...filters, [key]: value });
@@ -204,7 +207,15 @@ export function CollectionFiltersAside({
 
 				<SortFilter
 					order={filters.order}
-					onOrderChange={(v) => patch('order', v as CollectionFilters['order'])}
+					onOrderChange={(v) =>
+						// Quantity reads "most copies first": switch to descending on pick
+						// (the toggle can still flip it); other orders keep the current dir.
+						onChange({
+							...filters,
+							order: v as CollectionFilters['order'],
+							...(v === 'quantity' ? { dir: 'desc' as const } : {}),
+						})
+					}
 					dir={filters.dir}
 					onDirChange={(v) => patch('dir', v)}
 					allowAuto={false}
