@@ -99,21 +99,25 @@ export function CollectionView({
 		</div>
 	);
 
+	// Loading and loaded share ONE CardList element: a filter change re-enters the
+	// loading state, and swapping to a separate skeleton CardList would unmount the
+	// list and reset its local view mode (table → grid).
+	const isSkeleton = model.isInitialLoading || (!isLoaded && entryCount === 0);
+
 	let body: ReactNode;
 	if (isLoaded && entryCount === 0) {
 		body = emptyState ?? null;
-	} else if (model.isInitialLoading || (!isLoaded && entryCount === 0)) {
-		body = <CardList cards={[]} isLoading skeletonCount={skeletonCount} viewModes={['grid']} />;
-	} else if (model.error && visibleStacks.length === 0) {
+	} else if (!isSkeleton && model.error && visibleStacks.length === 0) {
 		body = errorBox;
 	} else {
 		body = (
 			<>
 				<CardList
-					cards={representativeCards}
-					isLoading={false}
+					cards={isSkeleton ? [] : representativeCards}
+					isLoading={isSkeleton}
+					skeletonCount={skeletonCount}
 					pageSize={false}
-					hasMore={model.hasMore && !model.error}
+					hasMore={!isSkeleton && model.hasMore && !model.error}
 					onLoadMore={model.loadMore}
 					isLoadingMore={model.isLoadingMore}
 					onCardClick={
@@ -202,7 +206,7 @@ export function CollectionView({
 						},
 					]}
 				/>
-				{errorBox}
+				{!isSkeleton && errorBox}
 			</>
 		);
 	}
@@ -231,7 +235,7 @@ export function CollectionView({
 					<div className={styles.titleSection}>
 						<div className={styles.titleLeft}>
 							<h1 className={styles.title}>{title}</h1>
-							{entryCount > 0 && !model.isInitialLoading && (
+							{entryCount > 0 && (!model.isInitialLoading || model.stats.totalCards > 0) && (
 								<p className={styles.statsLine}>
 									{t('stats', {
 										cards: stats.totalCards,
