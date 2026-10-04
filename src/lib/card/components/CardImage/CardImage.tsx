@@ -206,7 +206,9 @@ export function CardImage({
 			([entry]) => {
 				if (entry.isIntersecting) setIsVisible(true);
 			},
-			{ rootMargin: '200px' }
+			// Wide margin: the localized lookup + download should finish before the tile
+			// scrolls in, since nothing is painted until then (see renderCardImage).
+			{ rootMargin: '600px' }
 		);
 		observer.observe(el);
 		return () => observer.disconnect();
@@ -351,7 +353,17 @@ export function CardImage({
 		basePlaceholder && !hasResolvedOverride && !fallbackLoading && !fallbackPrintLoading;
 
 	function renderCardImage() {
-		if (fallbackPrintLoading || localizedLoading || (basePlaceholder && fallbackLoading)) {
+		// Not near the viewport yet: render no <img>. Otherwise the browser's native
+		// lazy-loading (wider margin than our observer) fetches and paints the BASE
+		// print, which the localized lookup then swaps out the moment the tile turns
+		// visible — every tile visibly reloads (base → placeholder → localized).
+		const awaitingVisibility = !isInputCustom && !priority && !isVisible;
+		if (
+			awaitingVisibility ||
+			fallbackPrintLoading ||
+			localizedLoading ||
+			(basePlaceholder && fallbackLoading)
+		) {
 			return <div className={styles.localizedPlaceholder} />;
 		}
 		if (!error && imageUri && !isPlaceholderImage) {
