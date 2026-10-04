@@ -169,7 +169,7 @@ check (
 - Single entry point **`useStackBy(list: 'collection' | 'wishlist' | 'deck')`** →
   `[stackBy, setStackBy]`:
   - signed in: reads the profile field, writes via `updateProfile`;
-  - signed out: `localStorage` key `wizcard.stackBy.<list>`, read and write wrapped in
+  - signed out: `localStorage` key `wizcard-stack-by-<list>`, read and write wrapped in
     try/catch, falls back to `[]`. No merge on sign-in: the profile wins.
 - While the profile loads the value is `[]`. If the profile arrives with another value,
   the list restacks once. The facets index loads in parallel, so this is normally not
