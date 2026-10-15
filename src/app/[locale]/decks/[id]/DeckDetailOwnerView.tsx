@@ -13,7 +13,7 @@ import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/Ca
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { getDeckZone } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
-import type { Card, MtgColor } from '@/types/cards';
+import type { Card, MtgColor, StackBy } from '@/types/cards';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
@@ -60,6 +60,9 @@ import { DeckSortBar } from './components/DeckSortBar/DeckSortBar';
 import { DeckTokens } from './components/DeckTokens/DeckTokens';
 import type { DeckGroupBy } from './useDeckCardSections';
 import styles from './page.module.css';
+
+// Temporary until the deck stacking menu lands (useStackBy('deck')).
+const EMPTY_STACK_BY: StackBy = [];
 
 export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const t = useTranslations('decks');
@@ -140,11 +143,13 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		deckId,
 	});
 
-	const { sections, groupByCardId } = useDeckCardSections(
+	const deckStackBy: StackBy = EMPTY_STACK_BY;
+	const { sections, groupByCardId, stackByRowId } = useDeckCardSections(
 		cardsByZone,
 		showCommander,
 		sortCards,
-		groupBy
+		groupBy,
+		deckStackBy
 	);
 	// The tokens panel shows one card per logical token (the per-stack count is
 	// rendered by the card overlay). Render deduped representatives so two copies
@@ -226,8 +231,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				label: t('colQty'),
 				render: (card) => {
 					const c = card as ResolvedDeckCard;
-					const zone = getDeckZone(c.entry.tags);
-					return groupByCardId.get(c.oracle_id ?? c.id)?.byZone.get(zone)?.length ?? 1;
+					return stackByRowId.get(c.entry.rowId)?.copies.length ?? 1;
 				},
 			},
 			{ key: 'name', label: t('colName') },
@@ -247,7 +251,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
 			},
 		],
-		[groupByCardId, symbolMap, t]
+		[stackByRowId, symbolMap, t]
 	);
 
 	// Tokens have no deck quantity or relevant mana cost; show identity-focused

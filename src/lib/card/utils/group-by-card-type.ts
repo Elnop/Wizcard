@@ -13,7 +13,8 @@ const CARD_TYPE_ORDER = [
 
 export function groupByCardType(
 	cards: AnyCard[],
-	countById?: Map<string, number>
+	countById?: Map<string, number>,
+	keyOf: (card: AnyCard) => string = (card) => card.id
 ): CardListSection[] {
 	const buckets = new Map<string, AnyCard[]>();
 
@@ -29,7 +30,7 @@ export function groupByCardType(
 		const group = buckets.get(key);
 		if (!group || group.length === 0) return null;
 		const total = countById
-			? group.reduce((sum, c) => sum + (countById.get(c.id) ?? 1), 0)
+			? group.reduce((sum, c) => sum + (countById.get(keyOf(c)) ?? 1), 0)
 			: group.length;
 		// Stable key (the type slug) so the open/collapsed state survives the count
 		// in the label changing when cards move in or out of the subsection.
