@@ -935,5 +935,19 @@
 		"emailChangeInProgress": "Une demande est déjà en cours. Vérifiez votre boîte mail.",
 		"emailSendFailed": "Échec de l’envoi de l’e-mail.",
 		"noEdhrecData": "Aucune donnée EDHREC pour ce commandant"
+	},
+	"stacking": {
+		"button": "Empiler : {summary}",
+		"unstacked": "Non empilé",
+		"nameAndMore": "Nom + {count} critères",
+		"noStack": "Ne pas empiler",
+		"stackBy": "Empiler par :",
+		"name": "Nom",
+		"nameAlways": "Nom (toujours)",
+		"print": "Édition",
+		"finish": "Finition",
+		"condition": "État",
+		"language": "Langue",
+		"flags": "Proxy / altérée / échange"
 	}
 }

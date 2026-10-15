@@ -1,5 +1,12 @@
 /* View toggle */
 
+.toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 8px;
+}
+
 .viewToggle {
 	display: inline-flex;
 	gap: 0;

@@ -61,6 +61,7 @@ export function CardList({
 	sectionClassName,
 	fluidSections,
 	viewModes = ['grid', 'table'],
+	toolbarExtra,
 	className,
 	pageSize = PAGE_SIZE,
 	showCardNames = false,
@@ -111,7 +112,7 @@ export function CardList({
 		</>
 	);
 
-	const toggle = viewModes.length > 1 && (
+	const viewToggle = viewModes.length > 1 && (
 		<div className={styles.viewToggle}>
 			{viewModes.map((mode) => (
 				<button
@@ -125,6 +126,15 @@ export function CardList({
 			))}
 		</div>
 	);
+	const toggle =
+		toolbarExtra != null ? (
+			<div className={styles.toolbar}>
+				{viewToggle}
+				{toolbarExtra}
+			</div>
+		) : (
+			viewToggle
+		);
 
 	const isFluid = viewMode === 'fluid-grid' || fluidSections;
 

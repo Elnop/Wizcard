@@ -935,5 +935,19 @@
 		"emailChangeInProgress": "A request is already in progress. Check your inbox.",
 		"emailSendFailed": "Failed to send the email.",
 		"noEdhrecData": "No EDHREC data found for this commander"
+	},
+	"stacking": {
+		"button": "Stack: {summary}",
+		"unstacked": "Not stacked",
+		"nameAndMore": "Name + {count} criteria",
+		"noStack": "Don't stack",
+		"stackBy": "Stack by:",
+		"name": "Name",
+		"nameAlways": "Name (always)",
+		"print": "Printing",
+		"finish": "Finish",
+		"condition": "Condition",
+		"language": "Language",
+		"flags": "Proxy / altered / for trade"
 	}
 }
