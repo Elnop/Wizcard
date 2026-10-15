@@ -1,13 +1,34 @@
 import { useState, useCallback } from 'react';
-import type { DeckCardGroup } from '@/types/decks';
 import type { ResolvedDeckCard } from './useDeckDetail';
+import type { DeckStack } from './useDeckCardSections';
+
+/**
+ * Flat list of the `rowId`s behind the selected stack keys. Stale keys (a stack
+ * that no longer exists) are ignored; `predicate` filters which copies to include
+ * (e.g. only un-owned copies for "add to collection").
+ */
+export function rowIdsOfSelectedStacks(
+	selected: ReadonlySet<string>,
+	stackByKey: ReadonlyMap<string, DeckStack>,
+	predicate?: (card: ResolvedDeckCard) => boolean
+): string[] {
+	const rowIds: string[] = [];
+	for (const key of selected) {
+		const stack = stackByKey.get(key);
+		if (!stack) continue;
+		for (const card of stack.copies) {
+			if (predicate && !predicate(card)) continue;
+			rowIds.push(card.entry.rowId);
+		}
+	}
+	return rowIds;
+}
 
 /**
  * Selection state for the deck bulk-action mode. Selection is keyed by the
- * group key (`oracle_id ?? id`) — the same key the deck sections and overlays
- * use — so a single selected entry represents every copy of that card across
- * all zones. `selectedRowIds` resolves those keys back to the flat list of
- * physical `rowId`s the deck mutations operate on.
+ * displayed stack (`DeckStack.selectionKey` = zone + stack key): one selected
+ * tile = that stack's copies in that zone. `selectedRowIds` resolves the keys to
+ * the flat list of physical `rowId`s the deck mutations operate on.
  */
 export function useDeckBulkSelection() {
 	const [selectMode, setSelectMode] = useState(false);
@@ -72,29 +93,11 @@ export function useDeckBulkSelection() {
 		[selected]
 	);
 
-	/**
-	 * Resolve the selected group keys into a flat list of `rowId`s, spanning all
-	 * zones of each selected group. An optional predicate filters which copies to
-	 * include (e.g. only un-owned copies for "add to collection").
-	 */
 	const selectedRowIds = useCallback(
 		(
-			groupByCardId: Map<string, DeckCardGroup>,
+			stackByKey: ReadonlyMap<string, DeckStack>,
 			predicate?: (card: ResolvedDeckCard) => boolean
-		): string[] => {
-			const rowIds: string[] = [];
-			for (const key of selected) {
-				const group = groupByCardId.get(key);
-				if (!group) continue;
-				for (const copies of group.byZone.values()) {
-					for (const card of copies as ResolvedDeckCard[]) {
-						if (predicate && !predicate(card)) continue;
-						rowIds.push(card.entry.rowId);
-					}
-				}
-			}
-			return rowIds;
-		},
+		): string[] => rowIdsOfSelectedStacks(selected, stackByKey, predicate),
 		[selected]
 	);
 
