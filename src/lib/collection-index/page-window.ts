@@ -28,7 +28,7 @@ export function toCardStack(
 		full.push({ ...card, entry: copy.entry });
 	}
 	if (full.length === 0) return null;
-	return { oracleId: stack.oracleId, name: stack.name, cards: full };
+	return { key: stack.key, name: stack.name, cards: full };
 }
 
 /**

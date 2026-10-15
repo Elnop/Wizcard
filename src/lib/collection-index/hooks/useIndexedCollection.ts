@@ -5,7 +5,7 @@ import {
 	defaultCollectionFilters,
 	type CollectionFilters,
 } from '@/lib/card/utils/filterCollectionCards';
-import { filterStacks, groupByOracleId } from '@/lib/card/utils/group-cards';
+import { filterStacks, groupByStack } from '@/lib/card/utils/group-cards';
 import { computeCollectionStats } from '@/app/[locale]/collection/lib/CollectionView/stats';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { countActiveFilters } from '@/lib/search/types';
@@ -41,7 +41,7 @@ export function useIndexedCollection(
 				return cmp !== 0 ? cmp : a.entry.rowId.localeCompare(b.entry.rowId);
 			});
 		}
-		const grouped = groupByOracleId(copies);
+		const grouped = groupByStack(copies);
 		return opts.filterable ? filterStacks(grouped, filters) : grouped;
 	}, [entries, index.getFacets, filters, opts.filterable]);
 

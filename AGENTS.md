@@ -4,7 +4,7 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 
 ## Common Pitfalls
 
-- **Never group by `scryfallId`** for display — use `oracleId` via `CardStack`. Two copies of the same card from different editions = same `CardStack`.
+- **Don't hand-roll display grouping** — stacks come from `groupByStack(copies, stackBy)` (`src/lib/card/utils/group-cards.ts`). Default `stackBy = []` groups by card (oracle_id: two editions = one `CardStack`); finer criteria are a user setting (`useStackBy`). Look stacks up by the representative's `entry.rowId`, never by print id — several stacks can share one print.
 - **Don't call `fetch()` against Scryfall directly** — always go through `scryfallGet`/`scryfallPost` in `src/lib/scryfall/utils/fetcher.ts` (rate limiting, caching, dedup).
 - **Always call `triggerSync()` after `enqueue()`** — the queue does not self-start.
 - **`npm run sb:reset` is destructive** — drops and recreates the local DB.
@@ -156,7 +156,7 @@ AuthProvider
 
 - **`rowId`** (`CardEntry.rowId` = `cards.id`) — unique per physical copy in the collection
 - **`scryfallId`** — identifies a specific printing/edition of a card
-- **`oracleId`** — identifies the abstract card concept across all editions; used as `CardStack.oracleId`
+- **`oracleId`** — identifies the abstract card concept across all editions; the base of every stack key (`CardStack.key`)
 
 ### localStorage Keys
 

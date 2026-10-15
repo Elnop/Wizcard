@@ -385,7 +385,7 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 			const stackCards = Array.isArray(resolved.cards) ? resolved.cards : [];
 			const rep = stackCards[0];
 			if (!rep) return undefined;
-			const stack: CardStack = { oracleId: oracleKeyOf(rep), name: rep.name, cards: stackCards };
+			const stack: CardStack = { key: oracleKeyOf(rep), name: rep.name, cards: stackCards };
 			const source = resolved.source;
 			const labels = source === 'wishlist' ? wishlistMenuLabels : collectionMenuLabels;
 			return (_card, closeMenu) => buildOwnedImageMenu(stack, source, deps, closeMenu, labels);

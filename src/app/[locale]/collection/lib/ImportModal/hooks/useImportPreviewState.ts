@@ -6,7 +6,7 @@ import type { ImportPreview } from '@/lib/import/hooks/useImport';
 import type { CardCopy, CardEntry, CardStack } from '@/types/cards';
 import { defaultCollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 import type { CollectionFilters } from '@/lib/card/utils/filterCollectionCards';
-import { groupByOracleId, filterStacks, cardGroupKey } from '@/lib/card/utils/group-cards';
+import { groupByStack, filterStacks, cardGroupKey } from '@/lib/card/utils/group-cards';
 import { countActiveFilters } from '@/lib/search/types';
 import type { InputMode } from '../inputMode';
 
@@ -66,7 +66,7 @@ export function useImportPreviewState({
 
 	// Group copies into stacks by oracle_id — the same logic the collection uses,
 	// so grouping, representative-print choice and filtering stay consistent.
-	const stacks = useMemo(() => groupByOracleId(activeCards), [activeCards]);
+	const stacks = useMemo(() => groupByStack(activeCards), [activeCards]);
 	const filteredStacks = useMemo(() => filterStacks(stacks, filters), [stacks, filters]);
 
 	// Representative print of each (filtered) stack — what the grid/table renders.

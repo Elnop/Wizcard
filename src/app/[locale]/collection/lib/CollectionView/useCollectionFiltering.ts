@@ -9,9 +9,9 @@ import { computeCollectionStats } from './stats';
 import { countActiveFilters } from '@/lib/search/types';
 import type { FacetCopy } from '@/types/cards';
 
-export function useCollectionFiltering<
-	S extends { oracleId: string; name: string; cards: FacetCopy[] },
->(stacks: S[]) {
+export function useCollectionFiltering<S extends { key: string; name: string; cards: FacetCopy[] }>(
+	stacks: S[]
+) {
 	const [filters, setFilters] = useState<CollectionFilters>(defaultCollectionFilters);
 	const { sets, isLoading: setsLoading } = useScryfallSets();
 

@@ -141,9 +141,15 @@ export interface CardEntry {
 // One copy in the collection = domain print data + per-copy metadata
 export type CardCopy = (Card | CustomCard) & { entry: CardEntry };
 
-// All copies of a card with the same oracle_id (potentially different editions)
+/** A copy property that, on top of the card name, splits stacks apart. */
+export type StackCriterion = 'print' | 'finish' | 'condition' | 'language' | 'flags';
+/** [] = by name (default); 'copy' = no stacking (one tile per physical copy). */
+export type StackBy = StackCriterion[] | 'copy';
+
+// Copies grouped under one tile. By default all copies of the same card (any
+// edition); finer per the user's StackBy setting.
 export interface CardStack {
-	oracleId: string; // stable grouping key
+	key: string; // stable grouping key (see stackKeyOf)
 	name: string; // display name (from first card in stack)
 	cards: CardCopy[]; // copies — may be different editions
 }
@@ -176,7 +182,7 @@ export type CardFacets = Pick<
 export type IndexedCard = CardFacets | CustomCard;
 export type FacetCopy = IndexedCard & { entry: CardEntry };
 export interface FacetStack {
-	oracleId: string;
+	key: string;
 	name: string;
 	cards: FacetCopy[];
 }

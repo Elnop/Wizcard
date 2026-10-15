@@ -7,7 +7,7 @@ import { useCardsStore, getCard } from '@/lib/scryfall/store/cards-store';
 import type { Card, CardCopy, CardStack } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import type { CardEntry } from '@/types/cards';
-import { groupByOracleId } from '@/lib/card/utils/group-cards';
+import { groupByStack } from '@/lib/card/utils/group-cards';
 
 type StoredCopy = { scryfallId: string; entry: CardEntry };
 
@@ -89,7 +89,7 @@ export function useCollectionCards(entries: StoredCopy[]): {
 
 	const cards = useMemo(() => buildCards(entries, scryfallMap), [entries, scryfallMap]);
 
-	const stacks = useMemo(() => groupByOracleId(cards), [cards]);
+	const stacks = useMemo(() => groupByStack(cards), [cards]);
 
 	return { stacks, isLoading, totalExpected: entries.length };
 }
