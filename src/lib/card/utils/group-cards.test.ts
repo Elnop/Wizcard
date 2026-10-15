@@ -1,7 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { CardEntry, FacetCopy } from '@/types/cards';
-import { groupByStack, stackKeyOf, filterStacks } from '@/lib/card/utils/group-cards';
+import {
+	groupByStack,
+	stackKeyOf,
+	stackFieldsOf,
+	filterStacks,
+} from '@/lib/card/utils/group-cards';
 import { defaultCollectionFilters } from '@/lib/card/utils/filterCollectionCards';
 
 let n = 0;
@@ -136,4 +141,38 @@ test('filterStacks keeps two stacks of the same card (no oracle collision)', () 
 	const filtered = filterStacks(stacks, defaultCollectionFilters);
 	assert.equal(filtered.length, 2);
 	assert.notEqual(filtered[0].key, filtered[1].key);
+});
+
+test('stackFieldsOf: a duplicate built from them lands in the same stack under every criterion', () => {
+	const source = copy(
+		{ lang: 'fr' },
+		{
+			isFoil: true,
+			foilType: 'etched',
+			condition: 'LP',
+			language: 'French',
+			proxy: true,
+			alter: true,
+			forTrade: true,
+			tags: ['deck:mainboard'],
+			deckId: 'deck-1',
+			ownerId: 'user-1',
+			purchasePrice: '3.50',
+		}
+	);
+	const fields = stackFieldsOf(source.entry);
+	assert.deepEqual(Object.keys(fields).sort(), [
+		'alter',
+		'condition',
+		'foilType',
+		'forTrade',
+		'isFoil',
+		'language',
+		'proxy',
+	]);
+	const duplicate = copy({ lang: 'fr' }, fields);
+	assert.equal(
+		stackKeyOf(duplicate, ['print', 'finish', 'condition', 'language', 'flags']),
+		stackKeyOf(source, ['print', 'finish', 'condition', 'language', 'flags'])
+	);
 });

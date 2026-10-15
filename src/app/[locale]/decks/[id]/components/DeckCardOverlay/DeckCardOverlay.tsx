@@ -148,6 +148,8 @@ type Props = {
 	deckId: string;
 	oracleScryfallIds: string[];
 	deckNameResolver: (deckId: string) => string | undefined;
+	/** Copies of the displayed stack (this zone, this stack) — every action targets these. */
+	stackCopies: CardCopy[];
 	onDuplicate: (rc: CardCopy) => void;
 	onRemove: (rowId: string) => void;
 	onChangeZone: (rowId: string, zone: DeckZone) => void;
@@ -170,6 +172,7 @@ export function DeckCardOverlay({
 	deckId,
 	oracleScryfallIds,
 	deckNameResolver,
+	stackCopies,
 	onDuplicate,
 	onRemove,
 	onChangeZone,
@@ -186,14 +189,14 @@ export function DeckCardOverlay({
 }: Props) {
 	const t = useTranslations('decks');
 	const otherZones = currentZone === 'tokens' ? [] : zones.filter((z) => z !== currentZone);
-	const zoneCopies = group.byZone.get(currentZone) ?? [];
+	const zoneCopies = stackCopies;
 	const lastCopy = zoneCopies[zoneCopies.length - 1];
 	const count = zoneCopies.length;
 
 	const { badgeState, ownedCount, neededCount, tooltipCopies, wishlistTooltipCopies } =
 		useCollectionBadge(
 			group,
-			currentZone,
+			stackCopies,
 			deckId,
 			oracleScryfallIds,
 			deckNameResolver,

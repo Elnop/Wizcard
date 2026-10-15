@@ -42,7 +42,12 @@ type DeckContextValue = {
 	deleteDeck: (deckId: string, options?: { deleteCollectionCopies?: boolean }) => void;
 
 	loadDeck: (deckId: string) => Promise<void>;
-	addCardToDeck: (deckId: string, card: Card | CustomCard, zone: DeckZone) => void;
+	addCardToDeck: (
+		deckId: string,
+		card: Card | CustomCard,
+		zone: DeckZone,
+		entryFields?: Partial<CardEntry>
+	) => void;
 	addCollectionCardToDeck: (deckId: string, collectionRowId: string, zone: DeckZone) => void;
 	bulkAddCardsToDeck: (
 		deckId: string,
@@ -185,9 +190,9 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	}, []);
 
 	const addCardToDeck = useCallback(
-		(deckId: string, card: Card | CustomCard, zone: DeckZone) => {
+		(deckId: string, card: Card | CustomCard, zone: DeckZone, entryFields?: Partial<CardEntry>) => {
 			if (!userId) return;
-			store.addCardToDeck(deckId, card, zone, userId, triggerSync);
+			store.addCardToDeck(deckId, card, zone, userId, triggerSync, entryFields);
 		},
 		[store, userId, triggerSync]
 	);

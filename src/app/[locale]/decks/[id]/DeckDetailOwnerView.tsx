@@ -14,6 +14,7 @@ import type { CardListColumn } from '@/lib/card/components/CardListTable/CardLis
 import { getDeckZone } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
 import type { Card, MtgColor, StackBy } from '@/types/cards';
+import { stackFieldsOf } from '@/lib/card/utils/group-cards';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
@@ -309,7 +310,9 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 
 	const handleDuplicateCard = useCallback(
 		(rc: ResolvedDeckCard) => {
-			addCardToDeck(deckId, rc, getDeckZone(rc.entry.tags));
+			// Keep the source's finish/condition/language/flags so the new copy joins
+			// the same stack whatever the stacking setting.
+			addCardToDeck(deckId, rc, getDeckZone(rc.entry.tags), stackFieldsOf(rc.entry));
 		},
 		[deckId, addCardToDeck]
 	);
@@ -491,7 +494,10 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			const collectionIds = oracleIdToAllScryfallIds.get(c.oracle_id ?? c.id);
 			const oracleScryfallIds = Array.from(new Set([...deckScryfallIds, ...(collectionIds ?? [])]));
 
-			const firstCopy = group.byZone.get(currentZone)?.[0];
+			// The displayed stack (tokens panel tiles resolve too: every copy is mapped).
+			const stackCopies =
+				stackByRowId.get(c.entry.rowId)?.copies ?? group.byZone.get(currentZone) ?? [];
+			const firstCopy = stackCopies[0];
 			const isContextCard = contextMenuCard === card;
 			return withCustomBadge(
 				card,
@@ -502,6 +508,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					deckId={deckId}
 					oracleScryfallIds={oracleScryfallIds}
 					deckNameResolver={deckNameResolver}
+					stackCopies={stackCopies}
 					onDuplicate={handleDuplicateCard}
 					onRemove={handleRemoveRequest}
 					onChangeZone={changeZone}
@@ -526,6 +533,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		},
 		[
 			groupByCardId,
+			stackByRowId,
 			bulk.selectMode,
 			bulk.selected,
 			zones,

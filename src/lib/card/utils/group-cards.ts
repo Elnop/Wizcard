@@ -1,4 +1,4 @@
-import type { FacetCopy, StackBy, StackCriterion } from '@/types/cards';
+import type { CardEntry, FacetCopy, StackBy, StackCriterion } from '@/types/cards';
 import { preferPrint } from '@/lib/card/utils/prefer-print';
 import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
 import {
@@ -44,6 +44,15 @@ function segment(copy: FacetCopy, criterion: StackCriterion): string {
 		case 'flags':
 			return `${entry.proxy ? 1 : 0}${entry.alter ? 1 : 0}${entry.forTrade ? 1 : 0}`;
 	}
+}
+
+/**
+ * The entry fields the stack criteria read (finish, condition, language, flags).
+ * A copy created from them ("add copy") lands in the same stack as its source.
+ */
+export function stackFieldsOf(entry: CardEntry): Partial<CardEntry> {
+	const { isFoil, foilType, condition, language, proxy, alter, forTrade } = entry;
+	return { isFoil, foilType, condition, language, proxy, alter, forTrade };
 }
 
 /**

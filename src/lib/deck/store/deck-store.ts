@@ -130,7 +130,9 @@ type DeckActions = {
 		card: Card | CustomCard,
 		zone: DeckZone,
 		userId: string,
-		triggerSync: () => void
+		triggerSync: () => void,
+		/** Copy metadata to carry over (e.g. "add copy" keeps the source's finish). */
+		entryFields?: Partial<CardEntry>
 	) => void;
 	addCollectionCardToDeck: (
 		deckId: string,
@@ -378,9 +380,10 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		triggerSync();
 	},
 
-	addCardToDeck: (deckId, card, zone, userId, triggerSync) => {
+	addCardToDeck: (deckId, card, zone, userId, triggerSync, entryFields) => {
 		const rowId = crypto.randomUUID();
 		const entry: CardEntry = {
+			...entryFields,
 			rowId,
 			dateAdded: new Date().toISOString(),
 			deckId,
