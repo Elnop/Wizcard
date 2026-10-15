@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { stackByFromArray, stackByToArray } from '@/lib/card/utils/stack-by';
+import { parseStoredStackBy, stackByFromArray, stackByToArray } from '@/lib/card/utils/stack-by';
 
 test('empty / non-array / garbage → by name', () => {
 	assert.deepEqual(stackByFromArray([]), []);
@@ -25,4 +25,13 @@ test('round trip', () => {
 		'condition',
 		'flags',
 	]);
+});
+
+test('parseStoredStackBy: missing, corrupt JSON or foreign shape → by name', () => {
+	assert.deepEqual(parseStoredStackBy(null), []);
+	assert.deepEqual(parseStoredStackBy('not json{'), []);
+	assert.deepEqual(parseStoredStackBy('"garbage"'), []);
+	assert.deepEqual(parseStoredStackBy('["foo"]'), []);
+	assert.equal(parseStoredStackBy('["copy"]'), 'copy');
+	assert.deepEqual(parseStoredStackBy('["finish","print"]'), ['print', 'finish']);
 });

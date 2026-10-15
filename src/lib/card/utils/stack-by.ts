@@ -17,3 +17,13 @@ export function stackByToArray(value: StackBy): string[] {
 	if (value === 'copy') return ['copy'];
 	return STACK_CRITERIA.filter((c) => value.includes(c));
 }
+
+/** Parses the localStorage JSON form; missing or corrupt values → [] (by name). */
+export function parseStoredStackBy(raw: string | null): StackBy {
+	if (!raw) return [];
+	try {
+		return stackByFromArray(JSON.parse(raw));
+	} catch {
+		return [];
+	}
+}
