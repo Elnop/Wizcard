@@ -164,6 +164,9 @@ with expected(t, col, typ) as (
     ('profiles','language','text'),('profiles','price_currency','text'),
     ('profiles','show_prices','boolean'),('profiles','theme_preference','text'),
     ('profiles','is_public','boolean'),('profiles','ignored_tags','ARRAY'),
+    -- 20261004120000_add_profile_stack_by
+    ('profiles','collection_stack_by','ARRAY'),('profiles','wishlist_stack_by','ARRAY'),
+    ('profiles','deck_stack_by','ARRAY'),
     -- user_usage
     ('user_usage','owner_id','uuid'),('user_usage','deck_count','integer'),('user_usage','card_count','integer'),
     -- custom_card_sources
@@ -214,7 +217,11 @@ with expected_default(t, col, dflt) as (
     ('profiles','theme_preference','''system''::text'),
     ('profiles','is_public','true'),
     -- 20260719120000_add_profile_ignored_tags : NSFW caché par défaut.
-    ('profiles','ignored_tags','''{nsfw}''::text[]')
+    ('profiles','ignored_tags','''{nsfw}''::text[]'),
+    -- 20261004120000_add_profile_stack_by : '{}' = par nom.
+    ('profiles','collection_stack_by','''{}''::text[]'),
+    ('profiles','wishlist_stack_by','''{}''::text[]'),
+    ('profiles','deck_stack_by','''{}''::text[]')
 )
 select pg_temp.chk(
   'column-default', e.t||'.'||e.col,
@@ -428,7 +435,11 @@ with con(t, name) as (
     ('profiles','profiles_theme_preference_check'),
     -- 20260714120000_profile_field_constraints : nickname/description
     ('profiles','profiles_nickname_valid'),
-    ('profiles','profiles_description_len')
+    ('profiles','profiles_description_len'),
+    -- 20261004120000_add_profile_stack_by
+    ('profiles','profiles_collection_stack_by_check'),
+    ('profiles','profiles_wishlist_stack_by_check'),
+    ('profiles','profiles_deck_stack_by_check')
 )
 select pg_temp.chk('check', con.t||' :: '||con.name,
   pg_temp.has_check(con.t, con.name), 'contrainte CHECK absente')
