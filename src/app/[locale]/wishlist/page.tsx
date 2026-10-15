@@ -11,8 +11,11 @@ import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
 import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { useImportContext } from '@/lib/import/context/ImportContext';
 import { useIndexedCollection } from '@/lib/collection-index/hooks/useIndexedCollection';
+import { useStackBy } from '@/lib/card/hooks/useStackBy';
+import { StackByMenu } from '@/lib/card/components/StackByMenu/StackByMenu';
 import { loadCardCopies } from '@/lib/collection-index/load-card-copies';
 import { CardList } from '@/lib/card/components/CardList/CardList';
+import { cardKey } from '@/lib/card/utils/card-key';
 import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
 import { Button } from '@/components/Button/Button';
 import { ExportMenu } from '@/app/[locale]/collection/ExportMenu/ExportMenu';
@@ -36,7 +39,8 @@ function WishlistPageInner() {
 	const { entries, isLoaded, clearWishlist, moveToCollection } = useWishlistContext();
 	const { status: importStatus, openModal: openImportModal } = useImportContext();
 
-	const model = useIndexedCollection(entries, { filterable: false });
+	const [stackBy, setStackBy] = useStackBy('wishlist');
+	const model = useIndexedCollection(entries, { filterable: false, stackBy });
 	const stacks = model.visibleStacks;
 
 	const { openAddToDeck } = useAddToDeckModal();
@@ -73,12 +77,14 @@ function WishlistPageInner() {
 	);
 
 	// Grid cards are stack representatives; map them back to their stack to wire
-	// click / context-menu / overlay against the full stack.
-	const stackByCardId = useMemo(() => {
+	// click / context-menu / overlay against the full stack. Keyed by the
+	// representative's rowId: several stacks can share one print id once
+	// stacking is finer than by-name (e.g. foil vs non-foil).
+	const stackByRowId = useMemo(() => {
 		const map = new Map<string, CardStack>();
 		for (const stack of stacks) {
 			const rep = stack.cards[0];
-			if (rep) map.set(rep.id, stack);
+			if (rep) map.set(rep.entry.rowId, stack);
 		}
 		return map;
 	}, [stacks]);
@@ -144,6 +150,7 @@ function WishlistPageInner() {
 					<>
 						<CardList
 							cards={representativeCards}
+							toolbarExtra={<StackByMenu value={stackBy} onChange={setStackBy} />}
 							isLoading={model.isInitialLoading}
 							skeletonCount={Math.min(PAGE_SIZE, entries.length)}
 							pageSize={false}
@@ -151,11 +158,11 @@ function WishlistPageInner() {
 							onLoadMore={model.loadMore}
 							isLoadingMore={model.isLoadingMore}
 							onCardClick={(card) => {
-								const stack = stackByCardId.get(card.id);
+								const stack = stackByRowId.get(cardKey(card));
 								if (stack) handleCardClick(stack);
 							}}
 							buildCardMenuItems={(card, close) => {
-								const stack = stackByCardId.get(card.id);
+								const stack = stackByRowId.get(cardKey(card));
 								return stack
 									? buildOwnedCardMenu(
 											stack,
@@ -175,7 +182,7 @@ function WishlistPageInner() {
 									: null;
 							}}
 							renderOverlay={(card) => {
-								const stack = stackByCardId.get(card.id);
+								const stack = stackByRowId.get(cardKey(card));
 								const count = stack?.cards.length ?? 1;
 								const countBadge =
 									count > 1 ? <span className={styles.cardBadge}>x{count}</span> : undefined;

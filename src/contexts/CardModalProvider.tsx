@@ -1,5 +1,6 @@
 'use client';
 
+import { focusCopyFirst } from '@/lib/card/utils/focus-copy';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { Card, CardCopy, CardEntry, CardStack } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
@@ -35,7 +36,8 @@ type StoredCopy = { scryfallId: string; entry: CardEntry };
  *    collection) — never re-resolved against the signed-in user's contexts.
  *  - 'bare': a single Scryfall/custom card (search/sets/prints). */
 type OpenState =
-	| { kind: 'stack'; oracleKey: string }
+	// focusRowId: the clicked copy, shown first (stacks can be finer than the card).
+	| { kind: 'stack'; oracleKey: string; focusRowId?: string }
 	| { kind: 'frozen'; cards: CardCopy[] }
 	| { kind: 'bare'; card: Card | CustomCard }
 	| { kind: 'deck'; deckId: string; oracleKey: string; clickedRowId: string }
@@ -199,7 +201,7 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 				// Read-only stacks (another user's collection) are frozen — never
 				// re-resolved against the signed-in user's contexts.
 				if (opts?.readOnly) setOpen({ kind: 'frozen', cards: input });
-				else setOpen({ kind: 'stack', oracleKey: oracleKeyOf(rep) });
+				else setOpen({ kind: 'stack', oracleKey: oracleKeyOf(rep), focusRowId: rep.entry.rowId });
 			} else {
 				setOpen({ kind: 'bare', card: input });
 			}
@@ -260,7 +262,7 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 		const inCollection = resolveStackCards(open.oracleKey, collection.entries);
 		const inWishlist = resolveStackCards(open.oracleKey, wishlist.entries);
 		const isWishlist = inWishlist.length > 0 && inCollection.length === 0;
-		const cards = isWishlist ? inWishlist : inCollection;
+		const cards = focusCopyFirst(isWishlist ? inWishlist : inCollection, open.focusRowId);
 		return {
 			cards: cards.length > 0 ? cards : null,
 			rep: cards[0] ?? null,

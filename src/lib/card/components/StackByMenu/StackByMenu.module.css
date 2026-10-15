@@ -31,13 +31,17 @@
 	position: absolute;
 	top: calc(100% + 4px);
 	left: 0;
-	z-index: 50;
+	/* Above card tiles and their badges (same layer as the context menu). */
+	z-index: 1000;
 	min-width: 220px;
 	padding: 8px;
 	background: var(--glass-bg, rgba(20, 20, 30, 0.92));
+	backdrop-filter: blur(var(--glass-blur, 12px));
 	border: 1px solid var(--border);
 	border-radius: 8px;
-	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.4),
+		0 2px 8px rgba(0, 0, 0, 0.3);
 	display: flex;
 	flex-direction: column;
 	gap: 2px;

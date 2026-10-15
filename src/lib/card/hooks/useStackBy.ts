@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import type { StackBy } from '@/types/cards';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useProfileContext } from '@/lib/profile/context/ProfileContext';
@@ -51,16 +51,22 @@ export function useStackBy(list: StackList): [StackBy, (next: StackBy) => void] 
 	);
 	const localValue = useMemo(() => parseStoredStackBy(raw), [raw]);
 
+	// Last value chosen in this session. updateProfile's optimistic patch is a
+	// no-op while the profile is still loading (the DB write still goes out), so
+	// without this the menu would not react until a reload.
+	const [chosen, setChosen] = useState<StackBy | null>(null);
+
 	// Memoised so a loading profile doesn't hand consumers a fresh [] every render.
 	const profileValue = user ? profile?.[PROFILE_FIELD[list]] : undefined;
 	const value = useMemo<StackBy>(
-		() => (user ? (profileValue ?? []) : localValue),
-		[user, profileValue, localValue]
+		() => (user ? (chosen ?? profileValue ?? []) : localValue),
+		[user, chosen, profileValue, localValue]
 	);
 
 	const setValue = useCallback(
 		(next: StackBy) => {
 			if (user) {
+				setChosen(next);
 				updateProfile({ [PROFILE_FIELD[list]]: next });
 				return;
 			}

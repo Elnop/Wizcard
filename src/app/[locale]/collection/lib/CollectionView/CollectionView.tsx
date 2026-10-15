@@ -8,6 +8,7 @@ import { PAGE_SIZE } from '@/lib/collection/constants';
 import { CollectionFiltersAside } from './CollectionFiltersAside/CollectionFiltersAside';
 import { CollectionFiltersBar } from './CollectionFiltersBar/CollectionFiltersBar';
 import { CardList } from '@/lib/card/components/CardList/CardList';
+import { cardKey } from '@/lib/card/utils/card-key';
 import type { ContextMenuAction } from '@/components/ContextMenu/ContextMenu';
 import { DeckBadge } from '@/lib/card/components/DeckBadge/DeckBadge';
 import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
@@ -33,6 +34,8 @@ type Props = {
 	onCardClick?: (stack: CardStack) => void;
 	/** Builds the right-click menu items for a card's stack (owner view only). */
 	buildCardMenuItems?: (stack: CardStack, close: () => void) => ContextMenuAction[] | null;
+	/** Controls rendered on the card list toolbar row (e.g. the stacking menu). */
+	toolbarExtra?: ReactNode;
 	/** Show a "in a deck" badge on cards whose copies are assigned to a deck (owner view only). */
 	showDeckBadges?: boolean;
 	/**
@@ -63,6 +66,7 @@ export function CollectionView({
 	emptyState,
 	onCardClick,
 	buildCardMenuItems,
+	toolbarExtra,
 	showDeckBadges = false,
 	filterLayout = 'aside',
 	panelOpen = false,
@@ -81,11 +85,13 @@ export function CollectionView({
 		[visibleStacks]
 	);
 
-	const stackByCardId = useMemo(() => {
+	// Look stacks up by their representative's rowId: several stacks can share
+	// one print id once stacking is finer than by-name (e.g. foil vs non-foil).
+	const stackByRowId = useMemo(() => {
 		const map = new Map<string, CardStack>();
 		for (const stack of visibleStacks) {
 			const rep = stack.cards[0];
-			if (rep) map.set(rep.id, stack);
+			if (rep) map.set(rep.entry.rowId, stack);
 		}
 		return map;
 	}, [visibleStacks]);
@@ -120,10 +126,11 @@ export function CollectionView({
 					hasMore={!isSkeleton && model.hasMore && !model.error}
 					onLoadMore={model.loadMore}
 					isLoadingMore={model.isLoadingMore}
+					toolbarExtra={toolbarExtra}
 					onCardClick={
 						onCardClick
 							? (card: AnyCard) => {
-									const stack = stackByCardId.get(card.id);
+									const stack = stackByRowId.get(cardKey(card));
 									if (stack) onCardClick(stack);
 								}
 							: undefined
@@ -131,13 +138,13 @@ export function CollectionView({
 					buildCardMenuItems={
 						buildCardMenuItems
 							? (card: AnyCard, close: () => void) => {
-									const stack = stackByCardId.get(card.id);
+									const stack = stackByRowId.get(cardKey(card));
 									return stack ? buildCardMenuItems(stack, close) : null;
 								}
 							: undefined
 					}
 					renderOverlay={(card) => {
-						const stack = stackByCardId.get(card.id);
+						const stack = stackByRowId.get(cardKey(card));
 						const count = stack?.cards.length ?? 1;
 						const countBadge =
 							count > 1 ? <span className={styles.cardBadge}>x{count}</span> : undefined;
@@ -167,7 +174,7 @@ export function CollectionView({
 							key: 'qty',
 							label: t('colQty'),
 							sortKey: 'quantity',
-							render: (card) => stackByCardId.get(card.id)?.cards.length ?? 1,
+							render: (card) => stackByRowId.get(cardKey(card))?.cards.length ?? 1,
 						},
 						{ key: 'name', label: t('colName'), sortKey: 'name' },
 						{

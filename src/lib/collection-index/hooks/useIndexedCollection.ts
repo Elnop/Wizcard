@@ -9,10 +9,12 @@ import { filterStacks, groupByStack } from '@/lib/card/utils/group-cards';
 import { computeCollectionStats } from '@/app/[locale]/collection/lib/CollectionView/stats';
 import { useScryfallSets } from '@/lib/scryfall/hooks/useScryfallSets';
 import { countActiveFilters } from '@/lib/search/types';
-import type { CardEntry, FacetCopy, FacetStack } from '@/types/cards';
+import type { CardEntry, FacetCopy, FacetStack, StackBy } from '@/types/cards';
 import { useCollectionIndex } from '../context/CollectionIndexProvider';
 import { usePagedCards } from './usePagedCards';
 import type { CollectionModel } from '../collection-model';
+
+const EMPTY_STACK_BY: StackBy = [];
 
 /**
  * Owner collection / wishlist: sort, filter, group and stats run on the global
@@ -21,8 +23,9 @@ import type { CollectionModel } from '../collection-model';
  */
 export function useIndexedCollection(
 	entries: Array<{ scryfallId: string; entry: CardEntry }>,
-	opts: { filterable: boolean }
+	opts: { filterable: boolean; stackBy?: StackBy }
 ): CollectionModel {
+	const stackBy = opts.stackBy ?? EMPTY_STACK_BY;
 	const index = useCollectionIndex();
 	const [filters, setFilters] = useState<CollectionFilters>(defaultCollectionFilters);
 	const { sets, isLoading: setsLoading } = useScryfallSets();
@@ -41,13 +44,16 @@ export function useIndexedCollection(
 				return cmp !== 0 ? cmp : a.entry.rowId.localeCompare(b.entry.rowId);
 			});
 		}
-		const grouped = groupByStack(copies);
+		const grouped = groupByStack(copies, stackBy);
 		return opts.filterable ? filterStacks(grouped, filters) : grouped;
-	}, [entries, index.getFacets, filters, opts.filterable]);
+	}, [entries, index.getFacets, filters, opts.filterable, stackBy]);
 
 	const stats = useMemo(() => computeCollectionStats(facetStacks), [facetStacks]);
 	const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
-	const resetKey = opts.filterable ? JSON.stringify(filters) : 'static';
+	const stackKey = JSON.stringify(stackBy);
+	const resetKey = opts.filterable
+		? `${JSON.stringify(filters)}|${stackKey}`
+		: `static|${stackKey}`;
 	const paged = usePagedCards(facetStacks, resetKey);
 
 	const indexLoading = index.status === 'loading';

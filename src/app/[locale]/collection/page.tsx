@@ -7,6 +7,8 @@ import type { CardStack } from '@/types/cards';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useImportContext } from '@/lib/import/context/ImportContext';
 import { useIndexedCollection } from '@/lib/collection-index/hooks/useIndexedCollection';
+import { useStackBy } from '@/lib/card/hooks/useStackBy';
+import { StackByMenu } from '@/lib/card/components/StackByMenu/StackByMenu';
 import { loadCardCopies } from '@/lib/collection-index/load-card-copies';
 import { ImportModal } from './lib/ImportModal/ImportModal';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
@@ -24,7 +26,8 @@ function CollectionPageInner() {
 	const t = useTranslations('collection');
 	const menuLabels = useOwnedCardMenuLabels('collection');
 	const { entries, isLoaded, clearCollection } = useCollectionContext();
-	const model = useIndexedCollection(entries, { filterable: true });
+	const [stackBy, setStackBy] = useStackBy('collection');
+	const model = useIndexedCollection(entries, { filterable: true, stackBy });
 	const { status, openModal } = useImportContext();
 
 	const { openAddToDeck } = useAddToDeckModal();
@@ -97,6 +100,7 @@ function CollectionPageInner() {
 			title={t('title')}
 			actions={actions}
 			emptyState={emptyState}
+			toolbarExtra={<StackByMenu value={stackBy} onChange={setStackBy} />}
 			onCardClick={openCard}
 			buildCardMenuItems={(stack, close) =>
 				buildOwnedCardMenu(
