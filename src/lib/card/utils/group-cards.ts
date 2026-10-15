@@ -77,7 +77,12 @@ export function stackKeyOf(copy: FacetCopy, stackBy: StackBy): string {
  * paper > non-promo > normal set > most recent), keeping the chosen vignette
  * consistent between the collection and the import preview.
  */
-export function groupByStack<T extends FacetCopy>(cards: T[], stackBy: StackBy = []): StackOf<T>[] {
+export function groupByStack<T extends FacetCopy>(
+	cards: T[],
+	stackBy: StackBy = [],
+	/** 'first' keeps input order (cards[0] = first copy seen), e.g. deck zones. */
+	representative: 'preferred' | 'first' = 'preferred'
+): StackOf<T>[] {
 	const map = new Map<string, T[]>();
 	const order: string[] = [];
 	for (const card of cards) {
@@ -92,6 +97,7 @@ export function groupByStack<T extends FacetCopy>(cards: T[], stackBy: StackBy =
 	}
 	return order.map((key) => {
 		const groupCards = map.get(key)!;
+		if (representative === 'first') return { key, name: groupCards[0].name, cards: groupCards };
 		// Promote the preferred print to cards[0] without disturbing the rest.
 		let repIndex = 0;
 		for (let i = 1; i < groupCards.length; i++) {

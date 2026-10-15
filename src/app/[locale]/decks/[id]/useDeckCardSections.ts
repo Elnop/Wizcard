@@ -56,7 +56,8 @@ function buildZoneStacks(
 	const zoneStacks = new Map<DeckZone, ResolvedDeckCard[][]>();
 	for (const zone of zones) {
 		const zoneBy = zone === 'tokens' ? EMPTY_STACK_BY : stackBy;
-		const stacks = groupByStack(cardsByZone[zone] ?? [], zoneBy);
+		// Zone order decides the tile (as before stacking existed), not preferPrint.
+		const stacks = groupByStack(cardsByZone[zone] ?? [], zoneBy, 'first');
 		zoneStacks.set(
 			zone,
 			stacks.map((s) => s.cards)

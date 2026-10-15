@@ -87,3 +87,25 @@ test('every copy rowId maps to its stack, tokens included and stacked by name', 
 	assert.equal(stackByRowId.get(t2.entry.rowId)?.copies.length, 2);
 	assert.equal(stackByRowId.get(t1.entry.rowId), stackByRowId.get(t2.entry.rowId));
 });
+
+test('by name keeps the zone order: the first copy stays the tile (no preferred-print swap)', () => {
+	const lea = copy('mainboard', { id: 'print-lea' }, { dateAdded: '2026-01-01T00:00:00Z' });
+	const m10 = copy('mainboard', { id: 'print-m10' }, { dateAdded: '2026-01-02T00:00:00Z' });
+	(lea as unknown as { set: string; released_at: string }).set = 'lea';
+	(lea as unknown as { released_at: string }).released_at = '1993-08-05';
+	(m10 as unknown as { set: string }).set = 'm10';
+	(m10 as unknown as { released_at: string }).released_at = '2009-07-17';
+	const { sections, stackByRowId } = buildDeckCardSections(
+		byZone([lea, m10]),
+		false,
+		keep,
+		'none',
+		[]
+	);
+	const tile = sections.find((s) => s.key === 'mainboard')!.cards[0] as ResolvedDeckCard;
+	assert.equal(tile.id, 'print-lea');
+	assert.deepEqual(
+		stackByRowId.get(lea.entry.rowId)!.copies.map((c) => c.id),
+		['print-lea', 'print-m10']
+	);
+});
