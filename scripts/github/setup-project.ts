@@ -11,6 +11,7 @@
  * Ne supprime jamais rien (labels, projets, champs, vues).
  */
 import { gh, ghGraphql, ghJson } from './lib/gh';
+import { findProject, STATUS_FIELD_FRAGMENT, type ProjectRef } from './lib/project';
 import {
 	FIELDS,
 	ITERATION_DURATION_DAYS,
@@ -77,29 +78,14 @@ function syncLabels(): void {
 }
 
 // ── Projet ───────────────────────────────────────────────────────────────
-type ProjectRef = { id: string; number: number; title: string; url: string };
-
-function listProjects(): ProjectRef[] {
-	return ghJson<{ projects: ProjectRef[] }>([
-		'project',
-		'list',
-		'--owner',
-		PROJECT.owner,
-		'--limit',
-		'100',
-		'--format',
-		'json',
-	]).projects;
-}
-
 function ensureProject(): ProjectRef | null {
-	let project = listProjects().find((p) => p.title === PROJECT.title);
+	let project = findProject();
 	if (!project) {
 		act(`project + ${PROJECT.title}`, () => {
 			gh(['project', 'create', '--owner', PROJECT.owner, '--title', PROJECT.title]);
 		});
 		if (dryRun) return null;
-		project = listProjects().find((p) => p.title === PROJECT.title);
+		project = findProject();
 		if (!project) throw new Error('Projet créé mais introuvable');
 	}
 	// `link` est idempotent côté GitHub ; on tolère « déjà lié ».
@@ -134,7 +120,7 @@ type ProjectState = {
 };
 
 const STATE_QUERY = `query($project: ID!) { node(id: $project) { ... on ProjectV2 {
-  status: field(name: "Status") { ... on ProjectV2SingleSelectField { id options { id name color description } } }
+  ${STATUS_FIELD_FRAGMENT}
   fields(first: 50) { nodes { ... on ProjectV2FieldCommon { id name } } }
   views(first: 50) { nodes { name } }
 } } }`;

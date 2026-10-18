@@ -1,0 +1,32 @@
+name: release-pr
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release-pr
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install npm 11
+        run: npm i -g npm@11.21.1
+      - run: npm ci --ignore-scripts
+      - name: Update the release PR
+        env:
+          GH_TOKEN: ${{ secrets.WIZCARD_BOT_TOKEN }}
+        run: npx tsx scripts/github/release-pr.ts
