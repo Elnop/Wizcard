@@ -6,7 +6,8 @@
  * Usage : `npm run gh:epics` (applique) ou `npm run gh:epics -- --dry-run`.
  * Ne supprime ni ne modifie jamais d'issue existante.
  */
-import { gh, ghGraphql, ghJson } from './lib/gh';
+import { ghGraphql, ghJson } from './lib/gh';
+import { createIssue, linkSubIssue } from './lib/issues';
 import { EPICS } from './epics';
 import { planEpics } from './plan';
 import { PROJECT } from './project-config';
@@ -44,42 +45,6 @@ function listExisting(): Existing[] {
 	});
 }
 
-function createIssue(title: string, label: string, body: string): { number: number; id: string } {
-	const url = gh([
-		'issue',
-		'create',
-		'--repo',
-		PROJECT.repo,
-		'--title',
-		title,
-		'--label',
-		label,
-		'--body',
-		body,
-		'--project',
-		PROJECT.title,
-	]).trim();
-	const number = Number(url.split('/').pop());
-	const { id } = ghJson<{ id: string }>([
-		'issue',
-		'view',
-		String(number),
-		'--repo',
-		PROJECT.repo,
-		'--json',
-		'id',
-	]);
-	console.log(`  #${number} ${title}`);
-	return { number, id };
-}
-
-function link(parentId: string, childId: string): void {
-	ghGraphql(
-		`mutation($p: ID!, $c: ID!) { addSubIssue(input: { issueId: $p, subIssueId: $c }) { clientMutationId } }`,
-		{ p: parentId, c: childId }
-	);
-}
-
 function act(description: string): boolean {
 	changes++;
 	console.log(`${dryRun ? '[dry-run] ' : ''}${description}`);
@@ -97,7 +62,7 @@ for (const { epicTitle, child } of createChildren) {
 	if (!act(`${child.label} + ${child.title}  (↑ ${epicTitle})`)) continue;
 	const parent = ids.get(epicTitle);
 	if (!parent) throw new Error(`Epic introuvable : ${epicTitle}`);
-	link(parent, createIssue(child.title, child.label, child.body).id);
+	linkSubIssue(parent, createIssue(child.title, child.label, child.body).id);
 }
 
 console.log(changes === 0 ? '✔ already up to date' : `✔ converged (${changes} changes)`);
