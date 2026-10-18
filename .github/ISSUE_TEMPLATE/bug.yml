@@ -1,0 +1,40 @@
+name: Bug
+description: Signaler un comportement incorrect ou inattendu
+title: '[Bug] '
+labels: ['bug']
+projects: ['Elnop/2']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Décrivez le problème le plus précisément possible pour pouvoir le reproduire.
+  - type: textarea
+    id: comportement-observe
+    attributes:
+      label: Comportement observé
+      description: Ce qui se passe actuellement.
+    validations:
+      required: true
+  - type: textarea
+    id: comportement-attendu
+    attributes:
+      label: Comportement attendu
+      description: Ce qui devrait se passer à la place.
+  - type: textarea
+    id: etapes-reproduire
+    attributes:
+      label: Étapes pour reproduire
+      description: Liste numérotée des actions menant au bug.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: environnement
+    attributes:
+      label: Environnement
+      options:
+        - local
+        - prod
