@@ -168,6 +168,19 @@ export async function updateCardRow(
 	}
 }
 
+/** `update(payload) where id in (ids)` — callers chunk `ids` (≤ 200). */
+export async function updateCardRowsByIds(
+	ids: string[],
+	payload: Record<string, unknown>
+): Promise<void> {
+	if (ids.length === 0) return;
+	const supabase = createClient();
+	const { error } = await supabase.from('card_entries').update(payload).in('id', ids);
+	if (error) {
+		throw new Error(`[queries/cards] updateCardRowsByIds error: ${error.message}`);
+	}
+}
+
 /**
  * Exact count of an owner's DISTINCT public prints (scryfall_id) via the
  * count_distinct_public_cards RPC. Used by the profile Overview "unique cards"
