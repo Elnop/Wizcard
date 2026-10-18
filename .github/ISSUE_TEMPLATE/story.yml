@@ -1,0 +1,42 @@
+name: Story
+description: Fonctionnalité ou amélioration décrite du point de vue utilisateur
+title: '[US] '
+labels: ['story']
+projects: ['Elnop/2']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Une story décrit une valeur livrée à un utilisateur. Rattachez-la à son epic en sous-issue si elle en fait partie.
+  - type: input
+    id: en-tant-que
+    attributes:
+      label: En tant que
+      placeholder: 'ex. : joueur connecté'
+  - type: textarea
+    id: je-veux
+    attributes:
+      label: Je veux
+      description: L'action ou la fonctionnalité souhaitée.
+    validations:
+      required: true
+  - type: input
+    id: afin-de
+    attributes:
+      label: Afin de
+      placeholder: 'ex. : retrouver mes cartes rapidement'
+  - type: textarea
+    id: criteres-acceptation
+    attributes:
+      label: Critères d'acceptation
+      description: Liste vérifiable des conditions pour considérer la story comme livrée.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: notes-techniques
+    attributes:
+      label: Notes techniques
+      description: Contraintes, pistes d'implémentation, fichiers ou migrations concernés.

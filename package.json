@@ -37,6 +37,9 @@
 		"seed:catalog": "NODE_ENV=production $(command -v systemd-inhibit || true) npx tsx scripts/seed/seed-catalog.ts",
 		"seed:sets": "NODE_ENV=production npx tsx scripts/seed/seed-sets.ts",
 		"seed:prod": "SEED_TARGET=prod npm run seed",
+		"gh:setup": "tsx scripts/github/setup-project.ts",
+		"gh:epics": "tsx scripts/github/file-epics.ts",
+		"test:scripts": "tsx --test 'scripts/**/*.test.ts'",
 		"logo:generate": "tsx scripts/generate-logo.ts",
 		"clean": "rm -rf node_modules .next",
 		"prepare": "husky"

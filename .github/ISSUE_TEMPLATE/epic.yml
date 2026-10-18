@@ -1,0 +1,32 @@
+name: Epic
+description: Grand chantier regroupant plusieurs stories, bugs ou chores
+title: '[Epic] '
+labels: ['epic']
+projects: ['Elnop/2']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Un epic regroupe des stories, bugs et chores liés à un même objectif. Les tickets enfants sont ajoutés en sous-issues (un seul niveau de hiérarchie).
+  - type: textarea
+    id: objectif
+    attributes:
+      label: Objectif
+      description: Ce que l'on veut accomplir au total.
+    validations:
+      required: true
+  - type: textarea
+    id: valeur
+    attributes:
+      label: Valeur / pourquoi
+      description: Pourquoi ce chantier compte pour les utilisateurs ou pour le projet.
+  - type: textarea
+    id: hors-perimetre
+    attributes:
+      label: Hors périmètre
+      description: Ce qui n'est volontairement pas couvert par cet epic.
+  - type: textarea
+    id: criteres-fin
+    attributes:
+      label: Critères de fin
+      description: Conditions objectives qui signalent que l'epic est terminé.
