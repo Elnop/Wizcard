@@ -1,0 +1,75 @@
+.root {
+	position: relative;
+	margin-bottom: 12px;
+}
+
+.trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	background: none;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	color: var(--text-muted);
+	font-size: var(--text-sm);
+	font-weight: 600;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.trigger:hover,
+.trigger[aria-expanded='true'] {
+	color: var(--foreground);
+}
+
+.caret {
+	font-size: 0.75em;
+}
+
+.panel {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	/* Above card tiles and their badges (same layer as the context menu). */
+	z-index: 1000;
+	min-width: 220px;
+	padding: 8px;
+	background: var(--glass-bg, rgba(20, 20, 30, 0.92));
+	backdrop-filter: blur(var(--glass-blur, 12px));
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.4),
+		0 2px 8px rgba(0, 0, 0, 0.3);
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.criteria {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding-left: 20px;
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 6px;
+	border-radius: 4px;
+	font-size: var(--text-sm);
+	color: var(--foreground);
+	cursor: pointer;
+}
+
+.row:hover {
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.disabled {
+	opacity: 0.5;
+	cursor: default;
+}

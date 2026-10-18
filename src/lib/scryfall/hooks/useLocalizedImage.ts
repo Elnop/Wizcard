@@ -314,7 +314,11 @@ export function useLocalizedImage(
 	// previous print/edition is never merged onto a new card (which would freeze
 	// the preview) — without resetting state from inside the effect.
 	const [result, setResult] = useState<{ key: string; data: LocalizedImageResult } | null>(null);
-	const [loadingKey, setLoadingKey] = useState<string | null>(null);
+	// The cacheKey whose lookup has finished (hit, miss or error). `loading` is
+	// "needs a lookup that has not settled yet" — true from the very first render,
+	// not only once the effect has run, so callers never paint the base print for
+	// one frame before swapping to their placeholder.
+	const [settledKey, setSettledKey] = useState<string | null>(null);
 
 	// Read the store directly rather than useProfileContext: this hook also runs
 	// in views rendered outside ProfileProvider, where the context would throw.
@@ -329,7 +333,6 @@ export function useLocalizedImage(
 		const controller = new AbortController();
 
 		(async () => {
-			setLoadingKey(cacheKey);
 			try {
 				// Shared cache→fetch logic, also used by the PDF export resolver.
 				const localized = await fetchLocalizedImage(card, controller.signal, preferredLang);
@@ -338,16 +341,15 @@ export function useLocalizedImage(
 				// print/edition is never surfaced for a different card.
 				setResult(localized ? { key: cacheKey, data: localized } : null);
 			} catch {
-				// A rejected fetch must not strand the card: leaving `loadingKey` set
-				// would keep `loading` true forever and freeze the skeleton. Drop the
-				// localized image and let the caller fall back to the base print.
+				// A rejected fetch must not strand the card: an unsettled key would keep
+				// `loading` true forever and freeze the skeleton. Drop the localized
+				// image and let the caller fall back to the base print.
 				if (controller.signal.aborted) return;
 				setResult(null);
 			} finally {
-				// Only the fetch that is still current may clear the flag. An aborted
-				// run has been superseded (card changed, unmount) and its `loadingKey`
-				// no longer belongs to it, so clearing it would unfreeze the wrong tile.
-				if (!controller.signal.aborted) setLoadingKey(null);
+				// Only the fetch that is still current may settle its key. An aborted
+				// run has been superseded (card changed, unmount).
+				if (!controller.signal.aborted) setSettledKey(cacheKey);
 			}
 		})();
 
@@ -361,7 +363,7 @@ export function useLocalizedImage(
 	// card. A result tagged with a previous cacheKey is treated as absent.
 	return {
 		localized: selectLocalized(needsFetch, cacheKey, result),
-		loading: needsFetch && loadingKey === cacheKey,
+		loading: needsFetch && settledKey !== cacheKey,
 	};
 }
 

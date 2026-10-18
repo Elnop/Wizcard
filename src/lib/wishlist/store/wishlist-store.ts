@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import type { CardEntry } from '@/types/cards';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
-import { fetchWishlistPage } from '../db/wishlist';
+import { fetchAllWishlistEntries } from '../db/wishlist';
 import { enqueue } from '@/lib/supabase/sync-queue';
 import { buildEntriesBatch } from '@/lib/card/entry/buildEntriesBatch';
 import { getAnalytics } from '@/lib/analytics/context/AnalyticsContext';
@@ -46,15 +46,16 @@ export const useWishlistStore = create<WishlistState & WishlistActions>()((set, 
 	isLoaded: false,
 
 	hydrateFromSupabase: async (userId) => {
-		let from = 0;
-		while (true) {
-			const { rows, hasMore } = await fetchWishlistPage(userId, from);
-			const current = get().entries;
-			const merged: WishlistData = { ...current };
-			for (const copy of rows) merged[copy.entry.rowId] = copy;
-			set({ entries: merged, isLoaded: true });
-			if (!hasMore) break;
-			from += 1000;
+		try {
+			const rows = await fetchAllWishlistEntries(userId);
+			const fresh: WishlistData = {};
+			for (const copy of rows) fresh[copy.entry.rowId] = copy;
+			// Merge over current state (as before) so an optimistic add made while
+			// loading is not dropped.
+			set({ entries: { ...get().entries, ...fresh }, isLoaded: true });
+		} catch (err) {
+			console.error('[wishlist-store] hydrate failed:', err);
+			set({ isLoaded: true });
 		}
 	},
 

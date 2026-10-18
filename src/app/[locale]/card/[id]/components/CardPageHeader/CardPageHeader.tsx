@@ -51,7 +51,7 @@ export function CardPageHeader({ card }: Props) {
 				</header>
 
 				<div className={styles.imageSection}>
-					<CardImage card={card} size="normal" priority onClick={() => setLightbox(true)} />
+					<CardImage card={card} size="large" priority onClick={() => setLightbox(true)} />
 				</div>
 
 				<div className={styles.infoSection}>

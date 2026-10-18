@@ -5,6 +5,7 @@ import { AuthProvider } from '@/lib/supabase/contexts/AuthContext';
 import { ProfileProvider } from '@/lib/profile/context/ProfileContext';
 import { CollectionProvider } from '@/lib/collection/context/CollectionContext';
 import { WishlistProvider } from '@/lib/wishlist/context/WishlistContext';
+import { CollectionIndexProvider } from '@/lib/collection-index/context/CollectionIndexProvider';
 import { DeckProvider } from '@/lib/deck/context/DeckContext';
 import { ImportProvider } from '@/lib/import/context/ImportContext';
 import { AddToDeckModalProvider } from '@/contexts/AddToDeckModalProvider';
@@ -37,15 +38,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
 						<AnalyticsAuthBridge />
 						<CollectionProvider>
 							<WishlistProvider>
-								<DeckProvider>
-									<ImportProvider>
-										<AddToDeckModalProvider>
-											<AddCardModalProvider>
-												<CardModalProvider>{children}</CardModalProvider>
-											</AddCardModalProvider>
-										</AddToDeckModalProvider>
-									</ImportProvider>
-								</DeckProvider>
+								<CollectionIndexProvider>
+									<DeckProvider>
+										<ImportProvider>
+											<AddToDeckModalProvider>
+												<AddCardModalProvider>
+													<CardModalProvider>{children}</CardModalProvider>
+												</AddCardModalProvider>
+											</AddToDeckModalProvider>
+										</ImportProvider>
+									</DeckProvider>
+								</CollectionIndexProvider>
 							</WishlistProvider>
 						</CollectionProvider>
 					</ProfileProvider>

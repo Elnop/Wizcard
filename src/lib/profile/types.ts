@@ -1,3 +1,5 @@
+import type { StackBy } from '@/types/cards';
+
 export type Language = 'en' | 'fr';
 export type PriceCurrency = 'eur' | 'usd';
 export type ThemePreference = 'light' | 'dark' | 'system';
@@ -13,6 +15,9 @@ export type Profile = {
 	themePreference: ThemePreference;
 	isPublic: boolean;
 	ignoredTags: string[];
+	collectionStackBy: StackBy;
+	wishlistStackBy: StackBy;
+	deckStackBy: StackBy;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -29,5 +34,8 @@ export type ProfileUpdate = Partial<
 		| 'themePreference'
 		| 'isPublic'
 		| 'ignoredTags'
+		| 'collectionStackBy'
+		| 'wishlistStackBy'
+		| 'deckStackBy'
 	>
 >;

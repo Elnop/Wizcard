@@ -27,6 +27,10 @@ export async function fetchProfileByNickname(nickname: string): Promise<Profile 
 		themePreference: ((data.theme_preference as string) ?? 'system') as Profile['themePreference'],
 		isPublic: (data.is_public as boolean) ?? true,
 		ignoredTags: (data.ignored_tags as string[]) ?? ['nsfw'],
+		// Owner-only display preferences: not selected for the public lookup.
+		collectionStackBy: [],
+		wishlistStackBy: [],
+		deckStackBy: [],
 		createdAt: data.created_at as string,
 		updatedAt: data.updated_at as string,
 	};

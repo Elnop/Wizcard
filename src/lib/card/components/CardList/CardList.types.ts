@@ -68,6 +68,8 @@ export interface CardListProps {
 	/** @deprecated use viewModes instead */
 	fluidSections?: boolean;
 	viewModes?: CardListViewMode[];
+	/** Extra controls rendered on the toolbar row, right of the view-mode toggle. */
+	toolbarExtra?: ReactNode;
 	className?: string;
 	pageSize?: number | false;
 	showCardNames?: boolean;

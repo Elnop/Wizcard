@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
-import type { CardStack } from '@/types/cards';
+import { useCallback, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import type { CardCopy } from '@/types/cards';
 import type { PdfSettings } from '@/components/PdfSettingsModal/PdfSettingsModal';
+import type { LoadCardCopiesResult } from '@/lib/collection-index/load-card-copies';
 import { generateCardsPdf } from '@/lib/pdf/generateCardsPdf';
 import { resolveLocalizedImageUris } from '@/lib/scryfall/utils/resolveLocalizedImageUri';
 import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
@@ -12,13 +14,29 @@ import { usePreferredCardLang } from '@/lib/scryfall/hooks/useLocalizedImage';
  * list of cards (one per copy), and the async image-resolve → render pipeline.
  * The `<PdfSettingsModal>` stays rendered in the page, driven by this state.
  */
-export function useWishlistPdf(stacks: CardStack[]) {
+export function useWishlistPdf(loadCards: () => Promise<LoadCardCopiesResult>) {
+	const t = useTranslations('collection');
 	const [isModalOpen, setModalOpen] = useState(false);
 	const [isGenerating, setGenerating] = useState(false);
+	const [isPreparing, setPreparing] = useState(false);
+	const [pdfCards, setPdfCards] = useState<CardCopy[]>([]);
 	const preferredLang = usePreferredCardLang();
 
-	// One card per wishlist copy (e.g. 3x Sol Ring → 3 cards in the PDF).
-	const pdfCards = useMemo(() => stacks.flatMap((stack) => stack.cards), [stacks]);
+	// One card per wishlist copy; every copy must be resolved before the modal opens.
+	const openModal = useCallback(() => {
+		setPreparing(true);
+		void loadCards()
+			.then(({ copies, missing }) => {
+				if (missing > 0 && !window.confirm(t('exportPartialConfirm', { missing }))) return;
+				setPdfCards(copies);
+				setModalOpen(true);
+			})
+			.catch((err) => {
+				console.error('[useWishlistPdf] loading cards failed:', err);
+				window.alert(t('exportFailed'));
+			})
+			.finally(() => setPreparing(false));
+	}, [loadCards, t]);
 
 	const generate = useCallback(
 		(settings: PdfSettings) => {
@@ -44,7 +62,8 @@ export function useWishlistPdf(stacks: CardStack[]) {
 	return {
 		pdfCards,
 		isModalOpen,
-		openModal: useCallback(() => setModalOpen(true), []),
+		isPreparing,
+		openModal,
 		closeModal: useCallback(() => setModalOpen(false), []),
 		isGenerating,
 		generate,

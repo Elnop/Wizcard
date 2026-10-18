@@ -61,12 +61,16 @@ export function CardList({
 	sectionClassName,
 	fluidSections,
 	viewModes = ['grid', 'table'],
+	toolbarExtra,
 	className,
 	pageSize = PAGE_SIZE,
 	showCardNames = false,
 	cardGap = 'default',
 }: CardListProps) {
-	const [viewMode, setViewMode] = useState<CardListViewMode>(viewModes[0]);
+	const [chosenViewMode, setViewMode] = useState<CardListViewMode>(viewModes[0]);
+	// A mode no longer offered (e.g. table while selecting) falls back to the first allowed one;
+	// the user's choice is kept in state, so it comes back when the restriction lifts.
+	const viewMode = viewModes.includes(chosenViewMode) ? chosenViewMode : viewModes[0];
 	const sections = isSections(cardsOrSections) ? (cardsOrSections as CardListSection[]) : undefined;
 	const { effectiveCollapsed, toggleSection } = useCollapsedSections(sections);
 	const cards = isSections(cardsOrSections) ? [] : cardsOrSections;
@@ -111,7 +115,7 @@ export function CardList({
 		</>
 	);
 
-	const toggle = viewModes.length > 1 && (
+	const viewToggle = viewModes.length > 1 && (
 		<div className={styles.viewToggle}>
 			{viewModes.map((mode) => (
 				<button
@@ -125,6 +129,15 @@ export function CardList({
 			))}
 		</div>
 	);
+	const toggle =
+		toolbarExtra != null ? (
+			<div className={styles.toolbar}>
+				{viewToggle}
+				{toolbarExtra}
+			</div>
+		) : (
+			viewToggle
+		);
 
 	const isFluid = viewMode === 'fluid-grid' || fluidSections;
 

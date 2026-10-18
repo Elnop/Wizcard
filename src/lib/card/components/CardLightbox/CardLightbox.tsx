@@ -64,7 +64,9 @@ export function CardLightbox({ card, onClose, isFoil = false, foilType = 'foil' 
 			<div className={styles.lightboxCard} onClick={(e) => e.stopPropagation()}>
 				<CardImage
 					card={card}
-					size="large"
+					// Full-screen zoom: the highest resolution Scryfall has (png on a
+					// high-res scan, large otherwise).
+					size="png"
 					priority
 					disableTilt={!effectsEnabled}
 					isFoil={effectsEnabled ? isFoil : false}

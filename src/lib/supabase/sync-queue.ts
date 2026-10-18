@@ -1,6 +1,7 @@
 import type { CardEntry } from '@/types/cards';
 import type { DeckMeta, FolderMeta } from '@/types/decks';
 import type { ProfileUpdate } from '@/lib/profile/types';
+import type { BulkUpdateRow } from '@/lib/supabase/group-row-updates';
 
 const QUEUE_KEY = 'wizcard-sync-queue';
 
@@ -45,6 +46,18 @@ export type SyncOp =
 			id: string;
 			type: 'bulk-delete';
 			payload: { userId: string; rowIds: string[] };
+			retries: number;
+			createdAt: string;
+	  }
+	| {
+			id: string;
+			type: 'bulk-update';
+			/**
+			 * Per-row column patches, written grouped by identical patch and matched
+			 * on `id` only (like `deck-card-update`): rows with owner_id = NULL
+			 * (wishlisted deck cards) are reachable; RLS protects the rest.
+			 */
+			payload: { rows: BulkUpdateRow[] };
 			retries: number;
 			createdAt: string;
 	  }

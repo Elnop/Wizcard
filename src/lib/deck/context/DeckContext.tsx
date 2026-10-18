@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef } fr
 import type { DeckMeta, DeckZone, FolderMeta } from '@/types/decks';
 import type { Card, CardEntry } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
+import type { BulkEdit } from '@/lib/card/bulk/bulk-edit';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
 import { useDeckStore } from '../store/deck-store';
@@ -42,7 +43,12 @@ type DeckContextValue = {
 	deleteDeck: (deckId: string, options?: { deleteCollectionCopies?: boolean }) => void;
 
 	loadDeck: (deckId: string) => Promise<void>;
-	addCardToDeck: (deckId: string, card: Card | CustomCard, zone: DeckZone) => void;
+	addCardToDeck: (
+		deckId: string,
+		card: Card | CustomCard,
+		zone: DeckZone,
+		entryFields?: Partial<CardEntry>
+	) => void;
 	addCollectionCardToDeck: (deckId: string, collectionRowId: string, zone: DeckZone) => void;
 	bulkAddCardsToDeck: (
 		deckId: string,
@@ -56,6 +62,7 @@ type DeckContextValue = {
 	removeCardFromDeck: (rowId: string, mode?: 'delete' | 'detach') => void;
 	changeZone: (rowId: string, zone: DeckZone) => void;
 	updateDeckCard: (rowId: string, updates: Partial<CardEntry>) => void;
+	bulkUpdateDeckCards: (rowIds: string[], edit: BulkEdit, zone?: DeckZone) => void;
 	toggleOwned: (rowId: string, proxy?: boolean) => void;
 	toggleDeckCardWishlist: (rowId: string) => void;
 	changeDeckCardPrint: (rowId: string, newCard: Card | CustomCard, deckId: string) => void;
@@ -185,9 +192,9 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	}, []);
 
 	const addCardToDeck = useCallback(
-		(deckId: string, card: Card | CustomCard, zone: DeckZone) => {
+		(deckId: string, card: Card | CustomCard, zone: DeckZone, entryFields?: Partial<CardEntry>) => {
 			if (!userId) return;
-			store.addCardToDeck(deckId, card, zone, userId, triggerSync);
+			store.addCardToDeck(deckId, card, zone, userId, triggerSync, entryFields);
 		},
 		[store, userId, triggerSync]
 	);
@@ -225,6 +232,12 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 	const updateDeckCard = useCallback(
 		(rowId: string, updates: Partial<CardEntry>) =>
 			store.updateDeckCard(rowId, updates, triggerSync),
+		[store, triggerSync]
+	);
+
+	const bulkUpdateDeckCards = useCallback(
+		(rowIds: string[], edit: BulkEdit, zone?: DeckZone) =>
+			store.bulkUpdateDeckCards(rowIds, edit, zone, triggerSync),
 		[store, triggerSync]
 	);
 
@@ -298,6 +311,7 @@ export function DeckProvider({ children }: { children: React.ReactNode }) {
 		removeCardFromDeck,
 		changeZone,
 		updateDeckCard,
+		bulkUpdateDeckCards,
 		toggleOwned,
 		toggleDeckCardWishlist,
 		changeDeckCardPrint,

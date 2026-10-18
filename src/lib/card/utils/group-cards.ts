@@ -1,27 +1,92 @@
-import type { CardCopy, CardStack } from '@/types/cards';
+import type { CardEntry, FacetCopy, StackBy, StackCriterion } from '@/types/cards';
 import { preferPrint } from '@/lib/card/utils/prefer-print';
+import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
 import {
 	filterCollectionCards,
 	getSortValue,
 	type CollectionFilters,
 } from '@/lib/card/utils/filterCollectionCards';
 
+type StackOf<T> = { key: string; name: string; cards: T[] };
+
 /** Logical-card grouping key: oracle_id when known, else the print id. */
-export function cardGroupKey(card: CardCopy): string {
+export function cardGroupKey(card: { oracle_id?: string; id: string }): string {
 	return card.oracle_id ?? card.id;
 }
 
+/** Every criterion, in the fixed order its key segment is appended. */
+export const STACK_CRITERIA: readonly StackCriterion[] = [
+	'print',
+	'finish',
+	'condition',
+	'language',
+	'flags',
+];
+
+function segment(copy: FacetCopy, criterion: StackCriterion): string {
+	const { entry } = copy;
+	switch (criterion) {
+		case 'print':
+			return copy.id;
+		case 'finish':
+			if (!entry.isFoil) return 'nonfoil';
+			return entry.foilType === 'etched' ? 'etched' : 'foil';
+		case 'condition':
+			return entry.condition ?? 'NM';
+		case 'language':
+			// entry.language is a language name ('French'); prints carry a Scryfall
+			// code ('fr'). Normalise to the name so unset copies stack with explicit ones.
+			return (
+				entry.language ??
+				('lang' in copy && copy.lang ? SCRYFALL_CODE_TO_LANGUAGE[copy.lang] : undefined) ??
+				'English'
+			);
+		case 'flags':
+			return `${entry.proxy ? 1 : 0}${entry.alter ? 1 : 0}${entry.forTrade ? 1 : 0}`;
+	}
+}
+
 /**
- * Groups copies into stacks keyed by oracle_id. Within each stack the cards are
+ * The entry fields the stack criteria read (finish, condition, language, flags).
+ * A copy created from them ("add copy") lands in the same stack as its source.
+ */
+export function stackFieldsOf(entry: CardEntry): Partial<CardEntry> {
+	const { isFoil, foilType, condition, language, proxy, alter, forTrade } = entry;
+	return { isFoil, foilType, condition, language, proxy, alter, forTrade };
+}
+
+/**
+ * Stack key of a copy: the logical card (cardGroupKey) plus one segment per
+ * selected criterion, in STACK_CRITERIA order so the array order is irrelevant.
+ * Missing values get explicit defaults so "unset" stacks with the default.
+ * 'copy' disables stacking: the key is the physical copy's rowId.
+ */
+export function stackKeyOf(copy: FacetCopy, stackBy: StackBy): string {
+	if (stackBy === 'copy') return copy.entry.rowId;
+	let key = cardGroupKey(copy);
+	for (const criterion of STACK_CRITERIA) {
+		if (stackBy.includes(criterion)) key += `|${segment(copy, criterion)}`;
+	}
+	return key;
+}
+
+/**
+ * Groups copies into stacks keyed by `stackKeyOf(copy, stackBy)` (default: by
+ * name). Within each stack the cards are
  * ordered so that cards[0] is the preferred representative print (preferPrint:
  * paper > non-promo > normal set > most recent), keeping the chosen vignette
  * consistent between the collection and the import preview.
  */
-export function groupByOracleId(cards: CardCopy[]): CardStack[] {
-	const map = new Map<string, CardCopy[]>();
+export function groupByStack<T extends FacetCopy>(
+	cards: T[],
+	stackBy: StackBy = [],
+	/** 'first' keeps input order (cards[0] = first copy seen), e.g. deck zones. */
+	representative: 'preferred' | 'first' = 'preferred'
+): StackOf<T>[] {
+	const map = new Map<string, T[]>();
 	const order: string[] = [];
 	for (const card of cards) {
-		const key = cardGroupKey(card);
+		const key = stackKeyOf(card, stackBy);
 		const existing = map.get(key);
 		if (existing) {
 			existing.push(card);
@@ -32,6 +97,7 @@ export function groupByOracleId(cards: CardCopy[]): CardStack[] {
 	}
 	return order.map((key) => {
 		const groupCards = map.get(key)!;
+		if (representative === 'first') return { key, name: groupCards[0].name, cards: groupCards };
 		// Promote the preferred print to cards[0] without disturbing the rest.
 		let repIndex = 0;
 		for (let i = 1; i < groupCards.length; i++) {
@@ -41,13 +107,13 @@ export function groupByOracleId(cards: CardCopy[]): CardStack[] {
 			repIndex === 0
 				? groupCards
 				: [groupCards[repIndex], ...groupCards.filter((_, i) => i !== repIndex)];
-		return { oracleId: key, name: ordered[0].name, cards: ordered };
+		return { key, name: ordered[0].name, cards: ordered };
 	});
 }
 
 /** Keeps only the copies matching the deck-assignment filter (acts per-copy, before stacking). */
 function matchesDeckAssignment(
-	card: CardCopy,
+	card: FacetCopy,
 	deckAssignment: CollectionFilters['deckAssignment']
 ): boolean {
 	if (deckAssignment === 'all') return true;
@@ -65,7 +131,10 @@ function matchesDeckAssignment(
  * the stack count is derived, so a 3-copy stack with one assigned copy shows a
  * single card under "assigned" and two cards under "unassigned".
  */
-export function filterStacks(stacks: CardStack[], filters: CollectionFilters): CardStack[] {
+export function filterStacks<T extends FacetCopy>(
+	stacks: StackOf<T>[],
+	filters: CollectionFilters
+): StackOf<T>[] {
 	// Drop copies that don't match the per-copy assignment filter, then discard
 	// stacks left empty (and re-promote a representative for the survivors).
 	const assignmentFiltered =
@@ -83,27 +152,40 @@ export function filterStacks(stacks: CardStack[], filters: CollectionFilters): C
 	const representatives = assignmentFiltered.map((s) => s.cards[0]).filter(Boolean);
 	const filtered = filterCollectionCards(representatives, filters);
 
-	const stackByOracle = new Map(assignmentFiltered.map((s) => [s.oracleId, s]));
+	// Map each surviving representative back to its stack by identity (rowId):
+	// several stacks can share one oracle_id once stacking is finer than by-name.
+	const stackByRepRowId = new Map(
+		assignmentFiltered.map((s) => [s.cards[0]?.entry.rowId, s] as const)
+	);
 	const { order, dir } = filters;
 
-	return filtered
-		.map((rep) => stackByOracle.get(cardGroupKey(rep)))
-		.filter((s): s is CardStack => Boolean(s))
-		.map((stack) => {
-			if (stack.cards.length <= 1) return stack;
-			const sorted = [...stack.cards].sort((a, b) => {
-				const av = getSortValue(a, order);
-				const bv = getSortValue(b, order);
-				let cmp: number;
-				if (typeof av === 'number' && typeof bv === 'number') {
-					cmp = av - bv;
-				} else {
-					cmp = String(av).localeCompare(String(bv));
-				}
-				if (dir === 'desc') cmp = -cmp;
-				if (cmp === 0) cmp = a.entry.dateAdded.localeCompare(b.entry.dateAdded);
-				return cmp;
-			});
-			return { ...stack, cards: sorted };
+	const ordered = filtered
+		.map((rep) => stackByRepRowId.get(rep.entry.rowId))
+		.filter((s): s is StackOf<T> => Boolean(s));
+	if (order === 'quantity') {
+		// Most copies first by default ('auto'), like a "how many do I own" view;
+		// ties fall back to name so equal counts stay alphabetical.
+		const sign = dir === 'asc' ? 1 : -1;
+		ordered.sort(
+			(a, b) => sign * (a.cards.length - b.cards.length) || a.name.localeCompare(b.name)
+		);
+	}
+
+	return ordered.map((stack) => {
+		if (stack.cards.length <= 1) return stack;
+		const sorted = [...stack.cards].sort((a, b) => {
+			const av = getSortValue(a, order);
+			const bv = getSortValue(b, order);
+			let cmp: number;
+			if (typeof av === 'number' && typeof bv === 'number') {
+				cmp = av - bv;
+			} else {
+				cmp = String(av).localeCompare(String(bv));
+			}
+			if (dir === 'desc') cmp = -cmp;
+			if (cmp === 0) cmp = a.entry.dateAdded.localeCompare(b.entry.dateAdded);
+			return cmp;
 		});
+		return { ...stack, cards: sorted };
+	});
 }

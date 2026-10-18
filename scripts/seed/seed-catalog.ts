@@ -18,9 +18,10 @@
 // own "> wizcard@0.1.0 …" preamble to STDOUT, which is not JSON and breaks a log
 // collector parsing the ndjson stream.
 //
-// Streams the bulk (never buffers the whole file). Writes via the service-role key.
+// Streams the bulk (gzipped JSONL, gunzipped on the fly — never buffers the whole file). Writes via the service-role key.
 
 import { createInterface } from 'node:readline';
+import { createGunzip } from 'node:zlib';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { resolveSupabaseEnv } from '../lib/load-env';
 import { fetchWithRetry } from '../lib/fetch-retry';
@@ -70,17 +71,28 @@ async function bulkUrl(type: string): Promise<string> {
 		logger: log,
 	});
 	if (!res.ok) throw new Error(`GET /bulk-data failed: HTTP ${res.status}`);
+	// Scryfall replaced `download_uri` (plain JSON array) + `size` with
+	// `jsonl_download_uri` (gzipped JSON Lines) + `compressed_size` in 2026-10.
+	// The legacy fields are still read as a fallback.
 	const json = (await res.json()) as {
-		data: Array<{ type: string; download_uri: string; size: number }>;
+		data: Array<{
+			type: string;
+			jsonl_download_uri?: string;
+			compressed_size?: number;
+			download_uri?: string;
+			size?: number;
+		}>;
 	};
 	const entry = json.data.find((b) => b.type === type);
 	if (!entry) throw new Error(`${type} entry not found in /bulk-data`);
+	const url = entry.jsonl_download_uri ?? entry.download_uri;
+	if (!url) throw new Error(`${type} entry in /bulk-data has no download URI`);
 	log.info('bulk resolved', {
 		bulk_type: type,
-		size_mb: Math.round(entry.size / 1e6),
-		url: entry.download_uri,
+		size_mb: Math.round((entry.compressed_size ?? entry.size ?? 0) / 1e6),
+		url,
 	});
-	return entry.download_uri;
+	return url;
 }
 
 async function openBulkLines(url: string) {
@@ -94,7 +106,12 @@ async function openBulkLines(url: string) {
 	}
 	const { Readable } = await import('node:stream');
 	const nodeStream = Readable.fromWeb(res.body as never);
-	return createInterface({ input: nodeStream, crlfDelay: Infinity });
+	// The .jsonl.gz is served as application/gzip WITHOUT content-encoding, so fetch
+	// does not decode it: gunzip the stream ourselves. parseLine handles both the
+	// legacy JSON-array lines and JSONL.
+	const gzipped = url.endsWith('.gz') && !res.headers.get('content-encoding')?.includes('gzip');
+	const input = gzipped ? nodeStream.pipe(createGunzip()) : nodeStream;
+	return createInterface({ input, crlfDelay: Infinity });
 }
 
 function parseLine(line: string): ScryfallCard | null {

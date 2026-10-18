@@ -8,9 +8,10 @@
 import type { ScryfallCard, ScryfallImageUris } from '@/lib/scryfall/types/scryfall';
 
 // The image sizes the catalog stores. `art_crop` is the landscape art used for
-// deck covers; the other three are the card renders. Scryfall serves more sizes
-// (png, border_crop) that nothing here reads, so they stay out of the row.
-type CatalogImageUris = Pick<ScryfallImageUris, 'small' | 'normal' | 'large' | 'art_crop'>;
+// deck covers; small/normal/large/png are the card renders (png = 744x1040, the
+// full-screen zoom). Scryfall serves more sizes (border_crop, and webp variants of
+// the same dimensions) that nothing here reads, so they stay out of the row.
+type CatalogImageUris = Pick<ScryfallImageUris, 'small' | 'normal' | 'large' | 'png' | 'art_crop'>;
 
 function pickImageUris(uris: ScryfallImageUris | undefined): CatalogImageUris | null {
 	if (!uris) return null;
@@ -18,6 +19,7 @@ function pickImageUris(uris: ScryfallImageUris | undefined): CatalogImageUris | 
 		small: uris.small,
 		normal: uris.normal,
 		large: uris.large,
+		png: uris.png,
 		art_crop: uris.art_crop,
 	};
 }

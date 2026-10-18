@@ -171,12 +171,10 @@ export function CardListGrid({
 				<div className={styles.imageWrapper}>
 					<CardImage
 						card={c}
-						// Grid cells render ~150-200px wide (see .grid in
-						// CardListGrid.module.css); `normal` (488x680) is ~2.5-3x more
-						// resolution than needed there. Keep `normal` only for the
-						// handful of above-the-fold priority cards so they stay crisp;
-						// everything else downloads the much lighter `small` (146x204)
-						// source.
+						// Starting size only: CardImage measures the cell and steps up to
+						// what its width × devicePixelRatio needs (a ~180px cell on a 2x
+						// screen loads `normal`). The above-the-fold priority cards fetch
+						// before measurement, so they start at `normal` directly.
 						size={isPriority ? 'normal' : 'small'}
 						priority={isPriority}
 						isFoil={'entry' in c ? c.entry.isFoil : undefined}

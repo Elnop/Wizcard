@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { focusCopyFirst } from '@/lib/card/utils/focus-copy';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { Card, CardCopy, CardEntry, CardStack } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
@@ -9,10 +10,12 @@ import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { DeckCardModalHost } from '@/app/[locale]/decks/[id]/DeckCardModalHost';
 import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
 import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
+import { useCollectionIndex } from '@/lib/collection-index/context/CollectionIndexProvider';
 import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
 import { useAddCardModal } from '@/contexts/AddCardModalProvider';
 import { getCard, putCards } from '@/lib/scryfall/store/cards-store';
 import { putCardsInCache } from '@/lib/scryfall/utils/card-cache';
+import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
 import { isCustomCard } from '@/lib/mpc/types';
 import { SCRYFALL_CODE_TO_LANGUAGE } from '@/lib/mtg/languages';
 import { deriveCardModalProps } from '@/lib/card/deriveCardModalProps';
@@ -33,7 +36,8 @@ type StoredCopy = { scryfallId: string; entry: CardEntry };
  *    collection) — never re-resolved against the signed-in user's contexts.
  *  - 'bare': a single Scryfall/custom card (search/sets/prints). */
 type OpenState =
-	| { kind: 'stack'; oracleKey: string }
+	// focusRowId: the clicked copy, shown first (stacks can be finer than the card).
+	| { kind: 'stack'; oracleKey: string; focusRowId?: string }
 	| { kind: 'frozen'; cards: CardCopy[] }
 	| { kind: 'bare'; card: Card | CustomCard }
 	| { kind: 'deck'; deckId: string; oracleKey: string; clickedRowId: string }
@@ -181,11 +185,13 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 	const viewerMenuLabels = useViewerCardMenuLabels();
 	const collection = useCollectionContext();
 	const wishlist = useWishlistContext();
+	const index = useCollectionIndex();
 	const { openAddToDeck } = useAddToDeckModal();
 	const { openAddCard } = useAddCardModal();
 	const mutations = useCardMutations();
 
 	const [open, setOpen] = useState<OpenState>(null);
+	const [resolveTick, setResolveTick] = useState(0);
 
 	const openCardModal = useCallback(
 		(input: Card | CustomCard | CardCopy[], opts?: { readOnly?: boolean }) => {
@@ -195,7 +201,7 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 				// Read-only stacks (another user's collection) are frozen — never
 				// re-resolved against the signed-in user's contexts.
 				if (opts?.readOnly) setOpen({ kind: 'frozen', cards: input });
-				else setOpen({ kind: 'stack', oracleKey: oracleKeyOf(rep) });
+				else setOpen({ kind: 'stack', oracleKey: oracleKeyOf(rep), focusRowId: rep.entry.rowId });
 			} else {
 				setOpen({ kind: 'bare', card: input });
 			}
@@ -219,6 +225,23 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 	const close = useCallback(() => setOpen(null), []);
 	useCloseOnRouteChange(close);
 
+	// The grid only resolves what it shows, so a stack's OTHER prints (or the
+	// collection copies of a card opened from the wishlist) may not be in the card
+	// store yet. Resolve every print sharing the oracle key, then re-derive.
+	const openOracleKey = open?.kind === 'stack' ? open.oracleKey : null;
+	useEffect(() => {
+		if (!openOracleKey) return;
+		const missing = index.printsForOracle(openOracleKey).filter((id) => !getCard(id));
+		if (missing.length === 0) return;
+		const cancelled = { current: false };
+		void resolveCardsByScryfallIds(missing, { isCancelled: () => cancelled.current }).then(() => {
+			if (!cancelled.current) setResolveTick((t) => t + 1);
+		});
+		return () => {
+			cancelled.current = true;
+		};
+	}, [openOracleKey, index]);
+
 	// Re-resolve the displayed cards on every render so they track store mutations
 	// (increment/decrement/change-print) without the modal losing its target.
 	const resolved = useMemo<{
@@ -239,13 +262,14 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 		const inCollection = resolveStackCards(open.oracleKey, collection.entries);
 		const inWishlist = resolveStackCards(open.oracleKey, wishlist.entries);
 		const isWishlist = inWishlist.length > 0 && inCollection.length === 0;
-		const cards = isWishlist ? inWishlist : inCollection;
+		const cards = focusCopyFirst(isWishlist ? inWishlist : inCollection, open.focusRowId);
 		return {
 			cards: cards.length > 0 ? cards : null,
 			rep: cards[0] ?? null,
 			source: isWishlist ? 'wishlist' : 'collection',
 		};
-	}, [open, collection.entries, wishlist.entries]);
+		// resolveTick: re-derive once on-demand resolution lands
+	}, [open, collection.entries, wishlist.entries, resolveTick]);
 
 	// Stateful change-print: persist the print change, then re-target the open
 	// stack to the new print's oracle key so the modal keeps showing it.
@@ -363,7 +387,7 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 			const stackCards = Array.isArray(resolved.cards) ? resolved.cards : [];
 			const rep = stackCards[0];
 			if (!rep) return undefined;
-			const stack: CardStack = { oracleId: oracleKeyOf(rep), name: rep.name, cards: stackCards };
+			const stack: CardStack = { key: oracleKeyOf(rep), name: rep.name, cards: stackCards };
 			const source = resolved.source;
 			const labels = source === 'wishlist' ? wishlistMenuLabels : collectionMenuLabels;
 			return (_card, closeMenu) => buildOwnedImageMenu(stack, source, deps, closeMenu, labels);

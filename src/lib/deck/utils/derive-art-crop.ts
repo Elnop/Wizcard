@@ -1,3 +1,5 @@
+import { deriveScryfallImageUrl } from '@/lib/scryfall/utils/scryfall-image-size';
+
 /**
  * Derive an `art_crop` URL from another Scryfall image URL of the same print.
  *
@@ -20,34 +22,6 @@
  * cover" instead of "no cover".
  */
 
-/** Size segments Scryfall serves; the one we rewrite sits right after the host. */
-const SIZE_SEGMENTS = ['normal', 'large', 'small', 'png', 'border_crop'];
-
-const SCRYFALL_IMAGE_HOST = 'cards.scryfall.io';
-
 export function deriveArtCropUrl(imageUrl: string | null | undefined): string | null {
-	if (!imageUrl) return null;
-
-	let url: URL;
-	try {
-		url = new URL(imageUrl);
-	} catch {
-		return null;
-	}
-
-	// Only rewrite URLs we recognise. Anything else (a custom/MPC image, a
-	// user-supplied cover) is returned as-is by the caller, never mangled here.
-	if (url.hostname !== SCRYFALL_IMAGE_HOST) return null;
-
-	const segments = url.pathname.split('/').filter(Boolean);
-	if (segments.length === 0) return null;
-
-	const [size, ...rest] = segments;
-	if (size === 'art_crop') return imageUrl; // already a crop
-	if (!SIZE_SEGMENTS.includes(size)) return null;
-
-	// Keep the query string: it is Scryfall's cache-busting timestamp, and the
-	// crop is published under the same one.
-	url.pathname = `/${['art_crop', ...rest].join('/')}`;
-	return url.toString();
+	return deriveScryfallImageUrl(imageUrl, 'art_crop');
 }

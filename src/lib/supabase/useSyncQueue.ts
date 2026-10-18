@@ -23,6 +23,8 @@ import { insertFolder, updateFolder, deleteFolder } from '@/lib/deck/db/folders'
 import { useDeckStore } from '@/lib/deck/store/deck-store';
 import { upsertProfile } from '@/lib/profile/db/profiles';
 import { createClient } from '@/lib/supabase/client';
+import { updateCardRowsByIds } from '@/lib/supabase/queries/cards';
+import { groupRowUpdates } from '@/lib/supabase/group-row-updates';
 import {
 	peek,
 	dequeue,
@@ -48,6 +50,10 @@ async function executeOp(op: SyncOp): Promise<void> {
 		await insertEntries(op.payload.userId, op.payload.rows);
 	} else if (op.type === 'bulk-delete') {
 		await deleteEntries(op.payload.userId, op.payload.rowIds);
+	} else if (op.type === 'bulk-update') {
+		for (const group of groupRowUpdates(op.payload.rows)) {
+			await updateCardRowsByIds(group.rowIds, group.updates);
+		}
 	} else if (op.type === 'deck-insert') {
 		await insertDeck(op.payload.userId, op.payload.deck);
 	} else if (op.type === 'deck-update') {

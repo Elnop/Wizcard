@@ -13,12 +13,16 @@ import type { AnyCard, CardListSection } from '@/lib/card/components/CardList/Ca
 import type { CardListColumn } from '@/lib/card/components/CardListTable/CardListTable.types';
 import { getDeckZone } from '@/types/decks';
 import type { DeckZone } from '@/types/decks';
-import type { Card, MtgColor } from '@/types/cards';
+import type { Card, MtgColor, StackBy } from '@/types/cards';
+import { stackFieldsOf } from '@/lib/card/utils/group-cards';
+import { useStackBy } from '@/lib/card/hooks/useStackBy';
+import { StackByMenu } from '@/lib/card/components/StackByMenu/StackByMenu';
 import { useScryfallSymbols } from '@/lib/scryfall/hooks/useScryfallSymbols';
 import { SymbolText } from '@/lib/scryfall/components/SymbolText';
 import { CardModal } from '@/lib/card/components/CardModal/CardModal';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
 import { useCollectionOracleIds } from '@/lib/collection/hooks/useCollectionOracleIds';
+import { useCollectionIndex } from '@/lib/collection-index/context/CollectionIndexProvider';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
 import { findFreeCollectionCopy } from '@/lib/deck/utils/collectionCopyResolver';
 import { useDeckDetail, type ResolvedDeckCard } from './useDeckDetail';
@@ -40,13 +44,16 @@ import {
 	type RemoveDeckCardMembership,
 } from './components/RemoveDeckCardModal/RemoveDeckCardModal';
 import { BulkRemoveDeckCardsModal } from './components/RemoveDeckCardModal/BulkRemoveDeckCardsModal';
-import { DeckBulkActionBar } from './components/DeckBulkActionBar/DeckBulkActionBar';
 import { SectionSelectButton } from './components/DeckBulkActionBar/SectionSelectButton';
 import {
 	DeckBulkEditModal,
 	type DeckBulkEdit,
 } from './components/DeckBulkEditModal/DeckBulkEditModal';
-import { useDeckBulkSelection } from './useDeckBulkSelection';
+import { useBulkSelection } from '@/lib/card/bulk/useBulkSelection';
+import { rowIdsOfSelected } from '@/lib/card/bulk/selection';
+import { BulkActionBar } from '@/lib/card/bulk/BulkActionBar';
+import { BulkSelectOverlay } from '@/lib/card/bulk/BulkSelectOverlay';
+import { WishlistIcon } from '@/lib/wishlist/components/WishlistIcon';
 import { type CollectionAddRequest } from './collectionAddRequest';
 import { DeckTextExportModal } from './components/DeckTextExportModal/DeckTextExportModal';
 import { ImportListIntoDeckModal } from './components/ImportListIntoDeckModal/ImportListIntoDeckModal';
@@ -57,8 +64,10 @@ import { useDeckSort } from './useDeckSort';
 import { useDeckTokens } from './useDeckTokens';
 import { DeckSortBar } from './components/DeckSortBar/DeckSortBar';
 import { DeckTokens } from './components/DeckTokens/DeckTokens';
-import type { DeckGroupBy } from './useDeckCardSections';
+import type { DeckGroupBy, DeckStack } from './useDeckCardSections';
 import styles from './page.module.css';
+
+const deckCopiesOf = (stack: DeckStack) => stack.copies;
 
 export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const t = useTranslations('decks');
@@ -69,7 +78,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		addCollectionCardToDeck,
 		removeCardFromDeck,
 		changeZone,
-		updateDeckCard,
+		bulkUpdateDeckCards,
 		toggleOwned,
 		toggleDeckCardWishlist,
 		getDeckCards,
@@ -104,7 +113,6 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const [contextMenuCard, setContextMenuCard] = useState<AnyCard | null>(null);
 	const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
 
-	const bulk = useDeckBulkSelection();
 	const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
 	const [bulkRemove, setBulkRemove] = useState<{ hasOwned: boolean; hasWishlist: boolean } | null>(
 		null
@@ -139,11 +147,24 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		deckId,
 	});
 
-	const { sections, groupByCardId } = useDeckCardSections(
+	const [deckStackBy, setDeckStackBy] = useStackBy('deck');
+	const bulk = useBulkSelection(JSON.stringify(deckStackBy));
+	const { sections, groupByCardId, stackByRowId } = useDeckCardSections(
 		cardsByZone,
 		showCommander,
 		sortCards,
-		groupBy
+		groupBy,
+		deckStackBy
+	);
+	// Selection works on displayed stacks: selectionKey → stack (unique stacks).
+	const stackBySelectionKey = useMemo(() => {
+		const map = new Map<string, DeckStack>();
+		for (const stack of stackByRowId.values()) map.set(stack.selectionKey, stack);
+		return map;
+	}, [stackByRowId]);
+	const selectionKeyOf = useCallback(
+		(card: AnyCard) => stackByRowId.get((card as ResolvedDeckCard).entry.rowId)?.selectionKey,
+		[stackByRowId]
 	);
 	// The tokens panel shows one card per logical token (the per-stack count is
 	// rendered by the card overlay). Render deduped representatives so two copies
@@ -156,6 +177,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 
 	const { entries } = useCollectionContext();
 	const { addToWishlist, entries: wishlistEntries } = useWishlistContext();
+	const { status: indexStatus } = useCollectionIndex();
 
 	const deckNameById = useMemo(() => new Map(allDecks.map((d) => [d.id, d.name])), [allDecks]);
 
@@ -206,15 +228,15 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 	const handleCardClick = useCallback(
 		(card: AnyCard) => {
 			if (bulk.selectMode) {
-				const c = card as ResolvedDeckCard;
-				bulk.toggle(c.oracle_id ?? c.id);
+				const key = selectionKeyOf(card);
+				if (key) bulk.toggle(key);
 				return;
 			}
 			const c = card as ResolvedDeckCard;
 			const group = groupByCardId.get(c.oracle_id ?? c.id);
 			if (group) openDeckCardModal(deckId, group, c.entry.rowId);
 		},
-		[bulk, groupByCardId, openDeckCardModal, deckId]
+		[bulk, selectionKeyOf, groupByCardId, openDeckCardModal, deckId]
 	);
 
 	const tableColumns: CardListColumn[] = useMemo(
@@ -224,8 +246,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				label: t('colQty'),
 				render: (card) => {
 					const c = card as ResolvedDeckCard;
-					const zone = getDeckZone(c.entry.tags);
-					return groupByCardId.get(c.oracle_id ?? c.id)?.byZone.get(zone)?.length ?? 1;
+					return stackByRowId.get(c.entry.rowId)?.copies.length ?? 1;
 				},
 			},
 			{ key: 'name', label: t('colName') },
@@ -245,7 +266,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 				render: (card) => ('set' in card ? (card.set as string).toUpperCase() : '—'),
 			},
 		],
-		[groupByCardId, symbolMap, t]
+		[stackByRowId, symbolMap, t]
 	);
 
 	// Tokens have no deck quantity or relevant mana cost; show identity-focused
@@ -303,7 +324,9 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 
 	const handleDuplicateCard = useCallback(
 		(rc: ResolvedDeckCard) => {
-			addCardToDeck(deckId, rc, getDeckZone(rc.entry.tags));
+			// Keep the source's finish/condition/language/flags so the new copy joins
+			// the same stack whatever the stacking setting.
+			addCardToDeck(deckId, rc, getDeckZone(rc.entry.tags), stackFieldsOf(rc.entry));
 		},
 		[deckId, addCardToDeck]
 	);
@@ -326,24 +349,27 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		[deckCards, removeCardFromDeck, resolvedCards]
 	);
 
-	const allOracleKeys = useMemo(() => Array.from(groupByCardId.keys()), [groupByCardId]);
+	// Tokens included, as before: their tiles are selectable in select mode too.
+	const allStackKeys = useMemo(() => [...stackBySelectionKey.keys()], [stackBySelectionKey]);
 	const allSelected = useMemo(
-		() => allOracleKeys.length > 0 && allOracleKeys.every((k) => bulk.selected.has(k)),
-		[allOracleKeys, bulk.selected]
+		() => allStackKeys.length > 0 && allStackKeys.every((k) => bulk.selected.has(k)),
+		[allStackKeys, bulk.selected]
 	);
 
 	// In select mode, give every section and sub-section a "select all" toggle in
 	// its header. The toggle acts on the union of that section's own cards plus
-	// any descendant sub-section cards (keyed by oracle_id, the selection key).
+	// any descendant sub-section cards (keyed by stack selection key).
 	const sectionsWithSelectAll = useMemo(() => {
 		if (!bulk.selectMode) return sections;
 		const decorate = (section: CardListSection): CardListSection => {
 			const children = section.children?.map(decorate);
 			const keys = new Set<string>();
-			for (const card of section.cards) keys.add((card as ResolvedDeckCard).oracle_id ?? card.id);
-			for (const child of children ?? []) {
-				for (const card of child.cards) keys.add((card as ResolvedDeckCard).oracle_id ?? card.id);
-			}
+			const addKey = (card: AnyCard) => {
+				const key = selectionKeyOf(card);
+				if (key) keys.add(key);
+			};
+			section.cards.forEach(addKey);
+			for (const child of children ?? []) child.cards.forEach(addKey);
 			const keyList = [...keys];
 			return {
 				...section,
@@ -357,47 +383,51 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			};
 		};
 		return sections.map(decorate);
-	}, [sections, bulk]);
+	}, [sections, bulk, selectionKeyOf]);
 
 	const handleBulkAddToWishlist = useCallback(() => {
 		// Flag the wishlist on every copy of each selected card. Skip copies that
 		// are already wishlisted so bulk add never toggles one back off.
-		for (const rowId of bulk.selectedRowIds(groupByCardId)) {
+		for (const rowId of rowIdsOfSelected(bulk.selected, stackBySelectionKey, deckCopiesOf)) {
 			if (deckCards[rowId]?.entry.wishlist) continue;
 			toggleDeckCardWishlist(rowId);
 		}
 		bulk.exit();
-	}, [bulk, groupByCardId, deckCards, toggleDeckCardWishlist]);
+	}, [bulk, stackBySelectionKey, deckCards, toggleDeckCardWishlist]);
 
 	const handleBulkAddToCollectionSelection = useCallback(() => {
 		// Mark every un-owned selected copy as owned (non-proxy), mirroring the
 		// per-card "Add to collection" action.
-		for (const rowId of bulk.selectedRowIds(groupByCardId, (c) => !c.entry.ownerId)) {
+		for (const rowId of rowIdsOfSelected(
+			bulk.selected,
+			stackBySelectionKey,
+			deckCopiesOf,
+			(c) => !c.entry.ownerId
+		)) {
 			toggleOwned(rowId, false);
 		}
 		bulk.exit();
-	}, [bulk, groupByCardId, toggleOwned]);
+	}, [bulk, stackBySelectionKey, toggleOwned]);
 
 	const handleBulkEditApply = useCallback(
-		({ patch, zone }: DeckBulkEdit) => {
-			const rowIds = bulk.selectedRowIds(groupByCardId);
-			const hasPatch = Object.keys(patch).length > 0;
-			for (const rowId of rowIds) {
-				if (zone) changeZone(rowId, zone);
-				if (hasPatch) updateDeckCard(rowId, patch);
-			}
+		({ edit, zone }: DeckBulkEdit) => {
+			bulkUpdateDeckCards(
+				rowIdsOfSelected(bulk.selected, stackBySelectionKey, deckCopiesOf),
+				edit,
+				zone
+			);
 			setBulkEditModalOpen(false);
 			bulk.exit();
 		},
-		[bulk, groupByCardId, changeZone, updateDeckCard]
+		[bulk, stackBySelectionKey, bulkUpdateDeckCards]
 	);
 
 	const handleBulkRemoveRequest = useCallback(() => {
-		const rowIds = bulk.selectedRowIds(groupByCardId);
+		const rowIds = rowIdsOfSelected(bulk.selected, stackBySelectionKey, deckCopiesOf);
 		const hasOwned = rowIds.some((rowId) => deckCards[rowId]?.entry.ownerId);
 		const hasWishlist = rowIds.some((rowId) => deckCards[rowId]?.entry.wishlist);
 		setBulkRemove({ hasOwned, hasWishlist });
-	}, [bulk, groupByCardId, deckCards]);
+	}, [bulk, stackBySelectionKey, deckCards]);
 
 	const handleBulkRemoveConfirm = useCallback(
 		({
@@ -407,7 +437,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			alsoRemoveCollection: boolean;
 			alsoRemoveWishlist: boolean;
 		}) => {
-			for (const rowId of bulk.selectedRowIds(groupByCardId)) {
+			for (const rowId of rowIdsOfSelected(bulk.selected, stackBySelectionKey, deckCopiesOf)) {
 				const entry = deckCards[rowId]?.entry;
 				let mode: 'delete' | 'detach' = 'delete';
 				if (entry?.ownerId) mode = alsoRemoveCollection ? 'delete' : 'detach';
@@ -417,7 +447,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			setBulkRemove(null);
 			bulk.exit();
 		},
-		[bulk, groupByCardId, deckCards, removeCardFromDeck]
+		[bulk, stackBySelectionKey, deckCards, removeCardFromDeck]
 	);
 
 	const handleAssignAllFromCollection = useCallback(() => {
@@ -451,32 +481,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			if (!group) return null;
 
 			if (bulk.selectMode) {
-				const checked = bulk.selected.has(c.oracle_id ?? c.id);
-				return withCustomBadge(
-					card,
-					<div
-						style={{
-							position: 'absolute',
-							inset: 0,
-							pointerEvents: 'none',
-							display: 'flex',
-							alignItems: 'flex-start',
-							justifyContent: 'flex-start',
-							padding: '8px',
-							background: checked ? 'rgba(124,106,245,0.18)' : 'transparent',
-							border: checked ? '2px solid rgba(124,106,245,0.7)' : '2px solid transparent',
-							borderRadius: '4px',
-							boxSizing: 'border-box',
-						}}
-					>
-						<input
-							type="checkbox"
-							checked={checked}
-							readOnly
-							style={{ width: 18, height: 18, cursor: 'pointer', pointerEvents: 'none' }}
-						/>
-					</div>
-				);
+				const checked = bulk.selected.has(selectionKeyOf(card) ?? '');
+				return withCustomBadge(card, <BulkSelectOverlay checked={checked} />);
 			}
 
 			const deckScryfallIds = Array.from(group.byZone.values())
@@ -485,7 +491,10 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			const collectionIds = oracleIdToAllScryfallIds.get(c.oracle_id ?? c.id);
 			const oracleScryfallIds = Array.from(new Set([...deckScryfallIds, ...(collectionIds ?? [])]));
 
-			const firstCopy = group.byZone.get(currentZone)?.[0];
+			// The displayed stack (tokens panel tiles resolve too: every copy is mapped).
+			const stackCopies =
+				stackByRowId.get(c.entry.rowId)?.copies ?? group.byZone.get(currentZone) ?? [];
+			const firstCopy = stackCopies[0];
 			const isContextCard = contextMenuCard === card;
 			return withCustomBadge(
 				card,
@@ -496,6 +505,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 					deckId={deckId}
 					oracleScryfallIds={oracleScryfallIds}
 					deckNameResolver={deckNameResolver}
+					stackCopies={stackCopies}
 					onDuplicate={handleDuplicateCard}
 					onRemove={handleRemoveRequest}
 					onChangeZone={changeZone}
@@ -509,6 +519,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 						toggleDeckCardWishlist(deckCardRowId);
 					}}
 					wishlistEntries={wishlistEntries}
+					ownershipPending={indexStatus === 'loading'}
 					deckCoverArtUrl={deck?.coverArtUrl ?? null}
 					onSetCover={(url) => updateDeck(deckId, { coverArtUrl: url })}
 					onResetCover={() => updateDeck(deckId, { coverArtUrl: null })}
@@ -519,6 +530,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 		},
 		[
 			groupByCardId,
+			stackByRowId,
+			selectionKeyOf,
 			bulk.selectMode,
 			bulk.selected,
 			zones,
@@ -531,11 +544,22 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			openDeckCardModal,
 			toggleDeckCardWishlist,
 			wishlistEntries,
+			indexStatus,
 			deck?.coverArtUrl,
 			updateDeck,
 			contextMenuCard,
 			contextMenuPos,
 		]
+	);
+
+	// Stack keys change with the stacking: drop the selection rather than keep
+	// keys that would silently match nothing (or other copies).
+	const handleDeckStackByChange = useCallback(
+		(next: StackBy) => {
+			setDeckStackBy(next);
+			bulk.clear();
+		},
+		[setDeckStackBy, bulk]
 	);
 
 	const handleCardContextMenu = useCallback((card: AnyCard, e: React.MouseEvent) => {
@@ -617,7 +641,8 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 						onCardContextMenu={bulk.selectMode ? undefined : handleCardContextMenu}
 						tableColumns={tableColumns}
 						pageSize={false}
-						viewModes={['fluid-grid', 'grid', 'table']}
+						viewModes={bulk.selectMode ? ['fluid-grid', 'grid'] : ['fluid-grid', 'grid', 'table']}
+						toolbarExtra={<StackByMenu value={deckStackBy} onChange={handleDeckStackByChange} />}
 						cardGap="compact"
 						showCardNames={false}
 					/>
@@ -659,16 +684,32 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 			</div>
 
 			{bulk.selectMode && (
-				<DeckBulkActionBar
-					selectedCount={bulk.selected.size}
+				<BulkActionBar
+					summary={t('selectedCount', { count: bulk.selected.size })}
 					allSelected={allSelected}
-					onToggleSelectAll={() => bulk.toggleSelectAll(allOracleKeys)}
-					onBulkEdit={() => setBulkEditModalOpen(true)}
-					onBulkAddToCollection={handleBulkAddToCollectionSelection}
-					onBulkAddToWishlist={handleBulkAddToWishlist}
-					onBulkRemove={handleBulkRemoveRequest}
+					onToggleSelectAll={() => bulk.toggleSelectAll(allStackKeys)}
+					hasSelection={bulk.selected.size > 0}
+					actions={[
+						{ id: 'edit', label: t('edit'), onClick: () => setBulkEditModalOpen(true) },
+						{
+							id: 'collection',
+							label: t('addToCollection'),
+							onClick: handleBulkAddToCollectionSelection,
+						},
+						{
+							id: 'wishlist',
+							label: (
+								<>
+									<WishlistIcon size={13} /> {t('wishlist')}
+								</>
+							),
+							onClick: handleBulkAddToWishlist,
+						},
+						{ id: 'remove', label: t('remove'), onClick: handleBulkRemoveRequest, danger: true },
+					]}
 					onClear={bulk.clear}
 					onExit={bulk.exit}
+					escapeDisabled={bulkEditModalOpen || bulkRemove !== null}
 				/>
 			)}
 

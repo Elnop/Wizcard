@@ -4,7 +4,7 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 
 ## Common Pitfalls
 
-- **Never group by `scryfallId`** for display — use `oracleId` via `CardStack`. Two copies of the same card from different editions = same `CardStack`.
+- **Don't hand-roll display grouping** — stacks come from `groupByStack(copies, stackBy)` (`src/lib/card/utils/group-cards.ts`). Default `stackBy = []` groups by card (oracle_id: two editions = one `CardStack`); finer criteria are a user setting (`useStackBy`). Look stacks up by the representative's `entry.rowId`, never by print id — several stacks can share one print.
 - **Don't call `fetch()` against Scryfall directly** — always go through `scryfallGet`/`scryfallPost` in `src/lib/scryfall/utils/fetcher.ts` (rate limiting, caching, dedup).
 - **Always call `triggerSync()` after `enqueue()`** — the queue does not self-start.
 - **`npm run sb:reset` is destructive** — drops and recreates the local DB.
@@ -22,6 +22,7 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 - `npm run sb:reset` — **destructive** — drop DB and re-apply all migrations
 - `npm run sb:migrate` — apply pending migrations only
 - `npm run sb:verify` — audit the local DB schema against all migrations (read-only; see § Schema Verification)
+- `npm run sb:verify:prod` — same audit against the PROD DB (read-only; see § Schema Verification)
 - `npm run sb:studio` — Supabase Studio (port 54323)
 
 ## Architecture
@@ -155,7 +156,7 @@ AuthProvider
 
 - **`rowId`** (`CardEntry.rowId` = `cards.id`) — unique per physical copy in the collection
 - **`scryfallId`** — identifies a specific printing/edition of a card
-- **`oracleId`** — identifies the abstract card concept across all editions; used as `CardStack.oracleId`
+- **`oracleId`** — identifies the abstract card concept across all editions; the base of every stack key (`CardStack.key`)
 
 ### localStorage Keys
 
@@ -202,9 +203,14 @@ Run it in these situations:
   expected schema. Exit code is non-zero if any assertion FAILs, so it also fits
   a pre-commit hook or CI step.
 - **Before/after a prod deploy**: prod is self-hosted Supabase (Coolify) and can
-  be behind on migrations. `npm run sb:verify` only checks **local**; to audit
-  **prod**, paste the entire `supabase/verify_schema.sql` into the prod SQL
-  editor and run it. The report lists exactly which objects are missing. It does
+  be behind on migrations. Run `npm run sb:verify:prod`: it sends the same
+  `verify_schema.sql` over HTTPS to pg-meta (`<kong-url>/pg/query`, guarded by
+  the service-role key) since Postgres itself is not exposed. Credentials come
+  from `.env.supabase.prod` (`SERVICE_URL_SUPABASEKONG` +
+  `SERVICE_SUPABASESERVICE_KEY`) or from `PROD_SUPABASE_URL` +
+  `PROD_SUPABASE_SERVICE_ROLE_KEY` in the environment; same exit codes as local.
+  Fallback without credentials: paste the file into the prod SQL editor.
+  The report lists exactly which objects are missing. It does
   NOT fix anything — remediation follows the usual idempotent-script workflow
   (`docs/…` / prod migration process): apply only the missing objects, then
   `insert into supabase_migrations.schema_migrations` for each applied file.

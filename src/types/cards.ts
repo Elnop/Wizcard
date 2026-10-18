@@ -9,8 +9,9 @@ export type CardImageStatus = 'missing' | 'placeholder' | 'lowres' | 'highres_sc
 export type CardCondition = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG';
 
 // Domain image-uris. small/normal/large are always present (the DB catalog seed stores at
-// least these); art_crop/png/border_crop are OPTIONAL — the catalog seed (pick3) drops them,
-// so only Scryfall-fallback-path cards carry them. Same pattern as Card.prices?.
+// least these); art_crop/png/border_crop are OPTIONAL — the catalog seed stores art_crop and
+// png but rows seeded before that lack them, and border_crop is never stored (only
+// Scryfall-fallback-path cards carry it). Same pattern as Card.prices?.
 export interface CardImageUris {
 	small: string;
 	normal: string;
@@ -140,11 +141,50 @@ export interface CardEntry {
 // One copy in the collection = domain print data + per-copy metadata
 export type CardCopy = (Card | CustomCard) & { entry: CardEntry };
 
-// All copies of a card with the same oracle_id (potentially different editions)
+/** A copy property that, on top of the card name, splits stacks apart. */
+export type StackCriterion = 'print' | 'finish' | 'condition' | 'language' | 'flags';
+/** [] = by name (default); 'copy' = no stacking (one tile per physical copy). */
+export type StackBy = StackCriterion[] | 'copy';
+
+// Copies grouped under one tile. By default all copies of the same card (any
+// edition); finer per the user's StackBy setting.
 export interface CardStack {
-	oracleId: string; // stable grouping key
+	key: string; // stable grouping key (see stackKeyOf)
 	name: string; // display name (from first card in stack)
 	cards: CardCopy[]; // copies — may be different editions
+}
+
+export type CardFacets = Pick<
+	Card,
+	| 'id'
+	| 'oracle_id'
+	| 'name'
+	| 'lang'
+	| 'layout'
+	| 'set'
+	| 'collector_number'
+	| 'rarity'
+	| 'released_at'
+	| 'artist'
+	| 'promo'
+	| 'digital'
+	| 'cmc'
+	| 'colors'
+	| 'color_identity'
+	| 'type_line'
+	| 'oracle_text'
+	| 'power'
+	| 'toughness'
+	| 'edhrec_rank'
+>;
+/** What the index holds per print: facets for catalog/Scryfall prints, the full
+ *  (already light, local) CustomCard for `mpc:` prints — filters read `custom.*`. */
+export type IndexedCard = CardFacets | CustomCard;
+export type FacetCopy = IndexedCard & { entry: CardEntry };
+export interface FacetStack {
+	key: string;
+	name: string;
+	cards: FacetCopy[];
 }
 
 // Aggregated collection statistics

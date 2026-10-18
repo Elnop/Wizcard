@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client';
 import type { Profile, ProfileUpdate } from '@/lib/profile/types';
+import { stackByFromArray, stackByToArray } from '@/lib/card/utils/stack-by';
 
 type ProfileRow = {
 	id: string;
@@ -12,6 +13,10 @@ type ProfileRow = {
 	theme_preference: string;
 	is_public: boolean;
 	ignored_tags: string[];
+	// Owner-only select (fetchProfile); absent from the public nickname select.
+	collection_stack_by?: string[];
+	wishlist_stack_by?: string[];
+	deck_stack_by?: string[];
 	created_at: string;
 	updated_at: string;
 };
@@ -28,6 +33,9 @@ function rowToProfile(row: ProfileRow): Profile {
 		themePreference: (row.theme_preference as Profile['themePreference']) ?? 'system',
 		isPublic: row.is_public ?? true,
 		ignoredTags: row.ignored_tags ?? ['nsfw'],
+		collectionStackBy: stackByFromArray(row.collection_stack_by),
+		wishlistStackBy: stackByFromArray(row.wishlist_stack_by),
+		deckStackBy: stackByFromArray(row.deck_stack_by),
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,
 	};
@@ -38,7 +46,7 @@ export async function fetchProfile(userId: string): Promise<Profile | null> {
 	const { data, error } = await supabase
 		.from('profiles')
 		.select(
-			'id, nickname, description, avatar_url, language, price_currency, show_prices, theme_preference, is_public, ignored_tags, created_at, updated_at'
+			'id, nickname, description, avatar_url, language, price_currency, show_prices, theme_preference, is_public, ignored_tags, collection_stack_by, wishlist_stack_by, deck_stack_by, created_at, updated_at'
 		)
 		.eq('id', userId)
 		.maybeSingle();
@@ -98,6 +106,11 @@ export async function upsertProfile(userId: string, updates: ProfileUpdate): Pro
 	if (updates.themePreference !== undefined) cols.theme_preference = updates.themePreference;
 	if (updates.isPublic !== undefined) cols.is_public = updates.isPublic;
 	if (updates.ignoredTags !== undefined) cols.ignored_tags = updates.ignoredTags;
+	if (updates.collectionStackBy !== undefined)
+		cols.collection_stack_by = stackByToArray(updates.collectionStackBy);
+	if (updates.wishlistStackBy !== undefined)
+		cols.wishlist_stack_by = stackByToArray(updates.wishlistStackBy);
+	if (updates.deckStackBy !== undefined) cols.deck_stack_by = stackByToArray(updates.deckStackBy);
 	const { error } = await supabase.from('profiles').upsert(cols);
 	if (error) throw error;
 }

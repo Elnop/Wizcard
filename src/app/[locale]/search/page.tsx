@@ -1,14 +1,23 @@
 'use client';
 
-import { Suspense, useMemo, type ReactNode } from 'react';
+import { Suspense, useCallback, useMemo, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { SearchBar } from '@/lib/search/components/SearchBar/SearchBar';
 import { SearchEntitySwitcher } from './components/SearchEntitySwitcher/SearchEntitySwitcher';
 import { CardList } from '@/lib/card/components/CardList/CardList';
+import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
+import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import { DeckCard } from '@/app/[locale]/decks/components/DeckCard/DeckCard';
 import { ProfileCard } from '@/lib/search/components/ProfileCard/ProfileCard';
+import { useCardModalContext } from '@/contexts/CardModalProvider';
+import { useAddCardModal } from '@/contexts/AddCardModalProvider';
+import { useAddToDeckModal } from '@/contexts/AddToDeckModalProvider';
+import { useCollectionContext } from '@/lib/collection/context/CollectionContext';
+import { useWishlistContext } from '@/lib/wishlist/context/WishlistContext';
+import { useCardMenuLabels } from '@/lib/card/hooks/useCardMenuLabels';
+import { buildSearchMenuItems } from './searchCardMenu';
 import { useScryfallCardSearch } from '@/lib/scryfall/hooks/useScryfallCardSearch';
 import { useDeckSearch } from '@/lib/search/hooks/useDeckSearch';
 import { useProfileSearch } from '@/lib/search/hooks/useProfileSearch';
@@ -91,6 +100,13 @@ function SectionHeader({ title, href }: { title: string; href: string }) {
 
 function CardsSection({ term }: { term: string }) {
 	const t = useTranslations('search');
+	const cardMenuLabels = useCardMenuLabels();
+	const router = useRouter();
+	const { openCardModal } = useCardModalContext();
+	const { openAddCard } = useAddCardModal();
+	const { openAddToDeck } = useAddToDeckModal();
+	const { addCards } = useCollectionContext();
+	const { addToWishlist } = useWishlistContext();
 
 	// Filtres neutres : la landing ne fait qu'une recherche par nom, les filtres
 	// avancés vivent sur /search/cards. Mémoïsé car le hook a l'objet en dépendance.
@@ -115,6 +131,8 @@ function CardsSection({ term }: { term: string }) {
 	const shown = useMemo(() => cards.slice(0, CARD_LIMIT), [cards]);
 	const href = term ? `/search/cards?name=${encodeURIComponent(term)}` : '/search/cards';
 
+	const handleCardClick = useCallback((card: AnyCard) => openCardModal(card), [openCardModal]);
+
 	let body: ReactNode;
 	if (isLoading) {
 		body = (
@@ -125,7 +143,39 @@ function CardsSection({ term }: { term: string }) {
 	} else if (shown.length === 0) {
 		body = <p className={`${landing.pitch} ${landing.sectionEmpty}`}>{t('landingNoResults')}</p>;
 	} else {
-		body = <CardList cards={shown} pageSize={false} viewModes={['grid']} />;
+		// Mêmes interactions que /search/cards : clic → modale carte, clic droit →
+		// menu contextuel complet. Les handlers sont identiques à `CardSearchView`.
+		body = (
+			<CardList
+				cards={shown}
+				onCardClick={handleCardClick}
+				buildCardMenuItems={(card, close) =>
+					buildSearchMenuItems(
+						card,
+						{
+							onViewDetails: (c) => openCardModal(c),
+							onOpenCardPage: (c) => router.push(`/card/${c.id}`),
+							onAddToCollection: (c) =>
+								openAddCard({
+									scryfallCard: c,
+									onAdd: (added, entry, count) => addCards(added, count, entry),
+								}),
+							onAddToWishlist: (c) =>
+								openAddCard({
+									scryfallCard: c,
+									onAdd: (added, entry, count) => addToWishlist(added, entry, count),
+								}),
+							onAddToDeck: (c) => openAddToDeck(c),
+						},
+						close,
+						cardMenuLabels
+					)
+				}
+				renderOverlay={withCustomBadge}
+				pageSize={false}
+				viewModes={['grid']}
+			/>
+		);
 	}
 
 	return (

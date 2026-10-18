@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useCollectionCards } from '@/lib/collection/hooks/useCollectionCards';
+import { useStackCollectionModel } from '@/lib/collection-index/hooks/useStackCollectionModel';
 import { CollectionView } from '@/app/[locale]/collection/lib/CollectionView/CollectionView';
 import { ExportMenu } from '@/app/[locale]/collection/ExportMenu/ExportMenu';
 import { useCardModalContext } from '@/contexts/CardModalProvider';
@@ -25,15 +26,14 @@ export function PublicCollectionView({
 	isOwner?: boolean;
 }) {
 	const { entries, isLoaded, isFullyLoaded } = usePublicCollection(ownerId);
-	const { stacks, isLoading: isHydrating, totalExpected } = useCollectionCards(entries);
+	const { stacks, isLoading: isHydrating } = useCollectionCards(entries);
+	const model = useStackCollectionModel(stacks, !isFullyLoaded || isHydrating);
 	const { openCardModal } = useCardModalContext();
 	const t = useTranslations('profile');
 	const ownerHandlers = useOwnedCardMenuHandlers(stacks, 'collection');
 	const ownerMenuLabels = useOwnedCardMenuLabels('collection');
 	const viewerHandlers = useViewerCardMenuHandlers();
 	const viewerMenuLabels = useViewerCardMenuLabels();
-
-	const isLoadingCollection = !isFullyLoaded || isHydrating;
 
 	const emptyState = (
 		<div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
@@ -46,18 +46,15 @@ export function PublicCollectionView({
 		<ExportMenu
 			cards={stacks.flatMap((s) => s.cards)}
 			filenameBase="collection"
-			disabled={isLoadingCollection}
+			disabled={!isFullyLoaded || isHydrating}
 		/>
 	);
 
 	return (
 		<CollectionView
-			stacks={stacks}
+			model={model}
 			entryCount={entries.length}
-			isHydrating={isHydrating}
-			totalExpected={totalExpected}
 			isLoaded={isLoaded}
-			isFullyLoaded={isFullyLoaded}
 			title={t('collectionTitle')}
 			actions={actions || undefined}
 			emptyState={emptyState}

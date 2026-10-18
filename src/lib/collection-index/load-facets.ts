@@ -1,0 +1,95 @@
+import { getCustomCardsByIds } from '@/lib/mpc/db/custom-cards';
+import { resolveCardsByScryfallIds } from '@/lib/scryfall/resolveCardsByScryfallIds';
+import { isUuid } from '@/lib/card/catalog-db/uuid';
+import { isCustomCard } from '@/lib/mpc/types';
+import type { IndexedCard } from '@/types/cards';
+import { fetchCardFacets } from './fetch-card-facets';
+import { facetsFromCard } from './facets';
+
+export interface LoadFacetsResult {
+	found: Map<string, IndexedCard>;
+	notFound: string[];
+}
+
+/** Custom cards into `found`; false if the lookup itself failed. */
+async function loadCustomInto(
+	customIds: string[],
+	found: Map<string, IndexedCard>
+): Promise<boolean> {
+	if (customIds.length === 0) return true;
+	try {
+		for (const [id, card] of await getCustomCardsByIds(customIds)) found.set(id, card);
+		return true;
+	} catch (err) {
+		console.error('[loadFacets] custom cards failed:', err);
+		return false;
+	}
+}
+
+/**
+ * Facts the index needs for `ids`:
+ *   mpc: ids        → custom_cards (full CustomCard, light and local)
+ *   catalog prints  → card_facets RPC
+ *   the rest        → resolveCardsByScryfallIds (catalog lag → Scryfall), facets
+ *                     derived from the returned Card (which also lands in the cache)
+ * An id nobody knows — custom or print — is reported in `notFound`, never
+ * silently dropped. If a lookup itself failed (custom cards, or the RPC) and
+ * that left any of ITS ids unresolved, this throws: the index must not claim
+ * `ready` with silent holes.
+ */
+export async function loadFacets(
+	ids: string[],
+	opts: {
+		isCancelled?: () => boolean;
+		/**
+		 * Called once custom cards + the RPC have answered successfully, BEFORE the
+		 * Scryfall fallback for catalog misses — which waits in the shared Scryfall
+		 * throttle queue (behind filter catalogs etc.) and can take seconds.
+		 */
+		onPrimary?: (found: ReadonlyMap<string, IndexedCard>) => void;
+	} = {}
+): Promise<LoadFacetsResult> {
+	const found = new Map<string, IndexedCard>();
+	const unique = [...new Set(ids)];
+	const customIds = unique.filter((id) => id.startsWith('mpc:'));
+	const printIds = unique.filter((id) => !id.startsWith('mpc:'));
+
+	const customFailed = !(await loadCustomInto(customIds, found));
+	if (opts.isCancelled?.()) return { found, notFound: [] };
+
+	let rpcFailed = false;
+	try {
+		for (const [id, facets] of await fetchCardFacets(printIds)) found.set(id, facets);
+	} catch (err) {
+		rpcFailed = true;
+		console.error('[loadFacets] card_facets failed, falling back:', err);
+	}
+	if (opts.isCancelled?.()) return { found, notFound: [] };
+	if (!rpcFailed && !customFailed) opts.onPrimary?.(new Map(found));
+
+	// Non-uuid ids can't be in the catalog nor on Scryfall by id: not found.
+	const malformed = printIds.filter((id) => !isUuid(id));
+	const misses = printIds.filter((id) => isUuid(id) && !found.has(id));
+	if (misses.length > 0) {
+		const resolved = await resolveCardsByScryfallIds(misses, { isCancelled: opts.isCancelled });
+		for (const [id, card] of resolved) {
+			found.set(id, isCustomCard(card) ? card : facetsFromCard(card));
+		}
+	}
+	// Custom ids the lookup didn't return (never thrown, just absent from custom_cards)
+	// are "not found" too — not silently missing from both maps.
+	const customNotFound = customIds.filter((id) => !found.has(id));
+	const notFound = [...customNotFound, ...malformed, ...misses.filter((id) => !found.has(id))];
+	if (customFailed && customNotFound.length > 0) {
+		throw new Error(
+			`[loadFacets] ${customNotFound.length} custom cards unresolved after custom lookup failure`
+		);
+	}
+	if (rpcFailed && notFound.length > 0) {
+		throw new Error(`[loadFacets] ${notFound.length} prints unresolved after card_facets failure`);
+	}
+	if (notFound.length > 0) {
+		console.warn(`[loadFacets] ${notFound.length} prints found nowhere — excluded`, notFound);
+	}
+	return { found, notFound };
+}
