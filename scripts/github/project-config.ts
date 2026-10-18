@@ -45,7 +45,7 @@ export const FIELDS: FieldSpec[] = [
 ];
 
 export const VIEWS: ViewSpec[] = [
-	{ name: 'Kanban', layout: 'BOARD_LAYOUT', filter: '-label:epic' },
+	{ name: 'Kanban', layout: 'BOARD_LAYOUT', filter: 'is:issue -label:epic' },
 	{ name: 'Par epic', layout: 'TABLE_LAYOUT' },
 	{ name: 'À déployer', layout: 'TABLE_LAYOUT', filter: 'status:"Done (main)"' },
 	{ name: 'Roadmap', layout: 'ROADMAP_LAYOUT', filter: 'label:epic' },

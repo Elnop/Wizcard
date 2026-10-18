@@ -21,13 +21,13 @@ Board: https://github.com/users/Elnop/projects/2 (user-owned Project v2, linked 
 
 ## Hierarchy
 
-Epic -> sub-issues (native GitHub sub-issues). The "Par epic" view uses this hierarchy; the Kanban hides epics (`-label:epic`) and the Roadmap shows only epics (`label:epic`).
+Epic -> sub-issues (native GitHub sub-issues). The "Par epic" view uses this hierarchy; the Kanban shows issues only and hides epics (`is:issue -label:epic`; PRs are represented by the issues they close, which move to In review) and the Roadmap shows only epics (`label:epic`).
 
 ## Views
 
 | View       | Layout  | Filter                 |
 | ---------- | ------- | ---------------------- |
-| Kanban     | Board   | `-label:epic`          |
+| Kanban     | Board   | `is:issue -label:epic` |
 | Par epic   | Table   | none (hierarchy)       |
 | À déployer | Table   | `status:"Done (main)"` |
 | Roadmap    | Roadmap | `label:epic`           |
