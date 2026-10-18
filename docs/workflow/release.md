@@ -1,6 +1,6 @@
 # Release procedure
 
-Roles: the **owner** applies prod migrations (Supabase dashboard) and verifies them; **Jo** operates Coolify and merges the release PR once the owner says the migrations are in.
+Roles: the **owner** runs the whole release (prod migrations via the Supabase dashboard, verification, merging the release PR). **Jo** only administers Coolify (prod environment variables, actions in Coolify) and is not part of this procedure.
 
 Production deploys from the `deploy` branch: Coolify auto-deploys on every push to it. `deploy` only changes by merging the release PR.
 
@@ -11,9 +11,9 @@ On every push to `main`, the `release-pr` workflow creates or updates a single o
 ## Procedure
 
 1. Open the release PR and read the list of migrations to apply. None listed → go to step 4.
-2. Owner: apply each pending migration to prod as an idempotent, transactional script, then insert its version into `schema_migrations`. Details: `AGENTS.md` § Schema Verification.
-3. Owner: run `npm run sb:verify:prod`, confirm no FAIL, and tell Jo.
-4. Jo: merge the release PR with **"Create a merge commit"**, always. Never squash or rebase the release PR: it would break release tracking. (Until the `deploy` ruleset is live — follow-up PR, issue #23 — nothing enforces this.) `deploy-guard` must be green.
+2. Apply each pending migration to prod as an idempotent, transactional script, then insert its version into `schema_migrations`. Details: `AGENTS.md` § Schema Verification.
+3. Run `npm run sb:verify:prod` and confirm no FAIL.
+4. Merge the release PR with **"Create a merge commit"**, always. Never squash or rebase the release PR: it would break release tracking. (Until the `deploy` ruleset is live — follow-up PR, issue #23 — nothing enforces this.) `deploy-guard` must be green.
 5. Coolify deploys automatically.
 6. The `mark-deployed` workflow then moves the board items from `Done (main)` to `Deployed`.
 

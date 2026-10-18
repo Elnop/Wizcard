@@ -57,10 +57,10 @@ export function renderReleaseBody(input: {
 		'',
 		'## Procédure',
 		'',
-		'- [ ] Owner : appliquer les migrations listées (script idempotent + transactionnel)',
-		'- [ ] Owner : les insérer dans `supabase_migrations.schema_migrations`',
-		'- [ ] Owner : lancer `npm run sb:verify:prod` et prévenir Jo',
-		'- [ ] Jo : merger cette PR avec « Create a merge commit » (Coolify déploie automatiquement)',
+		'- [ ] Appliquer les migrations listées (script idempotent + transactionnel)',
+		'- [ ] Les insérer dans `supabase_migrations.schema_migrations`',
+		'- [ ] Lancer `npm run sb:verify:prod`',
+		'- [ ] Merger cette PR avec « Create a merge commit » (Coolify déploie automatiquement)',
 		'',
 	].join('\n');
 }

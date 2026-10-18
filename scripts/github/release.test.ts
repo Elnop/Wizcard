@@ -51,7 +51,7 @@ test('renderReleaseBody lists PRs, closes and migrations', () => {
 	assert.match(body, /idempotent \+ transactionnel/);
 	assert.match(body, /schema_migrations/);
 	assert.match(body, /npm run sb:verify:prod/);
-	assert.match(body, /Jo : merger cette PR avec « Create a merge commit »/);
+	assert.match(body, /Merger cette PR avec « Create a merge commit »/);
 });
 
 test('renderReleaseBody with zero migrations says so', () => {
