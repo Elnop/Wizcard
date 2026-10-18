@@ -13,8 +13,6 @@ jobs:
   mark-deployed:
     if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.WIZCARD_BOT_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,4 +25,6 @@ jobs:
         run: npm i -g npm@11
       - run: npm ci --ignore-scripts
       - name: Mark shipped items as Deployed
+        env:
+          GH_TOKEN: ${{ secrets.WIZCARD_BOT_TOKEN }}
         run: npx tsx scripts/github/mark-deployed.ts

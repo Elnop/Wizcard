@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+	directCommitSubjects,
 	extractPrNumbers,
+	pickReleasePr,
 	parsePendingMigrations,
 	planReleasePr,
 	releaseTokenError,
@@ -46,8 +48,10 @@ test('renderReleaseBody lists PRs, closes and migrations', () => {
 	assert.match(body, /## Migrations à appliquer AVANT le merge/);
 	assert.ok(body.includes(MIG_A));
 	assert.match(body, /## Procédure/);
+	assert.match(body, /idempotent \+ transactionnel/);
 	assert.match(body, /schema_migrations/);
 	assert.match(body, /npm run sb:verify:prod/);
+	assert.match(body, /Merger cette PR \(Coolify/);
 });
 
 test('renderReleaseBody with zero migrations says so', () => {
@@ -71,4 +75,26 @@ test('releaseTokenError flags a missing WIZCARD_BOT_TOKEN', () => {
 		assert.ok(msg?.includes('gh secret set WIZCARD_BOT_TOKEN'));
 	}
 	assert.equal(releaseTokenError('x'), null);
+});
+
+test('renderReleaseBody lists direct commits under Contenu', () => {
+	const body = renderReleaseBody({ prs: [], migrations: [], otherCommits: ['fix: hotfix'] });
+	assert.match(body, /- fix: hotfix \(commit direct\)/);
+	assert.doesNotMatch(body, /Aucune PR\./);
+});
+
+test('directCommitSubjects keeps subjects without (#N)', () => {
+	assert.deepEqual(directCommitSubjects(['a (#1)', 'b', 'c (#2)']), ['b']);
+});
+
+test('pickReleasePr ignores cross-repository PRs', () => {
+	assert.equal(pickReleasePr([{ number: 9, isCrossRepository: true }]), null);
+	assert.equal(
+		pickReleasePr([
+			{ number: 9, isCrossRepository: true },
+			{ number: 4, isCrossRepository: false },
+		]),
+		4
+	);
+	assert.equal(pickReleasePr([]), null);
 });

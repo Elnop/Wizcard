@@ -15,7 +15,9 @@ import { gh, ghJson } from './lib/gh';
 import { git } from './lib/git';
 import { PROJECT } from './project-config';
 import {
+	directCommitSubjects,
 	extractPrNumbers,
+	pickReleasePr,
 	parsePendingMigrations,
 	planReleasePr,
 	releaseTokenError,
@@ -36,7 +38,7 @@ const range = 'origin/deploy..origin/main';
 const ahead = Number(git(['rev-list', '--count', range]).trim());
 const subjects = git(['log', '--format=%s', range]).split('\n').filter(Boolean);
 
-const open = ghJson<{ number: number }[]>([
+const open = ghJson<{ number: number; isCrossRepository: boolean }[]>([
 	'pr',
 	'list',
 	'--repo',
@@ -48,9 +50,9 @@ const open = ghJson<{ number: number }[]>([
 	'--state',
 	'open',
 	'--json',
-	'number',
+	'number,isCrossRepository',
 ]);
-const plan = planReleasePr({ openReleasePr: open[0]?.number ?? null, aheadCommits: ahead });
+const plan = planReleasePr({ openReleasePr: pickReleasePr(open), aheadCommits: ahead });
 console.log(`${ahead} commit(s) en avance ; action : ${plan.action}`);
 if (plan.action === 'none') process.exit(0);
 
@@ -87,7 +89,7 @@ const migrations = parsePendingMigrations(
 		'supabase/migrations',
 	])
 );
-const body = renderReleaseBody({ prs, migrations });
+const body = renderReleaseBody({ prs, migrations, otherCommits: directCommitSubjects(subjects) });
 const title = `Release ${new Date().toISOString().slice(0, 10)}`;
 
 if (dryRun) {

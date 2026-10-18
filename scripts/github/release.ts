@@ -33,8 +33,16 @@ function prLine(pr: ShippedPr): string {
 	return `- #${pr.number} ${pr.title}${closes}${mig}`;
 }
 
-export function renderReleaseBody(input: { prs: ShippedPr[]; migrations: string[] }): string {
-	const contenu = input.prs.length ? input.prs.map(prLine).join('\n') : 'Aucune PR.';
+export function renderReleaseBody(input: {
+	prs: ShippedPr[];
+	migrations: string[];
+	otherCommits?: string[];
+}): string {
+	const lines = [
+		...input.prs.map(prLine),
+		...(input.otherCommits ?? []).map((s) => `- ${s} (commit direct)`),
+	];
+	const contenu = lines.length ? lines.join('\n') : 'Aucune PR.';
 	const migrations = input.migrations.length
 		? input.migrations.map((m) => `- \`${m}\``).join('\n')
 		: 'Aucune migration.';
@@ -73,4 +81,16 @@ export function releaseTokenError(token: string | undefined): string | null {
 		'Le secret WIZCARD_BOT_TOKEN est vide ou absent : la PR de release doit être créée avec le PAT du propriétaire ' +
 		'(scopes repo + project) pour que ses checks se lancent. Définissez-le avec : gh secret set WIZCARD_BOT_TOKEN'
 	);
+}
+
+/** Numéro de la PR de release ouverte : seules les PRs du même dépôt comptent (pas un fork). */
+export function pickReleasePr(
+	prs: { number: number; isCrossRepository: boolean }[]
+): number | null {
+	return prs.find((p) => !p.isCrossRepository)?.number ?? null;
+}
+
+/** Sujets de commits sans numéro de PR `(#N)` (commits directs sur main). */
+export function directCommitSubjects(subjects: string[]): string[] {
+	return subjects.filter((s) => !SQUASH_PR_RE.test(s.trim()));
 }
