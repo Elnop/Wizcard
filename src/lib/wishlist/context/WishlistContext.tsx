@@ -11,6 +11,12 @@ import type { WishlistData } from '../store/wishlist-store';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
 import { useDeckStore, getLoadedDeckCard, patchLoadedDeckCard } from '@/lib/deck/store/deck-store';
 import { enqueue } from '@/lib/supabase/sync-queue';
+import type { BulkEdit } from '@/lib/card/bulk/bulk-edit';
+import {
+	wishlistBulkMoveToCollection,
+	wishlistBulkRemove,
+	wishlistBulkUpdate,
+} from '@/lib/wishlist/bulk-actions';
 import { getAnalytics } from '@/lib/analytics/context/AnalyticsContext';
 
 type WishlistContextValue = {
@@ -22,6 +28,9 @@ type WishlistContextValue = {
 	removeFromWishlist: (rowId: string) => void;
 	importCards: (cards: Array<{ scryfallId: string; entry: CardEntry }>) => void;
 	clearWishlist: () => void;
+	bulkUpdate: (rowIds: string[], edit: BulkEdit) => void;
+	bulkRemove: (rowIds: string[]) => void;
+	bulkMoveToCollection: (rowIds: string[]) => void;
 	moveToCollection: (rowIds: string[], scryfallId: string, entryPatch: Partial<CardEntry>) => void;
 	moveToWishlist: (rowIds: string[]) => void;
 	/**
@@ -331,6 +340,19 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
 	const entries = Object.values(store.entries);
 
+	const bulkUpdate = useCallback(
+		(rowIds: string[], edit: BulkEdit) => wishlistBulkUpdate(rowIds, edit, userId, triggerSync),
+		[userId, triggerSync]
+	);
+	const bulkRemove = useCallback(
+		(rowIds: string[]) => wishlistBulkRemove(rowIds, userId, triggerSync),
+		[userId, triggerSync]
+	);
+	const bulkMoveToCollection = useCallback(
+		(rowIds: string[]) => wishlistBulkMoveToCollection(rowIds, userId, triggerSync),
+		[userId, triggerSync]
+	);
+
 	const value: WishlistContextValue = {
 		wishlist: store.entries,
 		entries,
@@ -340,6 +362,9 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 		removeFromWishlist,
 		importCards,
 		clearWishlist,
+		bulkUpdate,
+		bulkRemove,
+		bulkMoveToCollection,
 		moveToCollection,
 		moveToWishlist,
 		assignToDeck,
