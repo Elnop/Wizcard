@@ -8,6 +8,9 @@ import { setDeckZone } from '@/types/decks';
 import { fetchDecks, fetchDeckCards } from '../db/decks';
 import { fetchFolders } from '../db/folders';
 import { enqueue } from '@/lib/supabase/sync-queue';
+import { applyBulkEdit, type BulkEdit } from '@/lib/card/bulk/bulk-edit';
+import { entryDbPatch, isEmptyDbPatch } from '@/lib/card/db/entry-db-patch';
+import type { BulkUpdateRow } from '@/lib/supabase/group-row-updates';
 import { useCollectionStore } from '@/lib/collection/store/collection-store';
 import { useWishlistStore } from '@/lib/wishlist/store/wishlist-store';
 import { getAnalytics } from '@/lib/analytics/context/AnalyticsContext';
@@ -155,6 +158,12 @@ type DeckActions = {
 	removeCardFromDeck: (rowId: string, triggerSync: () => void, mode?: 'delete' | 'detach') => void;
 	changeZone: (rowId: string, zone: DeckZone, triggerSync: () => void) => void;
 	updateDeckCard: (rowId: string, updates: Partial<CardEntry>, triggerSync: () => void) => void;
+	bulkUpdateDeckCards: (
+		rowIds: string[],
+		edit: BulkEdit,
+		zone: DeckZone | undefined,
+		triggerSync: () => void
+	) => void;
 	toggleOwned: (
 		rowId: string,
 		userId: string,
@@ -617,6 +626,26 @@ export const useDeckStore = create<DeckState & DeckActions>()((set, get) => ({
 		if (updates.purchasePrice !== undefined)
 			dbUpdates.purchase_price = updates.purchasePrice ?? null;
 		enqueue({ type: SYNC_DECK_CARD_UPDATE, payload: { rowId, updates: dbUpdates } });
+		triggerSync();
+	},
+
+	bulkUpdateDeckCards: (rowIds, edit, zone, triggerSync) => {
+		const decksCards = { ...get().decksCards };
+		const rows: BulkUpdateRow[] = [];
+		for (const rowId of rowIds) {
+			const found = findDeckOfRow(decksCards, rowId);
+			if (!found) continue;
+			const { deckId, copy } = found;
+			let entry = applyBulkEdit(copy.entry, edit);
+			if (zone) entry = { ...entry, tags: setDeckZone(entry.tags, zone) };
+			const updates = entryDbPatch(copy.entry, entry);
+			if (isEmptyDbPatch(updates)) continue;
+			decksCards[deckId] = { ...decksCards[deckId], [rowId]: { ...copy, entry } };
+			rows.push({ rowId, updates });
+		}
+		if (rows.length === 0) return;
+		set({ decksCards });
+		enqueue({ type: 'bulk-update', payload: { rows } });
 		triggerSync();
 	},
 

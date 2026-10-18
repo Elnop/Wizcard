@@ -1,0 +1,24 @@
+.overlay {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	display: flex;
+	align-items: flex-start;
+	justify-content: flex-start;
+	padding: 8px;
+	background: transparent;
+	border: 2px solid transparent;
+	border-radius: 4px;
+	box-sizing: border-box;
+}
+
+.checked {
+	background: rgba(124, 106, 245, 0.18);
+	border-color: rgba(124, 106, 245, 0.7);
+}
+
+.box {
+	width: 18px;
+	height: 18px;
+	pointer-events: none;
+}
