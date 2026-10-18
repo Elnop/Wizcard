@@ -27,7 +27,7 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 
 ## Workflow
 
-Every change goes through: issue -> branch `type/<N>-slug` (`feat|fix|chore|docs|refactor|perf`) -> PR whose body has `Closes #N` -> squash merge into `main`. See `CONTRIBUTING.md`, `docs/workflow/github-project.md` and `docs/workflow/release.md`.
+Every change goes through: issue -> branch `type/<N>-slug` (`feat|fix|chore|docs|refactor|perf`) -> PR whose body has `Closes #N` -> squash merge into `main`. See `CONTRIBUTING.md`, `docs/workflow/github-project.md` and `docs/workflow/release.md`. These rules are enforced by rulesets on `main` and `deploy` (`npm run gh:rules`).
 
 - Required checks on PRs to `main`: `check-build` and `pr-policy`. No approvals are required.
 - Owner (admin) bypass of the rules is for emergencies only. Agents (Claude) never use `gh pr merge --admin` or any bypass without the owner's explicit OK.
