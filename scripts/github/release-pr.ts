@@ -126,16 +126,18 @@ if (plan.action === 'create') {
 		bodyFile,
 	]);
 } else {
+	// REST, not `gh pr edit`: the latter queries GraphQL fields that need the
+	// read:org scope, which the bot PAT (repo + project) does not have.
 	gh([
-		'pr',
-		'edit',
-		String(plan.number),
-		'--repo',
-		PROJECT.repo,
-		'--title',
-		title,
-		'--body-file',
-		bodyFile,
+		'api',
+		'-X',
+		'PATCH',
+		`repos/${PROJECT.repo}/pulls/${plan.number}`,
+		'-f',
+		`title=${title}`,
+		'-F',
+		`body=@${bodyFile}`,
+		'--silent',
 	]);
 }
 console.log(`✔ PR de release ${plan.action === 'create' ? 'créée' : 'mise à jour'}`);

@@ -3,24 +3,20 @@
  * projet, champ Status et ses options. Utilisé par setup-project.ts et
  * mark-deployed.ts.
  */
-import { ghGraphql, ghJson } from './gh';
+import { ghGraphql } from './gh';
 import { PROJECT } from '../project-config';
 
 export type ProjectRef = { id: string; number: number; title: string; url: string };
 export type StatusOption = { id: string; name: string; color?: string; description?: string };
 export type StatusField = { id: string; options: StatusOption[] };
 
+// GraphQL on `viewer` rather than `gh project list --owner`: the CLI command
+// can require read:org, which the bot PAT (repo + project) does not have. The
+// project is owned by the token's own account, so `viewer` is that owner.
 export function listProjects(): ProjectRef[] {
-	return ghJson<{ projects: ProjectRef[] }>([
-		'project',
-		'list',
-		'--owner',
-		PROJECT.owner,
-		'--limit',
-		'100',
-		'--format',
-		'json',
-	]).projects;
+	return ghGraphql<{ viewer: { projectsV2: { nodes: ProjectRef[] } } }>(
+		'query { viewer { projectsV2(first: 100) { nodes { id number title url } } } }'
+	).viewer.projectsV2.nodes;
 }
 
 export function findProject(): ProjectRef | undefined {
