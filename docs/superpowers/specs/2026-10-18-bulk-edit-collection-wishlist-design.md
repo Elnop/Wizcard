@@ -1,7 +1,7 @@
 # Bulk selection and edit — collection, wishlist (and deck, shared)
 
 **Date**: 2026-10-18
-**Status**: Implemented 2026-10-18 on branch `feat/bulk-edit-sp2` (not merged, not pushed). Runtime checks of the Verification section pending.
+**Status**: Implemented 2026-10-18 on branch `feat/bulk-edit-sp2` (not merged, not pushed). Runtime checks run 2026-10-18 on local dev (see Verification state).
 **Prerequisite**: sub-project 1, configurable stacking
 ([2026-10-04-card-stacking-design.md](2026-10-04-card-stacking-design.md)), merged into `main`.
 
@@ -369,5 +369,27 @@ Not done, non-blocking.
 
 At the time of writing: 22 pure tests pass (bulk-edit 8, entry-db-patch 4,
 group-row-updates 4, selection 2, collection bulk-plans 3, wishlist bulk-plans 1); tsc is
-clean on touched files; `npm run build` is OK. Runtime/browser checks of the Verification
-section: not yet run (to be done before merge).
+clean on touched files; `npm run build` is OK. Runtime checks, 2026-10-18, local dev (`next dev -p 3100`, user `stacking-test`, results read
+back from the local DB):
+
+- Collection: select 2 tiles → "2 cards · 3 copies", no card modal; edit condition NM + add
+  tag → one `card_entries?id=in.(3 ids)` request, DB updated; Escape with the modal open keeps
+  select mode; Escape in the name search box keeps it, Escape elsewhere leaves it; a filter
+  change clears the selection; "Select all" matches the filtered stats (the test collection
+  fits in one page, so the unloaded-page case was not exercised); the table toggle is hidden
+  while selecting.
+- Collection → deck: zones follow the deck format (commander only for a commander deck);
+  summary "3 copies move from <deck>" / "already in this deck"; DB `deck_id` + zone tag set,
+  rows stay owned; moving to a second deck re-points `deck_id`.
+- Collection remove of deck-linked copies: notice "3 copies stay in their deck as unowned";
+  DB `owner_id` null, `deck_id` kept.
+- Wishlist: edit language on 4 copies incl. 2 deck cards with `owner_id` NULL → all updated;
+  move a plain row + a deck card → both `wishlist=false`, deck card gets `owner_id`, keeps its
+  deck; remove a wishlisted deck card → only the flag is cleared.
+- Deck: zone + condition + add tag applied in one request; removing a user tag together with
+  `deck:sideboard` removes the user tag and keeps the zone tag.
+- Sync queue in localStorage back to 0 after every action.
+
+Noted while testing (not fixed): the deck tokens panel is its own `CardList`, still offers
+the table view while selecting, and its tiles are selectable; the "Grille" / "Tableau" view
+labels are hard-coded French strings in `CardList.types.ts` (pre-existing).
