@@ -1,8 +1,7 @@
 import { LANGUAGE_TO_SCRYFALL_CODE, type MtgLanguage } from '@/lib/mtg/languages';
 
 export type LanguageChangeAction =
-	| { kind: 'skip' }
-	| { kind: 'fetch'; set: string; collectorNumber: string; langCode: string };
+	{ kind: 'skip' } | { kind: 'fetch'; set: string; collectorNumber: string; langCode: string };
 
 export function resolveLanguageChange(
 	language: MtgLanguage | undefined,

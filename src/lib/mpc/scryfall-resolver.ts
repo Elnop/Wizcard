@@ -41,7 +41,7 @@ export function normalizeForScryfall(name: string): string {
 	return (
 		name
 			// Split card names written as "A & B" to Scryfall's "A // B" format
-			// eslint-disable-next-line sonarjs/slow-regex
+			// eslint-disable-next-line sonarjs/super-linear-regex
 			.replace(/\s*&\s*/gu, ' // ')
 			// Normalize typographic quotes/apostrophes to ASCII equivalents so
 			// filenames using straight quotes match Scryfall names using curly quotes

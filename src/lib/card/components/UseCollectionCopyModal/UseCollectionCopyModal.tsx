@@ -115,7 +115,7 @@ export function UseCollectionCopyModal({
 					? LANGUAGE_TO_SCRYFALL_CODE[card.entry.language as keyof typeof LANGUAGE_TO_SCRYFALL_CODE]
 					: null;
 				const langLabel = langCode
-					? // eslint-disable-next-line sonarjs/slow-regex -- short lang label strings, no ReDoS risk
+					? // eslint-disable-next-line sonarjs/super-linear-regex -- short lang label strings, no ReDoS risk
 						getLangLabel(langCode, 0).replace(/\s*\(\d+\)$/, '')
 					: (card.entry.language ?? null);
 				return (

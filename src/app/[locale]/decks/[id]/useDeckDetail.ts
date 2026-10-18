@@ -23,7 +23,9 @@ export function useDeckDetail(deckId: string) {
 	const [scryfallCards, setScryfallCards] = useState<Record<string, Card | CustomCard>>({});
 	const resolvedIdsRef = useRef<Set<string>>(new Set());
 	const [resolveGeneration, setResolveGeneration] = useState(0);
-	const [isLoading, setIsLoading] = useState(true);
+	// Loading is derived: true until the load for the CURRENT deckId settles.
+	const [loadedDeckId, setLoadedDeckId] = useState<string | null>(null);
+	const isLoading = loadedDeckId !== deckId;
 	const activeResolveRef = useRef(0);
 
 	const deck = decks.find((d) => d.id === deckId) ?? null;
@@ -31,9 +33,8 @@ export function useDeckDetail(deckId: string) {
 	// Load deck cards from DB
 	useEffect(() => {
 		let cancelled = false;
-		setIsLoading(true);
 		loadDeck(deckId).finally(() => {
-			if (!cancelled) setIsLoading(false);
+			if (!cancelled) setLoadedDeckId(deckId);
 		});
 		return () => {
 			cancelled = true;

@@ -167,6 +167,8 @@ const eslintConfig = defineConfig([
 		'next-env.d.ts',
 		'cosmos-export/**',
 		'cosmos.imports.ts',
+		// Vendored CardConjurer frame packs, copied verbatim — not our code.
+		'assets/card-templates/**',
 	]),
 ]);
 

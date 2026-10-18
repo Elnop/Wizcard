@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { Card, CardCopy, CardEntry } from '@/types/cards';
 import type { CustomCard } from '@/lib/mpc/types';
 import type { DeckZone } from '@/types/decks';
@@ -28,6 +28,19 @@ export type PreviewInit = {
 	ignoreExisting: boolean;
 	ignoreBasicLands: boolean;
 };
+
+/** Field-wise identity: the init object itself is rebuilt every render by callers. */
+function sameInit(a: PreviewInit, b: PreviewInit): boolean {
+	return (
+		a.resolvedRows === b.resolvedRows &&
+		a.existingOracleIds === b.existingOracleIds &&
+		a.zone === b.zone &&
+		a.zoneMode === b.zoneMode &&
+		a.hasSections === b.hasSections &&
+		a.ignoreExisting === b.ignoreExisting &&
+		a.ignoreBasicLands === b.ignoreBasicLands
+	);
+}
 
 /** One editable copy: a Scryfall card carrying a synthetic deck CardEntry. */
 export type EditableCard = CardCopy;
@@ -67,21 +80,15 @@ function buildEditableCards(init: PreviewInit): EditableCard[] {
  * Per-card mutators then let the user tweak zone, quantity, print, and removal.
  */
 export function useImportPreviewEdit(init: PreviewInit) {
-	const [cards, setCards] = useState<EditableCard[]>([]);
+	const [cards, setCards] = useState<EditableCard[]>(() => buildEditableCards(init));
 
 	// Regenerate the editable list whenever the resolved rows or any global changes.
-	useEffect(() => {
+	// Render-time reset (not an effect): compare against the init last built from.
+	const [builtFrom, setBuiltFrom] = useState(init);
+	if (!sameInit(builtFrom, init)) {
+		setBuiltFrom(init);
 		setCards(buildEditableCards(init));
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on the init primitives below
-	}, [
-		init.resolvedRows,
-		init.existingOracleIds,
-		init.zone,
-		init.zoneMode,
-		init.hasSections,
-		init.ignoreExisting,
-		init.ignoreBasicLands,
-	]);
+	}
 
 	const setCardZone = useCallback((rowId: string, zone: DeckZone) => {
 		setCards((prev) =>
