@@ -1,7 +1,7 @@
 # Configurable card stacking — collection, wishlist, deck
 
 **Date**: 2026-10-04
-**Status**: Design approved, ready for planning
+**Status**: Implemented 2026-10-15, merged into `main` (commits `d5e951ee`..`4abcc0c4`, not pushed). **Prod migration pending** — see [Next steps](#next-steps).
 
 ## Context and goal
 
@@ -234,3 +234,95 @@ No test framework in the repo, and `npm run check` is red at base. So:
     per-stack selection; by-name mode identical to today.
 - **Prod**: apply the migration via the usual workflow (idempotent script in the SQL
   editor, sync `schema_migrations`). Not done by the implementation.
+
+## Implementation notes (deviations from the design above)
+
+Decided during implementation (2026-10-15). Where this section and the design disagree,
+this section wins.
+
+- **Language segment**: `entry.language` holds a language _name_ (`'French'`,
+  `MtgLanguage`) while prints carry a Scryfall _code_ (`'fr'`). The segment converts the
+  print code to the name with `SCRYFALL_CODE_TO_LANGUAGE` and defaults to `'English'`.
+  With raw codes, a copy with no language never stacked with one marked `'French'`.
+- **Deck tiles keep the zone order**: `groupByStack(cards, stackBy, representative)`
+  takes `'preferred'` (default: `preferPrint` picks `cards[0]`, as in the collection) or
+  `'first'` (input order). Deck zones use `'first'`. Otherwise the by-name deck view
+  (owner and read-only) showed a different printing for cards with mixed printings, and
+  "+1" duplicated a different printing.
+- **"Add copy" in the deck** passes `stackFieldsOf(source.entry)` (finish, condition,
+  language, proxy, alter, forTrade) through a new optional `entryFields` parameter of
+  `addCardToDeck` (store + `DeckContext`). The new copy therefore joins the stack it was
+  added from. This applies in every mode, by-name included: previously the copy was
+  created without metadata.
+- **The card modal focuses the clicked copy**: the `'stack'` mode of `CardModalProvider`
+  gains an optional `focusRowId`, and `focusCopyFirst` puts that copy first. The modal
+  still shows every copy of the card, keyed by oracle like the deck modal.
+- **`useStackBy`** keeps the last value chosen in local state (`chosen ?? profile`).
+  `applyProfileUpdate` does nothing while the profile is still loading, even though the
+  DB write still goes out, so without this the menu did not react until a reload.
+- **Pure functions pulled out to be testable**: `buildDeckCardSections` /
+  `buildZoneStacks` (deck sections), `rowIdsOfSelectedStacks` (deck selection),
+  `parseStoredStackBy` (localStorage), `focusCopyFirst`, `stackFieldsOf`.
+- **Panel**: `z-index: 1000` + `backdrop-filter`, like `ContextMenu`. Before this it was
+  translucent and the `xN` badges were drawn over it.
+- **Signed-out path**: unreachable today. `/collection` and `/wishlist` redirect anonymous
+  users to login, and the deck owner view needs an owner. Kept as specified.
+
+### Tests
+
+There is no framework: `node:test`, run through `tsx` (already a devDependency), 27 tests.
+
+- `src/lib/card/utils/{group-cards,stack-by,focus-copy}.test.ts`: `npx tsx --test <file>`
+- `src/app/[locale]/decks/[id]/{deck-card-sections,deck-bulk-selection}.test.ts`: run
+  each file directly, `npx tsx "<path>"`. `node --test` treats `[locale]` / `[id]` as glob
+  characters and finds no file.
+
+Browser checks on local dev must use `http://localhost:<port>`, **not** `127.0.0.1`. That
+origin is not in `allowedDevOrigins`, so React never hydrates and nothing responds.
+
+## Next steps
+
+1. **Prod migration, BEFORE deploying the app.** Apply
+   `supabase/migrations/20261004120000_add_profile_stack_by.sql` with the usual workflow
+   (idempotent script in the SQL editor, insert into
+   `supabase_migrations.schema_migrations`), then `npm run sb:verify:prod`.
+   `fetchProfile` selects the 3 new columns: if the app ships first, PostgREST rejects the
+   select and every signed-in user loses their preferences (language, theme, currency,
+   ignored tags) until the migration is applied.
+2. **Sub-project 2: selection + bulk edit on collection and wishlist** (not started; next
+   step is brainstorming). Starting context gathered on 2026-10-04:
+   - The deck already has the full mechanism, but it lives local to its route
+     (`src/app/[locale]/decks/[id]/`): `useDeckBulkSelection` (keyed by stack since this
+     sub-project, resolution in `rowIdsOfSelectedStacks`), `DeckBulkActionBar`,
+     `DeckBulkEditModal` (tri-state fields: zone, condition, language, foil, proxy,
+     for trade, altered, tags), `BulkRemoveDeckCardsModal`, `SectionSelectButton`. The
+     open question is generalising it (shared module) or duplicating it.
+   - The collection store only offers single-copy operations (`updateEntry(rowId)`,
+     `removeEntry(rowId)`…). The wishlist store is even more limited (add, remove, change
+     printing). The sync queue (`src/lib/supabase/sync-queue.ts`) knows `bulk-insert` /
+     `bulk-delete` but **not `bulk-update`**: a bulk edit of N copies today produces N
+     `update` ops.
+   - The collection is **paged** (`usePagedCards`), but the facets index holds every
+     entry in memory, already filtered and stacked (`useIndexedCollection` →
+     `facetStacks`). "Select everything filtered" can therefore resolve rowIds without
+     loading full cards.
+   - A selected tile = a stack = its copies' `rowId`s. To act on one specific copy, the
+     user switches stacking to finer criteria or to "Ne pas empiler".
+   - Invariant to respect: the same `rowId` is never in both the collection and the
+     wishlist (moving from wishlist to collection clears the flag in place).
+3. **Deferred minors** (from the final review, none blocking):
+   - The deck selection is not cleared when `deckStackBy` changes without a user action
+     (profile arriving late, `chosen`). Stale keys resolve to nothing, but the counter
+     still counts them. Fix: render-time reset keyed on `deckStackBy`.
+   - The `chosen` state in `useStackBy` is not reset when the user changes while the page
+     stays mounted.
+   - `StackByMenu.lastCriteria` is seeded from the first render (`[]` while the profile
+     loads).
+   - The panel can overflow the right edge on a ~360 px phone (not checked).
+   - `stack-by.ts` and `StackByMenu` import `STACK_CRITERIA` from `group-cards.ts`
+     (heavier bundle). It could move to `@/types/cards`.
+   - AGENTS.md § localStorage Keys does not list `wizcard-stack-by-<list>`.
+   - An outside click closes the menu without returning focus to the button (Escape
+     does).
+   - `supabase/bootstrap/init_schema.sql` does not have the 3 columns (the bootstrap is
+     allowed to lag behind the migrations).
