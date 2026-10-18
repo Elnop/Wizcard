@@ -2,6 +2,13 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import type { CardEntry } from '@/types/cards';
+import type { DeckZone } from '@/types/decks';
+import type { BulkEdit } from '@/lib/card/bulk/bulk-edit';
+import {
+	collectionBulkAssignToDeck,
+	collectionBulkRemove,
+	collectionBulkUpdate,
+} from '@/lib/collection/bulk-actions';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { useAuth } from '@/lib/supabase/contexts/AuthContext';
 import { useSyncQueueContext } from '@/lib/supabase/contexts/SyncQueueContext';
@@ -28,6 +35,9 @@ type CollectionContextValue = {
 	updateEntry: (rowId: string, updates: Partial<CardEntry>) => void;
 	changePrint: (rowId: string, newScryfallId: string, entryPatch?: Partial<CardEntry>) => void;
 	clearCollection: () => void;
+	bulkUpdate: (rowIds: string[], edit: BulkEdit) => void;
+	bulkRemove: (rowIds: string[]) => void;
+	bulkAssignToDeck: (rowIds: string[], deckId: string, zone: DeckZone) => void;
 	importCards: (cards: Array<{ scryfallId: string; entry: CardEntry }>) => void;
 	assignToDeck: (rowId: string, deckId: string) => void;
 	unassignFromDeck: (rowId: string) => void;
@@ -147,6 +157,20 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 		[ownershipByScryfallId]
 	);
 
+	const bulkUpdate = useCallback(
+		(rowIds: string[], edit: BulkEdit) => collectionBulkUpdate(rowIds, edit, userId, triggerSync),
+		[userId, triggerSync]
+	);
+	const bulkRemove = useCallback(
+		(rowIds: string[]) => collectionBulkRemove(rowIds, userId, triggerSync),
+		[userId, triggerSync]
+	);
+	const bulkAssignToDeck = useCallback(
+		(rowIds: string[], deckId: string, zone: DeckZone) =>
+			collectionBulkAssignToDeck(rowIds, deckId, zone, userId, triggerSync),
+		[userId, triggerSync]
+	);
+
 	const value: CollectionContextValue = {
 		collection: store.entries,
 		entries,
@@ -161,6 +185,9 @@ export function CollectionProvider({ children }: { children: React.ReactNode }) 
 		updateEntry,
 		changePrint,
 		clearCollection,
+		bulkUpdate,
+		bulkRemove,
+		bulkAssignToDeck,
 		importCards,
 		assignToDeck,
 		unassignFromDeck,
