@@ -67,6 +67,11 @@ test('mergeTags: remove then add, order kept, add wins, zone tag protected', () 
 	assert.deepEqual(mergeTags(['x', 'x'], ['x'], []), ['x']);
 });
 
+test('mergeTags: a zone tag can never be added', () => {
+	assert.deepEqual(mergeTags(['a'], [ZONE, 'b'], []), ['a', 'b']);
+	assert.deepEqual(mergeTags(['a', ZONE], [ZONE, 'deck:mainboard', 'b'], []), ['a', ZONE, 'b']);
+});
+
 test('applyBulkEdit sets fields, merges tags, clears foilType on non-foil', () => {
 	const before = entry({ isFoil: true, foilType: 'etched', tags: ['old'], condition: 'LP' });
 	const after = applyBulkEdit(before, {

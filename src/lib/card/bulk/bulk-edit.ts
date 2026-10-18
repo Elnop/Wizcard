@@ -100,11 +100,12 @@ export function isEmptyBulkEdit(edit: BulkEdit): boolean {
  */
 export function mergeTags(tags: string[] | undefined, add: string[], remove: string[]): string[] {
 	const current = tags ?? [];
-	const zoneTags = new Set(current.filter((t) => !removeDeckZoneTags([t]).length));
+	const isPlainTag = (t: string) => removeDeckZoneTags([t]).length > 0;
+	const zoneTags = new Set(current.filter((t) => !isPlainTag(t)));
 	const removeSet = new Set(remove.filter((t) => !zoneTags.has(t)));
 	const out: string[] = [];
 	for (const t of current) if (!removeSet.has(t) && !out.includes(t)) out.push(t);
-	for (const t of add) if (!out.includes(t)) out.push(t);
+	for (const t of add) if (isPlainTag(t) && !out.includes(t)) out.push(t);
 	return out;
 }
 
