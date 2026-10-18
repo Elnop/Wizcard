@@ -1,0 +1,30 @@
+name: mark-deployed
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [deploy]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mark-deployed:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.WIZCARD_BOT_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install npm 11
+        run: npm i -g npm@11
+      - run: npm ci --ignore-scripts
+      - name: Mark shipped items as Deployed
+        run: npx tsx scripts/github/mark-deployed.ts
