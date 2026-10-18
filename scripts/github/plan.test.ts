@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { planFields, planLabels, planStatusOptions, planViews } from './plan';
+import { planEpics, planFields, planLabels, planStatusOptions, planViews } from './plan';
 
 const DONE = 'Done (main)';
 
@@ -94,4 +94,16 @@ test('planFields / planViews return only missing by name', () => {
 		fields.map((f) => f.name),
 		['Itération']
 	);
+});
+
+test('planEpics skips existing epic and existing children', () => {
+	const story = (title: string) => ({ title, label: 'story' as const, body: '' });
+	const A = { title: '[Epic] A', body: '', children: [story('[US] x'), story('[US] y')] };
+	const B = { title: '[Epic] B', body: '', children: [story('[US] z')] };
+	const r = planEpics([{ number: 1, title: '[Epic] A', subIssueTitles: ['[US] x'] }], [A, B]);
+	assert.deepEqual(r.createEpics, [B]);
+	assert.deepEqual(r.createChildren, [
+		{ epicTitle: '[Epic] A', child: A.children[1] },
+		{ epicTitle: '[Epic] B', child: B.children[0] },
+	]);
 });

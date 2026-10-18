@@ -2,6 +2,7 @@
  * plan.ts — Planificateurs PURS : comparent l'état existant à l'état désiré et
  * retournent uniquement ce qu'il reste à faire. Aucun effet de bord.
  */
+import type { EpicSpec, StorySpec } from './epics';
 import type { FieldSpec, LabelSpec, ViewSpec } from './project-config';
 
 const normColor = (c: string) => c.replace(/^#/, '').toLowerCase();
@@ -48,4 +49,23 @@ export function planFields(existingNames: string[], desired: FieldSpec[]): Field
 export function planViews(existingNames: string[], desired: ViewSpec[]): ViewSpec[] {
 	const have = new Set(existingNames);
 	return desired.filter((v) => !have.has(v.name));
+}
+
+/** Epics/enfants à créer ; appariement par titre exact. */
+export function planEpics(
+	existing: { number: number; title: string; subIssueTitles: string[] }[],
+	desired: EpicSpec[]
+): { createEpics: EpicSpec[]; createChildren: { epicTitle: string; child: StorySpec }[] } {
+	const byTitle = new Map(existing.map((e) => [e.title, e]));
+	const createEpics: EpicSpec[] = [];
+	const createChildren: { epicTitle: string; child: StorySpec }[] = [];
+	for (const d of desired) {
+		const cur = byTitle.get(d.title);
+		if (!cur) createEpics.push(d);
+		const have = new Set(cur?.subIssueTitles ?? []);
+		for (const child of d.children) {
+			if (!have.has(child.title)) createChildren.push({ epicTitle: d.title, child });
+		}
+	}
+	return { createEpics, createChildren };
 }
