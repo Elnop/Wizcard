@@ -27,14 +27,17 @@ export function BulkAddToDeckModal({ copies, onConfirm, onClose }: Props) {
 		[decks]
 	);
 	const [deckId, setDeckId] = useState(sortedDecks[0]?.id ?? '');
-	const selectedDeck = sortedDecks.find((d) => d.id === deckId) ?? null;
+	const effectiveDeckId = sortedDecks.some((d) => d.id === deckId)
+		? deckId
+		: (sortedDecks[0]?.id ?? '');
+	const selectedDeck = sortedDecks.find((d) => d.id === effectiveDeckId) ?? null;
 	const zones = useMemo(() => zonesForFormat(selectedDeck?.format), [selectedDeck?.format]);
 	const [zone, setZone] = useState<DeckZone>('mainboard');
 	const effectiveZone = zones.includes(zone) ? zone : zones[0];
 
 	const summary = useMemo(
-		() => summarizeAssign(planAssignToDeck(copies, deckId, effectiveZone)),
-		[copies, deckId, effectiveZone]
+		() => summarizeAssign(planAssignToDeck(copies, effectiveDeckId, effectiveZone)),
+		[copies, effectiveDeckId, effectiveZone]
 	);
 	const deckName = (id: string) => decks.find((d) => d.id === id)?.name ?? '?';
 
@@ -59,7 +62,7 @@ export function BulkAddToDeckModal({ copies, onConfirm, onClose }: Props) {
 							<select
 								id="bulk-deck"
 								className={styles.select}
-								value={deckId}
+								value={effectiveDeckId}
 								onChange={(e) => setDeckId(e.target.value)}
 							>
 								{sortedDecks.map((d) => (
@@ -105,9 +108,9 @@ export function BulkAddToDeckModal({ copies, onConfirm, onClose }: Props) {
 				<button
 					type="button"
 					className={styles.applyBtn}
-					disabled={!deckId || copies.length === 0}
+					disabled={!effectiveDeckId || copies.length === 0}
 					onClick={() => {
-						onConfirm(deckId, effectiveZone);
+						onConfirm(effectiveDeckId, effectiveZone);
 						onClose();
 					}}
 				>
