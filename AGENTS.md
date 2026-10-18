@@ -34,6 +34,17 @@ Every change goes through: issue -> branch `type/<N>-slug` (`feat|fix|chore|docs
 - Never push to `deploy`. It is only updated by merging the automatic release PR (`main` -> `deploy`); Coolify deploys on push to `deploy`.
 - Never run anything against prod from an agent session.
 
+### Planning & dev process (BMAD)
+
+BMAD replaces superpowers on this project (superpowers is disabled in `.claude/settings.json`; `docs/superpowers/` is kept as history only).
+
+- Pinned version: **bmad-method 6.12.4**, modules `core` + `bmm`, tool `claude-code`. Installed in `_bmad/` (config) and `.claude/skills/bmad-*` (29 skills); both are committed. Upgrade only on purpose: `npx bmad-method@<version> install --action update`, then update this line.
+- Agents talk and write planning docs (PRD, epics, stories) in **French** so they can be copied verbatim into issues. Code, commits and repo docs stay English.
+- Outputs go to `_bmad-output/` (`planning-artifacts/`, `implementation-artifacts/`); long-term knowledge stays in `docs/`.
+- GitHub issues are the source of truth: BMAD epics/stories are pushed one-way into issues, then edited on GitHub.
+- BMAD dev skills (`bmad-build`, `bmad-agent-dev`, ...) follow the workflow above: a story is worked on a branch `type/<N>-slug` named after its issue and lands through a PR with `Closes #N`.
+- `_bmad/config.user.toml` and `_bmad/custom/*.user.toml` hold per-user answers; the custom ones are gitignored by BMAD.
+
 ## Architecture
 
 - Next.js 16 App Router (`src/app/`)
