@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import type { CardStack } from '@/types/cards';
@@ -21,14 +21,56 @@ import { ExportMenu } from './ExportMenu/ExportMenu';
 import styles from './page.module.css';
 import { CollectionView } from './lib/CollectionView/CollectionView';
 import { CollectionSearchPanel } from './lib/CollectionSearchPanel';
+import { useStackSelection } from '@/lib/card/bulk/useStackSelection';
+import { BulkActionBar } from '@/lib/card/bulk/BulkActionBar';
+import { BulkEditModal } from '@/lib/card/bulk/BulkEditModal';
+import { SelectModeButton } from '@/lib/card/bulk/SelectModeButton';
+import type { BulkField } from '@/lib/card/bulk/bulk-edit';
+import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
+import { planCollectionRemove } from '@/lib/collection/bulk-plans';
+import { BulkAddToDeckModal } from './lib/BulkAddToDeckModal/BulkAddToDeckModal';
+
+const COLLECTION_FIELDS: readonly BulkField[] = [
+	'tagsAdd',
+	'tagsRemove',
+	'condition',
+	'language',
+	'finish',
+	'proxy',
+	'forTrade',
+	'alter',
+	'purchasePrice',
+];
 
 function CollectionPageInner() {
 	const t = useTranslations('collection');
 	const menuLabels = useOwnedCardMenuLabels('collection');
-	const { entries, isLoaded, clearCollection } = useCollectionContext();
+	const tBulk = useTranslations('bulk');
+	const {
+		entries,
+		isLoaded,
+		clearCollection,
+		collection,
+		bulkUpdate,
+		bulkRemove,
+		bulkAssignToDeck,
+	} = useCollectionContext();
 	const [stackBy, setStackBy] = useStackBy('collection');
 	const model = useIndexedCollection(entries, { filterable: true, stackBy });
 	const { status, openModal } = useImportContext();
+	const selection = useStackSelection(
+		model.allStacks,
+		`${JSON.stringify(model.filters)}|${JSON.stringify(stackBy)}`
+	);
+	const [bulkModal, setBulkModal] = useState<'edit' | 'deck' | 'remove' | null>(null);
+	const selectedCopies = useMemo(
+		() =>
+			selection.selectedRowIds.flatMap((rowId) =>
+				collection[rowId] ? [{ rowId, entry: collection[rowId].entry }] : []
+			),
+		[selection.selectedRowIds, collection]
+	);
+	const closeBulkModal = useCallback(() => setBulkModal(null), []);
 
 	const { openAddToDeck } = useAddToDeckModal();
 	const { openCardModal } = useCardModalContext();
@@ -69,6 +111,8 @@ function CollectionPageInner() {
 		</div>
 	);
 
+	const detachCount = planCollectionRemove(selectedCopies).detachIds.length;
+
 	const actions = (
 		<>
 			{entries.length > 0 && (
@@ -100,7 +144,12 @@ function CollectionPageInner() {
 			title={t('title')}
 			actions={actions}
 			emptyState={emptyState}
-			toolbarExtra={<StackByMenu value={stackBy} onChange={setStackBy} />}
+			toolbarExtra={
+				<>
+					<StackByMenu value={stackBy} onChange={setStackBy} />
+					<SelectModeButton active={selection.selectMode} onToggle={selection.toggleMode} />
+				</>
+			}
 			onCardClick={openCard}
 			buildCardMenuItems={(stack, close) =>
 				buildOwnedCardMenu(
@@ -121,8 +170,73 @@ function CollectionPageInner() {
 			}
 			showDeckBadges
 			panelOpen={panelOpen && !panelExpanded}
+			selection={{
+				active: selection.selectMode,
+				isSelected: (key) => selection.selected.has(key),
+				toggle: selection.toggle,
+			}}
 		>
 			<ImportModal />
+			{selection.selectMode && (
+				<BulkActionBar
+					summary={tBulk('summary', {
+						stacks: selection.stackCount,
+						copies: selection.selectedRowIds.length,
+					})}
+					allSelected={selection.allSelected}
+					selectAllDisabled={model.isInitialLoading}
+					onToggleSelectAll={() => selection.toggleSelectAll(selection.allKeys)}
+					hasSelection={selection.selectedRowIds.length > 0}
+					actions={[
+						{ id: 'edit', label: tBulk('edit'), onClick: () => setBulkModal('edit') },
+						{ id: 'deck', label: tBulk('addToDeck'), onClick: () => setBulkModal('deck') },
+						{
+							id: 'remove',
+							label: tBulk('remove'),
+							onClick: () => setBulkModal('remove'),
+							danger: true,
+						},
+					]}
+					onClear={selection.clear}
+					onExit={selection.exit}
+					escapeDisabled={bulkModal !== null}
+				/>
+			)}
+			{bulkModal === 'edit' && (
+				<BulkEditModal
+					title={tBulk('editTitle', { count: selectedCopies.length })}
+					fields={COLLECTION_FIELDS}
+					onApply={(edit) => {
+						bulkUpdate(selection.selectedRowIds, edit);
+						selection.clear();
+					}}
+					onClose={closeBulkModal}
+				/>
+			)}
+			{bulkModal === 'deck' && (
+				<BulkAddToDeckModal
+					copies={selectedCopies}
+					onConfirm={(deckId, zone) => {
+						bulkAssignToDeck(selection.selectedRowIds, deckId, zone);
+						selection.clear();
+					}}
+					onClose={closeBulkModal}
+				/>
+			)}
+			{bulkModal === 'remove' && (
+				<ConfirmModal
+					message={tBulk('confirmRemoveCollection', { count: selectedCopies.length })}
+					confirmLabel={tBulk('remove')}
+					onConfirm={() => {
+						bulkRemove(selection.selectedRowIds);
+						selection.clear();
+						setBulkModal(null);
+					}}
+					onClose={closeBulkModal}
+				>
+					{detachCount > 0 && <p>{tBulk('detachNotice', { count: detachCount })}</p>}
+				</ConfirmModal>
+			)}
 			{panelOpen && (
 				<CollectionSearchPanel
 					expanded={panelExpanded}

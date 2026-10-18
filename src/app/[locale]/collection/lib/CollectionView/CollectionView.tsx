@@ -15,6 +15,7 @@ import { withCustomBadge } from '@/lib/card/utils/composeOverlay';
 import type { AnyCard } from '@/lib/card/components/CardList/CardList.types';
 import { Button } from '@/components/Button/Button';
 import type { CollectionModel } from '@/lib/collection-index/collection-model';
+import { BulkSelectOverlay } from '@/lib/card/bulk/BulkSelectOverlay';
 import styles from './CollectionView.module.css';
 
 type Props = {
@@ -46,9 +47,84 @@ type Props = {
 	filterLayout?: 'aside' | 'modal';
 	/** Reflow the grid to make room for the fixed side search panel (desktop). */
 	panelOpen?: boolean;
+	/**
+	 * Bulk selection mode (owner only). While `active`, a tile click toggles its
+	 * stack (keyed by `stack.key`), the context menu is off and tiles show a
+	 * check overlay.
+	 */
+	selection?: {
+		active: boolean;
+		isSelected: (stackKey: string) => boolean;
+		toggle: (stackKey: string) => void;
+	};
 	/** Modal(s) rendered as a sibling of the layout (owner edit / read-only view). */
 	children?: ReactNode;
 };
+
+type Selection = NonNullable<Props['selection']>;
+type StackLookup = Map<string, CardStack>;
+
+/** Selection mode turns a tile click into a stack toggle; otherwise the normal click. */
+function cardClickHandler(
+	stacks: StackLookup,
+	selection: Selection | undefined,
+	onCardClick: Props['onCardClick']
+): ((card: AnyCard) => void) | undefined {
+	if (selection?.active) {
+		return (card) => {
+			const stack = stacks.get(cardKey(card));
+			if (stack) selection.toggle(stack.key);
+		};
+	}
+	if (!onCardClick) return undefined;
+	return (card) => {
+		const stack = stacks.get(cardKey(card));
+		if (stack) onCardClick(stack);
+	};
+}
+
+/** The context menu is off while selecting. */
+function cardMenuBuilder(
+	stacks: StackLookup,
+	selection: Selection | undefined,
+	buildCardMenuItems: Props['buildCardMenuItems']
+): ((card: AnyCard, close: () => void) => ContextMenuAction[] | null) | undefined {
+	if (!buildCardMenuItems || selection?.active) return undefined;
+	return (card, close) => {
+		const stack = stacks.get(cardKey(card));
+		return stack ? buildCardMenuItems(stack, close) : null;
+	};
+}
+
+function cardOverlayRenderer(
+	stacks: StackLookup,
+	selection: Selection | undefined,
+	showDeckBadges: boolean,
+	badgeClass: string
+) {
+	return (card: AnyCard) => {
+		const stack = stacks.get(cardKey(card));
+		const count = stack?.cards.length ?? 1;
+		const countBadge = count > 1 ? <span className={badgeClass}>x{count}</span> : undefined;
+		if (selection?.active && stack) {
+			return withCustomBadge(
+				card,
+				<>
+					<BulkSelectOverlay checked={selection.isSelected(stack.key)} />
+					{countBadge}
+				</>
+			);
+		}
+		const deckBadge = showDeckBadges && stack ? <DeckBadge cards={stack.cards} /> : undefined;
+		return withCustomBadge(
+			card,
+			<>
+				{deckBadge}
+				{countBadge}
+			</>
+		);
+	};
+}
 
 /**
  * Shared, owner-agnostic presentation of a collection: filters aside + stats +
@@ -70,6 +146,7 @@ export function CollectionView({
 	showDeckBadges = false,
 	filterLayout = 'aside',
 	panelOpen = false,
+	selection,
 	children,
 }: Props) {
 	const t = useTranslations('collection');
@@ -127,37 +204,14 @@ export function CollectionView({
 					onLoadMore={model.loadMore}
 					isLoadingMore={model.isLoadingMore}
 					toolbarExtra={toolbarExtra}
-					onCardClick={
-						onCardClick
-							? (card: AnyCard) => {
-									const stack = stackByRowId.get(cardKey(card));
-									if (stack) onCardClick(stack);
-								}
-							: undefined
-					}
-					buildCardMenuItems={
-						buildCardMenuItems
-							? (card: AnyCard, close: () => void) => {
-									const stack = stackByRowId.get(cardKey(card));
-									return stack ? buildCardMenuItems(stack, close) : null;
-								}
-							: undefined
-					}
-					renderOverlay={(card) => {
-						const stack = stackByRowId.get(cardKey(card));
-						const count = stack?.cards.length ?? 1;
-						const countBadge =
-							count > 1 ? <span className={styles.cardBadge}>x{count}</span> : undefined;
-						const deckBadge =
-							showDeckBadges && stack ? <DeckBadge cards={stack.cards} /> : undefined;
-						return withCustomBadge(
-							card,
-							<>
-								{deckBadge}
-								{countBadge}
-							</>
-						);
-					}}
+					onCardClick={cardClickHandler(stackByRowId, selection, onCardClick)}
+					buildCardMenuItems={cardMenuBuilder(stackByRowId, selection, buildCardMenuItems)}
+					renderOverlay={cardOverlayRenderer(
+						stackByRowId,
+						selection,
+						showDeckBadges,
+						styles.cardBadge
+					)}
 					sortOrder={filters.order}
 					sortDir={filters.dir}
 					onSortChange={(newOrder, newDir) =>

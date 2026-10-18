@@ -24,7 +24,7 @@ const EMPTY_STACK_BY: StackBy = [];
 export function useIndexedCollection(
 	entries: Array<{ scryfallId: string; entry: CardEntry }>,
 	opts: { filterable: boolean; stackBy?: StackBy }
-): CollectionModel {
+): CollectionModel & { allStacks: FacetStack[] } {
 	const stackBy = opts.stackBy ?? EMPTY_STACK_BY;
 	const index = useCollectionIndex();
 	const [filters, setFilters] = useState<CollectionFilters>(defaultCollectionFilters);
@@ -65,6 +65,8 @@ export function useIndexedCollection(
 		setsLoading,
 		stats,
 		visibleStacks: paged.visibleStacks,
+		/** Every filtered stack (all pages), for "select all" and bulk resolution. */
+		allStacks: facetStacks,
 		hasMore: paged.hasMore,
 		loadMore: paged.loadMore,
 		// Mitigates a known usePagedCards edge case where isLoadingMore can stay
