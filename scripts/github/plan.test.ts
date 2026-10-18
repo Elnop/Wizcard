@@ -49,7 +49,7 @@ test('planStatusOptions keeps existing ids and configured order', () => {
 		],
 		['Backlog', DONE]
 	);
-	assert.deepEqual(r, [{ name: 'Backlog' }, { id: 'a', name: DONE }]);
+	assert.deepEqual(r, [{ name: 'Backlog' }, { id: 'a', name: DONE }, { id: 'b', name: 'Todo' }]);
 });
 
 test('planStatusOptions returns null when already converged', () => {
@@ -74,6 +74,44 @@ test('planStatusOptions reorders when names match but order differs', () => {
 	assert.deepEqual(r, [
 		{ id: 'b', name: 'Backlog' },
 		{ id: 'a', name: 'Done' },
+	]);
+});
+
+test('planStatusOptions: unknown existing option survives after configured ones', () => {
+	const r = planStatusOptions(
+		[
+			{ id: 'x', name: 'Legacy' },
+			{ id: 'b', name: 'Backlog' },
+		],
+		['Backlog', 'Done']
+	);
+	assert.deepEqual(r, [
+		{ id: 'b', name: 'Backlog' },
+		{ name: 'Done' },
+		{ id: 'x', name: 'Legacy' },
+	]);
+});
+
+test('planStatusOptions: configured prefix + extra option is a no-op', () => {
+	const r = planStatusOptions(
+		[
+			{ id: 'a', name: 'Backlog' },
+			{ id: 'b', name: 'Done' },
+			{ id: 'x', name: 'Legacy' },
+		],
+		['Backlog', 'Done']
+	);
+	assert.equal(r, null);
+});
+
+test('planStatusOptions: existing color/description preserved', () => {
+	const r = planStatusOptions(
+		[{ id: 'a', name: 'Done', color: 'RED', description: 'fini' }],
+		['Backlog', 'Done']
+	);
+	assert.deepEqual(r, [
+		{ name: 'Backlog' },
+		{ id: 'a', name: 'Done', color: 'RED', description: 'fini' },
 	]);
 });
 

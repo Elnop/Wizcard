@@ -1,0 +1,25 @@
+name: Chore
+description: Maintenance, outillage ou tâche technique sans valeur utilisateur directe
+title: '[Chore] '
+labels: ['chore']
+projects: ['Elnop/2']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Une chore regroupe une tâche de maintenance ou d'outillage (dépendances, CI, refactor, documentation).
+  - type: textarea
+    id: objectif
+    attributes:
+      label: Objectif
+      description: Ce qu'il faut faire et pourquoi.
+    validations:
+      required: true
+  - type: textarea
+    id: criteres-de-fin
+    attributes:
+      label: Critères de fin
+      description: Liste vérifiable des conditions pour considérer la tâche comme terminée.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...

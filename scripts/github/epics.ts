@@ -80,15 +80,15 @@ Le développeur
 
 ### Je veux
 
-régler à la main les filtres, regroupements et workflows du Project
+régler à la main les regroupements, colonnes, champs de date et workflows du Project
 
 ### Afin de
 
-compléter ce que l'API GraphQL ne permet pas de configurer
+compléter ce que l'API GraphQL ne permet pas de configurer (les filtres sont convergés par le script)
 
 ### Critères d'acceptation
 
-- Filtres/regroupements des vues réglés
+- Regroupements, colonnes et champs de date des vues réglés
 - Workflows natifs (ajout auto, statut) activés
 
 ### Notes techniques
@@ -421,7 +421,7 @@ Créer un epic par chantier en cours, avec ses stories restantes connues :
 - Migration prod de l'empilement de cartes / édition en masse
 - Seeds prod du studio
 
-Les migrations prod en attente deviennent des items \`needs-migration\` dans « To deploy ».
+Les migrations prod en attente deviennent des items \`needs-migration\` dans « À déployer ».
 
 ### Critères de fin
 

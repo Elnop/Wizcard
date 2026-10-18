@@ -26,19 +26,26 @@ export function planLabels(
 	return { create, update };
 }
 
-/** `null` si déjà convergé ; sinon la liste complète ordonnée (ids conservés). */
+export type StatusOption = { id?: string; name: string; color?: string; description?: string };
+
+/**
+ * `null` si déjà convergé (les noms configurés forment un préfixe ordonné des
+ * options existantes) ; sinon : options configurées dans l'ordre (id/couleur/
+ * description conservés), suivies des options existantes inconnues (jamais supprimées).
+ */
 export function planStatusOptions(
-	existing: { id: string; name: string }[],
+	existing: { id: string; name: string; color?: string; description?: string }[],
 	desired: string[]
-): { id?: string; name: string }[] | null {
-	const same =
-		existing.length === desired.length && existing.every((o, i) => o.name === desired[i]);
-	if (same) return null;
-	const idByName = new Map(existing.map((o) => [o.name, o.id]));
-	return desired.map((name) => {
-		const id = idByName.get(name);
-		return id ? { id, name } : { name };
-	});
+): StatusOption[] | null {
+	const converged =
+		existing.length >= desired.length && desired.every((name, i) => existing[i].name === name);
+	if (converged) return null;
+	const byName = new Map(existing.map((o) => [o.name, o]));
+	const wanted = new Set(desired);
+	return [
+		...desired.map((name): StatusOption => byName.get(name) ?? { name }),
+		...existing.filter((o) => !wanted.has(o.name)),
+	];
 }
 
 export function planFields(existingNames: string[], desired: FieldSpec[]): FieldSpec[] {

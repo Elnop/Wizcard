@@ -124,14 +124,17 @@ function ensureProject(): ProjectRef | null {
 // ── Champs / statut / vues ───────────────────────────────────────────────
 type ProjectState = {
 	node: {
-		status: { id: string; options: { id: string; name: string }[] } | null;
+		status: {
+			id: string;
+			options: { id: string; name: string; color?: string; description?: string }[];
+		} | null;
 		fields: { nodes: { id?: string; name?: string }[] };
 		views: { nodes: { name: string }[] };
 	};
 };
 
 const STATE_QUERY = `query($project: ID!) { node(id: $project) { ... on ProjectV2 {
-  status: field(name: "Status") { ... on ProjectV2SingleSelectField { id options { id name } } }
+  status: field(name: "Status") { ... on ProjectV2SingleSelectField { id options { id name color description } } }
   fields(first: 50) { nodes { ... on ProjectV2FieldCommon { id name } } }
   views(first: 50) { nodes { name } }
 } } }`;
@@ -155,10 +158,11 @@ function syncProject(project: ProjectRef | null): void {
 		const plan = planStatusOptions(state.status.options, STATUS_OPTIONS);
 		if (plan) {
 			act(`status → ${STATUS_OPTIONS.join(' → ')}`, () => {
+				// Options existantes : couleur/description inchangées ; nouvelles : palette.
 				const options = plan.map((o, i) => ({
 					...o,
-					color: OPTION_COLORS[i % OPTION_COLORS.length],
-					description: '',
+					color: o.color ?? OPTION_COLORS[i % OPTION_COLORS.length],
+					description: o.description ?? '',
 				}));
 				ghGraphql(
 					`mutation($id: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]!) {

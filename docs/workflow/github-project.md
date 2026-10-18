@@ -7,6 +7,7 @@ Board: https://github.com/users/Elnop/projects/2 (user-owned Project v2, linked 
 | Status      | Meaning                                                       |
 | ----------- | ------------------------------------------------------------- |
 | Backlog     | New or reopened item, not started                             |
+| Ready       | Refined and ready to be picked up                             |
 | In progress | Being worked on                                               |
 | In review   | A pull request linked to the issue is open                    |
 | Done (main) | Closed / merged into `main`, not yet deployed                 |
@@ -53,6 +54,14 @@ Project -> Settings -> Workflows:
 - [x] Item closed -> Done (main)
 - [x] Pull request merged -> Done (main)
 - [x] Pull request linked to issue -> In review
-- [ ] Auto-close issue: OFF
 
-Roadmap view: date fields `Début` (start) and `Échéance` (target), zoom Month.
+Leave "Auto-close issue" OFF.
+
+## View layout settings (UI only)
+
+View filters ARE converged by `gh:setup`; only grouping, columns, date fields and workflows are manual:
+
+- Kanban: grouped by Status.
+- Par epic: GitHub's native sub-issue hierarchy table, with the "Sub-issues progress" field visible (no grouping).
+- À déployer: show the Labels column so `needs-migration` is visible.
+- Roadmap: date fields `Début` (start) and `Échéance` (target), zoom Month.

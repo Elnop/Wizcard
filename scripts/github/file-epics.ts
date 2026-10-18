@@ -7,7 +7,7 @@
  * Ne supprime ni ne modifie jamais d'issue existante.
  */
 import { gh, ghGraphql, ghJson } from './lib/gh';
-import { EPICS, type EpicSpec, type StorySpec } from './epics';
+import { EPICS } from './epics';
 import { planEpics } from './plan';
 import { PROJECT } from './project-config';
 
@@ -90,10 +90,10 @@ const existing = listExisting();
 const { createEpics, createChildren } = planEpics(existing, EPICS);
 const ids = new Map(existing.map((e) => [e.title, e.id]));
 
-for (const e of createEpics as EpicSpec[]) {
+for (const e of createEpics) {
 	if (act(`epic + ${e.title}`)) ids.set(e.title, createIssue(e.title, 'epic', e.body).id);
 }
-for (const { epicTitle, child } of createChildren as { epicTitle: string; child: StorySpec }[]) {
+for (const { epicTitle, child } of createChildren) {
 	if (!act(`${child.label} + ${child.title}  (↑ ${epicTitle})`)) continue;
 	const parent = ids.get(epicTitle);
 	if (!parent) throw new Error(`Epic introuvable : ${epicTitle}`);
