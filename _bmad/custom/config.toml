@@ -5,3 +5,9 @@
 #
 # [agents.bmad-agent-pm]
 # description = "Prefers short, bulleted PRDs over narrative drafts."
+
+# Wizcard: tickets, PRs and BMAD planning docs are in French
+# (the sync script copies epics/stories verbatim into GitHub issues).
+[core]
+communication_language = "French"
+document_output_language = "French"
