@@ -51,6 +51,20 @@ export function planViews(existingNames: string[], desired: ViewSpec[]): ViewSpe
 	return desired.filter((v) => !have.has(v.name));
 }
 
+/** Vues existantes dont le filtre diffère du souhaité (absent/null/'' = aucun filtre). */
+export function planViewFilters(
+	existing: { id: string; name: string; filter: string | null }[],
+	desired: ViewSpec[]
+): { id: string; name: string; filter: string }[] {
+	const want = new Map(desired.map((v) => [v.name, v.filter ?? '']));
+	const out: { id: string; name: string; filter: string }[] = [];
+	for (const e of existing) {
+		const w = want.get(e.name);
+		if (w !== undefined && (e.filter ?? '') !== w) out.push({ id: e.id, name: e.name, filter: w });
+	}
+	return out;
+}
+
 /** Epics/enfants à créer ; appariement par titre exact. */
 export function planEpics(
 	existing: { number: number; title: string; subIssueTitles: string[] }[],

@@ -7,6 +7,8 @@ export type FieldSpec = { name: string; kind: 'DATE' | 'ITERATION' };
 export type ViewSpec = {
 	name: string;
 	layout: 'BOARD_LAYOUT' | 'TABLE_LAYOUT' | 'ROADMAP_LAYOUT';
+	/** Filtre de la vue (syntaxe GitHub Projects) ; absent = aucun filtre. */
+	filter?: string;
 };
 
 export const PROJECT = { owner: 'Elnop', repo: 'Elnop/Wizcard', title: 'Wizcard' };
@@ -43,8 +45,8 @@ export const FIELDS: FieldSpec[] = [
 ];
 
 export const VIEWS: ViewSpec[] = [
-	{ name: 'Kanban', layout: 'BOARD_LAYOUT' },
+	{ name: 'Kanban', layout: 'BOARD_LAYOUT', filter: '-label:epic' },
 	{ name: 'Par epic', layout: 'TABLE_LAYOUT' },
-	{ name: 'À déployer', layout: 'TABLE_LAYOUT' },
-	{ name: 'Roadmap', layout: 'ROADMAP_LAYOUT' },
+	{ name: 'À déployer', layout: 'TABLE_LAYOUT', filter: 'status:"Done (main)"' },
+	{ name: 'Roadmap', layout: 'ROADMAP_LAYOUT', filter: 'label:epic' },
 ];

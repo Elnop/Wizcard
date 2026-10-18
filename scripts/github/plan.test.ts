@@ -1,8 +1,16 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { planEpics, planFields, planLabels, planStatusOptions, planViews } from './plan';
+import {
+	planEpics,
+	planFields,
+	planLabels,
+	planStatusOptions,
+	planViewFilters,
+	planViews,
+} from './plan';
 
 const DONE = 'Done (main)';
+const NOT_EPIC = '-label:epic';
 
 test('planLabels creates missing, updates drifted, ignores unknown', () => {
 	const r = planLabels(
@@ -106,4 +114,39 @@ test('planEpics skips existing epic and existing children', () => {
 		{ epicTitle: '[Epic] A', child: A.children[1] },
 		{ epicTitle: '[Epic] B', child: B.children[0] },
 	]);
+});
+
+test('planViewFilters detects drift, clears stale filters, ignores unknown views', () => {
+	const r = planViewFilters(
+		[
+			{ id: 'v1', name: 'Kanban', filter: null },
+			{ id: 'v2', name: 'Par epic', filter: 'label:epic' },
+			{ id: 'v3', name: 'Manual', filter: 'x' },
+		],
+		[
+			{ name: 'Kanban', layout: 'BOARD_LAYOUT', filter: NOT_EPIC },
+			{ name: 'Par epic', layout: 'TABLE_LAYOUT' },
+			{ name: 'Roadmap', layout: 'ROADMAP_LAYOUT', filter: 'label:epic' },
+		]
+	);
+	assert.deepEqual(r, [
+		{ id: 'v1', name: 'Kanban', filter: NOT_EPIC },
+		{ id: 'v2', name: 'Par epic', filter: '' },
+	]);
+});
+
+test('planViewFilters is a no-op when filters match (null/undefined/empty equal)', () => {
+	const r = planViewFilters(
+		[
+			{ id: 'v1', name: 'Kanban', filter: NOT_EPIC },
+			{ id: 'v2', name: 'Par epic', filter: null },
+			{ id: 'v3', name: 'Roadmap', filter: '' },
+		],
+		[
+			{ name: 'Kanban', layout: 'BOARD_LAYOUT', filter: NOT_EPIC },
+			{ name: 'Par epic', layout: 'TABLE_LAYOUT' },
+			{ name: 'Roadmap', layout: 'ROADMAP_LAYOUT', filter: '' },
+		]
+	);
+	assert.deepEqual(r, []);
 });

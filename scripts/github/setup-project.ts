@@ -6,8 +6,8 @@
  * Usage : `npm run gh:setup` (applique) ou `npm run gh:setup -- --dry-run`
  * (affiche ce qui serait fait, sans rien modifier).
  *
- * Limite API : les filtres/regroupements des vues ne sont pas configurables via
- * GraphQL — à régler à la main dans l'UI après création des vues.
+ * Les filtres de vues sont convergés via GraphQL ; regroupements, workflows
+ * intégrés et champs de la Roadmap restent manuels (voir docs/workflow/github-project.md).
  * Ne supprime jamais rien (labels, projets, champs, vues).
  */
 import { gh, ghGraphql, ghJson } from './lib/gh';
@@ -20,7 +20,7 @@ import {
 	VIEWS,
 	type LabelSpec,
 } from './project-config';
-import { planFields, planLabels, planStatusOptions, planViews } from './plan';
+import { planFields, planLabels, planStatusOptions, planViewFilters, planViews } from './plan';
 
 const dryRun = process.argv.includes('--dry-run');
 let changes = 0;
@@ -213,6 +213,23 @@ function syncProject(project: ProjectRef | null): void {
 				`mutation($project: ID!, $name: String!, $layout: ProjectV2ViewLayout!) {
   createProjectV2View(input: { projectId: $project, name: $name, layout: $layout }) { clientMutationId } }`,
 				{ project: project.id, name: v.name, layout: v.layout }
+			);
+		});
+	}
+
+	// Filtres de vues (relecture : inclut les vues tout juste créées)
+	const views = ghGraphql<{
+		node: { views: { nodes: { id: string; name: string; filter: string | null }[] } };
+	}>(
+		`query($project: ID!) { node(id: $project) { ... on ProjectV2 { views(first: 50) { nodes { id name filter } } } } }`,
+		{ project: project.id }
+	).node.views.nodes;
+	for (const v of planViewFilters(views, VIEWS)) {
+		act(`view filter ${v.name} → ${v.filter || '(none)'}`, () => {
+			ghGraphql(
+				`mutation($id: ID!, $filter: String!) {
+  updateProjectV2View(input: { viewId: $id, filter: $filter }) { clientMutationId } }`,
+				{ id: v.id, filter: v.filter }
 			);
 		});
 	}
