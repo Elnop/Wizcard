@@ -44,7 +44,10 @@ export function BulkActionBar({
 	useEffect(() => {
 		if (escapeDisabled) return;
 		const onKey = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') onExit();
+			if (e.key !== 'Escape' || e.defaultPrevented) return;
+			const target = e.target instanceof Element ? e.target : null;
+			if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+			onExit();
 		};
 		window.addEventListener('keydown', onKey);
 		return () => window.removeEventListener('keydown', onKey);
