@@ -9,9 +9,9 @@ export interface ParsedCardFilename {
 }
 
 const EXT_RE = /\.([a-zA-Z0-9]+)$/u;
-// eslint-disable-next-line sonarjs/slow-regex
+// eslint-disable-next-line sonarjs/super-linear-regex
 const BRACKET_RE = /\[([^\]]*)\]/gu;
-// eslint-disable-next-line sonarjs/slow-regex
+// eslint-disable-next-line sonarjs/super-linear-regex
 const PAREN_RE = /\(([^)]*)\)/gu;
 // Numeric collector number: {357}
 const COLLECTOR_RE = /\{(\d+)\}/u;
@@ -20,10 +20,10 @@ const SET_CODE_RE = /^[A-Za-z0-9]{2,6}$/u;
 // Language prefix like {DE} or {EN}: 1-3 alphabetic chars only at start of filename (ISO-639-1)
 const LANG_PREFIX_RE = /^\{([A-Za-z]{1,3})\}\s*/u;
 // Comma separator for splitting bracket/paren tag lists
-// eslint-disable-next-line sonarjs/slow-regex
+// eslint-disable-next-line sonarjs/super-linear-regex
 const TAG_SPLIT_RE = /\s*,\s*/u;
 // Numeric sort prefix: "19 - ", "03. ", "26.", "037_", or bare digits+space "9 ", "12 "
-// eslint-disable-next-line sonarjs/slow-regex
+// eslint-disable-next-line sonarjs/super-linear-regex
 const NUMERIC_PREFIX_RE = /^\d+\s*(?:[-–—._]\s*|\s+(?=[A-Za-z]))/u;
 
 // Apostrophe-encoded underscores: "tormod_s" → "tormod's"
@@ -36,7 +36,7 @@ function restoreUnderscoreSpaces(s: string): string {
 	return s.replace(/_/gu, ' ');
 }
 
-// eslint-disable-next-line sonarjs/slow-regex
+// eslint-disable-next-line sonarjs/super-linear-regex
 const BRACE_RE = /\{[^}]*\}/gu;
 
 function normalizeCardName(name: string): string {

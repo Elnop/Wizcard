@@ -6,11 +6,11 @@ import type { CardType } from '../../src/lib/mpc/types';
 import type { DriveImageEntry } from './types';
 
 const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif']);
-// eslint-disable-next-line sonarjs/slow-regex
+// eslint-disable-next-line sonarjs/super-linear-regex
 const FOLDER_BRACKET_RE = /\[([^\]]*)\]/gu;
-// eslint-disable-next-line sonarjs/slow-regex
+// eslint-disable-next-line sonarjs/super-linear-regex
 const FOLDER_PAREN_RE = /\(([^)]*)\)/gu;
-// eslint-disable-next-line sonarjs/slow-regex
+// eslint-disable-next-line sonarjs/super-linear-regex
 const FOLDER_TAG_SPLIT_RE = /\s*,\s*/u;
 const DRIVE_ID_RE = /[?&]id=([a-zA-Z0-9_-]+)|\/folders\/([a-zA-Z0-9_-]+)/;
 
