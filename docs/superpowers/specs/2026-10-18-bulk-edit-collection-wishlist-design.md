@@ -1,7 +1,7 @@
 # Bulk selection and edit — collection, wishlist (and deck, shared)
 
 **Date**: 2026-10-18
-**Status**: Design approved in chat, 2026-10-18. Not implemented.
+**Status**: Implemented 2026-10-18 on branch `feat/bulk-edit-sp2` (not merged, not pushed). Runtime checks of the Verification section pending.
 **Prerequisite**: sub-project 1, configurable stacking
 ([2026-10-04-card-stacking-design.md](2026-10-04-card-stacking-design.md)), merged into `main`.
 
@@ -308,3 +308,66 @@ has a collection, a wishlist and two decks:
    removed).
 8. Changing the stacking or a filter clears the selection.
 9. Studio: the rows match. The sync queue is empty (no failed op).
+
+## Implementation notes (deviations from the design above)
+
+Decided during implementation (2026-10-18). Where this section and the design disagree,
+this section wins.
+
+- **Selection key**: for collection and wishlist the key is `stack.key` (unique per stack
+  in `groupByStack`; `toCardStack` copies it unchanged), not the representative rowId. A
+  paged `CardStack` can drop an unresolvable first copy and change its representative.
+- **Where the actions live**: cross-store bulk actions are in
+  `src/lib/collection/bulk-actions.ts` and `src/lib/wishlist/bulk-actions.ts`, with the
+  pure plans in `bulk-plans.ts` next to them. They are bound by `CollectionContext` /
+  `WishlistContext`. collection-store must not import deck-store (deck-store already
+  imports collection-store).
+- **Select mode after applying**: deck bulk edit still exits select mode after applying
+  (unchanged behaviour); collection and wishlist clear the selection and stay in select
+  mode.
+- **Deck bulk edit tags**: tags now ADD, and there is a new "tags to remove" field. The
+  old deck modal replaced the whole tags array, which wiped the `deck:<zone>` tag. Deck
+  bulk edit also now persists proxy / for_trade / alter (the old `updateDeckCard` DB patch
+  dropped them).
+- **Zone tags**: deck zone tags (`deck:` prefix) are refused both in tags-to-remove and
+  in tags-to-add.
+- **Foil normalisation**: `applyBulkEdit` normalises a foil copy with no foilType to
+  `'foil'` when it is edited (legacy rows were misfiltered by the foil filter).
+- **`ownerId` handling**: wishlist to collection also sets `ownerId` on the loaded deck
+  copy (the single-row `moveToCollection` does not). Collection remove clears `ownerId`
+  on the loaded deck copy of detached rows.
+- **Collection to deck**: only patches decks already loaded in the deck store (no partial
+  `decksCards[deckId]` for unloaded decks; `hydrateActiveDeck` re-reads the DB).
+- **Grid views only while selecting**: while select mode is on, the list is restricted to
+  grid views (CardList `viewModes`), because the table view has no overlay. The user's
+  chosen view comes back when select mode ends. Deck owner view: `['fluid-grid','grid']`.
+- **Escape**: exits select mode only when focus is not in an input / textarea / select /
+  contenteditable and no modal is open (`escapeDisabled`).
+- **Selection reset**: `useBulkSelection(resetKey)` resets at render time, which also
+  fixes the SP1 deferred minor "deck selection not cleared when deckStackBy changes".
+- **`bulk-update` op**: no migration. The id-only match is protected by RLS (UPDATE
+  policy `owner_id = auth.uid()` OR deck in my decks), and every written column is in the
+  column-level UPDATE grant.
+
+### Follow-ups
+
+Not done, non-blocking.
+
+- Deck bulk edit does not mirror into the collection/wishlist stores (pre-existing for
+  the single-row `updateDeckCard`); a later single-row collection `update` op can write
+  the stale full entry back.
+- ConfirmModal's confirm is always danger-styled ("Move to collection" looks
+  destructive).
+- Bulk paths emit no analytics events; the source deck `updatedAt` is not bumped on
+  move; wishlist bulk remove/move patch the deck store once per row.
+- The persisted `bulk-update` payload stores one `{rowId, updates}` per row; pre-grouping
+  would shrink it for very large selections (saveQueue swallows quota errors,
+  pre-existing).
+- The Escape selector misses `contenteditable=""` / `"plaintext-only"`.
+
+### Verification state
+
+At the time of writing: 22 pure tests pass (bulk-edit 8, entry-db-patch 4,
+group-row-updates 4, selection 2, collection bulk-plans 3, wishlist bulk-plans 1); tsc is
+clean on touched files; `npm run build` is OK. Runtime/browser checks of the Verification
+section: not yet run (to be done before merge).
