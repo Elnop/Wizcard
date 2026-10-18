@@ -30,10 +30,11 @@ export function useIndexedCollection(
 	const [filters, setFilters] = useState<CollectionFilters>(defaultCollectionFilters);
 	const { sets, isLoading: setsLoading } = useScryfallSets();
 
+	const { getFacets } = index;
 	const facetStacks = useMemo<FacetStack[]>(() => {
 		const copies: FacetCopy[] = [];
 		for (const { scryfallId, entry } of entries) {
-			const f = index.getFacets(scryfallId);
+			const f = getFacets(scryfallId);
 			if (f) copies.push({ ...f, entry } as FacetCopy);
 		}
 		if (!opts.filterable) {
@@ -46,7 +47,7 @@ export function useIndexedCollection(
 		}
 		const grouped = groupByStack(copies, stackBy);
 		return opts.filterable ? filterStacks(grouped, filters) : grouped;
-	}, [entries, index.getFacets, filters, opts.filterable, stackBy]);
+	}, [entries, getFacets, filters, opts.filterable, stackBy]);
 
 	const stats = useMemo(() => computeCollectionStats(facetStacks), [facetStacks]);
 	const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);

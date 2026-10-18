@@ -59,7 +59,7 @@ const TYPE_HEADERS = new Set([
 ]);
 
 // Deck name patterns — short inputs, no ReDoS risk
-/* eslint-disable sonarjs/slow-regex */
+/* eslint-disable sonarjs/super-linear-regex */
 const RE_MTGA_NAME = /^Name\s+(.+)$/i;
 const RE_COMMENT_NAME = /^\/\/\s*(.+)$/;
 const RE_HASH_NAME = /^#\s+(.+)$/;
@@ -68,7 +68,7 @@ const RE_NAME_COLON = /^Name:\s*(.+)$/i;
 // Lines that are metadata / comments to skip
 const RE_COMMENT_LINE = /^(\/\/|#)/;
 const RE_CARD_COUNT_COMMENT = /^(\/\/|#)\s*\d+\s+(cards?|cartes?|sideboard|mainboard)/i;
-/* eslint-enable sonarjs/slow-regex */
+/* eslint-enable sonarjs/super-linear-regex */
 
 export type DeckImportRow = ParsedImportRow & { zone: DeckZone };
 
@@ -80,7 +80,7 @@ export interface DeckImportResult {
 	detectedFormat: DeckFormat | null;
 }
 
-/* eslint-disable sonarjs/slow-regex -- all inputs are short single-line strings, no ReDoS risk */
+/* eslint-disable sonarjs/super-linear-regex -- all inputs are short single-line strings, no ReDoS risk */
 /**
  * Normalize a raw line to a standard format before regex matching.
  * Handles: Nx notation, markdown links, URLs, Archidekt brackets.
@@ -106,7 +106,7 @@ function normalizeLine(raw: string): string {
 
 	return line.trim();
 }
-/* eslint-enable sonarjs/slow-regex */
+/* eslint-enable sonarjs/super-linear-regex */
 
 function detectMtgaOfficialName(lines: string[]): string | null {
 	for (let i = 0; i < Math.min(lines.length - 1, 5); i++) {
@@ -178,7 +178,7 @@ function detectFormat(rows: DeckImportRow[]): DeckFormat | null {
 function matchSectionHeader(line: string): DeckZone | undefined {
 	let key = line.toLowerCase();
 	// Strip surrounding "=" decorations: "== considering ==" → "considering"
-	// eslint-disable-next-line sonarjs/slow-regex -- short header strings, no ReDoS risk
+	// eslint-disable-next-line sonarjs/super-linear-regex -- short header strings, no ReDoS risk
 	key = key.replace(/^=+\s*/, '').replace(/\s*=+$/, '');
 	// Strip trailing colon: "Sideboard:" → "sideboard"
 	if (key.endsWith(':')) key = key.slice(0, -1).trimEnd();
@@ -194,7 +194,7 @@ function isTypeHeader(line: string): boolean {
 	let key = line.toLowerCase();
 	if (key.endsWith(':')) key = key.slice(0, -1).trimEnd();
 	// Also match headers with card counts: "Creatures (12)"
-	// eslint-disable-next-line sonarjs/slow-regex -- short header strings, no ReDoS risk
+	// eslint-disable-next-line sonarjs/super-linear-regex -- short header strings, no ReDoS risk
 	key = key.replace(/\s*\(\d+\)\s*$/, '');
 	return TYPE_HEADERS.has(key);
 }

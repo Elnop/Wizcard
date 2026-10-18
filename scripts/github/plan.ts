@@ -1,0 +1,92 @@
+/**
+ * plan.ts — Planificateurs PURS : comparent l'état existant à l'état désiré et
+ * retournent uniquement ce qu'il reste à faire. Aucun effet de bord.
+ */
+import type { EpicSpec, StorySpec } from './epics';
+import type { FieldSpec, LabelSpec, ViewSpec } from './project-config';
+
+const normColor = (c: string) => c.replace(/^#/, '').toLowerCase();
+
+export function planLabels(
+	existing: LabelSpec[],
+	desired: LabelSpec[]
+): { create: LabelSpec[]; update: LabelSpec[] } {
+	const byName = new Map(existing.map((l) => [l.name.toLowerCase(), l]));
+	const create: LabelSpec[] = [];
+	const update: LabelSpec[] = [];
+	for (const d of desired) {
+		const cur = byName.get(d.name.toLowerCase());
+		if (!cur) create.push(d);
+		else if (
+			normColor(cur.color) !== normColor(d.color) ||
+			(cur.description ?? '') !== d.description
+		)
+			update.push(d);
+	}
+	return { create, update };
+}
+
+export type StatusOption = { id?: string; name: string; color?: string; description?: string };
+
+/**
+ * `null` si déjà convergé (les noms configurés forment un préfixe ordonné des
+ * options existantes) ; sinon : options configurées dans l'ordre (id/couleur/
+ * description conservés), suivies des options existantes inconnues (jamais supprimées).
+ */
+export function planStatusOptions(
+	existing: { id: string; name: string; color?: string; description?: string }[],
+	desired: string[]
+): StatusOption[] | null {
+	const converged =
+		existing.length >= desired.length && desired.every((name, i) => existing[i].name === name);
+	if (converged) return null;
+	const byName = new Map(existing.map((o) => [o.name, o]));
+	const wanted = new Set(desired);
+	return [
+		...desired.map((name): StatusOption => byName.get(name) ?? { name }),
+		...existing.filter((o) => !wanted.has(o.name)),
+	];
+}
+
+export function planFields(existingNames: string[], desired: FieldSpec[]): FieldSpec[] {
+	const have = new Set(existingNames);
+	return desired.filter((f) => !have.has(f.name));
+}
+
+export function planViews(existingNames: string[], desired: ViewSpec[]): ViewSpec[] {
+	const have = new Set(existingNames);
+	return desired.filter((v) => !have.has(v.name));
+}
+
+/** Vues existantes dont le filtre diffère du souhaité (absent/null/'' = aucun filtre). */
+export function planViewFilters(
+	existing: { id: string; name: string; filter: string | null }[],
+	desired: ViewSpec[]
+): { id: string; name: string; filter: string }[] {
+	const want = new Map(desired.map((v) => [v.name, v.filter ?? '']));
+	const out: { id: string; name: string; filter: string }[] = [];
+	for (const e of existing) {
+		const w = want.get(e.name);
+		if (w !== undefined && (e.filter ?? '') !== w) out.push({ id: e.id, name: e.name, filter: w });
+	}
+	return out;
+}
+
+/** Epics/enfants à créer ; appariement par titre exact. */
+export function planEpics(
+	existing: { number: number; title: string; subIssueTitles: string[] }[],
+	desired: EpicSpec[]
+): { createEpics: EpicSpec[]; createChildren: { epicTitle: string; child: StorySpec }[] } {
+	const byTitle = new Map(existing.map((e) => [e.title, e]));
+	const createEpics: EpicSpec[] = [];
+	const createChildren: { epicTitle: string; child: StorySpec }[] = [];
+	for (const d of desired) {
+		const cur = byTitle.get(d.title);
+		if (!cur) createEpics.push(d);
+		const have = new Set(cur?.subIssueTitles ?? []);
+		for (const child of d.children) {
+			if (!have.has(child.title)) createChildren.push({ epicTitle: d.title, child });
+		}
+	}
+	return { createEpics, createChildren };
+}

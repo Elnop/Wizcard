@@ -268,7 +268,9 @@ export function CardModalProvider({ children }: { children: React.ReactNode }) {
 			rep: cards[0] ?? null,
 			source: isWishlist ? 'wishlist' : 'collection',
 		};
-		// resolveTick: re-derive once on-demand resolution lands
+		// resolveTick: re-derive once on-demand resolution lands (the card cache lives
+		// outside React, so the tick is the only signal that it filled).
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- resolveTick is an intentional recompute trigger
 	}, [open, collection.entries, wishlist.entries, resolveTick]);
 
 	// Stateful change-print: persist the print change, then re-target the open

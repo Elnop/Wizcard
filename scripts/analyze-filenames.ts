@@ -1,4 +1,4 @@
-/* eslint-disable sonarjs/slow-regex, sonarjs/cognitive-complexity */
+/* eslint-disable sonarjs/super-linear-regex, sonarjs/cognitive-complexity */
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
