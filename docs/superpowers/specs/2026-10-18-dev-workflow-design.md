@@ -62,7 +62,7 @@ open to outside contributions.
 | BMAD               | **Replaces superpowers on Wizcard only** (project-level disable).                                                                                                                                             |
 | Source of truth    | **GitHub issues**. BMAD output is pushed one-way into issues, then edited on GitHub.                                                                                                                          |
 | Language           | Tickets and PRs in **French**. Code, commits and repo docs stay English, **except BMAD planning docs (PRD, epics, stories), which are written in French** so the sync copies them verbatim into issues.       |
-| Review             | **"Depending on context"**: no approval required by the `main` ruleset in general; a review-gate check requires the collaborator's approval only on risky PRs (see ②).                                        |
+| Review             | **No required approval at all** (amended 2026-10-18): Jo only runs Coolify and reviews no code. The classic branch protection on `main` (1 approval) is removed once the rulesets are live.                   |
 | Coolify            | **Auto-deploys on push to `deploy`.** Migrations are therefore applied **before** the release PR is merged.                                                                                                   |
 | Automation token   | **Classic PAT** of the owner (`project` + `repo` scopes) stored as a repo secret, used only by workflows on `push` / `workflow_dispatch` / merged-PR events of this repo — never on fork-triggered events.    |
 | Existing work      | Triage the 4 open issues, clean the ~18 local branches, turn in-flight specs into epics.                                                                                                                      |
@@ -103,17 +103,21 @@ is green. This is a prerequisite for making CI required.
 - CI workflow on PRs: `npm ci`, `npm run check`, `npm run build`. Build needs
   env (Supabase URL/anon key etc.) — use placeholder public values or repo
   secrets; _builder's call_ which, as long as build passes without real prod
-  credentials.
+  credentials. **Decided 2026-10-18: check + build only** — no Supabase/migration
+  job in CI (migrations stay verified locally with `sb:migrate` + `sb:verify`).
 - PR-policy Action: branch name matches `^(feat|fix|chore|docs|refactor|perf)/\d+-`
   and body contains `(Closes|Fixes|Resolves) #\d+`. Fails otherwise. Skipped for
   release PRs into `deploy`. **Fork PRs are exempt from the branch-name rule but
   still need `Closes #N`** (_Claude's call_; documented in CONTRIBUTING.md).
-- Review-gate Action (_Claude's interpretation of "depending on context" —
-  user to confirm_): required check that passes unless the PR touches
-  `supabase/migrations/**` or RLS/auth code, or carries label `needs-review`; in
-  those cases it requires an approving review from the collaborator. Claude's PRs
-  are authored by the owner's account, so the owner cannot self-approve — the
-  owner bypass remains the escape hatch.
+- ~~Review-gate Action~~ — **dropped (user, 2026-10-18)**: the collaborator (Jo)
+  only runs Coolify and does not review code, so no PR ever requires an
+  approval. US #21 is closed as not planned.
+- **Release PR is opened and kept up to date automatically (decided
+  2026-10-18)**: on every push to `main`, an Action creates or updates a single
+  open PR `main` → `deploy` ("Release …") whose body lists the shipped PRs/issues,
+  the pending migrations and the release checklist. It must be created with the
+  owner's PAT (a PR opened with `GITHUB_TOKEN` does not trigger the required
+  deploy-guard check).
 - Deploy-guard Action: on PRs targeting `deploy`, fail unless head ref is `main`
   (and head repo is this repo). When the release PR is opened/synchronised,
   comment the list of pending migrations computed by **tree diff**
@@ -128,7 +132,7 @@ is green. This is a prerequisite for making CI required.
   therefore be **backward-compatible with the currently deployed app**
   (expand-then-contract); a PR whose migration is not, must say so and is
   released alone.
-- Rulesets: `main` — require PR, required checks (CI + PR-policy), squash only
+- Rulesets: `main` — require PR (0 approvals), required checks (CI + PR-policy), squash only
   (repo setting: disable merge commits & rebase merging), block force-push and
   deletion, bypass list = repository admin (owner). `deploy` — require PR,
   required check deploy-guard, block force-push/deletion, **no bypass**.
@@ -140,6 +144,10 @@ is green. This is a prerequisite for making CI required.
   memory/procedure is updated accordingly. No back-merge into `main`.
 - Docs: AGENTS.md section "Workflow" (branch/PR/issue rules, release
   procedure for the collaborator).
+- After the rulesets are verified active, delete the pre-existing **classic
+  branch protection** on `main` (found 2026-10-18: 1 required approval, admins
+  not enforced; invisible to the rulesets API). Never leave a window with
+  neither in place.
 
 ### ④ BMAD on Wizcard
 
