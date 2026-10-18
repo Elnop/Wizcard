@@ -34,6 +34,18 @@ Every change goes through: issue -> branch `type/<N>-slug` (`feat|fix|chore|docs
 - Never push to `deploy`. It is only updated by merging the automatic release PR (`main` -> `deploy`); Coolify deploys on push to `deploy`.
 - Never run anything against prod from an agent session.
 
+### Planning & dev process (BMAD)
+
+BMAD replaces superpowers on this project (superpowers is disabled in `.claude/settings.json`; `docs/superpowers/` is kept as history only).
+
+- Pinned version: **bmad-method 6.12.4**, modules `core` + `bmm`, tool `claude-code`. Installed in `_bmad/` (config) and `.claude/skills/bmad-*` (29 skills); both are committed. Upgrade only on purpose: `npx bmad-method@<version> install --action update` (stay on the stable 6.x line; v7 is a preview alpha installed differently), then update this line.
+- Agents talk and write planning docs (PRD, epics, stories) in **French** so they can be copied verbatim into issues. Code, commits and repo docs stay English.
+- Outputs go to `_bmad-output/` (`planning-artifacts/`, `implementation-artifacts/`); long-term knowledge stays in `docs/`.
+- GitHub issues are the source of truth: BMAD epics/stories are pushed one-way into issues, then edited on GitHub.
+- BMAD dev skills (`bmad-build`, `bmad-agent-dev`, ...) follow the workflow above: a story is worked on a branch `type/<N>-slug` named after its issue and lands through a PR with `Closes #N`.
+- Team overrides live in `_bmad/custom/` and are committed: `config.toml` pins French for conversation and documents; `bmad-build.toml` and `bmad-agent-dev.toml` restate the workflow rules above as `persistent_facts`. Keep them in sync with this section. Edit them by hand or with `bmad-customize`, never the installer-managed files (`_bmad/config.toml`, `.claude/skills/bmad-*/customize.toml`).
+- Per-developer answers (`_bmad/config.user.toml`, `_bmad/custom/*.user.toml`) are gitignored. A fresh clone gets them by running the installer.
+
 ## Architecture
 
 - Next.js 16 App Router (`src/app/`)

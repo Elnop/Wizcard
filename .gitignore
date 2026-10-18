@@ -64,3 +64,6 @@ cosmos-export
 /docs/resend-otp-setup.md
 
 assets/card-templates
+
+# BMAD per-developer install answers (team settings live in _bmad/custom/config.toml)
+/_bmad/config.user.toml

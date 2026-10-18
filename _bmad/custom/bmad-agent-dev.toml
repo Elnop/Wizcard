@@ -1,0 +1,9 @@
+# Wizcard team rules for the dev agent (committed). See AGENTS.md § Workflow.
+
+[agent]
+persistent_facts = [
+  "Every change is tracked by a GitHub issue. Work on a branch `type/<N>-slug` (feat|fix|chore|docs|refactor|perf, N = issue number) created from `main`, never commit on `main` directly.",
+  "Land the change through a PR to `main` whose body contains `Closes #N`; it is squash-merged. Ticket and PR text is in French; code, commits and repo docs stay in English.",
+  "Run `npm run check` before committing; also run `npm run build` when the change touches imports, server/client boundaries or Supabase query builders.",
+  "Never use `gh pr merge --admin` or any ruleset bypass, never push to `deploy`, and never run anything against prod.",
+]
