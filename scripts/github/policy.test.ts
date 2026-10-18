@@ -34,6 +34,13 @@ test('checkPrPolicy accepts the closing keyword variants', () => {
 	assert.equal(checkPrPolicy(pr({ body: 'Refs #4' })).ok, false);
 });
 
+test('checkPrPolicy rejects malformed closing keywords', () => {
+	for (const body of ['prefix #3', 'Closes#3', '']) {
+		assert.equal(checkPrPolicy(pr({ body })).ok, false, JSON.stringify(body));
+	}
+	assert.equal(checkPrPolicy(pr({ body: 'Fixes: #3' })).ok, true);
+});
+
 test('checkPrPolicy exempts forks from the branch rule only', () => {
 	assert.equal(checkPrPolicy(pr({ headRef: 'patch-1', body: 'Closes #9', isFork: true })).ok, true);
 	assert.equal(checkPrPolicy(pr({ headRef: 'patch-1', body: 'nothing', isFork: true })).ok, false);

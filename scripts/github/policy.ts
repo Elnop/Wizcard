@@ -14,7 +14,7 @@ export type PolicyResult = { ok: boolean; reasons: string[] };
 
 const DEPLOY_BRANCH = 'deploy';
 const BRANCH_PATTERN = /^(feat|fix|chore|docs|refactor|perf)\/\d+-/;
-const CLOSING_KEYWORD = /(close[sd]?|fix(e[sd])?|resolve[sd]?) #\d+/i;
+const CLOSING_KEYWORD = /\b(close[sd]?|fix(e[sd])?|resolve[sd]?):? #\d+/i;
 
 export function checkPrPolicy(pr: PrContext): PolicyResult {
 	if (pr.baseRef === DEPLOY_BRANCH) return { ok: true, reasons: [] };

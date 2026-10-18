@@ -13,13 +13,13 @@ On every push to `main`, the `release-pr` workflow creates or updates a single o
 1. Open the release PR and read the list of migrations to apply.
 2. Apply each pending migration to prod as an idempotent, transactional script, then insert its version into `schema_migrations`. Details: `AGENTS.md` § Schema Verification.
 3. Run `npm run sb:verify:prod` and confirm no FAIL.
-4. Merge the release PR with a **merge commit** (the only method allowed on `deploy`). `deploy-guard` must be green.
+4. Merge the release PR with **"Create a merge commit"**, always. Never squash or rebase the release PR: it would break release tracking. (Until the `deploy` ruleset is live — follow-up PR, issue #23 — nothing enforces this.) `deploy-guard` must be green.
 5. Coolify deploys automatically.
 6. The `mark-deployed` workflow then moves the board items from `Done (main)` to `Deployed`.
 
 ## Migration compatibility
 
-Migrations run before the new code is live, so they must be backward-compatible with the app currently deployed (expand-then-contract: add first, remove in a later release). If a change cannot be, the release PR says so and it ships alone.
+Migrations run before the new code is live, so they must be backward-compatible with the app currently deployed (expand-then-contract: add first, remove in a later release). If a change cannot be, the feature PR says so (label `needs-migration`, shown as ⚠️ in the release PR body, which is regenerated on every push) and it ships alone.
 
 ## Setup: `WIZCARD_BOT_TOKEN`
 

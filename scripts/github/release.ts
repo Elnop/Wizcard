@@ -90,7 +90,17 @@ export function pickReleasePr(
 	return prs.find((p) => !p.isCrossRepository)?.number ?? null;
 }
 
-/** Sujets de commits sans numéro de PR `(#N)` (commits directs sur main). */
-export function directCommitSubjects(subjects: string[]): string[] {
-	return subjects.filter((s) => !SQUASH_PR_RE.test(s.trim()));
+/**
+ * Sujets de commits sans PR exploitable (commits directs sur main) : sans
+ * `(#N)`, ou, si `resolvedPrs` est fourni, dont le `(#N)` n'est pas une PR
+ * résolue (issue, revert…).
+ */
+export function directCommitSubjects(
+	subjects: string[],
+	resolvedPrs?: ReadonlySet<number>
+): string[] {
+	return subjects.filter((s) => {
+		const m = SQUASH_PR_RE.exec(s.trim());
+		return !m || (resolvedPrs !== undefined && !resolvedPrs.has(Number(m[1])));
+	});
 }

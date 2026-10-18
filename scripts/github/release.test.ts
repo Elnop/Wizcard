@@ -87,6 +87,11 @@ test('directCommitSubjects keeps subjects without (#N)', () => {
 	assert.deepEqual(directCommitSubjects(['a (#1)', 'b', 'c (#2)']), ['b']);
 });
 
+test('directCommitSubjects treats unresolvable (#N) refs as direct commits', () => {
+	const subjects = ['a (#1)', 'revert (#2)', 'b'];
+	assert.deepEqual(directCommitSubjects(subjects, new Set([1])), ['revert (#2)', 'b']);
+});
+
 test('pickReleasePr ignores cross-repository PRs', () => {
 	assert.equal(pickReleasePr([{ number: 9, isCrossRepository: true }]), null);
 	assert.equal(

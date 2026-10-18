@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Required check names (job names, used verbatim by the rulesets): `check-build`, `pr-policy`, `deploy-guard`.
-- Branch regex: `^(feat|fix|chore|docs|refactor|perf)/\d+-`; body regex (case-insensitive): `(close[sd]?|fix(e[sd])?|resolve[sd]?) #\d+`.
+- Branch regex: `^(feat|fix|chore|docs|refactor|perf)/\d+-`; body regex (case-insensitive): `\b(close[sd]?|fix(e[sd])?|resolve[sd]?):? #\d+`.
 - Fork PRs (head repo ≠ base repo): exempt from the branch rule, still need the closing keyword.
 - PRs into `deploy`: `pr-policy` passes immediately (skip); `deploy-guard` requires head ref `main` from this repo.
 - No required approvals anywhere (Jo only runs Coolify). Review-gate is dropped (#21 closed).

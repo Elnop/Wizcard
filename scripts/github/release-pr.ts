@@ -61,23 +61,28 @@ type PrView = {
 	labels: { name: string }[];
 	closingIssuesReferences: { number: number }[];
 };
-const prs: ShippedPr[] = extractPrNumbers(subjects).map((number) => {
-	const v = ghJson<PrView>([
-		'pr',
-		'view',
-		String(number),
-		'--repo',
-		PROJECT.repo,
-		'--json',
-		'title,labels,closingIssuesReferences',
-	]);
-	return {
-		number,
-		title: v.title,
-		closes: v.closingIssuesReferences.map((i) => i.number),
-		labels: v.labels.map((l) => l.name),
-	};
-});
+const prs: ShippedPr[] = [];
+for (const number of extractPrNumbers(subjects)) {
+	try {
+		const v = ghJson<PrView>([
+			'pr',
+			'view',
+			String(number),
+			'--repo',
+			PROJECT.repo,
+			'--json',
+			'title,labels,closingIssuesReferences',
+		]);
+		prs.push({
+			number,
+			title: v.title,
+			closes: v.closingIssuesReferences.map((i) => i.number),
+			labels: v.labels.map((l) => l.name),
+		});
+	} catch {
+		console.warn(`(#${number}) n'est pas une PR résolvable ; traité comme commit direct.`);
+	}
+}
 const migrations = parsePendingMigrations(
 	git([
 		'diff',
@@ -89,7 +94,11 @@ const migrations = parsePendingMigrations(
 		'supabase/migrations',
 	])
 );
-const body = renderReleaseBody({ prs, migrations, otherCommits: directCommitSubjects(subjects) });
+const body = renderReleaseBody({
+	prs,
+	migrations,
+	otherCommits: directCommitSubjects(subjects, new Set(prs.map((p) => p.number))),
+});
 const title = `Release ${new Date().toISOString().slice(0, 10)}`;
 
 if (dryRun) {
