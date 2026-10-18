@@ -27,8 +27,6 @@ Décisions validées par l'humain :
 
 ## Implementation Notes
 
-</content>
-</invoke>
 - `scripts/github/bmad.ts` (nouveau, pur) : `parseEpics` (gabarit bmad-create-epics-and-stories, en-têtes EN ou FR, gras toléré, « afin d' » élidé), `renderEpicBody`/`renderStoryBody` (formulaires epic.yml/story.yml, `_No response_` pour un champ vide comme GitHub), `markerOf`, `planBmadSync`. Lève sur clé dupliquée, story hors de son epic, story sans « Je veux » ou sans critères (dérive du gabarit détectée bruyamment plutôt qu'une issue vide).
 - `scripts/github/sync-bmad.ts` (nouveau) + `npm run gh:bmad` (`--dry-run`, chemin optionnel). Liste TOUTES les issues (sans filtre de label) pour retrouver les marqueurs.
 - `scripts/github/lib/issues.ts` : `createIssue`/`linkSubIssue` extraits de `file-epics.ts` (partagés, comportement inchangé).
