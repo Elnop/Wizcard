@@ -39,6 +39,7 @@
 		"seed:prod": "SEED_TARGET=prod npm run seed",
 		"gh:setup": "tsx scripts/github/setup-project.ts",
 		"gh:epics": "tsx scripts/github/file-epics.ts",
+		"gh:rules": "tsx scripts/github/setup-rulesets.ts",
 		"test:scripts": "tsx --test 'scripts/**/*.test.ts'",
 		"logo:generate": "tsx scripts/generate-logo.ts",
 		"clean": "rm -rf node_modules .next",

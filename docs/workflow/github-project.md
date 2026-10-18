@@ -39,9 +39,10 @@ npm run gh:setup              # converge labels, project, Status, fields, views 
 npm run gh:setup -- --dry-run # show what would change
 npm run gh:epics              # create missing epics and sub-issues
 npm run gh:epics -- --dry-run
+npm run gh:rules              # converge merge settings and the main/deploy rulesets (--remove-classic drops the old branch protection)
 ```
 
-Both are idempotent and never delete anything. `gh:setup` ends with `✔ already up to date` when nothing is left to do.
+All are idempotent; only `gh:rules -- --remove-classic` deletes (the old branch protection, once the rulesets are active). `gh:setup` ends with `✔ already up to date` when nothing is left to do.
 
 ## Manual-only configuration (UI, not available via API)
 
