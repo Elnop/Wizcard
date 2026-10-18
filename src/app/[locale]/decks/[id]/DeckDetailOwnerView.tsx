@@ -641,7 +641,7 @@ export default function DeckDetailOwnerView({ deckId }: { deckId: string }) {
 						onCardContextMenu={bulk.selectMode ? undefined : handleCardContextMenu}
 						tableColumns={tableColumns}
 						pageSize={false}
-						viewModes={['fluid-grid', 'grid', 'table']}
+						viewModes={bulk.selectMode ? ['fluid-grid', 'grid'] : ['fluid-grid', 'grid', 'table']}
 						toolbarExtra={<StackByMenu value={deckStackBy} onChange={handleDeckStackByChange} />}
 						cardGap="compact"
 						showCardNames={false}

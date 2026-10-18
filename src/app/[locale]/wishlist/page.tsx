@@ -178,6 +178,7 @@ function WishlistPageInner() {
 					<>
 						<CardList
 							cards={representativeCards}
+							viewModes={selection.selectMode ? ['grid'] : ['grid', 'table']}
 							toolbarExtra={
 								<>
 									<StackByMenu value={stackBy} onChange={setStackBy} />

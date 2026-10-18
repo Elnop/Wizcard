@@ -197,6 +197,7 @@ export function CollectionView({
 			<>
 				<CardList
 					cards={isSkeleton ? [] : representativeCards}
+					viewModes={selection?.active ? ['grid'] : ['grid', 'table']}
 					isLoading={isSkeleton}
 					skeletonCount={skeletonCount}
 					pageSize={false}

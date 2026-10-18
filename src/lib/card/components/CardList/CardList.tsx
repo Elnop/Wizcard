@@ -67,7 +67,10 @@ export function CardList({
 	showCardNames = false,
 	cardGap = 'default',
 }: CardListProps) {
-	const [viewMode, setViewMode] = useState<CardListViewMode>(viewModes[0]);
+	const [chosenViewMode, setViewMode] = useState<CardListViewMode>(viewModes[0]);
+	// A mode no longer offered (e.g. table while selecting) falls back to the first allowed one;
+	// the user's choice is kept in state, so it comes back when the restriction lifts.
+	const viewMode = viewModes.includes(chosenViewMode) ? chosenViewMode : viewModes[0];
 	const sections = isSections(cardsOrSections) ? (cardsOrSections as CardListSection[]) : undefined;
 	const { effectiveCollapsed, toggleSection } = useCollapsedSections(sections);
 	const cards = isSections(cardsOrSections) ? [] : cardsOrSections;
