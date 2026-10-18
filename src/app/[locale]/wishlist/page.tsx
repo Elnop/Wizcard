@@ -28,20 +28,48 @@ import { useWishlistPdf } from './useWishlistPdf';
 import { useMoveToCollection } from './useMoveToCollection';
 import { WishlistSearchPanel } from './WishlistSearchPanel';
 import { PAGE_SIZE } from '@/lib/collection/constants';
+import { useStackSelection } from '@/lib/card/bulk/useStackSelection';
+import { BulkActionBar } from '@/lib/card/bulk/BulkActionBar';
+import { BulkEditModal } from '@/lib/card/bulk/BulkEditModal';
+import { BulkSelectOverlay } from '@/lib/card/bulk/BulkSelectOverlay';
+import { SelectModeButton } from '@/lib/card/bulk/SelectModeButton';
+import type { BulkField } from '@/lib/card/bulk/bulk-edit';
+import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal';
 import collectionViewStyles from '@/app/[locale]/collection/lib/CollectionView/CollectionView.module.css';
 import styles from './page.module.css';
+
+const WISHLIST_FIELDS: readonly BulkField[] = [
+	'tagsAdd',
+	'tagsRemove',
+	'condition',
+	'language',
+	'finish',
+];
 
 function WishlistPageInner() {
 	const t = useTranslations('wishlist');
 	const tCollection = useTranslations('collection');
 	const tError = useTranslations('error');
 	const menuLabels = useOwnedCardMenuLabels('wishlist');
-	const { entries, isLoaded, clearWishlist, moveToCollection } = useWishlistContext();
+	const {
+		entries,
+		isLoaded,
+		clearWishlist,
+		moveToCollection,
+		bulkUpdate,
+		bulkRemove,
+		bulkMoveToCollection,
+	} = useWishlistContext();
+	const tBulk = useTranslations('bulk');
 	const { status: importStatus, openModal: openImportModal } = useImportContext();
 
 	const [stackBy, setStackBy] = useStackBy('wishlist');
 	const model = useIndexedCollection(entries, { filterable: false, stackBy });
 	const stacks = model.visibleStacks;
+	const selection = useStackSelection(model.allStacks, JSON.stringify(stackBy));
+	const [bulkModal, setBulkModal] = useState<'edit' | 'move' | 'remove' | null>(null);
+	const closeBulkModal = useCallback(() => setBulkModal(null), []);
+	const copyCount = selection.selectedRowIds.length;
 
 	const { openAddToDeck } = useAddToDeckModal();
 	const { openCardModal, close: closeCardModal } = useCardModalContext();
@@ -150,7 +178,12 @@ function WishlistPageInner() {
 					<>
 						<CardList
 							cards={representativeCards}
-							toolbarExtra={<StackByMenu value={stackBy} onChange={setStackBy} />}
+							toolbarExtra={
+								<>
+									<StackByMenu value={stackBy} onChange={setStackBy} />
+									<SelectModeButton active={selection.selectMode} onToggle={selection.toggleMode} />
+								</>
+							}
 							isLoading={model.isInitialLoading}
 							skeletonCount={Math.min(PAGE_SIZE, entries.length)}
 							pageSize={false}
@@ -159,34 +192,49 @@ function WishlistPageInner() {
 							isLoadingMore={model.isLoadingMore}
 							onCardClick={(card) => {
 								const stack = stackByRowId.get(cardKey(card));
-								if (stack) handleCardClick(stack);
+								if (!stack) return;
+								if (selection.selectMode) selection.toggle(stack.key);
+								else handleCardClick(stack);
 							}}
-							buildCardMenuItems={(card, close) => {
-								const stack = stackByRowId.get(cardKey(card));
-								return stack
-									? buildOwnedCardMenu(
-											stack,
-											'wishlist',
-											{
-												onViewDetails: handleCardClick,
-												onAddCopy: (rep) => mutations.wishlist.duplicate(rep.id, rep.entry),
-												onRemoveCopy: (rep) => mutations.wishlist.remove(rep.entry.rowId),
-												onMove: (rep) => move.requestMove(rep.entry.rowId),
-												onAddToDeck: (s) => openAddToDeck(s.cards[0]),
-												onChangePrint: handleCardClick,
-												onRemove: (rep) => mutations.wishlist.remove(rep.entry.rowId),
-											},
-											close,
-											menuLabels
-										)
-									: null;
-							}}
+							buildCardMenuItems={
+								selection.selectMode
+									? undefined
+									: (card, close) => {
+											const stack = stackByRowId.get(cardKey(card));
+											return stack
+												? buildOwnedCardMenu(
+														stack,
+														'wishlist',
+														{
+															onViewDetails: handleCardClick,
+															onAddCopy: (rep) => mutations.wishlist.duplicate(rep.id, rep.entry),
+															onRemoveCopy: (rep) => mutations.wishlist.remove(rep.entry.rowId),
+															onMove: (rep) => move.requestMove(rep.entry.rowId),
+															onAddToDeck: (s) => openAddToDeck(s.cards[0]),
+															onChangePrint: handleCardClick,
+															onRemove: (rep) => mutations.wishlist.remove(rep.entry.rowId),
+														},
+														close,
+														menuLabels
+													)
+												: null;
+										}
+							}
 							renderOverlay={(card) => {
 								const stack = stackByRowId.get(cardKey(card));
 								const count = stack?.cards.length ?? 1;
 								const countBadge =
 									count > 1 ? <span className={styles.cardBadge}>x{count}</span> : undefined;
 								const deckBadge = stack ? <DeckBadge cards={stack.cards} /> : undefined;
+								if (selection.selectMode && stack) {
+									return withCustomBadge(
+										card,
+										<>
+											<BulkSelectOverlay checked={selection.selected.has(stack.key)} />
+											{countBadge}
+										</>
+									);
+								}
 								return withCustomBadge(
 									card,
 									<>
@@ -250,6 +298,64 @@ function WishlistPageInner() {
 			)}
 
 			<ImportModal />
+
+			{selection.selectMode && (
+				<BulkActionBar
+					summary={tBulk('summary', { stacks: selection.stackCount, copies: copyCount })}
+					allSelected={selection.allSelected}
+					selectAllDisabled={model.isInitialLoading}
+					onToggleSelectAll={() => selection.toggleSelectAll(selection.allKeys)}
+					hasSelection={copyCount > 0}
+					actions={[
+						{ id: 'edit', label: tBulk('edit'), onClick: () => setBulkModal('edit') },
+						{ id: 'move', label: tBulk('moveToCollection'), onClick: () => setBulkModal('move') },
+						{
+							id: 'remove',
+							label: tBulk('remove'),
+							onClick: () => setBulkModal('remove'),
+							danger: true,
+						},
+					]}
+					onClear={selection.clear}
+					onExit={selection.exit}
+					escapeDisabled={bulkModal !== null}
+				/>
+			)}
+			{bulkModal === 'edit' && (
+				<BulkEditModal
+					title={tBulk('editTitle', { count: copyCount })}
+					fields={WISHLIST_FIELDS}
+					onApply={(edit) => {
+						bulkUpdate(selection.selectedRowIds, edit);
+						selection.clear();
+					}}
+					onClose={closeBulkModal}
+				/>
+			)}
+			{bulkModal === 'move' && (
+				<ConfirmModal
+					message={tBulk('confirmMoveToCollection', { count: copyCount })}
+					confirmLabel={tBulk('confirm')}
+					onConfirm={() => {
+						bulkMoveToCollection(selection.selectedRowIds);
+						selection.clear();
+						setBulkModal(null);
+					}}
+					onClose={closeBulkModal}
+				/>
+			)}
+			{bulkModal === 'remove' && (
+				<ConfirmModal
+					message={tBulk('confirmRemoveWishlist', { count: copyCount })}
+					confirmLabel={tBulk('remove')}
+					onConfirm={() => {
+						bulkRemove(selection.selectedRowIds);
+						selection.clear();
+						setBulkModal(null);
+					}}
+					onClose={closeBulkModal}
+				/>
+			)}
 
 			{panelOpen && (
 				<WishlistSearchPanel
