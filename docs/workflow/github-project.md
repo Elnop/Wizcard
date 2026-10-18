@@ -65,3 +65,8 @@ View filters ARE converged by `gh:setup`; only grouping, columns, date fields an
 - Par epic: GitHub's native sub-issue hierarchy table, with the "Sub-issues progress" field visible (no grouping).
 - À déployer: show the Labels column so `needs-migration` is visible.
 - Roadmap: date fields `Début` (start) and `Échéance` (target), zoom Month.
+
+## Related docs
+
+- [Release procedure](release.md) (deploying `main` to prod)
+- [Contributing guide](../../CONTRIBUTING.md)

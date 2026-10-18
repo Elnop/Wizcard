@@ -25,6 +25,15 @@ Wizcard — MTG collection manager — Next.js 16 + Supabase + Scryfall API.
 - `npm run sb:verify:prod` — same audit against the PROD DB (read-only; see § Schema Verification)
 - `npm run sb:studio` — Supabase Studio (port 54323)
 
+## Workflow
+
+Every change goes through: issue -> branch `type/<N>-slug` (`feat|fix|chore|docs|refactor|perf`) -> PR whose body has `Closes #N` -> squash merge into `main`. See `CONTRIBUTING.md`, `docs/workflow/github-project.md` and `docs/workflow/release.md`.
+
+- Required checks on PRs to `main`: `check-build` and `pr-policy`. No approvals are required.
+- Owner (admin) bypass of the rules is for emergencies only. Agents (Claude) never use `gh pr merge --admin` or any bypass without the owner's explicit OK.
+- Never push to `deploy`. It is only updated by merging the automatic release PR (`main` -> `deploy`); Coolify deploys on push to `deploy`.
+- Never run anything against prod from an agent session.
+
 ## Architecture
 
 - Next.js 16 App Router (`src/app/`)
