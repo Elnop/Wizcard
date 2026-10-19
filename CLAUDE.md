@@ -13,6 +13,7 @@ Strictly follow the rules in @AGENTS.md.
 - `npm run sb:verify:prod` — same audit against PROD via pg-meta (needs `.env.supabase.prod`; read-only)
 - `npm run seed` — seed the Scryfall catalog (`card_sets` + catalog tables) into local (or `.env.seed` target)
 - `npm run seed:prod` — **writes PROD** — same seed, target read from `.env.supabase.prod` (ignores `.env.seed`)
+- `.github/workflows/catalog-seed.yml` — **writes PROD** — weekly + on-demand GitHub Action that seeds the prod catalog from `deploy`; setup and failure handling in `docs/guides/catalog-seed.md`
 - `npm run sb:studio` — Supabase Studio (port 54323)
 - `npm run sb:mail` — Inbucket email inbox (port 54324)
 - `supabase/bootstrap/init_schema.sql` — schema consolide pour DB vierge
