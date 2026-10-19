@@ -1,0 +1,98 @@
+# Seeds the PROD Scryfall catalog (card_sets, then the catalog tables) with the
+# existing seed scripts. The workflow file lives on main (cron + dispatch need
+# the default branch) but the code that writes to prod is checked out from
+# `deploy`, so no script newer than the prod schema ever runs against it.
+# Setup and operations: docs/guides/catalog-seed.md.
+name: catalog-seed
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 1' # Monday 04:00 UTC
+
+concurrency:
+  group: catalog-seed
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    environment: prod
+    timeout-minutes: 345
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout deploy (code that writes to prod)
+        uses: actions/checkout@v4
+        with:
+          ref: deploy
+          persist-credentials: false
+      - name: Record deploy commit
+        run: |
+          echo "- **deploy** : $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Checkout workflow tooling
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .tooling
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install npm 11
+        run: npm i -g npm@11.21.1
+      - name: Install dependencies
+        id: install
+        run: npm ci
+      - name: Ensure GNU time
+        run: test -x /usr/bin/time || (sudo apt-get update && sudo apt-get install -y time)
+      - name: Check secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npx tsx .tooling/scripts/github/catalog-seed-step.ts --check-secrets
+
+      - name: Seed sets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: NODE_ENV=production /usr/bin/time -v -o "$RUNNER_TEMP/seed-sets.time" npx tsx scripts/seed/seed-sets.ts
+      - name: Summary (seed-sets)
+        if: always() && steps.install.outcome == 'success'
+        run: npx tsx .tooling/scripts/github/catalog-seed-step.ts --summary seed-sets "$RUNNER_TEMP/seed-sets.time"
+
+      - name: Seed catalog
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: NODE_ENV=production /usr/bin/time -v -o "$RUNNER_TEMP/seed-catalog.time" npx tsx scripts/seed/seed-catalog.ts
+      - name: Summary (seed-catalog)
+        if: always() && steps.install.outcome == 'success'
+        run: npx tsx .tooling/scripts/github/catalog-seed-step.ts --summary seed-catalog "$RUNNER_TEMP/seed-catalog.time"
+
+  alert:
+    needs: seed
+    if: always() && needs.seed.result != 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install npm 11
+        run: npm i -g npm@11.21.1
+      - run: npm ci --ignore-scripts
+      - name: Open or update the failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: npx tsx scripts/github/catalog-seed-alert.ts
