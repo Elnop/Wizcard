@@ -39,10 +39,12 @@ npm run gh:setup              # converge labels, project, Status, fields, views 
 npm run gh:setup -- --dry-run # show what would change
 npm run gh:epics              # create missing epics and sub-issues
 npm run gh:epics -- --dry-run
+npm run gh:bmad               # push BMAD epics/stories (_bmad-output/planning-artifacts/epics.md) as epic/story issues
+npm run gh:bmad -- --dry-run  # (optional path argument for another epics.md)
 npm run gh:rules              # converge merge settings and the main/deploy rulesets (--remove-classic drops the old branch protection)
 ```
 
-All are idempotent; only `gh:rules -- --remove-classic` deletes (the old branch protection, once the rulesets are active). `gh:setup` ends with `✔ already up to date` when nothing is left to do.
+All are idempotent; only `gh:rules -- --remove-classic` deletes (the old branch protection, once the rulesets are active). `gh:bmad` is one-way and create-only: each issue carries a hidden marker (`<!-- bmad:epic:1 -->`, `<!-- bmad:story:1.2 -->`) used as the match key, so issues can be renamed or edited on GitHub without creating duplicates; keep the marker when editing a body, and do not renumber stories already pushed (a new number is a new issue). `gh:setup` ends with `✔ already up to date` when nothing is left to do.
 
 ## Manual-only configuration (UI, not available via API)
 
