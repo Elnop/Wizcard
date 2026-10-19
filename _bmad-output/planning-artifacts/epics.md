@@ -3,13 +3,14 @@ status: final
 stepsCompleted: [1, 2, 3, 4]
 inputDocuments:
   - _bmad-output/brainstorming/brainstorm-catalogue-scryfall-modele-card-2026-10-19/brainstorm-intent.md
+  - _bmad-output/forge/catalog-change-notes/forged-idea.md
 ---
 
 # Wizcard - Epic Breakdown
 
 ## Overview
 
-Ce document découpe en epics et stories implémentables la fin de la migration vers le type de domaine `Card` et la fraîcheur du catalogue Scryfall. Projet brownfield : pas de PRD ni d'architecture ; les exigences viennent du brainstorm du 2026-10-19 (issue #29).
+Ce document découpe en epics et stories implémentables la fin de la migration vers le type de domaine `Card` et la fraîcheur du catalogue Scryfall. Projet brownfield : pas de PRD ni d'architecture ; les exigences viennent du brainstorm du 2026-10-19 (issue #29). L'epic 3 (notes de changement du catalogue et articles) vient du cadrage du même jour (`_bmad-output/forge/catalog-change-notes/forged-idea.md`, issue #58).
 
 ## Requirements Inventory
 
@@ -24,6 +25,10 @@ FR6: Le seed ne s'exécute que si le contenu Scryfall a changé depuis le dernie
 FR7: Un print retiré par Scryfall est marqué `removed_at` (jamais supprimé) : exclu de la recherche, toujours résolvable pour les cartes déjà possédées. Les retraits se déduisent de `/migrations` (anciens ids des `delete` et des `merge`), sans comparer la base au bulk.
 FR8: Après un seed réussi seulement, l'Action applique les migrations Scryfall (`/migrations`) aux données utilisateur, dans l'ordre de `performed_at` (fusions en chaîne) : un `merge` réécrit `card_entries.scryfall_id` vers le nouvel id. Chaque migration passe par une fonction SQL (RPC) transactionnelle qui fait la mise à jour et l'écriture au journal par ligne (`card_entry_id`, ancien id, nouvel id, migration), et n'est appliquée qu'une fois.
 FR9: Le seed alimente le palier d'image png réel (aujourd'hui dérivé de `large`).
+FR10: Un journal en base enregistre chaque changement réel du catalogue au fil des seeds : nouveaux sets, prints ajoutés, prints retirés, changement d'image (`image_status`, URLs), errata d'oracle (texte, type, coût, P/T…), légalités et bans, textes FR imprimés. Seules les vraies différences sont journalisées (le seed réécrit tout chaque semaine), y compris pour les faces des cartes recto-verso.
+FR11: Les migrations Scryfall (`/migrations` : `merge` et `delete`, note, date) sont stockées en base comme donnée de référence, à chaque seed, de façon idempotente.
+FR12: Après chaque seed réussi qui contient au moins un changement, un article « Catalogue » est généré et publié automatiquement, en français et en anglais, à partir d'un gabarit traduit et des données réelles (jamais de LLM). Un seul article par seed : le titre reprend l'événement le plus fort (nouveau set > set complété > traductions FR > images HD > reste), les autres changements forment des sections ; les migrations Scryfall y figurent avec les cartes de référence concernées (ancien print → nouveau, note).
+FR13: Une table `articles` générique (catégorie, slug, titre et corps fr/en, date de publication, source) est la source unique des articles ; une page `/articles` les liste avec un filtre par catégorie, une page d'article les affiche ; les deux sont traduites et indexables.
 
 ### NonFunctional Requirements
 
@@ -35,6 +40,8 @@ NFR5: `npm run check` reste vert à chaque story.
 NFR6: La clé service prod est un secret d'Environment GitHub `prod` limité aux branches `main` et `deploy`, jamais un secret de dépôt.
 NFR7: L'Action exécute le code de la branche `deploy` (checkout `deploy`), pour ne jamais écrire en prod avec un schéma pas encore migré ; la date et l'empreinte de seed ne sont écrites qu'en cas de succès.
 NFR8: Le premier run réel mesure la durée et la mémoire du seed sur le runner GitHub (limites : 6 h, 7 Go).
+NFR9: Aucun article ne contient de donnée utilisateur (collections, comptes, cartes remappées d'un joueur) ; seules les données de référence du catalogue sont publiées.
+NFR10: Un seed raté ne fait ni perdre ni publier en double un changement : le digest suivant couvre tout ce qui a été journalisé depuis le dernier article publié.
 
 ### Additional Requirements
 
@@ -54,10 +61,14 @@ FR2: Epic 1 - Adaptateurs MPC / CardNexus vers `Card`
 FR3: Epic 1 - Cache IDB en `Card`
 FR4: Epic 1 - UI 100 % `Card`
 FR5: Epic 2 - GitHub Action de seed (manuel + hebdomadaire)
-FR6: Epic 2 - Seed seulement si le contenu a changé (empreinte), date visible
-FR7: Epic 2 - Prints retirés marqués `removed_at`
+FR6: Epic 2 - Seed seulement si le contenu a changé (empreinte), date visible — abandonné (#51, reseed hebdomadaire systématique)
+FR7: Epic 2 - Prints retirés marqués `removed_at` — abandonné (#52, remplacé par FR10)
 FR8: Epic 2 - Remappage des données utilisateur via `/migrations`
 FR9: Epic 2 - Palier png réel
+FR10: Epic 3 - Journal des changements du catalogue
+FR11: Epic 3 - Migrations Scryfall en base
+FR12: Epic 3 - Digest « Catalogue » auto-publié
+FR13: Epic 3 - Table `articles` et pages `/articles`
 
 ## Epic List
 
@@ -70,6 +81,11 @@ Toutes les cartes, quel que soit leur fournisseur (Scryfall, MPC, CardNexus), ci
 
 Les joueurs trouvent les cartes et sets récents, aux images en pleine définition, sans intervention manuelle : le catalogue prod se met à jour chaque semaine, signale les prints retirés et remappe les cartes des collections concernées par une fusion Scryfall. Indépendant de l'epic 1.
 **FRs covered:** FR5, FR6, FR7, FR8, FR9
+
+### Epic 3: Notes de changement du catalogue & articles
+
+Chaque semaine, les joueurs lisent sur Wizcard ce qui a changé dans le catalogue Magic : nouveaux sets, cartes ajoutées, images en haute définition, errata, bans, corrections Scryfall. Le seed hebdomadaire publie lui-même un article « Catalogue », première brique du futur chantier articles (news Magic et news du site). Dépend de l'epic 2 (workflow `catalog-seed`).
+**FRs covered:** FR10, FR11, FR12, FR13
 
 ## Epic 1 : Modèle Card unifié
 
@@ -297,3 +313,126 @@ Couvre : FR8, NFR2, NFR3, NFR4.
 **Étant donné** un remappage à annuler
 **Quand** le propriétaire consulte le journal
 **Alors** chaque ligne permet de restaurer l'ancien `scryfall_id` exact, sans aucun backup exporté hors de la base
+
+## Epic 3 : Notes de changement du catalogue & articles
+
+Chaque semaine, les joueurs lisent sur Wizcard ce qui a changé dans le catalogue Magic, publié automatiquement par le seed hebdomadaire. Ordre conseillé : 3.1 → 3.2 → 3.3 → 3.4 → 3.5 ; la story 2.4 (remappage) vient après la 3.2, dont elle réutilise les migrations stockées en base.
+
+### Story 3.1 : Journal des changements du catalogue
+
+**En tant que** propriétaire du projet,
+**Je veux** qu'un journal en base enregistre chaque changement réel du catalogue au fil des seeds,
+**Afin de** savoir précisément quelles cartes ont changé, et comment, d'un seed à l'autre.
+
+Couvre : FR10, NFR3, NFR4, NFR5.
+
+**Critères d'acceptation :**
+
+**Étant donné** une migration SQL qui crée la table du journal et des triggers sur `card_prints` et `card_definitions`, idempotente, sans aucun accès `anon`/`authenticated`
+**Quand** le seed upserte une ligne identique à l'existante
+**Alors** rien n'est journalisé
+
+**Étant donné** un print nouveau, retiré (supprimé par le seed), ou dont l'image, le texte FR imprimé ou un champ suivi change
+**Quand** le seed s'exécute
+**Alors** une ligne du journal indique le print, le type de changement, l'ancienne et la nouvelle valeur, et la date
+
+**Étant donné** une définition dont l'oracle (texte, type, coût, P/T…) ou les légalités changent
+**Quand** le seed s'exécute
+**Alors** une ligne du journal indique l'`oracle_id`, le champ, l'ancienne et la nouvelle valeur
+
+**Étant donné** une carte recto-verso dont `card_print_faces` est supprimé puis réinséré à chaque run
+**Quand** le seed s'exécute sans changement réel sur ses faces
+**Alors** rien n'est journalisé pour ces faces
+**Et** un vrai changement d'image ou de texte sur une face est journalisé
+
+**Étant donné** un seed complet sur la base locale déjà à jour
+**Quand** on compte les lignes du journal ajoutées
+**Alors** il n'y en a aucune (vérification du bruit nul)
+
+### Story 3.2 : Migrations Scryfall stockées en base
+
+**En tant que** propriétaire du projet,
+**Je veux** que chaque seed enregistre les migrations Scryfall (`/migrations`) en base,
+**Afin que** le digest et le remappage (story 2.4) s'appuient sur une seule copie de ces données de référence.
+
+Couvre : FR11, NFR3, NFR4, NFR5.
+
+**Critères d'acceptation :**
+
+**Étant donné** une migration SQL qui crée la table des migrations Scryfall (id Scryfall, stratégie, ancien id, nouvel id, note, `performed_at`), idempotente, lisible seulement par `service_role`
+**Quand** le workflow `catalog-seed` termine un seed réussi
+**Alors** il lit toutes les pages de `/migrations` et upserte chaque migration par son id
+
+**Étant donné** une migration déjà enregistrée
+**Quand** l'étape repasse dessus
+**Alors** rien ne change
+
+**Étant donné** une réponse `/migrations` incomplète ou en erreur
+**Quand** l'étape s'exécute
+**Alors** le job échoue (issue d'alerte) sans écrire de liste partielle
+
+### Story 3.3 : Digest « Catalogue » publié après chaque seed
+
+**En tant que** joueur,
+**Je veux** un article qui résume ce qui a changé dans le catalogue cette semaine,
+**Afin de** découvrir les nouveaux sets, les cartes ajoutées et les corrections sans chercher.
+
+Couvre : FR12, NFR9, NFR10.
+
+**Critères d'acceptation :**
+
+**Étant donné** des lignes du journal et des migrations Scryfall postérieures au dernier article « Catalogue » publié
+**Quand** le seed et l'enregistrement des migrations ont réussi
+**Alors** un article de catégorie « Catalogue » est inséré dans `articles`, en français et en anglais, rédigé par un gabarit traduit (`messages/*.json`) et les données réelles, sans LLM
+
+**Étant donné** plusieurs types de changements dans la fenêtre
+**Quand** l'article est généré
+**Alors** le titre reprend l'événement le plus fort (nouveau set > set complété > traductions FR > images HD > reste) et chaque autre type forme une section
+**Et** les légalités d'une rotation Standard sont résumées en une ligne, pas carte par carte
+**Et** les migrations Scryfall citent les cartes de référence concernées (ancien print → nouveau, note), sans aucune donnée utilisateur
+
+**Étant donné** aucune ligne nouvelle depuis le dernier article
+**Quand** l'étape s'exécute
+**Alors** aucun article n'est publié et le résumé du job l'indique
+
+**Étant donné** un seed qui a échoué la semaine précédente après avoir journalisé une partie des changements
+**Quand** le seed suivant réussit
+**Alors** son article couvre aussi ces changements, une seule fois
+
+### Story 3.4 : Pages articles
+
+**En tant que** joueur,
+**Je veux** une page qui liste les articles du site et une page pour lire chacun,
+**Afin de** suivre les nouveautés du catalogue et, plus tard, les news Magic et du site.
+
+Couvre : FR13, NFR4, NFR5.
+
+**Critères d'acceptation :**
+
+**Étant donné** une migration SQL qui crée la table `articles` (catégorie, slug, titre et corps fr/en, date de publication, source), lisible par `anon`/`authenticated` et modifiable seulement par `service_role`
+**Quand** un visiteur ouvre `/articles` (fr ou en)
+**Alors** il voit les articles publiés, du plus récent au plus ancien, avec un filtre par catégorie
+
+**Étant donné** un article « Catalogue »
+**Quand** un visiteur l'ouvre
+**Alors** le titre et le corps s'affichent dans sa langue, avec les cartes citées affichées comme cartes (image, lien vers la page de la carte)
+
+**Étant donné** les pages `/articles` et d'article
+**Quand** un moteur de recherche les explore
+**Alors** elles sont indexables avec un canonical et des hreflang par page (couche SEO i18n existante)
+
+### Story 3.5 : Mise en prod et premier digest
+
+**En tant que** propriétaire du projet,
+**Je veux** mettre l'epic en production et vérifier le premier article publié,
+**Afin de** m'assurer que le digest hebdomadaire tourne seul.
+
+Couvre : NFR4, NFR8, NFR9.
+
+**Critères d'acceptation :**
+
+**Étant donné** les migrations SQL des stories 3.1, 3.2 et 3.4 appliquées en prod (vérifiées par `npm run sb:verify:prod`) puis `deploy` avancé
+**Quand** le workflow `catalog-seed` tourne
+**Alors** le journal du premier seed ne contient que les vrais changements depuis le seed précédent
+**Et** un article « Catalogue » est publié et lisible sur `/articles` en fr et en en
+**Et** la durée ajoutée au job est reportée dans l'issue de la story
