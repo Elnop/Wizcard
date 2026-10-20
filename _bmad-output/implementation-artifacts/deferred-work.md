@@ -34,3 +34,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-4-article-pages.md`
   summary: Une URL au percent-encoding invalide (ex. `/fr/card/%E0%A4%A`) renvoie une erreur 500 sur toutes les routes dynamiques, avant d'atteindre le code de la page.
   evidence: Constaté sur un build de prod le 2026-10-20 sur `/articles/[slug]`, `/card/[id]` et `/decks/[id]` ; le garde `decodeSlug` de #63 ne s'exécute pas. Piste : le proxy (`src/proxy.ts`) ou le décodage interne de Next 16.
+- source_spec: `_bmad-output/implementation-artifacts/spec-gh-70-article-directives.md`
+  summary: Accessibilité de la grille `::cards` : libellé de groupe, et `alt` des cartes dans la langue de l'article (aujourd'hui `card.name`, en anglais).
+  evidence: La grille est un simple `div` de liens-images.

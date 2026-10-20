@@ -5,7 +5,7 @@ import { Link } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { buildAlternates } from '@/lib/seo/alternates';
 import { localized, markdownExcerpt } from '@/lib/articles/article';
-import { getPublishedArticle } from '@/lib/articles/articles.server';
+import { getPublishedArticle, resolveCitations } from '@/lib/articles/articles.server';
 import { ArticleBody } from '@/lib/articles/ArticleBody/ArticleBody';
 import { formatArticleDate } from '../format-date';
 import styles from '../articles.module.css';
@@ -64,7 +64,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 	const article = await getPublishedArticle(slug);
 	if (!article) notFound();
 
-	const t = await getTranslations('articles');
+	const body = localized(article.body, locale);
+	const [t, citations] = await Promise.all([getTranslations('articles'), resolveCitations(body)]);
 	const date = formatArticleDate(article.publishedAt, locale);
 
 	return (
@@ -84,7 +85,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 				</p>
 				<h1 className={styles.title}>{localized(article.title, locale)}</h1>
 			</header>
-			<ArticleBody markdown={localized(article.body, locale)} />
+			<ArticleBody markdown={body} citations={citations} />
 		</article>
 	);
 }
