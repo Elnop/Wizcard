@@ -13,3 +13,9 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-catalog-change-journal.md`
   summary: Mentionner `npm run sb:test` à côté de `sb:verify` dans CLAUDE.md et AGENTS.md (§ Schema Verification).
   evidence: Le test SQL des triggers ne tourne que si on le lance ; ces fichiers de contexte d'agent ne sont pas modifiés par une story.
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-2-scryfall-migrations.md`
+  summary: La story 2.4 (remappage) doit suivre les chaînes de fusion (A→B→C), indexer `scryfall_migrations.new_scryfall_id`, et décider quoi faire d'une migration retirée par Scryfall (par exemple avec une colonne `last_seen_at`).
+  evidence: Seuls `old_scryfall_id` et `recorded_at` sont indexés ; une ligne qui disparaît de `/migrations` reste en base sans marque.
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-2-scryfall-migrations.md`
+  summary: Les migrations SQL et `verify_schema.sql` ne tournent pas en CI ; une dérive de grants n'est détectée que par un `sb:verify` lancé à la main.
+  evidence: `.github/workflows/ci.yml` lance check, test:scripts et build, sans base de données.
