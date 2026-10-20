@@ -98,6 +98,13 @@ export function NavbarDrawer() {
 					{t('sets')}
 				</Link>
 				<Link
+					href="/articles"
+					className={`${styles.drawerLink} ${pathname.startsWith('/articles') ? styles.drawerLinkActive : ''}`}
+					onClick={closeDrawer}
+				>
+					{t('articles')}
+				</Link>
+				<Link
 					href="/decks"
 					className={`${styles.drawerLink} ${pathname.startsWith('/decks') ? styles.drawerLinkActive : ''}`}
 					onClick={closeDrawer}
