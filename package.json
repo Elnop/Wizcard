@@ -43,7 +43,7 @@
 		"gh:epics": "tsx scripts/github/file-epics.ts",
 		"gh:rules": "tsx scripts/github/setup-rulesets.ts",
 		"gh:bmad": "tsx scripts/github/sync-bmad.ts",
-		"test:scripts": "tsx --test 'scripts/**/*.test.ts'",
+		"test:scripts": "tsx --test 'scripts/**/*.test.ts' 'src/lib/articles/**/*.test.ts'",
 		"logo:generate": "tsx scripts/generate-logo.ts",
 		"clean": "rm -rf node_modules .next",
 		"prepare": "husky"
@@ -76,6 +76,8 @@
 		"posthog-node": "^5.21.2",
 		"react": "19.2.3",
 		"react-dom": "19.2.3",
+		"react-markdown": "^10.1.0",
+		"remark-gfm": "^4.0.1",
 		"sharp": "^0.35.3",
 		"sql.js": "^1.14.1",
 		"zustand": "^5.0.12"

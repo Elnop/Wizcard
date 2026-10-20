@@ -135,7 +135,8 @@
 		"menu": "Menu",
 		"profile": "Profil",
 		"settings": "Paramètres",
-		"logout": "Se déconnecter"
+		"logout": "Se déconnecter",
+		"articles": "Articles"
 	},
 	"footer": {
 		"legalLinks": "Liens légaux",
@@ -959,6 +960,14 @@
 		},
 		"card": {
 			"title": "carte {name}"
+		},
+		"articles": {
+			"title": "Articles",
+			"description": "Les articles de Wizcard : changements du catalogue Magic: The Gathering, actualités Magic et nouveautés du site."
+		},
+		"article": {
+			"title": "{title}",
+			"notFoundTitle": "Article introuvable"
 		}
 	},
 	"apiErrors": {
@@ -994,5 +1003,20 @@
 		"condition": "État",
 		"language": "Langue",
 		"flags": "Proxy / altérée / échange"
+	},
+	"articles": {
+		"title": "Articles",
+		"intro": "Les nouveautés de Wizcard et du catalogue Magic: The Gathering.",
+		"filterLabel": "Filtrer par catégorie",
+		"all": "Tous",
+		"empty": "Aucun article publié pour le moment.",
+		"emptyCategory": "Aucun article dans cette catégorie pour le moment.",
+		"backToList": "← Tous les articles",
+		"publishedOn": "Publié le {date}",
+		"categories": {
+			"catalogue": "Catalogue",
+			"magic": "Magic",
+			"site": "Site"
+		}
 	}
 }

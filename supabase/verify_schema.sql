@@ -36,6 +36,8 @@
 -- bloc, juste après le catalogue. MàJ 2026-10-20.
 -- NB : la table scryfall_migrations (20261020130000) est auditée dans son propre
 -- bloc, juste après le journal. MàJ 2026-10-20.
+-- NB : la table articles (20261021120000) est auditée dans son propre bloc,
+-- juste après les migrations Scryfall. MàJ 2026-10-20.
 -- =============================================================================
 
 -- Pas de transaction englobante : on veut qu'un objet manquant produise un FAIL,
@@ -1043,6 +1045,123 @@ select pg_temp.chk('scryfall-migrations-security', 'service_role cannot DELETE/T
     and not has_table_privilege('service_role','public.scryfall_migrations','DELETE')
     and not has_table_privilege('service_role','public.scryfall_migrations','TRUNCATE'),
   'service_role peut effacer les migrations (default ACL non révoquée)');
+
+-- =============================================================================
+-- ARTICLES (20261021120000)
+--
+-- articles porte les articles publiés (digest « Catalogue », news). Lisible par
+-- anon/authenticated (policy limitée aux articles publiés), écrite seulement par
+-- service_role.
+-- =============================================================================
+select pg_temp.chk('articles', 'public.articles',
+  pg_temp.has_table('articles'), 'table absente');
+
+with expected(t, col, typ) as (
+  values
+    ('articles','id','uuid'),
+    ('articles','slug','text'),
+    ('articles','category','text'),
+    ('articles','title_fr','text'),
+    ('articles','title_en','text'),
+    ('articles','body_fr','text'),
+    ('articles','body_en','text'),
+    ('articles','published_at','timestamp with time zone'),
+    ('articles','source','text'),
+    ('articles','created_at','timestamp with time zone')
+)
+select pg_temp.chk(
+  'articles-column', e.t||'.'||e.col,
+  pg_temp.has_col(e.t, e.col) and pg_temp.col_type(e.t, e.col) is not distinct from e.typ,
+  case
+    when not pg_temp.has_col(e.t, e.col) then 'colonne absente'
+    else 'type '||coalesce(pg_temp.col_type(e.t,e.col),'?')||' ≠ attendu '||e.typ
+  end
+)
+from expected e;
+
+select pg_temp.chk('articles', 'articles.'||col||' not null',
+  coalesce((select a.attnotnull from pg_attribute a
+            where a.attrelid = to_regclass('public.articles')
+              and a.attname = col and not a.attisdropped), false),
+  'colonne nullable')
+from unnest(array['slug','category','title_fr','title_en','body_fr','body_en',
+                  'published_at','source']) col;
+
+select pg_temp.chk('articles', 'articles.id default gen_random_uuid()',
+  pg_temp.col_default('articles','id') = 'gen_random_uuid()',
+  'id sans default → un insert sans id échoue');
+
+select pg_temp.chk('articles', 'articles :: primary key (id)',
+  exists (select 1 from pg_constraint
+          where contype='p' and conrelid = to_regclass('public.articles')),
+  'clé primaire absente');
+
+select pg_temp.chk('articles', 'articles :: unique (slug)',
+  exists (select 1 from pg_constraint
+          where contype='u' and conrelid = to_regclass('public.articles')
+            and conname = 'articles_slug_key'),
+  'slug non unique → deux articles à la même URL');
+
+select pg_temp.chk('articles', 'articles :: '||con,
+  pg_temp.has_check('articles', con), 'contrainte absente')
+from unnest(array['articles_category_check',
+                  'articles_slug_format',
+                  'articles_text_not_blank']) con;
+
+select pg_temp.chk('articles', 'articles :: articles_category_published_at_idx',
+  pg_temp.has_index('articles', 'articles_category_published_at_idx'), 'index absent');
+
+-- SÉCURITÉ : RLS activée, une seule policy de lecture limitée aux articles publiés.
+select pg_temp.chk('articles-security', 'articles :: RLS enabled',
+  pg_temp.rls_on('articles'), 'RLS désactivée');
+
+select pg_temp.chk('articles-security', 'articles :: articles_select_published (published_at <= now())',
+  exists (select 1 from pg_policies
+          where schemaname='public' and tablename='articles'
+            and policyname='articles_select_published' and cmd='SELECT'
+            and qual like '%published_at <= now()%'),
+  'policy absente ou ne filtre pas les articles futurs');
+
+select pg_temp.chk('articles-security', 'articles :: articles_select_published TO anon, authenticated',
+  exists (select 1 from pg_policies
+          where schemaname='public' and tablename='articles'
+            and policyname='articles_select_published'
+            and roles @> array['anon','authenticated']::name[]),
+  'policy sans anon/authenticated → les pages articles ne voient rien');
+
+select pg_temp.chk('articles-security', 'articles :: only articles_select_published',
+  pg_temp.has_table('articles')
+    and not exists (select 1 from pg_policies
+                    where schemaname='public' and tablename='articles'
+                      and policyname <> 'articles_select_published'),
+  'table absente ou policy inattendue sur articles');
+
+-- anon/authenticated : SELECT seulement (la default ACL prod leur accorderait
+-- sinon l'écriture, TRUNCATE compris, qui contourne la RLS).
+select pg_temp.chk('articles-grant', r||' SELECT articles',
+  pg_temp.has_table('articles') and has_table_privilege(r,'public.articles','SELECT'),
+  'les pages articles ne pourront pas lire (403 42501)')
+from unnest(array['anon','authenticated']) r;
+
+select pg_temp.chk('articles-security', r||' cannot write articles',
+  pg_temp.has_table('articles')
+    and not has_table_privilege(r,'public.articles','INSERT')
+    and not has_table_privilege(r,'public.articles','UPDATE')
+    and not has_table_privilege(r,'public.articles','DELETE')
+    and not has_table_privilege(r,'public.articles','TRUNCATE'),
+  'le client peut écrire des articles (default ACL non révoquée)')
+from unnest(array['anon','authenticated']) r;
+
+select pg_temp.chk('articles-grant', 'service_role '||p||' articles',
+  pg_temp.has_table('articles')
+    and has_table_privilege('service_role','public.articles',p),
+  'le digest ne pourra pas écrire (403 42501)')
+from unnest(array['SELECT','INSERT','UPDATE','DELETE']) p;
+
+select pg_temp.chk('articles-security', 'service_role cannot TRUNCATE articles',
+  pg_temp.has_table('articles')
+    and not has_table_privilege('service_role','public.articles','TRUNCATE'),
+  'service_role peut vider la table (TRUNCATE non révoqué)');
 
 -- =============================================================================
 -- RÉSUMÉ + RAPPORT

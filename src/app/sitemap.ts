@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/seo/site';
 import { routing } from '@/i18n/routing';
 import { createClient } from '@/lib/supabase/server';
+import { fetchPublishedArticleSlugs } from '@/lib/supabase/queries/articles.server';
 
 /**
  * Sitemap multilingue. Chaque URL publique est émise pour les DEUX locales
@@ -44,10 +45,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		...localizedEntries('search/decks', { changeFrequency: 'weekly', priority: 0.7 }),
 		...localizedEntries('search/profiles', { changeFrequency: 'weekly', priority: 0.7 }),
 		...localizedEntries('sets', { changeFrequency: 'monthly', priority: 0.6 }),
+		...localizedEntries('articles', { changeFrequency: 'weekly', priority: 0.7 }),
 		...localizedEntries('mentions-legales', { changeFrequency: 'yearly', priority: 0.2 }),
 		...localizedEntries('confidentialite', { changeFrequency: 'yearly', priority: 0.2 }),
 		...localizedEntries('cgu', { changeFrequency: 'yearly', priority: 0.2 }),
 	];
+
+	// Articles come from a separate cookieless read so a failure there never drops
+	// the deck/profile entries (and vice versa).
+	let articleRoutes: MetadataRoute.Sitemap = [];
+	try {
+		articleRoutes = (await fetchPublishedArticleSlugs()).flatMap((a) =>
+			localizedEntries(`articles/${encodeURIComponent(a.slug)}`, {
+				lastModified: new Date(a.published_at),
+				changeFrequency: 'monthly',
+				priority: 0.6,
+			})
+		);
+	} catch {
+		articleRoutes = [];
+	}
 
 	try {
 		const supabase = await createClient();
@@ -87,8 +104,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 				})
 			);
 
-		return [...staticRoutes, ...deckRoutes, ...profileRoutes];
+		return [...staticRoutes, ...articleRoutes, ...deckRoutes, ...profileRoutes];
 	} catch {
-		return staticRoutes;
+		return [...staticRoutes, ...articleRoutes];
 	}
 }
