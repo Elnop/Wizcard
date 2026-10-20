@@ -34,6 +34,8 @@
 -- par une ligne INFO (jamais un FAIL). MàJ 2026-07-25.
 -- NB : le journal catalog_changes (20261020120000) est audité dans son propre
 -- bloc, juste après le catalogue. MàJ 2026-10-20.
+-- NB : la table scryfall_migrations (20261020130000) est auditée dans son propre
+-- bloc, juste après le journal. MàJ 2026-10-20.
 -- =============================================================================
 
 -- Pas de transaction englobante : on veut qu'un objet manquant produise un FAIL,
@@ -950,6 +952,97 @@ select pg_temp.chk('catalog-changes-security', 'service_role cannot write catalo
     and not has_table_privilege('service_role','public.catalog_changes','DELETE')
     and not has_table_privilege('service_role','public.catalog_changes','TRUNCATE'),
   'service_role peut altérer le journal (default ACL non révoquée)');
+
+-- =============================================================================
+-- MIGRATIONS SCRYFALL (20261020130000)
+--
+-- scryfall_migrations copie la liste /migrations de Scryfall (merge / delete),
+-- upsertée par id par scripts/seed/seed-migrations.ts. Lue par le digest
+-- « Catalogue » et le remappage des cartes utilisateur, avec la clé service_role ;
+-- anon/authenticated n'y ont AUCUN accès.
+-- =============================================================================
+select pg_temp.chk('scryfall-migrations', 'public.scryfall_migrations',
+  pg_temp.has_table('scryfall_migrations'), 'table absente');
+
+with expected(t, col, typ) as (
+  values
+    ('scryfall_migrations','id','uuid'),
+    ('scryfall_migrations','strategy','text'),
+    ('scryfall_migrations','old_scryfall_id','uuid'),
+    ('scryfall_migrations','new_scryfall_id','uuid'),
+    ('scryfall_migrations','note','text'),
+    ('scryfall_migrations','performed_at','date'),
+    ('scryfall_migrations','metadata','jsonb'),
+    ('scryfall_migrations','recorded_at','timestamp with time zone')
+)
+select pg_temp.chk(
+  'scryfall-migrations-column', e.t||'.'||e.col,
+  pg_temp.has_col(e.t, e.col) and pg_temp.col_type(e.t, e.col) is not distinct from e.typ,
+  case
+    when not pg_temp.has_col(e.t, e.col) then 'colonne absente'
+    else 'type '||coalesce(pg_temp.col_type(e.t,e.col),'?')||' ≠ attendu '||e.typ
+  end
+)
+from expected e;
+
+-- recorded_at posé à la 1re insertion (le script ne l'envoie jamais) : sans le
+-- default, l'upsert échouerait (not null) ; sans le not null, la fenêtre du digest
+-- raterait des lignes.
+select pg_temp.chk('scryfall-migrations', 'scryfall_migrations.recorded_at not null default now()',
+  coalesce((select a.attnotnull and pg_get_expr(d.adbin, d.adrelid) = 'now()'
+            from pg_attribute a
+            left join pg_attrdef d on d.adrelid = a.attrelid and d.adnum = a.attnum
+            where a.attrelid = to_regclass('public.scryfall_migrations')
+              and a.attname = 'recorded_at' and not a.attisdropped), false),
+  'recorded_at nullable ou sans default now()');
+
+select pg_temp.chk('scryfall-migrations', 'scryfall_migrations :: primary key (id)',
+  exists (select 1 from pg_constraint
+          where contype='p' and conrelid = to_regclass('public.scryfall_migrations')),
+  'clé primaire absente → l''upsert onConflict id échoue');
+
+select pg_temp.chk('scryfall-migrations', 'scryfall_migrations :: '||con,
+  pg_temp.has_check('scryfall_migrations', con), 'contrainte absente')
+from unnest(array['scryfall_migrations_strategy_check',
+                  'scryfall_migrations_merge_target_check']) con;
+
+select pg_temp.chk('scryfall-migrations', 'scryfall_migrations :: '||idx,
+  pg_temp.has_index('scryfall_migrations', idx), 'index absent')
+from unnest(array['scryfall_migrations_old_scryfall_id_idx',
+                  'scryfall_migrations_recorded_at_idx']) idx;
+
+-- SÉCURITÉ : RLS activée et AUCUNE policy (service_role only).
+select pg_temp.chk('scryfall-migrations-security', 'scryfall_migrations :: RLS enabled, no policy',
+  pg_temp.rls_on('scryfall_migrations')
+    and not exists (select 1 from pg_policies
+                    where schemaname='public' and tablename='scryfall_migrations'),
+  'table doit avoir RLS activée et AUCUNE policy (service-role only)');
+
+-- SÉCURITÉ : anon/authenticated sans aucun privilège (la default ACL prod leur
+-- accorderait sinon l'écriture, TRUNCATE compris, qui contourne la RLS).
+select pg_temp.chk('scryfall-migrations-security', r||' has no access to scryfall_migrations',
+  pg_temp.has_table('scryfall_migrations')
+    and not has_table_privilege(r,'public.scryfall_migrations','SELECT')
+    and not has_table_privilege(r,'public.scryfall_migrations','INSERT')
+    and not has_table_privilege(r,'public.scryfall_migrations','UPDATE')
+    and not has_table_privilege(r,'public.scryfall_migrations','DELETE')
+    and not has_table_privilege(r,'public.scryfall_migrations','TRUNCATE'),
+  'le client peut lire ou altérer les migrations Scryfall')
+from unnest(array['anon','authenticated']) r;
+
+-- Le seed upserte (INSERT + UPDATE) ; le digest et le remappage lisent.
+select pg_temp.chk('scryfall-migrations-grant', 'service_role '||p||' scryfall_migrations',
+  pg_temp.has_table('scryfall_migrations')
+    and has_table_privilege('service_role','public.scryfall_migrations',p),
+  'seed-migrations ou le digest échoueront (403 42501)')
+from unnest(array['SELECT','INSERT','UPDATE']) p;
+
+-- Aucune migration stockée n'est jamais supprimée.
+select pg_temp.chk('scryfall-migrations-security', 'service_role cannot DELETE/TRUNCATE scryfall_migrations',
+  pg_temp.has_table('scryfall_migrations')
+    and not has_table_privilege('service_role','public.scryfall_migrations','DELETE')
+    and not has_table_privilege('service_role','public.scryfall_migrations','TRUNCATE'),
+  'service_role peut effacer les migrations (default ACL non révoquée)');
 
 -- =============================================================================
 -- RÉSUMÉ + RAPPORT
