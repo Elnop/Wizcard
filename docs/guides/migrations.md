@@ -7,6 +7,8 @@ Migrations live in `supabase/migrations/` and are managed by the Supabase CLI.
 ```bash
 npm run sb:migrate   # apply pending migrations to local DB
 npm run sb:reset     # destructive: drop DB + re-apply all migrations from scratch
+npm run sb:verify    # read-only audit: local DB schema vs all migrations
+npm run sb:test      # run supabase/tests/catalog_changes.sql (journal triggers) in a rolled-back transaction
 ```
 
 Use `sb:migrate` for incremental updates. Use `sb:reset` when you need a clean slate (e.g. after a conflicting migration or during initial setup).

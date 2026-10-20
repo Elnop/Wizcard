@@ -33,6 +33,7 @@ import {
 	type CardDefinitionFaceRow,
 	type CardPrintFaceRow,
 } from './normalize-catalog-card';
+import { createDefinitionSelector, groupPrintsByFaceCount } from './catalog-sync';
 import type { ScryfallCard } from '@/lib/scryfall/types/scryfall';
 
 const BULK_META_URL = 'https://api.scryfall.com/bulk-data';
@@ -126,10 +127,10 @@ function parseLine(line: string): ScryfallCard | null {
 
 async function flushDefs(rows: CardDefinitionRow[]) {
 	if (rows.length === 0 || dryRun) return;
-	// Multiple prints (e.g. en + fr) of the same card share one oracle_id and produce
-	// identical definition rows (definitions carry the oracle-level name/type_line,
-	// not printed_name) — dedupe per batch or Postgres rejects the upsert with
-	// "ON CONFLICT DO UPDATE command cannot affect row a second time".
+	// pass1 already emits one definition per oracle per run (createDefinitionSelector).
+	// This per-batch dedupe is only a safety net: a duplicate oracle_id in one upsert
+	// would make Postgres reject it with "ON CONFLICT DO UPDATE command cannot affect
+	// row a second time".
 	const byOracleId = new Map(rows.map((r) => [r.oracle_id, r]));
 	const { error } = await sb()
 		.from('card_definitions')
@@ -207,10 +208,10 @@ const DELETE_CHUNK = 100; // .in() is a GET-style query string; UPSERT_BATCH-siz
 
 async function flushDefinitionFaces(rows: CardDefinitionFaceRow[]) {
 	if (rows.length === 0 || dryRun) return;
-	// Multiple prints of the same oracle (e.g. en + fr, or reprints) emit identical
-	// definition-face rows (gameplay is invariant per oracle) — dedupe per batch or
-	// Postgres rejects the upsert with "ON CONFLICT DO UPDATE command cannot affect
-	// row a second time" (same issue as flushDefs).
+	// pass1 already emits one oracle's definition faces once per run
+	// (createDefinitionSelector). This per-batch dedupe is only a safety net against a
+	// duplicate key, which Postgres rejects with "ON CONFLICT DO UPDATE command cannot
+	// affect row a second time" (same as flushDefs).
 	const byKey = new Map(rows.map((r) => [`${r.oracle_id}|${r.face_index}`, r]));
 	const { error } = await sb()
 		.from('card_definition_faces')
@@ -220,19 +221,34 @@ async function flushDefinitionFaces(rows: CardDefinitionFaceRow[]) {
 
 async function flushPrintFaces(printIds: string[], rows: CardPrintFaceRow[]) {
 	if (dryRun) return;
-	// Replace print-faces for the prints in this batch: delete then insert (a print's
-	// face set is small and fully known here). Chunk the delete: a full UPSERT_BATCH
-	// (500) of UUIDs in one `.in()` overflows PostgREST/kong's URL length limit
-	// ("URI too long").
-	for (let i = 0; i < printIds.length; i += DELETE_CHUNK) {
-		const chunk = printIds.slice(i, i + DELETE_CHUNK);
-		if (chunk.length === 0) continue;
-		const { error: delErr } = await sb().from('card_print_faces').delete().in('print_id', chunk);
-		if (delErr) throw new Error(`card_print_faces delete failed: ${delErr.message}`);
-	}
+	// Sync print-faces for the prints in this batch (a print's face set is small and
+	// fully known here): upsert the current faces, then delete the faces beyond each
+	// print's current count. Never delete-then-insert: the catalog_changes triggers
+	// journal real differences only, so an unchanged face must stay untouched and a
+	// changed one must arrive as an UPDATE (a removed face is journaled by its DELETE).
 	if (rows.length > 0) {
-		const { error } = await sb().from('card_print_faces').insert(rows);
-		if (error) throw new Error(`card_print_faces insert failed: ${error.message}`);
+		const { error } = await sb()
+			.from('card_print_faces')
+			.upsert(rows, { onConflict: 'print_id,face_index' });
+		if (error) throw new Error(`card_print_faces upsert failed: ${error.message}`);
+	}
+
+	// face_index is 0..k-1 for a print with k faces, so its extra faces are
+	// face_index >= k. Group prints by k to delete them in a few requests (most
+	// prints have k = 0, a request that usually matches nothing).
+	const byCount = groupPrintsByFaceCount(printIds, rows);
+	// Chunk the delete: a full UPSERT_BATCH (500) of UUIDs in one `.in()` overflows
+	// PostgREST/kong's URL length limit ("URI too long").
+	for (const [k, ids] of byCount) {
+		for (let i = 0; i < ids.length; i += DELETE_CHUNK) {
+			const chunk = ids.slice(i, i + DELETE_CHUNK);
+			const { error } = await sb()
+				.from('card_print_faces')
+				.delete()
+				.in('print_id', chunk)
+				.gte('face_index', k);
+			if (error) throw new Error(`card_print_faces delete failed: ${error.message}`);
+		}
 	}
 }
 
@@ -346,6 +362,7 @@ async function pass1(): Promise<{ seen: number; kept: number }> {
 	let defFaces: CardDefinitionFaceRow[] = [];
 	let printFaces: CardPrintFaceRow[] = [];
 	let facePrintIds: string[] = [];
+	const selectDefinition = createDefinitionSelector();
 
 	async function flushAll() {
 		// FK order: card_definitions -> card_definition_faces -> card_prints -> card_print_faces.
@@ -367,9 +384,14 @@ async function pass1(): Promise<{ seen: number; kept: number }> {
 		const rows = toCatalogRows(card);
 		if (!rows) continue;
 		kept++;
-		defs.push(rows.definition);
+		// One definition write per oracle per run, first print wins (see
+		// createDefinitionSelector: per-print oracle data would flip within a run).
+		const selected = selectDefinition(rows.definition, rows.definitionFaces);
+		if (selected) {
+			defs.push(selected.definition);
+			defFaces.push(...selected.definitionFaces);
+		}
 		prints.push(rows.print);
-		defFaces.push(...rows.definitionFaces);
 		printFaces.push(...rows.printFaces);
 		facePrintIds.push(rows.print.id);
 

@@ -32,6 +32,8 @@
 -- card_parts, card_sets) sont créées VIDES par les migrations et peuplées par
 -- `npm run seed` ; ce script audite leur STRUCTURE et signale un catalogue vide
 -- par une ligne INFO (jamais un FAIL). MàJ 2026-07-25.
+-- NB : le journal catalog_changes (20261020120000) est audité dans son propre
+-- bloc, juste après le catalogue. MàJ 2026-10-20.
 -- =============================================================================
 
 -- Pas de transaction englobante : on veut qu'un objet manquant produise un FAIL,
@@ -385,7 +387,9 @@ with fn(name, args) as (
     ('lower_tags','t text[]'),
     ('recompute_user_usage','uid uuid'),
     ('trg_decks_usage',''),('trg_cards_usage',''),
-    ('trg_decks_limit',''),('trg_cards_limit','')
+    ('trg_decks_limit',''),('trg_cards_limit',''),
+    -- 20261020120000_create_catalog_changes : journal des changements du catalogue.
+    ('log_catalog_change','')
 )
 select pg_temp.chk('function', fn.name||'('||fn.args||')',
   pg_temp.has_func(fn.name, fn.args), 'fonction absente')
@@ -408,7 +412,15 @@ with tg(schema_, t, name) as (
     ('public','decks','decks_limit_before'),
     ('public','decks','decks_usage_after'),
     ('public','card_entries','cards_limit_before'),
-    ('public','card_entries','cards_usage_after')
+    ('public','card_entries','cards_usage_after'),
+    -- 20261020120000_create_catalog_changes : journal des changements du catalogue.
+    ('public','card_prints','card_prints_log_insert_delete'),
+    ('public','card_prints','card_prints_log_update'),
+    ('public','card_definitions','card_definitions_log_insert'),
+    ('public','card_definitions','card_definitions_log_update'),
+    ('public','card_print_faces','card_print_faces_log_update'),
+    ('public','card_print_faces','card_print_faces_log_delete'),
+    ('public','card_definition_faces','card_definition_faces_log_update')
 )
 select pg_temp.chk('trigger', tg.schema_||'.'||tg.t||' :: '||tg.name,
   pg_temp.has_trigger(tg.schema_, tg.t, tg.name), 'trigger absent')
@@ -844,6 +856,100 @@ select
        then ''
        else 'catalogue VIDE → lancer `npm run seed` (structure OK, contenu absent)' end
 where pg_temp.has_table('card_definitions');
+
+-- =============================================================================
+-- JOURNAL DES CHANGEMENTS DU CATALOGUE (20261020120000)
+--
+-- catalog_changes reçoit, via des triggers AFTER ROW sur card_prints,
+-- card_definitions et leurs faces, une ligne par VRAIE différence (added /
+-- removed / updated par champ). Lu par le digest « Catalogue » avec la clé
+-- service_role ; anon/authenticated n'y ont AUCUN accès (ni lecture ni écriture).
+-- Les triggers et la fonction sont vérifiés aux sections 6 et 7.
+-- =============================================================================
+select pg_temp.chk('catalog-changes', 'public.catalog_changes',
+  pg_temp.has_table('catalog_changes'), 'table absente');
+
+with expected(t, col, typ) as (
+  values
+    ('catalog_changes','id','bigint'),
+    ('catalog_changes','changed_at','timestamp with time zone'),
+    ('catalog_changes','entity','text'),('catalog_changes','change','text'),
+    ('catalog_changes','print_id','uuid'),('catalog_changes','oracle_id','uuid'),
+    ('catalog_changes','face_index','smallint'),('catalog_changes','field','text'),
+    ('catalog_changes','old_value','jsonb'),('catalog_changes','new_value','jsonb')
+)
+select pg_temp.chk(
+  'catalog-changes-column', e.t||'.'||e.col,
+  pg_temp.has_col(e.t, e.col) and pg_temp.col_type(e.t, e.col) is not distinct from e.typ,
+  case
+    when not pg_temp.has_col(e.t, e.col) then 'colonne absente'
+    else 'type '||coalesce(pg_temp.col_type(e.t,e.col),'?')||' ≠ attendu '||e.typ
+  end
+)
+from expected e;
+
+select pg_temp.chk('catalog-changes', 'catalog_changes :: '||con,
+  pg_temp.has_check('catalog_changes', con), 'contrainte absente')
+from unnest(array['catalog_changes_entity_check','catalog_changes_change_check']) con;
+
+select pg_temp.chk('catalog-changes', 'catalog_changes :: catalog_changes_changed_at_idx',
+  pg_temp.has_index('catalog_changes','catalog_changes_changed_at_idx'),
+  'index absent → la fenêtre du digest (changed_at) balaie toute la table');
+
+-- Le journal n'a AUCUNE FK : il doit survivre à la suppression des prints.
+select pg_temp.chk('catalog-changes', 'catalog_changes has NO FK',
+  not exists (select 1 from pg_constraint
+              where contype='f' and conrelid = to_regclass('public.catalog_changes')),
+  'FK présente → supprimer un print casserait ou effacerait son journal');
+
+-- SÉCURITÉ : RLS activée et AUCUNE policy (service_role only).
+select pg_temp.chk('catalog-changes-security', 'catalog_changes :: RLS enabled, no policy',
+  pg_temp.rls_on('catalog_changes')
+    and not exists (select 1 from pg_policies
+                    where schemaname='public' and tablename='catalog_changes'),
+  'table doit avoir RLS activée et AUCUNE policy (service-role only)');
+
+-- SÉCURITÉ : la fonction trigger est SECURITY DEFINER (le seed écrit en
+-- service_role, qui n'a que SELECT sur le journal) avec un search_path figé.
+select pg_temp.chk('catalog-changes-security', 'log_catalog_change() SECURITY DEFINER, search_path=''''',
+  coalesce((select p.prosecdef and p.proconfig @> array['search_path=""']
+            from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+            where n.nspname='public' and p.proname='log_catalog_change'), false),
+  'fonction absente, pas SECURITY DEFINER, ou search_path non figé');
+
+select pg_temp.chk('catalog-changes-security', r||' cannot EXECUTE log_catalog_change()',
+  coalesce((select not has_function_privilege(r, p.oid, 'EXECUTE')
+            from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+            where n.nspname='public' and p.proname='log_catalog_change'), false),
+  'execute accordé → fonction SECURITY DEFINER appelable par le client')
+from unnest(array['anon','authenticated']) r;
+
+-- SÉCURITÉ : anon/authenticated sans aucun privilège (la default ACL prod leur
+-- accorderait sinon l'écriture, TRUNCATE compris, qui contourne la RLS).
+select pg_temp.chk('catalog-changes-security', r||' has no access to catalog_changes',
+  pg_temp.has_table('catalog_changes')
+    and not has_table_privilege(r,'public.catalog_changes','SELECT')
+    and not has_table_privilege(r,'public.catalog_changes','INSERT')
+    and not has_table_privilege(r,'public.catalog_changes','UPDATE')
+    and not has_table_privilege(r,'public.catalog_changes','DELETE')
+    and not has_table_privilege(r,'public.catalog_changes','TRUNCATE'),
+  'le client peut lire ou altérer le journal')
+from unnest(array['anon','authenticated']) r;
+
+select pg_temp.chk('catalog-changes-grant', 'service_role SELECT catalog_changes',
+  pg_temp.has_table('catalog_changes')
+    and has_table_privilege('service_role','public.catalog_changes','SELECT'),
+  'le digest ne pourra pas lire le journal (403 42501)');
+
+-- Le journal est en LECTURE SEULE pour service_role : seuls les triggers
+-- (fonction SECURITY DEFINER) y écrivent.
+select pg_temp.chk('catalog-changes-security', 'service_role cannot write catalog_changes',
+  pg_temp.has_table('catalog_changes')
+    and not has_table_privilege('service_role','public.catalog_changes','INSERT')
+    and not has_table_privilege('service_role','public.catalog_changes','UPDATE')
+    and not has_table_privilege('service_role','public.catalog_changes','DELETE')
+    and not has_table_privilege('service_role','public.catalog_changes','TRUNCATE'),
+  'service_role peut altérer le journal (default ACL non révoquée)');
 
 -- =============================================================================
 -- RÉSUMÉ + RAPPORT
