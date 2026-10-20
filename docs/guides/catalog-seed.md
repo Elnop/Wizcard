@@ -7,6 +7,15 @@ The `catalog-seed` workflow (`.github/workflows/catalog-seed.yml`) seeds the **P
 - One run at a time (`concurrency: catalog-seed`, a queued run waits, it never cancels the running one). GitHub keeps only one pending run per group: a third trigger cancels the run already waiting, and that cancelled run opens no failure issue. Job timeout: 345 min (runner limit 6 h).
 - No artifact is uploaded and the logs are ndjson. The Supabase URL and key are GitHub secrets, so they show as `***` in the logs.
 
+## Change journal (`catalog_changes`)
+
+Triggers on `card_prints`, `card_definitions`, `card_print_faces` and `card_definition_faces` (migration `20261020120000_create_catalog_changes.sql`) write every real difference the seed makes to `public.catalog_changes`: one `added` row per new print or definition, one `removed` row per deleted print (with the whole deleted row in `old_value`) or per face dropped from a print that still exists, and one `updated` row per changed field, with the old and new values as `jsonb`. An identical upsert writes nothing, so a full seed over an up-to-date catalog adds zero rows. All columns are tracked, new ones included, except `updated_at` and `card_definitions.edhrec_rank` (a popularity rank that moves every week). `card_parts` and `card_sets` are not journaled. The journal has no foreign key to the catalog, so it outlives deleted prints. Only `service_role` can read it; `anon` and `authenticated` have no access at all. The first seed of an empty catalog logs one `added` row per print and definition (~200k rows). The seed writes each definition once per run, from the oracle's first print in the bulk (sorted by print id): Scryfall's `oldschool` legality is per print, and writing every print's copy made the definition flip within a run, each flip logged as a fake legality change.
+
+Prod rollout hazards:
+
+1. Apply the migration and advance `deploy` together, before the next Monday 04:00 UTC run. The old seed code (delete-then-insert print faces, one definition write per print) would flood the journal.
+2. The first prod seed with this code switches ~473 oracles from last-print to first-print `oldschool` legality and logs ~3,500 spurious `legalities` rows. Delete them before the first digest (story 3.3); tracked in issue #66.
+
 ## One-time setup (before merging the workflow)
 
 The workflow fails on its first step if these are missing.
