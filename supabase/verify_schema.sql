@@ -38,6 +38,9 @@
 -- bloc, juste après le journal. MàJ 2026-10-20.
 -- NB : la table articles (20261021120000) est auditée dans son propre bloc,
 -- juste après les migrations Scryfall. MàJ 2026-10-20.
+-- NB : la table catalog_digests et la fonction publish_catalog_digest
+-- (20261022120000) sont auditées dans leur propre bloc, juste après les articles.
+-- MàJ 2026-10-20.
 -- =============================================================================
 
 -- Pas de transaction englobante : on veut qu'un objet manquant produise un FAIL,
@@ -393,7 +396,9 @@ with fn(name, args) as (
     ('trg_decks_usage',''),('trg_cards_usage',''),
     ('trg_decks_limit',''),('trg_cards_limit',''),
     -- 20261020120000_create_catalog_changes : journal des changements du catalogue.
-    ('log_catalog_change','')
+    ('log_catalog_change',''),
+    -- 20261022120000_create_catalog_digests : publication atomique du digest.
+    ('publish_catalog_digest','p_slug text, p_title_fr text, p_title_en text, p_body_fr text, p_body_en text, p_from_change_id bigint, p_from_migration_recorded_at timestamp with time zone, p_last_change_id bigint, p_last_migration_recorded_at timestamp with time zone')
 )
 select pg_temp.chk('function', fn.name||'('||fn.args||')',
   pg_temp.has_func(fn.name, fn.args), 'fonction absente')
@@ -1162,6 +1167,110 @@ select pg_temp.chk('articles-security', 'service_role cannot TRUNCATE articles',
   pg_temp.has_table('articles')
     and not has_table_privilege('service_role','public.articles','TRUNCATE'),
   'service_role peut vider la table (TRUNCATE non révoqué)');
+
+-- =============================================================================
+-- DIGEST « CATALOGUE » (20261022120000)
+--
+-- catalog_digests garde le repère du digest (dernier id du journal et dernier
+-- recorded_at des migrations Scryfall couverts). publish_catalog_digest() insère
+-- l'article ET le repère dans une seule transaction. service_role lit le repère et
+-- n'écrit que par la fonction ; anon/authenticated n'ont AUCUN accès.
+-- =============================================================================
+select pg_temp.chk('catalog-digests', 'public.catalog_digests',
+  pg_temp.has_table('catalog_digests'), 'table absente');
+
+with expected(t, col, typ) as (
+  values
+    ('catalog_digests','id','bigint'),
+    ('catalog_digests','article_id','uuid'),
+    ('catalog_digests','last_change_id','bigint'),
+    ('catalog_digests','last_migration_recorded_at','timestamp with time zone'),
+    ('catalog_digests','created_at','timestamp with time zone')
+)
+select pg_temp.chk(
+  'catalog-digests-column', e.t||'.'||e.col,
+  pg_temp.has_col(e.t, e.col) and pg_temp.col_type(e.t, e.col) is not distinct from e.typ,
+  case
+    when not pg_temp.has_col(e.t, e.col) then 'colonne absente'
+    else 'type '||coalesce(pg_temp.col_type(e.t,e.col),'?')||' ≠ attendu '||e.typ
+  end
+)
+from expected e;
+
+-- Supprimer un article ne doit jamais rembobiner le repère (ni échouer).
+select pg_temp.chk('catalog-digests', 'catalog_digests.article_id → articles(id) on delete set null',
+  exists (select 1 from pg_constraint
+          where contype='f' and conrelid = to_regclass('public.catalog_digests')
+            and confrelid = to_regclass('public.articles') and confdeltype='n'),
+  'FK absente ou pas ON DELETE SET NULL');
+
+-- Le repère doit toujours exister : une ligne sans last_change_id ferait repartir
+-- la fenêtre de zéro (max() ignore les NULL).
+select pg_temp.chk('catalog-digests', 'catalog_digests.last_change_id not null',
+  coalesce((select a.attnotnull from pg_attribute a
+            where a.attrelid = to_regclass('public.catalog_digests')
+              and a.attname = 'last_change_id' and not a.attisdropped), false),
+  'last_change_id nullable');
+
+select pg_temp.chk('catalog-digests', 'catalog_digests :: catalog_digests_last_change_id_idx',
+  pg_temp.has_index('catalog_digests','catalog_digests_last_change_id_idx'), 'index absent');
+
+select pg_temp.chk('catalog-digests-security', 'catalog_digests :: RLS enabled, no policy',
+  pg_temp.rls_on('catalog_digests')
+    and not exists (select 1 from pg_policies
+                    where schemaname='public' and tablename='catalog_digests'),
+  'table doit avoir RLS activée et AUCUNE policy (service-role only)');
+
+select pg_temp.chk('catalog-digests-security', r||' has no access to catalog_digests',
+  pg_temp.has_table('catalog_digests')
+    and not has_table_privilege(r,'public.catalog_digests','SELECT')
+    and not has_table_privilege(r,'public.catalog_digests','INSERT')
+    and not has_table_privilege(r,'public.catalog_digests','UPDATE')
+    and not has_table_privilege(r,'public.catalog_digests','DELETE')
+    and not has_table_privilege(r,'public.catalog_digests','TRUNCATE'),
+  'le client peut lire ou altérer le repère du digest')
+from unnest(array['anon','authenticated']) r;
+
+-- La séquence de l'identité : la default ACL prod l'accorderait à anon/authenticated.
+select pg_temp.chk('catalog-digests-security', r||' has no access to catalog_digests_id_seq',
+  to_regclass('public.catalog_digests_id_seq') is not null
+    and not has_sequence_privilege(r,'public.catalog_digests_id_seq','USAGE')
+    and not has_sequence_privilege(r,'public.catalog_digests_id_seq','SELECT')
+    and not has_sequence_privilege(r,'public.catalog_digests_id_seq','UPDATE'),
+  'séquence absente ou accessible au client (default ACL non révoquée)')
+from unnest(array['anon','authenticated']) r;
+
+select pg_temp.chk('catalog-digests-grant', 'service_role SELECT catalog_digests',
+  pg_temp.has_table('catalog_digests')
+    and has_table_privilege('service_role','public.catalog_digests','SELECT'),
+  'le digest ne pourra pas lire son repère (403 42501)');
+
+select pg_temp.chk('catalog-digests-security', 'service_role cannot write catalog_digests',
+  pg_temp.has_table('catalog_digests')
+    and not has_table_privilege('service_role','public.catalog_digests','INSERT')
+    and not has_table_privilege('service_role','public.catalog_digests','UPDATE')
+    and not has_table_privilege('service_role','public.catalog_digests','DELETE')
+    and not has_table_privilege('service_role','public.catalog_digests','TRUNCATE'),
+  'service_role peut altérer le repère hors de publish_catalog_digest()');
+
+select pg_temp.chk('catalog-digests-security', 'publish_catalog_digest() SECURITY DEFINER, search_path=''''',
+  coalesce((select p.prosecdef and p.proconfig @> array['search_path=""']
+            from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+            where n.nspname='public' and p.proname='publish_catalog_digest'), false),
+  'fonction absente, pas SECURITY DEFINER, ou search_path non figé');
+
+select pg_temp.chk('catalog-digests-security', r||' cannot EXECUTE publish_catalog_digest()',
+  coalesce((select not has_function_privilege(r, p.oid, 'EXECUTE')
+            from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+            where n.nspname='public' and p.proname='publish_catalog_digest'), false),
+  'execute accordé → le client pourrait publier un article')
+from unnest(array['anon','authenticated']) r;
+
+select pg_temp.chk('catalog-digests-grant', 'service_role EXECUTE publish_catalog_digest()',
+  coalesce((select has_function_privilege('service_role', p.oid, 'EXECUTE')
+            from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+            where n.nspname='public' and p.proname='publish_catalog_digest'), false),
+  'le digest ne pourra pas publier (403 42501)');
 
 -- =============================================================================
 -- RÉSUMÉ + RAPPORT
