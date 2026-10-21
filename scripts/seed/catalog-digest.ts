@@ -1,13 +1,16 @@
 // Publish the weekly "Catalogue" digest (story 3.3, issue #62).
 //   npm run digest:catalog
 //   npm run digest:catalog -- --baseline   (set the marker to the current max, publish
-//                                           nothing: once in prod, and after a local
-//                                           seed of an empty database)
+//                                           nothing; never required: see below)
 // Runs after the catalog seed (workflow step `Digest`, after `Seed migrations`).
 //
 // 1. Reads the marker (max last_change_id / last_migration_recorded_at of
 //    catalog_digests) and the window above it: catalog_changes.id > marker and
 //    scryfall_migrations.recorded_at > marker, both capped at their current max.
+//    With NO marker yet (first run ever, in prod or on a fresh local DB), it only
+//    sets the initial marker, like --baseline: the first seed never publishes, so the
+//    whole history (initial catalog load, 2,800 historical migrations) is never
+//    announced.
 // 2. Reads the reference data the window cites (prints, names, sets), by pages.
 // 3. Builds the fr/en article with the pure catalog-digest-build.ts (no LLM).
 // 4. publish_catalog_digest() inserts the article and advances the marker in ONE
@@ -83,6 +86,8 @@ function fail(what: string, error: { message: string }): never {
 // --- Marker and window -----------------------------------------------------------------
 
 interface Marker {
+	/** False until the first digest (or baseline) has written a marker row. */
+	exists: boolean;
 	lastChangeId: number;
 	lastMigrationRecordedAt: string | null;
 }
@@ -102,6 +107,7 @@ async function readMarker(): Promise<Marker> {
 		.limit(1);
 	if (byMigration.error) fail('catalog_digests read', byMigration.error);
 	return {
+		exists: byChange.data.length > 0,
 		lastChangeId: Number(byChange.data[0]?.last_change_id ?? 0),
 		lastMigrationRecordedAt:
 			(byMigration.data[0]?.last_migration_recorded_at as string | undefined) ?? null,
@@ -330,14 +336,17 @@ async function readMaxima(): Promise<{ changeId: number; migrationRecordedAt: st
 	};
 }
 
-/** --baseline: the marker jumps to the current max; nothing is published. */
-async function baseline(started: number): Promise<void> {
-	const marker = await readMarker();
+/**
+ * --baseline, and the first run ever (no marker yet): the marker jumps to the current
+ * max; nothing is published.
+ */
+async function baseline(started: number, marker?: Marker): Promise<void> {
+	marker ??= await readMarker();
 	const max = await readMaxima();
 	const lastChangeId = Math.max(marker.lastChangeId, max.changeId);
 	const lastMigration = max.migrationRecordedAt ?? marker.lastMigrationRecordedAt;
 	await publish(marker, null, lastChangeId, lastMigration);
-	summary('repère initial posé');
+	summary("repère initial posé, pas d'article");
 	log.info(RUN_COMPLETE, {
 		outcome: 'success',
 		baseline: true,
@@ -352,6 +361,7 @@ async function main() {
 	const started = Date.now();
 	if (process.argv.includes('--baseline')) return baseline(started);
 	const marker = await readMarker();
+	if (!marker.exists) return baseline(started, marker);
 	const changes = await readChanges(marker.lastChangeId);
 	const migrations = await readMigrations(marker.lastMigrationRecordedAt);
 	log.info('window read', {

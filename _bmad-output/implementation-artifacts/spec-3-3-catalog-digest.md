@@ -29,6 +29,7 @@ context:
   - une fenêtre qui ne contient que des « autres corrections » publie quand même un article ;
   - `npm run digest:catalog -- --baseline` pose le repère au maximum actuel du journal et des migrations, **sans rien publier**. À lancer une fois en prod (#64), et après un seed local d'une base vide ;
   - le digest reste en fin de `npm run seed` (donc aussi de `seed:prod`).
+- **Premier run (propriétaire, 2026-10-21) :** le premier seed ne publie jamais d'article. Tant que `catalog_digests` est vide, le digest se comporte comme `--baseline` : il pose le repère au maximum actuel et ne publie rien. Cela remplace « sans digest précédent, elle couvre tout » et la baseline manuelle en prod.
 - Grandes sections : une grille de **12 cartes au plus** par bloc, puis « et N autres » avec un lien vers le set quand il y en a un.
 
 ## Boundaries & Constraints

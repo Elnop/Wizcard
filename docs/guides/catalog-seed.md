@@ -14,7 +14,7 @@ Triggers on `card_prints`, `card_definitions`, `card_print_faces` and `card_defi
 Prod rollout hazards:
 
 1. Apply the migration and advance `deploy` together, before the next Monday 04:00 UTC run. The old seed code (delete-then-insert print faces, one definition write per print) would flood the journal.
-2. The first prod seed with this code switches ~473 oracles from last-print to first-print `oldschool` legality and logs ~3,500 spurious `legalities` rows. Delete them before the first digest (story 3.3); tracked in issue #66.
+2. The first prod seed with this code switches ~473 oracles from last-print to first-print `oldschool` legality and logs ~3,500 spurious `legalities` rows. They are never announced: the digest's first run only sets its initial marker (see Catalogue digest). Tracked in issue #66.
 
 ## Scryfall migrations (`scryfall_migrations`)
 
@@ -52,7 +52,7 @@ The `Digest` step (`scripts/seed/catalog-digest.ts`, `npm run digest:catalog` lo
 - **Atomic publish:** `publish_catalog_digest()` (migration `20261022120000_create_catalog_digests.sql`, SECURITY DEFINER, executable by `service_role` only) inserts the article and the new marker in one transaction. It refuses to publish when the marker moved since the script read it, so two runs never publish the same changes twice.
 - **Recovery:** a seed that failed after journaling part of its changes leaves them above the marker; the next successful run's digest covers them, once.
 - **Nothing new:** an empty window publishes nothing and the job summary says `aucun changement, pas d'article`. A window that only holds changes never announced (`oldschool` legalities, a re-issued id) advances the marker without an article (`… (repère avancé)`). Otherwise the summary says `article publié : <slug>`.
-- **Baseline:** `npm run digest:catalog -- --baseline` sets the marker to the current max of the journal and of the migrations **without publishing anything** (summary `repère initial posé`). Run it once in prod (see the rollout order) and locally after seeding an empty database, otherwise the next digest announces the whole catalog.
+- **First run = baseline:** while `catalog_digests` is empty (first run ever in prod, or a fresh local database), the digest only sets the initial marker to the current max of the journal and of the migrations, and **publishes nothing** (summary `repère initial posé, pas d'article`). The first seed therefore never announces the history (initial catalog load, `oldschool` noise, the ~2,800 historical Scryfall migrations); the next seed announces only what changed since. `npm run digest:catalog -- --baseline` does the same on demand (the marker jumps to now; pending changes are then never announced).
 - **Content:** the title names the strongest event (new set > new cards in an existing set, « N nouvelles cartes dans X » > French translations > HD images > the rest); every type then gets its own `##` section. Cards are shown in grids of 12 at most per set ("and N more" with a link to the set), 10 sets at most per section, 50 lines at most per list (errata, legalities, removed prints, Scryfall migrations). More than 20 cards leaving Standard become one line; a format that appears or disappears on many cards is one line per format (« Nouveau format X : N cartes », « Format retiré X »). Changes of the same field across several seeds are netted (legal → banned → legal is not announced). Oracle errata cover the oracle fields only (name, type, text, mana cost, P/T, loyalty, defense, colors, color identity); any other change counts once per card in « autres corrections », and a window holding only those still publishes an article. All formats except `oldschool` are announced until #66 is resolved. A removed print and an added one on the same (set, number, language) are a re-issued id and appear nowhere. No user data is ever read.
 - **Visibility:** the article page is live at once; the `/articles` list follows within an hour (ISR, no on-demand revalidation).
 
@@ -61,10 +61,9 @@ The step fails (exit 1, the `alert` job opens an issue) with neither article nor
 Prod rollout order:
 
 1. The migrations of stories 3.1, 3.2 and 3.4 must already be in prod.
-2. Delete the spurious `oldschool` journal rows of the first prod seed (#66) if they are still there.
-3. Apply `20261022120000_create_catalog_digests.sql` in the prod SQL editor and check it with `npm run sb:verify:prod`.
-4. Run the baseline once against prod, after the `oldschool` purge: `SEED_TARGET=prod npm run digest:catalog -- --baseline` (#64). Without it the first digest would announce the whole journal and the 2,806 historical Scryfall migrations.
-5. Merge the PR into `main`, then merge the release PR so `deploy` gets `scripts/seed/catalog-digest.ts` before the next Monday 04:00 UTC run. Until then the `Digest` step fails and opens an alert issue on purpose.
+2. Apply `20261022120000_create_catalog_digests.sql` in the prod SQL editor and check it with `npm run sb:verify:prod`.
+3. Nothing else: the first `Digest` run after the release finds no marker, sets it and publishes nothing; the first article comes with the following seed. No `oldschool` purge or manual baseline is needed for the digest.
+4. Merge the PR into `main`, then merge the release PR so `deploy` gets `scripts/seed/catalog-digest.ts` before the next Monday 04:00 UTC run. Until then the `Digest` step fails and opens an alert issue on purpose.
 
 ## One-time setup (before merging the workflow)
 
