@@ -34,6 +34,13 @@
 -- par une ligne INFO (jamais un FAIL). MàJ 2026-07-25.
 -- NB : le journal catalog_changes (20261020120000) est audité dans son propre
 -- bloc, juste après le catalogue. MàJ 2026-10-20.
+-- NB : la table scryfall_migrations (20261020130000) est auditée dans son propre
+-- bloc, juste après le journal. MàJ 2026-10-20.
+-- NB : la table articles (20261021120000) est auditée dans son propre bloc,
+-- juste après les migrations Scryfall. MàJ 2026-10-20.
+-- NB : la table catalog_digests et la fonction publish_catalog_digest
+-- (20261022120000) sont auditées dans leur propre bloc, juste après les articles.
+-- MàJ 2026-10-20.
 -- =============================================================================
 
 -- Pas de transaction englobante : on veut qu'un objet manquant produise un FAIL,
@@ -389,7 +396,9 @@ with fn(name, args) as (
     ('trg_decks_usage',''),('trg_cards_usage',''),
     ('trg_decks_limit',''),('trg_cards_limit',''),
     -- 20261020120000_create_catalog_changes : journal des changements du catalogue.
-    ('log_catalog_change','')
+    ('log_catalog_change',''),
+    -- 20261022120000_create_catalog_digests : publication atomique du digest.
+    ('publish_catalog_digest','p_slug text, p_title_fr text, p_title_en text, p_body_fr text, p_body_en text, p_from_change_id bigint, p_from_migration_recorded_at timestamp with time zone, p_last_change_id bigint, p_last_migration_recorded_at timestamp with time zone')
 )
 select pg_temp.chk('function', fn.name||'('||fn.args||')',
   pg_temp.has_func(fn.name, fn.args), 'fonction absente')
@@ -950,6 +959,318 @@ select pg_temp.chk('catalog-changes-security', 'service_role cannot write catalo
     and not has_table_privilege('service_role','public.catalog_changes','DELETE')
     and not has_table_privilege('service_role','public.catalog_changes','TRUNCATE'),
   'service_role peut altérer le journal (default ACL non révoquée)');
+
+-- =============================================================================
+-- MIGRATIONS SCRYFALL (20261020130000)
+--
+-- scryfall_migrations copie la liste /migrations de Scryfall (merge / delete),
+-- upsertée par id par scripts/seed/seed-migrations.ts. Lue par le digest
+-- « Catalogue » et le remappage des cartes utilisateur, avec la clé service_role ;
+-- anon/authenticated n'y ont AUCUN accès.
+-- =============================================================================
+select pg_temp.chk('scryfall-migrations', 'public.scryfall_migrations',
+  pg_temp.has_table('scryfall_migrations'), 'table absente');
+
+with expected(t, col, typ) as (
+  values
+    ('scryfall_migrations','id','uuid'),
+    ('scryfall_migrations','strategy','text'),
+    ('scryfall_migrations','old_scryfall_id','uuid'),
+    ('scryfall_migrations','new_scryfall_id','uuid'),
+    ('scryfall_migrations','note','text'),
+    ('scryfall_migrations','performed_at','date'),
+    ('scryfall_migrations','metadata','jsonb'),
+    ('scryfall_migrations','recorded_at','timestamp with time zone')
+)
+select pg_temp.chk(
+  'scryfall-migrations-column', e.t||'.'||e.col,
+  pg_temp.has_col(e.t, e.col) and pg_temp.col_type(e.t, e.col) is not distinct from e.typ,
+  case
+    when not pg_temp.has_col(e.t, e.col) then 'colonne absente'
+    else 'type '||coalesce(pg_temp.col_type(e.t,e.col),'?')||' ≠ attendu '||e.typ
+  end
+)
+from expected e;
+
+-- recorded_at posé à la 1re insertion (le script ne l'envoie jamais) : sans le
+-- default, l'upsert échouerait (not null) ; sans le not null, la fenêtre du digest
+-- raterait des lignes.
+select pg_temp.chk('scryfall-migrations', 'scryfall_migrations.recorded_at not null default now()',
+  coalesce((select a.attnotnull and pg_get_expr(d.adbin, d.adrelid) = 'now()'
+            from pg_attribute a
+            left join pg_attrdef d on d.adrelid = a.attrelid and d.adnum = a.attnum
+            where a.attrelid = to_regclass('public.scryfall_migrations')
+              and a.attname = 'recorded_at' and not a.attisdropped), false),
+  'recorded_at nullable ou sans default now()');
+
+select pg_temp.chk('scryfall-migrations', 'scryfall_migrations :: primary key (id)',
+  exists (select 1 from pg_constraint
+          where contype='p' and conrelid = to_regclass('public.scryfall_migrations')),
+  'clé primaire absente → l''upsert onConflict id échoue');
+
+select pg_temp.chk('scryfall-migrations', 'scryfall_migrations :: '||con,
+  pg_temp.has_check('scryfall_migrations', con), 'contrainte absente')
+from unnest(array['scryfall_migrations_strategy_check',
+                  'scryfall_migrations_merge_target_check']) con;
+
+select pg_temp.chk('scryfall-migrations', 'scryfall_migrations :: '||idx,
+  pg_temp.has_index('scryfall_migrations', idx), 'index absent')
+from unnest(array['scryfall_migrations_old_scryfall_id_idx',
+                  'scryfall_migrations_recorded_at_idx']) idx;
+
+-- SÉCURITÉ : RLS activée et AUCUNE policy (service_role only).
+select pg_temp.chk('scryfall-migrations-security', 'scryfall_migrations :: RLS enabled, no policy',
+  pg_temp.rls_on('scryfall_migrations')
+    and not exists (select 1 from pg_policies
+                    where schemaname='public' and tablename='scryfall_migrations'),
+  'table doit avoir RLS activée et AUCUNE policy (service-role only)');
+
+-- SÉCURITÉ : anon/authenticated sans aucun privilège (la default ACL prod leur
+-- accorderait sinon l'écriture, TRUNCATE compris, qui contourne la RLS).
+select pg_temp.chk('scryfall-migrations-security', r||' has no access to scryfall_migrations',
+  pg_temp.has_table('scryfall_migrations')
+    and not has_table_privilege(r,'public.scryfall_migrations','SELECT')
+    and not has_table_privilege(r,'public.scryfall_migrations','INSERT')
+    and not has_table_privilege(r,'public.scryfall_migrations','UPDATE')
+    and not has_table_privilege(r,'public.scryfall_migrations','DELETE')
+    and not has_table_privilege(r,'public.scryfall_migrations','TRUNCATE'),
+  'le client peut lire ou altérer les migrations Scryfall')
+from unnest(array['anon','authenticated']) r;
+
+-- Le seed upserte (INSERT + UPDATE) ; le digest et le remappage lisent.
+select pg_temp.chk('scryfall-migrations-grant', 'service_role '||p||' scryfall_migrations',
+  pg_temp.has_table('scryfall_migrations')
+    and has_table_privilege('service_role','public.scryfall_migrations',p),
+  'seed-migrations ou le digest échoueront (403 42501)')
+from unnest(array['SELECT','INSERT','UPDATE']) p;
+
+-- Aucune migration stockée n'est jamais supprimée.
+select pg_temp.chk('scryfall-migrations-security', 'service_role cannot DELETE/TRUNCATE scryfall_migrations',
+  pg_temp.has_table('scryfall_migrations')
+    and not has_table_privilege('service_role','public.scryfall_migrations','DELETE')
+    and not has_table_privilege('service_role','public.scryfall_migrations','TRUNCATE'),
+  'service_role peut effacer les migrations (default ACL non révoquée)');
+
+-- =============================================================================
+-- ARTICLES (20261021120000)
+--
+-- articles porte les articles publiés (digest « Catalogue », news). Lisible par
+-- anon/authenticated (policy limitée aux articles publiés), écrite seulement par
+-- service_role.
+-- =============================================================================
+select pg_temp.chk('articles', 'public.articles',
+  pg_temp.has_table('articles'), 'table absente');
+
+with expected(t, col, typ) as (
+  values
+    ('articles','id','uuid'),
+    ('articles','slug','text'),
+    ('articles','category','text'),
+    ('articles','title_fr','text'),
+    ('articles','title_en','text'),
+    ('articles','body_fr','text'),
+    ('articles','body_en','text'),
+    ('articles','published_at','timestamp with time zone'),
+    ('articles','source','text'),
+    ('articles','created_at','timestamp with time zone')
+)
+select pg_temp.chk(
+  'articles-column', e.t||'.'||e.col,
+  pg_temp.has_col(e.t, e.col) and pg_temp.col_type(e.t, e.col) is not distinct from e.typ,
+  case
+    when not pg_temp.has_col(e.t, e.col) then 'colonne absente'
+    else 'type '||coalesce(pg_temp.col_type(e.t,e.col),'?')||' ≠ attendu '||e.typ
+  end
+)
+from expected e;
+
+select pg_temp.chk('articles', 'articles.'||col||' not null',
+  coalesce((select a.attnotnull from pg_attribute a
+            where a.attrelid = to_regclass('public.articles')
+              and a.attname = col and not a.attisdropped), false),
+  'colonne nullable')
+from unnest(array['slug','category','title_fr','title_en','body_fr','body_en',
+                  'published_at','source']) col;
+
+select pg_temp.chk('articles', 'articles.id default gen_random_uuid()',
+  pg_temp.col_default('articles','id') = 'gen_random_uuid()',
+  'id sans default → un insert sans id échoue');
+
+select pg_temp.chk('articles', 'articles :: primary key (id)',
+  exists (select 1 from pg_constraint
+          where contype='p' and conrelid = to_regclass('public.articles')),
+  'clé primaire absente');
+
+select pg_temp.chk('articles', 'articles :: unique (slug)',
+  exists (select 1 from pg_constraint
+          where contype='u' and conrelid = to_regclass('public.articles')
+            and conname = 'articles_slug_key'),
+  'slug non unique → deux articles à la même URL');
+
+select pg_temp.chk('articles', 'articles :: '||con,
+  pg_temp.has_check('articles', con), 'contrainte absente')
+from unnest(array['articles_category_check',
+                  'articles_slug_format',
+                  'articles_text_not_blank']) con;
+
+select pg_temp.chk('articles', 'articles :: articles_category_published_at_idx',
+  pg_temp.has_index('articles', 'articles_category_published_at_idx'), 'index absent');
+
+-- SÉCURITÉ : RLS activée, une seule policy de lecture limitée aux articles publiés.
+select pg_temp.chk('articles-security', 'articles :: RLS enabled',
+  pg_temp.rls_on('articles'), 'RLS désactivée');
+
+select pg_temp.chk('articles-security', 'articles :: articles_select_published (published_at <= now())',
+  exists (select 1 from pg_policies
+          where schemaname='public' and tablename='articles'
+            and policyname='articles_select_published' and cmd='SELECT'
+            and qual like '%published_at <= now()%'),
+  'policy absente ou ne filtre pas les articles futurs');
+
+select pg_temp.chk('articles-security', 'articles :: articles_select_published TO anon, authenticated',
+  exists (select 1 from pg_policies
+          where schemaname='public' and tablename='articles'
+            and policyname='articles_select_published'
+            and roles @> array['anon','authenticated']::name[]),
+  'policy sans anon/authenticated → les pages articles ne voient rien');
+
+select pg_temp.chk('articles-security', 'articles :: only articles_select_published',
+  pg_temp.has_table('articles')
+    and not exists (select 1 from pg_policies
+                    where schemaname='public' and tablename='articles'
+                      and policyname <> 'articles_select_published'),
+  'table absente ou policy inattendue sur articles');
+
+-- anon/authenticated : SELECT seulement (la default ACL prod leur accorderait
+-- sinon l'écriture, TRUNCATE compris, qui contourne la RLS).
+select pg_temp.chk('articles-grant', r||' SELECT articles',
+  pg_temp.has_table('articles') and has_table_privilege(r,'public.articles','SELECT'),
+  'les pages articles ne pourront pas lire (403 42501)')
+from unnest(array['anon','authenticated']) r;
+
+select pg_temp.chk('articles-security', r||' cannot write articles',
+  pg_temp.has_table('articles')
+    and not has_table_privilege(r,'public.articles','INSERT')
+    and not has_table_privilege(r,'public.articles','UPDATE')
+    and not has_table_privilege(r,'public.articles','DELETE')
+    and not has_table_privilege(r,'public.articles','TRUNCATE'),
+  'le client peut écrire des articles (default ACL non révoquée)')
+from unnest(array['anon','authenticated']) r;
+
+select pg_temp.chk('articles-grant', 'service_role '||p||' articles',
+  pg_temp.has_table('articles')
+    and has_table_privilege('service_role','public.articles',p),
+  'le digest ne pourra pas écrire (403 42501)')
+from unnest(array['SELECT','INSERT','UPDATE','DELETE']) p;
+
+select pg_temp.chk('articles-security', 'service_role cannot TRUNCATE articles',
+  pg_temp.has_table('articles')
+    and not has_table_privilege('service_role','public.articles','TRUNCATE'),
+  'service_role peut vider la table (TRUNCATE non révoqué)');
+
+-- =============================================================================
+-- DIGEST « CATALOGUE » (20261022120000)
+--
+-- catalog_digests garde le repère du digest (dernier id du journal et dernier
+-- recorded_at des migrations Scryfall couverts). publish_catalog_digest() insère
+-- l'article ET le repère dans une seule transaction. service_role lit le repère et
+-- n'écrit que par la fonction ; anon/authenticated n'ont AUCUN accès.
+-- =============================================================================
+select pg_temp.chk('catalog-digests', 'public.catalog_digests',
+  pg_temp.has_table('catalog_digests'), 'table absente');
+
+with expected(t, col, typ) as (
+  values
+    ('catalog_digests','id','bigint'),
+    ('catalog_digests','article_id','uuid'),
+    ('catalog_digests','last_change_id','bigint'),
+    ('catalog_digests','last_migration_recorded_at','timestamp with time zone'),
+    ('catalog_digests','created_at','timestamp with time zone')
+)
+select pg_temp.chk(
+  'catalog-digests-column', e.t||'.'||e.col,
+  pg_temp.has_col(e.t, e.col) and pg_temp.col_type(e.t, e.col) is not distinct from e.typ,
+  case
+    when not pg_temp.has_col(e.t, e.col) then 'colonne absente'
+    else 'type '||coalesce(pg_temp.col_type(e.t,e.col),'?')||' ≠ attendu '||e.typ
+  end
+)
+from expected e;
+
+-- Supprimer un article ne doit jamais rembobiner le repère (ni échouer).
+select pg_temp.chk('catalog-digests', 'catalog_digests.article_id → articles(id) on delete set null',
+  exists (select 1 from pg_constraint
+          where contype='f' and conrelid = to_regclass('public.catalog_digests')
+            and confrelid = to_regclass('public.articles') and confdeltype='n'),
+  'FK absente ou pas ON DELETE SET NULL');
+
+-- Le repère doit toujours exister : une ligne sans last_change_id ferait repartir
+-- la fenêtre de zéro (max() ignore les NULL).
+select pg_temp.chk('catalog-digests', 'catalog_digests.last_change_id not null',
+  coalesce((select a.attnotnull from pg_attribute a
+            where a.attrelid = to_regclass('public.catalog_digests')
+              and a.attname = 'last_change_id' and not a.attisdropped), false),
+  'last_change_id nullable');
+
+select pg_temp.chk('catalog-digests', 'catalog_digests :: catalog_digests_last_change_id_idx',
+  pg_temp.has_index('catalog_digests','catalog_digests_last_change_id_idx'), 'index absent');
+
+select pg_temp.chk('catalog-digests-security', 'catalog_digests :: RLS enabled, no policy',
+  pg_temp.rls_on('catalog_digests')
+    and not exists (select 1 from pg_policies
+                    where schemaname='public' and tablename='catalog_digests'),
+  'table doit avoir RLS activée et AUCUNE policy (service-role only)');
+
+select pg_temp.chk('catalog-digests-security', r||' has no access to catalog_digests',
+  pg_temp.has_table('catalog_digests')
+    and not has_table_privilege(r,'public.catalog_digests','SELECT')
+    and not has_table_privilege(r,'public.catalog_digests','INSERT')
+    and not has_table_privilege(r,'public.catalog_digests','UPDATE')
+    and not has_table_privilege(r,'public.catalog_digests','DELETE')
+    and not has_table_privilege(r,'public.catalog_digests','TRUNCATE'),
+  'le client peut lire ou altérer le repère du digest')
+from unnest(array['anon','authenticated']) r;
+
+-- La séquence de l'identité : la default ACL prod l'accorderait à anon/authenticated.
+select pg_temp.chk('catalog-digests-security', r||' has no access to catalog_digests_id_seq',
+  to_regclass('public.catalog_digests_id_seq') is not null
+    and not has_sequence_privilege(r,'public.catalog_digests_id_seq','USAGE')
+    and not has_sequence_privilege(r,'public.catalog_digests_id_seq','SELECT')
+    and not has_sequence_privilege(r,'public.catalog_digests_id_seq','UPDATE'),
+  'séquence absente ou accessible au client (default ACL non révoquée)')
+from unnest(array['anon','authenticated']) r;
+
+select pg_temp.chk('catalog-digests-grant', 'service_role SELECT catalog_digests',
+  pg_temp.has_table('catalog_digests')
+    and has_table_privilege('service_role','public.catalog_digests','SELECT'),
+  'le digest ne pourra pas lire son repère (403 42501)');
+
+select pg_temp.chk('catalog-digests-security', 'service_role cannot write catalog_digests',
+  pg_temp.has_table('catalog_digests')
+    and not has_table_privilege('service_role','public.catalog_digests','INSERT')
+    and not has_table_privilege('service_role','public.catalog_digests','UPDATE')
+    and not has_table_privilege('service_role','public.catalog_digests','DELETE')
+    and not has_table_privilege('service_role','public.catalog_digests','TRUNCATE'),
+  'service_role peut altérer le repère hors de publish_catalog_digest()');
+
+select pg_temp.chk('catalog-digests-security', 'publish_catalog_digest() SECURITY DEFINER, search_path=''''',
+  coalesce((select p.prosecdef and p.proconfig @> array['search_path=""']
+            from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+            where n.nspname='public' and p.proname='publish_catalog_digest'), false),
+  'fonction absente, pas SECURITY DEFINER, ou search_path non figé');
+
+select pg_temp.chk('catalog-digests-security', r||' cannot EXECUTE publish_catalog_digest()',
+  coalesce((select not has_function_privilege(r, p.oid, 'EXECUTE')
+            from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+            where n.nspname='public' and p.proname='publish_catalog_digest'), false),
+  'execute accordé → le client pourrait publier un article')
+from unnest(array['anon','authenticated']) r;
+
+select pg_temp.chk('catalog-digests-grant', 'service_role EXECUTE publish_catalog_digest()',
+  coalesce((select has_function_privilege('service_role', p.oid, 'EXECUTE')
+            from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+            where n.nspname='public' and p.proname='publish_catalog_digest'), false),
+  'le digest ne pourra pas publier (403 42501)');
 
 -- =============================================================================
 -- RÉSUMÉ + RAPPORT

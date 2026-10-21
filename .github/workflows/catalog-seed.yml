@@ -1,7 +1,9 @@
-# Seeds the PROD Scryfall catalog (card_sets, then the catalog tables) with the
-# existing seed scripts. The workflow file lives on main (cron + dispatch need
-# the default branch) but the code that writes to prod is checked out from
-# `deploy`, so no script newer than the prod schema ever runs against it.
+# Seeds the PROD Scryfall catalog (card_sets, then the catalog tables, then the
+# Scryfall migrations) with the existing seed scripts, then publishes the
+# "Catalogue" digest article. The workflow file lives on
+# main (cron + dispatch need the default branch) but the code that writes to prod
+# is checked out from `deploy`, so no script newer than the prod schema ever runs
+# against it.
 # Setup and operations: docs/guides/catalog-seed.md.
 name: catalog-seed
 
@@ -73,6 +75,27 @@ jobs:
       - name: Summary (seed-catalog)
         if: always() && steps.install.outcome == 'success'
         run: npx tsx .tooling/scripts/github/catalog-seed-step.ts --summary seed-catalog "$RUNNER_TEMP/seed-catalog.time"
+
+      - name: Seed migrations
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: NODE_ENV=production /usr/bin/time -v -o "$RUNNER_TEMP/seed-migrations.time" npx tsx scripts/seed/seed-migrations.ts
+      - name: Summary (seed-migrations)
+        if: always() && steps.install.outcome == 'success'
+        run: npx tsx .tooling/scripts/github/catalog-seed-step.ts --summary seed-migrations "$RUNNER_TEMP/seed-migrations.time"
+
+      # Publishes the "Catalogue" article for everything journaled since the last
+      # digest (or nothing); also appends "article publié : <slug>" / "aucun
+      # changement" to the job summary.
+      - name: Digest
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: NODE_ENV=production /usr/bin/time -v -o "$RUNNER_TEMP/catalog-digest.time" npx tsx scripts/seed/catalog-digest.ts
+      - name: Summary (catalog-digest)
+        if: always() && steps.install.outcome == 'success'
+        run: npx tsx .tooling/scripts/github/catalog-seed-step.ts --summary catalog-digest "$RUNNER_TEMP/catalog-digest.time"
 
   alert:
     needs: seed
