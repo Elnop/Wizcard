@@ -2,14 +2,15 @@ import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/seo/site';
 import { routing } from '@/i18n/routing';
 import { createClient } from '@/lib/supabase/server';
-import { fetchPublishedArticleSlugs } from '@/lib/supabase/queries/articles.server';
 
 /**
  * Sitemap multilingue. Chaque URL publique est émise pour les DEUX locales
  * (`/fr/…` et `/en/…`) avec ses annotations `alternates.languages` (hreflang
  * fr/en + x-default → locale par défaut), de sorte que Google associe les
  * versions localisées entre elles. Les pages owner-only (`/decks`, `/collection`,
- * `/wishlist`) sont volontairement absentes (noindex, non partageables).
+ * `/wishlist`) sont volontairement absentes (noindex, non partageables). Les
+ * articles (`/articles`, `/articles/[slug]`) aussi : section cachée (non listée,
+ * noindex) tant qu'elle n'est pas prête à être publiée.
  */
 
 const { locales, defaultLocale } = routing;
@@ -45,26 +46,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		...localizedEntries('search/decks', { changeFrequency: 'weekly', priority: 0.7 }),
 		...localizedEntries('search/profiles', { changeFrequency: 'weekly', priority: 0.7 }),
 		...localizedEntries('sets', { changeFrequency: 'monthly', priority: 0.6 }),
-		...localizedEntries('articles', { changeFrequency: 'weekly', priority: 0.7 }),
 		...localizedEntries('mentions-legales', { changeFrequency: 'yearly', priority: 0.2 }),
 		...localizedEntries('confidentialite', { changeFrequency: 'yearly', priority: 0.2 }),
 		...localizedEntries('cgu', { changeFrequency: 'yearly', priority: 0.2 }),
 	];
-
-	// Articles come from a separate cookieless read so a failure there never drops
-	// the deck/profile entries (and vice versa).
-	let articleRoutes: MetadataRoute.Sitemap = [];
-	try {
-		articleRoutes = (await fetchPublishedArticleSlugs()).flatMap((a) =>
-			localizedEntries(`articles/${encodeURIComponent(a.slug)}`, {
-				lastModified: new Date(a.published_at),
-				changeFrequency: 'monthly',
-				priority: 0.6,
-			})
-		);
-	} catch {
-		articleRoutes = [];
-	}
 
 	try {
 		const supabase = await createClient();
@@ -104,8 +89,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 				})
 			);
 
-		return [...staticRoutes, ...articleRoutes, ...deckRoutes, ...profileRoutes];
+		return [...staticRoutes, ...deckRoutes, ...profileRoutes];
 	} catch {
-		return [...staticRoutes, ...articleRoutes];
+		return staticRoutes;
 	}
 }

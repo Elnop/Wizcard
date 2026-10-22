@@ -16,6 +16,9 @@ import styles from './articles.module.css';
 // list, used as the Suspense fallback.
 export const revalidate = 3600;
 
+// Hidden section: reachable by direct URL, but unlinked (navbar, sitemap) and
+// noindex until it is ready to be published.
+
 export async function generateMetadata({
 	params,
 }: {
@@ -27,7 +30,7 @@ export async function generateMetadata({
 		title: t('title'),
 		description: t('description'),
 		alternates: buildAlternates(locale, 'articles'),
-		robots: { index: true, follow: true },
+		robots: { index: false, follow: false },
 	};
 }
 

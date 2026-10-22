@@ -80,12 +80,6 @@ export function Navbar() {
 						{t('sets')}
 					</Link>
 					<Link
-						href="/articles"
-						className={`${styles.navLink} ${pathname.startsWith('/articles') ? styles.navLinkActive : ''}`}
-					>
-						{t('articles')}
-					</Link>
-					<Link
 						href="/decks"
 						className={`${styles.navLink} ${pathname.startsWith('/decks') ? styles.navLinkActive : ''}`}
 					>
