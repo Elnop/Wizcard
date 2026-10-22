@@ -45,7 +45,8 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
 		title: t('title', { title }),
 		description,
 		alternates: buildAlternates(locale, `articles/${encodeURIComponent(article.slug)}`),
-		robots: { index: true, follow: true },
+		// Hidden section (see ../page.tsx): noindex until it is published.
+		robots: { index: false, follow: false },
 		openGraph: {
 			type: 'article',
 			title,
